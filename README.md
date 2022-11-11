@@ -1,6 +1,6 @@
 # Sanakan #
 
-[![Build status](https://img.shields.io/appveyor/build/MrZnake/sanakan)](https://ci.appveyor.com/project/mrznake/sanakan/branch/master) [![CodeFactor](https://img.shields.io/codefactor/grade/github/MrZnake/sanakan/master)](https://www.codefactor.io/repository/github/mrznake/sanakan) [![License](https://img.shields.io/github/license/MrZnake/sanakan)](https://github.com/MrZnake/sanakan/blob/master/LICENSE)
+[![Build status](https://img.shields.io/appveyor/build/MrZnake/sanakan)](https://ci.appveyor.com/project/mrznake/sanakan/branch/master) [![CodeFactor](https://www.codefactor.io/repository/github/mzknek/sanakan/badge)](https://www.codefactor.io/repository/github/mzknek/sanakan) [![License](https://img.shields.io/github/license/MZKNEK/sanakan)](https://github.com/MZKNEK/sanakan/blob/master/LICENSE)
 
 Overcomplicated discord bot built with [Discord.NET](https://github.com/RogueException/Discord.Net).
 
