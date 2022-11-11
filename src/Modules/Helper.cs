@@ -150,7 +150,7 @@ namespace Sanakan.Modules
                 .AppendLine($"**Czas działania**: `{(DateTime.Now - proc.StartTime).ToString(@"d'd 'hh\:mm\:ss")}`")
                 .AppendLine()
                 .Append("[**Strona**](https://sanakan.pl/) | ")
-                .Append("[**GitHub**](https://github.com/MrZnake/sanakan) | ")
+                .Append("[**GitHub**](https://github.com/MZKNEK/sanakan.git) | ")
                 .Append("[**Wiki**](https://wiki.sanakan.pl/) | ")
                 .Append("[**Karty**](https://waifu.sanakan.pl/#/)");
 
