@@ -54,8 +54,16 @@ namespace Sanakan.Services.Session.Models
             if (P1 == null || Message == null)
                 return true;
 
-            await HandleMessageAsync(context);
-            return await HandleReactionAsync(context);
+            var reaction = context.ReactionAdded ?? context.ReactionRemoved;
+            if (reaction == null)
+            {
+                await HandleMessageAsync(context);
+                return false;
+            }
+            else
+            {
+                return await HandleReactionAsync(context);
+            }
         }
 
         public Embed BuildEmbed()
