@@ -12,7 +12,9 @@ namespace Sanakan.Config
         public ConfigManager(string path)
         {
             _reader = new JsonFileReader(path);
-            _config = Load();
+            _config = path.Contains("debug", System.StringComparison.CurrentCultureIgnoreCase) 
+            ? LoadOrCreateTemplate() 
+            : Load();
         }
 
         public ConfigModel Get() => _config;
@@ -20,5 +22,13 @@ namespace Sanakan.Config
         public void Save() => _reader.Save(_config);
 
         private ConfigModel Load()  => _reader.Load<ConfigModel>();
+
+        private ConfigModel LoadOrCreateTemplate()
+        {
+            if (!_reader.Exist())
+                _reader.Save(new ConfigModel());
+                
+            return Load();
+        }
     }
 }

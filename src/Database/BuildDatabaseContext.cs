@@ -70,7 +70,7 @@ namespace Sanakan.Database
             };
             optionsBuilder.UseMySql(_config.Get().ConnectionString,
                 new MySqlServerVersion(new System.Version(5, 7)),
-                mySqlOptions => mySqlOptions.CharSetBehavior(CharSetBehavior.NeverAppend));
+                mySqlOptions => mySqlOptions.CharSetBehavior(CharSetBehavior.NeverAppend).EnableRetryOnFailure());
         }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
