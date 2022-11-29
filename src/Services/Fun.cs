@@ -41,7 +41,23 @@ namespace Sanakan.Services
     {
         private static RNGCryptoServiceProvider _rand = new RNGCryptoServiceProvider();
 
+        private static List<string> _botReactions = new List<string>()
+        {
+            "https://i.imgur.com/TCkjWz1.gif",
+            "https://i.imgur.com/BLHMLQ8.gif",
+            "https://i.imgur.com/X4UdBxZ.gif",
+            "https://i.imgur.com/d9BDTmh.gif",
+            "https://i.imgur.com/uzVz5EX.gif",
+            "https://i.imgur.com/e8TGJAN.gif",
+            "https://i.imgur.com/UbZXkYl.gif",
+            "https://i.imgur.com/DCTKfiK.gif",
+            "https://i.imgur.com/tUjmshl.gif",
+            "https://i.imgur.com/NFbvUls.gif"
+        };
+
         public static int GetRandomValue(int max) => GetRandomValue(0, max);
+
+        public static string GetRandomMuteReactionGif() => GetOneRandomFrom(_botReactions);
 
         public static int GetRandomValue(int min, int max)
         {

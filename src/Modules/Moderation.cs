@@ -27,18 +27,6 @@ namespace Sanakan.Modules
         private Services.Profile _profile;
         private Services.Moderator _moderation;
 
-        private static List<string> _botReactions = new List<string>()
-        {
-            "https://i.imgur.com/TCkjWz1.gif",
-            "https://i.imgur.com/BLHMLQ8.gif",
-            "https://i.imgur.com/X4UdBxZ.gif",
-            "https://i.imgur.com/d9BDTmh.gif",
-            "https://i.imgur.com/uzVz5EX.gif",
-            "https://i.imgur.com/e8TGJAN.gif",
-            "https://i.imgur.com/UbZXkYl.gif",
-            "https://i.imgur.com/DCTKfiK.gif"
-        };
-
         public Moderation(Services.Helper helper, Services.Moderator moderation, Services.Profile prof, ShindenClient sh, IConfig config)
         {
             _shClient = sh;
@@ -128,7 +116,7 @@ namespace Sanakan.Modules
             }
 
             await ReplyAsync("", embed: $"{user.Mention} został zbanowany.".ToEmbedMessage(EMType.Success)
-                .WithImageUrl(Services.Fun.GetOneRandomFrom(_botReactions)).Build());
+                .WithImageUrl(Services.Fun.GetRandomMuteReactionGif()).Build());
         }
 
         [Command("mute")]
@@ -172,7 +160,7 @@ namespace Sanakan.Modules
             }
 
             await ReplyAsync("", embed: $"{user.Mention} został wyciszony.".ToEmbedMessage(EMType.Success)
-                .WithImageUrl(Services.Fun.GetOneRandomFrom(_botReactions)).Build());
+                .WithImageUrl(Services.Fun.GetRandomMuteReactionGif()).Build());
         }
 
         [Command("mute mod")]
@@ -223,7 +211,7 @@ namespace Sanakan.Modules
             }
 
             await ReplyAsync("", embed: $"{user.Mention} został wyciszony.".ToEmbedMessage(EMType.Success)
-                .WithImageUrl(Services.Fun.GetOneRandomFrom(_botReactions)).Build());
+                .WithImageUrl(Services.Fun.GetRandomMuteReactionGif()).Build());
         }
 
         [Command("unmute")]
