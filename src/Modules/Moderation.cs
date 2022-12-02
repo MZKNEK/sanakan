@@ -567,6 +567,35 @@ namespace Sanakan.Modules
             }
         }
 
+        [Command("sadminr")]
+        [Summary("ustawia role semi administratora")]
+        [Remarks("34125343243432"), RequireAdminRole]
+        public async Task SetSemiAdminRoleAsync([Summary("id roli")]SocketRole role)
+        {
+            if (role == null)
+            {
+                await ReplyAsync("", embed: "Nie odnaleziono roli na serwerze.".ToEmbedMessage(EMType.Error).Build());
+                return;
+            }
+
+            using (var db = new Database.GuildConfigContext(Config))
+            {
+                var config = await db.GetGuildConfigOrCreateAsync(Context.Guild.Id);
+                if (config.SemiAdminRole == role.Id)
+                {
+                    await ReplyAsync("", embed: $"Rola {role.Mention} już jest ustawiona jako rola semi administratora.".ToEmbedMessage(EMType.Bot).Build());
+                    return;
+                }
+
+                config.SemiAdminRole = role.Id;
+                await db.SaveChangesAsync();
+
+                QueryCacheManager.ExpireTag(new string[] { $"config-{Context.Guild.Id}" });
+
+                await ReplyAsync("", embed: $"Ustawiono {role.Mention} jako role semi administratora.".ToEmbedMessage(EMType.Success).Build());
+            }
+        }
+
         [Command("userr")]
         [Summary("ustawia role użytkownika")]
         [Remarks("34125343243432"), RequireAdminRole]

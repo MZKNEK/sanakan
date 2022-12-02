@@ -11,6 +11,7 @@ namespace Sanakan.Database.Models.Configuration
         public ulong ModMuteRole { get; set; }
         public ulong UserRole { get; set; }
         public ulong AdminRole { get; set; }
+        public ulong SemiAdminRole { get; set; }
         public ulong GlobalEmotesRole { get; set; }
         public ulong WaifuRole { get; set; }
         public ulong NotificationChannel { get; set; }
