@@ -1,6 +1,5 @@
 ﻿#pragma warning disable 1591
 
-using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
 using Sanakan.Config;
@@ -11,12 +10,8 @@ using System.Threading.Tasks;
 
 namespace Sanakan.Preconditions
 {
-    public class RequireAdminRoleOrChannelPermission : PreconditionAttribute
+    public class RequireAnyAdminOrModRole : PreconditionAttribute
     {
-        private readonly ChannelPermission _permission;
-
-        public RequireAdminRoleOrChannelPermission(ChannelPermission permission) => _permission = permission;
-
         public async override Task<PreconditionResult> CheckPermissionsAsync(ICommandContext context, CommandInfo command, IServiceProvider services)
         {
             var user = context.User as SocketGuildUser;
@@ -24,27 +19,27 @@ namespace Sanakan.Preconditions
 
             await Task.CompletedTask;
 
-            var channel = context.Channel as IGuildChannel;
-            if (channel == null) return PreconditionResult.FromError($"To polecenie działa tylko z poziomu serwera.");
-
             var config = (IConfig)services.GetService(typeof(IConfig));
             using (var db = new Database.GuildConfigContext(config))
             {
                 var gConfig = await db.GetCachedGuildFullConfigAsync(context.Guild.Id);
-                if (gConfig == null) return CheckUser(user, channel);
+                if (gConfig == null) return CheckUser(user);
+
+                if (gConfig.ModeratorRoles.Any(x => user.Roles.Any(r => r.Id == x.Role)))
+                    return PreconditionResult.FromSuccess();
 
                 var role = context.Guild.GetRole(gConfig.AdminRole);
-                if (role == null) return CheckUser(user, channel);
-
-                if (user.Roles.Any(x => x.Id == role.Id)) return PreconditionResult.FromSuccess();
-                return CheckUser(user, channel);
+                if (role != null && user.Roles.Any(x => x.Id == role.Id)) return PreconditionResult.FromSuccess();
+                
+                var srole = context.Guild.GetRole(gConfig.SemiAdminRole);
+                if (srole != null && user.Roles.Any(x => x.Id == srole.Id)) return PreconditionResult.FromSuccess();
+                return CheckUser(user);
             }
         }
 
-        private PreconditionResult CheckUser(SocketGuildUser user, IGuildChannel channel)
+        private PreconditionResult CheckUser(SocketGuildUser user)
         {
             if (user.GuildPermissions.Administrator) return PreconditionResult.FromSuccess();
-            if (user.GetPermissions(channel).Has(_permission)) return PreconditionResult.FromSuccess();
             return PreconditionResult.FromError($"|IMAGE|https://i.giphy.com/RX3vhj311HKLe.gif");
         }
     }

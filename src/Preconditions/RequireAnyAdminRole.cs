@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace Sanakan.Preconditions
 {
-    public class RequireAdminOrModRole : PreconditionAttribute
+    public class RequireAnyAdminRole : PreconditionAttribute
     {
         public async override Task<PreconditionResult> CheckPermissionsAsync(ICommandContext context, CommandInfo command, IServiceProvider services)
         {
@@ -25,13 +25,11 @@ namespace Sanakan.Preconditions
                 var gConfig = await db.GetCachedGuildFullConfigAsync(context.Guild.Id);
                 if (gConfig == null) return CheckUser(user);
 
-                if (gConfig.ModeratorRoles.Any(x => user.Roles.Any(r => r.Id == x.Role)))
-                    return PreconditionResult.FromSuccess();
-
                 var role = context.Guild.GetRole(gConfig.AdminRole);
-                if (role == null) return CheckUser(user);
-
-                if (user.Roles.Any(x => x.Id == role.Id)) return PreconditionResult.FromSuccess();
+                if (role != null && user.Roles.Any(x => x.Id == role.Id)) return PreconditionResult.FromSuccess();
+                
+                var srole = context.Guild.GetRole(gConfig.SemiAdminRole);
+                if (srole != null && user.Roles.Any(x => x.Id == srole.Id)) return PreconditionResult.FromSuccess();
                 return CheckUser(user);
             }
         }

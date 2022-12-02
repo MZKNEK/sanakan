@@ -39,7 +39,7 @@ namespace Sanakan.Modules
         [Command("kasuj", RunMode = RunMode.Async)]
         [Alias("prune")]
         [Summary("usuwa x ostatnich wiadomości")]
-        [Remarks("12"), RequireAdminRoleOrChannelPermission(ChannelPermission.ManageMessages)]
+        [Remarks("12"), RequireAnyAdminRoleOrChannelPermission(ChannelPermission.ManageMessages)]
         public async Task DeleteMesegesAsync([Summary("liczba wiadomości")]int count)
         {
             if (count < 1)
@@ -66,7 +66,7 @@ namespace Sanakan.Modules
         [Command("kasuju", RunMode = RunMode.Async)]
         [Alias("pruneu")]
         [Summary("usuwa wiadomości danego użytkownika")]
-        [Remarks("karna"), RequireAdminRoleOrChannelPermission(ChannelPermission.ManageMessages)]
+        [Remarks("karna"), RequireAnyAdminRoleOrChannelPermission(ChannelPermission.ManageMessages)]
         public async Task DeleteUserMesegesAsync([Summary("użytkownik")]SocketGuildUser user)
         {
             await Context.Message.DeleteAsync();
@@ -121,7 +121,7 @@ namespace Sanakan.Modules
 
         [Command("mute")]
         [Summary("wycisza użytkownika")]
-        [Remarks("karna"), RequireAdminRoleOrChannelPermission(ChannelPermission.ManageRoles), Priority(1)]
+        [Remarks("karna"), RequireAnyAdminRoleOrChannelPermission(ChannelPermission.ManageRoles), Priority(1)]
         public async Task MuteUserAsync([Summary("użytkownik")]SocketGuildUser user, [Summary("czas trwania w godzinach")]long duration, [Summary("powód (opcjonalne)")][Remainder]string reason = "nie podano")
         {
             if (duration < 1) return;
@@ -216,7 +216,7 @@ namespace Sanakan.Modules
 
         [Command("unmute")]
         [Summary("zdejmuje wyciszenie z użytkownika")]
-        [Remarks("karna"), RequireAdminRoleOrChannelPermission(ChannelPermission.ManageRoles), Priority(1)]
+        [Remarks("karna"), RequireAnyAdminRoleOrChannelPermission(ChannelPermission.ManageRoles), Priority(1)]
         public async Task UnmuteUserAsync([Summary("użytkownik")]SocketGuildUser user)
         {
             using (var db = new Database.GuildConfigContext(Config))
@@ -254,7 +254,7 @@ namespace Sanakan.Modules
         [Command("wyciszeni", RunMode = RunMode.Async)]
         [Alias("show muted")]
         [Summary("wyświetla wyciszonych użytkowników")]
-        [Remarks(""), RequireAdminRoleOrChannelPermission(ChannelPermission.ManageRoles)]
+        [Remarks(""), RequireAnyAdminRoleOrChannelPermission(ChannelPermission.ManageRoles)]
         public async Task ShowMutedUsersAsync()
         {
             using (var mdb = new Database.ManagmentContext(Config))
@@ -373,7 +373,7 @@ namespace Sanakan.Modules
 
         [Command("role", RunMode = RunMode.Async)]
         [Summary("wyświetla role serwera")]
-        [Remarks(""), RequireAdminRoleOrChannelPermission(ChannelPermission.ManageRoles)]
+        [Remarks(""), RequireAnyAdminRoleOrChannelPermission(ChannelPermission.ManageRoles)]
         public async Task ShowRolesAsync()
         {
             string tmg = "";
@@ -515,7 +515,7 @@ namespace Sanakan.Modules
 
         [Command("config")]
         [Summary("wyświetla konfiguracje serwera")]
-        [Remarks("mods"), RequireAdminRole]
+        [Remarks("mods"), RequireAnyAdminRole]
         public async Task ShowConfigAsync([Summary("typ (opcjonalne)")][Remainder]Services.ConfigType type = Services.ConfigType.Global)
         {
             using (var db = new Database.GuildConfigContext(Config))
@@ -817,7 +817,7 @@ namespace Sanakan.Modules
 
         [Command("selfrole")]
         [Summary("dodaje/usuwa role do automatycznego zarządzania")]
-        [Remarks("34125343243432 newsy"), RequireAdminRole]
+        [Remarks("34125343243432 newsy"), RequireAnyAdminRole]
         public async Task SetSelfRoleAsync([Summary("id roli")]SocketRole role, [Summary("nazwa")][Remainder]string name = null)
         {
             if (role == null)
@@ -1428,7 +1428,7 @@ namespace Sanakan.Modules
 
         [Command("todo", RunMode = RunMode.Async)]
         [Summary("dodaje wiadomość do todo")]
-        [Remarks("2342123444212"), RequireAdminOrModRole]
+        [Remarks("2342123444212"), RequireAnyAdminOrModRole]
         public async Task MarkAsTodoAsync([Summary("id wiadomości")]ulong messageId = 0, [Summary("nazwa serwera (opcjonalne)")]string serverName = null)
         {
             using (var db = new Database.GuildConfigContext(Config))
@@ -1498,7 +1498,7 @@ namespace Sanakan.Modules
 
         [Command("quote", RunMode = RunMode.Async)]
         [Summary("cytuje wiadomość i wysyła na podany kanał")]
-        [Remarks("2342123444212 2342123444212"), RequireAdminOrModRole]
+        [Remarks("2342123444212 2342123444212"), RequireAnyAdminOrModRole]
         public async Task QuoteAndSendAsync([Summary("id wiadomości")]ulong messageId, [Summary("id kanału na serwerze")]ulong channelId)
         {
             var channel2Send = Context.Guild.GetTextChannel(channelId);
@@ -1557,7 +1557,7 @@ namespace Sanakan.Modules
 
         [Command("check")]
         [Summary("sprawdza użytkownika")]
-        [Remarks("Karna"), RequireAdminRole]
+        [Remarks("Karna"), RequireAnyAdminRole]
         public async Task CheckUserAsync([Summary("użytkownik")]SocketGuildUser user)
         {
             string report = "**Globalki:** ✅\n\n";
@@ -1645,7 +1645,7 @@ namespace Sanakan.Modules
 
         [Command("loteria", RunMode = RunMode.Async)]
         [Summary("bot losuje osobę spośród tych, co dodali reakcję")]
-        [Remarks("5"), RequireAdminOrModRole]
+        [Remarks("5"), RequireAnyAdminOrModRole]
         public async Task GetRandomUserAsync([Summary("długość w minutach")]uint duration)
         {
             var emote = new Emoji("🎰");
@@ -1665,7 +1665,7 @@ namespace Sanakan.Modules
 
         [Command("pary", RunMode = RunMode.Async)]
         [Summary("bot losuje pary liczb")]
-        [Remarks("5"), RequireAdminOrModRole]
+        [Remarks("5"), RequireAnyAdminOrModRole]
         public async Task GetRandomPairsAsync([Summary("liczba par")]uint count)
         {
             var pairs = new List<Tuple<int, int>>();
@@ -1687,7 +1687,7 @@ namespace Sanakan.Modules
 
         [Command("pozycja gracza", RunMode = RunMode.Async)]
         [Summary("bot losuje liczbę dla gracza")]
-        [Remarks("kokosek dzida"), RequireAdminOrModRole]
+        [Remarks("kokosek dzida"), RequireAnyAdminOrModRole]
         public async Task AssingNumberToUsersAsync([Summary("nazwy graczy")]params string[] players)
         {
             var numbers = Enumerable.Range(1, players.Count()).ToList();
@@ -1711,7 +1711,7 @@ namespace Sanakan.Modules
         [Command("raport")]
         [Alias("report")]
         [Summary("rozwiązuje raport, nie podanie czasu odrzuca go, podanie czasu 0 ostrzega użytkownika")]
-        [Remarks("2342123444212 4 kara dla Ciebie"), RequireAdminRole, Priority(1)]
+        [Remarks("2342123444212 4 kara dla Ciebie"), RequireAnyAdminRole, Priority(1)]
         public async Task ResolveReportAsync([Summary("id raportu")]ulong rId, [Summary("długość wyciszenia w h")]long duration = -1, [Summary("powód")][Remainder]string reason = "z raportu")
         {
             using (var db = new Database.GuildConfigContext(Config))
@@ -1850,7 +1850,7 @@ namespace Sanakan.Modules
         [Command("pomoc", RunMode = RunMode.Async)]
         [Alias("help", "h")]
         [Summary("wypisuje polecenia")]
-        [Remarks("kasuj"), RequireAdminOrModRole]
+        [Remarks("kasuj"), RequireAnyAdminOrModRole]
         public async Task SendHelpAsync([Summary("nazwa polecenia (opcjonalne)")][Remainder]string command = null)
         {
             if (command != null)
