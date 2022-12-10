@@ -303,15 +303,15 @@ namespace Sanakan.Modules
         {
             using (var db = new Database.UserContext(Config))
             {
-                var deck = db.GameDecks.Include(x => x.Figures).Where(x => x.Id == Context.User.Id).AsNoTracking().FirstOrDefault();
-                var fig = deck.Figures.FirstOrDefault(x => x.Id == id || x.IsFocus);
+                var fig = db.Figures.AsQueryable().AsNoTracking().FirstOrDefault(x => x.Id == id || (id == 0 && x.IsFocus && x.GameDeckId == Context.User.Id));
                 if (fig == null)
                 {
                     await ReplyAsync("", embed: $"{Context.User.Mention} taka figurka nie istnieje.".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
-                await ReplyAsync("", embed: fig.GetDesc().TrimToLength(2000).ToEmbedMessage(EMType.Info).WithAuthor(new EmbedAuthorBuilder().WithUser(Context.User)).Build());
+                await ReplyAsync("", embed: fig.GetDesc().TrimToLength(2000).ToEmbedMessage(EMType.Info)
+                    .WithUser(Context.User).WithOwner(Context.Guild.GetUser(fig.GameDeckId)).Build());
             }
         }
 
