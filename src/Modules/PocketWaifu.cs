@@ -311,7 +311,7 @@ namespace Sanakan.Modules
                 }
 
                 await ReplyAsync("", embed: fig.GetDesc().TrimToLength(2000).ToEmbedMessage(EMType.Info)
-                    .WithUser(Context.User).WithOwner(Context.Guild.GetUser(fig.GameDeckId)).Build());
+                    .WithUser(Context.Guild.GetUser(fig.GameDeckId)).Build());
             }
         }
 
