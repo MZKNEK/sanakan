@@ -1,5 +1,6 @@
 ﻿#pragma warning disable 1591
 
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
@@ -10,7 +11,6 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Sanakan.Config;
 using Sanakan.Extensions;
-using Shinden.Logger;
 
 namespace Sanakan.Api.Controllers
 {
@@ -173,7 +173,19 @@ namespace Sanakan.Api.Controllers
                 }
 
                 var msg = await channel.SendMessageAsync(mentionContent, embed: message.ToEmbed());
-                if (msg != null) msgList.Add(msg.Id);
+                if (msg != null)
+                {
+                    msgList.Add(msg.Id);
+
+                    try
+                    {
+                        if (channel is INewsChannel)
+                        {
+                            await msg.CrosspostAsync();
+                        }
+                    }
+                    catch(Exception) {}
+                }
             }
 
             if (msgList.Count == 0)
