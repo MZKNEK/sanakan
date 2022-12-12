@@ -179,10 +179,7 @@ namespace Sanakan.Api.Controllers
 
                     try
                     {
-                        if (channel is INewsChannel)
-                        {
-                            await msg.CrosspostAsync();
-                        }
+                        await msg.CrosspostAsync();
                     }
                     catch(Exception) {}
                 }
