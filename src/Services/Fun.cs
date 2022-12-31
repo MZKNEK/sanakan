@@ -52,7 +52,9 @@ namespace Sanakan.Services
             "https://i.imgur.com/UbZXkYl.gif",
             "https://i.imgur.com/DCTKfiK.gif",
             "https://i.imgur.com/tUjmshl.gif",
-            "https://i.imgur.com/NFbvUls.gif"
+            "https://i.imgur.com/NFbvUls.gif",
+            "https://i.imgur.com/SGIRLxB.gif",
+            "https://i.imgur.com/9kylf9Z.gif"
         };
 
         public static int GetRandomValue(int max) => GetRandomValue(0, max);
