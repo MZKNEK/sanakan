@@ -55,6 +55,7 @@ namespace Sanakan.Database
         public DbSet<WaifuFightChannel> WaifuFightChannels { get; set; }
         public DbSet<PenaltyInfo> Penalties { get; set; }
         public DbSet<OwnedRole> OwnedRoles { get; set; }
+        public DbSet<MuteModifier> MuteModifiers { get; set; }
         public DbSet<UserAnalytics> UsersData { get; set; }
         public DbSet<SystemAnalytics> SystemData { get; set; }
         public DbSet<TransferAnalytics> TransferData { get; set; }
@@ -337,6 +338,11 @@ namespace Sanakan.Database
 
                 entity.HasOne(e => e.PenaltyInfo)
                     .WithMany(p => p.Roles);
+            });
+
+            modelBuilder.Entity<MuteModifier>(entity =>
+            {
+                entity.HasKey(e => e.Id);
             });
 
             // Analytics

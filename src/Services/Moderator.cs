@@ -577,6 +577,25 @@ namespace Sanakan.Services
             await user.Guild.AddBanAsync(user, 0, info.Reason);
         }
 
+        private async Task<long?> CheckMuteModifiersAsync(SocketGuildUser user, Database.ManagmentContext db, long duration)
+        {
+            var mod = await db.MuteModifiers.AsQueryable().FirstOrDefaultAsync(x => x.User == user.Id && x.Guild == user.Guild.Id);
+            if (mod == null)
+                return null;
+
+            switch (mod.Type)
+            {
+                case ModifierType.Growing:
+                    return (mod.Value * ++mod.Count) + duration;
+
+                case ModifierType.Constant:
+                    return mod.Value + duration;
+
+                default:
+                    return duration;
+            }
+        }
+
         public async Task<PenaltyInfo> MuteUserAysnc(SocketGuildUser user, SocketRole muteRole, SocketRole muteModRole, SocketRole userRole,
             Database.ManagmentContext db, long duration, string reason = "nie podano", IEnumerable<ModeratorRoles> modRoles = null)
         {
@@ -590,6 +609,10 @@ namespace Sanakan.Services
                 DurationInHours = duration,
                 Roles = new List<OwnedRole>(),
             };
+
+            var newDuration = await CheckMuteModifiersAsync(user, db, duration);
+            if (newDuration.HasValue)
+                info.DurationInHours = newDuration.Value;
 
             await db.Penalties.AddAsync(info);
 

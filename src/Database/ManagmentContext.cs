@@ -18,6 +18,7 @@ namespace Sanakan.Database
 
         public DbSet<PenaltyInfo> Penalties { get; set; }
         public DbSet<OwnedRole> OwnedRoles { get; set; }
+        public DbSet<MuteModifier> MuteModifiers { get; set; }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
