@@ -5,6 +5,7 @@ using Discord.Commands;
 using Discord.WebSocket;
 using Sanakan.Config;
 using Sanakan.Database.Models;
+using Sanakan.Database.Models.Management;
 using Sanakan.Extensions;
 using Sanakan.Preconditions;
 using Sanakan.Services;
@@ -117,6 +118,48 @@ namespace Sanakan.Modules
 
             await ReplyAsync("", embed: $"{user.Mention} został zbanowany.".ToEmbedMessage(EMType.Success)
                 .WithImageUrl(Services.Fun.GetRandomMuteReactionGif()).Build());
+        }
+
+        [Command("mute modifier")]
+        [Summary("dodaje modyfikacje muta")]
+        [Remarks("karna"), RequireAnyAdminRoleOrChannelPermission(ChannelPermission.ManageRoles), Priority(1)]
+        public async Task SetMuteModifierAsync([Summary("użytkownik")]SocketGuildUser user, [Summary("czas w godzinach (0 - kasacja)")]long duration, [Summary("typ (Constant/Growing)")]ModifierType type)
+        {
+            if (duration < 0) return;
+
+            using (var db = new Database.ManagmentContext(Config))
+            {
+                var mod = await db.MuteModifiers.FirstOrDefaultAsync(x => x.User == user.Id && x.Guild == Context.Guild.Id);
+                if (mod != null && duration == 0)
+                {
+                    db.MuteModifiers.Remove(mod);
+                    await db.SaveChangesAsync();
+                    await ReplyAsync("", embed: $"Wpis o użytkowniku {user.Mention} został skasowany.".ToEmbedMessage(EMType.Success).Build());
+                    return;
+                }
+
+                if (mod == null)
+                {
+                    mod = new MuteModifier
+                    {
+                        Count = 0,
+                        Type = type,
+                        User = user.Id,
+                        Value = duration,
+                        Guild = Context.Guild.Id,
+                    };
+                    db.MuteModifiers.Add(mod);
+                }
+                else
+                {
+                    mod.Value = duration;
+                    mod.Type = type;
+                }
+
+                await db.SaveChangesAsync();
+            }
+
+            await ReplyAsync("", embed: $"Wpis o użytkowniku {user.Mention} został dodany/zmieniony.".ToEmbedMessage(EMType.Success).Build());
         }
 
         [Command("mute")]
