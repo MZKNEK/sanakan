@@ -372,13 +372,13 @@ namespace Sanakan.Services
         }
 
         public async Task NotifyAboutPenaltyAsync(SocketGuildUser user, ITextChannel channel,
-            PenaltyInfo info, string byWho = "automat")
+            ExtendedPenaltyInfo exInfo, string byWho = "automat")
         {
             var embed = new EmbedBuilder
             {
-                Color = (info.Type == PenaltyType.Mute) ? EMType.Warning.Color() : EMType.Error.Color(),
+                Color = exInfo.GetColor(),
                 Footer = new EmbedFooterBuilder().WithText($"Przez: {byWho}"),
-                Description = $"Powód: {info.Reason}".TrimToLength(1800),
+                Description = $"Powód: {exInfo.Info.Reason}".TrimToLength(1800),
                 Author = new EmbedAuthorBuilder().WithUser(user),
                 Fields = new List<EmbedFieldBuilder>
                 {
@@ -392,22 +392,32 @@ namespace Sanakan.Services
                     {
                         IsInline = true,
                         Name = "Typ:",
-                        Value = info.Type,
+                        Value = exInfo.Info.Type,
                     },
                     new EmbedFieldBuilder
                     {
                         IsInline = true,
                         Name = "Kiedy:",
-                        Value = $"{info.StartDate.ToShortDateString()} {info.StartDate.ToShortTimeString()}"
+                        Value = $"{exInfo.GetTimeAsString()}"
                     },
                     new EmbedFieldBuilder
                     {
                         IsInline = true,
                         Name = "Na ile:",
-                        Value = $"{info.DurationInHours/24} dni {info.DurationInHours%24} godzin",
+                        Value = $"{exInfo.GetTotalDurationAsString()}",
                     }
                 }
             };
+
+            if (exInfo.IsBonusDuration())
+            {
+                embed.AddField(new EmbedFieldBuilder
+                    {
+                        IsInline = true,
+                        Name = "Bonus:",
+                        Value = $"{exInfo.GetBonusDurationAsString()}",
+                    });
+            }
 
             if (channel != null)
                 await channel.SendMessageAsync("", embed: embed.Build());
@@ -417,7 +427,7 @@ namespace Sanakan.Services
                 var dm = await user.CreateDMChannelAsync();
                 if (dm != null)
                 {
-                    await dm.SendMessageAsync($"Elo! Zostałeś ukarany mutem na {info.DurationInHours/24} dni {info.DurationInHours%24} godzin.\n\nPodany powód: {info.Reason}\n\nPozdrawiam serdecznie!".TrimToLength(2000));
+                    await dm.SendMessageAsync($"Elo! Zostałeś ukarany mutem na {exInfo.GetTotalDurationAsString()}.\n\nPodany powód: {exInfo.Info.Reason}\n\nPozdrawiam serdecznie!".TrimToLength(2000));
                     await dm.CloseAsync();
                 }
             }
@@ -552,29 +562,34 @@ namespace Sanakan.Services
             }
         }
 
-        public async Task<PenaltyInfo> GetBanUserInfoAysnc(SocketGuildUser user, long duration, string reason = "nie podano")
+        public ExtendedPenaltyInfo GetBanUserInfo(SocketGuildUser user, long duration, string reason = "nie podano")
         {
-            return await Task.FromResult(new PenaltyInfo
+            return new ExtendedPenaltyInfo
             {
-                User = user.Id,
-                Reason = reason,
-                Guild = user.Guild.Id,
-                Type = PenaltyType.Ban,
-                StartDate = DateTime.Now,
-                DurationInHours = duration,
-                Roles = new List<OwnedRole>(),
-            });
+                Info = new PenaltyInfo
+                {
+                    User = user.Id,
+                    Reason = reason,
+                    Guild = user.Guild.Id,
+                    Type = PenaltyType.Ban,
+                    StartDate = DateTime.Now,
+                    DurationInHours = duration,
+                    Roles = new List<OwnedRole>(),
+                },
+                BaseDuration = duration,
+                BonusDuration = 0
+            };
         }
 
-        public async Task ExecuteBanUserAysnc(SocketGuildUser user, PenaltyInfo info, Database.ManagmentContext db)
+        public async Task BanUserAsync(SocketGuildUser user, ExtendedPenaltyInfo exInfo, Database.ManagmentContext db)
         {
-            await db.Penalties.AddAsync(info);
+            await db.Penalties.AddAsync(exInfo.Info);
 
             await db.SaveChangesAsync();
 
             QueryCacheManager.ExpireTag(new string[] { $"mute" });
 
-            await user.Guild.AddBanAsync(user, 0, info.Reason);
+            await user.Guild.AddBanAsync(user, 0, exInfo.Info.Reason);
         }
 
         private async Task<long?> CheckMuteModifiersAsync(SocketGuildUser user, Database.ManagmentContext db, long duration)
@@ -596,32 +611,40 @@ namespace Sanakan.Services
             }
         }
 
-        public async Task<PenaltyInfo> MuteUserAysnc(SocketGuildUser user, SocketRole muteRole, SocketRole muteModRole, SocketRole userRole,
+        public async Task<ExtendedPenaltyInfo> MuteUserAsync(SocketGuildUser user, SocketRole muteRole, SocketRole muteModRole, SocketRole userRole,
             Database.ManagmentContext db, long duration, string reason = "nie podano", IEnumerable<ModeratorRoles> modRoles = null)
         {
-            var info = new PenaltyInfo
+            var exInfo = new ExtendedPenaltyInfo
             {
-                User = user.Id,
-                Reason = reason,
-                Guild = user.Guild.Id,
-                Type = PenaltyType.Mute,
-                StartDate = DateTime.Now,
-                DurationInHours = duration,
-                Roles = new List<OwnedRole>(),
+                Info = new PenaltyInfo
+                {
+                    User = user.Id,
+                    Reason = reason,
+                    Guild = user.Guild.Id,
+                    Type = PenaltyType.Mute,
+                    StartDate = DateTime.Now,
+                    DurationInHours = duration,
+                    Roles = new List<OwnedRole>(),
+                },
+                BaseDuration = duration,
+                BonusDuration = 0
             };
 
             var newDuration = await CheckMuteModifiersAsync(user, db, duration);
             if (newDuration.HasValue)
-                info.DurationInHours = newDuration.Value;
+            {
+                exInfo.Info.DurationInHours = newDuration.Value;
+                exInfo.BonusDuration = newDuration.Value - duration;
+            }
 
-            await db.Penalties.AddAsync(info);
+            await db.Penalties.AddAsync(exInfo.Info);
 
             if (userRole != null)
             {
                 if (user.Roles.Contains(userRole))
                 {
                     await user.RemoveRoleAsync(userRole);
-                    info.Roles.Add(new OwnedRole
+                    exInfo.Info.Roles.Add(new OwnedRole
                     {
                         Role = userRole.Id
                     });
@@ -636,7 +659,7 @@ namespace Sanakan.Services
                     if (role == null) continue;
 
                     await user.RemoveRoleAsync(role);
-                    info.Roles.Add(new OwnedRole
+                    exInfo.Info.Roles.Add(new OwnedRole
                     {
                         Role = role.Id
                     });
@@ -656,7 +679,7 @@ namespace Sanakan.Services
 
             QueryCacheManager.ExpireTag(new string[] { $"mute" });
 
-            return info;
+            return exInfo;
         }
     }
 }

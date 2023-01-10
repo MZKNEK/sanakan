@@ -110,9 +110,9 @@ namespace Sanakan.Modules
                 using (var mdb = new Database.ManagmentContext(Config))
                 {
                     var usr = Context.User as SocketGuildUser;
-                    var info = await _moderation.GetBanUserInfoAysnc(user, duration, reason);
+                    var info = _moderation.GetBanUserInfo(user, duration, reason);
                     await _moderation.NotifyAboutPenaltyAsync(user, notifChannel, info, $"{usr.Nickname ?? usr.Username}");
-                    await _moderation.ExecuteBanUserAysnc(user, info, mdb);
+                    await _moderation.BanUserAsync(user, info, mdb);
                 }
             }
 
@@ -197,7 +197,7 @@ namespace Sanakan.Modules
                 using (var mdb = new Database.ManagmentContext(Config))
                 {
                     var usr = Context.User as SocketGuildUser;
-                    var info = await _moderation.MuteUserAysnc(user, muteRole, null, userRole, mdb, duration, reason);
+                    var info = await _moderation.MuteUserAsync(user, muteRole, null, userRole, mdb, duration, reason);
                     await _moderation.NotifyAboutPenaltyAsync(user, notifChannel, info, $"{usr.Nickname ?? usr.Username}");
                 }
             }
@@ -248,7 +248,7 @@ namespace Sanakan.Modules
                 using (var mdb = new Database.ManagmentContext(Config))
                 {
                     var usr = Context.User as SocketGuildUser;
-                    var info = await _moderation.MuteUserAysnc(user, muteRole, muteModRole, userRole, mdb, duration, reason, config.ModeratorRoles);
+                    var info = await _moderation.MuteUserAsync(user, muteRole, muteModRole, userRole, mdb, duration, reason, config.ModeratorRoles);
                     await _moderation.NotifyAboutPenaltyAsync(user, notifChannel, info, $"{usr.Nickname ?? usr.Username}");
                 }
             }
@@ -1882,7 +1882,7 @@ namespace Sanakan.Modules
 
                 using (var mdb = new Database.ManagmentContext(Config))
                 {
-                    var info = await _moderation.MuteUserAysnc(user, muteRole, null, userRole, mdb, duration, reason);
+                    var info = await _moderation.MuteUserAsync(user, muteRole, null, userRole, mdb, duration, reason);
                     await _moderation.NotifyAboutPenaltyAsync(user, notifChannel, info, byWho);
                 }
 
