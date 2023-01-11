@@ -37,6 +37,24 @@ namespace Sanakan.Modules
             _moderation = moderation;
         }
 
+        [Command("kasujs", RunMode = RunMode.Async)]
+        [Alias("prunes")]
+        [Summary("usuwa podaną wiadomość")]
+        [Remarks("62342345245"), RequireAnyAdminRoleOrChannelPermission(ChannelPermission.ManageMessages)]
+        public async Task DeleteMesegeAsync([Summary("id wiadomości")]ulong id = 0)
+        {
+            if (id == 0 && Context.Message.Reference != null && Context.Message.Reference.MessageId.IsSpecified)
+                id = Context.Message.Reference.MessageId.Value;
+
+            await Context.Message.DeleteAsync();
+
+            if (id != 0)
+            {
+                var dmsg = await Context.Channel.GetMessageAsync(id);
+                await dmsg.DeleteAsync();
+            }
+        }
+
         [Command("kasuj", RunMode = RunMode.Async)]
         [Alias("prune")]
         [Summary("usuwa x ostatnich wiadomości")]
