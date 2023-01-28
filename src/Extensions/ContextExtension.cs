@@ -105,6 +105,11 @@ namespace Sanakan.Extensions
             return user;
         }
 
+        public static async Task<bool> IsUserMutedOnGuildAsync(this Database.UserContext context, ulong userId, ulong guildId)
+        {
+            return await context.Penalties.AsQueryable().AsNoTracking().AnyAsync(x => x.User == userId && x.Guild == guildId && x.Type == PenaltyType.Mute);
+        }
+
         public static async Task<User> GetBaseUserAndDontTrackAsync(this Database.UserContext context, ulong userId)
         {
             return await context.Users.AsQueryable().AsNoTracking().AsSplitQuery().FirstOrDefaultAsync(x => x.Id == userId);

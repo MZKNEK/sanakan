@@ -5,6 +5,7 @@ using Pomelo.EntityFrameworkCore.MySql.Infrastructure;
 using Sanakan.Config;
 using Sanakan.Database.Models;
 using Sanakan.Database.Models.Configuration;
+using Sanakan.Database.Models.Management;
 
 namespace Sanakan.Database
 {
@@ -37,6 +38,7 @@ namespace Sanakan.Database
         public DbSet<Answer> Answers { get; set; }
         public DbSet<Models.Analytics.WishlistCount> WishlistCountData { get; set; }
 
+        public DbSet<PenaltyInfo> Penalties { get; set; }
         public DbSet<GuildOptions> Guilds { get; set; }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
