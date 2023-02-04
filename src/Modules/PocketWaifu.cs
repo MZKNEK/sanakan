@@ -962,7 +962,7 @@ namespace Sanakan.Modules
 
         [Command("lazyp")]
         [Alias("lp")]
-        [Summary("otwiera pierwszy pakiet z domyślnie ustawionym niszczeniem kc na 4 oraz tagiem wymiana")]
+        [Summary("otwiera pierwszy pakiet z domyślnie ustawionym niszczeniem kc na 2 oraz tagiem wymiana")]
         [Remarks(""), RequireAnyCommandChannelOrLevel(200)]
         public async Task OpenPacketLazyModeAsync([Summary("czy zniszczyć karty nie będące na liście życzeń i nie posiadające danej kc?")]uint destroyCards = 2, [Summary("czy zamienić niszczenie na uwalnianie")]bool changeToRelease = false, [Summary("oznacza niezniszczone karty podanym tagiem")]string tag = "wymiana")
             => await OpenPacketAsync(1, 1, true, destroyCards, changeToRelease, tag);
