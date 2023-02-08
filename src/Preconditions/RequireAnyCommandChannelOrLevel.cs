@@ -55,7 +55,7 @@ namespace Sanakan.Preconditions
                     }
 
                     var channel = await context.Guild.GetTextChannelAsync(gConfig.CommandChannels.First().Channel);
-                    return PreconditionResult.FromError($"To polecenie działa na kanale {channel?.Mention}, możesz użyć go tutaj po osiągnięciu {_level} poziomu.");
+                    return PreconditionResult.FromError($"|IMAGE|https://i.imgur.com/SPkG2Bf.gif|To polecenie działa na kanale {channel?.Mention}, możesz użyć go tutaj po osiągnięciu {_level} poziomu.");
                 }
                 return PreconditionResult.FromSuccess();
             }
