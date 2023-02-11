@@ -194,6 +194,27 @@ namespace Sanakan.Api.Controllers
         }
 
         /// <summary>
+        /// Pobiera topke życzeń użytkowników
+        /// </summary>
+        /// <param name="count">jak dużo wpisów</param>
+        /// <returns>topka życzeń</returns>
+        /// <response code="404">Not found</response>
+        [HttpGet("top/characters")]
+        public async Task<IEnumerable<Database.Models.Analytics.WishlistCount>> GetTopCharactersAsync(int count)
+        {
+            using (var db = new Database.UserContext(_config))
+            {
+                var top = await db.WishlistCountData.AsQueryable().OrderByDescending(x => x.Count).ToListAsync();
+                if (top == null)
+                {
+                    await "Not found".ToResponse(404).ExecuteResultAsync(ControllerContext);
+                    return new List<Database.Models.Analytics.WishlistCount>();
+                }
+                return top.Take(count);
+            }
+        }
+
+        /// <summary>
         /// Pobiera profil użytkownika
         /// </summary>
         /// <param name="id">id użytkownika shindena</param>
