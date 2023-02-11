@@ -199,7 +199,7 @@ namespace Sanakan.Api.Controllers
         /// <param name="count">jak dużo wpisów</param>
         /// <returns>topka życzeń</returns>
         /// <response code="404">Not found</response>
-        [HttpGet("top/characters")]
+        [HttpGet("top/characters/{count}")]
         public async Task<IEnumerable<Database.Models.Analytics.WishlistCount>> GetTopCharactersAsync(int count)
         {
             using (var db = new Database.UserContext(_config))
