@@ -1703,7 +1703,8 @@ namespace Sanakan.Services.PocketWaifu
             var cards = new List<Card>();
             if (cardsId != null)
             {
-                var cds = await db.Cards.Include(x => x.TagList).Where(x => cardsId.Any(c => c == x.Id)).AsNoTracking().ToListAsync();
+                var cds = await db.Cards.Include(x => x.TagList).Where(x => cardsId.Any(c => c == x.Id))
+                    .Include(x => x.GameDeck).ThenInclude(x => x.User).AsNoTracking().ToListAsync();
                 cards.AddRange(cds);
             }
 
@@ -1726,7 +1727,8 @@ namespace Sanakan.Services.PocketWaifu
             if (characters.Count > 0)
             {
                 characters = characters.Distinct().Where(c => !userCards.Any(x => x.Character == c)).ToList();
-                var cads = await db.Cards.Include(x => x.TagList).Where(x => characters.Any(c => c == x.Character)).AsNoTracking().ToListAsync();
+                var cads = await db.Cards.Include(x => x.TagList).Where(x => characters.Any(c => c == x.Character))
+                    .Include(x => x.GameDeck).ThenInclude(x => x.User).AsNoTracking().ToListAsync();
                 cards.AddRange(cads);
             }
 
