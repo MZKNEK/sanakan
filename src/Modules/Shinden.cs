@@ -1,18 +1,18 @@
 ﻿#pragma warning disable 1591
 
+using System;
+using System.Linq;
+using System.Threading.Tasks;
 using Discord.Commands;
 using Discord.WebSocket;
+using Microsoft.EntityFrameworkCore;
 using Sanakan.Extensions;
 using Sanakan.Preconditions;
 using Sanakan.Services.Commands;
 using Sanakan.Services.Session;
 using Sanakan.Services.Session.Models;
-using Shden = Shinden;
-using System;
-using System.Linq;
-using System.Threading.Tasks;
 using Z.EntityFramework.Plus;
-using Microsoft.EntityFrameworkCore;
+using Shden = Shinden;
 
 namespace Sanakan.Modules
 {
@@ -88,7 +88,13 @@ namespace Sanakan.Modules
         [Alias("postac", "character")]
         [Summary("wyświetla informacje o postaci")]
         [Remarks("Gintoki")]
-        public async Task SearchCharacterAsync([Summary("imie")][Remainder]string name)
+        public async Task SearchCharacterBasicAsync([Summary("imie")][Remainder]string name) => await SearchCharacterAsync(false, name);
+
+        [Command("postać", RunMode = RunMode.Async)]
+        [Alias("postac", "character")]
+        [Summary("wyświetla informacje o postaci")]
+        [Remarks("Gintoki")]
+        public async Task SearchCharacterAsync([Summary("czy szukać tytułów?")]bool longSearch, [Summary("imie")][Remainder]string name)
         {
             var session = new SearchSession(Context.User, _shclient);
             if (_session.SessionExist(session)) return;
@@ -101,18 +107,30 @@ namespace Sanakan.Modules
             }
 
             var list = response.Body;
-            var toSend = _shinden.GetSearchResponse(list, "Wybierz postać, którą chcesz wyświetlić poprzez wpisanie numeru odpowiadającemu jej na liście.");
-
             if (list.Count == 1)
             {
                 var info = (await _shclient.GetCharacterInfoAsync(list.First())).Body;
                 await ReplyAsync("", false, info.ToEmbed());
+                return;
             }
-            else
+
+            System.Collections.Generic.IEnumerable<object> eList = list;
+            Discord.IUserMessage buildingMsg = null;
+            if (longSearch)
             {
-                session.PList = list;
-                await _shinden.SendSearchResponseAsync(Context, toSend, session);
+                if (list.Count > 6)
+                    buildingMsg = await ReplyAsync("", embed: $"📚 Przeglądanie zakurzonych półek...".ToEmbedMessage(EMType.Bot).Build());
+
+                eList = await _shinden.GetTitlesForCharactersAsync(list);
             }
+
+            var toSend = _shinden.GetSearchResponse(eList, "Wybierz postać, którą chcesz wyświetlić poprzez wpisanie numeru odpowiadającemu jej na liście.");
+
+            if (buildingMsg != null)
+                await buildingMsg.DeleteAsync();
+
+            session.PList = list;
+            await _shinden.SendSearchResponseAsync(Context, toSend, session);
         }
 
         [Command("strona", RunMode = RunMode.Async)]

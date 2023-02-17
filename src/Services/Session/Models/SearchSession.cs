@@ -73,8 +73,11 @@ namespace Sanakan.Services.Session.Models
             {
                 foreach (var message in Messages)
                 {
-                    var msg = await message.Channel.GetMessageAsync(message.Id);
-                    if (msg != null) await msg.DeleteAsync();
+                    if (message != null)
+                    {
+                        var msg = await message.Channel.GetMessageAsync(message.Id);
+                        if (msg != null) await msg.DeleteAsync();
+                    }
                 }
 
                 Messages = null;

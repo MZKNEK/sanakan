@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using Discord.Commands;
 using Discord.WebSocket;
 using Sanakan.Extensions;
+using Sanakan.Services.PocketWaifu;
 using Sanakan.Services.Session;
 using Sanakan.Services.Session.Models;
 using Shinden;
@@ -66,6 +67,28 @@ namespace Sanakan.Services
                 return UrlParsingError.InvalidUrlForum;
 
             return UrlParsingError.InvalidUrl;
+        }
+
+        public async Task<List<CharacterWithTitle>> GetTitlesForCharactersAsync(IEnumerable<IPersonSearch> characters)
+        {
+            var list = new List<CharacterWithTitle>();
+            foreach (var ch in characters)
+            {
+                var entity = new CharacterWithTitle
+                {
+                    Character = ch,
+                    Title = string.Empty
+                };
+
+                var res = await _shClient.GetCharacterInfoAsync(ch);
+                if (res.IsSuccessStatusCode())
+                {
+                    entity.Title = res.Body?.Relations?.OrderBy(x => x.Id)?.FirstOrDefault()?.Title ?? string.Empty;
+                }
+
+                list.Add(entity);
+            }
+            return list;
         }
 
         public string[] GetSearchResponse(IEnumerable<object> list, string title)
