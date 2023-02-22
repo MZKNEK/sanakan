@@ -266,7 +266,11 @@ namespace Sanakan.Extensions
                 maxHealth = 99999;
 
             var percent = card.Affection * 5d / 100d;
-            var newHealth = (int)(card.Health + (card.Health * percent));
+            var bonusFromFood = (int)(card.Health * percent);
+            if (bonusFromFood > 2000)
+                bonusFromFood = 2000;
+
+            var newHealth = card.Health + bonusFromFood;
             if (card.FromFigure)
             {
                 newHealth += card.HealthBonus;

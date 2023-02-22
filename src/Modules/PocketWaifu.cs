@@ -820,30 +820,30 @@ namespace Sanakan.Modules
                         break;
 
                     case ItemType.IncreaseUltimateAttack:
-                        card.AttackBonus += itemCnt;
+                        card.AttackBonus += itemCnt * 5;
                         karmaChange += 0.4 * itemCnt;
                         embed.Description += $"Zwiększono atak karty!";
                         _waifu.DeleteCardImageIfExist(card);
                         break;
 
                     case ItemType.IncreaseUltimateDefence:
-                        card.DefenceBonus += itemCnt;
+                        card.DefenceBonus += itemCnt * 3;
                         karmaChange += 0.4 * itemCnt;
                         embed.Description += $"Zwiększono obronę karty!";
                         _waifu.DeleteCardImageIfExist(card);
                         break;
 
                     case ItemType.IncreaseUltimateHealth:
-                        card.HealthBonus += itemCnt;
+                        card.HealthBonus += itemCnt * 5;
                         karmaChange += 0.6 * itemCnt;
                         embed.Description += $"Zwiększono punkty życia karty!";
                         _waifu.DeleteCardImageIfExist(card);
                         break;
 
                     case ItemType.IncreaseUltimateAll:
-                        card.AttackBonus += itemCnt;
-                        card.HealthBonus += itemCnt;
-                        card.DefenceBonus += itemCnt;
+                        card.AttackBonus += itemCnt * 5;
+                        card.HealthBonus += itemCnt * 5;
+                        card.DefenceBonus += itemCnt * 5;
                         karmaChange += 1.2 * itemCnt;
                         embed.Description += $"Zwiększono parametry karty!";
                         _waifu.DeleteCardImageIfExist(card);
