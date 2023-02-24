@@ -1,6 +1,12 @@
 ﻿#pragma warning disable 1591
 #pragma warning disable 0169
 
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using Discord;
 using Discord.WebSocket;
 using Microsoft.EntityFrameworkCore;
@@ -9,12 +15,6 @@ using Sanakan.Database.Models;
 using Sanakan.Extensions;
 using Shinden;
 using Shinden.Logger;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 using Z.EntityFramework.Plus;
 
 namespace Sanakan.Services
@@ -117,12 +117,9 @@ namespace Sanakan.Services
             {
                 try
                 {
-                    using (var db = new Database.UserContext(_config))
+                    using (var db = new Database.DatabaseContext(_config))
                     {
-                        using (var dbg = new Database.GuildConfigContext(_config))
-                        {
-                            await CyclicCheckAsync(db, dbg);
-                        }
+                        await CyclicCheckAsync(db);
                     }
                 }
                 catch (Exception ex)
