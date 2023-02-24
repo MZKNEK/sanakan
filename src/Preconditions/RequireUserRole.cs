@@ -20,7 +20,7 @@ namespace Sanakan.Preconditions
             await Task.CompletedTask;
 
             var config = (IConfig)services.GetService(typeof(IConfig));
-            using (var db = new Database.GuildConfigContext(config))
+            using (var db = new Database.DatabaseContext(config))
             {
                 var gConfig = await db.GetCachedGuildFullConfigAsync(context.Guild.Id);
                 if (gConfig == null) return PreconditionResult.FromSuccess();
@@ -30,7 +30,7 @@ namespace Sanakan.Preconditions
 
                 if (user.Roles.Any(x => x.Id == role.Id)) return PreconditionResult.FromSuccess();
                 if (user.GuildPermissions.Administrator) return PreconditionResult.FromSuccess();
-                
+
                 return PreconditionResult.FromError($"Do użycia tego polecenia wymagana jest rola {role.Mention}");
             }
         }

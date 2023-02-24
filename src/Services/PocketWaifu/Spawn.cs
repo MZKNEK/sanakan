@@ -136,7 +136,7 @@ namespace Sanakan.Services.PocketWaifu
                     var users = usersReacted.ToList();
 
                     IUser winner = null;
-                    using (var db = new Database.UserContext(_config))
+                    using (var db = new Database.DatabaseContext(_config))
                     {
                         var watch = Stopwatch.StartNew();
                         while (winner == null)
@@ -187,7 +187,7 @@ namespace Sanakan.Services.PocketWaifu
         {
             return new Executable("safari", new Task<Task>(async () =>
             {
-                using (var db = new Database.UserContext(_config))
+                using (var db = new Database.DatabaseContext(_config))
                 {
                     var botUser = await db.GetUserOrCreateAsync(winner.Id);
 
@@ -197,24 +197,20 @@ namespace Sanakan.Services.PocketWaifu
                     var wwc = await db.WishlistCountData.AsQueryable().FirstOrDefaultAsync(x => x.Id == newCard.Character);
                     newCard.WhoWantsCount = wwc?.Count ?? 0;
 
-                    using (var dba = new Database.AnalyticsContext(_config))
+                    botUser.GameDeck.RemoveCharacterFromWishList(newCard.Character, db);
+                    botUser.GameDeck.Cards.Add(newCard);
+
+                    QueryCacheManager.ExpireTag(new string[] { $"user-{botUser.Id}", "users" });
+
+                    db.UsersData.Add(new Database.Models.Analytics.UserAnalytics
                     {
-                        botUser.GameDeck.RemoveCharacterFromWishList(newCard.Character, dba);
-                        botUser.GameDeck.Cards.Add(newCard);
-                        await db.SaveChangesAsync();
-
-                        QueryCacheManager.ExpireTag(new string[] { $"user-{botUser.Id}", "users" });
-
-                        dba.UsersData.Add(new Database.Models.Analytics.UserAnalytics
-                        {
-                            Value = 1,
-                            UserId = winner.Id,
-                            MeasureDate = DateTime.Now,
-                            GuildId = trashChannel?.Guild?.Id ?? 0,
-                            Type = Database.Models.Analytics.UserAnalyticsEventType.Card
-                        });
-                        await dba.SaveChangesAsync();
-                    }
+                        Value = 1,
+                        UserId = winner.Id,
+                        MeasureDate = DateTime.Now,
+                        GuildId = trashChannel?.Guild?.Id ?? 0,
+                        Type = Database.Models.Analytics.UserAnalyticsEventType.Card
+                    });
+                    await db.SaveChangesAsync();
                 }
 
                 _ = Task.Run(async () =>
@@ -295,7 +291,7 @@ namespace Sanakan.Services.PocketWaifu
         {
             var exe = new Executable($"packet u{user.Id}", new Task<Task>(async () =>
             {
-                using (var db = new Database.UserContext(_config))
+                using (var db = new Database.DatabaseContext(_config))
                 {
                     var botUser = await db.GetUserOrCreateAsync(user.Id);
                     if (botUser.IsBlacklisted) return;
@@ -330,7 +326,7 @@ namespace Sanakan.Services.PocketWaifu
                         await channel.SendMessageAsync("", embed: $"{user.Mention} otrzymał pakiet losowych kart.".ToEmbedMessage(EMType.Bot).Build());
 
                         var gUser = user as SocketGuildUser;
-                        using (var dba = new Database.AnalyticsContext(_config))
+                        using (var dba = new Database.DatabaseContext(_config))
                         {
                             dba.UsersData.Add(new Database.Models.Analytics.UserAnalytics
                             {
@@ -375,7 +371,7 @@ namespace Sanakan.Services.PocketWaifu
             if (_config.Get().BlacklistedGuilds.Any(x => x == user.Guild.Id))
                 return;
 
-            using (var db = new Database.GuildConfigContext(_config))
+            using (var db = new Database.DatabaseContext(_config))
             {
                 var config = await db.GetCachedGuildFullConfigAsync(user.Guild.Id);
                 if (config == null) return;

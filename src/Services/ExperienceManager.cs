@@ -1,14 +1,14 @@
 ﻿#pragma warning disable 1591
 
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 using Discord.WebSocket;
 using Microsoft.EntityFrameworkCore;
 using Sanakan.Config;
 using Sanakan.Extensions;
 using Sanakan.Services.Executor;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace Sanakan.Services
 {
@@ -60,7 +60,7 @@ namespace Sanakan.Services
                 }
             }
 
-            using (var dba = new Database.AnalyticsContext(_config))
+            using (var dba = new Database.DatabaseContext(_config))
             {
                 dba.UsersData.Add(new Database.Models.Analytics.UserAnalytics
                 {
@@ -86,7 +86,7 @@ namespace Sanakan.Services
 
             bool countMsg = true;
             bool calculateExp = true;
-            using (var db = new Database.GuildConfigContext(_config))
+            using (var db = new Database.DatabaseContext(_config))
             {
                 var config = await db.GetCachedGuildFullConfigAsync(user.Guild.Id);
                 if (config != null)
@@ -110,11 +110,8 @@ namespace Sanakan.Services
                             countMsg = false;
                     }
                 }
-            }
 
-            if (!_messages.Any(x => x.Key == user.Id))
-            {
-                using (var db = new Database.UserContext(_config))
+                if (!_messages.Any(x => x.Key == user.Id))
                 {
                     if (!db.Users.AsNoTracking().Any(x => x.Id == user.Id))
                     {
@@ -242,7 +239,7 @@ namespace Sanakan.Services
         {
             return new Task<Task>(async () =>
             {
-                using (var db = new Database.UserContext(_config))
+                using (var db = new Database.DatabaseContext(_config))
                 {
                     if (!db.Users.Any(x => x.Id == user.Id))
                     {
@@ -258,7 +255,7 @@ namespace Sanakan.Services
         {
             return new Task<Task>(async () =>
             {
-                using (var db = new Database.UserContext(_config))
+                using (var db = new Database.DatabaseContext(_config))
                 {
                     var usr = await db.GetUserOrCreateAsync(user.Id);
                     if (usr == null) return;
@@ -286,29 +283,26 @@ namespace Sanakan.Services
                         _ = Task.Run(async () => { await NotifyAboutLevelAsync(user, channel, newLevel); });
                     }
 
+                    var config = await db.GetCachedGuildFullConfigAsync(user.Guild.Id);
                     _ = Task.Run(async () =>
                     {
-                        using (var dbc = new Database.GuildConfigContext(_config))
+                        if (config == null) return;
+                        if (!calculateExp) return;
+
+                        foreach (var lvlRole in config.RolesPerLevel)
                         {
-                            var config = await dbc.GetCachedGuildFullConfigAsync(user.Guild.Id);
-                            if (config == null) return;
-                            if (!calculateExp) return;
+                            var role = user.Guild.GetRole(lvlRole.Role);
+                            if (role == null) continue;
 
-                            foreach (var lvlRole in config.RolesPerLevel)
+                            bool hasRole = user.Roles.Any(x => x.Id == role.Id);
+                            if (newLevel >= (long)lvlRole.Level)
                             {
-                                var role = user.Guild.GetRole(lvlRole.Role);
-                                if (role == null) continue;
-
-                                bool hasRole = user.Roles.Any(x => x.Id == role.Id);
-                                if (newLevel >= (long)lvlRole.Level)
-                                {
-                                    if (!hasRole)
-                                        await user.AddRoleAsync(role);
-                                }
-                                else if (hasRole)
-                                {
-                                    await user.RemoveRoleAsync(role);
-                                }
+                                if (!hasRole)
+                                    await user.AddRoleAsync(role);
+                            }
+                            else if (hasRole)
+                            {
+                                await user.RemoveRoleAsync(role);
                             }
                         }
                     });

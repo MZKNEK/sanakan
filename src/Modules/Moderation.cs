@@ -1,5 +1,9 @@
 ﻿#pragma warning disable 1591
 
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
@@ -11,10 +15,6 @@ using Sanakan.Preconditions;
 using Sanakan.Services;
 using Sanakan.Services.Commands;
 using Shinden;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using Z.EntityFramework.Plus;
 
 namespace Sanakan.Modules
@@ -41,7 +41,7 @@ namespace Sanakan.Modules
         [Alias("prunes")]
         [Summary("usuwa podaną wiadomość")]
         [Remarks("62342345245"), RequireAnyAdminRoleOrChannelPermission(ChannelPermission.ManageMessages)]
-        public async Task DeleteMesegeAsync([Summary("id wiadomości")]ulong id = 0)
+        public async Task DeleteMesegeAsync([Summary("id wiadomości")] ulong id = 0)
         {
             if (id == 0 && Context.Message.Reference != null && Context.Message.Reference.MessageId.IsSpecified)
                 id = Context.Message.Reference.MessageId.Value;
@@ -59,7 +59,7 @@ namespace Sanakan.Modules
         [Alias("prune")]
         [Summary("usuwa x ostatnich wiadomości")]
         [Remarks("12"), RequireAnyAdminRoleOrChannelPermission(ChannelPermission.ManageMessages)]
-        public async Task DeleteMesegesAsync([Summary("liczba wiadomości")]int count)
+        public async Task DeleteMesegesAsync([Summary("liczba wiadomości")] int count)
         {
             if (count < 1)
                 return;
@@ -86,7 +86,7 @@ namespace Sanakan.Modules
         [Alias("pruneu")]
         [Summary("usuwa wiadomości danego użytkownika")]
         [Remarks("karna"), RequireAnyAdminRoleOrChannelPermission(ChannelPermission.ManageMessages)]
-        public async Task DeleteUserMesegesAsync([Summary("użytkownik")]SocketGuildUser user)
+        public async Task DeleteUserMesegesAsync([Summary("użytkownik")] SocketGuildUser user)
         {
             await Context.Message.DeleteAsync();
             if (Context.Channel is ITextChannel channel)
@@ -110,11 +110,11 @@ namespace Sanakan.Modules
         [Command("ban")]
         [Summary("banuje użytkownika")]
         [Remarks("karna"), RequireAdminRole, Priority(1)]
-        public async Task BanUserAsync([Summary("użytkownik")]SocketGuildUser user, [Summary("czas trwania w godzinach")]long duration, [Summary("powód (opcjonalne)")][Remainder]string reason = "nie podano")
+        public async Task BanUserAsync([Summary("użytkownik")] SocketGuildUser user, [Summary("czas trwania w godzinach")] long duration, [Summary("powód (opcjonalne)")][Remainder] string reason = "nie podano")
         {
             if (duration < 1) return;
 
-            using (var db = new Database.GuildConfigContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 var config = await db.GetCachedGuildFullConfigAsync(Context.Guild.Id);
                 if (config == null)
@@ -125,13 +125,10 @@ namespace Sanakan.Modules
 
                 var notifChannel = Context.Guild.GetTextChannel(config.NotificationChannel);
 
-                using (var mdb = new Database.ManagmentContext(Config))
-                {
-                    var usr = Context.User as SocketGuildUser;
-                    var info = _moderation.GetBanUserInfo(user, duration, reason);
-                    await _moderation.NotifyAboutPenaltyAsync(user, notifChannel, info, $"{usr.Nickname ?? usr.Username}");
-                    await _moderation.BanUserAsync(user, info, mdb);
-                }
+                var usr = Context.User as SocketGuildUser;
+                var info = _moderation.GetBanUserInfo(user, duration, reason);
+                await _moderation.NotifyAboutPenaltyAsync(user, notifChannel, info, $"{usr.Nickname ?? usr.Username}");
+                await _moderation.BanUserAsync(user, info, db);
             }
 
             await ReplyAsync("", embed: $"{user.Mention} został zbanowany.".ToEmbedMessage(EMType.Success)
@@ -141,11 +138,11 @@ namespace Sanakan.Modules
         [Command("mute modifier")]
         [Summary("dodaje modyfikacje muta")]
         [Remarks("karna"), RequireAnyAdminRoleOrChannelPermission(ChannelPermission.ManageRoles), Priority(1)]
-        public async Task SetMuteModifierAsync([Summary("użytkownik")]SocketGuildUser user, [Summary("czas w godzinach (0 - kasacja)")]long duration, [Summary("typ (Constant/Growing)")]ModifierType type)
+        public async Task SetMuteModifierAsync([Summary("użytkownik")] SocketGuildUser user, [Summary("czas w godzinach (0 - kasacja)")] long duration, [Summary("typ (Constant/Growing)")] ModifierType type)
         {
             if (duration < 0) return;
 
-            using (var db = new Database.ManagmentContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 var mod = await db.MuteModifiers.FirstOrDefaultAsync(x => x.User == user.Id && x.Guild == Context.Guild.Id);
                 if (mod != null && duration == 0)
@@ -183,11 +180,11 @@ namespace Sanakan.Modules
         [Command("mute")]
         [Summary("wycisza użytkownika")]
         [Remarks("karna"), RequireAnyAdminRoleOrChannelPermission(ChannelPermission.ManageRoles), Priority(1)]
-        public async Task MuteUserAsync([Summary("użytkownik")]SocketGuildUser user, [Summary("czas trwania w godzinach")]long duration, [Summary("powód (opcjonalne)")][Remainder]string reason = "nie podano")
+        public async Task MuteUserAsync([Summary("użytkownik")] SocketGuildUser user, [Summary("czas trwania w godzinach")] long duration, [Summary("powód (opcjonalne)")][Remainder] string reason = "nie podano")
         {
             if (duration < 1) return;
 
-            using (var db = new Database.GuildConfigContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 var config = await db.GetCachedGuildFullConfigAsync(Context.Guild.Id);
                 if (config == null)
@@ -212,12 +209,9 @@ namespace Sanakan.Modules
                     return;
                 }
 
-                using (var mdb = new Database.ManagmentContext(Config))
-                {
-                    var usr = Context.User as SocketGuildUser;
-                    var info = await _moderation.MuteUserAsync(user, muteRole, null, userRole, mdb, duration, reason);
-                    await _moderation.NotifyAboutPenaltyAsync(user, notifChannel, info, $"{usr.Nickname ?? usr.Username}");
-                }
+                var usr = Context.User as SocketGuildUser;
+                var info = await _moderation.MuteUserAsync(user, muteRole, null, userRole, db, duration, reason);
+                await _moderation.NotifyAboutPenaltyAsync(user, notifChannel, info, $"{usr.Nickname ?? usr.Username}");
             }
 
             await ReplyAsync("", embed: $"{user.Mention} został wyciszony.".ToEmbedMessage(EMType.Success)
@@ -227,11 +221,11 @@ namespace Sanakan.Modules
         [Command("mute mod")]
         [Summary("wycisza moderatora")]
         [Remarks("karna"), RequireAdminRole, Priority(1)]
-        public async Task MuteModUserAsync([Summary("użytkownik")]SocketGuildUser user, [Summary("czas trwania w godzinach")]long duration, [Summary("powód (opcjonalne)")][Remainder]string reason = "nie podano")
+        public async Task MuteModUserAsync([Summary("użytkownik")] SocketGuildUser user, [Summary("czas trwania w godzinach")] long duration, [Summary("powód (opcjonalne)")][Remainder] string reason = "nie podano")
         {
             if (duration < 1) return;
 
-            using (var db = new Database.GuildConfigContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 var config = await db.GetCachedGuildFullConfigAsync(Context.Guild.Id);
                 if (config == null)
@@ -263,12 +257,9 @@ namespace Sanakan.Modules
                     return;
                 }
 
-                using (var mdb = new Database.ManagmentContext(Config))
-                {
-                    var usr = Context.User as SocketGuildUser;
-                    var info = await _moderation.MuteUserAsync(user, muteRole, muteModRole, userRole, mdb, duration, reason, config.ModeratorRoles);
-                    await _moderation.NotifyAboutPenaltyAsync(user, notifChannel, info, $"{usr.Nickname ?? usr.Username}");
-                }
+                var usr = Context.User as SocketGuildUser;
+                var info = await _moderation.MuteUserAsync(user, muteRole, muteModRole, userRole, db, duration, reason, config.ModeratorRoles);
+                await _moderation.NotifyAboutPenaltyAsync(user, notifChannel, info, $"{usr.Nickname ?? usr.Username}");
             }
 
             await ReplyAsync("", embed: $"{user.Mention} został wyciszony.".ToEmbedMessage(EMType.Success)
@@ -278,9 +269,9 @@ namespace Sanakan.Modules
         [Command("unmute")]
         [Summary("zdejmuje wyciszenie z użytkownika")]
         [Remarks("karna"), RequireAnyAdminRoleOrChannelPermission(ChannelPermission.ManageRoles), Priority(1)]
-        public async Task UnmuteUserAsync([Summary("użytkownik")]SocketGuildUser user)
+        public async Task UnmuteUserAsync([Summary("użytkownik")] SocketGuildUser user)
         {
-            using (var db = new Database.GuildConfigContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 var config = await db.GetCachedGuildFullConfigAsync(Context.Guild.Id);
                 if (config == null)
@@ -303,10 +294,7 @@ namespace Sanakan.Modules
                     return;
                 }
 
-                using (var mdb = new Database.ManagmentContext(Config))
-                {
-                    await _moderation.UnmuteUserAsync(user, muteRole, muteModRole, mdb);
-                }
+                await _moderation.UnmuteUserAsync(user, muteRole, muteModRole, db);
             }
 
             await ReplyAsync("", embed: $"{user.Mention} już nie jest wyciszony.".ToEmbedMessage(EMType.Success).Build());
@@ -318,7 +306,7 @@ namespace Sanakan.Modules
         [Remarks(""), RequireAnyAdminRoleOrChannelPermission(ChannelPermission.ManageRoles)]
         public async Task ShowMutedUsersAsync()
         {
-            using (var mdb = new Database.ManagmentContext(Config))
+            using (var mdb = new Database.DatabaseContext(Config))
             {
                 await ReplyAsync("", embed: await _moderation.GetMutedListAsync(mdb, Context));
             }
@@ -327,9 +315,9 @@ namespace Sanakan.Modules
         [Command("prefix")]
         [Summary("ustawia prefix serwera (nie podanie reset)")]
         [Remarks("."), RequireAdminRole]
-        public async Task SetPrefixPerServerAsync([Summary("nowy prefix")]string prefix = null)
+        public async Task SetPrefixPerServerAsync([Summary("nowy prefix")] string prefix = null)
         {
-            using (var db = new Database.GuildConfigContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 var config = await db.GetGuildConfigOrCreateAsync(Context.Guild.Id);
 
@@ -346,9 +334,9 @@ namespace Sanakan.Modules
         [Alias("welcome")]
         [Summary("ustawia/wyświetla wiadomość przywitania")]
         [Remarks("No elo ^mention!"), RequireAdminRole]
-        public async Task SetOrShowWelcomeMessageAsync([Summary("wiadomość (opcjonalne, off - wyłączenie)")][Remainder]string messsage = null)
+        public async Task SetOrShowWelcomeMessageAsync([Summary("wiadomość (opcjonalne, off - wyłączenie)")][Remainder] string messsage = null)
         {
-            using (var db = new Database.GuildConfigContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 var config = await db.GetGuildConfigOrCreateAsync(Context.Guild.Id);
                 if (messsage == null)
@@ -376,9 +364,9 @@ namespace Sanakan.Modules
         [Alias("welcomepw")]
         [Summary("ustawia/wyświetla wiadomośc przywitania wysyłanego na pw")]
         [Remarks("No elo ^mention!"), RequireAdminRole]
-        public async Task SetOrShowWelcomeMessagePWAsync([Summary("wiadomość (opcjonalne, off - wyłączenie)")][Remainder]string messsage = null)
+        public async Task SetOrShowWelcomeMessagePWAsync([Summary("wiadomość (opcjonalne, off - wyłączenie)")][Remainder] string messsage = null)
         {
-            using (var db = new Database.GuildConfigContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 var config = await db.GetGuildConfigOrCreateAsync(Context.Guild.Id);
                 if (messsage == null)
@@ -406,9 +394,9 @@ namespace Sanakan.Modules
         [Alias("pozegnanie", "goodbye")]
         [Summary("ustawia/wyświetla wiadomość pożegnalną")]
         [Remarks("Nara ^nick?"), RequireAdminRole]
-        public async Task SetOrShowGoodbyeMessageAsync([Summary("wiadomość (opcjonalne, off - wyłączenie)")][Remainder]string messsage = null)
+        public async Task SetOrShowGoodbyeMessageAsync([Summary("wiadomość (opcjonalne, off - wyłączenie)")][Remainder] string messsage = null)
         {
-            using (var db = new Database.GuildConfigContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 var config = await db.GetGuildConfigOrCreateAsync(Context.Guild.Id);
                 if (messsage == null)
@@ -439,7 +427,7 @@ namespace Sanakan.Modules
         {
             string tmg = "";
             var msg = new List<String>();
-            foreach(var item in Context.Guild.Roles)
+            foreach (var item in Context.Guild.Roles)
             {
                 string mg = tmg + $"{item.Mention} `{item.Mention}`\n";
                 if ((mg.Length) > 2000)
@@ -458,9 +446,9 @@ namespace Sanakan.Modules
         [Command("clean config")]
         [Summary("przeczyszcza konfiguracje serwera z usuniętych ról i kanałów")]
         [Remarks(""), RequireAdminRole]
-        public async Task CleanConfigAsync([Summary("id serwera (opcjonalne)")]ulong guildId = 0)
+        public async Task CleanConfigAsync([Summary("id serwera (opcjonalne)")] ulong guildId = 0)
         {
-            using (var db = new Database.GuildConfigContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 var guild = Context.Guild;
                 if (guildId != 0)
@@ -481,7 +469,7 @@ namespace Sanakan.Modules
                 }
 
                 int clearedRows = 0;
-                foreach(var ch in config.ChannelsWithoutExp.ToList())
+                foreach (var ch in config.ChannelsWithoutExp.ToList())
                 {
                     var channel = guild.GetTextChannel(ch.Channel);
                     if (channel == null)
@@ -491,7 +479,7 @@ namespace Sanakan.Modules
                     }
                 }
 
-                foreach(var ch in config.ChannelsWithoutSupervision.ToList())
+                foreach (var ch in config.ChannelsWithoutSupervision.ToList())
                 {
                     var channel = guild.GetTextChannel(ch.Channel);
                     if (channel == null)
@@ -501,7 +489,7 @@ namespace Sanakan.Modules
                     }
                 }
 
-                foreach(var ch in config.CommandChannels.ToList())
+                foreach (var ch in config.CommandChannels.ToList())
                 {
                     var channel = guild.GetTextChannel(ch.Channel);
                     if (channel == null)
@@ -511,7 +499,7 @@ namespace Sanakan.Modules
                     }
                 }
 
-                foreach(var ch in config.IgnoredChannels.ToList())
+                foreach (var ch in config.IgnoredChannels.ToList())
                 {
                     var channel = guild.GetTextChannel(ch.Channel);
                     if (channel == null)
@@ -521,7 +509,7 @@ namespace Sanakan.Modules
                     }
                 }
 
-                foreach(var ch in config.WaifuConfig.CommandChannels.ToList())
+                foreach (var ch in config.WaifuConfig.CommandChannels.ToList())
                 {
                     var channel = guild.GetTextChannel(ch.Channel);
                     if (channel == null)
@@ -531,7 +519,7 @@ namespace Sanakan.Modules
                     }
                 }
 
-                foreach(var ch in config.WaifuConfig.FightChannels.ToList())
+                foreach (var ch in config.WaifuConfig.FightChannels.ToList())
                 {
                     var channel = guild.GetTextChannel(ch.Channel);
                     if (channel == null)
@@ -541,7 +529,7 @@ namespace Sanakan.Modules
                     }
                 }
 
-                foreach(var rl in config.RolesPerLevel.ToList())
+                foreach (var rl in config.RolesPerLevel.ToList())
                 {
                     var role = guild.GetRole(rl.Role);
                     if (role == null)
@@ -551,7 +539,7 @@ namespace Sanakan.Modules
                     }
                 }
 
-                foreach(var rl in config.SelfRoles.ToList())
+                foreach (var rl in config.SelfRoles.ToList())
                 {
                     var role = guild.GetRole(rl.Role);
                     if (role == null)
@@ -570,16 +558,16 @@ namespace Sanakan.Modules
                 await db.SaveChangesAsync();
                 QueryCacheManager.ExpireTag(new string[] { $"config-{guild.Id}" });
 
-                await ReplyAsync("", embed:$"Przeczyszczono konfigurację serwera: **{guild.Name}**.\n\nZostało skasowanych **{clearedRows}** wpisów z bazy.".ToEmbedMessage(EMType.Success).Build());
+                await ReplyAsync("", embed: $"Przeczyszczono konfigurację serwera: **{guild.Name}**.\n\nZostało skasowanych **{clearedRows}** wpisów z bazy.".ToEmbedMessage(EMType.Success).Build());
             }
         }
 
         [Command("config")]
         [Summary("wyświetla konfiguracje serwera")]
         [Remarks("mods"), RequireAnyAdminRole]
-        public async Task ShowConfigAsync([Summary("typ (opcjonalne)")][Remainder]Services.ConfigType type = Services.ConfigType.Global)
+        public async Task ShowConfigAsync([Summary("typ (opcjonalne)")][Remainder] Services.ConfigType type = Services.ConfigType.Global)
         {
-            using (var db = new Database.GuildConfigContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 var config = await db.GetCachedGuildFullConfigAsync(Context.Guild.Id);
                 if (config == null)
@@ -602,7 +590,7 @@ namespace Sanakan.Modules
         [Command("adminr")]
         [Summary("ustawia role administratora")]
         [Remarks("34125343243432"), RequireAdminRole]
-        public async Task SetAdminRoleAsync([Summary("id roli")]SocketRole role)
+        public async Task SetAdminRoleAsync([Summary("id roli")] SocketRole role)
         {
             if (role == null)
             {
@@ -610,7 +598,7 @@ namespace Sanakan.Modules
                 return;
             }
 
-            using (var db = new Database.GuildConfigContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 var config = await db.GetGuildConfigOrCreateAsync(Context.Guild.Id);
                 if (config.AdminRole == role.Id)
@@ -631,7 +619,7 @@ namespace Sanakan.Modules
         [Command("sadminr")]
         [Summary("ustawia role semi administratora")]
         [Remarks("34125343243432"), RequireAdminRole]
-        public async Task SetSemiAdminRoleAsync([Summary("id roli")]SocketRole role)
+        public async Task SetSemiAdminRoleAsync([Summary("id roli")] SocketRole role)
         {
             if (role == null)
             {
@@ -639,7 +627,7 @@ namespace Sanakan.Modules
                 return;
             }
 
-            using (var db = new Database.GuildConfigContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 var config = await db.GetGuildConfigOrCreateAsync(Context.Guild.Id);
                 if (config.SemiAdminRole == role.Id)
@@ -660,7 +648,7 @@ namespace Sanakan.Modules
         [Command("userr")]
         [Summary("ustawia role użytkownika")]
         [Remarks("34125343243432"), RequireAdminRole]
-        public async Task SetUserRoleAsync([Summary("id roli")]SocketRole role)
+        public async Task SetUserRoleAsync([Summary("id roli")] SocketRole role)
         {
             if (role == null)
             {
@@ -668,7 +656,7 @@ namespace Sanakan.Modules
                 return;
             }
 
-            using (var db = new Database.GuildConfigContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 var config = await db.GetGuildConfigOrCreateAsync(Context.Guild.Id);
                 if (config.UserRole == role.Id)
@@ -689,7 +677,7 @@ namespace Sanakan.Modules
         [Command("muter")]
         [Summary("ustawia role wyciszająca użytkownika")]
         [Remarks("34125343243432"), RequireAdminRole]
-        public async Task SetMuteRoleAsync([Summary("id roli")]SocketRole role)
+        public async Task SetMuteRoleAsync([Summary("id roli")] SocketRole role)
         {
             if (role == null)
             {
@@ -697,7 +685,7 @@ namespace Sanakan.Modules
                 return;
             }
 
-            using (var db = new Database.GuildConfigContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 var config = await db.GetGuildConfigOrCreateAsync(Context.Guild.Id);
                 if (config.MuteRole == role.Id)
@@ -718,7 +706,7 @@ namespace Sanakan.Modules
         [Command("mutemodr")]
         [Summary("ustawia role wyciszająca moderatora")]
         [Remarks("34125343243432"), RequireAdminRole]
-        public async Task SetMuteModRoleAsync([Summary("id roli")]SocketRole role)
+        public async Task SetMuteModRoleAsync([Summary("id roli")] SocketRole role)
         {
             if (role == null)
             {
@@ -726,7 +714,7 @@ namespace Sanakan.Modules
                 return;
             }
 
-            using (var db = new Database.GuildConfigContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 var config = await db.GetGuildConfigOrCreateAsync(Context.Guild.Id);
                 if (config.ModMuteRole == role.Id)
@@ -747,7 +735,7 @@ namespace Sanakan.Modules
         [Command("globalr")]
         [Summary("ustawia role globalnych emotek")]
         [Remarks("34125343243432"), RequireAdminRole]
-        public async Task SetGlobalRoleAsync([Summary("id roli")]SocketRole role)
+        public async Task SetGlobalRoleAsync([Summary("id roli")] SocketRole role)
         {
             if (role == null)
             {
@@ -755,7 +743,7 @@ namespace Sanakan.Modules
                 return;
             }
 
-            using (var db = new Database.GuildConfigContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 var config = await db.GetGuildConfigOrCreateAsync(Context.Guild.Id);
                 if (config.GlobalEmotesRole == role.Id)
@@ -776,7 +764,7 @@ namespace Sanakan.Modules
         [Command("waifur")]
         [Summary("ustawia role waifu")]
         [Remarks("34125343243432"), RequireAdminRole]
-        public async Task SetWaifuRoleAsync([Summary("id roli")]SocketRole role)
+        public async Task SetWaifuRoleAsync([Summary("id roli")] SocketRole role)
         {
             if (role == null)
             {
@@ -784,7 +772,7 @@ namespace Sanakan.Modules
                 return;
             }
 
-            using (var db = new Database.GuildConfigContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 var config = await db.GetGuildConfigOrCreateAsync(Context.Guild.Id);
                 if (config.WaifuRole == role.Id)
@@ -805,7 +793,7 @@ namespace Sanakan.Modules
         [Command("modr")]
         [Summary("ustawia role moderatora")]
         [Remarks("34125343243432"), RequireAdminRole]
-        public async Task SetModRoleAsync([Summary("id roli")]SocketRole role)
+        public async Task SetModRoleAsync([Summary("id roli")] SocketRole role)
         {
             if (role == null)
             {
@@ -813,7 +801,7 @@ namespace Sanakan.Modules
                 return;
             }
 
-            using (var db = new Database.GuildConfigContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 var config = await db.GetGuildConfigOrCreateAsync(Context.Guild.Id);
 
@@ -842,7 +830,7 @@ namespace Sanakan.Modules
         [Command("addur")]
         [Summary("dodaje nową rolę na poziom")]
         [Remarks("34125343243432 130"), RequireAdminRole]
-        public async Task SetUselessRoleAsync([Summary("id roli")]SocketRole role, [Summary("poziom")]uint level)
+        public async Task SetUselessRoleAsync([Summary("id roli")] SocketRole role, [Summary("poziom")] uint level)
         {
             if (role == null)
             {
@@ -850,7 +838,7 @@ namespace Sanakan.Modules
                 return;
             }
 
-            using (var db = new Database.GuildConfigContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 var config = await db.GetGuildConfigOrCreateAsync(Context.Guild.Id);
 
@@ -879,7 +867,7 @@ namespace Sanakan.Modules
         [Command("selfrole")]
         [Summary("dodaje/usuwa role do automatycznego zarządzania")]
         [Remarks("34125343243432 newsy"), RequireAnyAdminRole]
-        public async Task SetSelfRoleAsync([Summary("id roli")]SocketRole role, [Summary("nazwa")][Remainder]string name = null)
+        public async Task SetSelfRoleAsync([Summary("id roli")] SocketRole role, [Summary("nazwa")][Remainder] string name = null)
         {
             if (role == null)
             {
@@ -887,7 +875,7 @@ namespace Sanakan.Modules
                 return;
             }
 
-            using (var db = new Database.GuildConfigContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 var config = await db.GetGuildConfigOrCreateAsync(Context.Guild.Id);
 
@@ -922,7 +910,7 @@ namespace Sanakan.Modules
         [Command("myland"), RequireAdminRole]
         [Summary("dodaje nowy myland")]
         [Remarks("34125343243432 64325343243432 Kopacze")]
-        public async Task AddMyLandRoleAsync([Summary("id roli")]SocketRole manager, [Summary("id roli")]SocketRole underling = null, [Summary("nazwa landu")][Remainder]string name = null)
+        public async Task AddMyLandRoleAsync([Summary("id roli")] SocketRole manager, [Summary("id roli")] SocketRole underling = null, [Summary("nazwa landu")][Remainder] string name = null)
         {
             if (manager == null)
             {
@@ -930,7 +918,7 @@ namespace Sanakan.Modules
                 return;
             }
 
-            using (var db = new Database.GuildConfigContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 var config = await db.GetGuildConfigOrCreateAsync(Context.Guild.Id);
 
@@ -985,7 +973,7 @@ namespace Sanakan.Modules
         [Remarks(""), RequireAdminRole]
         public async Task SetLogChannelAsync()
         {
-            using (var db = new Database.GuildConfigContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 var config = await db.GetGuildConfigOrCreateAsync(Context.Guild.Id);
                 if (config.LogChannel == Context.Channel.Id)
@@ -1008,7 +996,7 @@ namespace Sanakan.Modules
         [Remarks(""), RequireAdminRole]
         public async Task SetGreetingChannelAsync()
         {
-            using (var db = new Database.GuildConfigContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 var config = await db.GetGuildConfigOrCreateAsync(Context.Guild.Id);
                 if (config.GreetingChannel == Context.Channel.Id)
@@ -1031,7 +1019,7 @@ namespace Sanakan.Modules
         [Remarks(""), RequireAdminRole]
         public async Task SetNotifChannelAsync()
         {
-            using (var db = new Database.GuildConfigContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 var config = await db.GetGuildConfigOrCreateAsync(Context.Guild.Id);
                 if (config.NotificationChannel == Context.Channel.Id)
@@ -1054,7 +1042,7 @@ namespace Sanakan.Modules
         [Remarks(""), RequireAdminRole]
         public async Task SetRaportChannelAsync()
         {
-            using (var db = new Database.GuildConfigContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 var config = await db.GetGuildConfigOrCreateAsync(Context.Guild.Id);
                 if (config.RaportChannel == Context.Channel.Id)
@@ -1077,7 +1065,7 @@ namespace Sanakan.Modules
         [Remarks(""), RequireAdminRole]
         public async Task SetQuizChannelAsync()
         {
-            using (var db = new Database.GuildConfigContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 var config = await db.GetGuildConfigOrCreateAsync(Context.Guild.Id);
                 if (config.QuizChannel == Context.Channel.Id)
@@ -1100,7 +1088,7 @@ namespace Sanakan.Modules
         [Remarks(""), RequireAdminRole]
         public async Task SetTodoChannelAsync()
         {
-            using (var db = new Database.GuildConfigContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 var config = await db.GetGuildConfigOrCreateAsync(Context.Guild.Id);
                 if (config.ToDoChannel == Context.Channel.Id)
@@ -1123,7 +1111,7 @@ namespace Sanakan.Modules
         [Remarks(""), RequireAdminRole]
         public async Task SetNsfwChannelAsync()
         {
-            using (var db = new Database.GuildConfigContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 var config = await db.GetGuildConfigOrCreateAsync(Context.Guild.Id);
                 if (config.NsfwChannel == Context.Channel.Id)
@@ -1146,7 +1134,7 @@ namespace Sanakan.Modules
         [Remarks(""), RequireAdminRole]
         public async Task SetTrashFightWaifuChannelAsync()
         {
-            using (var db = new Database.GuildConfigContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 var config = await db.GetGuildConfigOrCreateAsync(Context.Guild.Id);
                 if (config.WaifuConfig == null)
@@ -1172,7 +1160,7 @@ namespace Sanakan.Modules
         [Remarks(""), RequireAdminRole]
         public async Task SetTrashCmdWaifuChannelAsync()
         {
-            using (var db = new Database.GuildConfigContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 var config = await db.GetGuildConfigOrCreateAsync(Context.Guild.Id);
                 if (config.WaifuConfig == null)
@@ -1198,7 +1186,7 @@ namespace Sanakan.Modules
         [Remarks(""), RequireAdminRole]
         public async Task SetTrashSpawnWaifuChannelAsync()
         {
-            using (var db = new Database.GuildConfigContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 var config = await db.GetGuildConfigOrCreateAsync(Context.Guild.Id);
                 if (config.WaifuConfig == null)
@@ -1224,7 +1212,7 @@ namespace Sanakan.Modules
         [Remarks(""), RequireAdminRole]
         public async Task SetMarketWaifuChannelAsync()
         {
-            using (var db = new Database.GuildConfigContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 var config = await db.GetGuildConfigOrCreateAsync(Context.Guild.Id);
                 if (config.WaifuConfig == null)
@@ -1250,7 +1238,7 @@ namespace Sanakan.Modules
         [Remarks(""), RequireAdminRole]
         public async Task SetDuelWaifuChannelAsync()
         {
-            using (var db = new Database.GuildConfigContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 var config = await db.GetGuildConfigOrCreateAsync(Context.Guild.Id);
                 if (config.WaifuConfig == null)
@@ -1276,7 +1264,7 @@ namespace Sanakan.Modules
         [Remarks(""), RequireAdminRole]
         public async Task SetSafariWaifuChannelAsync()
         {
-            using (var db = new Database.GuildConfigContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 var config = await db.GetGuildConfigOrCreateAsync(Context.Guild.Id);
                 if (config.WaifuConfig == null)
@@ -1302,7 +1290,7 @@ namespace Sanakan.Modules
         [Remarks(""), RequireAdminRole]
         public async Task SetFightWaifuChannelAsync()
         {
-            using (var db = new Database.GuildConfigContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 var config = await db.GetGuildConfigOrCreateAsync(Context.Guild.Id);
                 if (config.WaifuConfig == null)
@@ -1335,7 +1323,7 @@ namespace Sanakan.Modules
         [Remarks(""), RequireAdminRole]
         public async Task SetCmdWaifuChannelAsync()
         {
-            using (var db = new Database.GuildConfigContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 var config = await db.GetGuildConfigOrCreateAsync(Context.Guild.Id);
                 if (config.WaifuConfig == null)
@@ -1368,7 +1356,7 @@ namespace Sanakan.Modules
         [Remarks(""), RequireAdminRole]
         public async Task SetCmdChannelAsync()
         {
-            using (var db = new Database.GuildConfigContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 var config = await db.GetGuildConfigOrCreateAsync(Context.Guild.Id);
 
@@ -1399,7 +1387,7 @@ namespace Sanakan.Modules
         [Remarks(""), RequireAdminRole]
         public async Task SetIgnoredChannelAsync()
         {
-            using (var db = new Database.GuildConfigContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 var config = await db.GetGuildConfigOrCreateAsync(Context.Guild.Id);
 
@@ -1430,7 +1418,7 @@ namespace Sanakan.Modules
         [Remarks(""), RequireAdminRole]
         public async Task SetNonExpChannelAsync()
         {
-            using (var db = new Database.GuildConfigContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 var config = await db.GetGuildConfigOrCreateAsync(Context.Guild.Id);
 
@@ -1461,7 +1449,7 @@ namespace Sanakan.Modules
         [Remarks(""), RequireAdminRole]
         public async Task SetNonSupChannelAsync()
         {
-            using (var db = new Database.GuildConfigContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 var config = await db.GetGuildConfigOrCreateAsync(Context.Guild.Id);
 
@@ -1490,9 +1478,9 @@ namespace Sanakan.Modules
         [Command("todo", RunMode = RunMode.Async)]
         [Summary("dodaje wiadomość do todo")]
         [Remarks("2342123444212"), RequireAnyAdminOrModRole]
-        public async Task MarkAsTodoAsync([Summary("id wiadomości")]ulong messageId = 0, [Summary("nazwa serwera (opcjonalne)")]string serverName = null)
+        public async Task MarkAsTodoAsync([Summary("id wiadomości")] ulong messageId = 0, [Summary("nazwa serwera (opcjonalne)")] string serverName = null)
         {
-            using (var db = new Database.GuildConfigContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 var guild = Context.Guild;
                 if (messageId == 0 && Context.Message.Reference != null && Context.Message.Reference.MessageId.IsSpecified)
@@ -1560,7 +1548,7 @@ namespace Sanakan.Modules
         [Command("quote", RunMode = RunMode.Async)]
         [Summary("cytuje wiadomość i wysyła na podany kanał")]
         [Remarks("2342123444212 2342123444212"), RequireAnyAdminOrModRole]
-        public async Task QuoteAndSendAsync([Summary("id wiadomości")]ulong messageId, [Summary("id kanału na serwerze")]ulong channelId)
+        public async Task QuoteAndSendAsync([Summary("id wiadomości")] ulong messageId, [Summary("id kanału na serwerze")] ulong channelId)
         {
             var channel2Send = Context.Guild.GetTextChannel(channelId);
             if (channel2Send == null)
@@ -1585,7 +1573,7 @@ namespace Sanakan.Modules
         [Remarks(""), RequireAdminRole]
         public async Task SetToggleChaosModeAsync()
         {
-            using (var db = new Database.GuildConfigContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 var config = await db.GetGuildConfigOrCreateAsync(Context.Guild.Id);
 
@@ -1603,7 +1591,7 @@ namespace Sanakan.Modules
         [Remarks(""), RequireAdminRole]
         public async Task SetToggleSupervisionModeAsync()
         {
-            using (var db = new Database.GuildConfigContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 var config = await db.GetGuildConfigOrCreateAsync(Context.Guild.Id);
 
@@ -1619,86 +1607,84 @@ namespace Sanakan.Modules
         [Command("check")]
         [Summary("sprawdza użytkownika")]
         [Remarks("Karna"), RequireAnyAdminRole]
-        public async Task CheckUserAsync([Summary("użytkownik")]SocketGuildUser user)
+        public async Task CheckUserAsync([Summary("użytkownik")] SocketGuildUser user)
         {
             string report = "**Globalki:** ✅\n\n";
-            using (var dbg = new Database.GuildConfigContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
-                var guildConfig = await dbg.GetCachedGuildFullConfigAsync(user.Guild.Id);
-                using (var db = new Database.UserContext(Config))
-                {
-                    var duser = await db.GetUserOrCreateAsync(user.Id);
-                    var globalRole = user.Guild.GetRole(guildConfig.GlobalEmotesRole);
-                    if (globalRole != null)
-                    {
-                        if (user.Roles.Contains(globalRole))
-                        {
-                            var sub = duser.TimeStatuses.FirstOrDefault(x => x.Type == StatusType.Globals && x.Guild == user.Guild.Id);
-                            if (sub == null)
-                            {
-                                report = $"**Globalki:** ❗\n\n";
-                                await user.RemoveRoleAsync(globalRole);
-                            }
-                            else if (!sub.IsActive())
-                            {
-                                report = $"**Globalki:** ⚠\n\n";
-                                await user.RemoveRoleAsync(globalRole);
-                            }
-                        }
-                    }
+                var guildConfig = await db.GetCachedGuildFullConfigAsync(user.Guild.Id);
 
-                    string kolorRep = $"**Kolor:** ✅\n\n";
-                    var colorRoles = (IEnumerable<uint>) Enum.GetValues(typeof(FColor));
-                    if (user.Roles.Any(x => colorRoles.Any(c => c.ToString() == x.Name)))
+                var duser = await db.GetUserOrCreateAsync(user.Id);
+                var globalRole = user.Guild.GetRole(guildConfig.GlobalEmotesRole);
+                if (globalRole != null)
+                {
+                    if (user.Roles.Contains(globalRole))
                     {
-                        var sub = duser.TimeStatuses.FirstOrDefault(x => x.Type == StatusType.Color && x.Guild == user.Guild.Id);
+                        var sub = duser.TimeStatuses.FirstOrDefault(x => x.Type == StatusType.Globals && x.Guild == user.Guild.Id);
                         if (sub == null)
                         {
-                            kolorRep = $"**Kolor:** ❗\n\n";
-                            await _profile.RomoveUserColorAsync(user);
+                            report = $"**Globalki:** ❗\n\n";
+                            await user.RemoveRoleAsync(globalRole);
                         }
                         else if (!sub.IsActive())
                         {
-                            kolorRep = $"**Kolor:** ⚠\n\n";
-                            await _profile.RomoveUserColorAsync(user);
+                            report = $"**Globalki:** ⚠\n\n";
+                            await user.RemoveRoleAsync(globalRole);
                         }
                     }
-                    report += kolorRep;
+                }
 
-                    string nickRep = $"**Nick:** ✅";
-                    if (guildConfig.UserRole != 0)
+                string kolorRep = $"**Kolor:** ✅\n\n";
+                var colorRoles = (IEnumerable<uint>)Enum.GetValues(typeof(FColor));
+                if (user.Roles.Any(x => colorRoles.Any(c => c.ToString() == x.Name)))
+                {
+                    var sub = duser.TimeStatuses.FirstOrDefault(x => x.Type == StatusType.Color && x.Guild == user.Guild.Id);
+                    if (sub == null)
                     {
-                        var userRole = user.Guild.GetRole(guildConfig.UserRole);
-                        if (userRole != null)
+                        kolorRep = $"**Kolor:** ❗\n\n";
+                        await _profile.RomoveUserColorAsync(user);
+                    }
+                    else if (!sub.IsActive())
+                    {
+                        kolorRep = $"**Kolor:** ⚠\n\n";
+                        await _profile.RomoveUserColorAsync(user);
+                    }
+                }
+                report += kolorRep;
+
+                string nickRep = $"**Nick:** ✅";
+                if (guildConfig.UserRole != 0)
+                {
+                    var userRole = user.Guild.GetRole(guildConfig.UserRole);
+                    if (userRole != null)
+                    {
+                        if (user.Roles.Contains(userRole))
                         {
-                            if (user.Roles.Contains(userRole))
+                            var realNick = user.Nickname ?? user.Username;
+                            if (duser.Shinden != 0)
                             {
-                                var realNick = user.Nickname ?? user.Username;
-                                if (duser.Shinden != 0)
+                                var res = await _shClient.User.GetAsync(duser.Shinden);
+                                if (res.IsSuccessStatusCode())
                                 {
-                                    var res = await _shClient.User.GetAsync(duser.Shinden);
-                                    if (res.IsSuccessStatusCode())
-                                    {
-                                        if (res.Body.Name != realNick)
-                                            nickRep = $"**Nick:** ❗ {res.Body.Name}";
-                                    }
-                                    else nickRep = $"**Nick:** ❗ D: {duser.Shinden}";
+                                    if (res.Body.Name != realNick)
+                                        nickRep = $"**Nick:** ❗ {res.Body.Name}";
                                 }
-                                else
+                                else nickRep = $"**Nick:** ❗ D: {duser.Shinden}";
+                            }
+                            else
+                            {
+                                var res = await _shClient.Search.UserAsync(realNick);
+                                if (res.IsSuccessStatusCode())
                                 {
-                                    var res = await _shClient.Search.UserAsync(realNick);
-                                    if (res.IsSuccessStatusCode())
-                                    {
-                                        if (!res.Body.Any(x => x.Name.Equals(realNick, StringComparison.Ordinal)))
-                                            nickRep = $"**Nick:** ⚠";
-                                    }
-                                    else nickRep = $"**Nick:** ⚠";
+                                    if (!res.Body.Any(x => x.Name.Equals(realNick, StringComparison.Ordinal)))
+                                        nickRep = $"**Nick:** ⚠";
                                 }
+                                else nickRep = $"**Nick:** ⚠";
                             }
                         }
                     }
-                    report += nickRep;
                 }
+                report += nickRep;
             }
 
             await ReplyAsync("", embed: report.ToEmbedMessage(EMType.Bot).WithAuthor(new EmbedAuthorBuilder().WithUser(user)).Build());
@@ -1707,7 +1693,7 @@ namespace Sanakan.Modules
         [Command("loteria", RunMode = RunMode.Async)]
         [Summary("bot losuje osobę spośród tych, co dodali reakcję")]
         [Remarks("5"), RequireAnyAdminOrModRole]
-        public async Task GetRandomUserAsync([Summary("długość w minutach")]uint duration)
+        public async Task GetRandomUserAsync([Summary("długość w minutach")] uint duration)
         {
             var emote = new Emoji("🎰");
             var time = DateTime.Now.AddMinutes(duration);
@@ -1727,10 +1713,10 @@ namespace Sanakan.Modules
         [Command("pary", RunMode = RunMode.Async)]
         [Summary("bot losuje pary liczb")]
         [Remarks("5"), RequireAnyAdminOrModRole]
-        public async Task GetRandomPairsAsync([Summary("liczba par")]uint count)
+        public async Task GetRandomPairsAsync([Summary("liczba par")] uint count)
         {
             var pairs = new List<Tuple<int, int>>();
-            var total = Enumerable.Range(1, (int) count * 2).ToList();
+            var total = Enumerable.Range(1, (int)count * 2).ToList();
 
             while (total.Count > 0)
             {
@@ -1749,7 +1735,7 @@ namespace Sanakan.Modules
         [Command("pozycja gracza", RunMode = RunMode.Async)]
         [Summary("bot losuje liczbę dla gracza")]
         [Remarks("kokosek dzida"), RequireAnyAdminOrModRole]
-        public async Task AssingNumberToUsersAsync([Summary("nazwy graczy")]params string[] players)
+        public async Task AssingNumberToUsersAsync([Summary("nazwy graczy")] params string[] players)
         {
             var numbers = Enumerable.Range(1, players.Count()).ToList();
             var pairs = new List<Tuple<string, int>>();
@@ -1773,9 +1759,9 @@ namespace Sanakan.Modules
         [Alias("report")]
         [Summary("rozwiązuje raport, nie podanie czasu odrzuca go, podanie czasu 0 ostrzega użytkownika")]
         [Remarks("2342123444212 4 kara dla Ciebie"), RequireAnyAdminRole, Priority(1)]
-        public async Task ResolveReportAsync([Summary("id raportu")]ulong rId, [Summary("długość wyciszenia w h")]long duration = -1, [Summary("powód")][Remainder]string reason = "z raportu")
+        public async Task ResolveReportAsync([Summary("id raportu")] ulong rId, [Summary("długość wyciszenia w h")] long duration = -1, [Summary("powód")][Remainder] string reason = "z raportu")
         {
-            using (var db = new Database.GuildConfigContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 var config = await db.GetGuildConfigOrCreateAsync(Context.Guild.Id);
 
@@ -1865,44 +1851,38 @@ namespace Sanakan.Modules
 
                 if (warning)
                 {
-                    using (var udb = new Database.UserContext(Config))
+                    var dbUser = await db.GetUserOrCreateAsync(user.Id);
+
+                    ++dbUser.Warnings;
+
+                    if (dbUser.Warnings < 3)
                     {
-                        var dbUser = await udb.GetUserOrCreateAsync(user.Id);
-
-                        ++dbUser.Warnings;
-                        await udb.SaveChangesAsync();
-
-                        if (dbUser.Warnings < 3)
-                        {
-                            await _moderation.NotifyUserAsync(user, reason);
-                            return;
-                        }
-
-                        var multiplier = 1;
-                        if (dbUser.Warnings > 15)
-                        {
-                            multiplier = 30;
-                        }
-                        else if (dbUser.Warnings > 10)
-                        {
-                            multiplier = 10;
-                        }
-                        else if (dbUser.Warnings > 5)
-                        {
-                            multiplier = 2;
-                        }
-
-                        byWho = "automat";
-                        duration = 24 * multiplier;
-                        reason = $"przekroczono maksymalną liczbę ostrzeżeń ({dbUser.Warnings})";
+                        await db.SaveChangesAsync();
+                        await _moderation.NotifyUserAsync(user, reason);
+                        return;
                     }
+
+                    var multiplier = 1;
+                    if (dbUser.Warnings > 15)
+                    {
+                        multiplier = 30;
+                    }
+                    else if (dbUser.Warnings > 10)
+                    {
+                        multiplier = 10;
+                    }
+                    else if (dbUser.Warnings > 5)
+                    {
+                        multiplier = 2;
+                    }
+
+                    byWho = "automat";
+                    duration = 24 * multiplier;
+                    reason = $"przekroczono maksymalną liczbę ostrzeżeń ({dbUser.Warnings})";
                 }
 
-                using (var mdb = new Database.ManagmentContext(Config))
-                {
-                    var info = await _moderation.MuteUserAsync(user, muteRole, null, userRole, mdb, duration, reason);
-                    await _moderation.NotifyAboutPenaltyAsync(user, notifChannel, info, byWho);
-                }
+                var info = await _moderation.MuteUserAsync(user, muteRole, null, userRole, db, duration, reason);
+                await _moderation.NotifyAboutPenaltyAsync(user, notifChannel, info, byWho);
 
                 await ReplyAsync("", embed: $"{user.Mention} został wyciszony.".ToEmbedMessage(EMType.Success).Build());
             }
@@ -1912,7 +1892,7 @@ namespace Sanakan.Modules
         [Alias("help", "h")]
         [Summary("wypisuje polecenia")]
         [Remarks("kasuj"), RequireAnyAdminOrModRole]
-        public async Task SendHelpAsync([Summary("nazwa polecenia (opcjonalne)")][Remainder]string command = null)
+        public async Task SendHelpAsync([Summary("nazwa polecenia (opcjonalne)")][Remainder] string command = null)
         {
             if (command != null)
             {
@@ -1921,7 +1901,7 @@ namespace Sanakan.Modules
                     string prefix = _config.Get().Prefix;
                     if (Context.Guild != null)
                     {
-                        using (var db = new Database.GuildConfigContext(_config))
+                        using (var db = new Database.DatabaseContext(_config))
                         {
                             var gConfig = await db.GetCachedGuildFullConfigAsync(Context.Guild.Id);
                             if (gConfig?.Prefix != null) prefix = gConfig.Prefix;

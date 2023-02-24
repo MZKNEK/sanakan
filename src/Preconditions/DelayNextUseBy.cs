@@ -45,7 +45,7 @@ namespace Sanakan.Preconditions
                 return PreconditionResult.FromSuccess();
 
             var config = (IConfig)services.GetService(typeof(IConfig));
-            using (var db = new Database.GuildConfigContext(config))
+            using (var db = new Database.DatabaseContext(config))
             {
                 var gConfig = await db.GetCachedGuildFullConfigAsync(context.Guild.Id);
                 if (gConfig != null)

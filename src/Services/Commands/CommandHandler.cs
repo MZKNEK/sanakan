@@ -44,7 +44,7 @@ namespace Sanakan.Services.Commands
                     using (var proc = System.Diagnostics.Process.GetCurrentProcess())
                     {
                         _logger.Log($"mem usage: {proc.WorkingSet64 / 1048576} MiB");
-                        using (var dba = new Database.AnalyticsContext(_config))
+                        using (var dba = new Database.DatabaseContext(_config))
                         {
                             dba.SystemData.Add(new SystemAnalytics
                             {
@@ -102,7 +102,7 @@ namespace Sanakan.Services.Commands
             var context = new SocketCommandContext(_client, msg);
             if (context.Guild != null)
             {
-                using (var db = new Database.GuildConfigContext(_config))
+                using (var db = new Database.DatabaseContext(_config))
                 {
                     var gConfig = await db.GetCachedGuildFullConfigAsync(context.Guild.Id);
                     if (gConfig?.Prefix != null) prefix = gConfig.Prefix;
@@ -120,7 +120,7 @@ namespace Sanakan.Services.Commands
                 if (res.IsSuccess())
                 {
                     _logger.Log($"Run cmd: u{msg.Author.Id} {res.Command.Match.Command.Name}");
-                    using (var dbc = new Database.AnalyticsContext(_config))
+                    using (var dbc = new Database.DatabaseContext(_config))
                     {
                         string param = null;
                         try

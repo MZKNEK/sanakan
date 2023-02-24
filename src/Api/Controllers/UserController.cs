@@ -50,7 +50,7 @@ namespace Sanakan.Api.Controllers
         [HttpGet("discord/{id}"), Authorize(Policy = "Site")]
         public async Task<Database.Models.User> GetUserByDiscordIdAsync(ulong id)
         {
-            using (var db = new Database.UserContext(_config))
+            using (var db = new Database.DatabaseContext(_config))
             {
                 return await db.GetCachedFullUserAsync(id);
             }
@@ -98,7 +98,7 @@ namespace Sanakan.Api.Controllers
         [HttpGet("shinden/{id}"), Authorize(Policy = "Site")]
         public async Task<UserWithToken> GetUserByShindenIdAsync(ulong id)
         {
-            using (var db = new Database.UserContext(_config))
+            using (var db = new Database.DatabaseContext(_config))
             {
                 var user = await db.GetCachedFullUserByShindenIdAsync(id);
                 if (user == null)
@@ -131,7 +131,7 @@ namespace Sanakan.Api.Controllers
         [HttpGet("shinden/simple/{id}"), Authorize(Policy = "Site")]
         public async Task<UserWithToken> GetUserByShindenIdSimpleAsync(ulong id)
         {
-            using (var db = new Database.UserContext(_config))
+            using (var db = new Database.DatabaseContext(_config))
             {
                 var user = db.Users.AsQueryable().AsSplitQuery().Where(x => x.Shinden == id).Include(x => x.GameDeck).AsNoTracking().FirstOrDefault();
                 if (user == null)
@@ -165,7 +165,7 @@ namespace Sanakan.Api.Controllers
         [HttpPost("shinden/{id}/nickname"), Authorize(Policy = "Site")]
         public async Task ChangeNicknameShindenUserAsync(ulong id, [FromBody, Required]string nickname)
         {
-            using (var db = new Database.UserContext(_config))
+            using (var db = new Database.DatabaseContext(_config))
             {
                 var user = await db.Users.AsQueryable().AsSplitQuery().Where(x => x.Shinden == id).AsNoTracking().FirstOrDefaultAsync();
                 if (user == null)
@@ -223,7 +223,7 @@ namespace Sanakan.Api.Controllers
                 return;
             }
 
-            using (var db = new Database.UserContext(_config))
+            using (var db = new Database.DatabaseContext(_config))
             {
                 var botUser = db.Users.FirstOrDefault(x => x.Id == id.DiscordUserId);
                 if (botUser != null)
@@ -274,7 +274,7 @@ namespace Sanakan.Api.Controllers
 
                 var exe = new Executable($"api-register u{id.DiscordUserId}", new Task<Task>(async () =>
                 {
-                    using (var dbs = new Database.UserContext(_config))
+                    using (var dbs = new Database.DatabaseContext(_config))
                     {
                         botUser = await dbs.GetUserOrCreateAsync(id.DiscordUserId);
                         botUser.Shinden = sUser.Id;
@@ -299,7 +299,7 @@ namespace Sanakan.Api.Controllers
         [HttpPut("discord/{id}/tc"), Authorize(Policy = "Site")]
         public async Task ModifyPointsTCDiscordAsync(ulong id, [FromBody, Required]long value)
         {
-            using (var db = new Database.UserContext(_config))
+            using (var db = new Database.DatabaseContext(_config))
             {
                 var user = db.Users.FirstOrDefault(x => x.Id == id);
                 if (user == null)
@@ -310,7 +310,7 @@ namespace Sanakan.Api.Controllers
 
                 var exe = new Executable($"api-tc u{id} ({value})", new Task<Task>(async () =>
                 {
-                    using (var dbc = new Database.AnalyticsContext(_config))
+                    using (var dbc = new Database.DatabaseContext(_config))
                     {
                         dbc.TransferData.Add(new Database.Models.Analytics.TransferAnalytics()
                         {
@@ -321,15 +321,10 @@ namespace Sanakan.Api.Controllers
                             Source = Database.Models.Analytics.TransferSource.ByDiscordId,
                         });
 
-                        await dbc.SaveChangesAsync();
-                    }
-
-                    using (var dbs = new Database.UserContext(_config))
-                    {
-                        user = dbs.GetUserOrCreateAsync(id).Result;
+                        user = dbc.GetUserOrCreateAsync(id).Result;
                         user.TcCnt += value;
 
-                        dbs.SaveChanges();
+                        await dbc.SaveChangesAsync();
 
                         QueryCacheManager.ExpireTag(new string[] { $"user-{user.Id}", "users" });
                     }
@@ -349,7 +344,7 @@ namespace Sanakan.Api.Controllers
         [HttpPut("shinden/{id}/tc"), Authorize(Policy = "Site")]
         public async Task ModifyPointsTCAsync(ulong id, [FromBody, Required]long value)
         {
-            using (var db = new Database.UserContext(_config))
+            using (var db = new Database.DatabaseContext(_config))
             {
                 var user = db.Users.FirstOrDefault(x => x.Shinden == id);
                 if (user == null)
@@ -360,19 +355,14 @@ namespace Sanakan.Api.Controllers
 
                 var exe = new Executable($"api-tc su{id} ({value})", new Task<Task>(async () =>
                 {
-                    using (var dbs = new Database.UserContext(_config))
+                    using (var dbs = new Database.DatabaseContext(_config))
                     {
                         user = dbs.Users.FirstOrDefault(x => x.Shinden == id);
                         user.TcCnt += value;
 
-                        await dbs.SaveChangesAsync();
-
                         QueryCacheManager.ExpireTag(new string[] { $"user-{user.Id}", "users" });
-                    }
 
-                    using (var dbc = new Database.AnalyticsContext(_config))
-                    {
-                        dbc.TransferData.Add(new Database.Models.Analytics.TransferAnalytics()
+                        dbs.TransferData.Add(new Database.Models.Analytics.TransferAnalytics()
                         {
                             Value = value,
                             DiscordId = user.Id,
@@ -381,7 +371,7 @@ namespace Sanakan.Api.Controllers
                             Source = Database.Models.Analytics.TransferSource.ByShindenId,
                         });
 
-                        await dbc.SaveChangesAsync();
+                        await dbs.SaveChangesAsync();
                     }
                 }), Priority.High);
 

@@ -67,7 +67,7 @@ namespace Sanakan
 
         private void EnsureDbIsCreated()
         {
-            using (var db = new Database.BuildDatabaseContext(_config))
+            using (var db = new Database.DatabaseContext(_config))
             {
                 db.Database.EnsureCreated();
             }

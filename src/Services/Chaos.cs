@@ -60,7 +60,7 @@ namespace Sanakan.Services
             if (_config.Get().BlacklistedGuilds.Any(x => x == user.Guild.Id))
                 return;
 
-            using (var db = new Database.GuildConfigContext(_config))
+            using (var db = new Database.DatabaseContext(_config))
             {
                 var gConfig = await db.GetCachedGuildFullConfigAsync(user.Guild.Id);
                 if (gConfig == null) return;

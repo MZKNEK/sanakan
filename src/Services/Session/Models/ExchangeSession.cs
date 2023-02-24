@@ -333,7 +333,7 @@ namespace Sanakan.Services.Session.Models
                         if (P1.Cards.Count == 0 && P2.Cards.Count == 0)
                             return end;
 
-                        using (var db = new Database.UserContext(_config))
+                        using (var db = new Database.DatabaseContext(_config))
                         {
                             var user1 = await db.GetUserOrCreateAsync(P1.User.Id);
                             var user2 = await db.GetUserOrCreateAsync(P2.User.Id);

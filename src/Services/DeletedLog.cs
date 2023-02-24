@@ -73,7 +73,7 @@ namespace Sanakan.Services
         {
             if (oldMessage.Content.IsEmotikunEmote() && newMessage == null) return;
 
-            using (var db = new Database.GuildConfigContext(_config))
+            using (var db = new Database.DatabaseContext(_config))
             {
                 var config = await db.GetCachedGuildFullConfigAsync(channel.Guild.Id);
                 if (config == null) return;

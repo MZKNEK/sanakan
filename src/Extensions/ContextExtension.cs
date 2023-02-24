@@ -15,7 +15,7 @@ namespace Sanakan.Extensions
 {
     public static class ContextExtension
     {
-        public static async Task<GuildOptions> GetGuildConfigOrCreateAsync(this Database.GuildConfigContext context, ulong guildId, bool dontCreate = false)
+        public static async Task<GuildOptions> GetGuildConfigOrCreateAsync(this Database.DatabaseContext context, ulong guildId, bool dontCreate = false)
         {
             var config = await context.Guilds.AsQueryable().Include(x => x.IgnoredChannels).Include(x => x.ChannelsWithoutExp).Include(x => x.ChannelsWithoutSupervision).Include(x => x.CommandChannels).Include(x => x.SelfRoles)
                 .Include(x => x.Lands).Include(x => x.ModeratorRoles).Include(x => x.RolesPerLevel).Include(x => x.WaifuConfig).ThenInclude(x => x.CommandChannels).Include(x => x.Raports)
@@ -34,19 +34,19 @@ namespace Sanakan.Extensions
             return config;
         }
 
-        public static async Task<GuildOptions> GetCachedGuildFullConfigAsync(this Database.GuildConfigContext context, ulong guildId)
+        public static async Task<GuildOptions> GetCachedGuildFullConfigAsync(this Database.DatabaseContext context, ulong guildId)
         {
             return (await context.Guilds.AsQueryable().Include(x => x.IgnoredChannels).Include(x => x.ChannelsWithoutExp).Include(x => x.ChannelsWithoutSupervision).Include(x => x.CommandChannels).Include(x => x.SelfRoles)
                 .Include(x => x.Lands).Include(x => x.ModeratorRoles).Include(x => x.RolesPerLevel).Include(x => x.WaifuConfig).ThenInclude(x => x.CommandChannels).Include(x => x.Raports)
                 .Include(x => x.WaifuConfig).ThenInclude(x => x.FightChannels).AsNoTracking().AsSplitQuery().FromCacheAsync(new string[] { $"config-{guildId}" })).FirstOrDefault(x => x.Id == guildId);
         }
 
-        public static async Task<IEnumerable<PenaltyInfo>> GetCachedFullPenalties(this Database.ManagmentContext context)
+        public static async Task<IEnumerable<PenaltyInfo>> GetCachedFullPenalties(this Database.DatabaseContext context)
         {
             return (await context.Penalties.AsQueryable().Include(x => x.Roles).AsNoTracking().AsSplitQuery().FromCacheAsync(new string[] { $"mute" })).ToList();
         }
 
-        public static async Task<User> GetCachedFullUserAsync(this Database.UserContext context, ulong userId)
+        public static async Task<User> GetCachedFullUserAsync(this Database.DatabaseContext context, ulong userId)
         {
             return (await context.Users.AsQueryable().Where(x => x.Id == userId).Include(x => x.Stats).Include(x => x.SMConfig).Include(x => x.TimeStatuses).Include(x => x.GameDeck).ThenInclude(x => x.PvPStats)
                 .Include(x => x.GameDeck).ThenInclude(x => x.Items).Include(x => x.GameDeck).ThenInclude(x => x.Cards).ThenInclude(x => x.ArenaStats).Include(x => x.GameDeck)
@@ -55,7 +55,7 @@ namespace Sanakan.Extensions
                 .Include(x => x.GameDeck).ThenInclude(x => x.Figures).AsNoTracking().AsSplitQuery().FromCacheAsync(new string[] { $"user-{userId}", "users" })).FirstOrDefault();
         }
 
-        public static async Task<User> GetCachedFullUserByShindenIdAsync(this Database.UserContext context, ulong userId)
+        public static async Task<User> GetCachedFullUserByShindenIdAsync(this Database.DatabaseContext context, ulong userId)
         {
             return (await context.Users.AsQueryable().Where(x => x.Shinden == userId).Include(x => x.Stats).Include(x => x.SMConfig).Include(x => x.TimeStatuses).Include(x => x.GameDeck).ThenInclude(x => x.PvPStats)
                 .Include(x => x.GameDeck).ThenInclude(x => x.Items).Include(x => x.GameDeck).ThenInclude(x => x.Cards).ThenInclude(x => x.ArenaStats).Include(x => x.GameDeck)
@@ -64,17 +64,17 @@ namespace Sanakan.Extensions
                 .Include(x => x.GameDeck).ThenInclude(x => x.Figures).AsNoTracking().AsSplitQuery().FromCacheAsync(new string[] { $"user-{userId}", "users" })).FirstOrDefault();
         }
 
-        public static async Task<List<User>> GetCachedAllUsersLiteAsync(this Database.UserContext context)
+        public static async Task<List<User>> GetCachedAllUsersLiteAsync(this Database.DatabaseContext context)
         {
             return (await context.Users.AsQueryable().AsNoTracking().AsSplitQuery().FromCacheAsync(new MemoryCacheEntryOptions{ AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(1) })).ToList();
         }
 
-        public static async Task<GameDeck> GetCachedUserGameDeckAsync(this Database.UserContext context, ulong userId)
+        public static async Task<GameDeck> GetCachedUserGameDeckAsync(this Database.DatabaseContext context, ulong userId)
         {
             return (await context.GameDecks.AsQueryable().Where(x => x.UserId == userId).Include(x => x.Cards).AsNoTracking().AsSplitQuery().FromCacheAsync(new string[] { $"user-{userId}", "users" })).FirstOrDefault();
         }
 
-        public static async Task<List<User>> GetCachedAllUsersAsync(this Database.UserContext context)
+        public static async Task<List<User>> GetCachedAllUsersAsync(this Database.DatabaseContext context)
         {
             return (await context.Users.AsQueryable().Include(x => x.Stats).Include(x => x.SMConfig).Include(x => x.TimeStatuses).Include(x => x.GameDeck).ThenInclude(x => x.PvPStats).Include(x => x.GameDeck).ThenInclude(x => x.Wishes)
                 .Include(x => x.GameDeck).ThenInclude(x => x.Items).Include(x => x.GameDeck).ThenInclude(x => x.ExpContainer).Include(x => x.GameDeck).ThenInclude(x => x.Cards).ThenInclude(x => x.ArenaStats)
@@ -83,12 +83,12 @@ namespace Sanakan.Extensions
                 .FromCacheAsync(new MemoryCacheEntryOptions{ AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(6) })).ToList();
         }
 
-        public static async Task<List<GameDeck>> GetCachedPlayersForPVP(this Database.UserContext context, ulong ignore = 1)
+        public static async Task<List<GameDeck>> GetCachedPlayersForPVP(this Database.DatabaseContext context, ulong ignore = 1)
         {
             return (await context.GameDecks.AsQueryable().Where(x => x.DeckPower > UserExtension.MIN_DECK_POWER && x.DeckPower < UserExtension.MAX_DECK_POWER && x.UserId != ignore).AsNoTracking().AsSplitQuery().FromCacheAsync(new MemoryCacheEntryOptions{ AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(2) })).ToList();
         }
 
-        public static async Task<User> GetUserOrCreateAsync(this Database.UserContext context, ulong userId)
+        public static async Task<User> GetUserOrCreateAsync(this Database.DatabaseContext context, ulong userId)
         {
             var user = await context.Users.AsQueryable().Where(x => x.Id == userId).Include(x => x.Stats).Include(x => x.SMConfig).Include(x => x.TimeStatuses).Include(x => x.GameDeck).ThenInclude(x => x.PvPStats).Include(x => x.GameDeck).ThenInclude(x => x.Wishes)
                 .Include(x => x.GameDeck).ThenInclude(x => x.Items).Include(x => x.GameDeck).ThenInclude(x => x.Cards).ThenInclude(x => x.ArenaStats).Include(x => x.GameDeck)
@@ -105,17 +105,17 @@ namespace Sanakan.Extensions
             return user;
         }
 
-        public static async Task<bool> IsUserMutedOnGuildAsync(this Database.UserContext context, ulong userId, ulong guildId)
+        public static async Task<bool> IsUserMutedOnGuildAsync(this Database.DatabaseContext context, ulong userId, ulong guildId)
         {
             return await context.Penalties.AsQueryable().AsNoTracking().AnyAsync(x => x.User == userId && x.Guild == guildId && x.Type == PenaltyType.Mute);
         }
 
-        public static async Task<User> GetBaseUserAndDontTrackAsync(this Database.UserContext context, ulong userId)
+        public static async Task<User> GetBaseUserAndDontTrackAsync(this Database.DatabaseContext context, ulong userId)
         {
             return await context.Users.AsQueryable().AsNoTracking().AsSplitQuery().FirstOrDefaultAsync(x => x.Id == userId);
         }
 
-        public static async Task<User> GetUserAndDontTrackAsync(this Database.UserContext context, ulong userId)
+        public static async Task<User> GetUserAndDontTrackAsync(this Database.DatabaseContext context, ulong userId)
         {
             return await context.Users.AsQueryable().Include(x => x.Stats).Include(x => x.SMConfig).Include(x => x.TimeStatuses).Include(x => x.GameDeck).ThenInclude(x => x.PvPStats).Include(x => x.GameDeck).ThenInclude(x => x.Wishes)
                 .Include(x => x.GameDeck).ThenInclude(x => x.Items).Include(x => x.GameDeck).ThenInclude(x => x.Cards).ThenInclude(x => x.ArenaStats).Include(x => x.GameDeck)
@@ -124,17 +124,17 @@ namespace Sanakan.Extensions
                 .Include(x => x.GameDeck).ThenInclude(x => x.Figures).AsNoTracking().AsSplitQuery().FirstOrDefaultAsync(x => x.Id == userId);
         }
 
-        public static async Task<List<Question>> GetCachedAllQuestionsAsync(this Database.UserContext context)
+        public static async Task<List<Question>> GetCachedAllQuestionsAsync(this Database.DatabaseContext context)
         {
             return (await context.Questions.AsQueryable().Include(x => x.Answers).AsNoTracking().AsSplitQuery().FromCacheAsync(new string[] { $"quiz" })).ToList();
         }
 
-        public static async Task<Question> GetCachedQuestionAsync(this Database.UserContext context, ulong id)
+        public static async Task<Question> GetCachedQuestionAsync(this Database.DatabaseContext context, ulong id)
         {
             return (await context.Questions.AsQueryable().Include(x => x.Answers).AsNoTracking().AsSplitQuery().FromCacheAsync(new string[] { $"quiz" })).FirstOrDefault(x => x.Id == id);
         }
 
-        public static Database.Models.Analytics.WishlistCount CreateOrChangeWishlistCountBy(this Database.AnalyticsContext context, ulong id, string name, int by = 1)
+        public static Database.Models.Analytics.WishlistCount CreateOrChangeWishlistCountBy(this Database.DatabaseContext context, ulong id, string name, int by = 1)
         {
             var ww = context.WishlistCountData.AsQueryable().FirstOrDefault(x => x.Id == id);
             if (ww == null)
@@ -156,7 +156,7 @@ namespace Sanakan.Extensions
             return ww;
         }
 
-        public static async Task<Database.Models.Analytics.WishlistCount> CreateOrChangeWishlistCountByAsync(this Database.AnalyticsContext context, ulong id, string name, int by = 1)
+        public static async Task<Database.Models.Analytics.WishlistCount> CreateOrChangeWishlistCountByAsync(this Database.DatabaseContext context, ulong id, string name, int by = 1)
             => await context.WishlistCountData.CreateOrChangeWishlistCountByAsync(id, name, by);
 
         public static async Task<Database.Models.Analytics.WishlistCount> CreateOrChangeWishlistCountByAsync(this DbSet<Database.Models.Analytics.WishlistCount> wwCount, ulong id, string name, int by = 1, bool setTo = false)

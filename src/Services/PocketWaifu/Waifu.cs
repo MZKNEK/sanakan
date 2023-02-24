@@ -671,7 +671,7 @@ namespace Sanakan.Services.PocketWaifu
             var realCost = itemCount * thisItem.Cost;
             string count = (itemCount > 1) ? $" x{itemCount}" : "";
 
-            using (var db = new Database.UserContext(config))
+            using (var db = new Database.DatabaseContext(config))
             {
                 var bUser = await db.GetUserOrCreateAsync(discordUser.Id);
                 if (!CheckIfUserCanBuy(type, bUser, realCost))
@@ -1698,7 +1698,7 @@ namespace Sanakan.Services.PocketWaifu
             return content;
         }
 
-        public async Task<IEnumerable<Card>> GetCardsFromWishlist(List<ulong> cardsId, List<ulong> charactersId, List<ulong> titlesId, Database.UserContext db, IEnumerable<Card> userCards)
+        public async Task<IEnumerable<Card>> GetCardsFromWishlist(List<ulong> cardsId, List<ulong> charactersId, List<ulong> titlesId, Database.DatabaseContext db, IEnumerable<Card> userCards)
         {
             var cards = new List<Card>();
             if (cardsId != null)

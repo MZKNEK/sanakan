@@ -37,7 +37,7 @@ namespace Sanakan.Services
 
         private async Task BotLeftGuildAsync(SocketGuild guild)
         {
-            using (var db = new Database.GuildConfigContext(_config))
+            using (var db = new Database.DatabaseContext(_config))
             {
                 var gConfig = await db.GetGuildConfigOrCreateAsync(guild.Id);
                 db.Guilds.Remove(gConfig);
@@ -48,7 +48,7 @@ namespace Sanakan.Services
                 await db.SaveChangesAsync();
             }
 
-            using (var db = new Database.ManagmentContext(_config))
+            using (var db = new Database.DatabaseContext(_config))
             {
                 var mute = db.Penalties.AsQueryable().AsSplitQuery().Where(x => x.Guild == guild.Id).ToList();
                 db.Penalties.RemoveRange(mute);
@@ -64,7 +64,7 @@ namespace Sanakan.Services
             if (_config.Get().BlacklistedGuilds.Any(x => x == user.Guild.Id))
                 return;
 
-            using (var db = new Database.GuildConfigContext(_config))
+            using (var db = new Database.DatabaseContext(_config))
             {
                 var config = await db.GetCachedGuildFullConfigAsync(user.Guild.Id);
                 if (config?.WelcomeMessage == null) return;
@@ -97,7 +97,7 @@ namespace Sanakan.Services
 
             if (!_config.Get().BlacklistedGuilds.Any(x => x == guild.Id))
             {
-                using (var db = new Database.GuildConfigContext(_config))
+                using (var db = new Database.DatabaseContext(_config))
                 {
                     var config = await db.GetCachedGuildFullConfigAsync(guild.Id);
                     if (config?.GoodbyeMessage == null) return;
@@ -117,7 +117,7 @@ namespace Sanakan.Services
             {
                 try
                 {
-                    using (var db = new Database.UserContext(_config))
+                    using (var db = new Database.DatabaseContext(_config))
                     {
                         var duser = await db.GetUserOrCreateAsync(user.Id);
                         var fakeu = await db.GetUserOrCreateAsync(1);

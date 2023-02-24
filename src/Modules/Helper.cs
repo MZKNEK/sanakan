@@ -53,7 +53,7 @@ namespace Sanakan.Modules
                     string prefix = _config.Get().Prefix;
                     if (Context.Guild != null)
                     {
-                        using (var db = new Database.GuildConfigContext(_config))
+                        using (var db = new Database.DatabaseContext(_config))
                         {
                             var gConfig = await db.GetCachedGuildFullConfigAsync(Context.Guild.Id);
                             if (gConfig?.Prefix != null) prefix = gConfig.Prefix;
@@ -181,7 +181,7 @@ namespace Sanakan.Modules
         [Remarks("63312335634561 Tak nie wolno!"), RequireUserRole]
         public async Task ReportUserAsync([Summary("id wiadomości")]ulong messageId, [Summary("powód")][Remainder]string reason)
         {
-            using (var db = new Database.GuildConfigContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 var config = await db.GetCachedGuildFullConfigAsync(Context.Guild.Id);
                 if (config == null)

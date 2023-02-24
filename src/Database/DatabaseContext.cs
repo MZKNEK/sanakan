@@ -13,11 +13,11 @@ using Z.EntityFramework.Plus;
 
 namespace Sanakan.Database
 {
-    public class BuildDatabaseContext : DbContext
+    public class DatabaseContext : DbContext
     {
         private IConfig _config;
 
-        public BuildDatabaseContext(IConfig config) : base()
+        public DatabaseContext(IConfig config) : base()
         {
             _config = config;
         }

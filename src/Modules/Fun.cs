@@ -41,7 +41,7 @@ namespace Sanakan.Modules
         [Remarks(""), RequireCommandChannel]
         public async Task GiveDailyScAsync()
         {
-            using (var db = new Database.UserContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 var botuser = await db.GetUserOrCreateAsync(Context.User.Id);
                 var daily = botuser.TimeStatuses.FirstOrDefault(x => x.Type == Database.Models.StatusType.Daily);
@@ -86,7 +86,7 @@ namespace Sanakan.Modules
             var usr = user ?? Context.User;
             if (usr == null) return;
 
-            using (var db = new Database.UserContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 long howMuch = Services.Fun.TakeATry(2) ? Services.Fun.GetRandomValue(1, 5000) : _spawn.HowMuchToPacket(usr.Id);
                 await ReplyAsync("", embed: $"{usr.Mention} potrzebuje **{howMuch}** znaków do następnego pakietu*(teoretycznie)*."
@@ -103,7 +103,7 @@ namespace Sanakan.Modules
             var user = Context.User as SocketGuildUser;
             if (user == null) return;
 
-            using (var db = new Database.GuildConfigContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 var config = await db.GetCachedGuildFullConfigAsync(Context.Guild.Id);
                 if (config == null)
@@ -154,7 +154,7 @@ namespace Sanakan.Modules
         [Remarks(""), RequireCommandChannel]
         public async Task GiveHourlyScAsync()
         {
-            using (var db = new Database.UserContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 var botuser = await db.GetUserOrCreateAsync(Context.User.Id);
                 var hourly = botuser.TimeStatuses.FirstOrDefault(x => x.Type == Database.Models.StatusType.Hourly);
@@ -222,7 +222,7 @@ namespace Sanakan.Modules
                 return;
             }
 
-            using (var db = new Database.UserContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 var botuser = await db.GetUserOrCreateAsync(Context.User.Id);
                 if (botuser.ScCnt < amount)
@@ -273,7 +273,7 @@ namespace Sanakan.Modules
                 return;
             }
 
-            using (var db = new Database.UserContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 var botuser = await db.GetUserOrCreateAsync(Context.User.Id);
                 if (!botuser.ApplySlotMachineSetting(setting, value))
@@ -302,7 +302,7 @@ namespace Sanakan.Modules
                 return;
             }
 
-            using (var db = new Database.UserContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 var botuser = await db.GetUserOrCreateAsync(Context.User.Id);
                 var machine = new SlotMachine(botuser);
@@ -343,7 +343,7 @@ namespace Sanakan.Modules
                 return;
             }
 
-            using (var db = new Database.UserContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 if (!db.Users.Any(x => x.Id == user.Id))
                 {
@@ -380,7 +380,7 @@ namespace Sanakan.Modules
         public async Task ShowRiddleAsync()
         {
             var riddles = new List<Question>();
-            using (var db = new Database.UserContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 riddles = await db.GetCachedAllQuestionsAsync();
             }

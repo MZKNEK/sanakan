@@ -51,7 +51,7 @@ namespace Sanakan.Services
             {
                 try
                 {
-                    using (var db = new Database.ManagmentContext(_config))
+                    using (var db = new Database.DatabaseContext(_config))
                     {
                         await CyclicCheckPenalties(db);
                     }
@@ -66,7 +66,7 @@ namespace Sanakan.Services
             TimeSpan.FromSeconds(30));
         }
 
-        private async Task CyclicCheckPenalties(Database.ManagmentContext db)
+        private async Task CyclicCheckPenalties(Database.DatabaseContext db)
         {
             foreach (var penalty in await db.GetCachedFullPenalties())
             {
@@ -76,24 +76,21 @@ namespace Sanakan.Services
                 var user = guild.GetUser(penalty.User);
                 if (user != null)
                 {
-                    using (var conf = new Database.GuildConfigContext(_config))
+                    var gconfig = await db.GetCachedGuildFullConfigAsync(guild.Id);
+                    var muteModRole = guild.GetRole(gconfig.ModMuteRole);
+                    var muteRole = guild.GetRole(gconfig.MuteRole);
+
+                    if ((DateTime.Now - penalty.StartDate).TotalHours < penalty.DurationInHours)
                     {
-                        var gconfig = await conf.GetCachedGuildFullConfigAsync(guild.Id);
-                        var muteModRole = guild.GetRole(gconfig.ModMuteRole);
-                        var muteRole = guild.GetRole(gconfig.MuteRole);
+                        var muteMod = penalty.Roles.Any(x => gconfig.ModeratorRoles.Any(z => z.Role == x.Role)) ? muteModRole : null;
+                        _ = Task.Run(async () => { await MuteUserGuildAsync(user, muteRole, penalty.Roles, muteMod); });
+                        continue;
+                    }
 
-                        if ((DateTime.Now - penalty.StartDate).TotalHours < penalty.DurationInHours)
-                        {
-                            var muteMod = penalty.Roles.Any(x => gconfig.ModeratorRoles.Any(z => z.Role == x.Role)) ? muteModRole : null;
-                            _ = Task.Run(async () => { await MuteUserGuildAsync(user, muteRole, penalty.Roles, muteMod); });
-                            continue;
-                        }
-
-                        if (penalty.Type == PenaltyType.Mute)
-                        {
-                            await UnmuteUserGuildAsync(user, muteRole, muteModRole, penalty.Roles);
-                            await RemovePenaltyFromDb(db, penalty);
-                        }
+                    if (penalty.Type == PenaltyType.Mute)
+                    {
+                        await UnmuteUserGuildAsync(user, muteRole, muteModRole, penalty.Roles);
+                        await RemovePenaltyFromDb(db, penalty);
                     }
                 }
                 else
@@ -437,7 +434,7 @@ namespace Sanakan.Services
             }
         }
 
-        public async Task<Embed> GetMutedListAsync(Database.ManagmentContext db, SocketCommandContext context)
+        public async Task<Embed> GetMutedListAsync(Database.DatabaseContext db, SocketCommandContext context)
         {
             string mutedList = "Brak";
 
@@ -487,7 +484,7 @@ namespace Sanakan.Services
             }.Build();
         }
 
-        public async Task UnmuteUserAsync(SocketGuildUser user, SocketRole muteRole, SocketRole muteModRole, Database.ManagmentContext db)
+        public async Task UnmuteUserAsync(SocketGuildUser user, SocketRole muteRole, SocketRole muteModRole, Database.DatabaseContext db)
         {
             var penalty = await db.Penalties.Include(x => x.Roles).FirstOrDefaultAsync(x => x.User == user.Id
                 && x.Type == PenaltyType.Mute && x.Guild == user.Guild.Id);
@@ -496,7 +493,7 @@ namespace Sanakan.Services
             await RemovePenaltyFromDb(db, penalty);
         }
 
-        private async Task RemovePenaltyFromDb(Database.ManagmentContext db, PenaltyInfo penalty)
+        private async Task RemovePenaltyFromDb(Database.DatabaseContext db, PenaltyInfo penalty)
         {
             if (penalty == null) return;
 
@@ -581,7 +578,7 @@ namespace Sanakan.Services
             };
         }
 
-        public async Task BanUserAsync(SocketGuildUser user, ExtendedPenaltyInfo exInfo, Database.ManagmentContext db)
+        public async Task BanUserAsync(SocketGuildUser user, ExtendedPenaltyInfo exInfo, Database.DatabaseContext db)
         {
             await db.Penalties.AddAsync(exInfo.Info);
 
@@ -592,7 +589,7 @@ namespace Sanakan.Services
             await user.Guild.AddBanAsync(user, 0, exInfo.Info.Reason);
         }
 
-        private async Task<long?> CheckMuteModifiersAsync(SocketGuildUser user, Database.ManagmentContext db, long duration)
+        private async Task<long?> CheckMuteModifiersAsync(SocketGuildUser user, Database.DatabaseContext db, long duration)
         {
             var mod = await db.MuteModifiers.AsQueryable().FirstOrDefaultAsync(x => x.User == user.Id && x.Guild == user.Guild.Id);
             if (mod == null)
@@ -612,7 +609,7 @@ namespace Sanakan.Services
         }
 
         public async Task<ExtendedPenaltyInfo> MuteUserAsync(SocketGuildUser user, SocketRole muteRole, SocketRole muteModRole, SocketRole userRole,
-            Database.ManagmentContext db, long duration, string reason = "nie podano", IEnumerable<ModeratorRoles> modRoles = null)
+            Database.DatabaseContext db, long duration, string reason = "nie podano", IEnumerable<ModeratorRoles> modRoles = null)
         {
             var exInfo = new ExtendedPenaltyInfo
             {

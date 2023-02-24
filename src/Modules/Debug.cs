@@ -73,7 +73,7 @@ namespace Sanakan.Modules
         public async Task GenerateMissingUsersListAsync()
         {
             var allUsers = Context.Client.Guilds.SelectMany(x => x.Users).Distinct();
-            using (var db = new Database.UserContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 var nonExistingIds = db.Users.AsQueryable().AsSplitQuery().Where(x => !allUsers.Any(u => u.Id == x.Id)).Select(x => x.Id).ToList();
                 await ReplyAsync("", embed: string.Join("\n", nonExistingIds).ToEmbedMessage(EMType.Bot).Build());
@@ -85,7 +85,7 @@ namespace Sanakan.Modules
         [Remarks("")]
         public async Task ShowBlacklistedUsersAsync()
         {
-            using (var db = new Database.UserContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 var bUsers = await db.Users.AsQueryable().Where(x => x.IsBlacklisted).AsNoTracking().ToListAsync();
                 await ReplyAsync("", embed: $"**Czarna lista:**\n\n{string.Join("\n", bUsers.Select(x => (Context.Client.GetUserAsync(x.Id).Result?.Username ?? "????") + $" {x.Id}"))}".ToEmbedMessage(EMType.Info).Build());
@@ -97,7 +97,7 @@ namespace Sanakan.Modules
         [Remarks("Karna")]
         public async Task BlacklistUserAsync([Summary("użytkownik")]SocketGuildUser user)
         {
-            using (var db = new Database.UserContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 var targetUser = await db.GetUserOrCreateAsync(user.Id);
 
@@ -184,7 +184,7 @@ namespace Sanakan.Modules
         [Remarks("3123 121")]
         public async Task ForceUpdateCardsAsync([Summary("WID kart")]params ulong[] ids)
         {
-            using (var db = new Database.UserContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 var cards = db.Cards.AsQueryable().AsSplitQuery().Where(x => ids.Any(c => c == x.Id)).ToList();
                 if (cards.Count < 1)
@@ -232,7 +232,7 @@ namespace Sanakan.Modules
             var time = DateTime.Now.AddMinutes(duration);
 
             var mention = "";
-            using (var db = new Database.GuildConfigContext(_config))
+            using (var db = new Database.DatabaseContext(_config))
             {
                 var config = await db.GetCachedGuildFullConfigAsync(Context.Guild.Id);
                 if (config != null)
@@ -254,7 +254,7 @@ namespace Sanakan.Modules
             var users = reactions.Shuffle().ToList();
 
             IUser winner = null;
-            using (var db = new Database.UserContext(_config))
+            using (var db = new Database.DatabaseContext(_config))
             {
                 var watch = Stopwatch.StartNew();
                 while (winner == null)
@@ -287,7 +287,7 @@ namespace Sanakan.Modules
 
             var exe = new Executable("lotery", new Task<Task>(async () =>
             {
-                using (var db = new Database.UserContext(Config))
+                using (var db = new Database.DatabaseContext(Config))
                 {
                     var user = await db.GetUserOrCreateAsync(id);
                     if (user == null)
@@ -377,7 +377,7 @@ namespace Sanakan.Modules
         [Remarks("Sniku 41231 41232")]
         public async Task TransferCardAsync([Summary("id użytkownika")]ulong userId, [Summary("WIDs")]params ulong[] wids)
         {
-            using (var db = new Database.UserContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
 
                 var deck = await db.GameDecks.Include(x => x.Wishes).FirstOrDefaultAsync(x => x.UserId == userId);
@@ -422,7 +422,7 @@ namespace Sanakan.Modules
         [Remarks("41231 41232")]
         public async Task RemoveCardsAsync([Summary("WIDs")]params ulong[] wids)
         {
-            using (var db = new Database.UserContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 var thisCards = db.Cards.AsQueryable().Include(x => x.TagList).Include(x => x.ArenaStats).AsSingleQuery().Where(x => wids.Contains(x.Id)).ToList();
                 if (thisCards.Count < 1)
@@ -453,7 +453,7 @@ namespace Sanakan.Modules
         [Remarks("Karna 1")]
         public async Task ChangeUserLevelAsync([Summary("użytkownik")]SocketGuildUser user, [Summary("poziom")]long level)
         {
-            using (var db = new Database.UserContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 var bUser = await db.GetUserOrCreateAsync(user.Id);
 
@@ -513,7 +513,7 @@ namespace Sanakan.Modules
         [Remarks("Sniku")]
         public async Task RestoreCardsAsync([Summary("użytkownik")]SocketGuildUser user)
         {
-            using (var db = new Database.UserContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 var bUser = await db.GetUserOrCreateAsync(user.Id);
                 var thisCards = db.Cards.Include(x => x.TagList).Where(x => (x.LastIdOwner == user.Id || (x.FirstIdOwner == user.Id && x.LastIdOwner == 0)) && x.GameDeckId == 1).ToList();
@@ -548,7 +548,7 @@ namespace Sanakan.Modules
         public async Task GenerateMissingUsersCardListAsync([Summary("czy wypisać id'ki")]bool ids = false)
         {
             var allUsers = Context.Client.Guilds.SelectMany(x => x.Users).Distinct();
-            using (var db = new Database.UserContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 var nonExistingIds = db.Cards.AsQueryable().AsSplitQuery().Where(x => !allUsers.Any(u => u.Id == x.GameDeckId)).Select(x => x.Id).ToList();
                 await ReplyAsync("", embed: $"Kart: {nonExistingIds.Count}".ToEmbedMessage(EMType.Bot).Build());
@@ -564,7 +564,7 @@ namespace Sanakan.Modules
         public async Task GenerateCardStatsAsync([Summary("WID")]ulong wid)
         {
             var stats = new long[(int)Rarity.E + 1];
-            using (var db = new Database.UserContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 foreach (var rarity in (Rarity[])Enum.GetValues(typeof(Rarity)))
                     stats[(int)rarity] = db.Cards.Count(x => x.Rarity == rarity && x.Id >= wid);
@@ -582,7 +582,7 @@ namespace Sanakan.Modules
         [Remarks("845155646123")]
         public async Task RemoveCardsUserAsync([Summary("id użytkownika")]ulong id)
         {
-            using (var db = new Database.UserContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 var user = await db.GetUserOrCreateAsync(id);
                 user.GameDeck.Cards.Clear();
@@ -600,7 +600,7 @@ namespace Sanakan.Modules
         [Remarks("845155646123")]
         public async Task FactoryUserAsync([Summary("id użytkownika")]ulong id, [Summary("czy usunąć karty?")]bool cards = false)
         {
-            using (var db = new Database.UserContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 var fakeu = await db.GetUserOrCreateAsync(1);
                 var user = await db.GetUserOrCreateAsync(id);
@@ -635,7 +635,7 @@ namespace Sanakan.Modules
         [Remarks("845155646123 5000")]
         public async Task FactoryUserAsync([Summary("id użytkownika")]ulong id, [Summary("wartość tc")]long value)
         {
-            using (var db = new Database.UserContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 var user = await db.GetUserOrCreateAsync(id);
                 foreach (var card in user.GameDeck.Cards.OrderByDescending(x => x.CreationDate).ToList())
@@ -689,7 +689,7 @@ namespace Sanakan.Modules
         [Remarks("ssało")]
         public async Task ChangeTitleCardAsync([Summary("WID")]ulong wid, [Summary("tytuł")][Remainder]string title = null)
         {
-            using (var db = new Database.UserContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 var thisCard = db.Cards.FirstOrDefault(x => x.Id == wid);
                 if (thisCard == null)
@@ -724,7 +724,7 @@ namespace Sanakan.Modules
         [Remarks("20}")]
         public async Task RemoveQuizAsync([Summary("id zagadki")]ulong id)
         {
-            using (var db = new Database.UserContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 var question = db.Questions.FirstOrDefault(x => x.Id == id);
                 if (question == null)
@@ -749,7 +749,7 @@ namespace Sanakan.Modules
             try
             {
                 var question = JsonConvert.DeserializeObject<Question>(json);
-                using (var db = new Database.UserContext(Config))
+                using (var db = new Database.DatabaseContext(Config))
                 {
                     db.Questions.Add(question);
                     await db.SaveChangesAsync();
@@ -924,7 +924,7 @@ namespace Sanakan.Modules
             [Summary("jakość przedmiotu")]Quality quality = Quality.Broken)
         {
             var item = itemType.ToItem(count, quality);
-            using (var db = new Database.UserContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 var botuser = await db.GetUserOrCreateAsync(user.Id);
                 var thisItem = botuser.GameDeck.Items.FirstOrDefault(x => x.Type == item.Type && x.Quality == item.Quality);
@@ -954,7 +954,7 @@ namespace Sanakan.Modules
             var card = (rarity == Rarity.E) ? _waifu.GenerateNewCard(user, character) : _waifu.GenerateNewCard(user, character, rarity);
 
             card.Source = CardSource.GodIntervention;
-            using (var db = new Database.UserContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 var botuser = await db.GetUserOrCreateAsync(user.Id);
                 botuser.GameDeck.Cards.Add(card);
@@ -975,7 +975,7 @@ namespace Sanakan.Modules
         public async Task MakeUltimateCardAsync([Summary("wid karty")]ulong id, [Summary("jakość karty")]Quality quality,
             [Summary("dodatkowy atak")]int atk = 0, [Summary("dodatkowa obrona")]int def = 0, [Summary("dodatkowe hp")]int hp = 0)
         {
-            using (var db = new Database.UserContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 var card = await db.Cards.AsQueryable().Include(x => x.TagList).AsSingleQuery().FirstOrDefaultAsync(x => x.Id == id);
                 if (card == null)
@@ -1008,7 +1008,7 @@ namespace Sanakan.Modules
         [Remarks("Sniku 10000")]
         public async Task ChangeUserScAsync([Summary("użytkownik")]SocketGuildUser user, [Summary("liczba SC")]long amount)
         {
-            using (var db = new Database.UserContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 var botuser = await db.GetUserOrCreateAsync(user.Id);
                 botuser.ScCnt += amount;
@@ -1026,7 +1026,7 @@ namespace Sanakan.Modules
         [Remarks("Sniku 10000")]
         public async Task ChangeUserAcAsync([Summary("użytkownik")]SocketGuildUser user, [Summary("liczba AC")]long amount)
         {
-            using (var db = new Database.UserContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 var botuser = await db.GetUserOrCreateAsync(user.Id);
                 botuser.AcCnt += amount;
@@ -1044,7 +1044,7 @@ namespace Sanakan.Modules
         [Remarks("Sniku 10000")]
         public async Task ChangeUserTcAsync([Summary("użytkownik")]SocketGuildUser user, [Summary("liczba TC")]long amount)
         {
-            using (var db = new Database.UserContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 var botuser = await db.GetUserOrCreateAsync(user.Id);
                 botuser.TcCnt += amount;
@@ -1062,7 +1062,7 @@ namespace Sanakan.Modules
         [Remarks("Sniku 10000")]
         public async Task ChangeUserPcAsync([Summary("użytkownik")]SocketGuildUser user, [Summary("liczba PC")]long amount)
         {
-            using (var db = new Database.UserContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 var botuser = await db.GetUserOrCreateAsync(user.Id);
                 botuser.GameDeck.PVPCoins += amount;
@@ -1080,7 +1080,7 @@ namespace Sanakan.Modules
         [Remarks("Sniku 10000")]
         public async Task ChangeUserCtAsync([Summary("użytkownik")]SocketGuildUser user, [Summary("liczba CT")]long amount)
         {
-            using (var db = new Database.UserContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 var botuser = await db.GetUserOrCreateAsync(user.Id);
                 botuser.GameDeck.CTCnt += amount;
@@ -1098,7 +1098,7 @@ namespace Sanakan.Modules
         [Remarks("Sniku 10000")]
         public async Task ChangeUserExpAsync([Summary("użytkownik")]SocketGuildUser user, [Summary("liczba punktów doświadczenia")]long amount)
         {
-            using (var db = new Database.UserContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 var botuser = await db.GetUserOrCreateAsync(user.Id);
                 botuser.ExpCnt += amount;
@@ -1116,7 +1116,7 @@ namespace Sanakan.Modules
         [Remarks("Jeeda 10000")]
         public async Task ChangeUserOstAsync([Summary("użytkownik")]SocketGuildUser user, [Summary("liczba ostrzeżeń")]long amount)
         {
-            using (var db = new Database.UserContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 var botuser = await db.GetUserOrCreateAsync(user.Id);
                 botuser.Warnings += amount;
@@ -1137,7 +1137,7 @@ namespace Sanakan.Modules
             if (expedition == CardExpedition.None)
                 return;
 
-            using (var db = new Database.UserContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 var botUser = await db.GetUserAndDontTrackAsync(Context.User.Id);
                 var thisCard = botUser.GameDeck.Cards.FirstOrDefault(x => x.Id == wid);
@@ -1187,7 +1187,7 @@ namespace Sanakan.Modules
         [Remarks("")]
         public async Task SpawnCardOnSafariAsync()
         {
-            using (var db = new Database.GuildConfigContext(_config))
+            using (var db = new Database.DatabaseContext(_config))
             {
                 var config = await db.GetCachedGuildFullConfigAsync(Context.Guild.Id);
                 if (config == null) return;
@@ -1327,7 +1327,7 @@ namespace Sanakan.Modules
                     string prefix = _config.Get().Prefix;
                     if (Context.Guild != null)
                     {
-                        using (var db = new Database.GuildConfigContext(_config))
+                        using (var db = new Database.DatabaseContext(_config))
                         {
                             var gConfig = await db.GetCachedGuildFullConfigAsync(Context.Guild.Id);
                             if (gConfig?.Prefix != null) prefix = gConfig.Prefix;

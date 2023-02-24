@@ -1,5 +1,9 @@
 ﻿#pragma warning disable 1591
 
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
@@ -14,10 +18,6 @@ using Sanakan.Services.PocketWaifu;
 using Sanakan.Services.Session;
 using Sanakan.Services.Session.Models;
 using Shinden.Logger;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using Z.EntityFramework.Plus;
 using Sden = Shinden;
 
@@ -59,7 +59,7 @@ namespace Sanakan.Modules
                 return;
             }
 
-            using (var db = new Database.UserContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 var user = await db.GetCachedFullUserAsync(Context.User.Id);
                 if (user?.GameDeck?.Cards?.Count() < 1)
@@ -100,7 +100,7 @@ namespace Sanakan.Modules
         [Remarks("1"), RequireWaifuCommandChannel]
         public async Task ShowItemsAsync([Summary("nr przedmiotu")]int numberOfItem = 0)
         {
-            using (var db = new Database.UserContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 var bUser = await db.GetCachedFullUserAsync(Context.User.Id);
                 var itemList = bUser.GameDeck.Items.OrderBy(x => x.Type).ToList();
@@ -158,7 +158,7 @@ namespace Sanakan.Modules
         [Remarks("685 nie"), RequireAnyCommandChannelOrLevel(40)]
         public async Task ShowCardImageAsync([Summary("WID")]ulong wid, [Summary("czy wyświetlić statystyki?")]bool showStats = false)
         {
-            using (var db = new Database.UserContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 var card = db.Cards.Include(x => x.GameDeck).Include(x => x.ArenaStats).Include(x => x.TagList).AsNoTracking().FirstOrDefault(x => x.Id == wid);
                 if (card == null)
@@ -170,12 +170,9 @@ namespace Sanakan.Modules
                 SocketUser user = Context.Guild.GetUser(card.GameDeck.UserId);
                 if (user == null) user = Context.Client.GetUser(card.GameDeck.UserId);
 
-                using (var cdb = new Database.GuildConfigContext(Config))
-                {
-                    var gConfig = await cdb.GetCachedGuildFullConfigAsync(Context.Guild.Id);
-                    var trashChannel = Context.Guild.GetTextChannel(gConfig.WaifuConfig.TrashCommandsChannel);
-                    await ReplyAsync("", embed: await _waifu.BuildCardImageAsync(card, trashChannel, user, showStats));
-                }
+                var gConfig = await db.GetCachedGuildFullConfigAsync(Context.Guild.Id);
+                var trashChannel = Context.Guild.GetTextChannel(gConfig.WaifuConfig.TrashCommandsChannel);
+                await ReplyAsync("", embed: await _waifu.BuildCardImageAsync(card, trashChannel, user, showStats));
             }
         }
 
@@ -185,7 +182,7 @@ namespace Sanakan.Modules
         [Remarks("2"), RequireWaifuCommandChannel]
         public async Task ShowFigureListAsync([Summary("ID")]ulong id = 0)
         {
-            using (var db = new Database.UserContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 var deck = db.GameDecks.Include(x => x.Figures).FirstOrDefault(x => x.Id == Context.User.Id);
                 if (id > 0)
@@ -232,7 +229,7 @@ namespace Sanakan.Modules
         [Remarks("lewa noga"), RequireWaifuCommandChannel]
         public async Task SelectActiveFigurePartAsync([Summary("część")][Remainder]FigurePart part)
         {
-            using (var db = new Database.UserContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 var deck = db.GameDecks.Include(x => x.Figures).Where(x => x.Id == Context.User.Id).FirstOrDefault();
                 var fig = deck.Figures.FirstOrDefault(x => x.IsFocus);
@@ -267,7 +264,7 @@ namespace Sanakan.Modules
         [Remarks(""), RequireWaifuCommandChannel]
         public async Task EndCreatingFigureAsync()
         {
-            using (var db = new Database.UserContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 var deck = db.GameDecks.Include(x => x.Figures).Include(x => x.Cards).ThenInclude(x => x.ArenaStats).Where(x => x.Id == Context.User.Id).FirstOrDefault();
                 var fig = deck.Figures.FirstOrDefault(x => x.IsFocus);
@@ -301,7 +298,7 @@ namespace Sanakan.Modules
         [Remarks("2"), RequireWaifuCommandChannel]
         public async Task ShowFigureAsync([Summary("ID")]ulong id = 0)
         {
-            using (var db = new Database.UserContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 var fig = db.Figures.AsQueryable().AsNoTracking().FirstOrDefault(x => x.Id == id || (id == 0 && x.IsFocus && x.GameDeckId == Context.User.Id));
                 if (fig == null)
@@ -321,7 +318,7 @@ namespace Sanakan.Modules
         [Remarks("685"), RequireAnyCommandChannelOrLevel(40)]
         public async Task ShowCardStringAsync([Summary("WID")]ulong wid)
         {
-            using (var db = new Database.UserContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 var card = db.Cards.Include(x => x.GameDeck).Include(x => x.ArenaStats).Include(x => x.TagList).AsNoTracking().FirstOrDefault(x => x.Id == wid);
                 if (card == null)
@@ -343,7 +340,7 @@ namespace Sanakan.Modules
         [Remarks("685"), RequireWaifuCommandChannel]
         public async Task ShowCardAsync([Summary("WID")]ulong wid)
         {
-            using (var db = new Database.UserContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 var card = db.Cards.Include(x => x.GameDeck).Include(x => x.ArenaStats).Include(x => x.TagList).AsNoTracking().FirstOrDefault(x => x.Id == wid);
                 if (card == null)
@@ -355,12 +352,9 @@ namespace Sanakan.Modules
                 SocketUser user = Context.Guild.GetUser(card.GameDeck.UserId);
                 if (user == null) user = Context.Client.GetUser(card.GameDeck.UserId);
 
-                using (var cdb = new Database.GuildConfigContext(Config))
-                {
-                    var gConfig = await cdb.GetCachedGuildFullConfigAsync(Context.Guild.Id);
-                    var trashChannel = Context.Guild.GetTextChannel(gConfig.WaifuConfig.TrashCommandsChannel);
-                    await ReplyAsync("", embed: await _waifu.BuildCardViewAsync(card, trashChannel, user));
-                }
+                var gConfig = await db.GetCachedGuildFullConfigAsync(Context.Guild.Id);
+                var trashChannel = Context.Guild.GetTextChannel(gConfig.WaifuConfig.TrashCommandsChannel);
+                await ReplyAsync("", embed: await _waifu.BuildCardViewAsync(card, trashChannel, user));
             }
         }
 
@@ -404,7 +398,7 @@ namespace Sanakan.Modules
                 return;
             }
 
-            using (var db = new Database.UserContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 var imgCnt = 0;
                 var itemCnt = 1;
@@ -980,7 +974,7 @@ namespace Sanakan.Modules
                 return;
             }
 
-            using (var db = new Database.UserContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 await db.Database.OpenConnectionAsync();
                 var bUser = await db.GetUserOrCreateAsync(Context.User.Id);
@@ -1126,7 +1120,7 @@ namespace Sanakan.Modules
         [Remarks("5412"), RequireWaifuCommandChannel]
         public async Task ResetCardAsync([Summary("WID")]ulong id)
         {
-            using (var db = new Database.UserContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 var bUser = await db.GetUserOrCreateAsync(Context.User.Id);
                 var card = bUser.GameDeck.Cards.FirstOrDefault(x => x.Id == id);
@@ -1201,7 +1195,7 @@ namespace Sanakan.Modules
         [Remarks("5412"), RequireWaifuCommandChannel]
         public async Task UpdateCardAsync([Summary("WID")]ulong id, [Summary("czy przywrócić obrazek ze strony")]bool defaultImage = false)
         {
-            using (var db = new Database.UserContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 var bUser = await db.GetUserOrCreateAsync(Context.User.Id);
                 var card = bUser.GameDeck.Cards.FirstOrDefault(x => x.Id == id);
@@ -1243,7 +1237,7 @@ namespace Sanakan.Modules
         [Remarks("5412"), RequireWaifuCommandChannel]
         public async Task UpgradeCardAsync([Summary("WID")]ulong id)
         {
-            using (var db = new Database.UserContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 var bUser = await db.GetUserOrCreateAsync(Context.User.Id);
                 var card = bUser.GameDeck.Cards.FirstOrDefault(x => x.Id == id);
@@ -1374,7 +1368,7 @@ namespace Sanakan.Modules
         [Remarks("5412 5413"), RequireWaifuCommandChannel]
         public async Task ReleaseCardAsync([Summary("WID kart")]params ulong[] ids)
         {
-            using (var db = new Database.UserContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 var bUser = await db.GetUserOrCreateAsync(Context.User.Id);
                 var cardsToSac = bUser.GameDeck.Cards.Where(x => ids.Any(c => c == x.Id)).ToList();
@@ -1435,7 +1429,7 @@ namespace Sanakan.Modules
         [Remarks("5412"), RequireWaifuCommandChannel]
         public async Task DestroyCardAsync([Summary("WID kart")]params ulong[] ids)
         {
-            using (var db = new Database.UserContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 var bUser = await db.GetUserOrCreateAsync(Context.User.Id);
                 var cardsToSac = bUser.GameDeck.Cards.Where(x => ids.Any(c => c == x.Id)).ToList();
@@ -1500,7 +1494,7 @@ namespace Sanakan.Modules
         [Remarks("2154 10"), RequireWaifuCommandChannel]
         public async Task TransferExpFromChestAsync([Summary("WID")]ulong id, [Summary("liczba doświadczenia")]uint exp)
         {
-            using (var db = new Database.UserContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 var bUser = await db.GetUserOrCreateAsync(Context.User.Id);
                 if (bUser.GameDeck.ExpContainer.Level == ExpContainerLevel.Disabled)
@@ -1583,7 +1577,7 @@ namespace Sanakan.Modules
         [Remarks("2154"), RequireWaifuCommandChannel]
         public async Task CreateChestAsync([Summary("WID kart")]params ulong[] ids)
         {
-            using (var db = new Database.UserContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 var bUser = await db.GetUserOrCreateAsync(Context.User.Id);
                 var cardsToSac = bUser.GameDeck.Cards.Where(x => ids.Any(c => c == x.Id)).ToList();
@@ -1654,7 +1648,7 @@ namespace Sanakan.Modules
         [Remarks(""), RequireAnyCommandChannelOrLevel(40)]
         public async Task GetFreeCardAsync()
         {
-            using (var db = new Database.UserContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 var botuser = await db.GetUserOrCreateAsync(Context.User.Id);
                 var freeCard = botuser.TimeStatuses.FirstOrDefault(x => x.Type == StatusType.Card);
@@ -1722,7 +1716,7 @@ namespace Sanakan.Modules
         [Remarks("2145"), RequireWaifuCommandChannel]
         public async Task GoToMarketAsync([Summary("WID")]ulong wid)
         {
-            using (var db = new Database.UserContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 var botuser = await db.GetUserOrCreateAsync(Context.User.Id);
                 if (botuser.GameDeck.IsMarketDisabled())
@@ -1846,7 +1840,7 @@ namespace Sanakan.Modules
         [Remarks("2145"), RequireWaifuCommandChannel]
         public async Task GoToBlackMarketAsync([Summary("WID")]ulong wid)
         {
-            using (var db = new Database.UserContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 var botuser = await db.GetUserOrCreateAsync(Context.User.Id);
                 if (botuser.GameDeck.IsBlackMarketDisabled())
@@ -1964,7 +1958,7 @@ namespace Sanakan.Modules
                 return;
             }
 
-            using (var db = new Database.UserContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 var bUser = await db.GetUserOrCreateAsync(Context.User.Id);
                 var cardToUp = bUser.GameDeck.Cards.FirstOrDefault(x => x.Id == idToUp);
@@ -2037,7 +2031,7 @@ namespace Sanakan.Modules
             var user = Context.User as SocketGuildUser;
             if (user == null) return;
 
-            using (var db = new Database.UserContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 var bUser = await db.GetUserOrCreateAsync(user.Id);
                 var cardsInCage = bUser.GameDeck.Cards.Where(x => x.InCage);
@@ -2113,7 +2107,7 @@ namespace Sanakan.Modules
         [Remarks("karta 4212 21452"), RequireWaifuCommandChannel]
         public async Task RemoveFromWishlistAsync([Summary("typ id (p - postać, t - tytuł, c - karta)")]WishlistObjectType type, [Summary("ids/WIDs")]params ulong[] ids)
         {
-            using (var db = new Database.UserContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 var bUser = await db.GetUserOrCreateAsync(Context.User.Id);
                 var objs = bUser.GameDeck.Wishes.Where(x => x.Type == type && ids.Any(c => c == x.ObjectId)).ToList();
@@ -2123,14 +2117,10 @@ namespace Sanakan.Modules
                     return;
                 }
 
-                using (var dba = new Database.AnalyticsContext(Config))
+                foreach (var obj in objs)
                 {
-                    foreach (var obj in objs)
-                    {
-                        await dba.CreateOrChangeWishlistCountByAsync(obj.ObjectId, obj.ObjectName, -1);
-                        bUser.GameDeck.Wishes.Remove(obj);
-                    }
-                    await dba.SaveChangesAsync();
+                    await db.CreateOrChangeWishlistCountByAsync(obj.ObjectId, obj.ObjectName, -1);
+                    bUser.GameDeck.Wishes.Remove(obj);
                 }
 
                 await db.SaveChangesAsync();
@@ -2147,7 +2137,7 @@ namespace Sanakan.Modules
         [Remarks("karta 4212"), RequireWaifuCommandChannel]
         public async Task AddToWishlistAsync([Summary("typ id (p - postać, t - tytuł, c - karta)")]WishlistObjectType type, [Summary("id/WID")]ulong id)
         {
-            using (var db = new Database.UserContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 string response = "";
                 var bUser = await db.GetUserOrCreateAsync(Context.User.Id);
@@ -2201,11 +2191,7 @@ namespace Sanakan.Modules
                         }
                         response = res2.Body.ToString();
                         obj.ObjectName = response;
-                        using (var dba = new Database.AnalyticsContext(Config))
-                        {
-                            await dba.CreateOrChangeWishlistCountByAsync(obj.ObjectId, obj.ObjectName);
-                            await dba.SaveChangesAsync();
-                        }
+                        await db.CreateOrChangeWishlistCountByAsync(obj.ObjectId, obj.ObjectName);
                         break;
                 }
 
@@ -2225,7 +2211,7 @@ namespace Sanakan.Modules
         [Remarks("tak"), RequireWaifuCommandChannel]
         public async Task SetWishlistViewAsync([Summary("czy ma być widoczna? (tak/nie)")]bool view)
         {
-            using (var db = new Database.UserContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 var bUser = await db.GetUserOrCreateAsync(Context.User.Id);
                 bUser.GameDeck.WishlistIsPrivate = !view;
@@ -2248,7 +2234,7 @@ namespace Sanakan.Modules
             var user = (usr ?? Context.User) as SocketGuildUser;
             if (user == null) return;
 
-            using (var db = new Database.UserContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 var bUser = await db.GetCachedFullUserAsync(user.Id);
                 if (bUser == null)
@@ -2300,7 +2286,7 @@ namespace Sanakan.Modules
             var user = (usr ?? Context.User) as SocketGuildUser;
             if (user == null) return;
 
-            using (var db = new Database.UserContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 var bUser = await db.GetCachedFullUserAsync(user.Id);
                 if (bUser == null)
@@ -2372,7 +2358,7 @@ namespace Sanakan.Modules
                 return;
             }
 
-            using (var db = new Database.UserContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 var bUser = await db.GetCachedFullUserAsync(user.Id);
                 if (bUser == null)
@@ -2437,7 +2423,7 @@ namespace Sanakan.Modules
         [Remarks("51545"), RequireWaifuCommandChannel]
         public async Task WhoWantsCardAsync([Summary("wid karty")]ulong wid, [Summary("czy zamienić oznaczenia na nicki?")]bool showNames = false)
         {
-            using (var db = new Database.UserContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 var thisCards = db.Cards.Include(x => x.TagList).FirstOrDefault(x => x.Id == wid);
                 if (thisCards == null)
@@ -2458,7 +2444,7 @@ namespace Sanakan.Modules
 
                 var exe = new Executable($"kc-check-{thisCards.Character}", new Task<Task>(async () =>
                 {
-                    using (var dbs = new Database.UserContext(_config))
+                    using (var dbs = new Database.DatabaseContext(_config))
                     {
                         var wCount = await dbs.GameDecks.Include(x => x.Wishes).AsNoTracking().Where(x => !x.WishlistIsPrivate && x.Wishes.Any(c => c.Type == WishlistObjectType.Character && c.ObjectId == thisCards.Character)).CountAsync();
                         await dbs.WishlistCountData.CreateOrChangeWishlistCountByAsync(thisCards.Character, thisCards.Name, wCount, true);
@@ -2482,7 +2468,7 @@ namespace Sanakan.Modules
                 return;
             }
 
-            using (var db = new Database.UserContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 var wishlists = db.GameDecks.Include(x => x.Wishes).Include(x => x.User).Where(x => !x.WishlistIsPrivate && x.Wishes.Any(c => c.Type == WishlistObjectType.Title && c.ObjectId == id)).ToList();
                 if (wishlists.Count < 1)
@@ -2503,7 +2489,7 @@ namespace Sanakan.Modules
         public async Task UnleashCardAsync([Summary("WID")]ulong wid)
         {
             int cost = 250;
-            using (var db = new Database.UserContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 var bUser = await db.GetUserOrCreateAsync(Context.User.Id);
                 var thisCard = bUser.GameDeck.Cards.FirstOrDefault(x => x.Id == wid);
@@ -2553,7 +2539,7 @@ namespace Sanakan.Modules
         [Remarks("10"), RequireWaifuCommandChannel]
         public async Task IncCardLimitAsync([Summary("krotność użycia polecenia")]uint count = 0)
         {
-            using (var db = new Database.UserContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 var bUser = await db.GetUserOrCreateAsync(Context.User.Id);
                 if (count < 1)
@@ -2594,7 +2580,7 @@ namespace Sanakan.Modules
         {
             var tcCost = 500;
 
-            using (var db = new Database.UserContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 var botuser = await db.GetUserOrCreateAsync(Context.User.Id);
                 if (botuser.TcCnt < tcCost)
@@ -2626,7 +2612,7 @@ namespace Sanakan.Modules
         {
             var tcCost = 500;
 
-            using (var db = new Database.UserContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 var botuser = await db.GetUserOrCreateAsync(Context.User.Id);
                 if (botuser.TcCnt < tcCost)
@@ -2658,7 +2644,7 @@ namespace Sanakan.Modules
         {
             var tcCost = 2000;
 
-            using (var db = new Database.UserContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 var botuser = await db.GetUserOrCreateAsync(Context.User.Id);
                 if (botuser.TcCnt < tcCost)
@@ -2688,7 +2674,7 @@ namespace Sanakan.Modules
         [Remarks("65"), RequireWaifuCommandChannel]
         public async Task ChangeWaifuSiteBackgroundPositionAsync([Summary("pozycja w % od 0 do 100")]uint position)
         {
-            using (var db = new Database.UserContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 var botuser = await db.GetUserOrCreateAsync(Context.User.Id);
                 if (position > 100)
@@ -2711,7 +2697,7 @@ namespace Sanakan.Modules
         [Remarks("78"), RequireWaifuCommandChannel]
         public async Task ChangeWaifuSiteForegroundPositionAsync([Summary("pozycja w % od 0 do 100")]uint position)
         {
-            using (var db = new Database.UserContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 var botuser = await db.GetUserOrCreateAsync(Context.User.Id);
                 if (position > 100)
@@ -2735,7 +2721,7 @@ namespace Sanakan.Modules
         public async Task IncGalleryLimitAsync([Summary("krotność użycia polecenia")]uint count = 0)
         {
             int cost = 100 * (int)count;
-            using (var db = new Database.UserContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 var bUser = await db.GetUserOrCreateAsync(Context.User.Id);
                 if (count < 1)
@@ -2768,7 +2754,7 @@ namespace Sanakan.Modules
         public async Task ExchangeToCrystalBallAsync()
         {
             int cost = 5;
-            using (var db = new Database.UserContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 var bUser = await db.GetUserOrCreateAsync(Context.User.Id);
                 var itemList = bUser.GameDeck.Items.OrderBy(x => x.Type).ToList();
@@ -2829,7 +2815,7 @@ namespace Sanakan.Modules
         [Remarks("konie 231 12341 22"), RequireWaifuCommandChannel]
         public async Task ChangeCardTagAsync([Summary("tag")]string tag, [Summary("WID kart")]params ulong[] wids)
         {
-            using (var db = new Database.UserContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 var bUser = await db.GetUserOrCreateAsync(Context.User.Id);
                 var cardsSelected = bUser.GameDeck.Cards.Where(x => wids.Any(c => c == x.Id)).ToList();
@@ -2866,7 +2852,7 @@ namespace Sanakan.Modules
         [Remarks("22"), RequireWaifuCommandChannel]
         public async Task CleanCardTagAsync([Summary("WID kart")]params ulong[] wids)
         {
-            using (var db = new Database.UserContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 var bUser = await db.GetUserOrCreateAsync(Context.User.Id);
                 var cardsSelected = bUser.GameDeck.Cards.Where(x => wids.Any(c => c == x.Id)).ToList();
@@ -2894,7 +2880,7 @@ namespace Sanakan.Modules
         [Remarks("konie"), RequireWaifuCommandChannel]
         public async Task ChangeCardsTagAsync([Summary("tag")]string tag)
         {
-            using (var db = new Database.UserContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 var bUser = await db.GetUserOrCreateAsync(Context.User.Id);
                 var untaggedCards = bUser.GameDeck.Cards.Where(x => x.TagList.Count < 1).ToList();
@@ -2940,7 +2926,7 @@ namespace Sanakan.Modules
                 return;
             }
 
-            using (var db = new Database.UserContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 var bUser = await db.GetUserOrCreateAsync(Context.User.Id);
                 var cards = bUser.GameDeck.Cards.Where(x => x.HasTag(oldTag)).ToList();
@@ -2977,7 +2963,7 @@ namespace Sanakan.Modules
         [Remarks("ulubione 2211 2123 33123"), RequireWaifuCommandChannel]
         public async Task RemoveCardTagAsync([Summary("tag")]string tag, [Summary("WID kart")]params ulong[] wids)
         {
-            using (var db = new Database.UserContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 var bUser = await db.GetUserOrCreateAsync(Context.User.Id);
                 var cardsSelected = bUser.GameDeck.Cards.Where(x => wids.Any(c => c == x.Id)).ToList();
@@ -3013,7 +2999,7 @@ namespace Sanakan.Modules
         [Remarks("Wymieniam się tylko za karty z mojej listy życzeń."), RequireWaifuCommandChannel]
         public async Task SetExchangeConditionAsync([Summary("zasady wymiany")][Remainder]string condition = null)
         {
-            using (var db = new Database.UserContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 var bUser = await db.GetUserOrCreateAsync(Context.User.Id);
 
@@ -3033,7 +3019,7 @@ namespace Sanakan.Modules
         [Remarks("1"), RequireWaifuCommandChannel]
         public async Task ChangeDeckCardStatusAsync([Summary("WID(opcjonalne)")]ulong wid = 0)
         {
-            using (var db = new Database.UserContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 var botUser = await db.GetCachedFullUserAsync(Context.User.Id);
                 var active = botUser.GameDeck.Cards.Where(x => x.Active).ToList();
@@ -3120,7 +3106,7 @@ namespace Sanakan.Modules
                 return;
             }
 
-            using (var db = new Database.UserContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 var cards = await db.Cards.Include(x => x.TagList).Include(x => x.GameDeck).ThenInclude(x => x.User).Where(x => x.Character == id).AsNoTracking().FromCacheAsync( new[] {"users"});
 
@@ -3160,7 +3146,7 @@ namespace Sanakan.Modules
         [Remarks("tak tak"), RequireWaifuCommandChannel]
         public async Task SearchCharacterCardsFromFavListAsync([Summary("czy pokazać ulubione (true/false) domyślnie ukryte")]bool showFavs = false, [Summary("czy zamienić oznaczenia na nicki?")]bool showNames = false)
         {
-            using (var db = new Database.UserContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 var user = await db.GetCachedFullUserAsync(Context.User.Id);
                 if (user == null)
@@ -3224,7 +3210,7 @@ namespace Sanakan.Modules
                 return;
             }
 
-            using (var db = new Database.UserContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 var cards = await db.Cards.AsQueryable().Include(x => x.TagList).Include(x => x.GameDeck).AsSplitQuery().Where(x => characterIds.Contains(x.Character)).AsNoTracking().FromCacheAsync( new[] {"users"});
 
@@ -3273,7 +3259,7 @@ namespace Sanakan.Modules
                 return;
             }
 
-            using (var db = new Database.UserContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 var duser1 = await db.GetCachedFullUserAsync(user1.Id);
                 var duser2 = await db.GetCachedFullUserAsync(user2.Id);
@@ -3329,7 +3315,7 @@ namespace Sanakan.Modules
                 return;
             }
 
-            using (var db = new Database.UserContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 var duser1 = await db.GetCachedFullUserAsync(user1.Id);
                 if (duser1 == null)
@@ -3380,7 +3366,7 @@ namespace Sanakan.Modules
         [Remarks(""), RequireWaifuFightChannel]
         public async Task ShowExpeditionStatusAsync()
         {
-            using (var db = new Database.UserContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                  var botUser = await db.GetCachedFullUserAsync(Context.User.Id);
                  var cardsOnExpedition = botUser.GameDeck.Cards.Where(x => x.Expedition != CardExpedition.None).ToList();
@@ -3402,7 +3388,7 @@ namespace Sanakan.Modules
         [Remarks("11321"), RequireWaifuFightChannel]
         public async Task EndCardExpeditionAsync([Summary("WID")]ulong wid)
         {
-            using (var db = new Database.UserContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 var botUser = await db.GetUserOrCreateAsync(Context.User.Id);
                 var thisCard = botUser.GameDeck.Cards.FirstOrDefault(x => x.Id == wid);
@@ -3445,7 +3431,7 @@ namespace Sanakan.Modules
                 return;
             }
 
-            using (var db = new Database.UserContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 var botUser = await db.GetUserOrCreateAsync(Context.User.Id);
                 var cardsSelected = botUser.GameDeck.Cards.Where(x => wids.Any(c => c == x.Id)).ToList();
@@ -3508,7 +3494,7 @@ namespace Sanakan.Modules
         [Remarks(""), RequireWaifuDuelChannel]
         public async Task MakeADuelAsync()
         {
-            using (var db = new Database.UserContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 var duser = await db.GetUserOrCreateAsync(Context.User.Id);
                 if (duser.GameDeck.NeedToSetDeckAgain())
@@ -3631,7 +3617,7 @@ namespace Sanakan.Modules
         [Remarks("451"), RequireWaifuCommandChannel]
         public async Task SetProfileWaifuAsync([Summary("WID")]ulong wid)
         {
-            using (var db = new Database.UserContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 var bUser = await db.GetUserOrCreateAsync(Context.User.Id);
                 if (wid == 0)
@@ -3688,7 +3674,7 @@ namespace Sanakan.Modules
         [Remarks("451"), RequireWaifuCommandChannel]
         public async Task ChangeCardAsync([Summary("WID")]ulong wid)
         {
-            using (var db = new Database.UserContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 var bUser = await db.GetUserOrCreateAsync(Context.User.Id);
                 if (!bUser.GameDeck.CanCreateDemon() && !bUser.GameDeck.CanCreateAngel())
@@ -3787,7 +3773,7 @@ namespace Sanakan.Modules
             var user = (usr ?? Context.User) as SocketGuildUser;
             if (user == null) return;
 
-            using (var db = new Database.UserContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 var bUser = await db.GetCachedFullUserAsync(user.Id);
                 if (bUser == null)
@@ -3833,7 +3819,7 @@ namespace Sanakan.Modules
             var user = (usr ?? Context.User) as SocketGuildUser;
             if (user == null) return;
 
-            using (var db = new Database.UserContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 var bUser = await db.GetCachedFullUserAsync(user.Id);
                 if (bUser == null)
@@ -3881,14 +3867,11 @@ namespace Sanakan.Modules
                     var tChar = bUser.GameDeck.Cards.OrderBy(x => x.Rarity).FirstOrDefault(x => x.Character == bUser.GameDeck.Waifu);
                     if (tChar != null)
                     {
-                        using (var cdb = new Database.GuildConfigContext(Config))
-                        {
-                            var config = await cdb.GetCachedGuildFullConfigAsync(Context.Guild.Id);
-                            var channel = Context.Guild.GetTextChannel(config.WaifuConfig.TrashCommandsChannel);
+                        var config = await db.GetCachedGuildFullConfigAsync(Context.Guild.Id);
+                        var channel = Context.Guild.GetTextChannel(config.WaifuConfig.TrashCommandsChannel);
 
-                            embed.WithImageUrl(await _waifu.GetWaifuProfileImageAsync(tChar, channel));
-                            embed.WithFooter(new EmbedFooterBuilder().WithText($"{tChar.Name}"));
-                        }
+                        embed.WithImageUrl(await _waifu.GetWaifuProfileImageAsync(tChar, channel));
+                        embed.WithFooter(new EmbedFooterBuilder().WithText($"{tChar.Name}"));
                     }
                 }
 

@@ -256,7 +256,7 @@ namespace Sanakan.Services.Session.Models
                     if (P1.Accepted)
                     {
                         error = false;
-                        using (var db = new Database.UserContext(_config))
+                        using (var db = new Database.DatabaseContext(_config))
                         {
                             var character = await _waifu.GetRandomCharacterAsync();
                             if (character == null)

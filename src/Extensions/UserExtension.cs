@@ -423,7 +423,7 @@ namespace Sanakan.Extensions
             return deck.Wishes.Where(x => x.Type == WishlistObjectType.Character).Select(x => x.ObjectId).ToList();
         }
 
-        public static bool RemoveCharacterFromWishList(this GameDeck deck, ulong id, Database.AnalyticsContext db)
+        public static bool RemoveCharacterFromWishList(this GameDeck deck, ulong id, Database.DatabaseContext db)
         {
             var en = deck.Wishes.FirstOrDefault(x => x.Type == WishlistObjectType.Character && x.ObjectId == id);
             if (en != null)
@@ -435,7 +435,7 @@ namespace Sanakan.Extensions
             return false;
         }
 
-        public static async Task<bool> RemoveCharacterFromWishListAsync(this GameDeck deck, ulong id, Database.UserContext db)
+        public static async Task<bool> RemoveCharacterFromWishListAsync(this GameDeck deck, ulong id, Database.DatabaseContext db)
         {
             var en = deck.Wishes.FirstOrDefault(x => x.Type == WishlistObjectType.Character && x.ObjectId == id);
             if (en != null)

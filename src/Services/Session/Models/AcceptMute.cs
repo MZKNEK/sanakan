@@ -31,7 +31,7 @@ namespace Sanakan.Services.Session.Models
                 await msg.DeleteAsync();
             }
 
-            using (var mdb = new Database.ManagmentContext(_config))
+            using (var mdb = new Database.DatabaseContext(_config))
             {
                 var info = await Moderation.MuteUserAsync(User, MuteRole, null, UserRole, mdb, (Fun.GetRandomValue(365) * 24) + 24, "Chciał to dostał :)");
                 await Moderation.NotifyAboutPenaltyAsync(User, NotifChannel, info, "Sanakan");

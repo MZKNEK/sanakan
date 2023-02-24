@@ -28,7 +28,7 @@ namespace Sanakan.Api.Controllers
         [HttpGet("questions")]
         public async Task<List<Database.Models.Question>> GetQuestionsAsync()
         {
-            using (var db = new Database.UserContext(_config))
+            using (var db = new Database.DatabaseContext(_config))
             {
                 return await db.GetCachedAllQuestionsAsync();
             }
@@ -42,7 +42,7 @@ namespace Sanakan.Api.Controllers
         [HttpGet("question/{id}")]
         public async Task<Database.Models.Question> GetQuestionAsync(ulong id)
         {
-            using (var db = new Database.UserContext(_config))
+            using (var db = new Database.DatabaseContext(_config))
             {
                 return await db.GetCachedQuestionAsync(id);
             }
@@ -56,7 +56,7 @@ namespace Sanakan.Api.Controllers
         [HttpPost("question")]
         public async Task AddQuestionAsync([FromBody]Database.Models.Question question)
         {
-            using (var db = new Database.UserContext(_config))
+            using (var db = new Database.DatabaseContext(_config))
             {
                 db.Questions.Add(question);
                 await db.SaveChangesAsync();
@@ -75,7 +75,7 @@ namespace Sanakan.Api.Controllers
         [HttpDelete("question/{id}")]
         public async Task RemoveQuestionAsync(ulong id)
         {
-            using (var db = new Database.UserContext(_config))
+            using (var db = new Database.DatabaseContext(_config))
             {
                 var question = await db.Questions.Include(x => x.Answer).FirstOrDefaultAsync(x => x.Id == id);
                 if (question != null)

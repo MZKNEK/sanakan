@@ -25,9 +25,9 @@ namespace Sanakan.Preconditions
                 return PreconditionResult.FromSuccess();
 
             var config = (IConfig)services.GetService(typeof(IConfig));
-            using (var dbu = new Database.UserContext(config))
+            using (var db = new Database.DatabaseContext(config))
             {
-                var botUser = await dbu.GetBaseUserAndDontTrackAsync(user.Id);
+                var botUser = await db.GetBaseUserAndDontTrackAsync(user.Id);
                 if (botUser != null)
                 {
                     if (botUser.IsBlacklisted)
@@ -36,10 +36,7 @@ namespace Sanakan.Preconditions
                     if (botUser.Level >= _level)
                         return PreconditionResult.FromSuccess();
                 }
-            }
 
-            using (var db = new Database.GuildConfigContext(config))
-            {
                 var gConfig = await db.GetCachedGuildFullConfigAsync(context.Guild.Id);
                 if (gConfig == null) return PreconditionResult.FromSuccess();
 

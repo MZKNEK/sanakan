@@ -100,7 +100,7 @@ namespace Sanakan.Services.Supervisor
 
         private async Task Analize(SocketGuildUser user, SocketUserMessage message)
         {
-            using (var db = new Database.GuildConfigContext(_config))
+            using (var db = new Database.DatabaseContext(_config))
             {
                 var gConfig = await db.GetCachedGuildFullConfigAsync(user.Guild.Id);
                 if (gConfig == null) return;
@@ -173,7 +173,7 @@ namespace Sanakan.Services.Supervisor
                         if (user.Roles.Contains(muteRole))
                             return;
 
-                        using (var db = new Database.ManagmentContext(_config))
+                        using (var db = new Database.DatabaseContext(_config))
                         {
                             var info = await _moderator.MuteUserAsync(user, muteRole, null, userRole, db, 24, "spam/flood");
                             await _moderator.NotifyAboutPenaltyAsync(user, notifChannel, info);
@@ -310,7 +310,7 @@ namespace Sanakan.Services.Supervisor
 
         private async Task AnalizeJoin(SocketGuildUser user)
         {
-            using (var db = new Database.GuildConfigContext(_config))
+            using (var db = new Database.DatabaseContext(_config))
             {
                 var gConfig = await db.GetCachedGuildFullConfigAsync(user.Guild.Id);
                 if (gConfig == null) return;

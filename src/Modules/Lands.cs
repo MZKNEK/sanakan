@@ -28,7 +28,7 @@ namespace Sanakan.Modules
         [Remarks("Kotleciki")]
         public async Task ShowPeopleAsync([Summary("nazwa krainy (opcjonalne)")][Remainder]string name = null)
         {
-            using (var db = new Database.GuildConfigContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 var config = await db.GetCachedGuildFullConfigAsync(Context.Guild.Id);
                 var land = _manager.DetermineLand(config.Lands, Context.User as SocketGuildUser, name);
@@ -52,7 +52,7 @@ namespace Sanakan.Modules
         [Remarks("Karna Kotleciki")]
         public async Task AddPersonAsync([Summary("użytkownik")]SocketGuildUser user, [Summary("nazwa krainy (opcjonalne)")][Remainder]string name = null)
         {
-            using (var db = new Database.GuildConfigContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 var config = await db.GetCachedGuildFullConfigAsync(Context.Guild.Id);
                 var land = _manager.DetermineLand(config.Lands, Context.User as SocketGuildUser, name);
@@ -82,7 +82,7 @@ namespace Sanakan.Modules
         [Remarks("Karna")]
         public async Task RemovePersonAsync([Summary("użytkownik")]SocketGuildUser user, [Summary("nazwa krainy (opcjonalne)")][Remainder]string name = null)
         {
-            using (var db = new Database.GuildConfigContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 var config = await db.GetCachedGuildFullConfigAsync(Context.Guild.Id);
                 var land = _manager.DetermineLand(config.Lands, Context.User as SocketGuildUser, name);

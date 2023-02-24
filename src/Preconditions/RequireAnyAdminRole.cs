@@ -20,14 +20,14 @@ namespace Sanakan.Preconditions
             await Task.CompletedTask;
 
             var config = (IConfig)services.GetService(typeof(IConfig));
-            using (var db = new Database.GuildConfigContext(config))
+            using (var db = new Database.DatabaseContext(config))
             {
                 var gConfig = await db.GetCachedGuildFullConfigAsync(context.Guild.Id);
                 if (gConfig == null) return CheckUser(user);
 
                 var role = context.Guild.GetRole(gConfig.AdminRole);
                 if (role != null && user.Roles.Any(x => x.Id == role.Id)) return PreconditionResult.FromSuccess();
-                
+
                 var srole = context.Guild.GetRole(gConfig.SemiAdminRole);
                 if (srole != null && user.Roles.Any(x => x.Id == srole.Id)) return PreconditionResult.FromSuccess();
                 return CheckUser(user);

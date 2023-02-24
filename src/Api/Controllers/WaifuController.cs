@@ -46,7 +46,7 @@ namespace Sanakan.Api.Controllers
         [HttpGet("users/owning/character/{id}"), Authorize(Policy = "Site")]
         public async Task<IEnumerable<ulong>> GetUsersOwningCharacterCardAsync(ulong id)
         {
-            using (var db = new Database.UserContext(_config))
+            using (var db = new Database.DatabaseContext(_config))
             {
                 var shindenIds = await db.Cards.Include(x => x.GameDeck).ThenInclude(x => x.User)
                     .Where(x => x.Character == id && x.GameDeck.User.Shinden != 0).AsNoTracking().Select(x => x.GameDeck.User.Shinden).Distinct().ToListAsync();
@@ -68,7 +68,7 @@ namespace Sanakan.Api.Controllers
         [HttpGet("user/{id}/cards"), Authorize(Policy = "Site")]
         public async Task<IEnumerable<Database.Models.Card>> GetUserCardsAsync(ulong id)
         {
-            using (var db = new Database.UserContext(_config))
+            using (var db = new Database.DatabaseContext(_config))
             {
                 var user = await db.Users.AsQueryable().Where(x => x.Shinden == id).Include(x => x.GameDeck).ThenInclude(x => x.Cards).ThenInclude(x => x.ArenaStats).Include(x => x.GameDeck)
                     .ThenInclude(x => x.Cards).ThenInclude(x => x.TagList).AsNoTracking().AsSplitQuery().FirstOrDefaultAsync();
@@ -95,7 +95,7 @@ namespace Sanakan.Api.Controllers
         [HttpPost("user/{id}/cards/{offset}/{count}")]
         public async Task<FilteredCards> GetUsersCardsByShindenIdWithOffsetAndFilterAsync(ulong id, uint offset, uint count, [FromBody]CardsQueryFilter filter)
         {
-            using (var db = new Database.UserContext(_config))
+            using (var db = new Database.DatabaseContext(_config))
             {
                 var user = await db.Users.AsQueryable().Where(x => x.Shinden == id).Include(x => x.GameDeck).AsNoTracking().AsSplitQuery().FirstOrDefaultAsync();
 
@@ -148,7 +148,7 @@ namespace Sanakan.Api.Controllers
         [HttpGet("user/{id}/cards/{offset}/{count}")]
         public async Task<IEnumerable<CardFinalView>> GetUsersCardsByShindenIdWithOffsetAsync(ulong id, uint offset, uint count)
         {
-            using (var db = new Database.UserContext(_config))
+            using (var db = new Database.DatabaseContext(_config))
             {
                 var user = await db.Users.AsQueryable().AsSplitQuery().Where(x => x.Shinden == id).Include(x => x.GameDeck).AsNoTracking().FirstOrDefaultAsync();
 
@@ -173,7 +173,7 @@ namespace Sanakan.Api.Controllers
         [HttpGet("user/shinden/{id}/wishlist/raw")]
         public async Task<IEnumerable<WishlistObject>> GetUsersRawWishlistByShindenIdAsync(ulong id)
         {
-            using (var db = new Database.UserContext(_config))
+            using (var db = new Database.DatabaseContext(_config))
             {
                 var user = await db.Users.AsQueryable().AsSplitQuery().Where(x => x.Shinden == id).Include(x => x.GameDeck).ThenInclude(x => x.Wishes).AsNoTracking().FirstOrDefaultAsync();
 
@@ -202,7 +202,7 @@ namespace Sanakan.Api.Controllers
         [HttpGet("top/characters/{count}")]
         public async Task<IEnumerable<Database.Models.Analytics.WishlistCount>> GetTopCharactersAsync(int count)
         {
-            using (var db = new Database.UserContext(_config))
+            using (var db = new Database.DatabaseContext(_config))
             {
                 var top = await db.WishlistCountData.AsQueryable().OrderByDescending(x => x.Count).ToListAsync();
                 if (top == null)
@@ -223,7 +223,7 @@ namespace Sanakan.Api.Controllers
         [HttpGet("user/{id}/profile")]
         public async Task<UserSiteProfile> GetUserWaifuProfileAsync(ulong id)
         {
-            using (var db = new Database.UserContext(_config))
+            using (var db = new Database.DatabaseContext(_config))
             {
                 var user = await db.Users.AsQueryable().AsSplitQuery().Where(x => x.Shinden == id).Include(x => x.GameDeck).ThenInclude(x => x.Cards).ThenInclude(x => x.ArenaStats).Include(x => x.GameDeck)
                     .ThenInclude(x => x.Cards).ThenInclude(x => x.TagList).AsNoTracking().FirstOrDefaultAsync();
@@ -299,7 +299,7 @@ namespace Sanakan.Api.Controllers
 
             var exe = new Executable($"api-repair oc{oldId} c{newId}", new Task<Task>(async () =>
             {
-                using (var db = new Database.UserContext(_config))
+                using (var db = new Database.DatabaseContext(_config))
                 {
                     var userRelease = new List<string>() { "users" };
                     var cards = db.Cards.AsQueryable().AsSplitQuery().Where(x => x.Character == oldId);
@@ -330,7 +330,7 @@ namespace Sanakan.Api.Controllers
         {
             var exe = new Executable($"update cards-{id} img", new Task<Task>(async () =>
             {
-                using (var db = new Database.UserContext(_config))
+                using (var db = new Database.DatabaseContext(_config))
                 {
                     var userRelease = new List<string>() { "users" };
                     var cards = db.Cards.AsQueryable().AsSplitQuery().Where(x => x.Character == id);
@@ -390,7 +390,7 @@ namespace Sanakan.Api.Controllers
 
             var exe = new Executable($"update cards-{id}", new Task<Task>(async () =>
                 {
-                    using (var db = new Database.UserContext(_config))
+                    using (var db = new Database.DatabaseContext(_config))
                     {
                         var userRelease = new List<string>() { "users" };
                         var cards = db.Cards.AsQueryable().AsSplitQuery().Where(x => x.Character == id);
@@ -427,7 +427,7 @@ namespace Sanakan.Api.Controllers
         [HttpGet("user/discord/{id}/wishlist"), Authorize(Policy = "Site")]
         public async Task<IEnumerable<Database.Models.Card>> GetUserWishlistAsync(ulong id)
         {
-            using (var db = new Database.UserContext(_config))
+            using (var db = new Database.DatabaseContext(_config))
             {
                 var user = await db.GetCachedFullUserAsync(id);
                 if (user == null)
@@ -458,7 +458,7 @@ namespace Sanakan.Api.Controllers
         [HttpGet("user/shinden/{id}/wishlist"), Authorize(Policy = "Site")]
         public async Task<IEnumerable<Database.Models.Card>> GetShindenUserWishlistAsync(ulong id)
         {
-            using (var db = new Database.UserContext(_config))
+            using (var db = new Database.DatabaseContext(_config))
             {
                 var user = await db.GetCachedFullUserByShindenIdAsync(id);
                 if (user == null)
@@ -488,7 +488,7 @@ namespace Sanakan.Api.Controllers
         [HttpGet("cards/tag/{tag}"), Authorize(Policy = "Site")]
         public async Task<IEnumerable<Database.Models.Card>> GetCardsWithTagAsync(string tag)
         {
-            using (var db = new Database.UserContext(_config))
+            using (var db = new Database.DatabaseContext(_config))
             {
                 return await db.Cards.Include(x => x.ArenaStats).Include(x => x.TagList).Where(x => x.TagList.Any(c => c.Name.Equals(tag, StringComparison.CurrentCultureIgnoreCase))).AsNoTracking().ToListAsync();
             }
@@ -506,7 +506,7 @@ namespace Sanakan.Api.Controllers
         {
             if (!System.IO.File.Exists($"{Services.Dir.CardsMiniatures}/{id}.webp") || !System.IO.File.Exists($"{Services.Dir.Cards}/{id}.webp") || !System.IO.File.Exists($"{Services.Dir.CardsInProfiles}/{id}.webp"))
             {
-                using (var db = new Database.UserContext(_config))
+                using (var db = new Database.DatabaseContext(_config))
                 {
                     var card = await db.Cards.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id);
                     if (card == null)
@@ -561,7 +561,7 @@ namespace Sanakan.Api.Controllers
                 return;
             }
 
-            using (var db = new Database.UserContext(_config))
+            using (var db = new Database.DatabaseContext(_config))
             {
                 var user = await db.GetCachedFullUserAsync(id);
                 if (user == null)
@@ -572,7 +572,7 @@ namespace Sanakan.Api.Controllers
 
                 var exe = new Executable($"api-packet u{id}", new Task<Task>(async () =>
                 {
-                    using (var dbs = new Database.UserContext(_config))
+                    using (var dbs = new Database.DatabaseContext(_config))
                     {
                         var botUser = await dbs.GetUserOrCreateAsync(id);
 
@@ -620,7 +620,7 @@ namespace Sanakan.Api.Controllers
                 return null;
             }
 
-            using (var db = new Database.UserContext(_config))
+            using (var db = new Database.DatabaseContext(_config))
             {
                 var user = await db.GetCachedFullUserByShindenIdAsync(id);
                 if (user == null)
@@ -632,7 +632,7 @@ namespace Sanakan.Api.Controllers
                 var discordId = user.Id;
                 var exe = new Executable($"api-packet u{discordId}", new Task<Task>(async () =>
                 {
-                    using (var dbs = new Database.UserContext(_config))
+                    using (var dbs = new Database.DatabaseContext(_config))
                     {
                         var botUser = await dbs.GetUserOrCreateAsync(discordId);
 
@@ -696,7 +696,7 @@ namespace Sanakan.Api.Controllers
             }
 
             ulong discordId = 0;
-            using (var db = new Database.UserContext(_config))
+            using (var db = new Database.DatabaseContext(_config))
             {
                 var bUser = await db.Users.AsQueryable().Where(x => x.Shinden == id).Include(x => x.GameDeck).ThenInclude(x => x.Cards).AsNoTracking().AsSplitQuery().FirstOrDefaultAsync();
                 if (bUser == null)
@@ -720,7 +720,7 @@ namespace Sanakan.Api.Controllers
 
             var exe = new Executable($"api-packet-open u{discordId}", new Task<Task>(async () =>
             {
-                using (var db = new Database.UserContext(_config))
+                using (var db = new Database.DatabaseContext(_config))
                 {
                     var botUser = await db.GetUserOrCreateAsync(discordId);
 
@@ -773,7 +773,7 @@ namespace Sanakan.Api.Controllers
                 {
                     string bPackName = "";
                     var cards = new List<Card>();
-                    using (var db = new Database.UserContext(_config))
+                    using (var db = new Database.DatabaseContext(_config))
                     {
                         var botUserCh = await db.GetCachedFullUserAsync(discordId);
                         if (botUserCh == null)
@@ -802,7 +802,7 @@ namespace Sanakan.Api.Controllers
 
                     var exe = new Executable($"api-packet-open u{discordId}", new Task<Task>(async () =>
                     {
-                        using (var db = new Database.UserContext(_config))
+                        using (var db = new Database.DatabaseContext(_config))
                         {
                             var botUser = await db.GetUserOrCreateAsync(discordId);
 
@@ -869,7 +869,7 @@ namespace Sanakan.Api.Controllers
             {
                 if (ulong.TryParse(currUser.Claims.First(x => x.Type == "DiscordId").Value, out var discordId))
                 {
-                    using (var db = new Database.UserContext(_config))
+                    using (var db = new Database.DatabaseContext(_config))
                     {
                         var botUserCh = await db.GetCachedFullUserAsync(discordId);
                         if (botUserCh == null)
@@ -894,7 +894,7 @@ namespace Sanakan.Api.Controllers
 
                     var exe = new Executable($"api-deck u{discordId}", new Task<Task>(async () =>
                     {
-                        using (var db = new Database.UserContext(_config))
+                        using (var db = new Database.DatabaseContext(_config))
                         {
                             var botUser = await db.GetUserOrCreateAsync(discordId);
                             var thisCard = botUser.GameDeck.Cards.FirstOrDefault(x => x.Id == wid);

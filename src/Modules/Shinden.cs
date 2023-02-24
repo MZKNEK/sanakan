@@ -142,7 +142,7 @@ namespace Sanakan.Modules
             var usr = user ?? Context.User as SocketGuildUser;
             if (usr == null) return;
 
-            using (var db = new Database.UserContext(Config))
+            using (var db = new Database.DatabaseContext(Config))
             {
                 var botUser = await db.GetCachedFullUserAsync(usr.Id);
                 if (botUser == null)
@@ -203,7 +203,7 @@ namespace Sanakan.Modules
                     return;
                 }
 
-                using (var db = new Database.UserContext(Config))
+                using (var db = new Database.DatabaseContext(Config))
                 {
                     var anyUser = await db.Users.AsQueryable().AsNoTracking().FirstOrDefaultAsync(x => x.Shinden == shindenId);
                     if (anyUser != null)

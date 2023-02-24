@@ -136,7 +136,7 @@ namespace Sanakan.Services
 #endif
         }
 
-        private async Task CyclicCheckAsync(Database.UserContext context, Database.GuildConfigContext guildContext)
+        private async Task CyclicCheckAsync(Database.DatabaseContext context)
         {
             var subs = context.TimeStatuses.AsNoTracking().FromCache(new[] { "users" }).Where(x => x.Type.IsSubType());
             foreach (var sub in subs)
@@ -148,7 +148,7 @@ namespace Sanakan.Services
                 switch (sub.Type)
                 {
                     case StatusType.Globals:
-                        var guildConfig = await guildContext.GetCachedGuildFullConfigAsync(sub.Guild);
+                        var guildConfig = await context.GetCachedGuildFullConfigAsync(sub.Guild);
                         await RemoveRoleAsync(guild, guildConfig?.GlobalEmotesRole ?? 0, sub.UserId);
                         break;
 
