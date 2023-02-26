@@ -689,5 +689,19 @@ namespace Sanakan.Extensions
         }
 
         public static List<T> ToRealList<T>(this IEnumerable<(T, int)> chances) => chances.ToRealEnumerable().ToList();
+
+        public static List<(ItemType, float)> GetChances(this IEnumerable<ItemType> list)
+        {
+            var chances = new List<(ItemType, float)>();
+            float all = list.Count();
+
+            foreach (var item in list.Distinct())
+            {
+                float cnt = list.Count(x => x == item);
+                chances.Add((item, cnt / (all / 100)));
+            }
+
+            return chances.ToList();
+        }
     }
 }

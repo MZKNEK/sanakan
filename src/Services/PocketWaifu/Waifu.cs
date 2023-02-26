@@ -62,121 +62,108 @@ namespace Sanakan.Services.PocketWaifu
 
         private static IEnumerable<ItemType> _ultimateExpeditionItems = new List<(ItemType, int)>
         {
-            (ItemType.FigureBodyPart,           9),
-            (ItemType.FigureClothesPart,        9),
-            (ItemType.FigureHeadPart,           9),
-            (ItemType.FigureLeftArmPart,        9),
-            (ItemType.FigureLeftLegPart,        9),
-            (ItemType.FigureRightArmPart,       9),
-            (ItemType.FigureRightLegPart,       9),
-            (ItemType.FigureUniversalPart,      5),
-            (ItemType.FigureSkeleton,           6),
+            (ItemType.FigureBodyPart,           12),
+            (ItemType.FigureClothesPart,        12),
+            (ItemType.FigureHeadPart,           12),
+            (ItemType.FigureLeftArmPart,        12),
+            (ItemType.FigureLeftLegPart,        12),
+            (ItemType.FigureRightArmPart,       12),
+            (ItemType.FigureRightLegPart,       12),
+            (ItemType.FigureSkeleton,           8),
+            (ItemType.FigureUniversalPart,      6),
             (ItemType.LotteryTicket,            1),
         }.ToRealList();
 
         private static IEnumerable<ItemType> _ultimateExpeditionHardcoreItems = new List<(ItemType, int)>
         {
-            (ItemType.FigureBodyPart,           8),
-            (ItemType.FigureClothesPart,        8),
-            (ItemType.FigureHeadPart,           8),
-            (ItemType.FigureLeftArmPart,        8),
-            (ItemType.FigureLeftLegPart,        8),
-            (ItemType.FigureRightArmPart,       8),
-            (ItemType.FigureRightLegPart,       8),
-            (ItemType.FigureUniversalPart,      7),
-            (ItemType.FigureSkeleton,           7),
-            (ItemType.LotteryTicket,            4),
-            (ItemType.IncreaseUltimateAttack,   3),
-            (ItemType.IncreaseUltimateDefence,  3),
+            (ItemType.FigureBodyPart,           12),
+            (ItemType.FigureClothesPart,        12),
+            (ItemType.FigureHeadPart,           12),
+            (ItemType.FigureLeftArmPart,        12),
+            (ItemType.FigureLeftLegPart,        12),
+            (ItemType.FigureRightArmPart,       12),
+            (ItemType.FigureRightLegPart,       12),
+            (ItemType.FigureUniversalPart,      9),
+            (ItemType.FigureSkeleton,           9),
+            (ItemType.IncreaseUltimateAttack,   5),
+            (ItemType.IncreaseUltimateDefence,  5),
+            (ItemType.LotteryTicket,            3),
             (ItemType.IncreaseUltimateHealth,   1),
         }.ToRealList();
 
-        private static Dictionary<CardExpedition, Dictionary<ItemType, Tuple<int, int>>> _chanceOfItemsInExpedition = new Dictionary<CardExpedition, Dictionary<ItemType, Tuple<int, int>>>
+        private static Dictionary<CardExpedition, IEnumerable<ItemType>> _itemChancesOnExpedition = new Dictionary<CardExpedition, IEnumerable<ItemType>>
         {
-            {CardExpedition.NormalItemWithExp, new Dictionary<ItemType, Tuple<int, int>>
+            {CardExpedition.NormalItemWithExp, new List<(ItemType, int)>
                 {
-                    {ItemType.AffectionRecoverySmall,   new Tuple<int, int>(0,    4049)},
-                    {ItemType.AffectionRecoveryNormal,  new Tuple<int, int>(4049, 6949)},
-                    {ItemType.DereReRoll,               new Tuple<int, int>(6949, 7699)},
-                    {ItemType.CardParamsReRoll,         new Tuple<int, int>(7699, 8559)},
-                    {ItemType.AffectionRecoveryBig,     new Tuple<int, int>(8559, 9419)},
-                    {ItemType.AffectionRecoveryGreat,   new Tuple<int, int>(9419, 9729)},
-                    {ItemType.IncreaseUpgradeCnt,       new Tuple<int, int>(9729, 9769)},
-                    {ItemType.IncreaseExpSmall,         new Tuple<int, int>(9769, 10000)},
-                    {ItemType.IncreaseExpBig,           new Tuple<int, int>(-1,   -2)},
-                    {ItemType.BetterIncreaseUpgradeCnt, new Tuple<int, int>(-3,   -4)},
-                }
+                    (ItemType.AffectionRecoverySmall,   50),
+                    (ItemType.AffectionRecoveryNormal,  37),
+                    (ItemType.DereReRoll,               10),
+                    (ItemType.CardParamsReRoll,         10),
+                    (ItemType.AffectionRecoveryBig,     10),
+                    (ItemType.AffectionRecoveryGreat,   4),
+                    (ItemType.IncreaseExpSmall,         3),
+                    (ItemType.IncreaseUpgradeCnt,       1),
+                }.ToRealList()
             },
-            {CardExpedition.ExtremeItemWithExp, new Dictionary<ItemType, Tuple<int, int>>
+            {CardExpedition.ExtremeItemWithExp, new List<(ItemType, int)>
                 {
-                    {ItemType.AffectionRecoverySmall,   new Tuple<int, int>(-1,   -2)},
-                    {ItemType.AffectionRecoveryNormal,  new Tuple<int, int>(0,    3499)},
-                    {ItemType.DereReRoll,               new Tuple<int, int>(-3,   -4)},
-                    {ItemType.CardParamsReRoll,         new Tuple<int, int>(-5,   -6)},
-                    {ItemType.AffectionRecoveryBig,     new Tuple<int, int>(3499, 6299)},
-                    {ItemType.AffectionRecoveryGreat,   new Tuple<int, int>(6299, 7499)},
-                    {ItemType.IncreaseUpgradeCnt,       new Tuple<int, int>(7499, 7799)},
-                    {ItemType.IncreaseExpSmall,         new Tuple<int, int>(7799, 8599)},
-                    {ItemType.IncreaseExpBig,           new Tuple<int, int>(8599, 9799)},
-                    {ItemType.BetterIncreaseUpgradeCnt, new Tuple<int, int>(9799, 10000)},
-                }
+                    (ItemType.AffectionRecoveryNormal,  36),
+                    (ItemType.AffectionRecoveryBig,     28),
+                    (ItemType.AffectionRecoveryGreat,   12),
+                    (ItemType.IncreaseExpBig,           12),
+                    (ItemType.IncreaseExpSmall,         8),
+                    (ItemType.IncreaseUpgradeCnt,       3),
+                    (ItemType.BetterIncreaseUpgradeCnt, 2),
+                }.ToRealList()
             },
-            {CardExpedition.DarkItems, new Dictionary<ItemType, Tuple<int, int>>
+            {CardExpedition.DarkItems, new List<(ItemType, int)>
                 {
-                    {ItemType.AffectionRecoverySmall,   new Tuple<int, int>(0,    1999)},
-                    {ItemType.AffectionRecoveryNormal,  new Tuple<int, int>(1999, 5999)},
-                    {ItemType.DereReRoll,               new Tuple<int, int>(-1,   -2)},
-                    {ItemType.CardParamsReRoll,         new Tuple<int, int>(5999, 6449)},
-                    {ItemType.AffectionRecoveryBig,     new Tuple<int, int>(6449, 8149)},
-                    {ItemType.AffectionRecoveryGreat,   new Tuple<int, int>(8149, 8949)},
-                    {ItemType.IncreaseUpgradeCnt,       new Tuple<int, int>(8949, 9049)},
-                    {ItemType.IncreaseExpSmall,         new Tuple<int, int>(9049, 9849)},
-                    {ItemType.IncreaseExpBig,           new Tuple<int, int>(-3,   -4)},
-                    {ItemType.BetterIncreaseUpgradeCnt, new Tuple<int, int>(9849, 10000)},
-                }
+                    (ItemType.AffectionRecoveryNormal,  52),
+                    (ItemType.AffectionRecoverySmall,   26),
+                    (ItemType.AffectionRecoveryBig,     22),
+                    (ItemType.AffectionRecoveryGreat,   11),
+                    (ItemType.IncreaseExpSmall,         10),
+                    (ItemType.CardParamsReRoll,         6),
+                    (ItemType.BetterIncreaseUpgradeCnt, 2),
+                    (ItemType.IncreaseUpgradeCnt,       1),
+                }.ToRealList()
             },
-            {CardExpedition.DarkItemWithExp, new Dictionary<ItemType, Tuple<int, int>>
+            {CardExpedition.DarkItemWithExp, new List<(ItemType, int)>
                 {
-                    {ItemType.AffectionRecoverySmall,   new Tuple<int, int>(0,    2499)},
-                    {ItemType.AffectionRecoveryNormal,  new Tuple<int, int>(2499, 5999)},
-                    {ItemType.DereReRoll,               new Tuple<int, int>(5999, 6999)},
-                    {ItemType.CardParamsReRoll,         new Tuple<int, int>(6999, 7199)},
-                    {ItemType.AffectionRecoveryBig,     new Tuple<int, int>(7199, 8499)},
-                    {ItemType.AffectionRecoveryGreat,   new Tuple<int, int>(8499, 9099)},
-                    {ItemType.IncreaseUpgradeCnt,       new Tuple<int, int>(9099, 9199)},
-                    {ItemType.IncreaseExpSmall,         new Tuple<int, int>(-1,   -2)},
-                    {ItemType.IncreaseExpBig,           new Tuple<int, int>(9199,  10000)},
-                    {ItemType.BetterIncreaseUpgradeCnt, new Tuple<int, int>(-3,   -4)},
-                }
+                    (ItemType.AffectionRecoveryNormal,  47),
+                    (ItemType.AffectionRecoverySmall,   32),
+                    (ItemType.AffectionRecoveryBig,     17),
+                    (ItemType.DereReRoll,               13),
+                    (ItemType.IncreaseExpBig,           11),
+                    (ItemType.AffectionRecoveryGreat,   8),
+                    (ItemType.CardParamsReRoll,         3),
+                    (ItemType.IncreaseUpgradeCnt,       1),
+                }.ToRealList()
             },
-            {CardExpedition.LightItems, new Dictionary<ItemType, Tuple<int, int>>
+            {CardExpedition.LightItems, new List<(ItemType, int)>
                 {
-                    {ItemType.AffectionRecoverySmall,   new Tuple<int, int>(0,    3799)},
-                    {ItemType.AffectionRecoveryNormal,  new Tuple<int, int>(3799, 6699)},
-                    {ItemType.DereReRoll,               new Tuple<int, int>(-1,   -2)},
-                    {ItemType.CardParamsReRoll,         new Tuple<int, int>(6699, 7199)},
-                    {ItemType.AffectionRecoveryBig,     new Tuple<int, int>(7199, 8199)},
-                    {ItemType.AffectionRecoveryGreat,   new Tuple<int, int>(8199, 8699)},
-                    {ItemType.IncreaseUpgradeCnt,       new Tuple<int, int>(8699, 8799)},
-                    {ItemType.IncreaseExpSmall,         new Tuple<int, int>(8799, 9899)},
-                    {ItemType.IncreaseExpBig,           new Tuple<int, int>(-3,   -4)},
-                    {ItemType.BetterIncreaseUpgradeCnt, new Tuple<int, int>(9899, 10000)},
-                }
+                    (ItemType.AffectionRecoverySmall,   50),
+                    (ItemType.AffectionRecoveryNormal,  38),
+                    (ItemType.IncreaseExpSmall,         15),
+                    (ItemType.AffectionRecoveryBig,     13),
+                    (ItemType.AffectionRecoveryGreat,   7),
+                    (ItemType.CardParamsReRoll,         6),
+                    (ItemType.IncreaseUpgradeCnt,       2),
+                    (ItemType.BetterIncreaseUpgradeCnt, 1),
+                }.ToRealList()
             },
-            {CardExpedition.LightItemWithExp, new Dictionary<ItemType, Tuple<int, int>>
+            {CardExpedition.LightItemWithExp, new List<(ItemType, int)>
                 {
-                    {ItemType.AffectionRecoverySmall,   new Tuple<int, int>(0,    3799)},
-                    {ItemType.AffectionRecoveryNormal,  new Tuple<int, int>(3799, 6399)},
-                    {ItemType.DereReRoll,               new Tuple<int, int>(6399, 7399)},
-                    {ItemType.CardParamsReRoll,         new Tuple<int, int>(7399, 7899)},
-                    {ItemType.AffectionRecoveryBig,     new Tuple<int, int>(7899, 8899)},
-                    {ItemType.AffectionRecoveryGreat,   new Tuple<int, int>(8899, 9399)},
-                    {ItemType.IncreaseUpgradeCnt,       new Tuple<int, int>(9399, 9499)},
-                    {ItemType.IncreaseExpSmall,         new Tuple<int, int>(-1,   -2)},
-                    {ItemType.IncreaseExpBig,           new Tuple<int, int>(9499, 10000)},
-                    {ItemType.BetterIncreaseUpgradeCnt, new Tuple<int, int>(-3,   -4)},
-                }
-            }
+                    (ItemType.AffectionRecoverySmall,   49),
+                    (ItemType.AffectionRecoveryNormal,  34),
+                    (ItemType.AffectionRecoveryBig,     14),
+                    (ItemType.DereReRoll,               13),
+                    (ItemType.AffectionRecoveryGreat,   7),
+                    (ItemType.CardParamsReRoll,         6),
+                    (ItemType.IncreaseExpBig,           6),
+                    (ItemType.IncreaseUpgradeCnt,       1),
+                }.ToRealList()
+            },
         };
 
         private Events _events;
@@ -315,8 +302,8 @@ namespace Sanakan.Services.PocketWaifu
         {
             var num = Fun.GetRandomValue(1000);
             if (num < 2) return ItemType.IncreaseExpSmall;
-            if (num < 12) return ItemType.BetterIncreaseUpgradeCnt;
-            if (num < 25) return ItemType.IncreaseUpgradeCnt;
+            if (num < 8) return ItemType.BetterIncreaseUpgradeCnt;
+            if (num < 22) return ItemType.IncreaseUpgradeCnt;
             if (num < 70) return ItemType.AffectionRecoveryGreat;
             if (num < 120) return ItemType.AffectionRecoveryBig;
             if (num < 180) return ItemType.CardParamsReRoll;
@@ -2003,6 +1990,23 @@ namespace Sanakan.Services.PocketWaifu
             return value + (duration * baseValue);
         }
 
+        public List<(ItemType, float)> GetItemChancesFromExpedition(CardExpedition expedition)
+        {
+            switch (expedition)
+            {
+                case CardExpedition.UltimateEasy:
+                case CardExpedition.UltimateMedium:
+                case CardExpedition.UltimateHard:
+                    return _ultimateExpeditionItems.GetChances();
+
+                case CardExpedition.UltimateHardcore:
+                    return _ultimateExpeditionHardcoreItems.GetChances();
+
+                default:
+                    return _itemChancesOnExpedition[expedition].GetChances();
+            }
+        }
+
         private Item RandomizeItemForExpedition(CardExpedition expedition)
         {
             var quality = Quality.Broken;
@@ -2022,54 +2026,9 @@ namespace Sanakan.Services.PocketWaifu
                     return Fun.GetOneRandomFrom(_ultimateExpeditionHardcoreItems).ToItem(1, quality);
 
                 default:
-                break;
+                    return Fun.GetOneRandomFrom(_itemChancesOnExpedition[expedition]).ToItem(1, quality);
             }
 
-            var c = _chanceOfItemsInExpedition[expedition];
-            switch (Fun.GetRandomValue(10000))
-            {
-                case int n when (n < c[ItemType.AffectionRecoverySmall].Item2
-                                && n >= c[ItemType.AffectionRecoverySmall].Item1):
-                    return ItemType.AffectionRecoverySmall.ToItem(1, quality);
-
-                case int n when (n < c[ItemType.AffectionRecoveryNormal].Item2
-                                && n >= c[ItemType.AffectionRecoveryNormal].Item1):
-                    return ItemType.AffectionRecoveryNormal.ToItem(1, quality);
-
-                case int n when (n < c[ItemType.DereReRoll].Item2
-                                && n >= c[ItemType.DereReRoll].Item1):
-                    return ItemType.DereReRoll.ToItem(1, quality);
-
-                case int n when (n < c[ItemType.CardParamsReRoll].Item2
-                                && n >= c[ItemType.CardParamsReRoll].Item1):
-                    return ItemType.CardParamsReRoll.ToItem(1, quality);
-
-                case int n when (n < c[ItemType.AffectionRecoveryBig].Item2
-                                && n >= c[ItemType.AffectionRecoveryBig].Item1):
-                    return ItemType.AffectionRecoveryBig.ToItem(1, quality);
-
-                case int n when (n < c[ItemType.AffectionRecoveryGreat].Item2
-                                && n >= c[ItemType.AffectionRecoveryGreat].Item1):
-                    return ItemType.AffectionRecoveryGreat.ToItem(1, quality);
-
-                case int n when (n < c[ItemType.IncreaseUpgradeCnt].Item2
-                                && n >= c[ItemType.IncreaseUpgradeCnt].Item1):
-                    return ItemType.IncreaseUpgradeCnt.ToItem(1, quality);
-
-                case int n when (n < c[ItemType.IncreaseExpSmall].Item2
-                                && n >= c[ItemType.IncreaseExpSmall].Item1):
-                    return ItemType.IncreaseExpSmall.ToItem(1, quality);
-
-                case int n when (n < c[ItemType.IncreaseExpBig].Item2
-                                && n >= c[ItemType.IncreaseExpBig].Item1):
-                    return ItemType.IncreaseExpBig.ToItem(1, quality);
-
-                case int n when (n < c[ItemType.BetterIncreaseUpgradeCnt].Item2
-                                && n >= c[ItemType.BetterIncreaseUpgradeCnt].Item1):
-                    return ItemType.BetterIncreaseUpgradeCnt.ToItem(1, quality);
-
-                default: return null;
-            }
         }
 
         private bool CheckChanceForItemInExpedition(int currItem, int maxItem, CardExpedition expedition)
