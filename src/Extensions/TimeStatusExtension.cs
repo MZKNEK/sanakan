@@ -296,5 +296,12 @@ namespace Sanakan.Extensions
 
             return $"{status.Type.Name()} do `{dateValue}`";
         }
+
+        public static TimeStatus Sub(this TimeStatus status, TimeSpan span)
+        {
+            var newStatus = status.Type.NewTimeStatus();
+            newStatus.EndsAt = status.EndsAt - span;
+            return newStatus;
+        }
     }
 }

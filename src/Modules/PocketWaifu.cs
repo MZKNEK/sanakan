@@ -1658,9 +1658,21 @@ namespace Sanakan.Modules
                     botuser.TimeStatuses.Add(freeCard);
                 }
 
-                if (freeCard.IsActive())
+                var ultimateCards = botuser.GameDeck.Cards.Where(x => x.FromFigure).ToList();
+                var cnt = ultimateCards.Count;
+                if (cnt > 5) cnt = 5;
+
+                cnt += ultimateCards.Any(x => x.Quality > Quality.Alpha)  ? 1 : 0;
+                cnt += ultimateCards.Any(x => x.Quality > Quality.Gamma)  ? 2 : 0;
+                cnt += ultimateCards.Any(x => x.Quality > Quality.Zeta)   ? 3 : 0;
+                cnt += ultimateCards.Any(x => x.Quality > Quality.Lambda) ? 5 : 0;
+                if (cnt > 12) cnt = 12;
+
+                var ns = freeCard.Sub(TimeSpan.FromHours(cnt));
+
+                if (ns.IsActive())
                 {
-                    var timeTo = (int)freeCard.RemainingMinutes();
+                    var timeTo = (int)ns.RemainingMinutes();
                     await ReplyAsync("", embed: $"{Context.User.Mention} możesz otrzymać następną darmową kartę dopiero za {timeTo / 60}h {timeTo % 60}m!".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
