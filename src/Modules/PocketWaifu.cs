@@ -3623,6 +3623,56 @@ namespace Sanakan.Modules
             }
         }
 
+        [Command("galerianka")]
+        [Alias("premium waifu")]
+        [Summary("serio?, przekupia kartę by została twoją waifu, zrobi to za skromne 1000 TC")]
+        [Remarks("12321"), RequireWaifuCommandChannel]
+        public async Task SetCardAsPremiumWaifuAsync([Summary("WID karty")] ulong wid)
+        {
+            var tcCost = 1000;
+            using (var db = new Database.DatabaseContext(Config))
+            {
+                var botuser = await db.GetUserOrCreateAsync(Context.User.Id);
+                if (botuser.TcCnt < tcCost)
+                {
+                    await ReplyAsync("", embed: $"{Context.User.Mention} nie posiadasz wystarczającej liczby TC!".ToEmbedMessage(EMType.Error).Build());
+                    return;
+                }
+
+                var thisCard = botuser.GameDeck.Cards.FirstOrDefault(x => x.Id == wid);
+                var prevCard = botuser.GameDeck.Cards.FirstOrDefault(x => x.Id == botuser.GameDeck.PremiumWaifu);
+                if (thisCard == null)
+                {
+                    await ReplyAsync("", embed: $"{Context.User.Mention} nie odnaleziono karty.".ToEmbedMessage(EMType.Error).Build());
+                    return;
+                }
+
+                if (prevCard != null && prevCard.Character != thisCard.Character)
+                {
+                    prevCard.Affection -= 50;
+                    _ = prevCard.CalculateCardPower();
+                }
+
+                if (botuser.GameDeck.Waifu != 0 && botuser.GameDeck.Waifu != thisCard.Character)
+                {
+                    var prevWaifus = botuser.GameDeck.Cards.Where(x => x.Character == botuser.GameDeck.Waifu);
+                    foreach (var card in prevWaifus)
+                    {
+                        card.Affection -= 15;
+                        _ = card.CalculateCardPower();
+                    }
+                }
+
+                botuser.TcCnt -= tcCost;
+                botuser.GameDeck.PremiumWaifu = thisCard.Id;
+                botuser.GameDeck.Waifu = thisCard.Character;
+
+                await db.SaveChangesAsync();
+
+                await ReplyAsync("", embed: $"Kupiłeś waifu, gratulacje {Context.User.Mention}!".ToEmbedMessage(EMType.Success).Build());
+            }
+        }
+
         [Command("waifu")]
         [Alias("husbando")]
         [Summary("pozwala ustawić sobie ulubioną postać na profilu (musisz posiadać jej kartę)")]
@@ -3640,10 +3690,14 @@ namespace Sanakan.Modules
                         foreach (var card in prevWaifus)
                         {
                             card.Affection -= 5;
+                            if (bUser.GameDeck.PremiumWaifu != 0)
+                                card.Affection -= 50;
+
                             _ = card.CalculateCardPower();
                         }
 
                         bUser.GameDeck.Waifu = 0;
+                        bUser.GameDeck.PremiumWaifu = 0;
                         await db.SaveChangesAsync();
                     }
 
@@ -3668,10 +3722,14 @@ namespace Sanakan.Modules
                 foreach (var card in allPrevWaifus)
                 {
                     card.Affection -= 5;
+                    if (bUser.GameDeck.PremiumWaifu != 0)
+                        card.Affection -= 50;
+
                     _ = card.CalculateCardPower();
                 }
 
                 bUser.GameDeck.Waifu = thisCard.Character;
+                bUser.GameDeck.PremiumWaifu = 0;
                 await db.SaveChangesAsync();
 
                 QueryCacheManager.ExpireTag(new string[] { $"user-{bUser.Id}", "users" });

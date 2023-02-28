@@ -1,12 +1,12 @@
 ﻿#pragma warning disable 1591
 
-using Discord;
-using Sanakan.Database.Models;
-using Sanakan.Services;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Discord;
+using Sanakan.Database.Models;
+using Sanakan.Services;
 
 namespace Sanakan.Extensions
 {
@@ -65,6 +65,7 @@ namespace Sanakan.Extensions
                     DeckPower = 0,
                     PVPWinStreak = 0,
                     ItemsDropped = 0,
+                    PremiumWaifu = 0,
                     GlobalPVPRank = 0,
                     SeasonalPVPRank = 0,
                     CardsInGallery = 10,
@@ -381,6 +382,9 @@ namespace Sanakan.Extensions
 
         public static Card GetWaifuCard(this GameDeck deck)
         {
+            if (deck.PremiumWaifu != 0)
+                return deck.Cards.FirstOrDefault(x => x.Id == deck.PremiumWaifu);
+
             return deck.Cards.Where(x => x.Character == deck.Waifu)
                 .OrderBy(x => x.Rarity).ThenByDescending(x => x.Quality).FirstOrDefault();
         }
@@ -455,6 +459,12 @@ namespace Sanakan.Extensions
 
         public static void RemoveFromWaifu(this GameDeck deck, Card card)
         {
+            if (deck.PremiumWaifu == card.Id)
+            {
+                card.Affection -= 250;
+                deck.PremiumWaifu = 0;
+            }
+
             if (deck.Waifu == card.Character)
             {
                 card.Affection -= 25;
