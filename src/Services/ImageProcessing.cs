@@ -231,7 +231,7 @@ namespace Sanakan.Services
 
             if (botUser.GameDeck.Waifu != 0 && botUser.ShowWaifuInProfile)
             {
-                var tChar = botUser.GameDeck.Cards.OrderBy(x => x.Rarity).FirstOrDefault(x => x.Character == botUser.GameDeck.Waifu);
+                var tChar = botUser.GameDeck.GetWaifuCard();
                 if (tChar != null)
                 {
                     using (var cardImage = await GetWaifuInProfileCardAsync(tChar))
@@ -342,7 +342,7 @@ namespace Sanakan.Services
 
             if (botUser.GameDeck.Waifu != 0)
             {
-                var tChar = botUser.GameDeck.Cards.OrderBy(x => x.Rarity).FirstOrDefault(x => x.Character == botUser.GameDeck.Waifu);
+                var tChar = botUser.GameDeck.GetWaifuCard();
                 if (tChar != null)
                 {
                     using (var cardImage = await GetWaifuInProfileCardAsync(tChar))

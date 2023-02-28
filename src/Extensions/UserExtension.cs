@@ -379,6 +379,12 @@ namespace Sanakan.Extensions
             return "Wieśniak";
         }
 
+        public static Card GetWaifuCard(this GameDeck deck)
+        {
+            return deck.Cards.Where(x => x.Character == deck.Waifu)
+                .OrderBy(x => x.Rarity).ThenByDescending(x => x.Quality).FirstOrDefault();
+        }
+
         public static bool CanCreateDemon(this GameDeck deck) => deck.Karma <= -2000;
 
         public static bool CanCreateAngel(this GameDeck deck) => deck.Karma >= 2000;

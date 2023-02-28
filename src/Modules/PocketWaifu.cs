@@ -3811,7 +3811,7 @@ namespace Sanakan.Modules
 
                 if (bUser.GameDeck?.Waifu != 0)
                 {
-                    var tChar = bUser.GameDeck.Cards.FirstOrDefault(x => x.Character == bUser.GameDeck.Waifu);
+                    var tChar = bUser.GameDeck.GetWaifuCard();
                     if (tChar != null)
                     {
                         embed.WithFooter(new EmbedFooterBuilder().WithText($"{tChar.Name}"));
@@ -3876,7 +3876,7 @@ namespace Sanakan.Modules
 
                 if (bUser.GameDeck?.Waifu != 0)
                 {
-                    var tChar = bUser.GameDeck.Cards.OrderBy(x => x.Rarity).FirstOrDefault(x => x.Character == bUser.GameDeck.Waifu);
+                    var tChar = bUser.GameDeck.GetWaifuCard();
                     if (tChar != null)
                     {
                         var config = await db.GetCachedGuildFullConfigAsync(Context.Guild.Id);
