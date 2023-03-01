@@ -18,6 +18,10 @@ namespace Sanakan.Api.Models
         /// </summary>
         public ulong Id { get; set; }
         /// <summary>
+        /// Id posiadacza karty na discordzie
+        /// </summary>
+        public ulong DiscordId { get; set; }
+        /// <summary>
         /// Czy karta jest w talii
         /// </summary>
         public bool IsActive { get; set; }
@@ -175,6 +179,7 @@ namespace Sanakan.Api.Models
                 UltimateQuality = card.Quality,
                 CreatedAt = card.CreationDate,
                 CardPower = card.CardPower,
+                DiscordId = card.GameDeckId,
                 WhoWantsCount = card.WhoWantsCount,
                 Value = card.GetThreeStateMarketValue(),
                 ExpCntForNextLevel = card.ExpToUpgrade(),

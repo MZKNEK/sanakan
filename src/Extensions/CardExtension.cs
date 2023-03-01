@@ -310,7 +310,7 @@ namespace Sanakan.Extensions
 
         public static int GetMaxCardsRestartsOnStarType(this Card card)
         {
-            return  card.GetMaxStarsPerType() * card.GetRestartCntPerStar() * card.GetCardStarType();
+            return card.GetMaxStarsPerType() * card.GetRestartCntPerStar() * card.GetCardStarType();
         }
 
         public static int GetCardStarCount(this Card card)

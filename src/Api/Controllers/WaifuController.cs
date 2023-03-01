@@ -84,6 +84,50 @@ namespace Sanakan.Api.Controllers
         }
 
         /// <summary>
+        /// Pobiera x kart z przefiltrowanej listy wszystkich kart
+        /// </summary>
+        /// <param name="offset">przesunięcie</param>
+        /// <param name="count">liczba kart</param>
+        /// <param name="filter">filtry listy</param>
+        /// <returns>lista kart</returns>
+        [HttpPost("user/total/cards/{offset}/{count}")]
+        public async Task<FilteredCards> GetCardsWithOffsetAndFilterAsync(uint offset, uint count, [FromBody]CardsQueryFilter filter)
+        {
+            using (var db = new Database.DatabaseContext(_config))
+            {
+                var query = db.Cards.AsQueryable().AsSplitQuery().Include(x=> x.ArenaStats).Include(x => x.TagList).AsNoTracking();
+                if (!string.IsNullOrEmpty(filter.SearchText))
+                {
+                    query = query.Where(x => x.Name.Contains(filter.SearchText) || x.Title.Contains(filter.SearchText) || x.Id.ToString().Contains(filter.SearchText));
+                }
+
+                query = CardsQueryFilter.Use(filter.OrderBy, query);
+
+                var cards = (await query.FromCacheAsync("api-all-cards")).ToList();
+                if (filter.IncludeTags != null && filter.IncludeTags.Count > 0)
+                {
+                    if (filter.FilterTagsMethod == FilterTagsMethodType.And)
+                    {
+                        foreach (var iTag in filter.IncludeTags)
+                            cards = cards.Where(x => x.HasTag(iTag)).ToList();
+                    }
+                    else
+                    {
+                        cards = cards.Where(x => x.HasAnyTag(filter.IncludeTags)).ToList();
+                    }
+                }
+
+                if (filter.ExcludeTags != null)
+                {
+                    foreach (var eTag in filter.ExcludeTags)
+                        cards = cards.Where(x => !x.HasTag(eTag)).ToList();
+                }
+
+                return new FilteredCards{TotalCards = cards.Count, Cards = cards.Skip((int)offset).Take((int)count).ToView()};
+            }
+        }
+
+        /// <summary>
         /// Pobiera x kart z przefiltrowanej listy użytkownika
         /// </summary>
         /// <param name="id">id użytkownika shindena</param>
