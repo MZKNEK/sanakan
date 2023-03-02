@@ -141,7 +141,7 @@ namespace Sanakan.Services.PocketWaifu
                         MinRarity = Rarity.E,
                     };
                     user.GameDeck.BoosterPacks.Add(pack);
-                    return "Pakiet kart z loterii!";
+                    return $"Pakiet kart z loterii ({name})!";
                 }
 
                 case LotteryReward.CT:

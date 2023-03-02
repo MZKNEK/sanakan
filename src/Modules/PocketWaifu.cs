@@ -2763,7 +2763,7 @@ namespace Sanakan.Modules
 
                 QueryCacheManager.ExpireTag(new string[] { $"user-{bUser.Id}", "users" });
 
-                await ReplyAsync("", embed: $"{Context.User.Mention} wygrał na loterii: {rewardInfo}".ToEmbedMessage(EMType.Success).Build());
+                await ReplyAsync("", embed: $"{Context.User.Mention} wygrał na loterii: **{rewardInfo}**".ToEmbedMessage(EMType.Success).Build());
             }
         }
 
