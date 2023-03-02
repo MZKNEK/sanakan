@@ -105,6 +105,12 @@ namespace Sanakan.Modules
                 }
                 break;
 
+                case LotteryReward.FigurePartNS:
+                {
+                    chances = Lottery.GetPartNSChances().Select(x => (x.Item1.Name(), x.Item2)).OrderByDescending(x => x.Item2);
+                }
+                break;
+
                 case LotteryReward.WaifuFood:
                 {
                     chances = Lottery.GetFoodChances().Select(x => (x.Item1.Name(), x.Item2)).OrderByDescending(x => x.Item2);

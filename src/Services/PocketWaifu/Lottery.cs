@@ -16,7 +16,7 @@ namespace Sanakan.Services.PocketWaifu
         // other
         ReverseKarma, ExpForChest, TC, CT,
         // helpers
-        Quality, None
+        Quality, None, FigurePartNS
     }
 
     public class Lottery
@@ -54,6 +54,18 @@ namespace Sanakan.Services.PocketWaifu
             (ItemType.FigureRightLegPart,       1),
             (ItemType.FigureSkeleton,           15),
             (ItemType.FigureUniversalPart,      30),
+        }.ToRealList();
+
+        private static List<ItemType> _figurePartsNoSkeleton = new List<(ItemType, int)>
+        {
+            (ItemType.FigureBodyPart,           5),
+            (ItemType.FigureClothesPart,        5),
+            (ItemType.FigureHeadPart,           5),
+            (ItemType.FigureLeftArmPart,        5),
+            (ItemType.FigureLeftLegPart,        5),
+            (ItemType.FigureRightArmPart,       5),
+            (ItemType.FigureRightLegPart,       5),
+            (ItemType.FigureUniversalPart,      10),
         }.ToRealList();
 
         private static List<ItemType> _pills = new List<(ItemType, int)>
@@ -98,6 +110,7 @@ namespace Sanakan.Services.PocketWaifu
         }.ToRealList();
 
         public static List<(Quality, float)> GetPartQualityChances() => _figurePartsQuality.GetChances();
+        public static List<(ItemType, float)> GetPartNSChances() => _figurePartsNoSkeleton.GetChances();
         public static List<(LotteryReward, float)> GetRewardChances() => _rewardsPool.GetChances();
         public static List<(int, float)> GetMoneyRewardChances() => _moneyRewards.GetChances();
         public static List<(ItemType, float)> GetPartChances() => _figureParts.GetChances();
@@ -113,14 +126,17 @@ namespace Sanakan.Services.PocketWaifu
                 case LotteryReward.CardsNormal:
                 case LotteryReward.CardsFromSeason:
                 {
+                    var name = reward == LotteryReward.CardsFromSeason ? "Sezonowy"
+                        : (reward == LotteryReward.CardsBig ? "Duży" : "Normalny");
+
                     var pack = new BoosterPack
                     {
                         Title = reward == LotteryReward.CardsFromSeason ? Fun.GetOneRandomFrom(_currentSeason): 0,
                         CardCnt = reward == LotteryReward.CardsBig ? 20 : 2,
                         RarityExcludedFromPack = new List<RarityExcluded>(),
                         Characters = new List<BoosterPackCharacter>(),
+                        Name = $"Pakiet kart z loterii ({name})",
                         CardSourceFromPack = CardSource.Lottery,
-                        Name = "Pakiet kart z loterii",
                         IsCardFromPackTradable = true,
                         MinRarity = Rarity.E,
                     };
@@ -159,9 +175,14 @@ namespace Sanakan.Services.PocketWaifu
 
                 case LotteryReward.FigurePart:
                 {
-                    var cnt = Fun.GetRandomValue(1, 10);
+                    var max = 10;
+                    var pool = _figureParts;
                     var quality = Fun.GetOneRandomFrom(_figurePartsQuality);
-                    var part = Fun.GetOneRandomFrom(_figureParts).ToItem(cnt, quality);
+                    if (quality > Quality.Jota) max = 2;
+                    else if (quality > Quality.Delta) max = 5;
+                    if (quality > Quality.Lambda) pool = _figurePartsNoSkeleton;
+                    var cnt = Fun.GetRandomValue(1, max);
+                    var part = Fun.GetOneRandomFrom(pool).ToItem(cnt, quality);
                     user.GameDeck.AddItem(part);
                     return $"{part.Name} x{cnt}!";
                 }
