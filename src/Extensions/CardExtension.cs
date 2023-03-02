@@ -398,6 +398,7 @@ namespace Sanakan.Extensions
                 case CardSource.Figure: return "Figurka";
                 case CardSource.Expedition: return "Wyprawa";
                 case CardSource.ActivityShop: return "Kiosk";
+                case CardSource.Lottery: return "Loteria";
 
                 default:
                 case CardSource.Other: return "Inne";

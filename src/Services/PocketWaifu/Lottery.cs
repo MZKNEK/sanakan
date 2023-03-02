@@ -79,10 +79,10 @@ namespace Sanakan.Services.PocketWaifu
         private static List<ItemType> _food = new List<(ItemType, int)>
         {
             (ItemType.AffectionRecoveryNormal,  30),
-            (ItemType.AffectionRecoveryBig,     20),
             (ItemType.IncreaseExpSmall,         20),
+            (ItemType.AffectionRecoveryBig,     15),
+            (ItemType.IncreaseExpBig,           10),
             (ItemType.AffectionRecoveryGreat,   5),
-            (ItemType.IncreaseExpBig,           5),
         }.ToRealList();
 
         private static List<LotteryReward> _rewardsPool = new List<(LotteryReward, int)>
@@ -90,23 +90,23 @@ namespace Sanakan.Services.PocketWaifu
             (LotteryReward.ReverseKarma,    1),
             (LotteryReward.Scalpel,         2),
             (LotteryReward.TC,              15),
+            (LotteryReward.CardsFromSeason, 20),
             (LotteryReward.CT,              25),
             (LotteryReward.ExpForChest,     30),
             (LotteryReward.CardsBig,        30),
-            (LotteryReward.CardsFromSeason, 35),
             (LotteryReward.FigurePart,      40),
             (LotteryReward.RandomPill,      45),
             (LotteryReward.WaifuFood,       55),
-            (LotteryReward.CardsNormal,     125),
+            (LotteryReward.CardsNormal,     115),
         }.ToRealList();
 
         private static List<int> _moneyRewards = new List<(int, int)>
         {
-            (10,    60),
-            (50,    40),
-            (100,   10),
+            (50,    60),
+            (100,   40),
+            (150,   10),
             (200,   5),
-            (250,   1),
+            (300,   1),
         }.ToRealList();
 
         public static List<(Quality, float)> GetPartQualityChances() => _figurePartsQuality.GetChances();
