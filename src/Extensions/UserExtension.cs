@@ -342,6 +342,17 @@ namespace Sanakan.Extensions
             return $"**{coins.ToString("+0;-#")}** PC **{gRank.ToString("+0;-#")}** GR  **{sRank.ToString("+0;-#")}** SR";
         }
 
+        public static void AddItem(this GameDeck deck, Item item)
+        {
+            var thisItem = deck.Items.FirstOrDefault(x => x.Type == item.Type && x.Quality == item.Quality);
+            if (thisItem == null)
+            {
+                thisItem = item;
+                deck.Items.Add(thisItem);
+            }
+            else thisItem.Count += item.Count;
+        }
+
         public static double GetDeckPower(this GameDeck deck) => deck.DeckPower;
 
         public static bool NeedToSetDeckAgain(this GameDeck deck) => deck.DeckPower == -1;

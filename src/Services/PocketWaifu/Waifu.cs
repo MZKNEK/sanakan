@@ -699,14 +699,7 @@ namespace Sanakan.Services.PocketWaifu
                 }
                 else
                 {
-                    var inUserItem = bUser.GameDeck.Items.FirstOrDefault(x => x.Type == thisItem.Item.Type && x.Quality == thisItem.Item.Quality);
-                    if (inUserItem == null)
-                    {
-                        inUserItem = thisItem.Item.Type.ToItem(itemCount, thisItem.Item.Quality);
-                        bUser.GameDeck.Items.Add(inUserItem);
-                    }
-                    else inUserItem.Count += itemCount;
-
+                    bUser.GameDeck.AddItem(thisItem.Item.Type.ToItem(itemCount, thisItem.Item.Quality));
                     IncreaseMoneySpentOnCookies(type, bUser, realCost);
                 }
 
@@ -1902,18 +1895,12 @@ namespace Sanakan.Services.PocketWaifu
 
                     minAff += newItem.BaseAffection();
 
-                    var thisItem = user.GameDeck.Items.FirstOrDefault(x => x.Type == newItem.Type && x.Quality == newItem.Quality);
-                    if (thisItem == null)
-                    {
-                        thisItem = newItem;
-                        user.GameDeck.Items.Add(thisItem);
-                    }
-                    else ++thisItem.Count;
+                    user.GameDeck.AddItem(newItem);
 
-                    if (!items.ContainsKey(thisItem.Name))
-                        items.Add(thisItem.Name, 0);
+                    if (!items.ContainsKey(newItem.Name))
+                        items.Add(newItem.Name, 0);
 
-                    ++items[thisItem.Name];
+                    ++items[newItem.Name];
                 }
             }
 

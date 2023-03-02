@@ -1171,13 +1171,7 @@ namespace Sanakan.Modules
 
                 if (card.RestartCnt > 1 && card.RestartCnt % 10 == 0 && card.RestartCnt <= 100)
                 {
-                    var inUserItem = bUser.GameDeck.Items.FirstOrDefault(x => x.Type == ItemType.SetCustomImage);
-                    if (inUserItem == null)
-                    {
-                        inUserItem = ItemType.SetCustomImage.ToItem();
-                        bUser.GameDeck.Items.Add(inUserItem);
-                    }
-                    else inUserItem.Count++;
+                    bUser.GameDeck.AddItem(ItemType.SetCustomImage.ToItem());
                 }
 
                 await db.SaveChangesAsync();
@@ -1340,13 +1334,7 @@ namespace Sanakan.Modules
                         {
                             if (bUser.Stats.UpgradedToSSS % 10 == 0)
                             {
-                                var inUserItem = bUser.GameDeck.Items.FirstOrDefault(x => x.Type == ItemType.SetCustomImage);
-                                if (inUserItem == null)
-                                {
-                                    inUserItem = ItemType.SetCustomImage.ToItem();
-                                    bUser.GameDeck.Items.Add(inUserItem);
-                                }
-                                else inUserItem.Count++;
+                                bUser.GameDeck.AddItem(ItemType.SetCustomImage.ToItem());
                             }
                             ++bUser.Stats.UpgradedToSSS;
                         }
@@ -1821,13 +1809,7 @@ namespace Sanakan.Modules
                     }
 
                     var item = itmType.ToItem(1, itmQu);
-                    var thisItem = botuser.GameDeck.Items.FirstOrDefault(x => x.Type == item.Type && x.Quality == item.Quality);
-                    if (thisItem == null)
-                    {
-                        thisItem = item;
-                        botuser.GameDeck.Items.Add(thisItem);
-                    }
-                    else ++thisItem.Count;
+                    botuser.GameDeck.AddItem(item);
 
                     reward += $"+{item.Name}\n";
                 }
@@ -1939,13 +1921,7 @@ namespace Sanakan.Modules
                     }
 
                     var item = itmType.ToItem(1, itmQu);
-                    var thisItem = botuser.GameDeck.Items.FirstOrDefault(x => x.Type == item.Type && x.Quality == item.Quality);
-                    if (thisItem == null)
-                    {
-                        thisItem = item;
-                        botuser.GameDeck.Items.Add(thisItem);
-                    }
-                    else ++thisItem.Count;
+                    botuser.GameDeck.AddItem(item);
 
                     reward += $"+{item.Name}\n";
                 }
@@ -2756,6 +2732,38 @@ namespace Sanakan.Modules
                 QueryCacheManager.ExpireTag(new string[] { $"user-{bUser.Id}", "users" });
 
                 await ReplyAsync("", embed: $"{Context.User.Mention} powiększył swój limit kart w galerii do {bUser.GameDeck.CardsInGallery}.".ToEmbedMessage(EMType.Success).Build());
+            }
+        }
+
+        [Command("loteria")]
+        [Alias("lottery")]
+        [Summary("wybierasz się na loterie i liczysz że coś fajnego Ci z niej wypadnie (wymagana przepustka)")]
+        [Remarks(""), RequireWaifuCommandChannel]
+        public async Task GoToLotteryAsync()
+        {
+            using (var db = new Database.DatabaseContext(Config))
+            {
+                var bUser = await db.GetUserOrCreateAsync(Context.User.Id);
+                var ticket = bUser.GameDeck.Items.FirstOrDefault(x => x.Type == ItemType.LotteryTicket);
+                if (ticket == null)
+                {
+                    await ReplyAsync("", embed: $"{Context.User.Mention} niestety nie masz przepustki.".ToEmbedMessage(EMType.Error).Build());
+                    return;
+                }
+
+                if (ticket.Count == 1)
+                {
+                    bUser.GameDeck.Items.Remove(ticket);
+                }
+                else ticket.Count--;
+
+                var rewardInfo = Lottery.GetAndApplyReward(bUser);
+
+                await db.SaveChangesAsync();
+
+                QueryCacheManager.ExpireTag(new string[] { $"user-{bUser.Id}", "users" });
+
+                await ReplyAsync("", embed: $"{Context.User.Mention} wygrał na loterii: {rewardInfo}".ToEmbedMessage(EMType.Success).Build());
             }
         }
 

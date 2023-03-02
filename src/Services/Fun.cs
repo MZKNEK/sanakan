@@ -3,7 +3,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Security.Cryptography;
 using Discord.WebSocket;
 using Sanakan.Database.Models;
 using Sanakan.Extensions;
@@ -39,7 +38,8 @@ namespace Sanakan.Services
 
     public class Fun
     {
-        private static RNGCryptoServiceProvider _rand = new RNGCryptoServiceProvider();
+        // private static RNGCryptoServiceProvider _rand = new RNGCryptoServiceProvider();
+        private static Random _rand = new Random();
 
         private static List<string> _botReactions = new List<string>()
         {
@@ -61,19 +61,7 @@ namespace Sanakan.Services
 
         public static string GetRandomMuteReactionGif() => GetOneRandomFrom(_botReactions);
 
-        public static int GetRandomValue(int min, int max)
-        {
-            uint scale = uint.MaxValue;
-            while (scale == uint.MaxValue)
-            {
-                byte[] bytes = new byte[4];
-                _rand.GetBytes(bytes);
-
-                scale = BitConverter.ToUInt32(bytes, 0);
-            }
-
-            return (int)(min + ((max - min) * (scale / (double)uint.MaxValue)));
-        }
+        public static int GetRandomValue(int min, int max) => _rand.Next(min, max);
 
         public static bool TakeATry(int chance) => (GetRandomValue(chance*100) % chance) == 1;
 

@@ -85,6 +85,64 @@ namespace Sanakan.Modules
             await ReplyAsync("", embed: msg.Build());
         }
 
+        [Command("lchances", RunMode = RunMode.Async)]
+        [Summary("wypisuje szanse z loterii")]
+        [Remarks("scalper")]
+        public async Task ShowItemChancesFromExpeditionAsync([Summary("konkrety")]LotteryReward r = LotteryReward.None)
+        {
+            IEnumerable<(string, float)> chances = null;
+            switch (r)
+            {
+                case LotteryReward.Quality:
+                {
+                    chances = Lottery.GetPartQualityChances().Select(x => (x.Item1.ToName(), x.Item2)).OrderByDescending(x => x.Item2);
+                }
+                break;
+
+                case LotteryReward.FigurePart:
+                {
+                    chances = Lottery.GetPartChances().Select(x => (x.Item1.Name(), x.Item2)).OrderByDescending(x => x.Item2);
+                }
+                break;
+
+                case LotteryReward.WaifuFood:
+                {
+                    chances = Lottery.GetFoodChances().Select(x => (x.Item1.Name(), x.Item2)).OrderByDescending(x => x.Item2);
+                }
+                break;
+
+                case LotteryReward.RandomPill:
+                {
+                    chances = Lottery.GetPillsChances().Select(x => (x.Item1.Name(), x.Item2)).OrderByDescending(x => x.Item2);
+                }
+                break;
+
+                case LotteryReward.TC:
+                case LotteryReward.CT:
+                {
+                    chances = Lottery.GetMoneyRewardChances().Select(x => (x.Item1.ToString(), x.Item2)).OrderByDescending(x => x.Item2);
+                }
+                break;
+
+                default:
+                {
+                    chances = Lottery.GetRewardChances().Select(x => (x.Item1.ToString(), x.Item2)).OrderByDescending(x => x.Item2);
+                }
+                break;
+            }
+
+            var msg = new EmbedBuilder
+            {
+                Color = EMType.Bot.Color(),
+                Title = $"Szanse z {r}",
+            };
+
+            foreach (var item in chances)
+                msg.Description += $"**{item.Item2.ToString("F")}%** - {item.Item1}\n";
+
+            await ReplyAsync("", embed: msg.Build());
+        }
+
         [Command("missingu", RunMode = RunMode.Async)]
         [Summary("generuje listę id użytkowników, których nie widzi bot na serwerach")]
         [Remarks("")]
@@ -945,13 +1003,7 @@ namespace Sanakan.Modules
             using (var db = new Database.DatabaseContext(Config))
             {
                 var botuser = await db.GetUserOrCreateAsync(user.Id);
-                var thisItem = botuser.GameDeck.Items.FirstOrDefault(x => x.Type == item.Type && x.Quality == item.Quality);
-                if (thisItem == null)
-                {
-                    thisItem = item;
-                    botuser.GameDeck.Items.Add(thisItem);
-                }
-                else thisItem.Count += count;
+                botuser.GameDeck.AddItem(item);
 
                 await db.SaveChangesAsync();
 
