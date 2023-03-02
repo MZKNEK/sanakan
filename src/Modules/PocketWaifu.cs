@@ -2736,9 +2736,9 @@ namespace Sanakan.Modules
         }
 
         [Command("loteria")]
-        [Alias("lottery")]
+        [Alias("lottery", "dej")]
         [Summary("wybierasz się na loterie i liczysz że coś fajnego Ci z niej wypadnie (wymagana przepustka)")]
-        [Remarks(""), RequireWaifuCommandChannel]
+        [Remarks(""), RequireAnyCommandChannelOrLevel(60)]
         public async Task GoToLotteryAsync()
         {
             using (var db = new Database.DatabaseContext(Config))
