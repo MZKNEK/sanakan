@@ -182,7 +182,7 @@ namespace Sanakan.Extensions
             if (ww.Count < 0)
                 ww.Count = 0;
 
-            if (ww.Name is null)
+            if (ww.Name != name)
                 ww.Name = name;
 
             return ww;
