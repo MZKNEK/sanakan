@@ -1047,7 +1047,8 @@ namespace Sanakan.Modules
                         return;
                     }
 
-                    mission.Count();
+                    if (pack.CardSourceFromPack != CardSource.Api)
+                        mission.Count();
 
                     if (pack.CardSourceFromPack == CardSource.Activity || pack.CardSourceFromPack == CardSource.Migration)
                     {
