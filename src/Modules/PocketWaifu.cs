@@ -2439,7 +2439,7 @@ namespace Sanakan.Modules
                 }
 
                 var usersStr = await _waifu.GetWhoWantsCardsStringAsync(wishlists, showNames, Context.Guild, Context.Client);
-                await ReplyAsync("", embed: $"**{thisCards.GetNameWithUrl()} chcą:**\n\n {usersStr}".TrimToLength(2000).ToEmbedMessage(EMType.Info).Build());
+                await ReplyAsync("", embed: $"**{thisCards.GetNameWithUrl()} chcą ({thisCards.WhoWantsCount}):**\n\n {usersStr}".TrimToLength(2000).ToEmbedMessage(EMType.Info).Build());
 
                 var exe = new Executable($"kc-check-{thisCards.Character}", new Task<Task>(async () =>
                 {
