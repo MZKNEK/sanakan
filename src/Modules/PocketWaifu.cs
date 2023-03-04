@@ -470,6 +470,7 @@ namespace Sanakan.Modules
                     case ItemType.FigureLeftLegPart:
                     case ItemType.FigureRightLegPart:
                     case ItemType.FigureClothesPart:
+                    case ItemType.FigureSkeleton:
                         if (!itemToExp) goto default;
                         break;
 
@@ -488,7 +489,7 @@ namespace Sanakan.Modules
                     return;
                 }
 
-                bool noCardOperation = item.Type.CanUseWithoutCard();
+                bool noCardOperation = item.Type.CanUseWithoutCard(itemToExp);
                 var card = bUser.GameDeck.Cards.FirstOrDefault(x => x.Id == wid);
                 if (card == null && !noCardOperation)
                 {
@@ -791,28 +792,6 @@ namespace Sanakan.Modules
                         embed.Description += $"Relacja wynosi: `{card.Affection.ToString("F")}`";
                         break;
 
-                    case ItemType.FigureSkeleton:
-                        if (card.Rarity != Rarity.SSS)
-                        {
-                            await ReplyAsync("", embed: $"{Context.User.Mention} karta musi być rangi **SSS**.".ToEmbedMessage(EMType.Error).Build());
-                            return;
-                        }
-                        if (bUser.GameDeck.Figures.Any(x => x.Character == card.Character))
-                        {
-                            await ReplyAsync("", embed: $"{Context.User.Mention} już posiadasz figurkę tej postaci.".ToEmbedMessage(EMType.Error).Build());
-                            return;
-                        }
-                        karmaChange -= 1;
-                        var figure = item.ToFigure(card);
-                        if (figure != null)
-                        {
-                            bUser.GameDeck.Figures.Add(figure);
-                            bUser.GameDeck.Cards.Remove(card);
-                        }
-                        embed.Description += $"Rozpoczęto tworzenie figurki.";
-                        _waifu.DeleteCardImageIfExist(card);
-                        break;
-
                     case ItemType.IncreaseUltimateAttack:
                         card.AttackBonus += itemCnt * 5;
                         karmaChange += 0.4 * itemCnt;
@@ -841,6 +820,38 @@ namespace Sanakan.Modules
                         karmaChange += 1.2 * itemCnt;
                         embed.Description += $"Zwiększono parametry karty!";
                         _waifu.DeleteCardImageIfExist(card);
+                        break;
+
+                    case ItemType.FigureSkeleton:
+                        if (itemToExp)
+                        {
+                            var expFromPart = item.ToExpForPart(activeFigure.SkeletonQuality);
+                            activeFigure.PartExp += expFromPart * itemCnt;
+
+                            embed.Description += $"Dodano do wybranej części figurki {expFromPart.ToString("F")} punktów konstrukcji. W sumie posiada ich {activeFigure.PartExp.ToString("F")}.";
+                        }
+                        else
+                        {
+                            if (card.Rarity != Rarity.SSS)
+                            {
+                                await ReplyAsync("", embed: $"{Context.User.Mention} karta musi być rangi **SSS**.".ToEmbedMessage(EMType.Error).Build());
+                                return;
+                            }
+                            if (bUser.GameDeck.Figures.Any(x => x.Character == card.Character))
+                            {
+                                await ReplyAsync("", embed: $"{Context.User.Mention} już posiadasz figurkę tej postaci.".ToEmbedMessage(EMType.Error).Build());
+                                return;
+                            }
+                            karmaChange -= 1;
+                            var figure = item.ToFigure(card);
+                            if (figure != null)
+                            {
+                                bUser.GameDeck.Figures.Add(figure);
+                                bUser.GameDeck.Cards.Remove(card);
+                            }
+                            embed.Description += $"Rozpoczęto tworzenie figurki.";
+                            _waifu.DeleteCardImageIfExist(card);
+                        }
                         break;
 
                     case ItemType.FigureHeadPart:

@@ -243,10 +243,13 @@ namespace Sanakan.Extensions
             }
         }
 
-        public static bool CanUseWithoutCard(this ItemType type)
+        public static bool CanUseWithoutCard(this ItemType type, bool toExp)
         {
             switch (type)
             {
+                case ItemType.FigureSkeleton:
+                    return toExp;
+
                 case ItemType.FigureHeadPart:
                 case ItemType.FigureBodyPart:
                 case ItemType.FigureClothesPart:
