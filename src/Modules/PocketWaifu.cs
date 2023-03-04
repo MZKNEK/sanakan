@@ -2279,7 +2279,7 @@ namespace Sanakan.Modules
         [Command("życzenia", RunMode = RunMode.Async)]
         [Alias("wishlist", "zyczenia")]
         [Summary("wyświetla liste życzeń użytkownika")]
-        [Remarks("Dzida tak tak tak"), RequireWaifuCommandChannel]
+        [Remarks("Dzida tak tak tak tak"), RequireWaifuCommandChannel]
         public async Task ShowWishlistAsync([Summary("użytkownik")]SocketGuildUser usr = null, [Summary("czy pokazać ulubione (true/false) domyślnie ukryte, wymaga podania użytkownika")]bool showFavs = false,
             [Summary("czy pokazać niewymienialne (true/false) domyślnie pokazane")] bool showBlocked = true, [Summary("czy zamienić oznaczenia na nicki?")]bool showNames = false, [Summary("czy dodać linki do profili?")]bool showShindenUrl = false)
         {
