@@ -2444,7 +2444,30 @@ namespace Sanakan.Modules
                 }
 
                 var usersStr = await _waifu.GetWhoWantsCardsStringAsync(wishlists, showNames, Context.Guild, Context.Client);
-                await ReplyAsync("", embed: $"**{thisCards.GetNameWithUrl()} chcą ({usersStr.Split('\n').Length}):**\n\n {usersStr}".TrimToLength(2000).ToEmbedMessage(EMType.Info).Build());
+                if (usersStr.Count > 50)
+                {
+                    try
+                    {
+                        var msgs = usersStr.SplitList();
+                        var dm = await Context.User.CreateDMChannelAsync();
+                        for (int i = 0; i < msgs.Count; i++)
+                        {
+                            var mes = $"**[{i + 1}/{msgs.Count}]:**\n\n{string.Join('\n', msgs[i])}";
+                            if (i == 0) mes = $"**{thisCards.GetNameWithUrl()} chcą ({usersStr.Count})** {mes}";
+                            await dm.SendMessageAsync("", embed: mes.ToEmbedMessage(EMType.Info).Build());
+                            await Task.Delay(TimeSpan.FromSeconds(2));
+                        }
+                        await ReplyAsync("", embed: $"{Context.User.Mention} lista poszła na PW!".ToEmbedMessage(EMType.Success).Build());
+                    }
+                    catch (Exception)
+                    {
+                        await ReplyAsync("", embed: $"{Context.User.Mention} nie można wysłać do Ciebie PW!".ToEmbedMessage(EMType.Error).Build());
+                    }
+                }
+                else
+                {
+                    await ReplyAsync("", embed: $"**{thisCards.GetNameWithUrl()} chcą ({usersStr.Count}):**\n\n {string.Join('\n', usersStr)}".TrimToLength(2000).ToEmbedMessage(EMType.Info).Build());
+                }
 
                 var exe = new Executable($"kc-check-{thisCards.Character}", new Task<Task>(async () =>
                 {

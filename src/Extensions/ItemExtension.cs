@@ -669,17 +669,7 @@ namespace Sanakan.Extensions
         }
 
         public static List<List<T>> SplitList<T>(this IEnumerable<T> locations, int nSize = 50)
-        {
-            var locationsList = locations.ToList();
-            var list = new List<List<T>>();
-
-            for (int i = 0; i < locationsList.Count; i += nSize)
-            {
-                list.Add(locationsList.GetRange(i, Math.Min(nSize, locationsList.Count - i)));
-            }
-
-            return list;
-        }
+            => locations.ToList().SplitList(nSize);
 
         public static IEnumerable<T> ToRealEnumerable<T>(this IEnumerable<(T, int)> chances)
         {

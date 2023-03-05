@@ -1568,14 +1568,14 @@ namespace Sanakan.Services.PocketWaifu
             }.Build();
         }
 
-        public async Task<string> GetWhoWantsCardsStringAsync(List<GameDeck> wishlists, bool showNames, SocketGuild guild, DiscordSocketClient client = null)
+        public async Task<List<string>> GetWhoWantsCardsStringAsync(List<GameDeck> wishlists, bool showNames, SocketGuild guild, DiscordSocketClient client = null)
         {
             if (!showNames)
             {
-                return string.Join("\n", wishlists.Select(x => $"<@{x.Id}>"));
+                return wishlists.Select(x => $"<@{x.Id}>").ToList();
             }
 
-            var str = new StringBuilder();
+            var str = new List<string>();
             foreach (var deck in wishlists)
             {
                 IUser dUser = guild.GetUser(deck.UserId);
@@ -1587,13 +1587,13 @@ namespace Sanakan.Services.PocketWaifu
                 {
                     if (deck.User.Shinden != 0 && deck.User.Id != 1)
                     {
-                        str.AppendLine($"[{dUser.GetUserNickInGuild()}](https://shinden.pl/user/{deck.User.Shinden})");
+                        str.Add($"[{dUser.GetUserNickInGuild()}](https://shinden.pl/user/{deck.User.Shinden})");
                         continue;
                     }
-                    str.AppendLine(dUser.GetUserNickInGuild());
+                    str.Add(dUser.GetUserNickInGuild());
                 }
             }
-            return str.ToString();
+            return str;
         }
 
         public Embed GetShopView(ItemWithCost[] items, string name = "Sklepik", string currency = "TC")
