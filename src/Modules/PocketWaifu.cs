@@ -969,17 +969,25 @@ namespace Sanakan.Modules
         [Alias("lp")]
         [Summary("otwiera pierwszy pakiet z domyślnie ustawionym niszczeniem kc na 2 oraz tagiem wymiana")]
         [Remarks(""), RequireAnyCommandChannelOrLevel(200)]
-        public async Task OpenPacketLazyModeAsync([Summary("czy zniszczyć karty nie będące na liście życzeń i nie posiadające danej kc?")]uint destroyCards = 2, [Summary("czy zamienić niszczenie na uwalnianie")]bool changeToRelease = false, [Summary("oznacza niezniszczone karty podanym tagiem")]string tag = "wymiana")
-            => await OpenPacketAsync(1, 1, true, destroyCards, changeToRelease, tag);
+        public async Task OpenPacketLazyModeAsync([Summary("czy zniszczyć karty nie będące na liście życzeń i nie posiadające danej kc?")]uint destroyCards = 2, [Summary("czy zamienić niszczenie na uwalnianie")]bool changeToRelease = false,
+            [Summary("oznacza niezniszczone karty podanym tagiem")]string tag = "wymiana", [Summary("oznacza karty z wishlisty podanym tagiem")]string tagWishlist = "ulubione")
+                => await OpenPacketAsync(1, 1, true, destroyCards, changeToRelease, tag, tagWishlist);
 
         [Command("pakiet")]
         [Alias("pakiet kart", "booster", "booster pack", "pack")]
         [Summary("wypisuje dostępne pakiety/otwiera pakiety(maksymalna suma kart z pakietów do otworzenia to 20)")]
         [Remarks("1"), RequireWaifuCommandChannel]
         public async Task OpenPacketAsync([Summary("nr pakietu kart")]int numberOfPack = 0, [Summary("liczba kolejnych pakietów")]int count = 1, [Summary("czy sprawdzić listy życzeń?")]bool checkWishlists = true,
-            [Summary("czy zniszczyć karty nie będące na liście życzeń i nie posiadające danej kc?")]uint destroyCards = 0, [Summary("czy zamienić niszczenie na uwalnianie")]bool changeToRelease = false, [Summary("oznacza niezniszczone karty podanym tagiem")]string tag = "")
+            [Summary("czy zniszczyć karty nie będące na liście życzeń i nie posiadające danej kc?")]uint destroyCards = 0, [Summary("czy zamienić niszczenie na uwalnianie")]bool changeToRelease = false, [Summary("oznacza niezniszczone karty podanym tagiem")]string tag = "",
+            [Summary("oznacza karty z wishlisty podanym tagiem")]string tagWishlist = "")
         {
             if (!string.IsNullOrEmpty(tag) && tag.Contains(" "))
+            {
+                await ReplyAsync("", embed: $"{Context.User.Mention} oznaczenie nie może zawierać spacji.".ToEmbedMessage(EMType.Error).Build());
+                return;
+            }
+
+            if (!string.IsNullOrEmpty(tagWishlist) && tagWishlist.Contains(" "))
             {
                 await ReplyAsync("", embed: $"{Context.User.Mention} oznaczenie nie może zawierać spacji.".ToEmbedMessage(EMType.Error).Build());
                 return;
@@ -1080,18 +1088,14 @@ namespace Sanakan.Modules
                                 card.DestroyOrRelease(bUser, changeToRelease);
                                 continue;
                             }
-
-                            card.WhoWantsCount = wishlistsCnt;
-                            bUser.GameDeck.Cards.Add(card);
-
-                            if (!string.IsNullOrEmpty(tag) && !isOnUserWishlist)
-                                card.TagList.Add(new CardTag { Name = tag });
                         }
-                        else
-                        {
-                            card.WhoWantsCount = wishlistsCnt;
-                            bUser.GameDeck.Cards.Add(card);
-                        }
+
+                        card.WhoWantsCount = wishlistsCnt;
+                        if (!string.IsNullOrEmpty(tag) && !isOnUserWishlist)
+                            card.TagList.Add(new CardTag { Name = tag });
+
+                        if (!string.IsNullOrEmpty(tagWishlist) && isOnUserWishlist)
+                            card.TagList.Add(new CardTag { Name = tagWishlist });
                     }
                     card.Affection += bUser.GameDeck.AffectionFromKarma();
                     bUser.GameDeck.Cards.Add(card);
