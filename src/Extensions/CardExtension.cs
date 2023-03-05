@@ -924,6 +924,9 @@ namespace Sanakan.Extensions
             switch (dere)
             {
                 case Dere.Tsundere: return 0.6;
+                case Dere.Yami:
+                case Dere.Raito: return 1.35;
+                case Dere.Yato: return 1.55;
 
                 default: return 1;
             }
