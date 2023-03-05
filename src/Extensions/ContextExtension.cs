@@ -1,14 +1,14 @@
 ﻿#pragma warning disable 1591
 
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Sanakan.Database.Models;
 using Sanakan.Database.Models.Configuration;
 using Sanakan.Database.Models.Management;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using Z.EntityFramework.Plus;
 
 namespace Sanakan.Extensions
@@ -156,8 +156,36 @@ namespace Sanakan.Extensions
             return ww;
         }
 
-        public static async Task<Database.Models.Analytics.WishlistCount> CreateOrChangeWishlistCountByAsync(this Database.DatabaseContext context, ulong id, string name, int by = 1)
-            => await context.WishlistCountData.CreateOrChangeWishlistCountByAsync(id, name, by);
+        public static async Task<bool> CreateOrChangeWishlistCountByAsync(this Database.DatabaseContext context, ulong id, string name, int by = 1, bool setTo = false)
+        {
+            var ww = await context.WishlistCountData.AsQueryable().FirstOrDefaultAsync(x => x.Id == id);
+            if (ww == null)
+            {
+                ww = new Database.Models.Analytics.WishlistCount
+                {
+                    Id = id,
+                    Name = name,
+                    Count = by < 0 ? 0 : by
+                };
+                await context.WishlistCountData.AddAsync(ww);
+                return false;
+            }
+
+            bool update = setTo ? (ww.Count == by) : false;
+
+            if (setTo)
+                ww.Count = by;
+            else
+                ww.Count += by;
+
+            if (ww.Count < 0)
+                ww.Count = 0;
+
+            if (ww.Name != name)
+                ww.Name = name;
+
+            return update;
+        }
 
         public static async Task<Database.Models.Analytics.WishlistCount> CreateOrChangeWishlistCountByAsync(this DbSet<Database.Models.Analytics.WishlistCount> wwCount, ulong id, string name, int by = 1, bool setTo = false)
         {

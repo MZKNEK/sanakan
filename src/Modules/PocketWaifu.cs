@@ -2440,14 +2440,19 @@ namespace Sanakan.Modules
                 }
 
                 var usersStr = await _waifu.GetWhoWantsCardsStringAsync(wishlists, showNames, Context.Guild, Context.Client);
-                await ReplyAsync("", embed: $"**{thisCards.GetNameWithUrl()} chcą ({thisCards.WhoWantsCount}):**\n\n {usersStr}".TrimToLength(2000).ToEmbedMessage(EMType.Info).Build());
+                await ReplyAsync("", embed: $"**{thisCards.GetNameWithUrl()} chcą ({usersStr.Split('\n').Length}):**\n\n {usersStr}".TrimToLength(2000).ToEmbedMessage(EMType.Info).Build());
 
                 var exe = new Executable($"kc-check-{thisCards.Character}", new Task<Task>(async () =>
                 {
                     using (var dbs = new Database.DatabaseContext(_config))
                     {
                         var wCount = await dbs.GameDecks.Include(x => x.Wishes).AsNoTracking().Where(x => !x.WishlistIsPrivate && x.Wishes.Any(c => c.Type == WishlistObjectType.Character && c.ObjectId == thisCards.Character)).CountAsync();
-                        await dbs.WishlistCountData.CreateOrChangeWishlistCountByAsync(thisCards.Character, thisCards.Name, wCount, true);
+                        var ww = await dbs.CreateOrChangeWishlistCountByAsync(thisCards.Character, thisCards.Name, wCount, true);
+                        if (ww)
+                        {
+                            var cds = await dbs.Cards.AsQueryable().Where(x => x.Character == thisCards.Character && x.WhoWantsCount != wCount).ToListAsync();
+                            foreach (var c in cds) c.WhoWantsCount = wCount;
+                        }
                         await dbs.SaveChangesAsync();
                     }
                 }));
