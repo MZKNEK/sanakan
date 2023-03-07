@@ -2505,7 +2505,7 @@ namespace Sanakan.Modules
                 }
 
                 var usersStr = await _waifu.GetWhoWantsCardsStringAsync(wishlists, showNames, Context.Guild, Context.Client);
-                await ReplyAsync("", embed: $"**Karty z {response.Body.Title} chcą:**\n\n {usersStr}".TrimToLength(2000).ToEmbedMessage(EMType.Info).Build());
+                await ReplyAsync("", embed: $"**Karty z {response.Body.Title} chcą:**\n\n {string.Join('\n', usersStr)}".TrimToLength(2000).ToEmbedMessage(EMType.Info).Build());
             }
         }
 
