@@ -1056,10 +1056,10 @@ namespace Sanakan.Extensions
                 card.ExpCnt *= 0.3;
 
             card.MarketValue *= target.Item2 / source.Item2;
-            if (card.MarketValue < 0.0001 || double.IsPositiveInfinity(card.MarketValue))
+            if (card.MarketValue < 0.0001 || double.IsInfinity(card.MarketValue))
                 card.MarketValue = 0.0001;
 
-            if (card.MarketValue > 10 || double.IsNegativeInfinity(card.MarketValue))
+            if (card.MarketValue > 10)
                 card.MarketValue = 10;
 
             if (card.FirstIdOwner == 0)
