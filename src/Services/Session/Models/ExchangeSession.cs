@@ -274,9 +274,12 @@ namespace Sanakan.Services.Session.Models
                         end = await HandleUserReactionInAccept(reaction, P2, msg);
                         break;
 
-                    default:
                     case ExchangeStatus.Add:
                         await HandleReactionInAdd(reaction, msg);
+                        break;
+
+                    default:
+                    case ExchangeStatus.End:
                         break;
                 }
             }
@@ -338,65 +341,15 @@ namespace Sanakan.Services.Session.Models
                             var user1 = await db.GetUserOrCreateAsync(P1.User.Id);
                             var user2 = await db.GetUserOrCreateAsync(P2.User.Id);
 
-                            double avgValueP1 = P1.Cards.GetAvgValue();
-                            double avgValueP2 = P2.Cards.GetAvgValue();
-
-                            double avgRarP1 = P1.Cards.GetAvgRarity();
-                            double avgRarP2 = P2.Cards.GetAvgRarity();
-                            var avgRarDif = avgRarP1 - avgRarP2;
-
-                            if (avgRarDif > 0)
-                            {
-                                avgValueP1 /= avgRarDif + 1;
-                            }
-                            else if (avgRarDif < 0)
-                            {
-                                avgRarDif = -avgRarDif;
-                                avgValueP2 /= avgRarDif + 1;
-                            }
-
-                            var divP1 = P1.Cards.Count * ((avgValueP1 <= 0) ? 1 : avgValueP1);
-                            var divP2 = P2.Cards.Count * ((avgValueP2 <= 0) ? 1 : avgValueP2);
-
-                            var exchangeRateP1 = divP2 / ((P1.Cards.Count == 0) ? (divP2 * 0.5) : divP1);
-                            var exchangeRateP2 = divP1 / ((P2.Cards.Count == 0) ? (divP1 * 0.5) : divP2);
-
-                            if (exchangeRateP1 > 1) exchangeRateP1 = 10;
-                            if (exchangeRateP1 < 0.0001) exchangeRateP1 = 0.001;
-
-                            if (exchangeRateP2 > 1) exchangeRateP2 = 10;
-                            if (exchangeRateP2 < 0.0001) exchangeRateP2 = 0.001;
+                            var u1Data = (user1, P1.Cards.Count > 0 ? P1.Cards.Count : 1);
+                            var u2Data = (user2, P2.Cards.Count > 0 ? P2.Cards.Count : 1);
 
                             foreach (var c in P1.Cards)
                             {
                                 var card = user1.GameDeck.Cards.FirstOrDefault(x => x.Id == c.Id);
                                 if (card != null)
                                 {
-                                    card.Active = false;
-                                    card.TagList.Clear();
-                                    card.Affection -= 1.5;
-
-                                    if (card.ExpCnt > 1)
-                                        card.ExpCnt *= 0.3;
-
-                                    var valueDiff = exchangeRateP1 - card.MarketValue;
-                                    var changed = card.MarketValue + valueDiff * 0.8;
-                                    if (changed < 0.0001) changed = 0.0001;
-                                    if (changed > 1) changed = 1;
-                                    card.MarketValue = changed;
-
-                                    if (card.FirstIdOwner == 0)
-                                        card.FirstIdOwner = user1.Id;
-
-                                    if (card.FromFigure)
-                                        card.IsTradable = false;
-
-                                    user1.GameDeck.RemoveFromWaifu(card);
-
-                                    card.GameDeckId = user2.GameDeck.Id;
-
-                                    await user2.GameDeck.RemoveCharacterFromWishListAsync(card.Character, db);
-                                    user2.GameDeck.RemoveCardFromWishList(card.Id);
+                                    await card.ExchangeWithAsync(u1Data, u2Data, db);
                                 }
                             }
 
@@ -405,31 +358,7 @@ namespace Sanakan.Services.Session.Models
                                 var card = user2.GameDeck.Cards.FirstOrDefault(x => x.Id == c.Id);
                                 if (card != null)
                                 {
-                                    card.Active = false;
-                                    card.TagList.Clear();
-                                    card.Affection -= 1.5;
-
-                                    if (card.ExpCnt > 1)
-                                        card.ExpCnt *= 0.3;
-
-                                    var valueDiff = exchangeRateP2 - card.MarketValue;
-                                    var changed = card.MarketValue + valueDiff * 0.8;
-                                    if (changed < 0.0001) changed = 0.0001;
-                                    if (changed > 1) changed = 1;
-                                    card.MarketValue = changed;
-
-                                    if (card.FirstIdOwner == 0)
-                                        card.FirstIdOwner = user2.Id;
-
-                                    if (card.FromFigure)
-                                        card.IsTradable = false;
-
-                                    user2.GameDeck.RemoveFromWaifu(card);
-
-                                    card.GameDeckId = user1.GameDeck.Id;
-
-                                    await user1.GameDeck.RemoveCharacterFromWishListAsync(card.Character, db);
-                                    user1.GameDeck.RemoveCardFromWishList(card.Id);
+                                    await card.ExchangeWithAsync(u2Data, u1Data, db);
                                 }
                             }
 

@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Discord;
+using Sanakan.Database;
 using Sanakan.Database.Models;
 
 namespace Sanakan.Extensions
@@ -1043,6 +1044,36 @@ namespace Sanakan.Extensions
 
             user.GameDeck.Karma += 1;
             user.Stats.ReleasedCards += 1;
+        }
+
+        public static async Task ExchangeWithAsync(this Card card, (User, int) source, (User, int) target, DatabaseContext db)
+        {
+            card.Active = false;
+            card.TagList.Clear();
+            card.Affection -= 1.5;
+
+            if (card.ExpCnt > 1)
+                card.ExpCnt *= 0.3;
+
+            card.MarketValue *= target.Item2 / source.Item2;
+            if (card.MarketValue < 0.0001 || double.IsPositiveInfinity(card.MarketValue))
+                card.MarketValue = 0.0001;
+
+            if (card.MarketValue > 10 || double.IsNegativeInfinity(card.MarketValue))
+                card.MarketValue = 10;
+
+            if (card.FirstIdOwner == 0)
+                card.FirstIdOwner = source.Item1.Id;
+
+            if (card.FromFigure)
+                card.IsTradable = false;
+
+            source.Item1.GameDeck.RemoveFromWaifu(card);
+
+            card.GameDeckId = target.Item1.GameDeck.Id;
+
+            target.Item1.GameDeck.RemoveCardFromWishList(card.Id);
+            await target.Item1.GameDeck.RemoveCharacterFromWishListAsync(card.Character, db);
         }
     }
 }
