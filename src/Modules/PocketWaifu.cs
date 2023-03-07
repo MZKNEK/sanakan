@@ -1383,8 +1383,6 @@ namespace Sanakan.Modules
                     return;
                 }
 
-                 var chLvl = bUser.GameDeck.ExpContainer.Level;
-
                 var broken = new List<Card>();
                 foreach (var card in cardsToSac)
                 {
@@ -1394,13 +1392,7 @@ namespace Sanakan.Modules
                         continue;
                     }
 
-                    bUser.StoreExpIfPossible(((card.ExpCnt / 2) > card.GetMaxExpToChest(chLvl))
-                        ? card.GetMaxExpToChest(chLvl)
-                        : (card.ExpCnt / 2));
-
-                    bUser.GameDeck.Karma += 1;
-
-                    bUser.Stats.ReleasedCards += 1;
+                    card.ReleaseCard(bUser);
 
                     bUser.GameDeck.Cards.Remove(card);
                     _waifu.DeleteCardImageIfExist(card);
@@ -1442,8 +1434,6 @@ namespace Sanakan.Modules
                     return;
                 }
 
-                var chLvl = bUser.GameDeck.ExpContainer.Level;
-
                 var broken = new List<Card>();
                 foreach (var card in cardsToSac)
                 {
@@ -1453,16 +1443,7 @@ namespace Sanakan.Modules
                         continue;
                     }
 
-                    bUser.StoreExpIfPossible((card.ExpCnt > card.GetMaxExpToChest(chLvl))
-                        ? card.GetMaxExpToChest(chLvl)
-                        : card.ExpCnt);
-
-                    bUser.GameDeck.Karma -= 1;
-
-                    if (card.MarketValue > 0.001)
-                        bUser.GameDeck.CTCnt += card.GetValue();
-
-                    bUser.Stats.DestroyedCards += 1;
+                    card.DestroyCard(bUser);
 
                     bUser.GameDeck.Cards.Remove(card);
                     _waifu.DeleteCardImageIfExist(card);

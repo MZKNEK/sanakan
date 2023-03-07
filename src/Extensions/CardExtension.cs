@@ -471,6 +471,8 @@ namespace Sanakan.Extensions
 
         public static string GetAffectionString(this Card card)
         {
+            if (card.Affection <= -2000) return "Pogarda (Ω)";
+            if (card.Affection <= -800) return "Pogarda (Δ)";
             if (card.Affection <= -400) return "Pogarda (γ)";
             if (card.Affection <= -200) return "Pogarda (β)";
             if (card.Affection <= -100) return "Pogarda (α)";
@@ -480,6 +482,8 @@ namespace Sanakan.Extensions
             if (card.Affection <= -3) return "Wrogość";
             if (card.Affection <= -2) return "Złośliwość";
             if (card.Affection <= -1) return "Chłodność";
+            if (card.Affection >= 2000) return "Obsesyjna miłość (Ω)";
+            if (card.Affection >= 800) return "Obsesyjna miłość (Δ)";
             if (card.Affection >= 400) return "Obsesyjna miłość (γ)";
             if (card.Affection >= 200) return "Obsesyjna miłość (β)";
             if (card.Affection >= 100) return "Obsesyjna miłość (α)";
@@ -924,12 +928,18 @@ namespace Sanakan.Extensions
         {
             switch (dere)
             {
-                case Dere.Tsundere: return 0.6;
-                case Dere.Yami:
-                case Dere.Raito: return 1.35;
-                case Dere.Yato: return 1.55;
+                case Dere.Tsundere:
+                    return 0.6;
 
-                default: return 1;
+                case Dere.Yami:
+                case Dere.Raito:
+                    return 1.35;
+
+                case Dere.Yato:
+                    return 1.55;
+
+                default:
+                    return 1;
             }
         }
 
@@ -990,24 +1000,6 @@ namespace Sanakan.Extensions
             return list;
         }
 
-        public static Card UpdateWWCount(this Card card, Database.Models.Analytics.WishlistCount ww)
-        {
-            card.WhoWantsCount = ww.Count;
-            return card;
-        }
-
-        public static double GetAvgValue(this List<Card> cards)
-        {
-            if (cards.Count < 1) return 0.01;
-            return cards.Average(x => x.MarketValue);
-        }
-
-        public static double GetAvgRarity(this List<Card> cards)
-        {
-            if (cards.Count < 1) return (int) Rarity.E;
-            return cards.Average(x => (int) x.Rarity);
-        }
-
         public static string ToHeartWishlist(this Card card, bool isOnUserWishlist = false)
         {
             if (isOnUserWishlist) return "💚 ";
@@ -1018,9 +1010,11 @@ namespace Sanakan.Extensions
         public static void DestroyOrRelease(this Card card, User user, bool release)
         {
             if (release)
+            {
                 card.ReleaseCard(user);
-            else
-                card.DestroyCard(user);
+                return;
+            }
+            card.DestroyCard(user);
         }
 
         public static void DestroyCard(this Card card, User user)
@@ -1032,7 +1026,12 @@ namespace Sanakan.Extensions
 
             user.GameDeck.Karma -= 1;
             user.Stats.DestroyedCards += 1;
-            user.GameDeck.CTCnt += (long)card.GetValue();
+
+            if (card.MarketValue >= 0.05)
+            {
+                var max = card.GetValue();
+                user.GameDeck.CTCnt += Math.Max(Math.Min(max, (int)(max * card.MarketValue)), 1);
+            }
         }
 
         public static void ReleaseCard(this Card card, User user)
@@ -1056,11 +1055,10 @@ namespace Sanakan.Extensions
                 card.ExpCnt *= 0.3;
 
             card.MarketValue *= target.Item2 / source.Item2;
-            if (card.MarketValue < 0.0001 || double.IsInfinity(card.MarketValue))
-                card.MarketValue = 0.0001;
+            if (double.IsInfinity(card.MarketValue))
+                card.MarketValue = 0.001;
 
-            if (card.MarketValue > 10)
-                card.MarketValue = 10;
+            card.MarketValue = Math.Max(Math.Min(card.MarketValue, 10), 0.001);
 
             if (card.FirstIdOwner == 0)
                 card.FirstIdOwner = source.Item1.Id;
