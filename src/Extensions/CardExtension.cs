@@ -257,6 +257,7 @@ namespace Sanakan.Extensions
                 + $"**Restarty:** {card.RestartCnt}\n"
                 + $"**Pochodzenie:** {card.Source.GetString()}\n"
                 + $"**Moc:** {card.CalculateCardPower().ToString("F")}\n"
+                + $"**Charakter:** {card.Dere}\n"
                 + $"**KC:** {card.WhoWantsCount}\n"
                 + $"**Tagi:** {tags}\n"
                 + $"{card.GetStatusIcons()}\n\n";
