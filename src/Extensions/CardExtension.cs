@@ -229,7 +229,7 @@ namespace Sanakan.Extensions
             var tags = string.Join(" ", card.TagList.Select(x => x.Name));
             if (card.TagList.Count < 1) tags = "---";
 
-            return $"**[{card.Id}]** *({card.Character}) KC: {card.WhoWantsCount}*\n"
+            return $"**[{card.Id}]** *({card.Character}) KC: {card.WhoWantsCount} PWR: {card.CalculateCardPower().ToString("F")}*\n"
                 + $"{card.GetString(true, true, true, false, true)}\n"
                 + $"_{card.Title}_\n\n"
                 + $"{card.Dere}\n"
@@ -256,6 +256,7 @@ namespace Sanakan.Extensions
                 + $"**WID:** {card.Id} *({card.Character})*\n"
                 + $"**Restarty:** {card.RestartCnt}\n"
                 + $"**Pochodzenie:** {card.Source.GetString()}\n"
+                + $"**Moc:** {card.CalculateCardPower().ToString("F")}\n"
                 + $"**KC:** {card.WhoWantsCount}\n"
                 + $"**Tagi:** {tags}\n"
                 + $"{card.GetStatusIcons()}\n\n";
