@@ -1219,6 +1219,12 @@ namespace Sanakan.Modules
                 if (defaultImage && !card.FromFigure)
                     card.CustomImage = null;
 
+                card.CalculateCardPower();
+
+                _waifu.DeleteCardImageIfExist(card);
+
+                QueryCacheManager.ExpireTag(new string[] { $"user-{bUser.Id}", "users" });
+
                 try
                 {
                     await card.Update(Context.User, _shclient);
@@ -1227,9 +1233,6 @@ namespace Sanakan.Modules
                     await db.WishlistCountData.CreateOrChangeWishlistCountByAsync(card.Character, card.Name, wCount, true);
 
                     await db.SaveChangesAsync();
-                    _waifu.DeleteCardImageIfExist(card);
-
-                    QueryCacheManager.ExpireTag(new string[] { $"user-{bUser.Id}", "users" });
 
                     await ReplyAsync("", embed: $"{Context.User.Mention} zaktualizował kartę: {card.GetString(false, false, true)}.".ToEmbedMessage(EMType.Success).Build());
                 }
