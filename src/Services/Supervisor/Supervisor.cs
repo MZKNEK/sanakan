@@ -157,7 +157,6 @@ namespace Sanakan.Services.Supervisor
             }
         }
 
-
         private async Task MakeActionAsync(Action action, SocketGuildUser user, SocketUserMessage message, SocketRole userRole, SocketRole muteRole, ITextChannel notifChannel)
         {
             switch (action)
@@ -271,7 +270,6 @@ namespace Sanakan.Services.Supervisor
                     foreach (var nick in guild.Value)
                         _guildsJoin[guild.Key][nick] = new SupervisorJoinEntity();
                 }
-
             }
             catch (Exception ex)
             {

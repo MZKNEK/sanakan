@@ -544,7 +544,7 @@ namespace Sanakan.Extensions
             double diff = ((int) skeleton - (int) item.Quality) / 10f;
             if (diff <= 0)
             {
-                return 1 + item.Quality.ToValue() * -diff;
+                return 1 + (item.Quality.ToValue() * -diff);
             }
             return 1 / (diff + 2);
         }

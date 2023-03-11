@@ -65,9 +65,9 @@ namespace Sanakan.Api.Models
                 case OrderType.DefenceDes:
                     return query.OrderByDescending(x => x.Defence + x.DefenceBonus + x.RestartCnt);
                 case OrderType.Health:
-                    return query.OrderBy(x => x.Health + (x.Health * (x.Affection * 5d / 100d) + x.HealthBonus));
+                    return query.OrderBy(x => x.Health + ((x.Health * (x.Affection * 5d / 100d)) + x.HealthBonus));
                 case OrderType.HealthDes:
-                    return query.OrderByDescending(x => x.Health + (x.Health * (x.Affection * 5d / 100d) + x.HealthBonus));
+                    return query.OrderByDescending(x => x.Health + ((x.Health * (x.Affection * 5d / 100d)) + x.HealthBonus));
                 case OrderType.HealthBase:
                     return query.OrderBy(x => x.Health);
                 case OrderType.HealthBaseDes:

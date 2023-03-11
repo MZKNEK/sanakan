@@ -461,7 +461,6 @@ namespace Sanakan.Modules
         {
             using (var db = new Database.DatabaseContext(Config))
             {
-
                 var deck = await db.GameDecks.Include(x => x.Wishes).FirstOrDefaultAsync(x => x.UserId == userId);
                 if (deck == null)
                 {

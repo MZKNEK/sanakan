@@ -103,25 +103,7 @@ namespace Sanakan.Api.Controllers
 
                 query = CardsQueryFilter.Use(filter.OrderBy, query);
 
-                var cards = (await query.FromCacheAsync("api-all-cards")).ToList();
-                if (filter.IncludeTags != null && filter.IncludeTags.Count > 0)
-                {
-                    if (filter.FilterTagsMethod == FilterTagsMethodType.And)
-                    {
-                        foreach (var iTag in filter.IncludeTags)
-                            cards = cards.Where(x => x.HasTag(iTag)).ToList();
-                    }
-                    else
-                    {
-                        cards = cards.Where(x => x.HasAnyTag(filter.IncludeTags)).ToList();
-                    }
-                }
-
-                if (filter.ExcludeTags != null)
-                {
-                    foreach (var eTag in filter.ExcludeTags)
-                        cards = cards.Where(x => !x.HasTag(eTag)).ToList();
-                }
+                var cards = FilterCardsByTags((await query.FromCacheAsync("api-all-cards")).ToList(), filter);
 
                 return new FilteredCards{TotalCards = cards.Count, Cards = cards.Skip((int)offset).Take((int)count).ToView()};
             }
@@ -157,25 +139,7 @@ namespace Sanakan.Api.Controllers
 
                 query = CardsQueryFilter.Use(filter.OrderBy, query);
 
-                var cards = await query.ToListAsync();
-                if (filter.IncludeTags != null && filter.IncludeTags.Count > 0)
-                {
-                    if (filter.FilterTagsMethod == FilterTagsMethodType.And)
-                    {
-                        foreach (var iTag in filter.IncludeTags)
-                            cards = cards.Where(x => x.HasTag(iTag)).ToList();
-                    }
-                    else
-                    {
-                        cards = cards.Where(x => x.HasAnyTag(filter.IncludeTags)).ToList();
-                    }
-                }
-
-                if (filter.ExcludeTags != null)
-                {
-                    foreach (var eTag in filter.ExcludeTags)
-                        cards = cards.Where(x => !x.HasTag(eTag)).ToList();
-                }
+                var cards = FilterCardsByTags(await query.ToListAsync(), filter);
 
                 return new FilteredCards{TotalCards = cards.Count, Cards = cards.Skip((int)offset).Take((int)count).ToView()};
             }
@@ -956,6 +920,30 @@ namespace Sanakan.Api.Controllers
                 }
             }
             await "The appropriate claim was not found".ToResponse(403).ExecuteResultAsync(ControllerContext);
+        }
+
+        private List<Card> FilterCardsByTags(List<Card> cards, CardsQueryFilter filter)
+        {
+            if (filter.IncludeTags != null && filter.IncludeTags.Count > 0)
+            {
+                if (filter.FilterTagsMethod == FilterTagsMethodType.And)
+                {
+                    foreach (var iTag in filter.IncludeTags)
+                        cards = cards.Where(x => x.HasTag(iTag)).ToList();
+                }
+                else
+                {
+                    cards = cards.Where(x => x.HasAnyTag(filter.IncludeTags)).ToList();
+                }
+            }
+
+            if (filter.ExcludeTags != null)
+            {
+                foreach (var eTag in filter.ExcludeTags)
+                    cards = cards.Where(x => !x.HasTag(eTag)).ToList();
+            }
+
+            return cards;
         }
     }
 }

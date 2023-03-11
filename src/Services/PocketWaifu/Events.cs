@@ -376,7 +376,7 @@ namespace Sanakan.Services.PocketWaifu
 
                 case EventType.Fight:
                 {
-                    var enemyCard = Waifu.GenerateFakeNewCard("Miecu", "Bajeczka", null, Waifu.RandomizeRarity());
+                    var enemyCard = Waifu.GenerateNewCard("Miecu", "Bajeczka", null, Waifu.RandomizeRarity());
                     var result = Waifu.GetFightWinner(card, enemyCard);
 
                     string resStr = result == FightWinner.Card1 ? "zwycięstwo!" : "przegrana!";

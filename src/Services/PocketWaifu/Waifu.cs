@@ -801,7 +801,7 @@ namespace Sanakan.Services.PocketWaifu
             });
         }
 
-        static public Card GenerateFakeNewCard(string name, string title, string image, Rarity rarity)
+        static public Card GenerateNewCard(string name, string title, string image, Rarity rarity)
         {
             var card = new Card
             {
@@ -860,60 +860,12 @@ namespace Sanakan.Services.PocketWaifu
 
         public Card GenerateNewCard(IUser user, ICharacterInfo character, Rarity rarity)
         {
-            var card = new Card
-            {
-                Title = character?.Relations?.OrderBy(x => x.Id)?.FirstOrDefault()?.Title ?? "????",
-                Defence = RandomizeDefence(rarity),
-                ArenaStats = new CardArenaStats(),
-                Attack = RandomizeAttack(rarity),
-                Expedition = CardExpedition.None,
-                QualityOnStart = Quality.Broken,
-                ExpeditionDate = DateTime.Now,
-                PAS = PreAssembledFigure.None,
-                TagList = new List<CardTag>(),
-                CreationDate = DateTime.Now,
-                Name = character.ToString(),
-                StarStyle = StarStyle.Full,
-                Source = CardSource.Other,
-                Character = character.Id,
-                Quality = Quality.Broken,
-                Dere = RandomizeDere(),
-                Curse = CardCurse.None,
-                RarityOnStart = rarity,
-                CustomBorder = null,
-                FromFigure = false,
-                CustomImage = null,
-                IsTradable = true,
-                WhoWantsCount = 0,
-                FirstIdOwner = 1,
-                DefenceBonus = 0,
-                HealthBonus = 0,
-                AttackBonus = 0,
-                UpgradesCnt = 2,
-                LastIdOwner = 0,
-                MarketValue = 1,
-                Rarity = rarity,
-                EnhanceCnt = 0,
-                Unique = false,
-                InCage = false,
-                RestartCnt = 0,
-                Active = false,
-                Affection = 0,
-                FigureId = 0,
-                Image = null,
-                Health = 0,
-                ExpCnt = 0,
-            };
+            var card = GenerateNewCard(character.ToString(),
+                character?.Relations?.OrderBy(x => x.Id)?.FirstOrDefault()?.Title ?? "????",
+                character.HasImage ? character.PictureUrl : string.Empty, rarity);
 
             if (user != null)
                 card.FirstIdOwner = user.Id;
-
-            if (character.HasImage)
-                card.Image = character.PictureUrl;
-
-            card.Health = RandomizeHealth(card);
-
-            _ = card.CalculateCardPower();
 
             return card;
         }
@@ -2015,7 +1967,6 @@ namespace Sanakan.Services.PocketWaifu
                 default:
                     return Fun.GetOneRandomFrom(_itemChancesOnExpedition[expedition]).ToItem(1, quality);
             }
-
         }
 
         private bool CheckChanceForItemInExpedition(int currItem, int maxItem, CardExpedition expedition)
