@@ -618,5 +618,9 @@ namespace Sanakan.Extensions
             }
             user.GameDeck.ExpContainer.ExpCount += exp;
         }
+
+        public static Card GetCard(this User user, ulong id) => user.GameDeck.Cards.FirstOrDefault(x => x.Id == id);
+
+        public static IEnumerable<Card> GetCards(this User user, ulong[] ids) => user.GameDeck.Cards.Where(x => ids.Any(c => c == x.Id));
     }
 }

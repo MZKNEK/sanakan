@@ -1075,5 +1075,7 @@ namespace Sanakan.Extensions
             target.Item1.GameDeck.RemoveCardFromWishList(card.Id);
             await target.Item1.GameDeck.RemoveCharacterFromWishListAsync(card.Character, db);
         }
+
+        public static bool IsProtectedFromDiscarding(this Card card) => card.InCage || card.HasTag("ulubione") || card.FromFigure || card.Expedition != CardExpedition.None;
     }
 }

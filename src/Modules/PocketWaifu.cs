@@ -1378,45 +1378,19 @@ namespace Sanakan.Modules
             using (var db = new Database.DatabaseContext(Config))
             {
                 var bUser = await db.GetUserOrCreateAsync(Context.User.Id);
-                var cardsToSac = bUser.GameDeck.Cards.Where(x => ids.Any(c => c == x.Id)).ToList();
+                var res = _waifu.DestroyOrReleaseCards(bUser, ids, true);
 
-                if (cardsToSac.Count < 1)
+                if (res.IsError())
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} nie posiadasz takich kart.".ToEmbedMessage(EMType.Error).Build());
+                    await ReplyAsync("", embed: $"{Context.User.Mention} {res.Message}".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
-
-                var broken = new List<Card>();
-                foreach (var card in cardsToSac)
-                {
-                    if (card.InCage || card.HasTag("ulubione") || card.FromFigure || card.Expedition != CardExpedition.None)
-                    {
-                        broken.Add(card);
-                        continue;
-                    }
-
-                    card.ReleaseCard(bUser);
-
-                    bUser.GameDeck.Cards.Remove(card);
-                    _waifu.DeleteCardImageIfExist(card);
-                }
-
-                string response = $"kartę: {cardsToSac.First().GetString(false, false, true)}";
-                if (cardsToSac.Count > 1) response = $" {cardsToSac.Count} kart";
 
                 await db.SaveChangesAsync();
 
                 QueryCacheManager.ExpireTag(new string[] { $"user-{bUser.Id}", "users" });
 
-                if (broken.Count != cardsToSac.Count)
-                {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} uwolnił {response}".ToEmbedMessage(EMType.Success).Build());
-                }
-
-                if (broken.Count > 0)
-                {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} nie udało się uwolnić {broken.Count} kart, najpewniej znajdują się w klatce lub są oznaczone jako ulubione.".ToEmbedMessage(EMType.Error).Build());
-                }
+                await ReplyAsync("", embed: $"{Context.User.Mention} {res.Message}".ToEmbedMessage(EMType.Success).Build());
             }
         }
 
@@ -1429,45 +1403,19 @@ namespace Sanakan.Modules
             using (var db = new Database.DatabaseContext(Config))
             {
                 var bUser = await db.GetUserOrCreateAsync(Context.User.Id);
-                var cardsToSac = bUser.GameDeck.Cards.Where(x => ids.Any(c => c == x.Id)).ToList();
+                var res = _waifu.DestroyOrReleaseCards(bUser, ids);
 
-                if (cardsToSac.Count < 1)
+                if (res.IsError())
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} nie posiadasz takich kart.".ToEmbedMessage(EMType.Error).Build());
+                    await ReplyAsync("", embed: $"{Context.User.Mention} {res.Message}".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
-
-                var broken = new List<Card>();
-                foreach (var card in cardsToSac)
-                {
-                    if (card.InCage || card.HasTag("ulubione") || card.FromFigure || card.Expedition != CardExpedition.None)
-                    {
-                        broken.Add(card);
-                        continue;
-                    }
-
-                    card.DestroyCard(bUser);
-
-                    bUser.GameDeck.Cards.Remove(card);
-                    _waifu.DeleteCardImageIfExist(card);
-                }
-
-                string response = $"kartę: {cardsToSac.First().GetString(false, false, true)}";
-                if (cardsToSac.Count > 1) response = $" {cardsToSac.Count} kart";
 
                 await db.SaveChangesAsync();
 
                 QueryCacheManager.ExpireTag(new string[] { $"user-{bUser.Id}", "users" });
 
-                if (broken.Count != cardsToSac.Count)
-                {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} zniszczył {response}".ToEmbedMessage(EMType.Success).Build());
-                }
-
-                if (broken.Count > 0)
-                {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} nie udało się zniszczyć {broken.Count} kart, najpewniej znajdują się w klatce lub są oznaczone jako ulubione.".ToEmbedMessage(EMType.Error).Build());
-                }
+                await ReplyAsync("", embed: $"{Context.User.Mention} {res.Message}".ToEmbedMessage(EMType.Success).Build());
             }
         }
 
@@ -1563,7 +1511,7 @@ namespace Sanakan.Modules
             using (var db = new Database.DatabaseContext(Config))
             {
                 var bUser = await db.GetUserOrCreateAsync(Context.User.Id);
-                var cardsToSac = bUser.GameDeck.Cards.Where(x => ids.Any(c => c == x.Id)).ToList();
+                var cardsToSac = bUser.GetCards(ids).ToList();
 
                 if (cardsToSac.Count < 1)
                 {
@@ -1576,6 +1524,12 @@ namespace Sanakan.Modules
                     if (card.Rarity != Rarity.SSS)
                     {
                         await ReplyAsync("", embed: $"{Context.User.Mention} ta karta nie jest kartą SSS.".ToEmbedMessage(EMType.Error).Build());
+                        return;
+                    }
+
+                    if (card.IsProtectedFromDiscarding())
+                    {
+                        await ReplyAsync("", embed: $"{Context.User.Mention} tej karty z jakiegoś powodu nie można zniszczyć.".ToEmbedMessage(EMType.Error).Build());
                         return;
                     }
                 }
@@ -1944,8 +1898,9 @@ namespace Sanakan.Modules
             using (var db = new Database.DatabaseContext(Config))
             {
                 var bUser = await db.GetUserOrCreateAsync(Context.User.Id);
-                var cardToUp = bUser.GameDeck.Cards.FirstOrDefault(x => x.Id == idToUp);
-                var cardsToSac = bUser.GameDeck.Cards.Where(x => idsToSac.Any(c => c == x.Id)).ToList();
+
+                var cardToUp = bUser.GetCard(idToUp);
+                var cardsToSac = bUser.GetCards(idsToSac).ToList();
 
                 if (cardsToSac.Count < 1 || cardToUp == null)
                 {
@@ -1969,7 +1924,7 @@ namespace Sanakan.Modules
                 var broken = new List<Card>();
                 foreach (var card in cardsToSac)
                 {
-                    if (card.IsBroken() || card.InCage || card.HasTag("ulubione") || card.FromFigure || card.Expedition != CardExpedition.None)
+                    if (card.IsProtectedFromDiscarding())
                     {
                         broken.Add(card);
                         continue;

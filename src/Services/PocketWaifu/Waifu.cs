@@ -2050,5 +2050,48 @@ namespace Sanakan.Services.PocketWaifu
                     return false;
             }
         }
+
+        public ExecutionResult DestroyOrReleaseCards(User user, ulong[] ids, bool release = false)
+        {
+            var cardsForDiscarding = user.GetCards(ids).ToList();
+            if (cardsForDiscarding.IsNullOrEmpty())
+            {
+                return ExecutionResult.FromError("nie posiadasz takich kart");
+            }
+
+            var realDiscardedCount = 0;
+            var ignored = new List<Card>();
+            foreach (var card in cardsForDiscarding)
+            {
+                if (card.IsProtectedFromDiscarding())
+                {
+                    ignored.Add(card);
+                    continue;
+                }
+
+                realDiscardedCount++;
+                card.DestroyOrRelease(user, release);
+
+                user.GameDeck.Cards.Remove(card);
+                DeleteCardImageIfExist(card);
+            }
+
+            string actionStr = release ? "uwolni" : "zniszczy";
+
+            if (ignored.Count == cardsForDiscarding.Count)
+            {
+                return ExecutionResult.FromError($"nie udało się {actionStr}ć żadnej karty, najpewniej znajdują się one w klatce lub są oznaczone jako ulubione.");
+            }
+
+            var response = new StringBuilder().Append($"{actionStr}ł ");
+            response.Append(realDiscardedCount > 1 ? $"{realDiscardedCount} kart" : $"kartę: {cardsForDiscarding.First().GetString(false, false, true)}");
+
+            if (ignored.Any())
+            {
+                response.Append($"\n\n ❗ Nie udało się {actionStr}ć {ignored.Count} kart!");
+            }
+
+            return ExecutionResult.FromSucces(response.ToString());
+        }
     }
 }

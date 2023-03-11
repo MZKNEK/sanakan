@@ -32,6 +32,14 @@ namespace Sanakan.Extensions
             }
         }
 
+        public static bool IsNullOrEmpty<T>(this IEnumerable<T> list)
+        {
+            if (list != null)
+                return !list.Any();
+
+            return true;
+        }
+
         public static T Next<T>(this T src) where T : Enum
         {
             T[] Arr = (T[])Enum.GetValues(src.GetType());
