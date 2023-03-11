@@ -89,7 +89,7 @@ namespace Sanakan.Services.Session.Models
             if (context.Message.Channel.Id != Message.Channel.Id)
                 return;
 
-            var cmd = context.Message?.Content?.ToLower();
+            var cmd = context.Message?.Content;
             if (cmd == null) return;
 
             var splitedCmd = cmd.Replace("\n", " ").Split(" ");
