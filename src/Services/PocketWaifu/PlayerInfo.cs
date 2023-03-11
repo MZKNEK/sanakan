@@ -14,5 +14,6 @@ namespace Sanakan.Services.PocketWaifu
         public SocketUser User { get; set; }
         public bool Accepted { get; set; }
         public User Dbuser { get; set; }
+        public string Tag { get; set; }
     }
 }

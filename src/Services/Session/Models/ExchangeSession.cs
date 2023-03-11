@@ -95,7 +95,7 @@ namespace Sanakan.Services.Session.Models
             var splitedCmd = cmd.Replace("\n", " ").Split(" ");
             if (splitedCmd.Length < 2) return;
 
-            var cmdType = splitedCmd[0];
+            var cmdType = splitedCmd[0]?.ToLower();
             if (cmdType == null) return;
 
             PlayerInfo thisPlayer = null;
@@ -112,7 +112,7 @@ namespace Sanakan.Services.Session.Models
             }
             if (thisPlayer == null) return;
 
-            if (cmdType.Contains("usuń") || cmdType.Contains("usun"))
+            if (cmdType.Equals("usuń") || cmdType.Equals("usun"))
             {
                 var WIDStr = splitedCmd?[1];
                 if (string.IsNullOrEmpty(WIDStr))
@@ -127,7 +127,7 @@ namespace Sanakan.Services.Session.Models
                 }
                 RestartTimer();
             }
-            else if (cmdType.Contains("dodaj"))
+            else if (cmdType.Equals("dodaj"))
             {
                 var ids = new List<ulong>();
                 foreach (var WIDStr in splitedCmd)
@@ -141,6 +141,19 @@ namespace Sanakan.Services.Session.Models
                 else await context.Message.AddReactionAsync(ErrEmote);
                 RestartTimer();
             }
+            else if (cmdType.Equals("tag") || cmdType.Equals("oznacz"))
+            {
+                var tag = splitedCmd?[1];
+                if (string.IsNullOrEmpty(tag) || tag.Contains(" "))
+                {
+                    await context.Message.AddReactionAsync(ErrEmote);
+                    return;
+                }
+
+                thisPlayer.Tag = tag;
+                await context.Message.AddReactionAsync(AcceptEmote);
+                RestartTimer();
+            }
         }
 
         private async Task HandleAddAsync(PlayerInfo player, List<ulong> wid, IUserMessage message, PlayerInfo target)
@@ -150,26 +163,8 @@ namespace Sanakan.Services.Session.Models
 
             foreach (var id in wid)
             {
-                var card = player.Dbuser.GameDeck.Cards.FirstOrDefault(x => x.Id == id);
-                if (card == null)
-                {
-                    error = true;
-                    continue;
-                }
-
-                if (card.Expedition != Database.Models.CardExpedition.None)
-                {
-                    error = true;
-                    continue;
-                }
-
-                if (card.InCage || !card.IsTradable || card.IsBroken())
-                {
-                    error = true;
-                    continue;
-                }
-
-                if (card.Dere == Database.Models.Dere.Yato)
+                var card = player.Dbuser.GetCard(id);
+                if (card.IsDisallowedToExchange())
                 {
                     error = true;
                     continue;
@@ -190,19 +185,11 @@ namespace Sanakan.Services.Session.Models
                 if (player.Cards.Any(x => x.Id == card.Id))
                     continue;
 
-                if (card.FromFigure)
-                {
-                    if (card.PAS != Database.Models.PreAssembledFigure.None)
-                    {
-                        error = true;
-                        continue;
-                    }
 
-                    if (target.Dbuser.GameDeck.Cards.Any(x => x.FromFigure && x.Character == card.Character))
-                    {
-                        error = true;
-                        continue;
-                    }
+                if (card.FromFigure && target.Dbuser.GameDeck.Cards.Any(x => x.FromFigure && x.Character == card.Character))
+                {
+                    error = true;
+                    continue;
                 }
 
                 player.Cards.Add(card);
@@ -341,12 +328,12 @@ namespace Sanakan.Services.Session.Models
                             var user1 = await db.GetUserOrCreateAsync(P1.User.Id);
                             var user2 = await db.GetUserOrCreateAsync(P2.User.Id);
 
-                            var u1Data = (user1, P1.Cards.Count > 0 ? P1.Cards.Count : 1);
-                            var u2Data = (user2, P2.Cards.Count > 0 ? P2.Cards.Count : 1);
+                            var u1Data = (user1, P1.Cards.Count > 0 ? P1.Cards.Count : 1, P1.Tag);
+                            var u2Data = (user2, P2.Cards.Count > 0 ? P2.Cards.Count : 1, P2.Tag);
 
                             foreach (var c in P1.Cards)
                             {
-                                var card = user1.GameDeck.Cards.FirstOrDefault(x => x.Id == c.Id);
+                                var card = user1.GetCard(c.Id);
                                 if (card != null)
                                 {
                                     await card.ExchangeWithAsync(u1Data, u2Data, db);
@@ -355,7 +342,7 @@ namespace Sanakan.Services.Session.Models
 
                             foreach (var c in P2.Cards)
                             {
-                                var card = user2.GameDeck.Cards.FirstOrDefault(x => x.Id == c.Id);
+                                var card = user2.GetCard(c.Id);
                                 if (card != null)
                                 {
                                     await card.ExchangeWithAsync(u2Data, u1Data, db);

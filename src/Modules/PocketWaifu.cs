@@ -3239,8 +3239,14 @@ namespace Sanakan.Modules
         [Alias("exchange")]
         [Summary("propozycja wymiany z użytkownikiem")]
         [Remarks("Karna"), RequireWaifuMarketChannel]
-        public async Task ExchangeCardsAsync([Summary("użytkownik")]SocketGuildUser user2)
+        public async Task ExchangeCardsAsync([Summary("użytkownik")]SocketGuildUser user2, [Summary("oznacza karty po wymianie podanym tagiem")]string tag = "")
         {
+            if (!string.IsNullOrEmpty(tag) && tag.Contains(" "))
+            {
+                await ReplyAsync("", embed: $"{Context.User.Mention} oznaczenie nie może zawierać spacji.".ToEmbedMessage(EMType.Error).Build());
+                return;
+            }
+
             var user1 = Context.User as SocketGuildUser;
             if (user1 == null) return;
 
@@ -3269,6 +3275,7 @@ namespace Sanakan.Modules
 
                 session.P1 = new PlayerInfo
                 {
+                    Tag = tag,
                     User = user1,
                     Dbuser = duser1,
                     Accepted = false,
@@ -3278,6 +3285,7 @@ namespace Sanakan.Modules
 
                 session.P2 = new PlayerInfo
                 {
+                    Tag = "",
                     User = user2,
                     Dbuser = duser2,
                     Accepted = false,

@@ -1047,7 +1047,8 @@ namespace Sanakan.Extensions
             user.Stats.ReleasedCards += 1;
         }
 
-        public static async Task ExchangeWithAsync(this Card card, (User, int) source, (User, int) target, DatabaseContext db)
+        public static async Task ExchangeWithAsync(this Card card, (User user, int count, string tag)
+            source, (User user, int count, string tag) target, DatabaseContext db)
         {
             card.Active = false;
             card.TagList.Clear();
@@ -1056,26 +1057,37 @@ namespace Sanakan.Extensions
             if (card.ExpCnt > 1)
                 card.ExpCnt *= 0.3;
 
-            card.MarketValue *= target.Item2 / source.Item2;
+            card.MarketValue *= target.count / source.count;
             if (double.IsInfinity(card.MarketValue))
                 card.MarketValue = 0.001;
 
             card.MarketValue = Math.Max(Math.Min(card.MarketValue, 10), 0.001);
 
             if (card.FirstIdOwner == 0)
-                card.FirstIdOwner = source.Item1.Id;
+                card.FirstIdOwner = source.user.Id;
 
             if (card.FromFigure)
                 card.IsTradable = false;
 
-            source.Item1.GameDeck.RemoveFromWaifu(card);
+            source.user.GameDeck.RemoveFromWaifu(card);
 
-            card.GameDeckId = target.Item1.GameDeck.Id;
+            if (!string.IsNullOrEmpty(target.tag))
+                card.TagList.Add(new CardTag { Name = target.tag });
 
-            target.Item1.GameDeck.RemoveCardFromWishList(card.Id);
-            await target.Item1.GameDeck.RemoveCharacterFromWishListAsync(card.Character, db);
+            card.GameDeckId = target.user.GameDeck.Id;
+
+            target.user.GameDeck.RemoveCardFromWishList(card.Id);
+            await target.user.GameDeck.RemoveCharacterFromWishListAsync(card.Character, db);
         }
 
         public static bool IsProtectedFromDiscarding(this Card card) => card.InCage || card.HasTag("ulubione") || card.FromFigure || card.Expedition != CardExpedition.None;
+
+        public static bool IsDisallowedToExchange(this Card card) => card is null
+            || card.InCage
+            || !card.IsTradable
+            || card.Dere == Database.Models.Dere.Yato
+            || card.Expedition != Database.Models.CardExpedition.None
+            || (card.FromFigure && card.PAS != Database.Models.PreAssembledFigure.None)
+            || card.IsBroken();
     }
 }
