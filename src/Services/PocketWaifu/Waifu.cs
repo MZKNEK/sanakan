@@ -839,7 +839,7 @@ namespace Sanakan.Services.PocketWaifu
                 InCage = false,
                 RestartCnt = 0,
                 Active = false,
-                Character = 1,
+                Character = 0,
                 Affection = 0,
                 Image = null,
                 FigureId = 0,
@@ -863,6 +863,8 @@ namespace Sanakan.Services.PocketWaifu
             var card = GenerateNewCard(character.ToString(),
                 character?.Relations?.OrderBy(x => x.Id)?.FirstOrDefault()?.Title ?? "????",
                 character.HasImage ? character.PictureUrl : string.Empty, rarity);
+
+            card.Character = character.Id;
 
             if (user != null)
                 card.FirstIdOwner = user.Id;

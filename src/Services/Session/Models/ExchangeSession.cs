@@ -185,7 +185,6 @@ namespace Sanakan.Services.Session.Models
                 if (player.Cards.Any(x => x.Id == card.Id))
                     continue;
 
-
                 if (card.FromFigure && target.Dbuser.GameDeck.Cards.Any(x => x.FromFigure && x.Character == card.Character))
                 {
                     error = true;
