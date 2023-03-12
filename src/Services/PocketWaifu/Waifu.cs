@@ -2191,10 +2191,16 @@ namespace Sanakan.Services.PocketWaifu
                 case ItemType.AffectionRecoveryBig:
                 case ItemType.AffectionRecoveryGreat:
                 case ItemType.AffectionRecoveryNormal:
-                case ItemType.AffectionRecoverySmall:
-                case ItemType.IncreaseExpBig:
-                case ItemType.IncreaseExpSmall:
+                case ItemType.AffectionRecoverySmall:                
                 case ItemType.CheckAffection:
+                    break;
+
+                case ItemType.IncreaseExpBig:
+                    card.ExpCnt += 5d * itemCnt;
+                    break;
+
+                case ItemType.IncreaseExpSmall:
+                    card.ExpCnt += 1.5 * itemCnt;
                     break;
 
                 case ItemType.ResetCardValue:
