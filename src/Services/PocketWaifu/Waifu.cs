@@ -784,7 +784,8 @@ namespace Sanakan.Services.PocketWaifu
             => Fun.GetRandomValue(rarity.GetDefenceMin(), rarity.GetDefenceMax() + 1);
 
         static public int RandomizeHealth(Card card)
-            => Fun.GetRandomValue(card.Rarity.GetHealthMin(), card.GetHealthMax() + 1);
+            => Fun.GetRandomValue(Math.Min(card.Rarity.GetHealthMin(), card.GetHealthMax() + 1),
+                Math.Max(card.Rarity.GetHealthMin(), card.GetHealthMax() + 1));
 
         static public Dere RandomizeDere()
         {
