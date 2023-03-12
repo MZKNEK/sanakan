@@ -806,7 +806,6 @@ namespace Sanakan.Extensions
                     type = StarStyle.Full;
                     return false;
             }
-
         }
 
         public static StarStyle Parse(this StarStyle star, string s)
