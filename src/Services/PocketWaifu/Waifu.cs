@@ -2051,8 +2051,7 @@ namespace Sanakan.Services.PocketWaifu
             if (itemNumber <= 0 || itemNumber > itemList.Count)
                 return ExecutionResult.FromError("nie masz aż tylu przedmiotów.");
 
-            var itemCnt = 1;
-            if (!int.TryParse(detail, out itemCnt) && itemCnt < 1)
+            if (!int.TryParse(detail, out var itemCnt) || itemCnt < 1)
                 itemCnt = 1;
 
             var item = itemList[itemNumber - 1];
