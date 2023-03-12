@@ -80,7 +80,7 @@ namespace Sanakan.Modules
             };
 
             foreach (var item in chances)
-                msg.Description += $"**{item.Item2.ToString("F")}%** - {item.Item1.Name()}\n";
+                msg.Description += $"**{item.Item2:F}%** - {item.Item1.Name()}\n";
 
             await ReplyAsync("", embed: msg.Build());
         }
@@ -144,7 +144,7 @@ namespace Sanakan.Modules
             };
 
             foreach (var item in chances)
-                msg.Description += $"**{item.Item2.ToString("F")}%** - {item.Item1}\n";
+                msg.Description += $"**{item.Item2:F}%** - {item.Item1}\n";
 
             await ReplyAsync("", embed: msg.Build());
         }
@@ -308,7 +308,7 @@ namespace Sanakan.Modules
         [Command("rozdaj", RunMode = RunMode.Async)]
         [Summary("rozdaje karty")]
         [Remarks("1 10 5")]
-        public async Task GiveawayCardsAsync([Summary("id użytkownika")]ulong id, [Summary("liczba kart")]uint count, [Summary("czas w minutach")]uint duration = 5, [Summary("które wywołanie?")]long progress = -1, [Summary("ile wywołań?")]uint howMuch = 0)
+        public async Task GiveawayCardsAsync([Summary("id użytkownika")]ulong id, [Summary("liczba kart")]uint count, [Summary("czas w minutach")]uint duration = 5, [Summary("które wywołanie?"), Hidden]long progress = -1, [Summary("ile wywołań?"), Hidden]uint howMuch = 0)
         {
             var emote = Emote.Parse("<a:success:467493778752798730>");
             var time = DateTime.Now.AddMinutes(duration);
@@ -324,7 +324,7 @@ namespace Sanakan.Modules
                 }
             }
 
-            var sendMsg = $"Loteria kart. Zareaguj {emote}, aby wziąć udział.\n\nKoniec `{time.ToShortTimeString()}:{time.Second.ToString("00")}`".ToEmbedMessage(EMType.Bot);
+            var sendMsg = $"Loteria kart. Zareaguj {emote}, aby wziąć udział.\n\nKoniec `{time.ToShortTimeString()}:{time.Second:00}`".ToEmbedMessage(EMType.Bot);
             if (progress > -1) sendMsg.Footer = (new EmbedFooterBuilder()).WithText($"{progress+1}/{howMuch}");
             var msg = await ReplyAsync(mention, embed: sendMsg.Build());
             await msg.AddReactionAsync(emote);

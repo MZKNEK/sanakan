@@ -1035,7 +1035,7 @@ namespace Sanakan.Services.PocketWaifu
         {
             var page = 0;
             var msg = new List<Embed>();
-            var cardsStrings = list.Select(x => $"**P:** {x.CardPower.ToString("F")} {x.GetString(false, false, true)}");
+            var cardsStrings = list.Select(x => $"**P:** {x.CardPower:F} {x.GetString(false, false, true)}");
             var perPage = cardsStrings.SplitList(10);
 
             foreach (var p in perPage)
@@ -1043,7 +1043,7 @@ namespace Sanakan.Services.PocketWaifu
                 msg.Add(new EmbedBuilder()
                 {
                     Color = EMType.Info.Color(),
-                    Footer = new EmbedFooterBuilder().WithText($"(S: {++page}) MOC {list.Sum(x => x.CalculateCardPower()).ToString("F")}"),
+                    Footer = new EmbedFooterBuilder().WithText($"(S: {++page}) MOC {list.Sum(x => x.CalculateCardPower()):F}"),
                     Description = ("**Twoje aktywne karty to**:\n\n" + string.Join("\n", p)).TrimToLength(1800),
                 }.Build());
             }
@@ -1839,7 +1839,7 @@ namespace Sanakan.Services.PocketWaifu
             card.DecAffectionOnExpeditionBy(affectionCost);
 
             double minAff = 0;
-            reward += $"Zdobywa:\n+{totalExp.ToString("F")} exp ({card.ExpCnt.ToString("F")})\n";
+            reward += $"Zdobywa:\n+{totalExp:F} exp ({card.ExpCnt:F})\n";
             for (int i = 0; i < totalItemsCnt && allowItems; i++)
             {
                 if (CheckChanceForItemInExpedition(i, totalItemsCnt, card.Expedition))
@@ -1847,7 +1847,7 @@ namespace Sanakan.Services.PocketWaifu
                     var newItem = RandomizeItemForExpedition(card.Expedition);
                     if (newItem == null) break;
 
-                    minAff += newItem.BaseAffection();
+                    minAff += newItem.GetBaseAffection();
 
                     user.GameDeck.AddItem(newItem);
 
@@ -1862,7 +1862,7 @@ namespace Sanakan.Services.PocketWaifu
 
             if (showStats)
             {
-                reward += $"\n\nRT: {duration.Item1.ToString("F")} E: {totalExp.ToString("F")} AI: {minAff.ToString("F")} A: {affectionCost.ToString("F")} K: {karmaCost.ToString("F")} MI: {totalItemsCnt}";
+                reward += $"\n\nRT: {duration.Item1:F} E: {totalExp:F} AI: {minAff:F} A: {affectionCost:F} K: {karmaCost:F} MI: {totalItemsCnt}";
             }
 
             card.Expedition = CardExpedition.None;
@@ -2044,7 +2044,59 @@ namespace Sanakan.Services.PocketWaifu
                 response.Append($"\n\n ❗ Nie udało się {actionStr}ć {ignored.Count} kart!");
             }
 
-            return ExecutionResult.FromSucces(response.ToString());
+            return ExecutionResult.FromSuccess(response.ToString());
         }
-    }
+
+        public async Task<ExecutionResult> UseItemAsync(User user, string userName, int itemNumber, ulong wid, string detail, bool itemToExp = false)
+        {
+			var itemList = user.GetAllItems().ToList();
+            if (itemList.IsNullOrEmpty())
+            {
+				return ExecutionResult.FromError("nie masz żadnych przedmiotów.");
+			}
+
+			if (itemNumber <= 0 || itemNumber > itemList.Count)
+			{
+                return ExecutionResult.FromError("nie masz aż tylu przedmiotów.");
+			}
+
+			var itemCnt = 1;
+			if (int.TryParse(detail, out itemCnt) && itemCnt < 1)
+			{
+				itemCnt = 1;
+			}
+
+			var item = itemList[itemNumber - 1];
+            if (item.Count < itemCnt)
+			{
+                return ExecutionResult.FromError("nie posiadasz tylu sztuk tego przedmiotu.");
+			}
+
+            if (!item.Type.CanBeUsedWithNormalUseCommand())
+			{
+                return ExecutionResult.FromError("tego przedmiotu nie można użyć za pomocą komendy `użyj`.");
+			}
+
+			if (itemCnt != 1 && !item.Type.CanUseMoreThanOne(itemToExp))
+			{
+				return ExecutionResult.FromError("możesz użyć tylko jeden przedmiot tego typu na raz!");
+			}
+
+            var res = wid == 0 ? item.Use(user, itemCnt, itemToExp) : await item.UseOnCardAsync(user, userName, itemCnt, wid, detail, this, _shClient);
+            if (res.IsError()) return res;
+
+            var mission = user.TimeStatuses.FirstOrDefault(x => x.Type == Database.Models.StatusType.DUsedItems);
+			if (mission == null)
+			{
+				mission = Database.Models.StatusType.DUsedItems.NewTimeStatus();
+				user.TimeStatuses.Add(mission);
+			}
+			mission.Count(itemCnt);
+
+			if (item.Count <= 0)
+				user.GameDeck.Items.Remove(item);
+
+            return res;
+		}
+	}
 }

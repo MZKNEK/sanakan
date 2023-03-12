@@ -147,7 +147,7 @@ namespace Sanakan.Modules
             {
                 var info = new System.Text.StringBuilder()
                 .AppendLine($"**Sanakan ({typeof(Sanakan).Assembly.GetName().Version})**:")
-                .AppendLine($"**Czas działania**: `{(DateTime.Now - proc.StartTime).ToString(@"d'd 'hh\:mm\:ss")}`")
+                .AppendLine($"**Czas działania**: `{DateTime.Now - proc.StartTime:d'd 'hh\\:mm\\:ss}`")
                 .AppendLine()
                 .Append("[**Strona**](https://sanakan.pl/) | ")
                 .Append("[**GitHub**](https://github.com/MZKNEK/sanakan.git) | ")

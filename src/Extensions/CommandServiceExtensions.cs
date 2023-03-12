@@ -1,6 +1,7 @@
 ﻿#pragma warning disable 1591
 
 using Discord.Commands;
+using Sanakan.Services.Commands;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -92,6 +93,12 @@ namespace Sanakan.Extensions
 
             var chosenOverload = successfulParses[0];
             return new Services.Commands.SearchResult(command: new Services.Commands.Command(chosenOverload.Key, chosenOverload.Value, context, (Services.Executor.Priority) chosenOverload.Key.Command.Priority));
+        }
+
+        public static bool IsHidden(this ParameterInfo info)
+        {
+            var attr = info.Attributes.FirstOrDefault(x => x.GetType() == typeof(HiddenAttribute)) as HiddenAttribute;
+            return attr?.IsHidden() ?? false;
         }
     }
 }
