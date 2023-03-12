@@ -258,7 +258,7 @@ namespace Sanakan.Services.PocketWaifu
             var embed = new EmbedBuilder
             {
                 Color = EMType.Bot.Color(),
-                Description = $"**Polowanie zakończy się o**: `{time.ToShortTimeString()}:{time.Second.ToString("00")}`",
+                Description = $"**Polowanie zakończy się o**: `{time.ToShortTimeString()}:{time.Second:00}`",
                 ImageUrl = await _waifu.GetSafariViewAsync(pokeImage, trashChannel)
             };
 

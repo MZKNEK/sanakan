@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Discord;
 using Sanakan.Database;
 using Sanakan.Database.Models;
+using Sanakan.Services;
 
 namespace Sanakan.Extensions
 {
@@ -229,12 +230,12 @@ namespace Sanakan.Extensions
             var tags = string.Join(" ", card.TagList.Select(x => x.Name));
             if (card.TagList.Count < 1) tags = "---";
 
-            return $"**[{card.Id}]** *({card.Character}) KC: {card.WhoWantsCount} PWR: {card.CalculateCardPower().ToString("F")}*\n"
+            return $"**[{card.Id}]** *({card.Character}) KC: {card.WhoWantsCount} PWR: {card.CalculateCardPower():F}*\n"
                 + $"{card.GetString(true, true, true, false, true)}\n"
                 + $"_{card.Title}_\n\n"
                 + $"{card.Dere}\n"
                 + $"{card.GetAffectionString()}\n"
-                + $"{card.ExpCnt.ToString("F")}/{card.ExpToUpgrade().ToString("F")} exp\n\n"
+                + $"{card.ExpCnt:F}/{card.ExpToUpgrade():F} exp\n\n"
                 + $"{tags}\n"
                 + $"{card.GetStatusIcons()}";
         }
@@ -248,7 +249,7 @@ namespace Sanakan.Extensions
                 + $"*{card.Title ?? "????"}*\n\n"
                 + $"*{card.GetCardParams(true, false, true)}*\n\n"
                 + $"**Relacja:** {card.GetAffectionString()}\n"
-                + $"**Doświadczenie:** {card.ExpCnt.ToString("F")}/{card.ExpToUpgrade().ToString("F")}\n"
+                + $"**Doświadczenie:** {card.ExpCnt:F}/{card.ExpToUpgrade():F}\n"
                 + $"**Dostępne ulepszenia:** {card.UpgradesCnt}\n\n"
                 + $"**W klatce:** {card.InCage.GetYesNo()}\n"
                 + $"**Aktywna:** {card.Active.GetYesNo()}\n"
@@ -256,7 +257,7 @@ namespace Sanakan.Extensions
                 + $"**WID:** {card.Id} *({card.Character})*\n"
                 + $"**Restarty:** {card.RestartCnt}\n"
                 + $"**Pochodzenie:** {card.Source.GetString()}\n"
-                + $"**Moc:** {card.CalculateCardPower().ToString("F")}\n"
+                + $"**Moc:** {card.CalculateCardPower():F}\n"
                 + $"**Charakter:** {card.Dere}\n"
                 + $"**KC:** {card.WhoWantsCount}\n"
                 + $"**Tagi:** {tags}\n"
@@ -945,15 +946,22 @@ namespace Sanakan.Extensions
             }
         }
 
-        public static bool CanUpgradePower(this Card card, int by = 1)
+        public static ExecutionResult CanUpgradePower(this Card card, int by = 1)
         {
             if (!card.FromFigure)
-                return false;
+            {
+                return ExecutionResult.FromError("ten przedmiot można użyć tylko na karcie ultimate.");
+            }
 
-            var currParams = card.AttackBonus + card.HealthBonus + card.DefenceBonus;
-            var maxParams = 4900 * (int) card.Quality;
-            return currParams + by <= maxParams;
-        }
+			var currParams = card.AttackBonus + card.HealthBonus + card.DefenceBonus;
+			var maxParams = 4900 * (int)card.Quality;
+			if (currParams + by <= maxParams)
+            {
+				return ExecutionResult.FromError("nie można już bardziej zwiekszyć parametrów na tej karcie.");
+			}
+
+            return ExecutionResult.FromSuccess("");
+		}
 
         public static double ValueModifier(this Rarity rarity)
         {

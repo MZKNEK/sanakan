@@ -83,7 +83,10 @@ namespace Sanakan.Services.Session
             => _sessions.Where(x => x.IsOwner(session.GetParticipants()))
                 .Any(x => ((x.GetId() == null) ? (x is T) : (x.GetId() == session.GetId())));
 
-        private async Task DisposeAsync(ISession session)
+		public bool SessionExist(IUser user, Type sessionType)
+		   => _sessions.Where(x => x.IsOwner(user)).Any(x => (x.GetType() == sessionType));
+
+		private async Task DisposeAsync(ISession session)
         {
             await _semaphore.WaitAsync();
 

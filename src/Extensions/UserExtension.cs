@@ -339,7 +339,7 @@ namespace Sanakan.Extensions
             var coins = d1.GetPVPCoinsFromDuel(res);
             d1.PVPCoins += coins;
 
-            return $"**{coins.ToString("+0;-#")}** PC **{gRank.ToString("+0;-#")}** GR  **{sRank.ToString("+0;-#")}** SR";
+            return $"**{coins:+0;-#}** PC **{gRank:+0;-#}** GR  **{sRank:+0;-#}** SR";
         }
 
         public static void AddItem(this GameDeck deck, Item item)
@@ -552,7 +552,7 @@ namespace Sanakan.Extensions
 
                 case TopType.Karma:
                 case TopType.KarmaNegative:
-                    return $"{u.GameDeck.Karma.ToString("F")}";
+                    return $"{u.GameDeck.Karma:F}";
 
                 case TopType.Pvp:
                     return $"{u.GameDeck.GlobalPVPRank}";
@@ -622,5 +622,8 @@ namespace Sanakan.Extensions
         public static Card GetCard(this User user, ulong id) => user.GameDeck.Cards.FirstOrDefault(x => x.Id == id);
 
         public static IEnumerable<Card> GetCards(this User user, ulong[] ids) => user.GameDeck.Cards.Where(x => ids.Any(c => c == x.Id));
-    }
+
+        public static IEnumerable<Item> GetAllItems(this User user) => user.GameDeck.Items.OrderBy(x => x.Type);
+
+	}
 }

@@ -485,7 +485,7 @@ namespace Sanakan.Services
             var gOptions = new TextOptions(font) { HorizontalAlignment = HorizontalAlignment.Right };
             gOptions.Origin = new Point(xSecondRow, ySecondStart);
 
-            baseImg.Mutate(x => x.DrawText(gOptions, $"{more?.Score?.Rating.Value.ToString("0.0")}", fontColor));
+            baseImg.Mutate(x => x.DrawText(gOptions, $"{more?.Score?.Rating.Value:0.0}", fontColor));
             ySecondStart += fontSizeAndInterline;
             gOptions.Origin = new Point(xSecondRow, ySecondStart);
 
@@ -756,7 +756,7 @@ namespace Sanakan.Services
                 var thisColor = (FColor)val;
                 if (thisColor == FColor.None) continue;
 
-                var name = $"{thisColor.ToString()} ({thisColor.Price(currency)} {currency.ToString().ToUpper()})";
+                var name = $"{thisColor} ({thisColor.Price(currency)} {currency.ToString().ToUpper()})";
                 var nLen = TextMeasurer.Measure(name, new TextOptions(message));
 
                 if (i < inFirstColumn + 1)
@@ -794,7 +794,7 @@ namespace Sanakan.Services
                 if (thisColor == FColor.None) continue;
 
                 posY += (int)firstColumnMaxLength.Height + 2;
-                var tname = $"{thisColor.ToString()} ({thisColor.Price(currency)} {currency.ToString().ToUpper()})";
+                var tname = $"{thisColor} ({thisColor.Price(currency)} {currency.ToString().ToUpper()})";
                 imgBase.Mutate(x => x.DrawText(tname, message, GetOrCreateColor(val.ToString("X6")), new Point(posX, posY)));
             }
 
