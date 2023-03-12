@@ -3,17 +3,12 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net;
-using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
-using Discord;
 using Sanakan.Database.Models;
 using Sanakan.Services;
 using Sanakan.Services.PocketWaifu;
 using Shinden;
-using SixLabors.ImageSharp.Drawing;
-using static Sanakan.Services.PocketWaifu.SafariImage;
 
 namespace Sanakan.Extensions
 {
