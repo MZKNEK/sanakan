@@ -41,7 +41,7 @@ namespace Sanakan.Services.PocketWaifu
 
     public class Waifu
     {
-        private const int DERE_TAB_SIZE = ((int) Dere.Yato) + 1;
+        private const int DERE_TAB_SIZE = ((int)Dere.Yato) + 1;
         private static CharacterIdUpdate CharId = new CharacterIdUpdate();
 
         private static double[,] _dereDmgRelation = new double[DERE_TAB_SIZE, DERE_TAB_SIZE]
@@ -216,32 +216,32 @@ namespace Sanakan.Services.PocketWaifu
                     return list.Where(x => x.IsBroken()).ToList();
 
                 case HaremType.Tag:
-                {
-                    var nList = new List<Card>();
-                    var tagList = tag.Split(" ").ToList();
-                    foreach (var t in tagList)
                     {
-                        if (t.Length < 1)
-                            continue;
+                        var nList = new List<Card>();
+                        var tagList = tag.Split(" ").ToList();
+                        foreach (var t in tagList)
+                        {
+                            if (t.Length < 1)
+                                continue;
 
-                        nList = list.Where(x => x.TagList.Any(c => c.Name.Equals(t, StringComparison.CurrentCultureIgnoreCase))).ToList();
+                            nList = list.Where(x => x.TagList.Any(c => c.Name.Equals(t, StringComparison.CurrentCultureIgnoreCase))).ToList();
+                        }
+                        return nList;
                     }
-                    return nList;
-                }
 
                 case HaremType.NoTag:
-                {
-                    var nList = new List<Card>();
-                    var tagList = tag.Split(" ").ToList();
-                    foreach (var t in tagList)
                     {
-                        if (t.Length < 1)
-                            continue;
+                        var nList = new List<Card>();
+                        var tagList = tag.Split(" ").ToList();
+                        foreach (var t in tagList)
+                        {
+                            if (t.Length < 1)
+                                continue;
 
-                        nList = list.Where(x => !x.TagList.Any(c => c.Name.Equals(t, StringComparison.CurrentCultureIgnoreCase))).ToList();
+                            nList = list.Where(x => !x.TagList.Any(c => c.Name.Equals(t, StringComparison.CurrentCultureIgnoreCase))).ToList();
+                        }
+                        return nList;
                     }
-                    return nList;
-                }
 
                 case HaremType.Picture:
                     return list.Where(x => x.HasImage()).ToList();
@@ -261,9 +261,9 @@ namespace Sanakan.Services.PocketWaifu
         static public Rarity RandomizeRarity()
         {
             var num = Fun.GetRandomValue(1000);
-            if (num < 5)   return Rarity.SS;
-            if (num < 25)  return Rarity.S;
-            if (num < 75)  return Rarity.A;
+            if (num < 5) return Rarity.SS;
+            if (num < 25) return Rarity.S;
+            if (num < 75) return Rarity.A;
             if (num < 175) return Rarity.B;
             if (num < 370) return Rarity.C;
             if (num < 620) return Rarity.D;
@@ -287,10 +287,10 @@ namespace Sanakan.Services.PocketWaifu
             };
 
             var ex = list.Where(x => rarityExcluded.Any(c => c == x.Rarity)).ToList();
-            foreach(var e in ex) list.Remove(e);
+            foreach (var e in ex) list.Remove(e);
 
             var num = Fun.GetRandomValue(1000);
-            foreach(var rar in list)
+            foreach (var rar in list)
             {
                 if (num < rar.Chance)
                     return rar.Rarity;
@@ -586,7 +586,7 @@ namespace Sanakan.Services.PocketWaifu
                     return user.AcCnt >= cost;
 
                 default:
-                   return false;
+                    return false;
             }
         }
 
@@ -720,8 +720,8 @@ namespace Sanakan.Services.PocketWaifu
             if (toUp.Character == toSac.Character)
                 rExp *= 10f;
 
-            var sacVal = (int) toSac.Rarity;
-            var upVal = (int) toUp.Rarity;
+            var sacVal = (int)toSac.Rarity;
+            var upVal = (int)toUp.Rarity;
             var diff = upVal - sacVal;
 
             if (diff < 0)
@@ -880,7 +880,7 @@ namespace Sanakan.Services.PocketWaifu
 
         private int ScaleNumber(int oMin, int oMax, int nMin, int nMax, int value)
         {
-            var m = (double)(nMax - nMin)/(double)(oMax - oMin);
+            var m = (double)(nMax - nMin) / (double)(oMax - oMin);
             var c = (oMin * m) - nMin;
 
             return (int)((m * value) - c);
@@ -1207,7 +1207,7 @@ namespace Sanakan.Services.PocketWaifu
                 {
                     if (groupName != "")
                     {
-                        string count = groupCnt > 0 ? $"{startGroup}-{startGroup+groupCnt}" : $"{startGroup}";
+                        string count = groupCnt > 0 ? $"{startGroup}-{startGroup + groupCnt}" : $"{startGroup}";
                         packString += $"**[{count}]** {groupName}\n";
                     }
                     if (i != packs.Count)
@@ -1237,7 +1237,7 @@ namespace Sanakan.Services.PocketWaifu
                 var embed = new EmbedBuilder
                 {
                     Color = EMType.Info.Color(),
-                    Description = $"{user.Mention} twoje przedmioty **({i+1}/{list.Count})**:\n\n{string.Join("\n", list[i]).TrimToLength(1900)}"
+                    Description = $"{user.Mention} twoje przedmioty **({i + 1}/{list.Count})**:\n\n{string.Join("\n", list[i]).TrimToLength(1900)}"
                 };
                 pages.Add(embed.Build());
             }
@@ -1253,7 +1253,7 @@ namespace Sanakan.Services.PocketWaifu
                 var res = await _shClient.GetCharacterInfoAsync(characterId);
                 if (res.IsSuccessStatusCode()) character = res.Body;
             }
-            catch (Exception) {}
+            catch (Exception) { }
             return character;
         }
 
@@ -1265,7 +1265,7 @@ namespace Sanakan.Services.PocketWaifu
                 var res = await _shClient.Title.GetCharactersAsync(titleId);
                 if (res.IsSuccessStatusCode()) characaters = res.Body;
             }
-            catch (Exception) {}
+            catch (Exception) { }
             return characaters;
         }
 
@@ -1277,7 +1277,7 @@ namespace Sanakan.Services.PocketWaifu
                 var res = await _shClient.Title.GetInfoAsync(titleId);
                 if (res.IsSuccessStatusCode()) info = res.Body;
             }
-            catch (Exception) {}
+            catch (Exception) { }
             return info;
         }
 
@@ -1403,7 +1403,7 @@ namespace Sanakan.Services.PocketWaifu
                 if (File.Exists(pImageLocation))
                     File.Delete(pImageLocation);
             }
-            catch (Exception) {}
+            catch (Exception) { }
         }
 
         private async Task<string> GetCardUrlIfExistAsync(Card card, bool defaultStr = false, bool force = false)
@@ -1554,7 +1554,7 @@ namespace Sanakan.Services.PocketWaifu
         {
             string embedString = "";
             for (int i = 0; i < items.Length; i++)
-                embedString+= $"**[{i + 1}]** _{items[i].Item.Name}_ - {items[i].Cost} {currency}\n";
+                embedString += $"**[{i + 1}]** _{items[i].Item.Name}_ - {items[i].Cost} {currency}\n";
 
             return new EmbedBuilder
             {
@@ -1711,11 +1711,11 @@ namespace Sanakan.Services.PocketWaifu
                     break;
 
                 case CardExpedition.UltimateHard:
-                    cnt =  2.3;
+                    cnt = 2.3;
                     break;
 
                 case CardExpedition.UltimateHardcore:
-                    cnt =  1.1;
+                    cnt = 1.1;
                     break;
 
                 default:
@@ -1780,7 +1780,7 @@ namespace Sanakan.Services.PocketWaifu
             var multiplier = (duration.Item2 < 60) ? ((duration.Item2 < 30) ? 5d : 3d) : 1d;
 
             var totalExp = GetProgressiveValueFromExpedition(baseExp, duration.Item1, 15d);
-            var totalItemsCnt = (int) GetProgressiveValueFromExpedition(baseItemsCnt, duration.Item1, 25d);
+            var totalItemsCnt = (int)GetProgressiveValueFromExpedition(baseItemsCnt, duration.Item1, 25d);
 
             var karmaCost = card.GetKarmaCostInExpeditionPerMinute() * duration.Item1;
             var affectionCost = card.GetCostOfExpeditionPerMinute() * duration.Item1 * multiplier;
@@ -2049,54 +2049,54 @@ namespace Sanakan.Services.PocketWaifu
 
         public async Task<ExecutionResult> UseItemAsync(User user, string userName, int itemNumber, ulong wid, string detail, bool itemToExp = false)
         {
-			var itemList = user.GetAllItems().ToList();
+            var itemList = user.GetAllItems().ToList();
             if (itemList.IsNullOrEmpty())
             {
-				return ExecutionResult.FromError("nie masz żadnych przedmiotów.");
-			}
+                return ExecutionResult.FromError("nie masz żadnych przedmiotów.");
+            }
 
-			if (itemNumber <= 0 || itemNumber > itemList.Count)
-			{
+            if (itemNumber <= 0 || itemNumber > itemList.Count)
+            {
                 return ExecutionResult.FromError("nie masz aż tylu przedmiotów.");
-			}
+            }
 
-			var itemCnt = 1;
-			if (int.TryParse(detail, out itemCnt) && itemCnt < 1)
-			{
-				itemCnt = 1;
-			}
+            var itemCnt = 1;
+            if (int.TryParse(detail, out itemCnt) && itemCnt < 1)
+            {
+                itemCnt = 1;
+            }
 
-			var item = itemList[itemNumber - 1];
+            var item = itemList[itemNumber - 1];
             if (item.Count < itemCnt)
-			{
+            {
                 return ExecutionResult.FromError("nie posiadasz tylu sztuk tego przedmiotu.");
-			}
+            }
 
             if (!item.Type.CanBeUsedWithNormalUseCommand())
-			{
+            {
                 return ExecutionResult.FromError("tego przedmiotu nie można użyć za pomocą komendy `użyj`.");
-			}
+            }
 
-			if (itemCnt != 1 && !item.Type.CanUseMoreThanOne(itemToExp))
-			{
-				return ExecutionResult.FromError("możesz użyć tylko jeden przedmiot tego typu na raz!");
-			}
+            if (itemCnt != 1 && !item.Type.CanUseMoreThanOne(itemToExp))
+            {
+                return ExecutionResult.FromError("możesz użyć tylko jeden przedmiot tego typu na raz!");
+            }
 
             var res = wid == 0 ? item.Use(user, itemCnt, itemToExp) : await item.UseOnCardAsync(user, userName, itemCnt, wid, detail, this, _shClient);
             if (res.IsError()) return res;
 
             var mission = user.TimeStatuses.FirstOrDefault(x => x.Type == Database.Models.StatusType.DUsedItems);
-			if (mission == null)
-			{
-				mission = Database.Models.StatusType.DUsedItems.NewTimeStatus();
-				user.TimeStatuses.Add(mission);
-			}
-			mission.Count(itemCnt);
+            if (mission == null)
+            {
+                mission = Database.Models.StatusType.DUsedItems.NewTimeStatus();
+                user.TimeStatuses.Add(mission);
+            }
+            mission.Count(itemCnt);
 
-			if (item.Count <= 0)
-				user.GameDeck.Items.Remove(item);
+            if (item.Count <= 0)
+                user.GameDeck.Items.Remove(item);
 
             return res;
-		}
-	}
+        }
+    }
 }

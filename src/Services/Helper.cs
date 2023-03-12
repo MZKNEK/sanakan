@@ -83,7 +83,6 @@ namespace Sanakan.Services
                 foreach (var param in cmd.Parameters)
                     command += param.IsHidden() ? "" : $" `{param.Name}` ";
 
-
             command += $" - {cmd.Summary}\n";
 
             if (cmd.Parameters.Count > 0)

@@ -92,7 +92,7 @@ namespace Sanakan.Extensions
             }
 
             var chosenOverload = successfulParses[0];
-            return new Services.Commands.SearchResult(command: new Services.Commands.Command(chosenOverload.Key, chosenOverload.Value, context, (Services.Executor.Priority) chosenOverload.Key.Command.Priority));
+            return new Services.Commands.SearchResult(command: new Services.Commands.Command(chosenOverload.Key, chosenOverload.Value, context, (Services.Executor.Priority)chosenOverload.Key.Command.Priority));
         }
 
         public static bool IsHidden(this ParameterInfo info)

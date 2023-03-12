@@ -38,7 +38,7 @@ namespace Sanakan.Modules
         [Alias("h", "help")]
         [Summary("wyświetla listę poleceń")]
         [Remarks("odcinki"), RequireAnyCommandChannel]
-        public async Task GiveHelpAsync([Summary("nazwa polecenia (opcjonalne)")][Remainder]string command = null)
+        public async Task GiveHelpAsync([Summary("nazwa polecenia (opcjonalne)")][Remainder] string command = null)
         {
             var gUser = Context.User as SocketGuildUser;
             if (gUser == null) return;
@@ -80,7 +80,7 @@ namespace Sanakan.Modules
         [Alias("whois")]
         [Summary("wyświetla informacje o użytkowniku")]
         [Remarks("Dzida"), RequireCommandChannel]
-        public async Task GiveUserInfoAsync([Summary("nazwa użytkownika (opcjonalne)")]SocketUser user = null)
+        public async Task GiveUserInfoAsync([Summary("nazwa użytkownika (opcjonalne)")] SocketUser user = null)
         {
             var usr = (user ?? Context.User) as SocketGuildUser;
             if (usr == null)
@@ -125,7 +125,7 @@ namespace Sanakan.Modules
         [Alias("avatar", "pfp")]
         [Summary("wyświetla awatar użytkownika")]
         [Remarks("Dzida"), RequireCommandChannel]
-        public async Task ShowUserAvatarAsync([Summary("nazwa użytkownika (opcjonalne)")]SocketUser user = null, [Summary("awatar serwera? (opcjonalne)")]bool fromGuild = false)
+        public async Task ShowUserAvatarAsync([Summary("nazwa użytkownika (opcjonalne)")] SocketUser user = null, [Summary("awatar serwera? (opcjonalne)")] bool fromGuild = false)
         {
             var usr = (user ?? Context.User);
             var embed = new EmbedBuilder
@@ -162,7 +162,7 @@ namespace Sanakan.Modules
         [Alias("raport", "report", "zgłos", "zglos", "zgloś")]
         [Summary("zgłasza wiadomość użytkownika")]
         [Remarks("Tak nie wolno!"), RequireUserRole]
-        public async Task ReportUserSimpleAsync([Summary("powód")][Remainder]string reason)
+        public async Task ReportUserSimpleAsync([Summary("powód")][Remainder] string reason)
         {
             if (Context.Message.Reference != null && Context.Message.Reference.MessageId.IsSpecified)
             {
@@ -179,7 +179,7 @@ namespace Sanakan.Modules
         [Alias("raport", "report", "zgłos", "zglos", "zgloś")]
         [Summary("zgłasza wiadomość użytkownika")]
         [Remarks("63312335634561 Tak nie wolno!"), RequireUserRole]
-        public async Task ReportUserAsync([Summary("id wiadomości")]ulong messageId, [Summary("powód")][Remainder]string reason)
+        public async Task ReportUserAsync([Summary("id wiadomości")] ulong messageId, [Summary("powód")][Remainder] string reason)
         {
             using (var db = new Database.DatabaseContext(Config))
             {
