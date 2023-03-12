@@ -886,7 +886,7 @@ namespace Sanakan.Extensions
                     return ExecutionResult.FromError("nie możesz użyć szkieletu bez karty, chyba, że chcesz przerobić go na exp.");
 
                 default:
-                    return ExecutionResult.FromError("tego przedmiotu nie powinno tutaj być!");
+                    return ExecutionResult.FromError($"tego przedmiotu ({item.Name}) nie powinno tutaj być!");
             }
 
             return ExecutionResult.FromSuccess(str.ToString());
@@ -948,6 +948,7 @@ namespace Sanakan.Extensions
                 case ItemType.AffectionRecoverySmall:
                 case ItemType.IncreaseExpBig:
                 case ItemType.IncreaseExpSmall:
+                case ItemType.CheckAffection:
                     break;
 
                 case ItemType.ResetCardValue:
@@ -1129,7 +1130,7 @@ namespace Sanakan.Extensions
                     break;
 
                 default:
-                    return ExecutionResult.FromError("tego przedmiotu nie powinno tutaj być!");
+                    return ExecutionResult.FromError($"tego przedmiotu (({item.Name})) nie powinno tutaj być!");
             }
 
             _waifu.DeleteCardImageIfExist(card);

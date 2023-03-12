@@ -385,15 +385,15 @@ namespace Sanakan.Modules
             await ReplyAsync("", embed: await _waifu.ExecuteShopAsync(ShopType.Normal, Config, Context.User, itemNumber, info));
         }
 
-        [Command("użyj")]
-        [Alias("uzyj", "use")]
+        [Command("użyj bez karty")]
+        [Alias("uzyj bez karty", "use without card", "usewc", "użyjbk", "uzyjbk")]
         [Summary("używa przedmiot")]
         [Remarks("1 4212 2"), RequireWaifuCommandChannel]
         public async Task UseItemAsync([Summary("nr przedmiotu")] int itemNumber, [Summary("liczba przedmiotów")] string detail = "1", [Summary("czy zamienić część figurki na exp")] bool itemToExp = false, [Hidden] ulong wid = 0)
             => await UseItemOnCardAsync(itemNumber, wid, detail, itemToExp);
 
-        [Command("użyj na karcie")]
-        [Alias("uzyj na karcie", "use on card", "usec", "uzyjk", "użyjk")]
+        [Command("użyj")]
+        [Alias("uzyj", "use")]
         [Summary("używa przedmiot na karcie")]
         [Remarks("1 4212 2"), RequireWaifuCommandChannel]
         public async Task UseItemOnCardAsync([Summary("nr przedmiotu")] int itemNumber, [Summary("WID")] ulong wid = 0, [Summary("liczba przedmiotów/link do obrazka/typ gwiazdki")] string detail = "1", [Hidden] bool itemToExp = false)
@@ -415,7 +415,7 @@ namespace Sanakan.Modules
                     return;
                 }
 
-                await ReplyAsync("", embed: res.ToEmbedMessage().WithAuthor(Context.User).Build());
+                await ReplyAsync("", embed: res.ToEmbedMessage().WithUser(Context.User).Build());
 
                 await db.SaveChangesAsync();
 
