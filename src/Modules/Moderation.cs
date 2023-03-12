@@ -1697,7 +1697,7 @@ namespace Sanakan.Modules
         {
             var emote = new Emoji("🎰");
             var time = DateTime.Now.AddMinutes(duration);
-            var msg = await ReplyAsync("", embed: $"Loteria! zareaguj {emote}, aby wziąć udział.\n\n Koniec `{time.ToShortTimeString()}:{time.Second.ToString("00")}`".ToEmbedMessage(EMType.Bot).Build());
+            var msg = await ReplyAsync("", embed: $"Loteria! zareaguj {emote}, aby wziąć udział.\n\n Koniec `{time.ToShortTimeString()}:{time.Second:00}`".ToEmbedMessage(EMType.Bot).Build());
 
             await msg.AddReactionAsync(emote);
             await Task.Delay(TimeSpan.FromMinutes(duration));

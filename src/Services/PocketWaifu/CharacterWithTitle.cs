@@ -14,7 +14,7 @@ namespace Sanakan.Services.PocketWaifu
             if (string.IsNullOrEmpty(Title))
                 return Character.ToString();
 
-            return $"{Character.ToString()} ({Title})";
+            return $"{Character} ({Title})";
         }
     }
 }

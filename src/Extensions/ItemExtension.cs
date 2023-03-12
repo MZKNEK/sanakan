@@ -3,7 +3,12 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 using Sanakan.Database.Models;
+using Sanakan.Services;
+using Sanakan.Services.PocketWaifu;
+using Shinden;
 
 namespace Sanakan.Extensions
 {
@@ -94,6 +99,54 @@ namespace Sanakan.Extensions
 
                 default:
                     return "Brak opisu.";
+            }
+        }
+
+        public static string Info(this ItemType type, Card card = null)
+        {
+            switch (type)
+            {
+                case ItemType.AffectionRecoveryGreat:
+                    return "Bardzo powiększyła się relacja z kartą!";
+                case ItemType.AffectionRecoveryBig:
+                    return "Znacznie powiększyła się relacja z kartą!";
+                case ItemType.AffectionRecoveryNormal:
+                    return "Powiększyła się relacja z kartą!";
+                case ItemType.AffectionRecoverySmall:
+                    return "Powiększyła się trochę relacja z kartą!";
+                case ItemType.IncreaseExpSmall:
+                    return "Twoja karta otrzymała odrobinę punktów doświadczenia!";
+                case ItemType.IncreaseExpBig:
+                    return "Twoja karta otrzymała punkty doświadczenia!";
+                case ItemType.ChangeStarType:
+                    return "Zmieniono typ gwiazdki!";
+                case ItemType.ChangeCardImage:
+                    return "Ustawiono nowy obrazek.";
+                case ItemType.SetCustomImage:
+                    return "Ustawiono nowy obrazek. Pamiętaj jednak, że dodanie nieodpowiedniego obrazka może skutkować skasowaniem karty!";
+                case ItemType.SetCustomBorder:
+                    return "Ustawiono nowy obrazek jako ramkę. Pamiętaj jednak, że dodanie nieodpowiedniego obrazka może skutkować skasowaniem karty!";
+                case ItemType.IncreaseUpgradeCnt:
+                    return $"Zwiększono liczbę ulepszeń do {card.UpgradesCnt}!";
+                case ItemType.ResetCardValue:
+                    return "Wartość karty została zresetowana.";
+                case ItemType.DereReRoll:
+                    return $"Nowy charakter to: {card.Dere}!";
+                case ItemType.CardParamsReRoll:
+                    return $"Nowa moc karty to: 🔥{card.GetAttackWithBonus()} 🛡{card.GetDefenceWithBonus()}!";
+                case ItemType.CheckAffection:
+                    return $"Relacja wynosi: `{card.Affection:F}`";
+                case ItemType.IncreaseUltimateAttack:
+                    return $"Zwiększono atak karty!";
+                case ItemType.IncreaseUltimateDefence:
+                    return $"Zwiększono obronę karty!";
+                case ItemType.IncreaseUltimateHealth:
+                    return $"Zwiększono punkty życia karty!";
+                case ItemType.IncreaseUltimateAll:
+                    return $"Zwiększono parametry karty!";
+
+                default:
+                    return "";
             }
         }
 
@@ -190,11 +243,11 @@ namespace Sanakan.Extensions
             }
         }
 
-        public static double GetQualityModifier(this Quality quality) => 0.1 * (int) quality;
+        public static double GetQualityModifier(this Quality quality) => 0.1 * (int)quality;
 
-        public static double BaseAffection(this Item item)
+        public static double GetBaseAffection(this Item item)
         {
-            var aff = item.Type.BaseAffection();
+            var aff = item.Type.GetBaseAffection();
             if (item.Type.HasDifferentQualities())
             {
                 aff += aff * item.Quality.GetQualityModifier();
@@ -202,30 +255,59 @@ namespace Sanakan.Extensions
             return aff;
         }
 
-        public static double BaseAffection(this ItemType type)
+        public static double GetBaseAffection(this ItemType type)
         {
             switch (type)
             {
-                case ItemType.AffectionRecoveryGreat:   return 1.6;
-                case ItemType.AffectionRecoveryBig:     return 1;
-                case ItemType.AffectionRecoveryNormal:  return 0.12;
-                case ItemType.AffectionRecoverySmall:   return 0.02;
+                case ItemType.AffectionRecoveryGreat: return 1.6;
+                case ItemType.AffectionRecoveryBig: return 1;
+                case ItemType.AffectionRecoveryNormal: return 0.12;
+                case ItemType.AffectionRecoverySmall: return 0.02;
                 case ItemType.BetterIncreaseUpgradeCnt: return 1.7;
-                case ItemType.IncreaseUpgradeCnt:       return 0.7;
-                case ItemType.DereReRoll:               return 0.1;
-                case ItemType.CardParamsReRoll:         return 0.2;
-                case ItemType.CheckAffection:           return 0.2;
-                case ItemType.SetCustomImage:           return 0.5;
-                case ItemType.IncreaseExpSmall:         return 0.15;
-                case ItemType.IncreaseExpBig:           return 0.25;
-                case ItemType.ChangeStarType:           return 0.3;
-                case ItemType.SetCustomBorder:          return 0.4;
-                case ItemType.ChangeCardImage:          return 0.1;
-                case ItemType.ResetCardValue:           return 0.1;
-                case ItemType.IncreaseUltimateAttack:   return 0.35;
-                case ItemType.IncreaseUltimateDefence:  return 0.35;
-                case ItemType.IncreaseUltimateHealth:   return 0.55;
-                case ItemType.IncreaseUltimateAll:      return 2.2;
+                case ItemType.IncreaseUpgradeCnt: return 0.7;
+                case ItemType.DereReRoll: return 0.1;
+                case ItemType.CardParamsReRoll: return 0.2;
+                case ItemType.CheckAffection: return 0.2;
+                case ItemType.SetCustomImage: return 0.5;
+                case ItemType.IncreaseExpSmall: return 0.15;
+                case ItemType.IncreaseExpBig: return 0.25;
+                case ItemType.ChangeStarType: return 0.3;
+                case ItemType.SetCustomBorder: return 0.4;
+                case ItemType.ChangeCardImage: return 0.1;
+                case ItemType.ResetCardValue: return 0.1;
+                case ItemType.IncreaseUltimateAttack: return 0.35;
+                case ItemType.IncreaseUltimateDefence: return 0.35;
+                case ItemType.IncreaseUltimateHealth: return 0.55;
+                case ItemType.IncreaseUltimateAll: return 2.2;
+
+                default: return 0;
+            }
+        }
+
+        public static double GetBaseKarmaChange(this ItemType type)
+        {
+            switch (type)
+            {
+                case ItemType.AffectionRecoveryGreat: return 0.3;
+                case ItemType.AffectionRecoveryBig: return 0.1;
+                case ItemType.AffectionRecoveryNormal: return 0.01;
+                case ItemType.AffectionRecoverySmall: return 0.001;
+                case ItemType.IncreaseExpSmall: return 0.1;
+                case ItemType.IncreaseExpBig: return 0.3;
+                case ItemType.ChangeStarType: return 0.001;
+                case ItemType.ChangeCardImage: return 0.001;
+                case ItemType.SetCustomImage: return 0.001;
+                case ItemType.SetCustomBorder: return 0.001;
+                case ItemType.IncreaseUpgradeCnt: return 1;
+                case ItemType.ResetCardValue: return 0.5;
+                case ItemType.DereReRoll: return 0.02;
+                case ItemType.CardParamsReRoll: return 0.03;
+                case ItemType.CheckAffection: return -0.01;
+                case ItemType.IncreaseUltimateAttack: return 0.4;
+                case ItemType.IncreaseUltimateDefence: return 0.4;
+                case ItemType.IncreaseUltimateHealth: return 0.6;
+                case ItemType.IncreaseUltimateAll: return 1.2;
+                case ItemType.FigureSkeleton: return -1;
 
                 default: return 0;
             }
@@ -259,6 +341,44 @@ namespace Sanakan.Extensions
                 case ItemType.FigureRightLegPart:
                 case ItemType.FigureUniversalPart:
                     return true;
+
+                default:
+                    return false;
+            }
+        }
+
+        public static bool CanUseMoreThanOne(this ItemType type, bool toExp)
+        {
+            switch (type)
+            {
+                case ItemType.AffectionRecoveryBig:
+                case ItemType.AffectionRecoverySmall:
+                case ItemType.AffectionRecoveryNormal:
+                case ItemType.AffectionRecoveryGreat:
+                case ItemType.IncreaseUpgradeCnt:
+                case ItemType.IncreaseExpSmall:
+                case ItemType.IncreaseExpBig:
+                case ItemType.IncreaseUltimateAttack:
+                case ItemType.IncreaseUltimateDefence:
+                case ItemType.IncreaseUltimateHealth:
+                case ItemType.IncreaseUltimateAll:
+                // special case
+                case ItemType.CardParamsReRoll:
+                case ItemType.DereReRoll:
+                case ItemType.ChangeCardImage:
+                    return true;
+
+                case ItemType.FigureUniversalPart:
+                case ItemType.FigureHeadPart:
+                case ItemType.FigureBodyPart:
+                case ItemType.FigureLeftArmPart:
+                case ItemType.FigureRightArmPart:
+                case ItemType.FigureLeftLegPart:
+                case ItemType.FigureRightLegPart:
+                case ItemType.FigureClothesPart:
+                case ItemType.FigureSkeleton:
+                    if (toExp) return true;
+                    return false;
 
                 default:
                     return false;
@@ -541,7 +661,7 @@ namespace Sanakan.Extensions
 
         public static double ToExpForPart(this Item item, Quality skeleton)
         {
-            double diff = ((int) skeleton - (int) item.Quality) / 10f;
+            double diff = ((int)skeleton - (int)item.Quality) / 10f;
             if (diff <= 0)
             {
                 return 1 + (item.Quality.ToValue() * -diff);
@@ -695,6 +815,357 @@ namespace Sanakan.Extensions
             }
 
             return chances.ToList();
+        }
+
+        public static ExecutionResult Use(this Item item, User user, int itemCnt, bool itemToExp)
+        {
+            if (!item.Type.CanUseWithoutCard(itemToExp))
+            {
+                return ExecutionResult.FromError("nie można użyć przedmiotu bez karty.");
+            }
+
+            var activeFigure = user.GameDeck.Figures.FirstOrDefault(x => x.IsFocus);
+            if (activeFigure == null)
+            {
+                return ExecutionResult.FromError("nie posiadasz aktywnej figurki!");
+            }
+
+            // double karmachange = item.Type.GetBaseKarmaChange() * itemCnt;
+
+            var str = new StringBuilder().Append($"Użyto _{item.Name}_ {((itemCnt > 1) ? $"x{itemCnt}" : "")}\n\n");
+
+            switch (item.Type)
+            {
+                case ItemType.FigureHeadPart:
+                case ItemType.FigureBodyPart:
+                case ItemType.FigureClothesPart:
+                case ItemType.FigureLeftArmPart:
+                case ItemType.FigureLeftLegPart:
+                case ItemType.FigureRightArmPart:
+                case ItemType.FigureRightLegPart:
+                case ItemType.FigureUniversalPart:
+                    if (itemToExp)
+                    {
+                        var itemPartType = item.Type.GetPartType();
+                        if (activeFigure.FocusedPart != itemPartType && itemPartType != FigurePart.All)
+                            return ExecutionResult.FromError("typy części się nie zgadzają.");
+
+                        var expFromPart = item.ToExpForPart(activeFigure.SkeletonQuality);
+                        activeFigure.PartExp += expFromPart * itemCnt;
+
+                        str.Append($"Dodano do wybranej części figurki {expFromPart:F} punktów konstrukcji. W sumie posiada ich {activeFigure.PartExp:F}.");
+                        break;
+                    }
+
+                    if (!activeFigure.CanAddPart(item))
+                        return ExecutionResult.FromError("część, którą próbujesz dodać ma zbyt niską jakość.");
+
+                    if (!activeFigure.HasEnoughPointsToAddPart(item))
+                        return ExecutionResult.FromError($"aktywowana część ma zbyt małą ilość punktów konstrukcji, wymagana to {activeFigure.ConstructionPointsToInstall(item)}.");
+
+                    if (!activeFigure.AddPart(item))
+                        return ExecutionResult.FromError("coś poszło nie tak.");
+
+                    str.Append("Dodano część do figurki.");
+                    break;
+
+                case ItemType.FigureSkeleton:
+                    if (itemToExp)
+                    {
+                        var expFromPart = item.ToExpForPart(activeFigure.SkeletonQuality);
+                        activeFigure.PartExp += expFromPart * itemCnt;
+
+                        str.Append($"Dodano do wybranej części figurki {expFromPart:F} punktów konstrukcji. W sumie posiada ich {activeFigure.PartExp:F}.");
+                        break;
+                    }
+                    return ExecutionResult.FromError("nie możesz użyć szkieletu bez karty, chyba, że chcesz przerobić go na exp.");
+
+                default:
+                    return ExecutionResult.FromError($"tego przedmiotu ({item.Name}) nie powinno tutaj być!");
+            }
+
+            return ExecutionResult.FromSuccess(str.ToString());
+        }
+
+        public async static Task<ExecutionResult> UseOnCardAsync(this Item item, User user, string userName, int itemCnt, ulong wid, string detail, Waifu _waifu, ShindenClient shinden)
+        {
+            var card = user.GameDeck.Cards.FirstOrDefault(x => x.Id == wid);
+            if (card == null)
+            {
+                return ExecutionResult.FromError("nie posiadasz takiej karty!");
+            }
+
+            if (card.Expedition != CardExpedition.None)
+            {
+                return ExecutionResult.FromError("ta karta jest na wyprawie!");
+            }
+
+            switch (item.Type)
+            {
+                case ItemType.FigureSkeleton:
+                case ItemType.IncreaseExpBig:
+                case ItemType.IncreaseExpSmall:
+                case ItemType.CardParamsReRoll:
+                case ItemType.IncreaseUpgradeCnt:
+                case ItemType.BetterIncreaseUpgradeCnt:
+                    if (!card.FromFigure)
+                        goto default;
+                    return ExecutionResult.FromError("tego przedmiotu nie można użyć na tej karcie.");
+
+                case ItemType.IncreaseUltimateAttack:
+                case ItemType.IncreaseUltimateDefence:
+                case ItemType.IncreaseUltimateHealth:
+                case ItemType.IncreaseUltimateAll:
+                    var res = card.CanUpgradePower(itemCnt);
+                    if (res.Status == ExecutionResult.EStatus.Error)
+                        return res;
+                    break;
+
+                default:
+                    break;
+            }
+
+            var consumeItem = true;
+            var embedColor = EMType.Bot;
+
+            var textRelation = card.GetAffectionString();
+
+            double karmaChange = item.Type.GetBaseKarmaChange() * itemCnt;
+            double affectionInc = item.Type.GetBaseAffection() * itemCnt;
+
+            var str = new StringBuilder().Append($"Użyto _{item.Name}_ {((itemCnt > 1) ? $"x{itemCnt}" : "")}{(" na " + card.GetString(false, false, true))}\n\n");
+
+            switch (item.Type)
+            {
+                case ItemType.AffectionRecoveryBig:
+                case ItemType.AffectionRecoveryGreat:
+                case ItemType.AffectionRecoveryNormal:
+                case ItemType.AffectionRecoverySmall:
+                case ItemType.IncreaseExpBig:
+                case ItemType.IncreaseExpSmall:
+                case ItemType.CheckAffection:
+                    break;
+
+                case ItemType.ResetCardValue:
+                    card.MarketValue = 1;
+                    break;
+
+                case ItemType.CardParamsReRoll:
+                    card.Attack = Waifu.RandomizeAttack(card.Rarity);
+                    card.Defence = Waifu.RandomizeDefence(card.Rarity);
+                    break;
+
+                case ItemType.IncreaseUltimateAttack:
+                    card.AttackBonus += itemCnt * 5;
+                    break;
+
+                case ItemType.IncreaseUltimateDefence:
+                    card.DefenceBonus += itemCnt * 3;
+                    break;
+
+                case ItemType.IncreaseUltimateHealth:
+                    card.HealthBonus += itemCnt * 5;
+                    break;
+
+                case ItemType.IncreaseUltimateAll:
+                    card.AttackBonus += itemCnt * 5;
+                    card.HealthBonus += itemCnt * 5;
+                    card.DefenceBonus += itemCnt * 5;
+                    break;
+
+                case ItemType.ChangeStarType:
+                    try
+                    {
+                        card.StarStyle = new StarStyle().Parse(detail);
+                    }
+                    catch (Exception)
+                    {
+                        return ExecutionResult.FromError("Nie rozpoznano typu gwiazdki!");
+                    }
+                    break;
+
+                case ItemType.ChangeCardImage:
+                    var res = await shinden.GetCharacterInfoAsync(card.Character);
+                    if (!res.IsSuccessStatusCode())
+                    {
+                        return ExecutionResult.FromError("Nie odnaleziono postaci na shinden!");
+                    }
+                    var urls = res.Body.Pictures.GetPicList();
+                    if (itemCnt == 0)
+                    {
+                        int tidx = 0;
+                        return ExecutionResult.FromSuccess("Obrazki: \n" + string.Join("\n", urls.Select(x => $"{++tidx}: {x}")), EMType.Info);
+                    }
+                    else
+                    {
+                        if (itemCnt > urls.Count)
+                        {
+                            return ExecutionResult.FromError("Nie odnaleziono obrazka!");
+                        }
+                        var turl = urls[itemCnt - 1];
+                        if (card.GetImage() == turl)
+                        {
+                            return ExecutionResult.FromError("Taki obrazek jest już ustawiony!");
+                        }
+                        card.CustomImage = turl;
+                    }
+                    break;
+
+                case ItemType.SetCustomImage:
+                    if (!detail.IsURLToImage())
+                    {
+                        return ExecutionResult.FromError("Nie wykryto obrazka! Upewnij się, że podałeś poprawny adres!");
+                    }
+                    if (card.Image == null && !card.FromFigure)
+                    {
+                        return ExecutionResult.FromError("Aby ustawić własny obrazek, karta musi posiadać wcześniej ustawiony główny (na stronie)!");
+                    }
+                    card.CustomImage = detail;
+                    consumeItem = !card.FromFigure;
+                    break;
+
+                case ItemType.SetCustomBorder:
+                    if (!detail.IsURLToImage())
+                    {
+                        return ExecutionResult.FromError("Nie wykryto obrazka! Upewnij się, że podałeś poprawny adres!");
+                    }
+                    if (card.Image == null)
+                    {
+                        return ExecutionResult.FromError("Aby ustawić ramkę, karta musi posiadać wcześniej ustawiony obrazek na stronie!");
+                    }
+                    card.CustomBorder = detail;
+                    break;
+
+                case ItemType.BetterIncreaseUpgradeCnt:
+                    if (card.Curse == CardCurse.BloodBlockade)
+                    {
+                        return ExecutionResult.FromError("na tej karcie ciąży klątwa!");
+                    }
+                    if (card.Rarity == Rarity.SSS)
+                    {
+                        return ExecutionResult.FromError("karty **SSS** nie można już ulepszyć!");
+                    }
+                    if (!card.CanGiveBloodOrUpgradeToSSS())
+                    {
+                        if (card.HasNoNegativeEffectAfterBloodUsage())
+                        {
+                            if (card.CanGiveRing())
+                            {
+                                affectionInc = 1.7;
+                                karmaChange += 0.6;
+                                str.Append("Bardzo powiększyła się relacja z kartą!");
+                            }
+                            else
+                            {
+                                affectionInc = 1.2;
+                                karmaChange += 0.4;
+                                embedColor = EMType.Warning;
+                                str.Append($"Karta się zmartwiła!");
+                            }
+                        }
+                        else
+                        {
+                            affectionInc = -5;
+                            karmaChange -= 0.5;
+                            embedColor = EMType.Error;
+                            str.Append($"Karta się przeraziła!");
+                        }
+                    }
+                    else
+                    {
+                        karmaChange += 2;
+                        affectionInc = 1.5;
+                        card.UpgradesCnt += 2;
+                        str.Append($"Zwiększono liczbę ulepszeń do {card.UpgradesCnt}!");
+                    }
+                    break;
+
+                case ItemType.IncreaseUpgradeCnt:
+                    if (!card.CanGiveRing())
+                    {
+                        return ExecutionResult.FromError("karta musi mieć min. poziom relacji: *Miłość*.");
+                    }
+                    if (card.Rarity == Rarity.SSS)
+                    {
+                        return ExecutionResult.FromError("karty **SSS** nie można już ulepszyć!");
+                    }
+                    if (card.UpgradesCnt + itemCnt > 5)
+                    {
+                        return ExecutionResult.FromError("nie można mieć więcej jak pięć ulepszeń dostępnych na karcie.");
+                    }
+                    card.UpgradesCnt += itemCnt;
+                    break;
+
+                case ItemType.DereReRoll:
+                    if (card.Curse == CardCurse.DereBlockade)
+                    {
+                        return ExecutionResult.FromError("na tej karcie ciąży klątwa!");
+                    }
+                    card.Dere = Waifu.RandomizeDere();
+                    break;
+
+                case ItemType.FigureSkeleton:
+                    if (card.Rarity != Rarity.SSS)
+                    {
+                        return ExecutionResult.FromError("karta musi być rangi **SSS**.");
+                    }
+
+                    if (user.GameDeck.Figures.Any(x => x.Character == card.Character))
+                    {
+                        return ExecutionResult.FromError("już posiadasz figurkę tej postaci.");
+                    }
+
+                    var figure = item.ToFigure(card);
+                    if (figure != null)
+                    {
+                        user.GameDeck.Figures.Add(figure);
+                        user.GameDeck.Cards.Remove(card);
+                    }
+                    str.Append($"Rozpoczęto tworzenie figurki.");
+                    break;
+
+                default:
+                    return ExecutionResult.FromError($"tego przedmiotu (({item.Name})) nie powinno tutaj być!");
+            }
+
+            _waifu.DeleteCardImageIfExist(card);
+            str.Append(item.Type.Info(card));
+
+            if (card.Character == user.GameDeck.Waifu)
+                affectionInc *= 1.15;
+
+            var response = await shinden.GetCharacterInfoAsync(card.Character);
+            if (response.IsSuccessStatusCode())
+            {
+                if (response.Body?.Points != null)
+                {
+                    var ordered = response.Body.Points.OrderByDescending(x => x.Points);
+                    if (ordered.Any(x => x.Name == userName))
+                        affectionInc *= 1.1;
+                }
+            }
+
+            if (card.Dere == Dere.Tsundere)
+                affectionInc *= 1.2;
+
+            if (consumeItem)
+                item.Count -= itemCnt;
+
+            if (card.Curse == CardCurse.InvertedItems)
+            {
+                affectionInc = -affectionInc;
+                karmaChange = -karmaChange;
+            }
+
+            user.GameDeck.Karma += karmaChange;
+            card.Affection += affectionInc;
+
+            _ = card.CalculateCardPower();
+
+            if (textRelation != card.GetAffectionString())
+                str.Append($"\nNowa relacja to *{card.GetAffectionString()}*.");
+
+            return ExecutionResult.FromSuccess(str.ToString(), embedColor);
         }
     }
 }

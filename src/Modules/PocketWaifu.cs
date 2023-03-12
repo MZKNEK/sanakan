@@ -48,7 +48,7 @@ namespace Sanakan.Modules
         [Alias("cards", "karty")]
         [Summary("wyświetla wszystkie posiadane karty")]
         [Remarks("tag konie"), RequireWaifuCommandChannel]
-        public async Task ShowCardsAsync([Summary("typ sortowania (klatka/jakość/atak/obrona/relacja/życie/tag(-)/uszkodzone/niewymienialne/obrazek(-/c)/unikat)")]HaremType type = HaremType.Rarity, [Summary("tag)")][Remainder]string tag = null)
+        public async Task ShowCardsAsync([Summary("typ sortowania (klatka/jakość/atak/obrona/relacja/życie/tag(-)/uszkodzone/niewymienialne/obrazek(-/c)/unikat)")] HaremType type = HaremType.Rarity, [Summary("tag)")][Remainder] string tag = null)
         {
             var session = new ListSession<Card>(Context.User, Context.Client.CurrentUser);
             await _session.KillSessionIfExistAsync(session);
@@ -80,7 +80,7 @@ namespace Sanakan.Modules
                 {
                     var dm = await Context.User.CreateDMChannelAsync();
                     var msg = await dm.SendMessageAsync("", embed: session.BuildPage(0));
-                    await msg.AddReactionsAsync( new [] { new Emoji("⬅"), new Emoji("➡") });
+                    await msg.AddReactionsAsync(new[] { new Emoji("⬅"), new Emoji("➡") });
 
                     session.Message = msg;
                     await _session.TryAddSession(session);
@@ -98,7 +98,7 @@ namespace Sanakan.Modules
         [Alias("items", "item", "przedmiot")]
         [Summary("wypisuje posiadane przedmioty (informacje o przedmiocie, gdy podany jego numer)")]
         [Remarks("1"), RequireWaifuCommandChannel]
-        public async Task ShowItemsAsync([Summary("nr przedmiotu")]int numberOfItem = 0)
+        public async Task ShowItemsAsync([Summary("nr przedmiotu")] int numberOfItem = 0)
         {
             using (var db = new Database.DatabaseContext(Config))
             {
@@ -156,7 +156,7 @@ namespace Sanakan.Modules
         [Alias("card image", "ci", "ko")]
         [Summary("pozwala wyświetlić obrazek karty")]
         [Remarks("685 nie"), RequireAnyCommandChannelOrLevel(40)]
-        public async Task ShowCardImageAsync([Summary("WID")]ulong wid, [Summary("czy wyświetlić statystyki?")]bool showStats = false)
+        public async Task ShowCardImageAsync([Summary("WID")] ulong wid, [Summary("czy wyświetlić statystyki?")] bool showStats = false)
         {
             using (var db = new Database.DatabaseContext(Config))
             {
@@ -180,7 +180,7 @@ namespace Sanakan.Modules
         [Alias("figures")]
         [Summary("pozwala wyświetlić liste figurę/ustawić aktywną figurkę")]
         [Remarks("2"), RequireWaifuCommandChannel]
-        public async Task ShowFigureListAsync([Summary("ID")]ulong id = 0)
+        public async Task ShowFigureListAsync([Summary("ID")] ulong id = 0)
         {
             using (var db = new Database.DatabaseContext(Config))
             {
@@ -227,7 +227,7 @@ namespace Sanakan.Modules
         [Alias("select part")]
         [Summary("pozwala wybrać część w aktywnej figurcje do przekazywania doświadczenia")]
         [Remarks("lewa noga"), RequireWaifuCommandChannel]
-        public async Task SelectActiveFigurePartAsync([Summary("część")][Remainder]FigurePart part)
+        public async Task SelectActiveFigurePartAsync([Summary("część")][Remainder] FigurePart part)
         {
             using (var db = new Database.DatabaseContext(Config))
             {
@@ -296,7 +296,7 @@ namespace Sanakan.Modules
         [Alias("figure")]
         [Summary("pozwala wyświetlić figurkę")]
         [Remarks("2"), RequireWaifuCommandChannel]
-        public async Task ShowFigureAsync([Summary("ID")]ulong id = 0)
+        public async Task ShowFigureAsync([Summary("ID")] ulong id = 0)
         {
             using (var db = new Database.DatabaseContext(Config))
             {
@@ -316,7 +316,7 @@ namespace Sanakan.Modules
         [Alias("card-")]
         [Summary("pozwala wyświetlić kartę w prostej postaci")]
         [Remarks("685"), RequireAnyCommandChannelOrLevel(40)]
-        public async Task ShowCardStringAsync([Summary("WID")]ulong wid)
+        public async Task ShowCardStringAsync([Summary("WID")] ulong wid)
         {
             using (var db = new Database.DatabaseContext(Config))
             {
@@ -338,7 +338,7 @@ namespace Sanakan.Modules
         [Alias("card")]
         [Summary("pozwala wyświetlić kartę")]
         [Remarks("685"), RequireWaifuCommandChannel]
-        public async Task ShowCardAsync([Summary("WID")]ulong wid)
+        public async Task ShowCardAsync([Summary("WID")] ulong wid)
         {
             using (var db = new Database.DatabaseContext(Config))
             {
@@ -362,37 +362,43 @@ namespace Sanakan.Modules
         [Alias("pvp shop")]
         [Summary("listowanie/zakup przedmiotu/wypisanie informacji")]
         [Remarks("1 info"), RequireWaifuCommandChannel]
-        public async Task BuyItemPvPAsync([Summary("nr przedmiotu")]int itemNumber = 0, [Summary("info/4 (liczba przedmiotów do zakupu/id tytułu)")]string info = "0")
+        public async Task BuyItemPvPAsync([Summary("nr przedmiotu")] int itemNumber = 0, [Summary("info/4 (liczba przedmiotów do zakupu/id tytułu)")] string info = "0")
         {
-            await ReplyAsync("", embed: await  _waifu.ExecuteShopAsync(ShopType.Pvp, Config, Context.User, itemNumber, info));
+            await ReplyAsync("", embed: await _waifu.ExecuteShopAsync(ShopType.Pvp, Config, Context.User, itemNumber, info));
         }
 
         [Command("kiosk")]
         [Alias("ac shop")]
         [Summary("listowanie/zakup przedmiotu/wypisanie informacji")]
         [Remarks("1 info"), RequireWaifuCommandChannel]
-        public async Task BuyItemActivityAsync([Summary("nr przedmiotu")]int itemNumber = 0, [Summary("info/4 (liczba przedmiotów do zakupu/id tytułu)")]string info = "0")
+        public async Task BuyItemActivityAsync([Summary("nr przedmiotu")] int itemNumber = 0, [Summary("info/4 (liczba przedmiotów do zakupu/id tytułu)")] string info = "0")
         {
-            await ReplyAsync("", embed: await  _waifu.ExecuteShopAsync(ShopType.Activity, Config, Context.User, itemNumber, info));
+            await ReplyAsync("", embed: await _waifu.ExecuteShopAsync(ShopType.Activity, Config, Context.User, itemNumber, info));
         }
 
         [Command("sklepik")]
         [Alias("shop", "p2w")]
         [Summary("listowanie/zakup przedmiotu/wypisanie informacji (du użycia wymagany 10 lvl)")]
         [Remarks("1 info"), RequireWaifuCommandChannel, RequireLevel(10)]
-        public async Task BuyItemAsync([Summary("nr przedmiotu")]int itemNumber = 0, [Summary("info/4 (liczba przedmiotów do zakupu/id tytułu)")]string info = "0")
+        public async Task BuyItemAsync([Summary("nr przedmiotu")] int itemNumber = 0, [Summary("info/4 (liczba przedmiotów do zakupu/id tytułu)")] string info = "0")
         {
-            await ReplyAsync("", embed: await  _waifu.ExecuteShopAsync(ShopType.Normal, Config, Context.User, itemNumber, info));
+            await ReplyAsync("", embed: await _waifu.ExecuteShopAsync(ShopType.Normal, Config, Context.User, itemNumber, info));
         }
+
+        [Command("użyj bez karty")]
+        [Alias("uzyj bez karty", "use without card", "usewc", "użyjbk", "uzyjbk")]
+        [Summary("używa przedmiot")]
+        [Remarks("1 4212 2"), RequireWaifuCommandChannel]
+        public async Task UseItemAsync([Summary("nr przedmiotu")] int itemNumber, [Summary("liczba przedmiotów")] string detail = "1", [Summary("czy zamienić część figurki na exp")] bool itemToExp = false, [Hidden] ulong wid = 0)
+            => await UseItemOnCardAsync(itemNumber, wid, detail, itemToExp);
 
         [Command("użyj")]
         [Alias("uzyj", "use")]
-        [Summary("używa przedmiot na karcie lub nie")]
+        [Summary("używa przedmiot na karcie")]
         [Remarks("1 4212 2"), RequireWaifuCommandChannel]
-        public async Task UseItemAsync([Summary("nr przedmiotu")]int itemNumber, [Summary("WID")]ulong wid = 0, [Summary("liczba przedmiotów/link do obrazka/typ gwiazdki")]string detail = "1")
+        public async Task UseItemOnCardAsync([Summary("nr przedmiotu")] int itemNumber, [Summary("WID")] ulong wid = 0, [Summary("liczba przedmiotów/link do obrazka/typ gwiazdki")] string detail = "1", [Hidden] bool itemToExp = false)
         {
-            var session = new CraftingSession(Context.User, _waifu, _config);
-            if (_session.SessionExist(session))
+            if (_session.SessionExist(Context.User, typeof(CraftingSession)))
             {
                 await ReplyAsync("", embed: $"{Context.User.Mention} nie możesz używać przedmiotów, gdy masz otwarte menu tworzenia kart.".ToEmbedMessage(EMType.Error).Build());
                 return;
@@ -400,568 +406,20 @@ namespace Sanakan.Modules
 
             using (var db = new Database.DatabaseContext(Config))
             {
-                var imgCnt = 0;
-                var itemCnt = 1;
                 var bUser = await db.GetUserOrCreateAsync(Context.User.Id);
-                var itemList = bUser.GameDeck.Items.OrderBy(x => x.Type).ToList();
+                var res = await _waifu.UseItemAsync(bUser, Context.User.GetUserNickInGuild(), itemNumber, wid, detail, itemToExp);
 
-                if (itemList.Count < 1)
+                if (res.IsError())
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} nie masz żadnych przedmiotów.".ToEmbedMessage(EMType.Error).Build());
+                    await ReplyAsync("", embed: res.ToEmbedMessage($"{Context.User.Mention} ").Build());
                     return;
                 }
 
-                if (itemNumber <= 0 || itemNumber > itemList.Count)
-                {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} nie masz aż tylu przedmiotów.".ToEmbedMessage(EMType.Error).Build());
-                    return;
-                }
-
-                bool itemToExp = false;
-                if (detail.EndsWith("!exp"))
-                {
-                    itemToExp = true;
-                    detail = detail.Remove(detail.Length - 4);
-                }
-
-                var dis = int.TryParse(detail, out itemCnt);
-                if (itemCnt < 1)
-                {
-                    dis = false;
-                    itemCnt = 1;
-                }
-
-                var item = itemList[itemNumber - 1];
-                if (!item.Type.CanBeUsedWithNormalUseCommand())
-                {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} tego przedmiotu nie można użyć za pomocą komendy `użyj`.".ToEmbedMessage(EMType.Error).Build());
-                    return;
-                }
-
-                switch (item.Type)
-                {
-                    case ItemType.AffectionRecoveryBig:
-                    case ItemType.AffectionRecoverySmall:
-                    case ItemType.AffectionRecoveryNormal:
-                    case ItemType.AffectionRecoveryGreat:
-                    case ItemType.IncreaseUpgradeCnt:
-                    case ItemType.IncreaseExpSmall:
-                    case ItemType.IncreaseExpBig:
-                    case ItemType.IncreaseUltimateAttack:
-                    case ItemType.IncreaseUltimateDefence:
-                    case ItemType.IncreaseUltimateHealth:
-                    case ItemType.IncreaseUltimateAll:
-                    // special case
-                    case ItemType.CardParamsReRoll:
-                    case ItemType.DereReRoll:
-                        break;
-
-                    case ItemType.ChangeCardImage:
-                        if (dis) imgCnt = itemCnt;
-                        if (imgCnt < 0) imgCnt = 0;
-                        itemCnt = 1;
-                        break;
-
-                    case ItemType.FigureUniversalPart:
-                    case ItemType.FigureHeadPart:
-                    case ItemType.FigureBodyPart:
-                    case ItemType.FigureLeftArmPart:
-                    case ItemType.FigureRightArmPart:
-                    case ItemType.FigureLeftLegPart:
-                    case ItemType.FigureRightLegPart:
-                    case ItemType.FigureClothesPart:
-                    case ItemType.FigureSkeleton:
-                        if (!itemToExp) goto default;
-                        break;
-
-                    default:
-                        if (itemCnt != 1)
-                        {
-                            await ReplyAsync("", embed: $"{Context.User.Mention} możesz użyć tylko jeden przedmiot tego typu na raz!".ToEmbedMessage(EMType.Error).Build());
-                            return;
-                        }
-                        break;
-                }
-
-                if (item.Count < itemCnt)
-                {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} nie posiadasz tylu sztuk tego przedmiotu.".ToEmbedMessage(EMType.Error).Build());
-                    return;
-                }
-
-                bool noCardOperation = item.Type.CanUseWithoutCard(itemToExp);
-                var card = bUser.GameDeck.Cards.FirstOrDefault(x => x.Id == wid);
-                if (card == null && !noCardOperation)
-                {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} nie posiadasz takiej karty!".ToEmbedMessage(EMType.Error).Build());
-                    return;
-                }
-
-                if (!noCardOperation && card.Expedition != CardExpedition.None)
-                {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} ta karta jest na wyprawie!".ToEmbedMessage(EMType.Error).Build());
-                    return;
-                }
-
-                var activeFigure = bUser.GameDeck.Figures.FirstOrDefault(x => x.IsFocus);
-                if (activeFigure == null && noCardOperation)
-                {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} nie posiadasz aktywnej figurki!".ToEmbedMessage(EMType.Error).Build());
-                    return;
-                }
-
-                if (!noCardOperation && !card.FromFigure)
-                {
-                    switch (item.Type)
-                    {
-                        case ItemType.IncreaseUltimateAttack:
-                        case ItemType.IncreaseUltimateDefence:
-                        case ItemType.IncreaseUltimateHealth:
-                        case ItemType.IncreaseUltimateAll:
-                            await ReplyAsync("", embed: $"{Context.User.Mention} ten przedmiot można użyć tylko na karcie ultimate.".ToEmbedMessage(EMType.Error).Build());
-                            return;
-
-                        default:
-                            break;
-                    }
-                }
-
-                if (!noCardOperation && card.FromFigure)
-                {
-                    switch (item.Type)
-                    {
-                        case ItemType.FigureSkeleton:
-                        case ItemType.IncreaseExpBig:
-                        case ItemType.IncreaseExpSmall:
-                        case ItemType.CardParamsReRoll:
-                        case ItemType.IncreaseUpgradeCnt:
-                        case ItemType.BetterIncreaseUpgradeCnt:
-                            await ReplyAsync("", embed: $"{Context.User.Mention} tego przedmiotu nie można użyć na tej karcie.".ToEmbedMessage(EMType.Error).Build());
-                            return;
-
-                        case ItemType.IncreaseUltimateAttack:
-                        case ItemType.IncreaseUltimateDefence:
-                        case ItemType.IncreaseUltimateHealth:
-                        case ItemType.IncreaseUltimateAll:
-                            if (!card.CanUpgradePower(itemCnt))
-                            {
-                                await ReplyAsync("", embed: $"{Context.User.Mention} nie można już bardziej zwiekszyć parametrów na tej karcie.".ToEmbedMessage(EMType.Error).Build());
-                                return;
-                            }
-                            break;
-
-                        default:
-                            break;
-                    }
-                }
-
-                double karmaChange = 0;
-                bool consumeItem = true;
-                var cnt = (itemCnt > 1) ? $"x{itemCnt}" : "";
-                var bonusFromQ = item.Quality.GetQualityModifier();
-                double affectionInc = item.Type.BaseAffection() * itemCnt;
-                var textRelation = noCardOperation ? "" : card.GetAffectionString();
-                var cardString = noCardOperation ? "" : " na " + card.GetString(false, false, true);
-                var embed = new EmbedBuilder
-                {
-                    Color = EMType.Bot.Color(),
-                    Author = new EmbedAuthorBuilder().WithUser(Context.User),
-                    Description = $"Użyto _{item.Name}_ {cnt}{cardString}\n\n"
-                };
-
-                switch (item.Type)
-                {
-                    case ItemType.AffectionRecoveryGreat:
-                        karmaChange += 0.3 * itemCnt;
-                        embed.Description += "Bardzo powiększyła się relacja z kartą!";
-                        break;
-
-                    case ItemType.AffectionRecoveryBig:
-                        karmaChange += 0.1 * itemCnt;
-                        embed.Description += "Znacznie powiększyła się relacja z kartą!";
-                        break;
-
-                    case ItemType.AffectionRecoveryNormal:
-                        karmaChange += 0.01 * itemCnt;
-                        embed.Description += "Powiększyła się relacja z kartą!";
-                        break;
-
-                    case ItemType.AffectionRecoverySmall:
-                        karmaChange += 0.001 * itemCnt;
-                        embed.Description += "Powiększyła się trochę relacja z kartą!";
-                        break;
-
-                    case ItemType.IncreaseExpSmall:
-                        var exS = 1.5 * itemCnt;
-                        exS += exS * bonusFromQ;
-
-                        card.ExpCnt += exS;
-                        karmaChange += 0.1 * itemCnt;
-                        embed.Description += "Twoja karta otrzymała odrobinę punktów doświadczenia!";
-                        break;
-
-                    case ItemType.IncreaseExpBig:
-                        var exB = 5d * itemCnt;
-                        exB += exB * bonusFromQ;
-
-                        card.ExpCnt += exB;
-                        karmaChange += 0.3 * itemCnt;
-                        embed.Description += "Twoja karta otrzymała punkty doświadczenia!";
-                        break;
-
-                    case ItemType.ChangeStarType:
-                        try
-                        {
-                            card.StarStyle = new StarStyle().Parse(detail);
-                        }
-                        catch (Exception)
-                        {
-                            await ReplyAsync("", embed: "Nie rozpoznano typu gwiazdki!".ToEmbedMessage(EMType.Error).Build());
-                            return;
-                        }
-                        karmaChange += 0.001 * itemCnt;
-                        embed.Description += "Zmieniono typ gwiazdki!";
-                        _waifu.DeleteCardImageIfExist(card);
-                        break;
-
-                    case ItemType.ChangeCardImage:
-                        var res = await _shclient.GetCharacterInfoAsync(card.Character);
-                        if (!res.IsSuccessStatusCode())
-                        {
-                            await ReplyAsync("", embed: "Nie odnaleziono postaci na shinden!".ToEmbedMessage(EMType.Error).Build());
-                            return;
-                        }
-                        var urls = res.Body.Pictures.GetPicList();
-                        if (imgCnt == 0 || !dis)
-                        {
-                            int tidx = 0;
-                            var ls = "Obrazki: \n" + string.Join("\n", urls.Select(x => $"{++tidx}: {x}"));
-                            await ReplyAsync("", embed: ls.ToEmbedMessage(EMType.Info).Build());
-                            return;
-                        }
-                        else
-                        {
-                            if (imgCnt > urls.Count)
-                            {
-                                await ReplyAsync("", embed: "Nie odnaleziono obrazka!".ToEmbedMessage(EMType.Error).Build());
-                                return;
-                            }
-                            var turl = urls[imgCnt - 1];
-                            if (card.GetImage() == turl)
-                            {
-                                await ReplyAsync("", embed: "Taki obrazek jest już ustawiony!".ToEmbedMessage(EMType.Error).Build());
-                                return;
-                            }
-                            card.CustomImage = turl;
-                        }
-                        karmaChange += 0.001 * itemCnt;
-                        embed.Description += "Ustawiono nowy obrazek.";
-                        _waifu.DeleteCardImageIfExist(card);
-                        break;
-
-                    case ItemType.SetCustomImage:
-                        if (!detail.IsURLToImage())
-                        {
-                            await ReplyAsync("", embed: "Nie wykryto obrazka! Upewnij się, że podałeś poprawny adres!".ToEmbedMessage(EMType.Error).Build());
-                            return;
-                        }
-                        if (card.Image == null && !card.FromFigure)
-                        {
-                            await ReplyAsync("", embed: "Aby ustawić własny obrazek, karta musi posiadać wcześniej ustawiony główny (na stronie)!".ToEmbedMessage(EMType.Error).Build());
-                            return;
-                        }
-                        card.CustomImage = detail;
-                        consumeItem = !card.FromFigure;
-                        karmaChange += 0.001 * itemCnt;
-                        embed.Description += "Ustawiono nowy obrazek. Pamiętaj jednak, że dodanie nieodpowiedniego obrazka może skutkować skasowaniem karty!";
-                        _waifu.DeleteCardImageIfExist(card);
-                        break;
-
-                    case ItemType.SetCustomBorder:
-                        if (!detail.IsURLToImage())
-                        {
-                            await ReplyAsync("", embed: "Nie wykryto obrazka! Upewnij się, że podałeś poprawny adres!".ToEmbedMessage(EMType.Error).Build());
-                            return;
-                        }
-                        if (card.Image == null)
-                        {
-                            await ReplyAsync("", embed: "Aby ustawić ramkę, karta musi posiadać wcześniej ustawiony obrazek na stronie!".ToEmbedMessage(EMType.Error).Build());
-                            return;
-                        }
-                        card.CustomBorder = detail;
-                        karmaChange += 0.001 * itemCnt;
-                        embed.Description += "Ustawiono nowy obrazek jako ramkę. Pamiętaj jednak, że dodanie nieodpowiedniego obrazka może skutkować skasowaniem karty!";
-                        _waifu.DeleteCardImageIfExist(card);
-                        break;
-
-                    case ItemType.BetterIncreaseUpgradeCnt:
-                        if (card.Curse == CardCurse.BloodBlockade)
-                        {
-                            await ReplyAsync("", embed: $"{Context.User.Mention} na tej karcie ciąży klątwa!".ToEmbedMessage(EMType.Error).Build());
-                            return;
-                        }
-                        if (card.Rarity == Rarity.SSS)
-                        {
-                            await ReplyAsync("", embed: $"{Context.User.Mention} karty **SSS** nie można już ulepszyć!".ToEmbedMessage(EMType.Error).Build());
-                            return;
-                        }
-                        if (!card.CanGiveBloodOrUpgradeToSSS())
-                        {
-                            if (card.HasNoNegativeEffectAfterBloodUsage())
-                            {
-                                if (card.CanGiveRing())
-                                {
-                                    affectionInc = 1.7;
-                                    karmaChange += 0.6;
-                                    embed.Description += "Bardzo powiększyła się relacja z kartą!";
-                                }
-                                else
-                                {
-                                    affectionInc = 1.2;
-                                    karmaChange += 0.4;
-                                    embed.Color = EMType.Warning.Color();
-                                    embed.Description += $"Karta się zmartwiła!";
-                                }
-                            }
-                            else
-                            {
-                                affectionInc = -5;
-                                karmaChange -= 0.5;
-                                embed.Color = EMType.Error.Color();
-                                embed.Description += $"Karta się przeraziła!";
-                            }
-                        }
-                        else
-                        {
-                            karmaChange += 2;
-                            affectionInc = 1.5;
-                            card.UpgradesCnt += 2;
-                            embed.Description += $"Zwiększono liczbę ulepszeń do {card.UpgradesCnt}!";
-                        }
-                        break;
-
-                    case ItemType.IncreaseUpgradeCnt:
-                        if (!card.CanGiveRing())
-                        {
-                            await ReplyAsync("", embed: $"{Context.User.Mention} karta musi mieć min. poziom relacji: *Miłość*.".ToEmbedMessage(EMType.Error).Build());
-                            return;
-                        }
-                        if (card.Rarity == Rarity.SSS)
-                        {
-                            await ReplyAsync("", embed: $"{Context.User.Mention} karty **SSS** nie można już ulepszyć!".ToEmbedMessage(EMType.Error).Build());
-                            return;
-                        }
-                        if (card.UpgradesCnt + itemCnt > 5)
-                        {
-                            await ReplyAsync("", embed: $"{Context.User.Mention} nie można mieć więcej jak pięć ulepszeń dostępnych na karcie.".ToEmbedMessage(EMType.Error).Build());
-                            return;
-                        }
-                        karmaChange += itemCnt;
-                        card.UpgradesCnt += itemCnt;
-                        embed.Description += $"Zwiększono liczbę ulepszeń do {card.UpgradesCnt}!";
-                        break;
-
-                    case ItemType.ResetCardValue:
-                        karmaChange += 0.5;
-                        card.MarketValue = 1;
-                        embed.Description += "Wartość karty została zresetowana.";
-                        break;
-
-                    case ItemType.DereReRoll:
-                        if (card.Curse == CardCurse.DereBlockade)
-                        {
-                            await ReplyAsync("", embed: $"{Context.User.Mention} na tej karcie ciąży klątwa!".ToEmbedMessage(EMType.Error).Build());
-                            return;
-                        }
-                        karmaChange += 0.02 * itemCnt;
-                        card.Dere = Waifu.RandomizeDere();
-                        embed.Description += $"Nowy charakter to: {card.Dere}!";
-                        _waifu.DeleteCardImageIfExist(card);
-                        break;
-
-                    case ItemType.CardParamsReRoll:
-                        karmaChange += 0.03 * itemCnt;
-                        card.Attack = Waifu.RandomizeAttack(card.Rarity);
-                        card.Defence = Waifu.RandomizeDefence(card.Rarity);
-                        embed.Description += $"Nowa moc karty to: 🔥{card.GetAttackWithBonus()} 🛡{card.GetDefenceWithBonus()}!";
-                        _waifu.DeleteCardImageIfExist(card);
-                        break;
-
-                    case ItemType.CheckAffection:
-                        karmaChange -= 0.01;
-                        embed.Description += $"Relacja wynosi: `{card.Affection.ToString("F")}`";
-                        break;
-
-                    case ItemType.IncreaseUltimateAttack:
-                        card.AttackBonus += itemCnt * 5;
-                        karmaChange += 0.4 * itemCnt;
-                        embed.Description += $"Zwiększono atak karty!";
-                        _waifu.DeleteCardImageIfExist(card);
-                        break;
-
-                    case ItemType.IncreaseUltimateDefence:
-                        card.DefenceBonus += itemCnt * 3;
-                        karmaChange += 0.4 * itemCnt;
-                        embed.Description += $"Zwiększono obronę karty!";
-                        _waifu.DeleteCardImageIfExist(card);
-                        break;
-
-                    case ItemType.IncreaseUltimateHealth:
-                        card.HealthBonus += itemCnt * 5;
-                        karmaChange += 0.6 * itemCnt;
-                        embed.Description += $"Zwiększono punkty życia karty!";
-                        _waifu.DeleteCardImageIfExist(card);
-                        break;
-
-                    case ItemType.IncreaseUltimateAll:
-                        card.AttackBonus += itemCnt * 5;
-                        card.HealthBonus += itemCnt * 5;
-                        card.DefenceBonus += itemCnt * 5;
-                        karmaChange += 1.2 * itemCnt;
-                        embed.Description += $"Zwiększono parametry karty!";
-                        _waifu.DeleteCardImageIfExist(card);
-                        break;
-
-                    case ItemType.FigureSkeleton:
-                        if (itemToExp)
-                        {
-                            var expFromPart = item.ToExpForPart(activeFigure.SkeletonQuality);
-                            activeFigure.PartExp += expFromPart * itemCnt;
-
-                            embed.Description += $"Dodano do wybranej części figurki {expFromPart.ToString("F")} punktów konstrukcji. W sumie posiada ich {activeFigure.PartExp.ToString("F")}.";
-                        }
-                        else
-                        {
-                            if (card.Rarity != Rarity.SSS)
-                            {
-                                await ReplyAsync("", embed: $"{Context.User.Mention} karta musi być rangi **SSS**.".ToEmbedMessage(EMType.Error).Build());
-                                return;
-                            }
-                            if (bUser.GameDeck.Figures.Any(x => x.Character == card.Character))
-                            {
-                                await ReplyAsync("", embed: $"{Context.User.Mention} już posiadasz figurkę tej postaci.".ToEmbedMessage(EMType.Error).Build());
-                                return;
-                            }
-                            karmaChange -= 1;
-                            var figure = item.ToFigure(card);
-                            if (figure != null)
-                            {
-                                bUser.GameDeck.Figures.Add(figure);
-                                bUser.GameDeck.Cards.Remove(card);
-                            }
-                            embed.Description += $"Rozpoczęto tworzenie figurki.";
-                            _waifu.DeleteCardImageIfExist(card);
-                        }
-                        break;
-
-                    case ItemType.FigureHeadPart:
-                    case ItemType.FigureBodyPart:
-                    case ItemType.FigureClothesPart:
-                    case ItemType.FigureLeftArmPart:
-                    case ItemType.FigureLeftLegPart:
-                    case ItemType.FigureRightArmPart:
-                    case ItemType.FigureRightLegPart:
-                    case ItemType.FigureUniversalPart:
-                        if (itemToExp)
-                        {
-                            var itemPartType = item.Type.GetPartType();
-                            if (activeFigure.FocusedPart != itemPartType && itemPartType != FigurePart.All)
-                            {
-                                await ReplyAsync("", embed: $"{Context.User.Mention} typy części się nie zgadzają.".ToEmbedMessage(EMType.Error).Build());
-                                return;
-                            }
-
-                            var expFromPart = item.ToExpForPart(activeFigure.SkeletonQuality);
-                            activeFigure.PartExp += expFromPart * itemCnt;
-
-                            embed.Description += $"Dodano do wybranej części figurki {expFromPart.ToString("F")} punktów konstrukcji. W sumie posiada ich {activeFigure.PartExp.ToString("F")}.";
-                        }
-                        else
-                        {
-                            if (!activeFigure.CanAddPart(item))
-                            {
-                                await ReplyAsync("", embed: $"{Context.User.Mention} część, którą próbujesz dodać ma zbyt niską jakość.".ToEmbedMessage(EMType.Error).Build());
-                                return;
-                            }
-                            if (!activeFigure.HasEnoughPointsToAddPart(item))
-                            {
-                                await ReplyAsync("", embed: $"{Context.User.Mention} aktywowana część ma zbyt małą ilość punktów konstrukcji, wymagana to {activeFigure.ConstructionPointsToInstall(item)}.".ToEmbedMessage(EMType.Error).Build());
-                                return;
-                            }
-                            if (!activeFigure.AddPart(item))
-                            {
-                                await ReplyAsync("", embed: $"{Context.User.Mention} coś poszło nie tak.".ToEmbedMessage(EMType.Error).Build());
-                                return;
-                            }
-                            embed.Description += $"Dodano część do figurki.";
-                        }
-                        break;
-
-                    default:
-                        await ReplyAsync("", embed: $"{Context.User.Mention} tego przedmiotu nie powinno tutaj być!".ToEmbedMessage(EMType.Error).Build());
-                        return;
-                }
-
-                if (!noCardOperation && card.Character == bUser.GameDeck.Waifu)
-                    affectionInc *= 1.15;
-
-                if (!noCardOperation)
-                {
-                    var response = await _shclient.GetCharacterInfoAsync(card.Character);
-                    if (response.IsSuccessStatusCode())
-                    {
-                        if (response.Body?.Points != null)
-                        {
-                            var ordered = response.Body.Points.OrderByDescending(x => x.Points);
-                            if (ordered.Any(x => x.Name == embed.Author.Name))
-                                affectionInc *= 1.1;
-                        }
-                    }
-                }
-
-                var mission = bUser.TimeStatuses.FirstOrDefault(x => x.Type == Database.Models.StatusType.DUsedItems);
-                if (mission == null)
-                {
-                    mission = Database.Models.StatusType.DUsedItems.NewTimeStatus();
-                    bUser.TimeStatuses.Add(mission);
-                }
-                mission.Count(itemCnt);
-
-                if (!noCardOperation && card.Dere == Dere.Tsundere)
-                    affectionInc *= 1.2;
-
-                if (item.Type.HasDifferentQualities())
-                    affectionInc += affectionInc * bonusFromQ;
-
-                if (consumeItem)
-                    item.Count -= itemCnt;
-
-                if (!noCardOperation)
-                {
-                    if (card.Curse == CardCurse.InvertedItems)
-                    {
-                        affectionInc = -affectionInc;
-                        karmaChange = -karmaChange;
-                    }
-
-                    bUser.GameDeck.Karma += karmaChange;
-                    card.Affection += affectionInc;
-
-                    _ = card.CalculateCardPower();
-                }
-
-                var newTextRelation = noCardOperation ? "" : card.GetAffectionString();
-                if (textRelation != newTextRelation)
-                    embed.Description += $"\nNowa relacja to *{newTextRelation}*.";
-
-                if (item.Count <= 0)
-                    bUser.GameDeck.Items.Remove(item);
+                await ReplyAsync("", embed: res.ToEmbedMessage().WithUser(Context.User).Build());
 
                 await db.SaveChangesAsync();
 
                 QueryCacheManager.ExpireTag(new string[] { $"user-{bUser.Id}", "users" });
-
-                await ReplyAsync("", embed: embed.Build());
             }
         }
 
@@ -969,17 +427,17 @@ namespace Sanakan.Modules
         [Alias("lp")]
         [Summary("otwiera pierwszy pakiet z domyślnie ustawionym niszczeniem kc na 2 oraz tagiem wymiana")]
         [Remarks(""), RequireAnyCommandChannelOrLevel(200)]
-        public async Task OpenPacketLazyModeAsync([Summary("czy zniszczyć karty nie będące na liście życzeń i nie posiadające danej kc?")]uint destroyCards = 2, [Summary("czy zamienić niszczenie na uwalnianie")]bool changeToRelease = false,
-            [Summary("oznacza niezniszczone karty podanym tagiem")]string tag = "wymiana", [Summary("oznacza karty z wishlisty podanym tagiem")]string tagWishlist = "ulubione")
+        public async Task OpenPacketLazyModeAsync([Summary("czy zniszczyć karty nie będące na liście życzeń i nie posiadające danej kc?")] uint destroyCards = 2, [Summary("czy zamienić niszczenie na uwalnianie")] bool changeToRelease = false,
+            [Summary("oznacza niezniszczone karty podanym tagiem")] string tag = "wymiana", [Summary("oznacza karty z wishlisty podanym tagiem")] string tagWishlist = "ulubione")
                 => await OpenPacketAsync(1, 1, true, destroyCards, changeToRelease, tag, tagWishlist);
 
         [Command("pakiet")]
         [Alias("pakiet kart", "booster", "booster pack", "pack")]
         [Summary("wypisuje dostępne pakiety/otwiera pakiety(maksymalna suma kart z pakietów do otworzenia to 20)")]
         [Remarks("1"), RequireWaifuCommandChannel]
-        public async Task OpenPacketAsync([Summary("nr pakietu kart")]int numberOfPack = 0, [Summary("liczba kolejnych pakietów")]int count = 1, [Summary("czy sprawdzić listy życzeń?")]bool checkWishlists = true,
-            [Summary("czy zniszczyć karty nie będące na liście życzeń i nie posiadające danej kc?")]uint destroyCards = 0, [Summary("czy zamienić niszczenie na uwalnianie")]bool changeToRelease = false, [Summary("oznacza niezniszczone karty podanym tagiem")]string tag = "",
-            [Summary("oznacza karty z wishlisty podanym tagiem")]string tagWishlist = "")
+        public async Task OpenPacketAsync([Summary("nr pakietu kart")] int numberOfPack = 0, [Summary("liczba kolejnych pakietów")] int count = 1, [Summary("czy sprawdzić listy życzeń?")] bool checkWishlists = true,
+            [Summary("czy zniszczyć karty nie będące na liście życzeń i nie posiadające danej kc?")] uint destroyCards = 0, [Summary("czy zamienić niszczenie na uwalnianie")] bool changeToRelease = false, [Summary("oznacza niezniszczone karty podanym tagiem")] string tag = "",
+            [Summary("oznacza karty z wishlisty podanym tagiem")] string tagWishlist = "")
         {
             if (!string.IsNullOrEmpty(tag) && tag.Contains(" "))
             {
@@ -1134,7 +592,7 @@ namespace Sanakan.Modules
         [Alias("restart")]
         [Summary("restartuj kartę SSS na kartę E i dodaje stały bonus")]
         [Remarks("5412"), RequireWaifuCommandChannel]
-        public async Task ResetCardAsync([Summary("WID")]ulong id)
+        public async Task ResetCardAsync([Summary("WID")] ulong id)
         {
             using (var db = new Database.DatabaseContext(Config))
             {
@@ -1203,7 +661,7 @@ namespace Sanakan.Modules
         [Alias("update")]
         [Summary("pobiera dane na tamat karty z shindena")]
         [Remarks("5412"), RequireWaifuCommandChannel]
-        public async Task UpdateCardAsync([Summary("WID")]ulong id, [Summary("czy przywrócić obrazek ze strony")]bool defaultImage = false)
+        public async Task UpdateCardAsync([Summary("WID")] ulong id, [Summary("czy przywrócić obrazek ze strony")] bool defaultImage = false)
         {
             using (var db = new Database.DatabaseContext(Config))
             {
@@ -1248,7 +706,7 @@ namespace Sanakan.Modules
         [Alias("upgrade")]
         [Summary("ulepsza kartę na lepszą jakość")]
         [Remarks("5412"), RequireWaifuCommandChannel]
-        public async Task UpgradeCardAsync([Summary("WID")]ulong id)
+        public async Task UpgradeCardAsync([Summary("WID")] ulong id)
         {
             using (var db = new Database.DatabaseContext(Config))
             {
@@ -1281,7 +739,7 @@ namespace Sanakan.Modules
 
                 if (card.ExpCnt < card.ExpToUpgrade() && card.Quality == Quality.Broken)
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} ta karta ma niewystarczającą ilość punktów doświadczenia. Wymagane {card.ExpToUpgrade().ToString("F")}.".ToEmbedMessage(EMType.Bot).Build());
+                    await ReplyAsync("", embed: $"{Context.User.Mention} ta karta ma niewystarczającą ilość punktów doświadczenia. Wymagane {card.ExpToUpgrade():F}.".ToEmbedMessage(EMType.Bot).Build());
                     return;
                 }
 
@@ -1373,7 +831,7 @@ namespace Sanakan.Modules
         [Alias("release", "puśmje")]
         [Summary("uwalnia posiadaną kartę")]
         [Remarks("5412 5413"), RequireWaifuCommandChannel]
-        public async Task ReleaseCardAsync([Summary("WID kart")]params ulong[] ids)
+        public async Task ReleaseCardAsync([Summary("WID kart")] params ulong[] ids)
         {
             using (var db = new Database.DatabaseContext(Config))
             {
@@ -1398,7 +856,7 @@ namespace Sanakan.Modules
         [Alias("destroy")]
         [Summary("niszczy posiadaną kartę")]
         [Remarks("5412"), RequireWaifuCommandChannel]
-        public async Task DestroyCardAsync([Summary("WID kart")]params ulong[] ids)
+        public async Task DestroyCardAsync([Summary("WID kart")] params ulong[] ids)
         {
             using (var db = new Database.DatabaseContext(Config))
             {
@@ -1423,7 +881,7 @@ namespace Sanakan.Modules
         [Alias("chest")]
         [Summary("przenosi doświadczenie z skrzyni do karty lub figurki gdy podane wid 0(kosztuje CT)")]
         [Remarks("2154 10"), RequireWaifuCommandChannel]
-        public async Task TransferExpFromChestAsync([Summary("WID")]ulong id, [Summary("liczba doświadczenia")]uint exp)
+        public async Task TransferExpFromChestAsync([Summary("WID")] ulong id, [Summary("liczba doświadczenia")] uint exp)
         {
             using (var db = new Database.DatabaseContext(Config))
             {
@@ -1506,7 +964,7 @@ namespace Sanakan.Modules
         [Alias("make chest")]
         [Summary("tworzy lub ulepsza skrzynię doświadczenia")]
         [Remarks("2154"), RequireWaifuCommandChannel]
-        public async Task CreateChestAsync([Summary("WID kart")]params ulong[] ids)
+        public async Task CreateChestAsync([Summary("WID kart")] params ulong[] ids)
         {
             using (var db = new Database.DatabaseContext(Config))
             {
@@ -1599,9 +1057,9 @@ namespace Sanakan.Modules
                 var cnt = ultimateCards.Count;
                 if (cnt > 5) cnt = 5;
 
-                cnt += ultimateCards.Any(x => x.Quality > Quality.Alpha)  ? 1 : 0;
-                cnt += ultimateCards.Any(x => x.Quality > Quality.Gamma)  ? 2 : 0;
-                cnt += ultimateCards.Any(x => x.Quality > Quality.Zeta)   ? 3 : 0;
+                cnt += ultimateCards.Any(x => x.Quality > Quality.Alpha) ? 1 : 0;
+                cnt += ultimateCards.Any(x => x.Quality > Quality.Gamma) ? 2 : 0;
+                cnt += ultimateCards.Any(x => x.Quality > Quality.Zeta) ? 3 : 0;
                 cnt += ultimateCards.Any(x => x.Quality > Quality.Lambda) ? 5 : 0;
                 if (cnt > 12) cnt = 12;
 
@@ -1653,7 +1111,7 @@ namespace Sanakan.Modules
 
                 var wishStr = card.ToHeartWishlist(wasOnWishlist);
 
-                QueryCacheManager.ExpireTag(new string[] { $"user-{botuser.Id}", "users"});
+                QueryCacheManager.ExpireTag(new string[] { $"user-{botuser.Id}", "users" });
 
                 await ReplyAsync("", embed: $"{Context.User.Mention} otrzymałeś {wishStr}{card.GetString(false, false, true)}".ToEmbedMessage(EMType.Success).Build());
             }
@@ -1663,7 +1121,7 @@ namespace Sanakan.Modules
         [Alias("market")]
         [Summary("udajesz się na rynek z wybraną przez Ciebie kartą, aby pohandlować")]
         [Remarks("2145"), RequireWaifuCommandChannel]
-        public async Task GoToMarketAsync([Summary("WID")]ulong wid)
+        public async Task GoToMarketAsync([Summary("WID")] ulong wid)
         {
             using (var db = new Database.DatabaseContext(Config))
             {
@@ -1781,7 +1239,7 @@ namespace Sanakan.Modules
         [Alias("black market")]
         [Summary("udajesz się na czarny rynek z wybraną przez Ciebie kartą, wolałbym nie wiedzieć co tam będziesz robić")]
         [Remarks("2145"), RequireWaifuCommandChannel]
-        public async Task GoToBlackMarketAsync([Summary("WID")]ulong wid)
+        public async Task GoToBlackMarketAsync([Summary("WID")] ulong wid)
         {
             using (var db = new Database.DatabaseContext(Config))
             {
@@ -1887,7 +1345,7 @@ namespace Sanakan.Modules
         [Alias("sacrifice", "poswiec", "poświec", "poświeć", "poswięć", "poswieć")]
         [Summary("dodaje exp do karty, poświęcając kilka innych")]
         [Remarks("5412 5411 5410"), RequireWaifuCommandChannel]
-        public async Task SacraficeCardMultiAsync([Summary("WID(do ulepszenia)")]ulong idToUp, [Summary("WID kart(do poświęcenia)")]params ulong[] idsToSac)
+        public async Task SacraficeCardMultiAsync([Summary("WID(do ulepszenia)")] ulong idToUp, [Summary("WID kart(do poświęcenia)")] params ulong[] idsToSac)
         {
             if (idsToSac.Any(x => x == idToUp))
             {
@@ -1950,12 +1408,12 @@ namespace Sanakan.Modules
 
                 if (cardsToSac.Count > broken.Count)
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} ulepszył kartę: {cardToUp.GetString(false, false, true)} o {totalExp.ToString("F")} exp.".ToEmbedMessage(EMType.Success).Build());
+                    await ReplyAsync("", embed: $"{Context.User.Mention} ulepszył kartę: {cardToUp.GetString(false, false, true)} o {totalExp:F} exp.".ToEmbedMessage(EMType.Success).Build());
                 }
 
                 if (broken.Count > 0)
                 {
-                     await ReplyAsync("", embed: $"{Context.User.Mention} nie udało się poświęcić {broken.Count} kart.".ToEmbedMessage(EMType.Error).Build());
+                    await ReplyAsync("", embed: $"{Context.User.Mention} nie udało się poświęcić {broken.Count} kart.".ToEmbedMessage(EMType.Error).Build());
                 }
             }
         }
@@ -1964,7 +1422,7 @@ namespace Sanakan.Modules
         [Alias("cage")]
         [Summary("otwiera klatkę z kartami (sprecyzowanie wid wyciąga tylko jedną kartę)")]
         [Remarks(""), RequireWaifuCommandChannel]
-        public async Task OpenCageAsync([Summary("WID(opcjonalne)")]ulong wid = 0)
+        public async Task OpenCageAsync([Summary("WID(opcjonalne)")] ulong wid = 0)
         {
             var user = Context.User as SocketGuildUser;
             if (user == null) return;
@@ -2043,7 +1501,7 @@ namespace Sanakan.Modules
         [Alias("wremove", "zusuń", "żusun", "zusun")]
         [Summary("usuwa karty/tytuły/postacie z listy życzeń")]
         [Remarks("karta 4212 21452"), RequireWaifuCommandChannel]
-        public async Task RemoveFromWishlistAsync([Summary("typ id (p - postać, t - tytuł, c - karta)")]WishlistObjectType type, [Summary("ids/WIDs")]params ulong[] ids)
+        public async Task RemoveFromWishlistAsync([Summary("typ id (p - postać, t - tytuł, c - karta)")] WishlistObjectType type, [Summary("ids/WIDs")] params ulong[] ids)
         {
             using (var db = new Database.DatabaseContext(Config))
             {
@@ -2073,7 +1531,7 @@ namespace Sanakan.Modules
         [Alias("wadd", "zdodaj")]
         [Summary("dodaje kartę/tytuł/postać do listy życzeń")]
         [Remarks("karta 4212"), RequireWaifuCommandChannel]
-        public async Task AddToWishlistAsync([Summary("typ id (p - postać, t - tytuł, c - karta)")]WishlistObjectType type, [Summary("id/WID")]ulong id)
+        public async Task AddToWishlistAsync([Summary("typ id (p - postać, t - tytuł, c - karta)")] WishlistObjectType type, [Summary("id/WID")] ulong id)
         {
             using (var db = new Database.DatabaseContext(Config))
             {
@@ -2147,7 +1605,7 @@ namespace Sanakan.Modules
         [Alias("wishlist view", "zyczenia widok")]
         [Summary("pozwala ukryć listę życzeń przed innymi graczami")]
         [Remarks("tak"), RequireWaifuCommandChannel]
-        public async Task SetWishlistViewAsync([Summary("czy ma być widoczna? (tak/nie)")]bool view)
+        public async Task SetWishlistViewAsync([Summary("czy ma być widoczna? (tak/nie)")] bool view)
         {
             using (var db = new Database.DatabaseContext(Config))
             {
@@ -2167,7 +1625,7 @@ namespace Sanakan.Modules
         [Alias("on wishlist", "na zyczeniach")]
         [Summary("wyświetla obiekty dodane do listy życzeń")]
         [Remarks(""), RequireWaifuCommandChannel]
-        public async Task ShowThingsOnWishlistAsync([Summary("użytkownik(opcjonalne)")]SocketGuildUser usr = null)
+        public async Task ShowThingsOnWishlistAsync([Summary("użytkownik(opcjonalne)")] SocketGuildUser usr = null)
         {
             var user = (usr ?? Context.User) as SocketGuildUser;
             if (user == null) return;
@@ -2218,8 +1676,8 @@ namespace Sanakan.Modules
         [Alias("wishlist", "zyczenia")]
         [Summary("wyświetla liste życzeń użytkownika")]
         [Remarks("Dzida tak tak tak tak"), RequireWaifuCommandChannel]
-        public async Task ShowWishlistAsync([Summary("użytkownik")]SocketGuildUser usr = null, [Summary("czy pokazać ulubione (true/false) domyślnie ukryte, wymaga podania użytkownika")]bool showFavs = false,
-            [Summary("czy pokazać niewymienialne (true/false) domyślnie pokazane")] bool showBlocked = true, [Summary("czy zamienić oznaczenia na nicki?")]bool showNames = false, [Summary("czy dodać linki do profili?")]bool showShindenUrl = false)
+        public async Task ShowWishlistAsync([Summary("użytkownik")] SocketGuildUser usr = null, [Summary("czy pokazać ulubione (true/false) domyślnie ukryte, wymaga podania użytkownika")] bool showFavs = false,
+            [Summary("czy pokazać niewymienialne (true/false) domyślnie pokazane")] bool showBlocked = true, [Summary("czy zamienić oznaczenia na nicki?")] bool showNames = false, [Summary("czy dodać linki do profili?")] bool showShindenUrl = false)
         {
             var user = (usr ?? Context.User) as SocketGuildUser;
             if (user == null) return;
@@ -2249,7 +1707,7 @@ namespace Sanakan.Modules
                 var t = bUser.GameDeck.GetTitlesWishList();
                 var c = bUser.GameDeck.GetCardsWishList();
 
-                var cards = await _waifu.GetCardsFromWishlist(c, p ,t, db, bUser.GameDeck.Cards);
+                var cards = await _waifu.GetCardsFromWishlist(c, p, t, db, bUser.GameDeck.Cards);
                 cards = cards.Where(x => x.GameDeckId != bUser.Id).ToList();
 
                 if (!showFavs)
@@ -2285,7 +1743,7 @@ namespace Sanakan.Modules
         [Alias("wishlistf", "zyczeniaf")]
         [Summary("wyświetla pozycje z listy życzeń użytkownika zawierające tylko drugiego użytkownika")]
         [Remarks("Dzida Kokos tak tak tak"), RequireWaifuCommandChannel]
-        public async Task ShowFilteredWishlistAsync([Summary("użytkownik do którego należy lista życzeń")]SocketGuildUser user, [Summary("użytkownik po którym odbywa się filtracja (opcjonalne)")]SocketGuildUser usrf = null, [Summary("czy pokazać ulubione (true/false) domyślnie ukryte, wymaga podania użytkownika")]bool showFavs = false, [Summary("czy pokazać niewymienialne (true/false) domyślnie pokazane")] bool showBlocked = true, [Summary("czy zamienić oznaczenia na nicki?")]bool showNames = false)
+        public async Task ShowFilteredWishlistAsync([Summary("użytkownik do którego należy lista życzeń")] SocketGuildUser user, [Summary("użytkownik po którym odbywa się filtracja (opcjonalne)")] SocketGuildUser usrf = null, [Summary("czy pokazać ulubione (true/false) domyślnie ukryte, wymaga podania użytkownika")] bool showFavs = false, [Summary("czy pokazać niewymienialne (true/false) domyślnie pokazane")] bool showBlocked = true, [Summary("czy zamienić oznaczenia na nicki?")] bool showNames = false)
         {
             var userf = (usrf ?? Context.User) as SocketGuildUser;
             if (userf == null) return;
@@ -2321,7 +1779,7 @@ namespace Sanakan.Modules
                 var t = bUser.GameDeck.GetTitlesWishList();
                 var c = bUser.GameDeck.GetCardsWishList();
 
-                var cards = await _waifu.GetCardsFromWishlist(c, p ,t, db, bUser.GameDeck.Cards);
+                var cards = await _waifu.GetCardsFromWishlist(c, p, t, db, bUser.GameDeck.Cards);
 
                 ulong searchId = userf.Id == Context.Client.CurrentUser.Id ? 1 : userf.Id;
                 cards = cards.Where(x => x.GameDeckId == searchId).ToList();
@@ -2359,7 +1817,7 @@ namespace Sanakan.Modules
         [Alias("who wants", "kc", "ww")]
         [Summary("wyszukuje na listach życzeń użytkowników danej karty, pomija tytuły")]
         [Remarks("51545"), RequireWaifuCommandChannel]
-        public async Task WhoWantsCardAsync([Summary("wid karty")]ulong wid, [Summary("czy zamienić oznaczenia na nicki?")]bool showNames = false)
+        public async Task WhoWantsCardAsync([Summary("wid karty")] ulong wid, [Summary("czy zamienić oznaczenia na nicki?")] bool showNames = false)
         {
             using (var db = new Database.DatabaseContext(Config))
             {
@@ -2425,7 +1883,7 @@ namespace Sanakan.Modules
         [Alias("who wants anime", "kca", "wwa")]
         [Summary("wyszukuje na wishlistach danego anime")]
         [Remarks("21"), RequireWaifuCommandChannel]
-        public async Task WhoWantsCardsFromAnimeAsync([Summary("id anime")]ulong id, [Summary("czy zamienić oznaczenia na nicki?")]bool showNames = false)
+        public async Task WhoWantsCardsFromAnimeAsync([Summary("id anime")] ulong id, [Summary("czy zamienić oznaczenia na nicki?")] bool showNames = false)
         {
             var response = await _shclient.Title.GetInfoAsync(id);
             if (!response.IsSuccessStatusCode())
@@ -2452,7 +1910,7 @@ namespace Sanakan.Modules
         [Alias("unleash", "wyzwol")]
         [Summary("zmienia karte niewymienialną na wymienialną (250 CT lub 2000 CT w przypadku ultimate)")]
         [Remarks("8651"), RequireWaifuCommandChannel]
-        public async Task UnleashCardAsync([Summary("WID")]ulong wid)
+        public async Task UnleashCardAsync([Summary("WID")] ulong wid)
         {
             int cost = 250;
             using (var db = new Database.DatabaseContext(Config))
@@ -2503,7 +1961,7 @@ namespace Sanakan.Modules
         [Alias("card limit")]
         [Summary("zwiększa limit kart, jakie można posiadać o 100, podanie 0 jako krotności wypisuje obecny limit")]
         [Remarks("10"), RequireWaifuCommandChannel]
-        public async Task IncCardLimitAsync([Summary("krotność użycia polecenia")]uint count = 0)
+        public async Task IncCardLimitAsync([Summary("krotność użycia polecenia")] uint count = 0)
         {
             using (var db = new Database.DatabaseContext(Config))
             {
@@ -2542,7 +2000,7 @@ namespace Sanakan.Modules
         [Alias("site color")]
         [Summary("zmienia kolor przewodni profilu na stronie waifu (500 TC)")]
         [Remarks("#dc5341"), RequireWaifuCommandChannel]
-        public async Task ChangeWaifuSiteForegroundColorAsync([Summary("kolor w formacie hex")]string color)
+        public async Task ChangeWaifuSiteForegroundColorAsync([Summary("kolor w formacie hex")] string color)
         {
             var tcCost = 500;
 
@@ -2574,7 +2032,7 @@ namespace Sanakan.Modules
         [Alias("szczegoł strony", "szczegol strony", "szczegól strony", "site fg", "site foreground")]
         [Summary("zmienia obrazek nakładany na tło profilu na stronie waifu (500 TC)")]
         [Remarks("https://i.imgur.com/eQoaZid.png"), RequireWaifuCommandChannel]
-        public async Task ChangeWaifuSiteForegroundAsync([Summary("bezpośredni adres do obrazka")]string imgUrl)
+        public async Task ChangeWaifuSiteForegroundAsync([Summary("bezpośredni adres do obrazka")] string imgUrl)
         {
             var tcCost = 500;
 
@@ -2606,7 +2064,7 @@ namespace Sanakan.Modules
         [Alias("tlo strony", "site bg", "site background")]
         [Summary("zmienia obrazek tła profilu na stronie waifu (2000 TC)")]
         [Remarks("https://i.imgur.com/wmDhRWd.jpeg"), RequireWaifuCommandChannel]
-        public async Task ChangeWaifuSiteBackgroundAsync([Summary("bezpośredni adres do obrazka")]string imgUrl)
+        public async Task ChangeWaifuSiteBackgroundAsync([Summary("bezpośredni adres do obrazka")] string imgUrl)
         {
             var tcCost = 2000;
 
@@ -2638,7 +2096,7 @@ namespace Sanakan.Modules
         [Alias("pozycja tla strony", "site bgp", "site background position")]
         [Summary("zmienia położenie obrazka tła profilu na stronie waifu")]
         [Remarks("65"), RequireWaifuCommandChannel]
-        public async Task ChangeWaifuSiteBackgroundPositionAsync([Summary("pozycja w % od 0 do 100")]uint position)
+        public async Task ChangeWaifuSiteBackgroundPositionAsync([Summary("pozycja w % od 0 do 100")] uint position)
         {
             using (var db = new Database.DatabaseContext(Config))
             {
@@ -2649,7 +2107,7 @@ namespace Sanakan.Modules
                     return;
                 }
 
-                botuser.GameDeck.BackgroundPosition = (int) position;
+                botuser.GameDeck.BackgroundPosition = (int)position;
 
                 await db.SaveChangesAsync();
 
@@ -2661,7 +2119,7 @@ namespace Sanakan.Modules
         [Alias("pozycja szczególu strony", "pozycja szczegolu strony", "pozycja szczegołu strony", "site fgp", "site foreground position")]
         [Summary("zmienia położenie obrazka szczegółu profilu na stronie waifu")]
         [Remarks("78"), RequireWaifuCommandChannel]
-        public async Task ChangeWaifuSiteForegroundPositionAsync([Summary("pozycja w % od 0 do 100")]uint position)
+        public async Task ChangeWaifuSiteForegroundPositionAsync([Summary("pozycja w % od 0 do 100")] uint position)
         {
             using (var db = new Database.DatabaseContext(Config))
             {
@@ -2672,7 +2130,7 @@ namespace Sanakan.Modules
                     return;
                 }
 
-                botuser.GameDeck.ForegroundPosition = (int) position;
+                botuser.GameDeck.ForegroundPosition = (int)position;
 
                 await db.SaveChangesAsync();
 
@@ -2684,7 +2142,7 @@ namespace Sanakan.Modules
         [Alias("gallery")]
         [Summary("wykupuje dodatkowe 5 pozycji w galerii (koszt 100 TC), podanie 0 jako krotności wypisuje obecny limit")]
         [Remarks(""), RequireWaifuCommandChannel]
-        public async Task IncGalleryLimitAsync([Summary("krotność użycia polecenia")]uint count = 0)
+        public async Task IncGalleryLimitAsync([Summary("krotność użycia polecenia")] uint count = 0)
         {
             int cost = 100 * (int)count;
             using (var db = new Database.DatabaseContext(Config))
@@ -2811,7 +2269,7 @@ namespace Sanakan.Modules
         [Alias("tag")]
         [Summary("dodaje tag do kart")]
         [Remarks("konie 231 12341 22"), RequireWaifuCommandChannel]
-        public async Task ChangeCardTagAsync([Summary("tag")]string tag, [Summary("WID kart")]params ulong[] wids)
+        public async Task ChangeCardTagAsync([Summary("tag")] string tag, [Summary("WID kart")] params ulong[] wids)
         {
             using (var db = new Database.DatabaseContext(Config))
             {
@@ -2833,7 +2291,7 @@ namespace Sanakan.Modules
                 foreach (var thisCard in cardsSelected)
                 {
                     if (!thisCard.HasTag(tag))
-                        thisCard.TagList.Add(new CardTag{ Name = tag });
+                        thisCard.TagList.Add(new CardTag { Name = tag });
                 }
 
                 await db.SaveChangesAsync();
@@ -2848,7 +2306,7 @@ namespace Sanakan.Modules
         [Alias("tag clean", "oznacz czysć", "oznacz czyśc", "oznacz czysc")]
         [Summary("czyści tagi z kart")]
         [Remarks("22"), RequireWaifuCommandChannel]
-        public async Task CleanCardTagAsync([Summary("WID kart")]params ulong[] wids)
+        public async Task CleanCardTagAsync([Summary("WID kart")] params ulong[] wids)
         {
             using (var db = new Database.DatabaseContext(Config))
             {
@@ -2876,7 +2334,7 @@ namespace Sanakan.Modules
         [Alias("tag empty")]
         [Summary("dodaje tag do kart, które nie są oznaczone")]
         [Remarks("konie"), RequireWaifuCommandChannel]
-        public async Task ChangeCardsTagAsync([Summary("tag")]string tag)
+        public async Task ChangeCardsTagAsync([Summary("tag")] string tag)
         {
             using (var db = new Database.DatabaseContext(Config))
             {
@@ -2896,7 +2354,7 @@ namespace Sanakan.Modules
                 }
 
                 foreach (var card in untaggedCards)
-                    card.TagList.Add(new CardTag{ Name = tag });
+                    card.TagList.Add(new CardTag { Name = tag });
 
                 await db.SaveChangesAsync();
 
@@ -2910,7 +2368,7 @@ namespace Sanakan.Modules
         [Alias("tag replace", "oznacz podmien")]
         [Summary("podmienia tag na wszystkich kartach, niepodanie nowego tagu usuwa tag z kart")]
         [Remarks("konie wymiana"), RequireWaifuCommandChannel]
-        public async Task ReplaceCardsTagAsync([Summary("stary tag")]string oldTag, [Summary("nowy tag")]string newTag = "%$-1")
+        public async Task ReplaceCardsTagAsync([Summary("stary tag")] string oldTag, [Summary("nowy tag")] string newTag = "%$-1")
         {
             if (newTag.Contains(" "))
             {
@@ -2943,7 +2401,7 @@ namespace Sanakan.Modules
                         card.TagList.Remove(thisTag);
 
                         if (!card.HasTag(newTag) && newTag != "%$-1")
-                            card.TagList.Add(new CardTag{ Name = newTag });
+                            card.TagList.Add(new CardTag { Name = newTag });
                     }
                 }
 
@@ -2959,7 +2417,7 @@ namespace Sanakan.Modules
         [Alias("tag remove", "oznacz usun")]
         [Summary("kasuje tag z kart")]
         [Remarks("ulubione 2211 2123 33123"), RequireWaifuCommandChannel]
-        public async Task RemoveCardTagAsync([Summary("tag")]string tag, [Summary("WID kart")]params ulong[] wids)
+        public async Task RemoveCardTagAsync([Summary("tag")] string tag, [Summary("WID kart")] params ulong[] wids)
         {
             using (var db = new Database.DatabaseContext(Config))
             {
@@ -2995,7 +2453,7 @@ namespace Sanakan.Modules
         [Alias("exchange conditions")]
         [Summary("ustawia tekst będący zasadami wymiany z nami, wywołanie bez podania zasad kasuje tekst")]
         [Remarks("Wymieniam się tylko za karty z mojej listy życzeń."), RequireWaifuCommandChannel]
-        public async Task SetExchangeConditionAsync([Summary("zasady wymiany")][Remainder]string condition = null)
+        public async Task SetExchangeConditionAsync([Summary("zasady wymiany")][Remainder] string condition = null)
         {
             using (var db = new Database.DatabaseContext(Config))
             {
@@ -3015,7 +2473,7 @@ namespace Sanakan.Modules
         [Alias("deck", "aktywne")]
         [Summary("wyświetla aktywne karty/ustawia kartę jako aktywną")]
         [Remarks("1"), RequireWaifuCommandChannel]
-        public async Task ChangeDeckCardStatusAsync([Summary("WID(opcjonalne)")]ulong wid = 0)
+        public async Task ChangeDeckCardStatusAsync([Summary("WID(opcjonalne)")] ulong wid = 0)
         {
             using (var db = new Database.DatabaseContext(Config))
             {
@@ -3086,7 +2544,7 @@ namespace Sanakan.Modules
                 QueryCacheManager.ExpireTag(new string[] { $"user-{bUser.Id}", "users" });
 
                 var message = thisCard.Active ? "aktywował: " : "dezaktywował: ";
-                var power = $"**Moc talii**: {bUser.GameDeck.DeckPower.ToString("F")}";
+                var power = $"**Moc talii**: {bUser.GameDeck.DeckPower:F}";
                 await ReplyAsync("", embed: $"{Context.User.Mention} {message}{thisCard.GetString(false, false, true)}\n\n{power}".ToEmbedMessage(EMType.Success).Build());
             }
         }
@@ -3095,7 +2553,7 @@ namespace Sanakan.Modules
         [Alias("who")]
         [Summary("pozwala wyszukać użytkowników posiadających kartę danej postaci")]
         [Remarks("51 tak"), RequireWaifuCommandChannel]
-        public async Task SearchCharacterCardsAsync([Summary("id postaci na shinden")]ulong id, [Summary("czy zamienić oznaczenia na nicki?")]bool showNames = false, [Summary("czy dodać linki do profili?")]bool showShindenUrl = false)
+        public async Task SearchCharacterCardsAsync([Summary("id postaci na shinden")] ulong id, [Summary("czy zamienić oznaczenia na nicki?")] bool showNames = false, [Summary("czy dodać linki do profili?")] bool showShindenUrl = false)
         {
             var response = await _shclient.GetCharacterInfoAsync(id);
             if (!response.IsSuccessStatusCode())
@@ -3106,7 +2564,7 @@ namespace Sanakan.Modules
 
             using (var db = new Database.DatabaseContext(Config))
             {
-                var cards = await db.Cards.Include(x => x.TagList).Include(x => x.GameDeck).ThenInclude(x => x.User).Where(x => x.Character == id).AsNoTracking().FromCacheAsync( new[] {"users"});
+                var cards = await db.Cards.Include(x => x.TagList).Include(x => x.GameDeck).ThenInclude(x => x.User).Where(x => x.Character == id).AsNoTracking().FromCacheAsync(new[] { "users" });
 
                 if (cards.Count() < 1)
                 {
@@ -3142,7 +2600,7 @@ namespace Sanakan.Modules
         [Alias("favs")]
         [Summary("pozwala wyszukać użytkowników posiadających karty z naszej listy ulubionych postaci")]
         [Remarks("tak tak"), RequireWaifuCommandChannel]
-        public async Task SearchCharacterCardsFromFavListAsync([Summary("czy pokazać ulubione (true/false) domyślnie ukryte")]bool showFavs = false, [Summary("czy zamienić oznaczenia na nicki?")]bool showNames = false)
+        public async Task SearchCharacterCardsFromFavListAsync([Summary("czy pokazać ulubione (true/false) domyślnie ukryte")] bool showFavs = false, [Summary("czy zamienić oznaczenia na nicki?")] bool showNames = false)
         {
             using (var db = new Database.DatabaseContext(Config))
             {
@@ -3192,7 +2650,7 @@ namespace Sanakan.Modules
         [Alias("which")]
         [Summary("pozwala wyszukać użytkowników posiadających karty z danego tytułu")]
         [Remarks("1 tak"), RequireWaifuCommandChannel]
-        public async Task SearchCharacterCardsFromTitleAsync([Summary("id serii na shinden")]ulong id, [Summary("czy zamienić oznaczenia na nicki?")]bool showNames = false)
+        public async Task SearchCharacterCardsFromTitleAsync([Summary("id serii na shinden")] ulong id, [Summary("czy zamienić oznaczenia na nicki?")] bool showNames = false)
         {
             var response = await _shclient.Title.GetCharactersAsync(id);
             if (!response.IsSuccessStatusCode())
@@ -3210,7 +2668,7 @@ namespace Sanakan.Modules
 
             using (var db = new Database.DatabaseContext(Config))
             {
-                var cards = await db.Cards.AsQueryable().Include(x => x.TagList).Include(x => x.GameDeck).AsSplitQuery().Where(x => characterIds.Contains(x.Character)).AsNoTracking().FromCacheAsync( new[] {"users"});
+                var cards = await db.Cards.AsQueryable().Include(x => x.TagList).Include(x => x.GameDeck).AsSplitQuery().Where(x => characterIds.Contains(x.Character)).AsNoTracking().FromCacheAsync(new[] { "users" });
 
                 if (cards.Count() < 1)
                 {
@@ -3239,7 +2697,7 @@ namespace Sanakan.Modules
         [Alias("exchange")]
         [Summary("propozycja wymiany z użytkownikiem")]
         [Remarks("Karna"), RequireWaifuMarketChannel]
-        public async Task ExchangeCardsAsync([Summary("użytkownik")]SocketGuildUser user2, [Summary("oznacza karty po wymianie podanym tagiem")]string tag = "")
+        public async Task ExchangeCardsAsync([Summary("użytkownik")] SocketGuildUser user2, [Summary("oznacza karty po wymianie podanym tagiem")] string tag = "")
         {
             if (!string.IsNullOrEmpty(tag) && tag.Contains(" "))
             {
@@ -3374,17 +2832,17 @@ namespace Sanakan.Modules
         {
             using (var db = new Database.DatabaseContext(Config))
             {
-                 var botUser = await db.GetCachedFullUserAsync(Context.User.Id);
-                 var cardsOnExpedition = botUser.GameDeck.Cards.Where(x => x.Expedition != CardExpedition.None).ToList();
+                var botUser = await db.GetCachedFullUserAsync(Context.User.Id);
+                var cardsOnExpedition = botUser.GameDeck.Cards.Where(x => x.Expedition != CardExpedition.None).ToList();
 
-                 if (cardsOnExpedition.Count < 1)
-                 {
+                if (cardsOnExpedition.Count < 1)
+                {
                     await ReplyAsync("", embed: $"{Context.User.Mention} nie posiadasz kart znajdujących się na wyprawie.".ToEmbedMessage(EMType.Error).Build());
                     return;
-                 }
+                }
 
-                 var expStrs = cardsOnExpedition.Select(x => $"{x.GetShortString(true)}:\n Od {x.ExpeditionDate.ToShortDateTime()} na {x.Expedition.GetName("ej")} wyprawie.\nTraci siły po {x.CalculateMaxTimeOnExpeditionInMinutes(botUser.GameDeck.Karma).ToString("F")} min.");
-                 await ReplyAsync("", embed: $"**Wyprawy[**{cardsOnExpedition.Count}/{botUser.GameDeck.LimitOfCardsOnExpedition()}**]** {Context.User.Mention}:\n\n{string.Join("\n\n", expStrs)}".ToEmbedMessage(EMType.Bot).WithUser(Context.User).Build());
+                var expStrs = cardsOnExpedition.Select(x => $"{x.GetShortString(true)}:\n Od {x.ExpeditionDate.ToShortDateTime()} na {x.Expedition.GetName("ej")} wyprawie.\nTraci siły po {x.CalculateMaxTimeOnExpeditionInMinutes(botUser.GameDeck.Karma):F} min.");
+                await ReplyAsync("", embed: $"**Wyprawy[**{cardsOnExpedition.Count}/{botUser.GameDeck.LimitOfCardsOnExpedition()}**]** {Context.User.Mention}:\n\n{string.Join("\n\n", expStrs)}".ToEmbedMessage(EMType.Bot).WithUser(Context.User).Build());
             }
         }
 
@@ -3392,7 +2850,7 @@ namespace Sanakan.Modules
         [Alias("expedition end")]
         [Summary("kończy wyprawę karty")]
         [Remarks("11321"), RequireWaifuFightChannel]
-        public async Task EndCardExpeditionAsync([Summary("WID")]ulong wid)
+        public async Task EndCardExpeditionAsync([Summary("WID")] ulong wid)
         {
             using (var db = new Database.DatabaseContext(Config))
             {
@@ -3416,7 +2874,7 @@ namespace Sanakan.Modules
 
                 await db.SaveChangesAsync();
 
-                QueryCacheManager.ExpireTag(new string[] { $"user-{botUser.Id}", "users"});
+                QueryCacheManager.ExpireTag(new string[] { $"user-{botUser.Id}", "users" });
 
                 _ = Task.Run(async () =>
                 {
@@ -3429,7 +2887,7 @@ namespace Sanakan.Modules
         [Alias("expedition")]
         [Summary("wysyła karty na wyprawę")]
         [Remarks("n 11321 123112"), RequireWaifuFightChannel]
-        public async Task SendCardToExpeditionAsync([Summary("typ wyprawy")]CardExpedition expedition, [Summary("WIDy")]params ulong[] wids)
+        public async Task SendCardToExpeditionAsync([Summary("typ wyprawy")] CardExpedition expedition, [Summary("WIDy")] params ulong[] wids)
         {
             if (expedition == CardExpedition.None)
             {
@@ -3476,7 +2934,7 @@ namespace Sanakan.Modules
 
                 await db.SaveChangesAsync();
 
-                QueryCacheManager.ExpireTag(new string[] { $"user-{botUser.Id}", "users"});
+                QueryCacheManager.ExpireTag(new string[] { $"user-{botUser.Id}", "users" });
 
                 _ = Task.Run(async () =>
                 {
@@ -3513,7 +2971,7 @@ namespace Sanakan.Modules
                 if (canFight != DeckPowerStatus.Ok)
                 {
                     var err = (canFight == DeckPowerStatus.TooLow) ? "słabą" : "silną";
-                    await ReplyAsync("", embed: $"{Context.User.Mention} masz zbyt {err} talie ({duser.GameDeck.GetDeckPower().ToString("F")}).".ToEmbedMessage(EMType.Error).Build());
+                    await ReplyAsync("", embed: $"{Context.User.Mention} masz zbyt {err} talie ({duser.GameDeck.GetDeckPower():F}).".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
@@ -3671,7 +3129,7 @@ namespace Sanakan.Modules
         [Alias("husbando")]
         [Summary("pozwala ustawić sobie ulubioną postać na profilu (musisz posiadać jej kartę)")]
         [Remarks("451"), RequireWaifuCommandChannel]
-        public async Task SetProfileWaifuAsync([Summary("WID")]ulong wid)
+        public async Task SetProfileWaifuAsync([Summary("WID")] ulong wid)
         {
             using (var db = new Database.DatabaseContext(Config))
             {
@@ -3736,7 +3194,7 @@ namespace Sanakan.Modules
         [Alias("donate")]
         [Summary("ofiaruj trzy krople swojej krwi, aby przeistoczyć kartę w anioła lub demona (wymagany odpowiedni poziom karmy)")]
         [Remarks("451"), RequireWaifuCommandChannel]
-        public async Task ChangeCardAsync([Summary("WID")]ulong wid)
+        public async Task ChangeCardAsync([Summary("WID")] ulong wid)
         {
             using (var db = new Database.DatabaseContext(Config))
             {
@@ -3832,7 +3290,7 @@ namespace Sanakan.Modules
         [Alias("cpf-")]
         [Summary("wyświetla uproszczony profil PocketWaifu")]
         [Remarks("Karna"), RequireAnyCommandChannelOrLevel(40)]
-        public async Task ShowSimpleProfileAsync([Summary("użytkownik (opcjonalne)")]SocketGuildUser usr = null)
+        public async Task ShowSimpleProfileAsync([Summary("użytkownik (opcjonalne)")] SocketGuildUser usr = null)
         {
             var user = (usr ?? Context.User) as SocketGuildUser;
             if (user == null) return;
@@ -3856,8 +3314,8 @@ namespace Sanakan.Modules
                     Color = EMType.Bot.Color(),
                     Author = new EmbedAuthorBuilder().WithUser(user),
                     Description = $"*{bUser.GameDeck.GetUserNameStatus()}*\n\n"
-                        + $"**Skrzynia({(int)bUser.GameDeck.ExpContainer.Level})**: {bUser.GameDeck.ExpContainer.ExpCount.ToString("F")}\n"
-                        + $"**CT**: {bUser.GameDeck.CTCnt}\n**Karma**: {bUser.GameDeck.Karma.ToString("F")}\n\n**Posiadane karty**: {bUser.GameDeck.Cards.Count}\n"
+                        + $"**Skrzynia({(int)bUser.GameDeck.ExpContainer.Level})**: {bUser.GameDeck.ExpContainer.ExpCount:F}\n"
+                        + $"**CT**: {bUser.GameDeck.CTCnt}\n**Karma**: {bUser.GameDeck.Karma:F}\n\n**Posiadane karty**: {bUser.GameDeck.Cards.Count}\n"
                         + $"**GR**: {globalString}\n**SR**: {seasonString}"
                 };
 
@@ -3878,7 +3336,7 @@ namespace Sanakan.Modules
         [Alias("cpf")]
         [Summary("wyświetla profil PocketWaifu")]
         [Remarks("Karna"), RequireWaifuCommandChannel]
-        public async Task ShowProfileAsync([Summary("użytkownik (opcjonalne)")]SocketGuildUser usr = null)
+        public async Task ShowProfileAsync([Summary("użytkownik (opcjonalne)")] SocketGuildUser usr = null)
         {
             var user = (usr ?? Context.User) as SocketGuildUser;
             if (user == null) return;
@@ -3919,9 +3377,9 @@ namespace Sanakan.Modules
                     Color = EMType.Bot.Color(),
                     Author = new EmbedAuthorBuilder().WithUser(user),
                     Description = $"*{bUser.GameDeck.GetUserNameStatus()}*\n\n"
-                                + $"**Skrzynia({(int)bUser.GameDeck.ExpContainer.Level})**: {bUser.GameDeck.ExpContainer.ExpCount.ToString("F")}\n"
+                                + $"**Skrzynia({(int)bUser.GameDeck.ExpContainer.Level})**: {bUser.GameDeck.ExpContainer.ExpCount:F}\n"
                                 + $"**Uwolnione**: {bUser.Stats.ReleasedCards}\n**Zniszczone**: {bUser.Stats.DestroyedCards}\n**Poświęcone**: {bUser.Stats.SacraficeCards}\n**Ulepszone**: {bUser.Stats.UpgaredCards}\n**Wyzwolone**: {bUser.Stats.UnleashedCards}\n\n"
-                                + $"**CT**: {bUser.GameDeck.CTCnt}\n**Karma**: {bUser.GameDeck.Karma.ToString("F")}\n\n**Posiadane karty**: {bUser.GameDeck.Cards.Count}\n"
+                                + $"**CT**: {bUser.GameDeck.CTCnt}\n**Karma**: {bUser.GameDeck.Karma:F}\n\n**Posiadane karty**: {bUser.GameDeck.Cards.Count}\n"
                                 + $"{sssString}**SS**: {ssCnt} **S**: {sCnt} **A**: {aCnt} **B**: {bCnt} **C**: {cCnt} **D**: {dCnt} **E**:{eCnt}\n\n"
                                 + $"**PVP** Rozegrane: {aPvp} Wygrane: {wPvp}\n**GR**: {globalString}\n**SR**: {seasonString}"
                 };

@@ -54,7 +54,7 @@ namespace Sanakan.Services.Session.Models
             for (int i = 0; i < itemsOnPage.Count; i++)
             {
                 string enumerable = Enumerable ? $"**{(i + 1) + (page * ItemsPerPage)}**: " : "";
-                pageString += $"{enumerable}{itemsOnPage[i].ToString()}\n";
+                pageString += $"{enumerable}{itemsOnPage[i]}\n";
             }
 
             Embed.Description = pageString.TrimToLength(1800);

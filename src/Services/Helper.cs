@@ -80,12 +80,14 @@ namespace Sanakan.Services
             string command = $"**{botPrefix}{modulePrefix}{cmd.Name}**";
 
             if (cmd.Parameters.Count > 0)
-                foreach (var param in cmd.Parameters) command += $" `{param.Name}` ";
+                foreach (var param in cmd.Parameters)
+                    command += param.IsHidden() ? "" : $" `{param.Name}` ";
 
             command += $" - {cmd.Summary}\n";
 
             if (cmd.Parameters.Count > 0)
-                foreach (var param in cmd.Parameters) command += $"*{param.Name}* - *{param.Summary}*\n";
+                foreach (var param in cmd.Parameters)
+                    command += param.IsHidden() ? "" : $"*{param.Name}* - *{param.Summary}*\n";
 
             if (cmd.Aliases.Count > 1)
             {

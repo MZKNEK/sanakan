@@ -101,14 +101,14 @@ namespace Sanakan.Services
 
             foreach (var item in list)
             {
-                temp += $"[{++i}] {item.ToString()}\n";
+                temp += $"[{++i}] {item}\n";
                 if (temp.Length > 1800)
                 {
                     toSend[messageNr] += "\n```";
-                    toSend[++messageNr] += $"```ini\n[{i}] {item.ToString()}\n";
+                    toSend[++messageNr] += $"```ini\n[{i}] {item}\n";
                     temp = "";
                 }
-                else toSend[messageNr] += $"[{i}] {item.ToString()}\n";
+                else toSend[messageNr] += $"[{i}] {item}\n";
             }
             toSend[messageNr] += "```\nNapisz `koniec`, aby zamknąć menu.";
 

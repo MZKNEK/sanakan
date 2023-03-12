@@ -299,29 +299,29 @@ namespace Sanakan.Extensions
                     if (wsb < 20) wsb = 20;
                     if (wsb > 40) wsb = 40;
 
-                    sRank = (long) (80 * (1 - sChan)) + wsb;
-                    gRank = (long) (40 * (1 - gChan)) + wsb;
+                    sRank = (long)(80 * (1 - sChan)) + wsb;
+                    gRank = (long)(40 * (1 - gChan)) + wsb;
 
                     mmrChange = 2 * (1 - chanceD1);
                     mmreChange = 2 * (0 - chanceD2);
-                break;
+                    break;
 
                 case FightResult.Lose:
                     d1.PVPWinStreak = 0;
-                    sRank = (long) (80 * (0 - sChan));
-                    gRank = (long) (40 * (0 - gChan));
+                    sRank = (long)(80 * (0 - sChan));
+                    gRank = (long)(40 * (0 - gChan));
 
                     mmrChange = 2 * (0 - chanceD1);
                     mmreChange = 2 * (1 - chanceD2);
-                break;
+                    break;
 
                 case FightResult.Draw:
-                    sRank = (long) (40 * (1 - sChan));
-                    gRank = (long) (20 * (1 - gChan));
+                    sRank = (long)(40 * (1 - sChan));
+                    gRank = (long)(20 * (1 - gChan));
 
                     mmrChange = 1 * (1 - chanceD1);
                     mmreChange = 1 * (1 - chanceD2);
-                break;
+                    break;
             }
 
             d1.MatachMakingRatio += mmrChange;
@@ -339,7 +339,7 @@ namespace Sanakan.Extensions
             var coins = d1.GetPVPCoinsFromDuel(res);
             d1.PVPCoins += coins;
 
-            return $"**{coins.ToString("+0;-#")}** PC **{gRank.ToString("+0;-#")}** GR  **{sRank.ToString("+0;-#")}** SR";
+            return $"**{coins:+0;-#}** PC **{gRank:+0;-#}** GR  **{sRank:+0;-#}** SR";
         }
 
         public static void AddItem(this GameDeck deck, Item item)
@@ -552,7 +552,7 @@ namespace Sanakan.Extensions
 
                 case TopType.Karma:
                 case TopType.KarmaNegative:
-                    return $"{u.GameDeck.Karma.ToString("F")}";
+                    return $"{u.GameDeck.Karma:F}";
 
                 case TopType.Pvp:
                     return $"{u.GameDeck.GlobalPVPRank}";
@@ -582,16 +582,16 @@ namespace Sanakan.Extensions
                 switch (type)
                 {
                     case SlotMachineSetting.Beat:
-                            var bt = (SlotMachineBeat)Enum.Parse(typeof(SlotMachineBeat), $"b{value}");
-                            user.SMConfig.Beat = bt;
+                        var bt = (SlotMachineBeat)Enum.Parse(typeof(SlotMachineBeat), $"b{value}");
+                        user.SMConfig.Beat = bt;
                         break;
                     case SlotMachineSetting.Rows:
-                            var rw = (SlotMachineSelectedRows)Enum.Parse(typeof(SlotMachineSelectedRows), $"r{value}");
-                            user.SMConfig.Rows = rw;
+                        var rw = (SlotMachineSelectedRows)Enum.Parse(typeof(SlotMachineSelectedRows), $"r{value}");
+                        user.SMConfig.Rows = rw;
                         break;
                     case SlotMachineSetting.Multiplier:
-                            var mt = (SlotMachineBeatMultiplier)Enum.Parse(typeof(SlotMachineBeatMultiplier), $"x{value}");
-                            user.SMConfig.Multiplier = mt;
+                        var mt = (SlotMachineBeatMultiplier)Enum.Parse(typeof(SlotMachineBeatMultiplier), $"x{value}");
+                        user.SMConfig.Multiplier = mt;
                         break;
 
                     default:
@@ -622,5 +622,7 @@ namespace Sanakan.Extensions
         public static Card GetCard(this User user, ulong id) => user.GameDeck.Cards.FirstOrDefault(x => x.Id == id);
 
         public static IEnumerable<Card> GetCards(this User user, ulong[] ids) => user.GameDeck.Cards.Where(x => ids.Any(c => c == x.Id));
+
+        public static IEnumerable<Item> GetAllItems(this User user) => user.GameDeck.Items.OrderBy(x => x.Type);
     }
 }
