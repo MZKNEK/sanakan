@@ -385,8 +385,8 @@ namespace Sanakan.Modules
             await ReplyAsync("", embed: await _waifu.ExecuteShopAsync(ShopType.Normal, Config, Context.User, itemNumber, info));
         }
 
-        [Command("użyj bez karty")]
-        [Alias("uzyj bez karty", "use without card", "usewc", "użyjbk", "uzyjbk")]
+        [Command("użyjbk ")]
+        [Alias("usewc", "uzyjbk")]
         [Summary("używa przedmiot")]
         [Remarks("1 4212 2"), RequireWaifuCommandChannel]
         public async Task UseItemAsync([Summary("nr przedmiotu")] int itemNumber, [Summary("liczba przedmiotów")] string detail = "1", [Summary("czy zamienić część figurki na exp")] bool itemToExp = false, [Hidden] ulong wid = 0)

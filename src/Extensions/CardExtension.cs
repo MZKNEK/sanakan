@@ -759,7 +759,7 @@ namespace Sanakan.Extensions
             card.Title = response.Body?.Relations?.OrderBy(x => x.Id).FirstOrDefault()?.Title ?? "????";
         }
 
-        public static StarStyle Parse(this StarStyle star, string s)
+        public static bool TryParse(this StarStyle star, string s, out StarStyle type)
         {
             switch (s.ToLower())
             {
@@ -769,37 +769,48 @@ namespace Sanakan.Extensions
                 case "wąż":
                 case "snek":
                 case "snake":
-                    return StarStyle.Snek;
+                    type = StarStyle.Snek;
+                    return true;
 
                 case "pig":
                 case "świnia":
                 case "swinia":
                 case "świnka":
                 case "swinka":
-                    return StarStyle.Pig;
+                    type = StarStyle.Pig;
+                    return true;
 
                 case "biała":
                 case "biala":
                 case "white":
-                    return StarStyle.White;
+                    type = StarStyle.White;
+                    return true;
 
                 case "full":
                 case "pełna":
                 case "pelna":
-                    return StarStyle.Full;
+                    type = StarStyle.Full;
+                    return true;
 
                 case "empty":
                 case "pusta":
-                    return StarStyle.Empty;
+                    type = StarStyle.Empty;
+                    return true;
 
                 case "black":
                 case "czarna":
-                    return StarStyle.Black;
+                    type = StarStyle.Black;
+                    return true;
 
                 default:
-                    throw new Exception("Could't parse input!");
+                    type = StarStyle.Full;
+                    return false;
             }
+
         }
+
+        public static StarStyle Parse(this StarStyle star, string s)
+            => star.TryParse(s, out var type) ? type : throw new Exception("Could't parse input!");
 
         public static double GetCostOfExpeditionPerMinute(this Card card, CardExpedition expedition = CardExpedition.None)
         {

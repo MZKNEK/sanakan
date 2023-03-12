@@ -34,5 +34,7 @@ namespace Sanakan.Services
         public bool IsError() => Status == EStatus.Error;
 
         public EmbedBuilder ToEmbedMessage(string prefix = "", string suffix = "") => $"{prefix}{Message}{suffix}".ToEmbedMessage(MessageType);
+
+        public static implicit operator bool(ExecutionResult result) => result?.IsOk() ?? false;
     }
 }
