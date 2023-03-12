@@ -388,7 +388,7 @@ namespace Sanakan.Modules
         [Command("użyjbk ")]
         [Alias("usewc", "uzyjbk")]
         [Summary("używa przedmiot")]
-        [Remarks("1 4212 2"), RequireWaifuCommandChannel]
+        [Remarks("1 1 tak"), RequireWaifuCommandChannel]
         public async Task UseItemAsync([Summary("nr przedmiotu")] int itemNumber, [Summary("liczba przedmiotów")] string detail = "1", [Summary("czy zamienić część figurki na exp")] bool itemToExp = false, [Hidden] ulong wid = 0)
             => await UseItemOnCardAsync(itemNumber, wid, detail, itemToExp);
 
