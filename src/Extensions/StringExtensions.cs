@@ -2,7 +2,9 @@
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
+using System.Text;
 using System.Text.RegularExpressions;
 using Discord;
 using Microsoft.AspNetCore.Mvc;
@@ -77,6 +79,10 @@ namespace Sanakan.Extensions
 
             return s;
         }
+
+        public static string RemoveDiacritics(this string s) => string.Concat(s.Normalize(NormalizationForm.FormD)
+            .Where(ch => CharUnicodeInfo.GetUnicodeCategory(ch) != UnicodeCategory.NonSpacingMark))
+            .Normalize(NormalizationForm.FormC);
 
         public static int CountEmotesTextLenght(this IReadOnlyCollection<Discord.ITag> tags)
         {

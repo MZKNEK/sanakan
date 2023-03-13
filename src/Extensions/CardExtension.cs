@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using Discord;
 using Sanakan.Database;
@@ -13,34 +14,42 @@ namespace Sanakan.Extensions
 {
     public static class CardExtension
     {
-        public static string GetString(this Card card, bool withoutId = false, bool withUpgrades = false, bool nameAsUrl = false, bool allowZero = false, bool showBaseHp = false)
+        private static Dictionary<string, StarStyle> _starStyleParsingDic = new Dictionary<string, StarStyle>
         {
-            string idStr = withoutId ? "" : $"**[{card.Id}]** ";
-            string name = nameAsUrl ? card.GetNameWithUrl() : card.Name;
-            string upgCnt = (withUpgrades && !card.FromFigure) ? $"_(U:{card.UpgradesCnt})_" : "";
+            {"waz",     StarStyle.Snek},
+            {"snek",    StarStyle.Snek},
+            {"snake",   StarStyle.Snek},
+            {"pig",     StarStyle.Pig},
+            {"swinka",  StarStyle.Pig},
+            {"white",   StarStyle.White},
+            {"biala",   StarStyle.White},
+            {"full",    StarStyle.Full},
+            {"pelna",   StarStyle.Full},
+            {"empty",   StarStyle.Empty},
+            {"pusta",   StarStyle.Empty},
+            {"black",   StarStyle.Black},
+            {"czarna",  StarStyle.Black},
+        };
 
-            return $"{idStr} {name} **{card.GetCardRealRarity()}** {card.GetCardParams(showBaseHp, allowZero)} {upgCnt}";
-        }
+        public static string GetString(this Card card, bool withoutId = false, bool withUpgrades = false,
+            bool nameAsUrl = false, bool allowZero = false, bool showBaseHp = false) => new StringBuilder()
+                    .Append(withoutId ? "" : $"**[{card.Id}]** ")
+                    .Append(nameAsUrl ? card.GetNameWithUrl() : card.Name)
+                    .Append($" **{card.GetCardRealRarity()}** ")
+                    .Append(card.GetCardParams(showBaseHp, allowZero))
+                    .Append((withUpgrades && !card.FromFigure) ? $"_(U:{card.UpgradesCnt})_" : "")
+                    .ToString();
 
-        public static string GetShortString(this Card card, bool nameAsUrl = false)
-        {
-            string name = nameAsUrl ? card.GetNameWithUrl() : card.Name;
-            return $"**[{card.Id}]** {name} **{card.GetCardRealRarity()}**";
-        }
+        public static string GetShortString(this Card card, bool nameAsUrl = false) =>
+             $"**[{card.Id}]** {(nameAsUrl ? card.GetNameWithUrl() : card.Name)} **{card.GetCardRealRarity()}**";
 
-        public static string GetCardRealRarity(this Card card)
-        {
-            if (card.FromFigure)
-                return card.Quality.ToName();
-
-            return card.Rarity.ToString();
-        }
+        public static string GetCardRealRarity(this Card card) =>
+            card.FromFigure ? card.Quality.ToName() : card.Rarity.ToString();
 
         public static string GetCardParams(this Card card, bool showBaseHp = false, bool allowZero = false, bool inNewLine = false)
         {
             string hp = showBaseHp ? $"**({card.Health})**{card.GetHealthWithPenalty(allowZero)}" : $"{card.GetHealthWithPenalty(allowZero)}";
             var param = new string[] { $"❤{hp}", $"🔥{card.GetAttackWithBonus()}", $"🛡{card.GetDefenceWithBonus()}" };
-
             return string.Join(inNewLine ? "\n" : " ", param);
         }
 
@@ -187,7 +196,7 @@ namespace Sanakan.Extensions
         public static MarketValue GetThreeStateMarketValue(this Card card)
         {
             if (card.MarketValue < 0.3) return MarketValue.Low;
-            if (card.MarketValue > 2.8) return MarketValue.High;
+            if (card.MarketValue > 5.8) return MarketValue.High;
             return MarketValue.Normal;
         }
 
@@ -227,24 +236,18 @@ namespace Sanakan.Extensions
 
         public static string GetDescSmall(this Card card)
         {
-            var tags = string.Join(" ", card.TagList.Select(x => x.Name));
-            if (card.TagList.Count < 1) tags = "---";
-
             return $"**[{card.Id}]** *({card.Character}) KC: {card.WhoWantsCount} PWR: {card.CalculateCardPower():F}*\n"
                 + $"{card.GetString(true, true, true, false, true)}\n"
                 + $"_{card.Title}_\n\n"
                 + $"{card.Dere}\n"
                 + $"{card.GetAffectionString()}\n"
                 + $"{card.ExpCnt:F}/{card.ExpToUpgrade():F} exp\n\n"
-                + $"{tags}\n"
+                + $"{(card.TagList.IsNullOrEmpty() ? "---" : string.Join(" ", card.TagList.Select(x => x.Name)))}\n"
                 + $"{card.GetStatusIcons()}";
         }
 
         public static string GetDesc(this Card card)
         {
-            var tags = string.Join(" ", card.TagList.Select(x => x.Name));
-            if (card.TagList.Count < 1) tags = "---";
-
             return $"{card.GetNameWithUrl()} **{card.GetCardRealRarity()}**\n"
                 + $"*{card.Title ?? "????"}*\n\n"
                 + $"*{card.GetCardParams(true, false, true)}*\n\n"
@@ -260,7 +263,7 @@ namespace Sanakan.Extensions
                 + $"**Moc:** {card.CalculateCardPower():F}\n"
                 + $"**Charakter:** {card.Dere}\n"
                 + $"**KC:** {card.WhoWantsCount}\n"
-                + $"**Tagi:** {tags}\n"
+                + $"**Tagi:** {(card.TagList.IsNullOrEmpty() ? "---" : string.Join(" ", card.TagList.Select(x => x.Name)))}\n"
                 + $"{card.GetStatusIcons()}\n\n";
         }
 
@@ -760,53 +763,7 @@ namespace Sanakan.Extensions
         }
 
         public static bool TryParse(this StarStyle star, string s, out StarStyle type)
-        {
-            switch (s.ToLower())
-            {
-                case "waz":
-                case "waż":
-                case "wąz":
-                case "wąż":
-                case "snek":
-                case "snake":
-                    type = StarStyle.Snek;
-                    return true;
-
-                case "pig":
-                case "świnia":
-                case "swinia":
-                case "świnka":
-                case "swinka":
-                    type = StarStyle.Pig;
-                    return true;
-
-                case "biała":
-                case "biala":
-                case "white":
-                    type = StarStyle.White;
-                    return true;
-
-                case "full":
-                case "pełna":
-                case "pelna":
-                    type = StarStyle.Full;
-                    return true;
-
-                case "empty":
-                case "pusta":
-                    type = StarStyle.Empty;
-                    return true;
-
-                case "black":
-                case "czarna":
-                    type = StarStyle.Black;
-                    return true;
-
-                default:
-                    type = StarStyle.Full;
-                    return false;
-            }
-        }
+            => _starStyleParsingDic.TryGetValue(s.RemoveDiacritics().ToLower(), out type);
 
         public static StarStyle Parse(this StarStyle star, string s)
             => star.TryParse(s, out var type) ? type : throw new Exception("Could't parse input!");
