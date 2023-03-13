@@ -299,6 +299,9 @@ namespace Sanakan.Extensions
 
         public static TimeStatus Sub(this TimeStatus status, TimeSpan span)
         {
+            if (status.EndsAt == DateTime.MinValue)
+                return status.Type.NewTimeStatus();
+
             var newStatus = status.Type.NewTimeStatus();
             newStatus.EndsAt = status.EndsAt - span;
             return newStatus;

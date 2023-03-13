@@ -1094,48 +1094,17 @@ namespace Sanakan.Services.PocketWaifu
         public async Task<List<Embed>> GetWaifuFromCharacterSearchResult(string title, IEnumerable<Card> cards, DiscordSocketClient client, bool mention, SocketGuild guild = null, bool shindenUrls = false)
         {
             var list = new List<Embed>();
-            string contentString = $"{title}\n\n";
 
+            var contentString = new StringBuilder($"{title}\n\n");
             foreach (var card in cards)
             {
-                string tempContentString = $"";
-                IUser user = await client.GetUserAsync(card.GameDeckId);
-                var usrName = user?.Mention ?? "????";
-
-                if (!mention)
-                {
-                    user = guild?.GetUser(card.GameDeckId) ?? user;
-                    usrName = user?.GetUserNickInGuild() ?? "????";
-
-                    if (shindenUrls && card?.GameDeck?.User?.Shinden != 0 && card?.GameDeckId != 1)
-                    {
-                        usrName = $"[{usrName}](https://shinden.pl/user/{card.GameDeck.User.Shinden})";
-                    }
-                }
-
-                tempContentString += $"{usrName} **[{card.Id}]** **{card.GetCardRealRarity()}** {card.GetStatusIcons()}\n";
-
-                if ((contentString.Length + tempContentString.Length) <= 2000)
-                {
-                    contentString += tempContentString;
-                }
-                else
-                {
-                    list.Add(new EmbedBuilder()
-                    {
-                        Color = EMType.Info.Color(),
-                        Description = contentString.TrimToLength(2000)
-                    }.Build());
-
-                    contentString = tempContentString;
-                }
-                tempContentString = "";
+                AppendMessage(list, 2000, contentString, await GetCardInfo(card, client, mention, guild, shindenUrls));
             }
 
             list.Add(new EmbedBuilder()
             {
                 Color = EMType.Info.Color(),
-                Description = contentString.TrimToLength(2000)
+                Description = contentString.ToString()
             }.Build());
 
             return list;
@@ -1146,54 +1115,58 @@ namespace Sanakan.Services.PocketWaifu
             var list = new List<Embed>();
             var characters = cards.GroupBy(x => x.Character);
 
-            string contentString = "";
+            var contentString = new StringBuilder();
+            var tempContentString = new StringBuilder();
             foreach (var cardsG in characters)
             {
                 var fC = cardsG.First();
-                string tempContentString = $"\n**{fC.GetNameWithUrl()}** ({fC.WhoWantsCount})\n";
+                tempContentString.Append($"\n**{fC.GetNameWithUrl()}** ({fC.WhoWantsCount})\n");
+
                 foreach (var card in cardsG)
                 {
-                    IUser user = await client.GetUserAsync(card.GameDeckId);
-                    var usrName = user?.Mention ?? "????";
-
-                    if (!mention)
-                    {
-                        user = guild?.GetUser(card.GameDeckId) ?? user;
-                        usrName = user?.GetUserNickInGuild() ?? "????";
-
-                        if (shindenUrls && card?.GameDeck?.User?.Shinden != 0 && card?.GameDeckId != 1)
-                        {
-                            usrName = $"[{usrName}](https://shinden.pl/user/{card.GameDeck.User.Shinden})";
-                        }
-                    }
-
-                    tempContentString += $"{usrName}: **[{card.Id}]** **{card.GetCardRealRarity()}** {card.GetStatusIcons()}\n";
+                    AppendMessage(list, 2000, tempContentString, await GetCardInfo(card, client, mention, guild, shindenUrls));
                 }
 
-                if ((contentString.Length + tempContentString.Length) <= 2000)
-                {
-                    contentString += tempContentString;
-                }
-                else
-                {
-                    list.Add(new EmbedBuilder()
-                    {
-                        Color = EMType.Info.Color(),
-                        Description = contentString.TrimToLength(2000)
-                    }.Build());
-
-                    contentString = tempContentString;
-                }
-                tempContentString = "";
+                AppendMessage(list, 2000, contentString, tempContentString.ToString());
+                tempContentString.Clear();
             }
 
             list.Add(new EmbedBuilder()
             {
                 Color = EMType.Info.Color(),
-                Description = contentString.TrimToLength(2000)
+                Description = contentString.ToString()
             }.Build());
 
             return list;
+        }
+
+        private async Task<string> GetCardInfo(Card card, DiscordSocketClient client, bool mention, SocketGuild guild, bool shindenUrls)
+        {
+            IUser user = await client.GetUserAsync(card.GameDeckId);
+            var usrName = user?.Mention ?? "????";
+
+            if (!mention)
+            {
+                user = guild?.GetUser(card.GameDeckId) ?? user;
+                usrName = user?.GetUserNickInGuild() ?? "????";
+
+                if (shindenUrls && card?.GameDeck?.User?.Shinden != 0 && card?.GameDeckId != 1)
+                {
+                    usrName = $"[{usrName}](https://shinden.pl/user/{card.GameDeck.User.Shinden})";
+                }
+            }
+
+            return $"{usrName}: **[{card.Id}]** **{card.GetCardRealRarity()}** {card.GetStatusIcons()}\n";
+        }
+
+        private void AppendMessage(List<Embed> embeds, int maxLength, StringBuilder currentContent, ReadOnlySpan<char> nextPart)
+        {
+            if (currentContent.Length + nextPart.Length > maxLength)
+            {
+                embeds.Add(new EmbedBuilder() { Color = EMType.Info.Color(), Description = currentContent.ToString() }.Build());
+                currentContent.Clear();
+            }
+            currentContent.Append(nextPart);
         }
 
         public Embed GetBoosterPackList(SocketUser user, List<BoosterPack> packs)
