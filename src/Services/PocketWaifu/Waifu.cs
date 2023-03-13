@@ -1142,21 +1142,15 @@ namespace Sanakan.Services.PocketWaifu
 
         private async Task<string> GetCardInfo(Card card, DiscordSocketClient client, bool mention, SocketGuild guild, bool shindenUrls)
         {
-            IUser user = await client.GetUserAsync(card.GameDeckId);
-            var usrName = user?.Mention ?? "????";
+            if (mention)
+                return $"<@{card.GameDeckId}>: **[{card.Id}]** **{card.GetCardRealRarity()}** {card.GetStatusIcons()}\n";
 
-            if (!mention)
-            {
-                user = guild?.GetUser(card.GameDeckId) ?? user;
-                usrName = user?.GetUserNickInGuild() ?? "????";
+            var user = guild?.GetUser(card.GameDeckId) ?? await client.GetUserAsync(card.GameDeckId);
 
-                if (shindenUrls && card?.GameDeck?.User?.Shinden != 0 && card?.GameDeckId != 1)
-                {
-                    usrName = $"[{usrName}](https://shinden.pl/user/{card.GameDeck.User.Shinden})";
-                }
-            }
+            if (!shindenUrls || card?.GameDeck?.User?.Shinden == 0 || card?.GameDeckId == 1)
+                return $"{(user?.GetUserNickInGuild() ?? "????")}: **[{card.Id}]** **{card.GetCardRealRarity()}** {card.GetStatusIcons()}\n";
 
-            return $"{usrName}: **[{card.Id}]** **{card.GetCardRealRarity()}** {card.GetStatusIcons()}\n";
+            return $"[{(user?.GetUserNickInGuild() ?? "????")}](https://shinden.pl/user/{card.GameDeck.User.Shinden}): **[{card.Id}]** **{card.GetCardRealRarity()}** {card.GetStatusIcons()}\n";
         }
 
         private void AppendMessage(List<Embed> embeds, int maxLength, StringBuilder currentContent, ReadOnlySpan<char> nextPart)
@@ -2163,7 +2157,7 @@ namespace Sanakan.Services.PocketWaifu
                 case ItemType.AffectionRecoveryBig:
                 case ItemType.AffectionRecoveryGreat:
                 case ItemType.AffectionRecoveryNormal:
-                case ItemType.AffectionRecoverySmall:                
+                case ItemType.AffectionRecoverySmall:
                 case ItemType.CheckAffection:
                     break;
 
