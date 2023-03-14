@@ -438,23 +438,7 @@ namespace Sanakan.Api.Controllers
             using (var db = new Database.DatabaseContext(_config))
             {
                 var user = await db.GetCachedFullUserAsync(id);
-                if (user == null)
-                {
-                    await "User not found!".ToResponse(404).ExecuteResultAsync(ControllerContext);
-                    return null;
-                }
-
-                if (user.GameDeck.Wishes.Count < 1)
-                {
-                    await "Wishlist not found!".ToResponse(404).ExecuteResultAsync(ControllerContext);
-                    return null;
-                }
-
-                var p = user.GameDeck.GetCharactersWishList();
-                var t = user.GameDeck.GetTitlesWishList();
-                var c = user.GameDeck.GetCardsWishList();
-
-                return await _waifu.GetCardsFromWishlist(c, p ,t, db, user.GameDeck.Cards);
+                return await GetCardsFormWishlistAsync(ControllerContext, user, db);
             }
         }
 
@@ -469,23 +453,7 @@ namespace Sanakan.Api.Controllers
             using (var db = new Database.DatabaseContext(_config))
             {
                 var user = await db.GetCachedFullUserByShindenIdAsync(id);
-                if (user == null)
-                {
-                    await "User not found!".ToResponse(404).ExecuteResultAsync(ControllerContext);
-                    return null;
-                }
-
-                if (user.GameDeck.Wishes.Count < 1)
-                {
-                    await "Wishlist not found!".ToResponse(404).ExecuteResultAsync(ControllerContext);
-                    return null;
-                }
-
-                var p = user.GameDeck.GetCharactersWishList();
-                var t = user.GameDeck.GetTitlesWishList();
-                var c = user.GameDeck.GetCardsWishList();
-
-                return await _waifu.GetCardsFromWishlist(c, p ,t, db, user.GameDeck.Cards);
+                return await GetCardsFormWishlistAsync(ControllerContext, user, db);
             }
         }
 
@@ -550,24 +518,8 @@ namespace Sanakan.Api.Controllers
         [HttpPost("discord/{id}/boosterpack"), Authorize(Policy = "Site")]
         public async Task GiveUserAPacksAsync(ulong id, [FromBody]List<Models.CardBoosterPack> boosterPacks)
         {
-            if (boosterPacks?.Count < 1)
-            {
-                await "Model is Invalid".ToResponse(500).ExecuteResultAsync(ControllerContext);
-                return;
-            }
-
-            var packs = new List<BoosterPack>();
-            foreach (var pack in boosterPacks)
-            {
-                var rPack = pack.ToRealPack();
-                if (rPack != null) packs.Add(rPack);
-            }
-
-            if (packs.Count < 1)
-            {
-                await "Data is Invalid".ToResponse(500).ExecuteResultAsync(ControllerContext);
-                return;
-            }
+            var packs = await ValidateBoosterPackAsync(ControllerContext, boosterPacks);
+            if (packs.IsNullOrEmpty()) return;
 
             using (var db = new Database.DatabaseContext(_config))
             {
@@ -609,24 +561,8 @@ namespace Sanakan.Api.Controllers
         [HttpPost("shinden/{id}/boosterpack"), Authorize(Policy = "Site")]
         public async Task<UserWithToken> GiveShindenUserAPacksAsync(ulong id, [FromBody]List<Models.CardBoosterPack> boosterPacks)
         {
-            if (boosterPacks?.Count < 1)
-            {
-                await "Model is Invalid".ToResponse(500).ExecuteResultAsync(ControllerContext);
-                return null;
-            }
-
-            var packs = new List<BoosterPack>();
-            foreach (var pack in boosterPacks)
-            {
-                var rPack = pack.ToRealPack();
-                if (rPack != null) packs.Add(rPack);
-            }
-
-            if (packs.Count < 1)
-            {
-                await "Data is Invalid".ToResponse(500).ExecuteResultAsync(ControllerContext);
-                return null;
-            }
+            var packs = await ValidateBoosterPackAsync(ControllerContext, boosterPacks);
+            if (packs.IsNullOrEmpty()) return null;
 
             using (var db = new Database.DatabaseContext(_config))
             {
@@ -733,19 +669,8 @@ namespace Sanakan.Api.Controllers
                     var botUser = await db.GetUserOrCreateAsync(discordId);
 
                     botUser.Stats.OpenedBoosterPacks += packs.Count;
-                    var allWWCnt = await db.WishlistCountData.AsQueryable().AsNoTracking().ToListAsync();
 
-                    foreach (var card in cards)
-                    {
-                        card.Affection += botUser.GameDeck.AffectionFromKarma();
-                        card.FirstIdOwner = botUser.Id;
-
-                        var wwc = allWWCnt.FirstOrDefault(x => x.Id == card.Character);
-                        card.WhoWantsCount = wwc?.Count ?? 0;
-
-                        botUser.GameDeck.Cards.Add(card);
-                        await botUser.GameDeck.RemoveCharacterFromWishListAsync(card.Character, db);
-                    }
+                    await UpdateWishlistCountAsync(db, cards, botUser);
 
                     await db.SaveChangesAsync();
 
@@ -832,19 +757,7 @@ namespace Sanakan.Api.Controllers
                                 botUser.Stats.OpenedBoosterPacks += 1;
                             }
 
-                            var allWWCnt = await db.WishlistCountData.AsQueryable().AsNoTracking().ToListAsync();
-
-                            foreach (var card in cards)
-                            {
-                                card.Affection += botUser.GameDeck.AffectionFromKarma();
-                                card.FirstIdOwner = botUser.Id;
-
-                                var wwc = allWWCnt.FirstOrDefault(x => x.Id == card.Character);
-                                card.WhoWantsCount = wwc?.Count ?? 0;
-
-                                botUser.GameDeck.Cards.Add(card);
-                                await botUser.GameDeck.RemoveCharacterFromWishListAsync(card.Character, db);
-                            }
+                            await UpdateWishlistCountAsync(db, cards, botUser);
 
                             await db.SaveChangesAsync();
 
@@ -920,6 +833,66 @@ namespace Sanakan.Api.Controllers
                 }
             }
             await "The appropriate claim was not found".ToResponse(403).ExecuteResultAsync(ControllerContext);
+        }
+
+        private async Task<List<BoosterPack>> ValidateBoosterPackAsync(ControllerContext context, List<Models.CardBoosterPack> boosterPacks)
+        {
+            if (boosterPacks?.Count < 1)
+            {
+                await "Model is Invalid".ToResponse(500).ExecuteResultAsync(context);
+                return null;
+            }
+            var packs = new List<BoosterPack>();
+            foreach (var pack in boosterPacks)
+            {
+                var rPack = pack.ToRealPack();
+                if (rPack != null) packs.Add(rPack);
+            }
+
+            if (packs.Count < 1)
+            {
+                await "Data is Invalid".ToResponse(500).ExecuteResultAsync(ControllerContext);
+                return null;
+            }
+            return packs;
+        }
+
+        private async Task<IEnumerable<Card>> GetCardsFormWishlistAsync(ControllerContext context, User user, Database.DatabaseContext db)
+        {
+            if (user == null)
+            {
+                await "User not found!".ToResponse(404).ExecuteResultAsync(ControllerContext);
+                return null;
+            }
+
+            if (user.GameDeck.Wishes.Count < 1)
+            {
+                await "Wishlist not found!".ToResponse(404).ExecuteResultAsync(ControllerContext);
+                return null;
+            }
+
+            var p = user.GameDeck.GetCharactersWishList();
+            var t = user.GameDeck.GetTitlesWishList();
+            var c = user.GameDeck.GetCardsWishList();
+
+            return await _waifu.GetCardsFromWishlist(c, p, t, db, user.GameDeck.Cards);
+        }
+
+        private async Task UpdateWishlistCountAsync(Database.DatabaseContext db, List<Card> cards, User user)
+        {
+            var allWWCnt = await db.WishlistCountData.AsQueryable().AsNoTracking().ToListAsync();
+
+            foreach (var card in cards)
+            {
+                card.Affection += user.GameDeck.AffectionFromKarma();
+                card.FirstIdOwner = user.Id;
+
+                var wwc = allWWCnt.FirstOrDefault(x => x.Id == card.Character);
+                card.WhoWantsCount = wwc?.Count ?? 0;
+
+                user.GameDeck.Cards.Add(card);
+                await user.GameDeck.RemoveCharacterFromWishListAsync(card.Character, db);
+            }
         }
 
         private List<Card> FilterCardsByTags(List<Card> cards, CardsQueryFilter filter)
