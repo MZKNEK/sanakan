@@ -1195,7 +1195,7 @@ namespace Sanakan.Services.PocketWaifu
             }.Build();
         }
 
-        public List<Embed> GetItemList(SocketUser user, List<Item> items)
+        public List<Embed> GetItemList(SocketUser user, IEnumerable<Item> items)
         {
             var pages = new List<Embed>();
             var list = items.ToItemList().SplitList(50);

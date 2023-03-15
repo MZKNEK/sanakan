@@ -767,11 +767,13 @@ namespace Sanakan.Extensions
             return items.ToString();
         }
 
-        public static List<string> ToItemList(this List<Item> list)
+        public static List<string> ToItemList(this IEnumerable<Item> list)
         {
             var items = new List<string>();
-            for (int i = 0; i < list.Count; i++)
-                items.Add($"**[{i + 1}]** {list[i].Name} x{list[i].Count}");
+            var index = 0;
+
+            foreach(var item in list)
+                items.Add($"**[{++index}]** {item.Name} x{item.Count}");
 
             return items;
         }

@@ -103,9 +103,9 @@ namespace Sanakan.Modules
             using (var db = new Database.DatabaseContext(Config))
             {
                 var bUser = await db.GetCachedFullUserAsync(Context.User.Id);
-                var itemList = bUser.GameDeck.Items.OrderBy(x => x.Type).ToList();
+                var itemList = bUser.GetAllItems();
 
-                if (itemList.Count < 1)
+                if (itemList.IsNullOrEmpty())
                 {
                     await ReplyAsync("", embed: $"{Context.User.Mention} nie masz żadnych przemiotów.".ToEmbedMessage(EMType.Error).Build());
                     return;
@@ -140,7 +140,7 @@ namespace Sanakan.Modules
                     return;
                 }
 
-                var item = itemList[numberOfItem - 1];
+                var item = itemList.ToArray()[numberOfItem - 1];
                 var embed = new EmbedBuilder
                 {
                     Color = EMType.Info.Color(),
@@ -2213,7 +2213,7 @@ namespace Sanakan.Modules
             using (var db = new Database.DatabaseContext(Config))
             {
                 var bUser = await db.GetUserOrCreateAsync(Context.User.Id);
-                var itemList = bUser.GameDeck.Items.OrderBy(x => x.Type).ToList();
+                var itemList = bUser.GetAllItems();
 
                 var item1 = itemList.FirstOrDefault(x => x.Type == ItemType.CardParamsReRoll);
                 if (item1 == null)
