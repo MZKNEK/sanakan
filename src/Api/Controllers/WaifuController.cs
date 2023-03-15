@@ -875,7 +875,7 @@ namespace Sanakan.Api.Controllers
             var t = user.GameDeck.GetTitlesWishList();
             var c = user.GameDeck.GetCardsWishList();
 
-            return await _waifu.GetCardsFromWishlist(c, p, t, db, user.GameDeck.Cards);
+            return await _waifu.GetCardsFromWishlistAsync(c, p, t, db, user.GameDeck.Cards);
         }
 
         private async Task UpdateWishlistCountAsync(Database.DatabaseContext db, List<Card> cards, User user)

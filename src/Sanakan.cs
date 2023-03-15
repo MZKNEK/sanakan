@@ -106,7 +106,8 @@ namespace Sanakan
             _executor = new SynchronizedExecutor(_logger);
             _mod = new Moderator(_logger, _config, _client);
             _daemon = new Daemonizer(_client, _logger, _config);
-            _waifu = new Waifu(_img, _shindenClient, _events, _logger);
+            _waifu = new Waifu(_img, _shindenClient, _events, _logger,
+                 _client, _helper);
             _sessions = new SessionManager(_client, _executor, _logger);
             _supervisor = new Supervisor(_client, _config, _logger, _mod);
             _greeting = new Greeting(_client, _logger, _config, _executor);

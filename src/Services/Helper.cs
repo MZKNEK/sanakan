@@ -1,14 +1,14 @@
 ﻿#pragma warning disable 1591
 
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
 using Sanakan.Config;
 using Sanakan.Extensions;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace Sanakan.Services
 {
@@ -410,6 +410,27 @@ namespace Sanakan.Services
                     }
                 }
             }.Build();
+        }
+
+        public async Task<ExecutionResult> SendEmbedsOnDMAsync(IUser user, IEnumerable<Embed> embeds)
+            => await SendEmbedsOnDMAsync(user, embeds, TimeSpan.FromSeconds(2));
+
+        public async Task<ExecutionResult> SendEmbedsOnDMAsync(IUser user, IEnumerable<Embed> embeds, TimeSpan delay)
+        {
+            try
+            {
+                var dm = await user.CreateDMChannelAsync();
+                foreach (var emb in embeds)
+                {
+                    await dm.SendMessageAsync("", embed: emb);
+                    await Task.Delay(delay);
+                }
+                return ExecutionResult.FromSuccess("lista poszła na PW!");
+            }
+            catch (Exception)
+            {
+                return ExecutionResult.FromError("nie można wysłać do Ciebie PW!");
+            }
         }
     }
 }
