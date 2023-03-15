@@ -767,13 +767,19 @@ namespace Sanakan.Extensions
             return items.ToString();
         }
 
-        public static List<string> ToItemList(this IEnumerable<Item> list)
+        public static List<string> ToItemList(this IEnumerable<Item> list, string filter)
         {
+            var filterDisabled = string.IsNullOrEmpty(filter);
             var items = new List<string>();
             var index = 0;
 
             foreach(var item in list)
-                items.Add($"**[{++index}]** {item.Name} x{item.Count}");
+            {
+                index++;
+
+                if (filterDisabled || item.Name.Contains(filter, StringComparison.CurrentCultureIgnoreCase))
+                    items.Add($"**[{index}]** {item.Name} x{item.Count}");
+            }
 
             return items;
         }

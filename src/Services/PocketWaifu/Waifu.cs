@@ -44,6 +44,27 @@ namespace Sanakan.Services.PocketWaifu
         private const int DERE_TAB_SIZE = ((int)Dere.Yato) + 1;
         private static CharacterIdUpdate CharId = new CharacterIdUpdate();
 
+        private static List<string> _qualityNamesList = Enum.GetNames(typeof(Quality)).ToList();
+
+        private static Dictionary<string, Quality> _greekLetersAsQuality = new Dictionary<string, Quality>
+        {
+            { "alfa",       Quality.Alpha   },
+            { "dzeta",      Quality.Zeta    },
+            { "teta",       Quality.Theta   },
+            { "iota",       Quality.Jota    },
+            // { "my",         Quality.Mi      },
+            // { "ny",         Quality.Ni      },
+            // { "xi",         Quality.Ksi     },
+            // { "ksy",        Quality.Ksi     },
+            // { "ksey",       Quality.Ksi     },
+            // { "omikron",    Quality.Omicron },
+            // { "mikron",     Quality.Omicron },
+            // { "pej",        Quality.Pi      },
+            { "ipsilon",    Quality.Epsilon },
+            { "ypsilon",    Quality.Epsilon },
+            { "mega",       Quality.Omega   },
+        };
+
         private static double[,] _dereDmgRelation = new double[DERE_TAB_SIZE, DERE_TAB_SIZE]
         {
             //Tsundere, Kamidere, Deredere, Yandere, Dandere, Kuudere, Mayadere, Bodere, Yami, Raito, Yato
@@ -1195,10 +1216,22 @@ namespace Sanakan.Services.PocketWaifu
             }.Build();
         }
 
-        public List<Embed> GetItemList(SocketUser user, IEnumerable<Item> items)
+        public string NormalizeItemFilter(string filter)
+        {
+            var quality = _qualityNamesList.FirstOrDefault(x => x.Equals(filter, StringComparison.CurrentCultureIgnoreCase));
+            if (!string.IsNullOrEmpty(quality))
+                return ((Quality)Enum.Parse(typeof(Quality), quality)).ToName();
+
+            if (_greekLetersAsQuality.TryGetValue(filter.ToLower(), out var qua))
+                return qua.ToName();
+
+            return filter;
+        }
+
+        public List<Embed> GetItemList(SocketUser user, IEnumerable<Item> items, string filter = "")
         {
             var pages = new List<Embed>();
-            var list = items.ToItemList().SplitList(50);
+            var list = items.ToItemList(filter).SplitList(50);
 
             for (int i = 0; i < list.Count; i++)
             {

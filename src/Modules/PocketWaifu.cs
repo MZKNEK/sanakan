@@ -98,7 +98,7 @@ namespace Sanakan.Modules
         [Alias("items", "item", "przedmiot")]
         [Summary("wypisuje posiadane przedmioty (informacje o przedmiocie, gdy podany jego numer)")]
         [Remarks("1"), RequireWaifuCommandChannel]
-        public async Task ShowItemsAsync([Summary("nr przedmiotu")] int numberOfItem = 0)
+        public async Task ShowItemsAsync([Summary("nr przedmiotu/filtr")] string filter = "")
         {
             using (var db = new Database.DatabaseContext(Config))
             {
@@ -111,26 +111,36 @@ namespace Sanakan.Modules
                     return;
                 }
 
-                if (numberOfItem <= 0)
+                var isNumber = int.TryParse(filter, out var numberOfItem);
+                if (!isNumber || numberOfItem <= 0)
                 {
-                    var pages = _waifu.GetItemList(Context.User, itemList);
+                    filter = (!string.IsNullOrEmpty(filter) && !isNumber)
+                        ? _waifu.NormalizeItemFilter(filter)
+                        : string.Empty;
+
+                    var pages = _waifu.GetItemList(Context.User, itemList, filter);
+                    if (pages.Count < 1)
+                    {
+                        await ReplyAsync("", embed: $"{Context.User.Mention} nie odnaleniono przedmiotów zawierających **{filter}** w nazwie.".ToEmbedMessage(EMType.Error).Build());
+                        return;
+                    }
+
                     if (pages.Count == 1)
                     {
                         await ReplyAsync("", embed: pages.FirstOrDefault());
+                        return;
                     }
-                    else
+
+                    var dmCh = await Context.User.CreateDMChannelAsync();
+                    if (dmCh == null) return;
+
+                    foreach (var page in pages)
                     {
-                        var dmCh = await Context.User.CreateDMChannelAsync();
-                        if (dmCh == null) return;
-
-                        foreach (var page in pages)
-                        {
-                            await dmCh.SendMessageAsync("", embed: page);
-                            await Task.Delay(TimeSpan.FromSeconds(1));
-                        }
-
-                        await ReplyAsync("", embed: $"{Context.User.Mention} lista poszła na PW!".ToEmbedMessage(EMType.Success).Build());
+                        await dmCh.SendMessageAsync("", embed: page);
+                        await Task.Delay(TimeSpan.FromSeconds(1));
                     }
+
+                    await ReplyAsync("", embed: $"{Context.User.Mention} lista poszła na PW!".ToEmbedMessage(EMType.Success).Build());
                     return;
                 }
 
