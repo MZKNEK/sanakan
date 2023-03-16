@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Discord;
 using Discord.WebSocket;
 using Sanakan.Config;
 using Sanakan.Extensions;
@@ -14,8 +15,23 @@ namespace Sanakan.Services
 {
     public class Chaos
     {
+        private static List<Emote> _emtoes = new List<Emote>
+        {
+            Emote.Parse("<a:turlaj_bulbe:650258354358321173>"),
+            Emote.Parse("<a:turlaj_chomika:973012917429600338>"),
+            Emote.Parse("<a:turlaj_lame:754108144208183396>"),
+            Emote.Parse("<a:turlaj_owce:613393896390656011>"),
+            Emote.Parse("<a:padaczka:1058736063973179474>"),
+            Emote.Parse("<a:kolejny_pedofil_wykryty:989269381538279525>"),
+            Emote.Parse("<a:Confused_Dog:575413848106860544>"),
+            Emote.Parse("<a:nienie:1078334400254726194>"),
+            Emote.Parse("<a:nie_nie_nie:606195098169901108>"),
+            Emote.Parse("<a:DameDaNe:754108167650148462>"),
+            Emote.Parse("<a:okidoki:575415074399977472>"),
+        };
+
         private DiscordSocketClient _client;
-        private List<ulong> _changed;
+        private bool _isEnabled;
         private IConfig _config;
         private ILogger _logger;
         private Timer _timer;
@@ -25,22 +41,14 @@ namespace Sanakan.Services
             _client = client;
             _config = config;
             _logger = logger;
-            _changed = new List<ulong>();
+            _isEnabled = false;
             _timer = new Timer(_ =>
             {
-                try
-                {
-                    _changed = new List<ulong>();
-                }
-                catch (Exception ex)
-                {
-                    _logger.Log($"in chaos: {ex}");
-                    _changed.Clear();
-                }
+                _isEnabled = !_isEnabled;
             },
             null,
-            TimeSpan.FromHours(1),
-            TimeSpan.FromHours(1));
+            TimeSpan.FromMinutes(30),
+            TimeSpan.FromMinutes(10));
 
 #if !DEBUG
             _client.MessageReceived += HandleMessageAsync;
@@ -68,27 +76,19 @@ namespace Sanakan.Services
                 if (!gConfig.ChaosMode) return;
             }
 
-            if (Fun.TakeATry(3))
+            if (!_isEnabled) return;
+
+            if (Fun.TakeATry(10))
             {
-                var notChangedUsers = user.Guild.Users.Where(x => !x.IsBot && x.Id != user.Id && !_changed.Any(c => c == x.Id)).ToList();
-                if (notChangedUsers.Count < 2) return;
-
-                if (_changed.Any(x => x == user.Id))
+                var emote = Fun.GetOneRandomFrom(_emtoes);
+                try
                 {
-                    user = Fun.GetOneRandomFrom(notChangedUsers);
-                    notChangedUsers.Remove(user);
+                    await message.AddReactionAsync(emote);
                 }
-
-                var user2 = Fun.GetOneRandomFrom(notChangedUsers);
-
-                var user1Nickname = user.Nickname ?? user.Username;
-                var user2Nickname = user2.Nickname ?? user2.Username;
-
-                await user.ModifyAsync(x => x.Nickname = user2Nickname);
-                _changed.Add(user.Id);
-
-                await user2.ModifyAsync(x => x.Nickname = user1Nickname);
-                _changed.Add(user2.Id);
+                catch (Exception)
+                {
+                    _logger.Log($"Chaos: Missing emote - {emote.Name}");
+                }
             }
         }
     }
