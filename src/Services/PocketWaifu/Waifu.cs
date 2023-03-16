@@ -796,6 +796,7 @@ namespace Sanakan.Services.PocketWaifu
                 if (def2 > 99) def2 = 99;
                 realAtk1 = atk1 * (100 - def2) / 100;
             }
+            if (realAtk1 < 1) realAtk1 = 1;
 
             realAtk1 *= GetDereDmgMultiplier(target, enemy);
 
