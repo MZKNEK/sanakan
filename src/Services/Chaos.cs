@@ -34,8 +34,15 @@ namespace Sanakan.Services
             Emote.Parse("<a:ohwow:538070145763901450>"),
             Emote.Parse("<a:mnie_tu_nie_bylo:467494048878559243>"),
             Emote.Parse("<a:MoonaWink:772826033896161310>"),
+            Emote.Parse("<a:petpepe:743064718578548746>"),
             Emote.Parse("<a:fruwa_mi_to:1003069441153695824>"),
             Emote.Parse("<a:pepeshirt:826132578821603448>"),
+            Emote.Parse("<a:kekwholup:826050686021140530>"),
+            Emote.Parse("<a:christianbale:575413770310909962>"),
+            Emote.Parse("<a:robaczki:575413800828796948>"),
+            Emote.Parse("<a:zamachujaca_sie_maskotka:575413696797343770>"),
+            Emote.Parse("<a:waitwhat:575413860689772544>"),
+            Emote.Parse("<a:reverse:613392031598903330>"),
             Emote.Parse("<:nic_mnie_to_nie_obchodzi:613391974078218250>"),
             Emote.Parse("<:uwu:584839709126164646>"),
             Emote.Parse("<:Seya:605777855925977098>"),
@@ -45,6 +52,17 @@ namespace Sanakan.Services
             Emote.Parse("<:eeeh:650258354517704705>"),
             Emote.Parse("<:japonski_demon_rzeczny:479708998610976788>"),
             Emote.Parse("<:ojojojojoj:483289508868259850>"),
+            Emote.Parse("<:pijani:826049216282886216>"),
+            Emote.Parse("<:ale_jak_to:415615798930046987>"),
+            Emote.Parse("<:gites_majonez:507287997809688589>"),
+            Emote.Parse("<:zabawne_prawie_do_rozpuku:480478343540637696>"),
+            Emote.Parse("<:fuj:371787002732871690>"),
+            Emote.Parse("<:koniec_zartow:567733692324380693>"),
+            Emote.Parse("<:nie_do_konca:480052207455174667>"),
+            Emote.Parse("<:jestes_pewien:606193113962119189>"),
+            Emote.Parse("<:ban:507286044970844170>"),
+            Emote.Parse("<:angesip:754112752725000192>"),
+            Emote.Parse("<:PaimonShock:772826030666547201>"),
         }.Shuffle().ToList();
 
         private DiscordSocketClient _client;
@@ -64,7 +82,7 @@ namespace Sanakan.Services
                 _isEnabled = !_isEnabled;
             },
             null,
-            TimeSpan.FromMinutes(15),
+            TimeSpan.FromMinutes(10),
             TimeSpan.FromMinutes(10));
 
             _client.MessageReceived += HandleMessageAsync;
