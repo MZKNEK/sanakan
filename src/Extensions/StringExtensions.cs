@@ -111,6 +111,9 @@ namespace Sanakan.Extensions
 
         public static bool IsCommand(this string message, string prefix)
         {
+            if (string.IsNullOrEmpty(message))
+                return false;
+
             prefix = prefix.Replace(".", @"\.").Replace("?", @"\?");
             return new Regex($@"^{prefix}\w+", RegexOptions.Compiled).Matches(message).Count > 0;
         }
