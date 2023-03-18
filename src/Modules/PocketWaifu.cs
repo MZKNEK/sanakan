@@ -1668,7 +1668,7 @@ namespace Sanakan.Modules
         [Command("życzenia filtr", RunMode = RunMode.Async)]
         [Alias("wishlistf", "zyczeniaf")]
         [Summary("wyświetla pozycje z listy życzeń użytkownika zawierające tylko drugiego użytkownika")]
-        [Remarks("Dzida Kokos tak tak tak"), RequireWaifuCommandChannel]
+        [Remarks("Dzida Kokos tak tak tak tak"), RequireWaifuCommandChannel]
         public async Task ShowFilteredWishlistAsync([Summary("użytkownik do którego należy lista życzeń")] SocketGuildUser user,
             [Summary("użytkownik po którym odbywa się filtracja (opcjonalne)")] SocketGuildUser usrf = null,
             [Summary("czy pokazać ulubione (true/false) domyślnie ukryte, wymaga podania użytkownika")] bool showFavs = false,
