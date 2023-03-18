@@ -88,13 +88,13 @@ namespace Sanakan.Modules
         [Alias("postac", "character")]
         [Summary("wyświetla informacje o postaci")]
         [Remarks("Gintoki")]
-        public async Task SearchCharacterBasicAsync([Summary("imie")][Remainder]string name) => await SearchCharacterAsync(false, name);
+        public async Task SearchCharacterBasicAsync([Summary("imię")][Remainder]string name) => await SearchCharacterAsync(false, name);
 
         [Command("postać", RunMode = RunMode.Async)]
         [Alias("postac", "character")]
         [Summary("wyświetla informacje o postaci")]
         [Remarks("Gintoki")]
-        public async Task SearchCharacterAsync([Summary("czy szukać tytułów?")]bool longSearch, [Summary("imie")][Remainder]string name)
+        public async Task SearchCharacterAsync([Summary("czy szukać tytułów?")]bool longSearch, [Summary("imię")][Remainder]string name)
         {
             var session = new SearchSession(Context.User, _shclient);
             if (_session.SessionExist(session)) return;
