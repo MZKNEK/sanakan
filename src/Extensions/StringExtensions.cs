@@ -115,7 +115,7 @@ namespace Sanakan.Extensions
                 return false;
 
             prefix = prefix.Replace(".", @"\.").Replace("?", @"\?");
-            return new Regex($@"^{prefix}\w+", RegexOptions.Compiled).Matches(message).Count > 0;
+            return new Regex($@"^{prefix}\w+", RegexOptions.Compiled | RegexOptions.IgnoreCase).Matches(message).Count > 0;
         }
 
         public static IActionResult ToResponse(this string str, int Code = 200)

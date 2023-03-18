@@ -34,7 +34,7 @@ namespace Sanakan.Modules
         [Command("portfel", RunMode = RunMode.Async)]
         [Alias("wallet")]
         [Summary("wyświetla portfel użytkownika")]
-        [Remarks("")]
+        [Remarks("Karna")]
         public async Task ShowWalletAsync([Summary("użytkownik (opcjonalne)")]SocketUser user = null)
         {
             var usr = user ?? Context.User;
@@ -101,7 +101,7 @@ namespace Sanakan.Modules
                 if (!user.Roles.Contains(gRole))
                     await user.AddRoleAsync(gRole);
 
-                await ReplyAsync("", embed: $"{user.Mention} przyznano role: `{name}`".ToEmbedMessage(EMType.Success).Build());
+                await ReplyAsync("", embed: $"{user.Mention} przyznano rolę: `{name}`".ToEmbedMessage(EMType.Success).Build());
             }
         }
 
@@ -129,7 +129,7 @@ namespace Sanakan.Modules
                 if (user.Roles.Contains(gRole))
                     await user.RemoveRoleAsync(gRole);
 
-                await ReplyAsync("", embed: $"{user.Mention} zdjęto role: `{name}`".ToEmbedMessage(EMType.Success).Build());
+                await ReplyAsync("", embed: $"{user.Mention} zdjęto rolę: `{name}`".ToEmbedMessage(EMType.Success).Build());
             }
         }
 
@@ -184,7 +184,7 @@ namespace Sanakan.Modules
         [Alias("iledopoziomu", "howmuchtolevelup", "hmtlup")]
         [Summary("wyświetla ile pozostało punktów doświadczenia do następnego poziomu")]
         [Remarks("karna")]
-        public async Task ShowHowMuchToLevelUpAsync([Summary("użytkownik(opcjonalne)")]SocketUser user = null)
+        public async Task ShowHowMuchToLevelUpAsync([Summary("użytkownik (opcjonalne)")]SocketUser user = null)
         {
             var usr = user ?? Context.User;
             if (usr == null) return;
@@ -287,7 +287,7 @@ namespace Sanakan.Modules
         [Alias("quest")]
         [Summary("wyświetla postęp misji użytkownika")]
         [Remarks("tak"), RequireAnyCommandChannel]
-        public async Task ShowUserQuestsProgressAsync([Summary("czy odebrać nagrody?")]bool claim = false)
+        public async Task ShowUserQuestsProgressAsync([Summary("czy odebrać nagrody? (opcjonalne)")]bool claim = false)
         {
             using (var db = new Database.DatabaseContext(Config))
             {
