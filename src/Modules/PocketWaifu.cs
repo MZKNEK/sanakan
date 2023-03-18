@@ -2472,7 +2472,8 @@ namespace Sanakan.Modules
                     return;
                 }
 
-                var cards = await db.Cards.Include(x => x.TagList).Include(x => x.GameDeck).Where(x => x.GameDeckId != user.Id && response.Body.Any(r => r.Id == x.Character)).AsNoTracking().ToListAsync();
+                var cards = await db.Cards.AsQueryable().Include(x => x.TagList).Include(x => x.GameDeck).AsSplitQuery()
+                    .Where(x => x.GameDeckId != user.Id && response.Body.Select(x => x.Id).Contains(x.Character)).AsNoTracking().ToListAsync();
 
                 if (!showFavs)
                     cards = cards.Where(x => !x.HasTag("ulubione")).ToList();
