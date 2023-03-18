@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
@@ -29,45 +30,58 @@ namespace Sanakan.Services
 
         public string GivePublicHelp()
         {
-            string commands = "**Lista poleceń:**\n";
+            StringBuilder sb = new StringBuilder();
+            sb.AppendLine("**Lista poleceń:**");
+
             foreach (var item in GetInfoAboutModules(PublicModulesInfo))
             {
-                List<string> sSubInfo = new List<string>();
+                sb.Append($"\n**{item.Name}:**");
+
                 foreach (var mod in item.Modules)
                 {
-                    string info = "";
-                    if (!string.IsNullOrWhiteSpace(mod.Prefix))
-                        info += $"      ***{mod.Prefix}***";
+                    string prefix = mod.Prefix;
+                    string commands = string.Join("  ", mod.Commands);
 
-                    sSubInfo.Add(info + " " + string.Join("  ", mod.Commands));
+                    if (!string.IsNullOrWhiteSpace(prefix))
+                    {
+                        sb.Append($" ***{prefix}*** {commands}");
+                    }
+                    else
+                    {
+                        sb.Append($" {commands}");
+                    }
                 }
-
-                commands += $"\r\n**{item.Name}:**" + string.Join("\n", sSubInfo);
             }
-            commands += $"\r\n\r\nUżyj `{_config.Get().Prefix}pomoc [polecenie]`, aby uzyskać informacje dotyczące danego polecenia.";
-            return commands;
+
+            sb.AppendLine($"\n\nUżyj `{_config.Get().Prefix}pomoc [polecenie]`, aby uzyskać informacje dotyczące danego polecenia.");
+
+            return sb.ToString();
         }
 
         public string GivePrivateHelp(string moduleName)
         {
-            var item = GetInfoAboutModule(PrivateModulesInfo[moduleName]);
-            return $"**Lista poleceń:**\n\n**{item.Prefix}:** " + string.Join("  ", item.Commands);
+            var moduleInfo = GetInfoAboutModule(PrivateModulesInfo[moduleName]);
+            return $"**Lista poleceń:**\n\n**{moduleInfo.Prefix}:** " + string.Join("  ", moduleInfo.Commands);
         }
 
         public string GiveHelpAboutPrivateCmd(string moduleName, string command, string prefix, bool throwEx = true)
         {
-            var info = PrivateModulesInfo[moduleName];
+            if (!PrivateModulesInfo.TryGetValue(moduleName, out var info))
+            {
+                if (throwEx)
+                    throw new Exception($"Nie znaleziono modułu o nazwie {moduleName}.");
 
-            var thisCommands = info.Commands.FirstOrDefault(x => x.Name == command);
+                return null;
+            }
 
-            if (thisCommands == null)
-                thisCommands = info.Commands.FirstOrDefault(x => x.Aliases.Any(c => c == command));
+            var thisCommands = info.Commands.FirstOrDefault(x => x.Name == command)
+                               ?? info.Commands.FirstOrDefault(x => x.Aliases.Contains(command));
 
             if (thisCommands != null)
                 return GetCommandInfo(thisCommands, prefix);
 
             if (throwEx)
-                throw new Exception("Polecenie nie istnieje!");
+                throw new Exception($"Nie znaleziono polecenia {command} w module {moduleName}.");
 
             return null;
         }
@@ -77,41 +91,50 @@ namespace Sanakan.Services
             string modulePrefix = GetModGroupPrefix(cmd.Module);
             string botPrefix = prefix ?? _config.Get().Prefix;
 
-            string command = $"**{botPrefix}{modulePrefix}{cmd.Name}**";
+            var commandBuilder = new StringBuilder($"**{botPrefix}{modulePrefix}{cmd.Name}**");
 
-            if (cmd.Parameters.Count > 0)
-                foreach (var param in cmd.Parameters)
-                    command += param.IsHidden() ? "" : $" `{param.Name}` ";
+            if (cmd.Parameters.Any())
+            {
+                foreach (var param in cmd.Parameters.Where(param => !param.IsHidden()))
+                {
+                    commandBuilder.Append($" `{param.Name}` ");
+                }
+            }
 
-            command += $" - {cmd.Summary}\n";
+            commandBuilder.Append($" - {cmd.Summary}\n");
 
-            if (cmd.Parameters.Count > 0)
-                foreach (var param in cmd.Parameters)
-                    command += param.IsHidden() ? "" : $"*{param.Name}* - *{param.Summary}*\n";
+            if (cmd.Parameters.Any())
+            {
+                foreach (var param in cmd.Parameters.Where(param => !param.IsHidden()))
+                {
+                    commandBuilder.Append($"*{param.Name}* - *{param.Summary}*\n");
+                }
+            }
 
             if (cmd.Aliases.Count > 1)
             {
-                command += "\n**Aliasy:**\n";
-                foreach (var alias in cmd.Aliases)
-                    if (alias != cmd.Name) command += $"`{alias}` ";
+                commandBuilder.Append("\n**Aliasy:**\n");
+                foreach (var alias in cmd.Aliases.Where(alias => alias != cmd.Name))
+                {
+                    commandBuilder.Append($"`{alias}` ");
+                }
             }
 
-            command += $"\n\nnp. `{botPrefix}{modulePrefix}{cmd.Name} {cmd.Remarks}`";
+            commandBuilder.Append($"\n\nnp. `{botPrefix}{modulePrefix}{cmd.Name} {cmd.Remarks}`");
 
-            return command;
+            return commandBuilder.ToString();
         }
 
         public string GiveHelpAboutPublicCmd(string command, string prefix, bool admin = false, bool dev = false)
         {
-            foreach(var module in PublicModulesInfo)
+            var matchingCommands = PublicModulesInfo
+                .SelectMany(module => module.Commands)
+                .Where(cmd => cmd.Name == command || cmd.Aliases.Any(alias => alias == command))
+                .ToList();
+
+            if (matchingCommands.Any())
             {
-                var thisCommands = module.Commands.FirstOrDefault(x => x.Name == command);
-
-                if (thisCommands == null)
-                    thisCommands = module.Commands.FirstOrDefault(x => x.Aliases.Any(c => c == command));
-
-                if (thisCommands != null)
-                    return GetCommandInfo(thisCommands, prefix);
+                return GetCommandInfo(matchingCommands.First(), prefix);
             }
 
             if (admin)
@@ -131,74 +154,70 @@ namespace Sanakan.Services
 
         private List<SanakanModuleInfo> GetInfoAboutModules(IEnumerable<ModuleInfo> modules)
         {
-            List<SanakanModuleInfo> mod = new List<SanakanModuleInfo>();
-            foreach (var item in modules)
+            var moduleInfos = new List<SanakanModuleInfo>();
+
+            foreach (var module in modules)
             {
-                var mInfo = new SanakanModuleInfo()
+                var moduleInfo = moduleInfos.FirstOrDefault(x => x.Name == module.Name);
+
+                if (moduleInfo == null)
                 {
-                    Name = item.Name,
-                    Modules = new List<SanakanSubModuleInfo>()
+                    moduleInfo = new SanakanModuleInfo
+                    {
+                        Name = module.Name,
+                        Modules = new List<SanakanSubModuleInfo>()
+                    };
+
+                    moduleInfos.Add(moduleInfo);
+                }
+
+                var subModuleInfo = new SanakanSubModuleInfo
+                {
+                    Prefix = GetModGroupPrefix(module, false),
+                    Commands = module.Commands
+                        .Where(x => !string.IsNullOrEmpty(x.Name))
+                        .Select(x => $"`{x.Name}`")
+                        .ToList()
                 };
 
-                if (mod.Any(x => x.Name.Equals(item.Name)))
-                    mInfo = mod.First(x => x.Name.Equals(item.Name));
-                else mod.Add(mInfo);
-
-                var subMInfo = new SanakanSubModuleInfo()
+                if (!moduleInfo.Modules.Any(x => x.Prefix == subModuleInfo.Prefix))
                 {
-                    Prefix = GetModGroupPrefix(item, false),
-                    Commands = new List<string>()
-                };
-
-                foreach (var cmd in item.Commands)
-                    if (!string.IsNullOrEmpty(cmd.Name))
-                        subMInfo.Commands.Add("`" + cmd.Name + "`");
-
-                mInfo.Modules.Add(subMInfo);
-            }
-            return mod;
-        }
-
-        private SanakanSubModuleInfo GetInfoAboutModule(ModuleInfo module)
-        {
-            var subMInfo = new SanakanSubModuleInfo()
-            {
-                Prefix = module.Name,
-                Commands = new List<string>()
-            };
-
-            foreach (var cmd in module.Commands)
-            {
-                if (!string.IsNullOrEmpty(cmd.Name))
-                {
-                    var name = "`" + cmd.Name + "`";
-                    if (!subMInfo.Commands.Contains(name))
-                        subMInfo.Commands.Add(name);
+                    moduleInfo.Modules.Add(subModuleInfo);
                 }
             }
 
-            return subMInfo;
+            return moduleInfos;
         }
+
+        private SanakanSubModuleInfo GetInfoAboutModule(ModuleInfo module)
+            => new SanakanSubModuleInfo
+            {
+                Prefix = module.Name,
+                Commands = module.Commands
+                    .Where(cmd => !string.IsNullOrEmpty(cmd.Name))
+                    .Select(cmd => $"`{cmd.Name}`")
+                    .Distinct()
+                    .ToList()
+            };
 
         private string GetModGroupPrefix(ModuleInfo mod, bool space = true)
         {
-            string prefix = "";
-            var att = mod.Aliases.FirstOrDefault();
-            if (!string.IsNullOrEmpty(att))
+            var alias = mod.Aliases.FirstOrDefault();
+            if (!string.IsNullOrEmpty(alias))
             {
-                if (space) att += " ";
-                prefix = att;
+                if (space) alias += " ";
+                return alias;
             }
-            return prefix;
+            return "";
         }
 
-        private struct SanakanModuleInfo
+        private class SanakanModuleInfo
         {
             public string Name { get; set; }
             public List<SanakanSubModuleInfo> Modules { get; set; }
         }
 
-        private struct SanakanSubModuleInfo
+        private class SanakanSubModuleInfo
         {
             public string Prefix { get; set; }
             public List<string> Commands { get; set; }
@@ -220,10 +239,10 @@ namespace Sanakan.Services
             string roles = "Brak";
             if (user.Roles.Count > 1)
             {
-                roles = "";
-                foreach (var item in user.Roles.OrderByDescending(x => x.Position))
-                    if (!item.IsEveryone)
-                        roles += $"{item.Mention}\n";
+                roles = string.Join("\n", user.Roles
+                    .OrderByDescending(x => x.Position)
+                    .Where(x => !x.IsEveryone)
+                    .Select(x => x.Mention));
             }
 
             return new List<EmbedFieldBuilder>
@@ -231,7 +250,7 @@ namespace Sanakan.Services
                 new EmbedFieldBuilder
                 {
                     Name = "Id",
-                    Value = user.Id,
+                    Value = user.Id.ToString(),
                     IsInline = true
                 },
                 new EmbedFieldBuilder
@@ -255,13 +274,13 @@ namespace Sanakan.Services
                 new EmbedFieldBuilder
                 {
                     Name = "Utworzono",
-                    Value = user.CreatedAt.DateTime.ToString(),
+                    Value = user.CreatedAt.ToString("dd.MM.yyyy HH:mm:ss"),
                     IsInline = false
                 },
                 new EmbedFieldBuilder
                 {
                     Name = "Dołączono",
-                    Value = user.JoinedAt.ToString().Split('+')[0],
+                    Value = user.JoinedAt?.ToString("dd.MM.yyyy HH:mm:ss") ?? "Nieznane",
                     IsInline = false
                 },
                 new EmbedFieldBuilder
@@ -292,19 +311,18 @@ namespace Sanakan.Services
 
         private List<EmbedFieldBuilder> GetInfoGuildFields(SocketGuild guild)
         {
-            string roles = "";
-            foreach (var item in guild.Roles.OrderByDescending(x => x.Position))
-            {
-                if (!item.IsEveryone && !ulong.TryParse(item.Name, out var id))
-                    roles += item.Mention + " ";
-            }
+            var roles = guild.Roles
+                .Where(role => !role.IsEveryone && !ulong.TryParse(role.Name, out _))
+                .OrderByDescending(role => role.Position)
+                .Select(role => role.Mention)
+                .ToList();
 
             return new List<EmbedFieldBuilder>
             {
                 new EmbedFieldBuilder
                 {
                     Name = "Id",
-                    Value = guild.Id,
+                    Value = guild.Id.ToString(),
                     IsInline = true
                 },
                 new EmbedFieldBuilder
@@ -316,31 +334,31 @@ namespace Sanakan.Services
                 new EmbedFieldBuilder
                 {
                     Name = "Utworzono",
-                    Value = guild.CreatedAt.DateTime.ToString(),
+                    Value = guild.CreatedAt.ToString("dd.MM.yyyy HH:mm:ss"),
                     IsInline = true
                 },
                 new EmbedFieldBuilder
                 {
                     Name = "Liczba użytkowników",
-                    Value = guild.Users.Count,
+                    Value = guild.Users.Count.ToString(),
                     IsInline = true
                 },
                 new EmbedFieldBuilder
                 {
                     Name = "Kanały tekstowe",
-                    Value = guild.TextChannels.Count,
+                    Value = guild.TextChannels.Count.ToString(),
                     IsInline = true
                 },
                 new EmbedFieldBuilder
                 {
                     Name = "Kanały głosowe",
-                    Value = guild.VoiceChannels.Count,
+                    Value = guild.VoiceChannels.Count.ToString(),
                     IsInline = true
                 },
                 new EmbedFieldBuilder
                 {
                     Name = $"Role[{guild.Roles.Count}]",
-                    Value = roles.TrimToLength(EmbedFieldBuilder.MaxFieldValueLength),
+                    Value = string.Join(" ", roles).TrimToLength(EmbedFieldBuilder.MaxFieldValueLength),
                     IsInline = false
                 }
             };
@@ -348,27 +366,24 @@ namespace Sanakan.Services
 
         public async Task<IMessage> FindMessageInGuildAsync(SocketGuild guild, ulong id)
         {
-            IMessage msg = null;
             foreach (ITextChannel channel in guild.Channels)
-                if (channel != null)
-                {
-                    msg = await channel.GetMessageAsync(id);
-                    if (msg != null)
-                        break;
-                }
+            {
+                if (channel == null)
+                    continue;
 
-            return msg;
+                IMessage msg = await channel.GetMessageAsync(id);
+                if (msg != null)
+                {
+                    return msg;
+                }
+            }
+            return null;
         }
 
         public Embed BuildRaportInfo(IMessage message, string reportAuthor, string reason, ulong reportId)
         {
-            string attach = "brak";
-            if (message.Attachments.Count > 0)
-            {
-                attach = "";
-                foreach (var att in message.Attachments)
-                    attach += $"{att.Url}\n";
-            }
+            var attachments = message.Attachments.Select(x => x.Url).ToList();
+            var attach = attachments.Count > 0 ? string.Join("\n", attachments) : "brak";
 
             return new EmbedBuilder
             {
@@ -394,7 +409,7 @@ namespace Sanakan.Services
                     {
                         IsInline = true,
                         Name = "Id zgloszenia:",
-                        Value = reportId
+                        Value = reportId.ToString()
                     },
                     new EmbedFieldBuilder
                     {
