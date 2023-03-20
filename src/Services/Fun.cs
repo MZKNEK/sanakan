@@ -38,7 +38,6 @@ namespace Sanakan.Services
 
     public class Fun
     {
-        // private static RNGCryptoServiceProvider _rand = new RNGCryptoServiceProvider();
         private static Random _rand = new Random();
 
         private static List<string> _botReactions = new List<string>()
@@ -63,13 +62,16 @@ namespace Sanakan.Services
 
         public static int GetRandomValue(int min, int max) => _rand.Next(min, max);
 
-        public static bool TakeATry(int chance) => (GetRandomValue(chance*100) % chance) == 1;
+        public static bool TakeATry(int chance) => GetRandomValue(chance) == 1;
 
         public static T GetOneRandomFrom<T>(IEnumerable<T> enumerable)
-        {
-            var arr = enumerable.ToArray();
-            return arr[GetRandomValue(arr.Length)];
-        }
+            => GetOneRandomFrom(enumerable.ToArray());
+
+        public static T GetOneRandomFrom<T>(List<T> list)
+            => list[GetRandomValue(list.Count)];
+
+        public static T GetOneRandomFrom<T>(T[] arr)
+            => arr[GetRandomValue(arr.Length)];
 
         public CoinSide RandomizeSide()
             => (CoinSide) GetRandomValue(2);
@@ -88,7 +90,7 @@ namespace Sanakan.Services
             string psay = (botUser.SMConfig.PsayMode > 0) ? "<:klasycznypsaj:482136878120828938> " : " ";
 
             return $"{psay}**Gra:** {user.Mention}\n\n ➖➖➖➖➖➖ \n{slots}\n ➖➖➖➖➖➖ \n"
-                + $"**Stawka:** `{botUser.SMConfig.Beat.Value()} SC`\n" 
+                + $"**Stawka:** `{botUser.SMConfig.Beat.Value()} SC`\n"
                 + $"**Mnożnik:** `x{botUser.SMConfig.Multiplier.Value()}`\n\n**Wygrana:** `{win} SC`";
         }
 

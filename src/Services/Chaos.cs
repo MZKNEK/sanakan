@@ -83,7 +83,7 @@ namespace Sanakan.Services
             },
             null,
             TimeSpan.FromMinutes(10),
-            TimeSpan.FromMinutes(10));
+            TimeSpan.FromMinutes(4));
 
             _client.MessageReceived += HandleMessageAsync;
         }
@@ -113,7 +113,7 @@ namespace Sanakan.Services
                 prefix = string.IsNullOrEmpty(gConfig.Prefix) ? prefix : gConfig.Prefix;
             }
 
-            if (_isEnabled && Fun.TakeATry(8) && !message.Content.IsCommand(prefix))
+            if (_isEnabled && Fun.TakeATry(10) && !message.Content.IsCommand(prefix))
             {
                 var emote = Fun.GetOneRandomFrom(_emtoes);
                 _ = Task.Run(async () =>
