@@ -38,7 +38,7 @@ namespace Sanakan.Modules
         [Alias("h", "help")]
         [Summary("wyświetla listę poleceń")]
         [Remarks("odcinki"), RequireAnyCommandChannel]
-        public async Task GiveHelpAsync([Summary("nazwa polecenia?")][Remainder] string command = null)
+        public async Task GiveHelpAsync([Summary("nazwa polecenia")][Remainder] string command = null)
         {
             var gUser = Context.User as SocketGuildUser;
             if (gUser == null) return;
@@ -80,7 +80,7 @@ namespace Sanakan.Modules
         [Alias("whois")]
         [Summary("wyświetla informacje o użytkowniku")]
         [Remarks("Dzida"), RequireCommandChannel]
-        public async Task GiveUserInfoAsync([Summary("nazwa użytkownika?")] SocketUser user = null)
+        public async Task GiveUserInfoAsync([Summary("nazwa użytkownika")] SocketUser user = null)
         {
             var usr = (user ?? Context.User) as SocketGuildUser;
             if (usr == null)
@@ -125,7 +125,7 @@ namespace Sanakan.Modules
         [Alias("avatar", "pfp")]
         [Summary("wyświetla awatar użytkownika")]
         [Remarks("Dzida"), RequireCommandChannel]
-        public async Task ShowUserAvatarAsync([Summary("nazwa użytkownika?")] SocketUser user = null, [Summary("awatar serwera?")] bool fromGuild = false)
+        public async Task ShowUserAvatarAsync([Summary("nazwa użytkownika")] SocketUser user = null, [Summary("awatar serwera?")] bool fromGuild = false)
         {
             var usr = (user ?? Context.User);
             var embed = new EmbedBuilder

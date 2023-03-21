@@ -110,7 +110,7 @@ namespace Sanakan.Modules
         [Command("ban")]
         [Summary("banuje użytkownika")]
         [Remarks("Karna"), RequireAdminRole, Priority(1)]
-        public async Task BanUserAsync([Summary("nazwa użytkownika")] SocketGuildUser user, [Summary("czas trwania w godzinach")] long duration, [Summary("powód?")][Remainder] string reason = "nie podano")
+        public async Task BanUserAsync([Summary("nazwa użytkownika")] SocketGuildUser user, [Summary("czas trwania w godzinach")] long duration, [Summary("powód")][Remainder] string reason = "nie podano")
         {
             if (duration < 1) return;
 
@@ -180,7 +180,7 @@ namespace Sanakan.Modules
         [Command("mute")]
         [Summary("wycisza użytkownika")]
         [Remarks("Karna"), RequireAnyAdminRoleOrChannelPermission(ChannelPermission.ManageRoles), Priority(1)]
-        public async Task MuteUserAsync([Summary("nazwa użytkownika")] SocketGuildUser user, [Summary("czas trwania w godzinach")] long duration, [Summary("powód?")][Remainder] string reason = "nie podano")
+        public async Task MuteUserAsync([Summary("nazwa użytkownika")] SocketGuildUser user, [Summary("czas trwania w godzinach")] long duration, [Summary("powód")][Remainder] string reason = "nie podano")
         {
             if (duration < 1) return;
 
@@ -221,7 +221,7 @@ namespace Sanakan.Modules
         [Command("mute mod")]
         [Summary("wycisza moderatora")]
         [Remarks("Karna"), RequireAdminRole, Priority(1)]
-        public async Task MuteModUserAsync([Summary("nazwa użytkownika")] SocketGuildUser user, [Summary("czas trwania w godzinach")] long duration, [Summary("powód?")][Remainder] string reason = "nie podano")
+        public async Task MuteModUserAsync([Summary("nazwa użytkownika")] SocketGuildUser user, [Summary("czas trwania w godzinach")] long duration, [Summary("powód")][Remainder] string reason = "nie podano")
         {
             if (duration < 1) return;
 
@@ -334,7 +334,7 @@ namespace Sanakan.Modules
         [Alias("welcome")]
         [Summary("ustawia/wyświetla wiadomość przywitania")]
         [Remarks("No elo ^mention!"), RequireAdminRole]
-        public async Task SetOrShowWelcomeMessageAsync([Summary("wiadomość? (off - wyłączenie)")][Remainder] string messsage = null)
+        public async Task SetOrShowWelcomeMessageAsync([Summary("wiadomość (off - wyłączenie)")][Remainder] string messsage = null)
         {
             using (var db = new Database.DatabaseContext(Config))
             {
@@ -364,7 +364,7 @@ namespace Sanakan.Modules
         [Alias("welcomepw")]
         [Summary("ustawia/wyświetla wiadomośc przywitania wysyłanego na pw")]
         [Remarks("No elo ^mention!"), RequireAdminRole]
-        public async Task SetOrShowWelcomeMessagePWAsync([Summary("wiadomość? (off - wyłączenie)")][Remainder] string messsage = null)
+        public async Task SetOrShowWelcomeMessagePWAsync([Summary("wiadomość (off - wyłączenie)")][Remainder] string messsage = null)
         {
             using (var db = new Database.DatabaseContext(Config))
             {
@@ -394,7 +394,7 @@ namespace Sanakan.Modules
         [Alias("pozegnanie", "goodbye")]
         [Summary("ustawia/wyświetla wiadomość pożegnalną")]
         [Remarks("Nara ^nick?"), RequireAdminRole]
-        public async Task SetOrShowGoodbyeMessageAsync([Summary("wiadomość? (off - wyłączenie)")][Remainder] string messsage = null)
+        public async Task SetOrShowGoodbyeMessageAsync([Summary("wiadomość (off - wyłączenie)")][Remainder] string messsage = null)
         {
             using (var db = new Database.DatabaseContext(Config))
             {
@@ -446,7 +446,7 @@ namespace Sanakan.Modules
         [Command("clean config")]
         [Summary("przeczyszcza konfiguracje serwera z usuniętych ról i kanałów")]
         [Remarks(""), RequireAdminRole]
-        public async Task CleanConfigAsync([Summary("id serwera?")] ulong guildId = 0)
+        public async Task CleanConfigAsync([Summary("id serwera")] ulong guildId = 0)
         {
             using (var db = new Database.DatabaseContext(Config))
             {
@@ -565,7 +565,7 @@ namespace Sanakan.Modules
         [Command("config")]
         [Summary("wyświetla konfiguracje serwera")]
         [Remarks("mods"), RequireAnyAdminRole]
-        public async Task ShowConfigAsync([Summary("typ?")][Remainder] Services.ConfigType type = Services.ConfigType.Global)
+        public async Task ShowConfigAsync([Summary("typ")][Remainder] Services.ConfigType type = Services.ConfigType.Global)
         {
             using (var db = new Database.DatabaseContext(Config))
             {
@@ -1478,7 +1478,7 @@ namespace Sanakan.Modules
         [Command("todo", RunMode = RunMode.Async)]
         [Summary("dodaje wiadomość do todo")]
         [Remarks("2342123444212"), RequireAnyAdminOrModRole]
-        public async Task MarkAsTodoAsync([Summary("id wiadomości")] ulong messageId = 0, [Summary("nazwa serwera?")] string serverName = null)
+        public async Task MarkAsTodoAsync([Summary("id wiadomości")] ulong messageId = 0, [Summary("nazwa serwera")] string serverName = null)
         {
             using (var db = new Database.DatabaseContext(Config))
             {
@@ -1892,7 +1892,7 @@ namespace Sanakan.Modules
         [Alias("help", "h")]
         [Summary("wypisuje polecenia")]
         [Remarks("kasuj"), RequireAnyAdminOrModRole]
-        public async Task SendHelpAsync([Summary("nazwa polecenia?")][Remainder] string command = null)
+        public async Task SendHelpAsync([Summary("nazwa polecenia")][Remainder] string command = null)
         {
             if (command != null)
             {

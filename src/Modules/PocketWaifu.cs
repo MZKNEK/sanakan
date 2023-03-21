@@ -431,7 +431,7 @@ namespace Sanakan.Modules
         [Summary("otwiera pierwszy pakiet z domyślnie ustawionym niszczeniem kc na 2 oraz tagiem wymiana")]
         [Remarks("2 nie Wymiana Ulubione"), RequireAnyCommandChannelOrLevel(200)]
         public async Task OpenPacketLazyModeAsync([Summary("czy zniszczyć karty nie będące na liście życzeń i nie posiadające danej kc?")] uint destroyCards = 2, [Summary("czy zamienić niszczenie na uwalnianie?")] bool changeToRelease = false,
-            [Summary("oznaczyć niezniszczone karty?")] string tag = "wymiana", [Summary("oznaczyć karty z wishlisty?")] string tagWishlist = "ulubione")
+            [Summary("oznacz niezniszczone karty")] string tag = "wymiana", [Summary("oznacz karty z wishlisty")] string tagWishlist = "ulubione")
                 => await OpenPacketAsync(1, 1, true, destroyCards, changeToRelease, tag, tagWishlist);
 
         [Command("pakiet")]
@@ -439,8 +439,8 @@ namespace Sanakan.Modules
         [Summary("wypisuje dostępne pakiety/otwiera pakiety(maksymalna suma kart z pakietów do otworzenia to 20)")]
         [Remarks("1 1 tak 2 nie Wymiana Ulubione"), RequireWaifuCommandChannel]
         public async Task OpenPacketAsync([Summary("nr pakietu kart")] int numberOfPack = 0, [Summary("liczba kolejnych pakietów")] int count = 1, [Summary("czy sprawdzić listy życzeń?")] bool checkWishlists = true,
-            [Summary("czy zniszczyć karty nie będące na liście życzeń i nie posiadające danej kc?")] uint destroyCards = 0, [Summary("czy zamienić niszczenie na uwalnianie?")] bool changeToRelease = false, [Summary("oznaczyć niezniszczone karty?")] string tag = "",
-            [Summary("oznaczyć karty z wishlisty?")] string tagWishlist = "")
+            [Summary("czy zniszczyć karty nie będące na liście życzeń i nie posiadające danej kc?")] uint destroyCards = 0, [Summary("czy zamienić niszczenie na uwalnianie?")] bool changeToRelease = false, [Summary("oznacz niezniszczone karty")] string tag = "",
+            [Summary("oznacz karty z wishlisty")] string tagWishlist = "")
         {
             if (!string.IsNullOrEmpty(tag) && tag.Contains(" "))
             {
@@ -1628,7 +1628,7 @@ namespace Sanakan.Modules
         [Alias("on wishlist", "na zyczeniach")]
         [Summary("wyświetla obiekty dodane do listy życzeń")]
         [Remarks("Karna"), RequireWaifuCommandChannel]
-        public async Task ShowThingsOnWishlistAsync([Summary("nazwa użytkownika?")] SocketGuildUser usr = null)
+        public async Task ShowThingsOnWishlistAsync([Summary("nazwa użytkownika")] SocketGuildUser usr = null)
         {
             var user = (usr ?? Context.User) as SocketGuildUser;
             if (user == null) return;
@@ -2249,7 +2249,7 @@ namespace Sanakan.Modules
 
         [Command("oznacz podmień")]
         [Alias("tag replace", "oznacz podmien")]
-        [Summary("podmienia oznaczenie na wszystkich kartach, niepodanie nowego - usuwa stare z kart")]
+        [Summary("podmienia oznaczenie na wszystkich kartach, niepodanie nowego usuwa stare z kart")]
         [Remarks("konie wymiana"), RequireWaifuCommandChannel]
         public async Task ReplaceCardsTagAsync([Summary("stare oznaczenie")] string oldTag, [Summary("nowe oznaczenie")] string newTag = "%$-1")
         {
@@ -2356,7 +2356,7 @@ namespace Sanakan.Modules
         [Alias("deck", "aktywne")]
         [Summary("wyświetla aktywne karty/ustawia kartę jako aktywną")]
         [Remarks("1"), RequireWaifuCommandChannel]
-        public async Task ChangeDeckCardStatusAsync([Summary("WID?")] ulong wid = 0)
+        public async Task ChangeDeckCardStatusAsync([Summary("WID")] ulong wid = 0)
         {
             using (var db = new Database.DatabaseContext(Config))
             {
@@ -3117,7 +3117,7 @@ namespace Sanakan.Modules
         [Alias("cpf-")]
         [Summary("wyświetla uproszczony profil PocketWaifu")]
         [Remarks("Karna"), RequireAnyCommandChannelOrLevel(40)]
-        public async Task ShowSimpleProfileAsync([Summary("nazwa użytkownika?")] SocketGuildUser usr = null)
+        public async Task ShowSimpleProfileAsync([Summary("nazwa użytkownika")] SocketGuildUser usr = null)
         {
             var user = (usr ?? Context.User) as SocketGuildUser;
             if (user == null) return;
@@ -3163,7 +3163,7 @@ namespace Sanakan.Modules
         [Alias("cpf")]
         [Summary("wyświetla profil PocketWaifu")]
         [Remarks("Karna"), RequireWaifuCommandChannel]
-        public async Task ShowProfileAsync([Summary("nazwa użytkownika?")] SocketGuildUser usr = null)
+        public async Task ShowProfileAsync([Summary("nazwa użytkownika")] SocketGuildUser usr = null)
         {
             var user = (usr ?? Context.User) as SocketGuildUser;
             if (user == null) return;

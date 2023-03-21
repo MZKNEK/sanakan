@@ -137,7 +137,7 @@ namespace Sanakan.Modules
         [Alias("ile", "otaku", "site", "mangozjeb")]
         [Summary("wyświetla statystyki użytkownika z strony")]
         [Remarks("Karna"), DelayNextUseBy(30)]
-        public async Task ShowSiteStatisticAsync([Summary("nazwa użytkownika?")]SocketGuildUser user = null)
+        public async Task ShowSiteStatisticAsync([Summary("nazwa użytkownika")]SocketGuildUser user = null)
         {
             var usr = user ?? Context.User as SocketGuildUser;
             if (usr == null) return;

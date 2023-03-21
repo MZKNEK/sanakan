@@ -1393,7 +1393,7 @@ namespace Sanakan.Modules
         [Alias("help", "h")]
         [Summary("wypisuje polecenia")]
         [Remarks("kasuj")]
-        public async Task SendHelpAsync([Summary("nazwa polecenia?")][Remainder]string command = null)
+        public async Task SendHelpAsync([Summary("nazwa polecenia")][Remainder]string command = null)
         {
             if (command != null)
             {

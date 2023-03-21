@@ -35,7 +35,7 @@ namespace Sanakan.Modules
         [Alias("wallet")]
         [Summary("wyświetla portfel użytkownika")]
         [Remarks("Karna")]
-        public async Task ShowWalletAsync([Summary("nazwa użytkownika?")]SocketUser user = null)
+        public async Task ShowWalletAsync([Summary("nazwa użytkownika")]SocketUser user = null)
         {
             var usr = user ?? Context.User;
             if (usr == null) return;
@@ -162,7 +162,7 @@ namespace Sanakan.Modules
         [Alias("stats")]
         [Summary("wyświetla statystyki użytkownika")]
         [Remarks("karna")]
-        public async Task ShowStatsAsync([Summary("nazwa użytkownika?")]SocketUser user = null)
+        public async Task ShowStatsAsync([Summary("nazwa użytkownika")]SocketUser user = null)
         {
             var usr = user ?? Context.User;
             if (usr == null) return;
@@ -184,7 +184,7 @@ namespace Sanakan.Modules
         [Alias("iledopoziomu", "howmuchtolevelup", "hmtlup")]
         [Summary("wyświetla ile pozostało punktów doświadczenia do następnego poziomu")]
         [Remarks("karna")]
-        public async Task ShowHowMuchToLevelUpAsync([Summary("nazwa użytkownika?")]SocketUser user = null)
+        public async Task ShowHowMuchToLevelUpAsync([Summary("nazwa użytkownika")]SocketUser user = null)
         {
             var usr = user ?? Context.User;
             if (usr == null) return;
@@ -259,7 +259,7 @@ namespace Sanakan.Modules
         [Alias("profile")]
         [Summary("wyświetla profil użytkownika")]
         [Remarks("karna"), DelayNextUseBy(30)]
-        public async Task ShowUserProfileAsync([Summary("nazwa użytkownika?")]SocketGuildUser user = null)
+        public async Task ShowUserProfileAsync([Summary("nazwa użytkownika")]SocketGuildUser user = null)
         {
             var usr = user ?? Context.User as SocketGuildUser;
             if (usr == null) return;
