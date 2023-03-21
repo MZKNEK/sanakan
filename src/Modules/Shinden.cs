@@ -56,7 +56,7 @@ namespace Sanakan.Modules
                     }
                     catch (Exception ex)
                     {
-                        await msg.ModifyAsync(x => x.Embed = $"{Context.User.Mention} nie udało się wyłać PW! ({ex.Message})".ToEmbedMessage(EMType.Error).Build());
+                        await msg.ModifyAsync(x => x.Embed = $"{Context.User.Mention} nie udało się wysłać PW! ({ex.Message})".ToEmbedMessage(EMType.Error).Build());
                     }
 
                     return;
@@ -136,8 +136,8 @@ namespace Sanakan.Modules
         [Command("strona", RunMode = RunMode.Async)]
         [Alias("ile", "otaku", "site", "mangozjeb")]
         [Summary("wyświetla statystyki użytkownika z strony")]
-        [Remarks("karna"), DelayNextUseBy(30)]
-        public async Task ShowSiteStatisticAsync([Summary("użytkownik (opcjonalne)")]SocketGuildUser user = null)
+        [Remarks("Karna"), DelayNextUseBy(30)]
+        public async Task ShowSiteStatisticAsync([Summary("nazwa użytkownika?")]SocketGuildUser user = null)
         {
             var usr = user ?? Context.User as SocketGuildUser;
             if (usr == null) return;

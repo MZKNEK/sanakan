@@ -87,8 +87,8 @@ namespace Sanakan.Modules
 
         [Command("lchances", RunMode = RunMode.Async)]
         [Summary("wypisuje szanse z loterii")]
-        [Remarks("scalper")]
-        public async Task ShowItemChancesFromExpeditionAsync([Summary("konkrety")]LotteryReward r = LotteryReward.None)
+        [Remarks("scalpel")]
+        public async Task ShowItemChancesFromExpeditionAsync([Summary("kategoria nagród")]LotteryReward r = LotteryReward.None)
         {
             IEnumerable<(string, float)> chances = null;
             switch (r)
@@ -163,7 +163,7 @@ namespace Sanakan.Modules
         }
 
         [Command("sbl", RunMode = RunMode.Async)]
-        [Summary("wypisuje liste użytkowników na czarnej liśćie")]
+        [Summary("wypisuje listę użytkowników na czarnej liśćie")]
         [Remarks("")]
         public async Task ShowBlacklistedUsersAsync()
         {
@@ -175,9 +175,9 @@ namespace Sanakan.Modules
         }
 
         [Command("blacklist")]
-        [Summary("dodaje/usuwa użytkownika do czarnej listy")]
+        [Summary("dodaje/usuwa użytkownika do/z czarnej listy")]
         [Remarks("Karna")]
-        public async Task BlacklistUserAsync([Summary("użytkownik")]SocketGuildUser user)
+        public async Task BlacklistUserAsync([Summary("nazwa użytkownika")]SocketGuildUser user)
         {
             using (var db = new Database.DatabaseContext(Config))
             {
@@ -193,7 +193,7 @@ namespace Sanakan.Modules
         }
 
         [Command("rmsg", RunMode = RunMode.Async)]
-        [Summary("wysyła wiadomość na kanał w danym serwerze jako odpowiedź do podanej innej wiadomości")]
+        [Summary("wysyła wiadomość na kanał na danym serwerze jako odpowiedź do podanej innej wiadomości")]
         [Remarks("15188451644 101155483 1231231 Nie masz racji!")]
         public async Task SendResponseMsgToChannelInGuildAsync([Summary("id serwera")]ulong gId, [Summary("id kanału")]ulong chId, [Summary("id wiadomości")]ulong msgId, [Summary("treść wiadomości")][Remainder]string msg)
         {
@@ -209,7 +209,7 @@ namespace Sanakan.Modules
         }
 
         [Command("smsg", RunMode = RunMode.Async)]
-        [Summary("wysyła wiadomość na kanał w danym serwerze")]
+        [Summary("wysyła wiadomość na kanał na danym serwerze")]
         [Remarks("15188451644 101155483 elo ziomki")]
         public async Task SendMsgToChannelInGuildAsync([Summary("id serwera")]ulong gId, [Summary("id kanału")]ulong chId, [Summary("treść wiadomości")][Remainder]string msg)
         {
@@ -224,9 +224,9 @@ namespace Sanakan.Modules
         }
 
         [Command("semsg", RunMode = RunMode.Async)]
-        [Summary("wysyła wiadomość w formie embed na kanał w danym serwerze")]
+        [Summary("wysyła wiadomość w formie embed na kanał na danym serwerze")]
         [Remarks("15188451644 101155483 bot elo ziomki")]
-        public async Task SendEmbedMsgToChannelInGuildAsync([Summary("id serwera")]ulong gId, [Summary("id kanału")]ulong chId, [Summary("typ wiadomości(Neutral/Warning/Success/Error/Info/Bot)")]EMType type, [Summary("treść wiadomości")][Remainder]string msg)
+        public async Task SendEmbedMsgToChannelInGuildAsync([Summary("id serwera")]ulong gId, [Summary("id kanału")]ulong chId, [Summary("typ wiadomości (Neutral/Warning/Success/Error/Info/Bot)")]EMType type, [Summary("treść wiadomości")][Remainder]string msg)
         {
             try
             {
@@ -239,7 +239,7 @@ namespace Sanakan.Modules
         }
 
         [Command("r2msg", RunMode = RunMode.Async)]
-        [Summary("dodaje reakcje do wiadomości")]
+        [Summary("dodaje reakcję do wiadomości")]
         [Remarks("15188451644 101155483 825724399512453140 <:Redpill:455880209711759400>")]
         public async Task AddReactionToMsgOnChannelInGuildAsync([Summary("id serwera")]ulong gId, [Summary("id kanału")]ulong chId, [Summary("id wiadomości")]ulong msgId, [Summary("reakcja")]string reaction)
         {
@@ -264,7 +264,7 @@ namespace Sanakan.Modules
         [Command("cup")]
         [Summary("wymusza update na kartach")]
         [Remarks("3123 121")]
-        public async Task ForceUpdateCardsAsync([Summary("WID kart")]params ulong[] ids)
+        public async Task ForceUpdateCardsAsync([Summary("WIDs")]params ulong[] ids)
         {
             using (var db = new Database.DatabaseContext(Config))
             {
@@ -450,12 +450,12 @@ namespace Sanakan.Modules
         }
 
         [Command("tranc"), Priority(1)]
-        [Summary("przenosi kartę między użytkownikami")]
+        [Summary("przenosi karty między użytkownikami")]
         [Remarks("Sniku 41231 41232")]
-        public async Task TransferUserCardAsync([Summary("użytkownik")]SocketUser user, [Summary("WIDs")]params ulong[] wids) => await TransferCardAsync(user.Id, wids);
+        public async Task TransferUserCardAsync([Summary("nazwa użytkownika")]SocketUser user, [Summary("WIDs")]params ulong[] wids) => await TransferCardAsync(user.Id, wids);
 
         [Command("tranc"), Priority(1)]
-        [Summary("przenosi kartę między użytkownikami")]
+        [Summary("przenosi karty między użytkownikami")]
         [Remarks("Sniku 41231 41232")]
         public async Task TransferCardAsync([Summary("id użytkownika")]ulong userId, [Summary("WIDs")]params ulong[] wids)
         {
@@ -532,7 +532,7 @@ namespace Sanakan.Modules
         [Command("level")]
         [Summary("ustawia podany poziom użytkownikowi")]
         [Remarks("Karna 1")]
-        public async Task ChangeUserLevelAsync([Summary("użytkownik")]SocketGuildUser user, [Summary("poziom")]long level)
+        public async Task ChangeUserLevelAsync([Summary("nazwa użytkownika")]SocketGuildUser user, [Summary("poziom")]long level)
         {
             using (var db = new Database.DatabaseContext(Config))
             {
@@ -552,7 +552,7 @@ namespace Sanakan.Modules
         [Command("mkick", RunMode = RunMode.Async)]
         [Summary("wyrzuca użytkowników z serwera")]
         [Remarks("Jupson Moe")]
-        public async Task MultiKickAsync([Summary("użytkownicy")]params SocketGuildUser[] users)
+        public async Task MultiKickAsync([Summary("nazwy użytkowników")]params SocketGuildUser[] users)
         {
             var count = 0;
 
@@ -572,7 +572,7 @@ namespace Sanakan.Modules
         [Command("mban", RunMode = RunMode.Async)]
         [Summary("banuje użytkowników z serwera")]
         [Remarks("Jupson Moe")]
-        public async Task MultiBankAsync([Summary("użytkownicy")]params SocketGuildUser[] users)
+        public async Task MultiBankAsync([Summary("nazwy użytkowników")]params SocketGuildUser[] users)
         {
             var count = 0;
 
@@ -590,7 +590,7 @@ namespace Sanakan.Modules
         }
 
         [Command("restore"), Priority(1)]
-        [Summary("przenosi kartę na nowo do użytkownika")]
+        [Summary("przenosi karty na nowo do użytkownika")]
         [Remarks("Sniku")]
         public async Task RestoreCardsAsync([Summary("użytkownik")]SocketGuildUser user)
         {
@@ -626,7 +626,7 @@ namespace Sanakan.Modules
         [Command("missingc", RunMode = RunMode.Async)]
         [Summary("generuje listę id kart, których właścicieli nie widzi bot na serwerach")]
         [Remarks("true")]
-        public async Task GenerateMissingUsersCardListAsync([Summary("czy wypisać id'ki")]bool ids = false)
+        public async Task GenerateMissingUsersCardListAsync([Summary("czy wypisać id'ki?")]bool ids = false)
         {
             var allUsers = Context.Client.Guilds.SelectMany(x => x.Users).Distinct();
             using (var db = new Database.DatabaseContext(Config))
@@ -836,7 +836,7 @@ namespace Sanakan.Modules
                     await db.SaveChangesAsync();
 
                     QueryCacheManager.ExpireTag(new string[] { $"quiz" });
-                    await ReplyAsync("", embed: $"Nowy zagadka dodana, jej ID to: `{question.Id}`".ToEmbedMessage(EMType.Success).Build());
+                    await ReplyAsync("", embed: $"Nowa zagadka dodana, jej ID to: `{question.Id}`".ToEmbedMessage(EMType.Success).Build());
                 }
             }
             catch (Exception)
@@ -860,7 +860,7 @@ namespace Sanakan.Modules
         [Command("chpp"), Priority(1)]
         [Summary("ustawia liczbę znaków na pakiet")]
         [Remarks("true")]
-        public async Task SetCharCntPerPacketAsync([Summary("liczba znaków")]long count, [Summary("true/false - czy zapisać")]bool save = false)
+        public async Task SetCharCntPerPacketAsync([Summary("liczba znaków")]long count, [Summary("true/false - czy zapisać?")]bool save = false)
         {
             var config = Config.Get();
             config.CharPerPacket = count;
@@ -872,7 +872,7 @@ namespace Sanakan.Modules
         [Command("chpe"), Priority(1)]
         [Summary("ustawia liczbę znaków na punkt doświadczenia")]
         [Remarks("true")]
-        public async Task SetCharCntPerExpAsync([Summary("liczba znaków")]long count, [Summary("true/false - czy zapisać")]bool save = false)
+        public async Task SetCharCntPerExpAsync([Summary("liczba znaków")]long count, [Summary("true/false - czy zapisać?")]bool save = false)
         {
             var config = Config.Get();
             config.Exp.CharPerPoint = count;
@@ -882,7 +882,7 @@ namespace Sanakan.Modules
         }
 
         [Command("turlban"), Priority(1)]
-        [Summary("wyłącza/załącza banowanie za spam url")]
+        [Summary("wyłącza/włącza banowanie za spam url")]
         [Remarks("")]
         public async Task ToggleSafariAsync()
         {
@@ -894,9 +894,9 @@ namespace Sanakan.Modules
         }
 
         [Command("tsafari"), Priority(1)]
-        [Summary("wyłącza/załącza safari")]
+        [Summary("wyłącza/włącza safari")]
         [Remarks("true")]
-        public async Task ToggleSafariAsync([Summary("true/false - czy zapisać")]bool save = false)
+        public async Task ToggleSafariAsync([Summary("true/false - czy zapisać?")]bool save = false)
         {
             var config = Config.Get();
             config.SafariEnabled = !config.SafariEnabled;
@@ -1001,7 +1001,7 @@ namespace Sanakan.Modules
         [Command("gitem"), Priority(1)]
         [Summary("generuje przedmiot i daje go użytkownikowi")]
         [Remarks("Sniku 2 1")]
-        public async Task GenerateItemAsync([Summary("użytkownik")]SocketGuildUser user, [Summary("przedmiot")]ItemType itemType, [Summary("liczba przedmiotów")]uint count = 1,
+        public async Task GenerateItemAsync([Summary("nazwa użytkownika")]SocketGuildUser user, [Summary("przedmiot")]ItemType itemType, [Summary("liczba przedmiotów")]uint count = 1,
             [Summary("jakość przedmiotu")]Quality quality = Quality.Broken)
         {
             var item = itemType.ToItem(count, quality);
@@ -1022,7 +1022,7 @@ namespace Sanakan.Modules
         [Command("gcard"), Priority(1)]
         [Summary("generuje kartę i daje ją użytkownikowi")]
         [Remarks("Sniku 54861")]
-        public async Task GenerateCardAsync([Summary("użytkownik")]SocketGuildUser user, [Summary("id postaci na shinden (nie podanie - losowo)")]ulong id = 0,
+        public async Task GenerateCardAsync([Summary("nazwa użytkownika")]SocketGuildUser user, [Summary("id postaci na shinden (nie podanie - losowo)")]ulong id = 0,
             [Summary("jakość karty (nie podanie - losowo)")]Rarity rarity = Rarity.E)
         {
             var character = (id == 0) ? await _waifu.GetRandomCharacterAsync() : (await _shClient.GetCharacterInfoAsync(id)).Body;
@@ -1047,7 +1047,7 @@ namespace Sanakan.Modules
         [Command("ctou"), Priority(1)]
         [Summary("zamienia kartę na ultimate")]
         [Remarks("54861 Zeta 100 100 1000")]
-        public async Task MakeUltimateCardAsync([Summary("wid karty")]ulong id, [Summary("jakość karty")]Quality quality,
+        public async Task MakeUltimateCardAsync([Summary("WID")]ulong id, [Summary("jakość karty")]Quality quality,
             [Summary("dodatkowy atak")]int atk = 0, [Summary("dodatkowa obrona")]int def = 0, [Summary("dodatkowe hp")]int hp = 0)
         {
             using (var db = new Database.DatabaseContext(Config))
@@ -1079,9 +1079,9 @@ namespace Sanakan.Modules
         }
 
         [Command("sc"), Priority(1)]
-        [Summary("zmienia SC użytkownika o podaną wartość")]
+        [Summary("dodaje podaną wartość SC użytkownikowi")]
         [Remarks("Sniku 10000")]
-        public async Task ChangeUserScAsync([Summary("użytkownik")]SocketGuildUser user, [Summary("liczba SC")]long amount)
+        public async Task ChangeUserScAsync([Summary("nazwa użytkownika")]SocketGuildUser user, [Summary("liczba SC")]long amount)
         {
             using (var db = new Database.DatabaseContext(Config))
             {
@@ -1097,9 +1097,9 @@ namespace Sanakan.Modules
         }
 
         [Command("ac"), Priority(1)]
-        [Summary("zmienia AC użytkownika o podaną wartość")]
+        [Summary("dodaje podaną wartość AC użytkownikowi")]
         [Remarks("Sniku 10000")]
-        public async Task ChangeUserAcAsync([Summary("użytkownik")]SocketGuildUser user, [Summary("liczba AC")]long amount)
+        public async Task ChangeUserAcAsync([Summary("nazwa użytkownika")]SocketGuildUser user, [Summary("liczba AC")]long amount)
         {
             using (var db = new Database.DatabaseContext(Config))
             {
@@ -1115,9 +1115,9 @@ namespace Sanakan.Modules
         }
 
         [Command("tc"), Priority(1)]
-        [Summary("zmienia TC użytkownika o podaną wartość")]
+        [Summary("dodaje podaną wartość TC użytkownikowi")]
         [Remarks("Sniku 10000")]
-        public async Task ChangeUserTcAsync([Summary("użytkownik")]SocketGuildUser user, [Summary("liczba TC")]long amount)
+        public async Task ChangeUserTcAsync([Summary("nazwa użytkownika")]SocketGuildUser user, [Summary("liczba TC")]long amount)
         {
             using (var db = new Database.DatabaseContext(Config))
             {
@@ -1133,9 +1133,9 @@ namespace Sanakan.Modules
         }
 
         [Command("pc"), Priority(1)]
-        [Summary("zmienia PC użytkownika o podaną wartość")]
+        [Summary("dodaje podaną wartość PC użytkownikowi")]
         [Remarks("Sniku 10000")]
-        public async Task ChangeUserPcAsync([Summary("użytkownik")]SocketGuildUser user, [Summary("liczba PC")]long amount)
+        public async Task ChangeUserPcAsync([Summary("nazwa użytkownika")]SocketGuildUser user, [Summary("liczba PC")]long amount)
         {
             using (var db = new Database.DatabaseContext(Config))
             {
@@ -1151,9 +1151,9 @@ namespace Sanakan.Modules
         }
 
         [Command("ct"), Priority(1)]
-        [Summary("zmienia CT użytkownika o podaną wartość")]
+        [Summary("dodaje podaną wartość CT użytkownikowi")]
         [Remarks("Sniku 10000")]
-        public async Task ChangeUserCtAsync([Summary("użytkownik")]SocketGuildUser user, [Summary("liczba CT")]long amount)
+        public async Task ChangeUserCtAsync([Summary("nazwa użytkownika")]SocketGuildUser user, [Summary("liczba CT")]long amount)
         {
             using (var db = new Database.DatabaseContext(Config))
             {
@@ -1169,9 +1169,9 @@ namespace Sanakan.Modules
         }
 
         [Command("exp"), Priority(1)]
-        [Summary("zmienia punkty doświadczenia użytkownika o podaną wartość")]
+        [Summary("dodaje podaną wartość punktów doświadczenia użytkownikowi")]
         [Remarks("Sniku 10000")]
-        public async Task ChangeUserExpAsync([Summary("użytkownik")]SocketGuildUser user, [Summary("liczba punktów doświadczenia")]long amount)
+        public async Task ChangeUserExpAsync([Summary("nazwa użytkownika")]SocketGuildUser user, [Summary("liczba punktów doświadczenia")]long amount)
         {
             using (var db = new Database.DatabaseContext(Config))
             {
@@ -1187,9 +1187,9 @@ namespace Sanakan.Modules
         }
 
         [Command("ost"), Priority(1)]
-        [Summary("zmienia liczbę punktów ostrzeżeń")]
+        [Summary("zmienia liczbę ostrzeżeń użytkownika")]
         [Remarks("Jeeda 10000")]
-        public async Task ChangeUserOstAsync([Summary("użytkownik")]SocketGuildUser user, [Summary("liczba ostrzeżeń")]long amount)
+        public async Task ChangeUserOstAsync([Summary("nazwa użytkownika")]SocketGuildUser user, [Summary("liczba ostrzeżeń")]long amount)
         {
             using (var db = new Database.DatabaseContext(Config))
             {
@@ -1258,7 +1258,7 @@ namespace Sanakan.Modules
         }
 
         [Command("spawncof", RunMode = RunMode.Async)]
-        [Summary("tworzy nowe polowanie na karte")]
+        [Summary("tworzy nowe polowanie na kartę")]
         [Remarks("")]
         public async Task SpawnCardOnSafariAsync()
         {
@@ -1393,7 +1393,7 @@ namespace Sanakan.Modules
         [Alias("help", "h")]
         [Summary("wypisuje polecenia")]
         [Remarks("kasuj")]
-        public async Task SendHelpAsync([Summary("nazwa polecenia (opcjonalne)")][Remainder]string command = null)
+        public async Task SendHelpAsync([Summary("nazwa polecenia?")][Remainder]string command = null)
         {
             if (command != null)
             {
