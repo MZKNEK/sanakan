@@ -56,7 +56,7 @@ namespace Sanakan.Modules
                     }
                     catch (Exception ex)
                     {
-                        await msg.ModifyAsync(x => x.Embed = $"{Context.User.Mention} nie udało się wyłać PW! ({ex.Message})".ToEmbedMessage(EMType.Error).Build());
+                        await msg.ModifyAsync(x => x.Embed = $"{Context.User.Mention} nie udało się wysłać PW! ({ex.Message})".ToEmbedMessage(EMType.Error).Build());
                     }
 
                     return;
@@ -88,13 +88,13 @@ namespace Sanakan.Modules
         [Alias("postac", "character")]
         [Summary("wyświetla informacje o postaci")]
         [Remarks("Gintoki")]
-        public async Task SearchCharacterBasicAsync([Summary("imie")][Remainder]string name) => await SearchCharacterAsync(false, name);
+        public async Task SearchCharacterBasicAsync([Summary("imię")][Remainder]string name) => await SearchCharacterAsync(false, name);
 
         [Command("postać", RunMode = RunMode.Async)]
         [Alias("postac", "character")]
         [Summary("wyświetla informacje o postaci")]
         [Remarks("Gintoki")]
-        public async Task SearchCharacterAsync([Summary("czy szukać tytułów?")]bool longSearch, [Summary("imie")][Remainder]string name)
+        public async Task SearchCharacterAsync([Summary("czy szukać tytułów?")]bool longSearch, [Summary("imię")][Remainder]string name)
         {
             var session = new SearchSession(Context.User, _shclient);
             if (_session.SessionExist(session)) return;
@@ -136,8 +136,8 @@ namespace Sanakan.Modules
         [Command("strona", RunMode = RunMode.Async)]
         [Alias("ile", "otaku", "site", "mangozjeb")]
         [Summary("wyświetla statystyki użytkownika z strony")]
-        [Remarks("karna"), DelayNextUseBy(30)]
-        public async Task ShowSiteStatisticAsync([Summary("użytkownik (opcjonalne)")]SocketGuildUser user = null)
+        [Remarks("Karna"), DelayNextUseBy(30)]
+        public async Task ShowSiteStatisticAsync([Summary("nazwa użytkownika")]SocketGuildUser user = null)
         {
             var usr = user ?? Context.User as SocketGuildUser;
             if (usr == null) return;

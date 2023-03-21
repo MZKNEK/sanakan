@@ -34,8 +34,8 @@ namespace Sanakan.Modules
         [Command("portfel", RunMode = RunMode.Async)]
         [Alias("wallet")]
         [Summary("wyświetla portfel użytkownika")]
-        [Remarks("")]
-        public async Task ShowWalletAsync([Summary("użytkownik (opcjonalne)")]SocketUser user = null)
+        [Remarks("Karna")]
+        public async Task ShowWalletAsync([Summary("nazwa użytkownika")]SocketUser user = null)
         {
             var usr = user ?? Context.User;
             if (usr == null) return;
@@ -101,7 +101,7 @@ namespace Sanakan.Modules
                 if (!user.Roles.Contains(gRole))
                     await user.AddRoleAsync(gRole);
 
-                await ReplyAsync("", embed: $"{user.Mention} przyznano role: `{name}`".ToEmbedMessage(EMType.Success).Build());
+                await ReplyAsync("", embed: $"{user.Mention} przyznano rolę: `{name}`".ToEmbedMessage(EMType.Success).Build());
             }
         }
 
@@ -129,12 +129,12 @@ namespace Sanakan.Modules
                 if (user.Roles.Contains(gRole))
                     await user.RemoveRoleAsync(gRole);
 
-                await ReplyAsync("", embed: $"{user.Mention} zdjęto role: `{name}`".ToEmbedMessage(EMType.Success).Build());
+                await ReplyAsync("", embed: $"{user.Mention} zdjęto rolę: `{name}`".ToEmbedMessage(EMType.Success).Build());
             }
         }
 
         [Command("wypisz role", RunMode = RunMode.Async)]
-        [Summary("wypisuje samo zarządzane role")]
+        [Summary("wypisuje samozarządzane role")]
         [Remarks(""), RequireCommandChannel]
         public async Task ShowRolesAsync()
         {
@@ -162,7 +162,7 @@ namespace Sanakan.Modules
         [Alias("stats")]
         [Summary("wyświetla statystyki użytkownika")]
         [Remarks("karna")]
-        public async Task ShowStatsAsync([Summary("użytkownik (opcjonalne)")]SocketUser user = null)
+        public async Task ShowStatsAsync([Summary("nazwa użytkownika")]SocketUser user = null)
         {
             var usr = user ?? Context.User;
             if (usr == null) return;
@@ -184,7 +184,7 @@ namespace Sanakan.Modules
         [Alias("iledopoziomu", "howmuchtolevelup", "hmtlup")]
         [Summary("wyświetla ile pozostało punktów doświadczenia do następnego poziomu")]
         [Remarks("karna")]
-        public async Task ShowHowMuchToLevelUpAsync([Summary("użytkownik(opcjonalne)")]SocketUser user = null)
+        public async Task ShowHowMuchToLevelUpAsync([Summary("nazwa użytkownika")]SocketUser user = null)
         {
             var usr = user ?? Context.User;
             if (usr == null) return;
@@ -259,7 +259,7 @@ namespace Sanakan.Modules
         [Alias("profile")]
         [Summary("wyświetla profil użytkownika")]
         [Remarks("karna"), DelayNextUseBy(30)]
-        public async Task ShowUserProfileAsync([Summary("użytkownik (opcjonalne)")]SocketGuildUser user = null)
+        public async Task ShowUserProfileAsync([Summary("nazwa użytkownika")]SocketGuildUser user = null)
         {
             var usr = user ?? Context.User as SocketGuildUser;
             if (usr == null) return;
@@ -348,7 +348,7 @@ namespace Sanakan.Modules
         [Command("styl")]
         [Alias("style")]
         [Summary("zmienia styl profilu (koszt 3000 SC/1000 TC)")]
-        [Remarks("1 https://i.imgur.com/8UK8eby.png"), RequireCommandChannel]
+        [Remarks("1 https://i.imgur.com/8UK8eby.png sc"), RequireCommandChannel]
         public async Task ChangeStyleAsync([Summary("typ stylu (statystyki(0), obrazek(1), brzydkie(2), karcianka(3))")]ProfileType type, [Summary("bezpośredni adres do obrazka gdy wybrany styl 1 lub 2 (325 x 272)")]string imgUrl = null, [Summary("waluta (SC/TC)")]SCurrency currency = SCurrency.Sc)
         {
             var scCost = 3000;
@@ -411,7 +411,7 @@ namespace Sanakan.Modules
         [Command("tło")]
         [Alias("tlo", "bg", "background")]
         [Summary("zmienia obrazek tła profilu (koszt 5000 SC/2500 TC)")]
-        [Remarks("https://i.imgur.com/LjVxiv8.png"), RequireCommandChannel]
+        [Remarks("https://i.imgur.com/LjVxiv8.png sc"), RequireCommandChannel]
         public async Task ChangeBackgroundAsync([Summary("bezpośredni adres do obrazka (450 x 145)")]string imgUrl, [Summary("waluta (SC/TC)")]SCurrency currency = SCurrency.Sc)
         {
             var tcCost = 2500;
@@ -515,7 +515,7 @@ namespace Sanakan.Modules
         [Command("kolor")]
         [Alias("color", "colour")]
         [Summary("zmienia kolor użytkownika (koszt TC/SC na liście)")]
-        [Remarks("pink"), RequireCommandChannel]
+        [Remarks("pink sc"), RequireCommandChannel]
         public async Task ToggleColorRoleAsync([Summary("kolor z listy (none - lista)")]FColor color = FColor.None, [Summary("waluta (SC/TC)")]SCurrency currency = SCurrency.Tc)
         {
             var user = Context.User as SocketGuildUser;

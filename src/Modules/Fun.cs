@@ -80,8 +80,8 @@ namespace Sanakan.Modules
         [Command("daleko jeszcze?", RunMode = RunMode.Async)]
         [Alias("ilejeszczemuszespamicbydostactenzasranypakiet", "ijmsbdtzp", "how much to next packet")]
         [Summary("wyświetla ile pozostało znaków do otrzymania pakietu")]
-        [Remarks("karna"), RequireAnyCommandChannelOrLevel(60), DelayNextUseBy(120, DelayNextUseBy.ResType.Nothing)]
-        public async Task ShowHowMuchToPacketAsync([Summary("użytkownik(opcjonalne)")]SocketUser user = null)
+        [Remarks("Karna"), RequireAnyCommandChannelOrLevel(60), DelayNextUseBy(120, DelayNextUseBy.ResType.Nothing)]
+        public async Task ShowHowMuchToPacketAsync([Summary("nazwa użytkownika")]SocketUser user = null)
         {
             var usr = user ?? Context.User;
             if (usr == null) return;
@@ -329,7 +329,7 @@ namespace Sanakan.Modules
         [Alias("donatesc")]
         [Summary("dajesz datek innemu graczowi w postaci SC obarczony 40% podatkiem")]
         [Remarks("Karna 2000"), RequireCommandChannel]
-        public async Task GiveUserScAsync([Summary("użytkownik")]SocketGuildUser user, [Summary("liczba SC (min. 1000)")]uint value)
+        public async Task GiveUserScAsync([Summary("nazwa użytkownika")]SocketGuildUser user, [Summary("liczba SC (min. 1000)")]uint value)
         {
             if (value < 1000)
             {
