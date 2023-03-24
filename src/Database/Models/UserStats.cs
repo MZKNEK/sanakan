@@ -34,6 +34,9 @@ namespace Sanakan.Database.Models
         public long WastedPuzzlesOnCookies { get; set; }
         public long WastedPuzzlesOnCards { get; set; }
 
+        public long LotteryTicketsUsed { get; set; }
+        public long ReversedKarmaCnt { get; set; }
+
         public ulong UserId { get; set; }
         [JsonIgnore]
         public virtual User User { get; set; }

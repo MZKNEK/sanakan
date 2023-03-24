@@ -2078,6 +2078,7 @@ namespace Sanakan.Modules
                 else ticket.Count--;
 
                 var rewardInfo = Lottery.GetAndApplyReward(bUser);
+                bUser.Stats.LotteryTicketsUsed++;
 
                 await db.SaveChangesAsync();
 

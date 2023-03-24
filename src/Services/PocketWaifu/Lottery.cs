@@ -197,6 +197,7 @@ namespace Sanakan.Services.PocketWaifu
 
                 case LotteryReward.ReverseKarma:
                 {
+                    user.Stats.ReversedKarmaCnt++;
                     user.GameDeck.Karma = -user.GameDeck.Karma;
                     foreach (var card in user.GameDeck.Cards.Where(x => x.Dere == Dere.Yami || x.Dere == Dere.Raito))
                     {
