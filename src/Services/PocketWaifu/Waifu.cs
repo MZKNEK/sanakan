@@ -2406,7 +2406,7 @@ namespace Sanakan.Services.PocketWaifu
 
         public async Task<ExecutionResult> CheckWishlistAndSendToDMAsync(Database.DatabaseContext db, IUser discordUser, User user,
             bool hideFavs = true, bool hideBlocked = true, bool hideNames = true, bool showShindenUrl = false, SocketGuild guild = null,
-            bool showContentOnly = false, ulong? filrerById = null)
+            bool showContentOnly = false, ulong? filrerById = null, bool ignoreTitles = false)
         {
             if (user == null)
                 return ExecutionResult.FromError("ta osoba nie ma profilu bota.");
@@ -2417,8 +2417,8 @@ namespace Sanakan.Services.PocketWaifu
             if (user.GameDeck.Wishes.Count < 1)
                 return ExecutionResult.FromError("ta osoba nie ma nic na liście życzeń.");
 
+            var t = ignoreTitles ? new List<ulong>() : user.GameDeck.GetTitlesWishList();
             var p = user.GameDeck.GetCharactersWishList();
-            var t = user.GameDeck.GetTitlesWishList();
             var c = user.GameDeck.GetCardsWishList();
 
             if (showContentOnly)

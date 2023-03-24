@@ -1625,7 +1625,7 @@ namespace Sanakan.Modules
         }
 
         [Command("na życzeniach", RunMode = RunMode.Async)]
-        [Alias("on wishlist", "na zyczeniach")]
+        [Alias("on wishlist", "na zyczeniach", "onwl")]
         [Summary("wyświetla obiekty dodane do listy życzeń")]
         [Remarks("Karna"), RequireWaifuCommandChannel]
         public async Task ShowThingsOnWishlistAsync([Summary("nazwa użytkownika")] SocketGuildUser usr = null)
@@ -1643,7 +1643,7 @@ namespace Sanakan.Modules
         }
 
         [Command("życzenia", RunMode = RunMode.Async)]
-        [Alias("wishlist", "zyczenia")]
+        [Alias("wishlist", "zyczenia", "wl")]
         [Summary("wyświetla liste życzeń użytkownika")]
         [Remarks("Dzida tak tak tak tak"), RequireWaifuCommandChannel]
         public async Task ShowWishlistAsync([Summary("nazwa użytkownika")] SocketGuildUser usr = null,
@@ -1666,7 +1666,7 @@ namespace Sanakan.Modules
         }
 
         [Command("życzenia filtr", RunMode = RunMode.Async)]
-        [Alias("wishlistf", "zyczeniaf")]
+        [Alias("wishlistf", "zyczeniaf", "wlf")]
         [Summary("wyświetla pozycje z listy życzeń użytkownika zawierające tylko drugiego użytkownika")]
         [Remarks("Dzida Kokos tak tak tak tak"), RequireWaifuCommandChannel]
         public async Task ShowFilteredWishlistAsync([Summary("użytkownik do którego należy lista życzeń")] SocketGuildUser user,
@@ -1674,7 +1674,8 @@ namespace Sanakan.Modules
             [Summary("czy pokazać ulubione, domyślnie ukryte, wymaga podania użytkownika? (true/false)")] bool showFavs = false,
             [Summary("czy pokazać niewymienialne, domyślnie pokazane? (true/false)")] bool showBlocked = true,
             [Summary("czy zamienić oznaczenia na nicki?")] bool showNames = false,
-            [Summary("czy dodać linki do profili?")] bool showShindenUrl = false)
+            [Summary("czy dodać linki do profili?")] bool showShindenUrl = false,
+            [Summary("czy ignorować anime?")] bool ignoreTitles = false)
         {
             var userf = (usrf ?? Context.User) as SocketGuildUser;
             if (userf == null) return;
@@ -1690,7 +1691,7 @@ namespace Sanakan.Modules
                 var bUser = await db.GetCachedFullUserAsync(user.Id);
                 ulong searchId = userf.Id == Context.Client.CurrentUser.Id ? 1 : userf.Id;
                 var res = await _waifu.CheckWishlistAndSendToDMAsync(db, Context.User, bUser, !showFavs,
-                    !showBlocked, !showNames, showShindenUrl, Context.Guild, false, searchId);
+                    !showBlocked, !showNames, showShindenUrl, Context.Guild, false, searchId, ignoreTitles);
 
                 await ReplyAsync("", embed: res.ToEmbedMessage($"{Context.User.Mention} ").Build());
             }
@@ -2454,7 +2455,9 @@ namespace Sanakan.Modules
         [Alias("favs")]
         [Summary("pozwala wyszukać użytkowników posiadających karty z naszej listy ulubionych postaci")]
         [Remarks("tak tak"), RequireWaifuCommandChannel]
-        public async Task SearchCharacterCardsFromFavListAsync([Summary("czy pokazać ulubione domyślnie ukryte? (true/false)")] bool showFavs = false, [Summary("czy zamienić oznaczenia na nicki?")] bool showNames = false)
+        public async Task SearchCharacterCardsFromFavListAsync([Summary("czy pokazać ulubione domyślnie ukryte? (true/false)")] bool showFavs = false,
+            [Summary("czy zamienić oznaczenia na nicki?")] bool showNames = false,
+            [Summary("czy dodać linki do profili?")] bool showShindenUrl = false)
         {
             using (var db = new Database.DatabaseContext(Config))
             {
@@ -2472,7 +2475,7 @@ namespace Sanakan.Modules
                     return;
                 }
 
-                var cards = await db.Cards.AsQueryable().Include(x => x.TagList).Include(x => x.GameDeck).AsSplitQuery()
+                var cards = await db.Cards.AsQueryable().Include(x => x.TagList).Include(x => x.GameDeck).ThenInclude(x => x.User).AsSplitQuery()
                     .Where(x => x.GameDeckId != user.Id && response.Body.Select(x => x.Id).Contains(x.Character)).AsNoTracking().ToListAsync();
 
                 if (!showFavs)
@@ -2484,7 +2487,7 @@ namespace Sanakan.Modules
                     return;
                 }
 
-                var embeds = await _waifu.GetWaifuFromCharacterTitleSearchResultAsync(cards, !showNames, Context.Guild);
+                var embeds = await _waifu.GetWaifuFromCharacterTitleSearchResultAsync(cards, !showNames, Context.Guild, showShindenUrl);
                 var res = await _helepr.SendEmbedsOnDMAsync(Context.User, embeds);
                 await ReplyAsync("", embed: res.ToEmbedMessage($"{Context.User.Mention} ").Build());
             }
