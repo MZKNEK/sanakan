@@ -1022,6 +1022,15 @@ namespace Sanakan.Extensions
             user.Stats.ReleasedCards += 1;
         }
 
+        public static void CalculateMarketValue(this Card card, double sourceCnt, double targetCnt)
+        {
+            card.MarketValue *= targetCnt / sourceCnt;
+            if (double.IsInfinity(card.MarketValue))
+                card.MarketValue = 0.001;
+
+            card.MarketValue = Math.Max(Math.Min(card.MarketValue, 10), 0.001);
+        }
+
         public static async Task ExchangeWithAsync(this Card card, (User user, int count, string tag)
             source, (User user, int count, string tag) target, DatabaseContext db)
         {
@@ -1032,11 +1041,7 @@ namespace Sanakan.Extensions
             if (card.ExpCnt > 1)
                 card.ExpCnt *= 0.3;
 
-            card.MarketValue *= target.count / source.count;
-            if (double.IsInfinity(card.MarketValue))
-                card.MarketValue = 0.001;
-
-            card.MarketValue = Math.Max(Math.Min(card.MarketValue, 10), 0.001);
+            card.CalculateMarketValue(source.count, target.count);
 
             if (card.FirstIdOwner == 0)
                 card.FirstIdOwner = source.user.Id;
