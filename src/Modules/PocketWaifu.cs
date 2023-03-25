@@ -1645,7 +1645,7 @@ namespace Sanakan.Modules
         [Command("życzenia", RunMode = RunMode.Async)]
         [Alias("wishlist", "zyczenia", "wl")]
         [Summary("wyświetla liste życzeń użytkownika")]
-        [Remarks("Dzida tak tak tak tak"), RequireWaifuCommandChannel]
+        [Remarks("Dzida tak tak tak tak nie"), RequireWaifuCommandChannel]
         public async Task ShowWishlistAsync([Summary("nazwa użytkownika")] SocketGuildUser usr = null,
             [Summary("czy pokazać ulubione, domyślnie ukryte, wymaga podania użytkownika? (true/false)")] bool showFavs = false,
             [Summary("czy pokazać niewymienialne, domyślnie pokazane? (true/false)")] bool showBlocked = true,
@@ -1669,7 +1669,7 @@ namespace Sanakan.Modules
         [Command("życzenia filtr", RunMode = RunMode.Async)]
         [Alias("wishlistf", "zyczeniaf", "wlf")]
         [Summary("wyświetla pozycje z listy życzeń użytkownika zawierające tylko drugiego użytkownika")]
-        [Remarks("Dzida Kokos tak tak tak tak"), RequireWaifuCommandChannel]
+        [Remarks("Dzida Kokos tak tak tak tak nie"), RequireWaifuCommandChannel]
         public async Task ShowFilteredWishlistAsync([Summary("użytkownik do którego należy lista życzeń")] SocketGuildUser user,
             [Summary("użytkownik po którym odbywa się filtracja")] SocketGuildUser usrf = null,
             [Summary("czy pokazać ulubione, domyślnie ukryte, wymaga podania użytkownika? (true/false)")] bool showFavs = false,
