@@ -1650,7 +1650,8 @@ namespace Sanakan.Modules
             [Summary("czy pokazać ulubione, domyślnie ukryte, wymaga podania użytkownika? (true/false)")] bool showFavs = false,
             [Summary("czy pokazać niewymienialne, domyślnie pokazane? (true/false)")] bool showBlocked = true,
             [Summary("czy zamienić oznaczenia na nicki?")] bool showNames = false,
-            [Summary("czy dodać linki do profili?")] bool showShindenUrl = false)
+            [Summary("czy dodać linki do profili?")] bool showShindenUrl = false,
+            [Summary("czy ignorować anime?")] bool ignoreTitles = false)
         {
             var user = (usr ?? Context.User) as SocketGuildUser;
             if (user == null) return;
@@ -1659,7 +1660,7 @@ namespace Sanakan.Modules
             {
                 var bUser = await db.GetCachedFullUserAsync(user.Id);
                 var res = await _waifu.CheckWishlistAndSendToDMAsync(db, Context.User, bUser, !showFavs,
-                    !showBlocked, !showNames, showShindenUrl, Context.Guild);
+                    !showBlocked, !showNames, showShindenUrl, Context.Guild, false, 0, ignoreTitles);
 
                 await ReplyAsync("", embed: res.ToEmbedMessage($"{Context.User.Mention} ").Build());
             }
