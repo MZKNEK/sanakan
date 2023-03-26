@@ -30,17 +30,19 @@ namespace Sanakan.Modules
         private SessionManager _session;
         private Services.Helper _helepr;
         private IExecutor _executor;
+        private Lottery _lottery;
         private ILogger _logger;
         private IConfig _config;
         private Waifu _waifu;
 
-        public PocketWaifu(Waifu waifu, Sden.ShindenClient client, ILogger logger,
+        public PocketWaifu(Waifu waifu, Sden.ShindenClient client, ILogger logger, Lottery lottery,
             SessionManager session, IConfig config, IExecutor executor, Services.Helper helper)
         {
             _waifu = waifu;
             _logger = logger;
             _config = config;
             _helepr = helper;
+            _lottery = lottery;
             _shclient = client;
             _session = session;
             _executor = executor;
@@ -2078,7 +2080,7 @@ namespace Sanakan.Modules
                 }
                 else ticket.Count--;
 
-                var rewardInfo = Lottery.GetAndApplyReward(bUser);
+                var rewardInfo = await _lottery.GetAndApplyRewardAsync(bUser);
                 bUser.Stats.LotteryTicketsUsed++;
 
                 await db.SaveChangesAsync();

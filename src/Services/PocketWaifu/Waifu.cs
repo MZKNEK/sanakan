@@ -42,7 +42,7 @@ namespace Sanakan.Services.PocketWaifu
     public class Waifu
     {
         private const int DERE_TAB_SIZE = ((int)Dere.Yato) + 1;
-        private static CharacterIdUpdate CharId = new CharacterIdUpdate();
+        private static ListIdUpdate CharId = new ListIdUpdate();
 
         private static List<string> _qualityNamesList = Enum.GetNames(typeof(Quality)).ToList();
 

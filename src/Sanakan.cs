@@ -161,6 +161,7 @@ namespace Sanakan
                 .AddSingleton<Services.Fun>()
                 .AddSingleton<Services.Shinden>()
                 .AddSingleton<Services.LandManager>()
+                .AddSingleton<Services.PocketWaifu.Lottery>()
                 .BuildServiceProvider();
         }
     }

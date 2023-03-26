@@ -1,9 +1,12 @@
 #pragma warning disable 1591
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using Sanakan.Database.Models;
 using Sanakan.Extensions;
+using Shinden;
 
 namespace Sanakan.Services.PocketWaifu
 {
@@ -21,12 +24,7 @@ namespace Sanakan.Services.PocketWaifu
 
     public class Lottery
     {
-        private static List<ulong> _currentSeason = new List<ulong>
-        {
-            58089, 59500, 59830, 59686, 58578, 59213, 60965, 60289, 61318, 59274, 59368, 58928, 56308, 61773,
-            60753, 59114, 59479, 59440, 60234, 60551, 58776, 57629, 59551, 59559, 59895, 59783, 60425, 60286,
-            60251, 59302, 61380, 60742
-        };
+        private static ListIdUpdate _currentSeason = new ListIdUpdate();
 
         private static List<Quality> _figurePartsQuality = new List<(Quality, int)>
         {
@@ -109,6 +107,13 @@ namespace Sanakan.Services.PocketWaifu
             (300,   1),
         }.ToRealList();
 
+        private ShindenClient _shClient;
+
+        public Lottery(ShindenClient client)
+        {
+            _shClient = client;
+        }
+
         public static List<(Quality, float)> GetPartQualityChances() => _figurePartsQuality.GetChances();
         public static List<(ItemType, float)> GetPartNSChances() => _figurePartsNoSkeleton.GetChances();
         public static List<(LotteryReward, float)> GetRewardChances() => _rewardsPool.GetChances();
@@ -117,7 +122,27 @@ namespace Sanakan.Services.PocketWaifu
         public static List<(ItemType, float)> GetPillsChances() => _pills.GetChances();
         public static List<(ItemType, float)> GetFoodChances() => _food.GetChances();
 
-        public static string GetAndApplyReward(User user)
+        public async Task<ulong> GetRandomTitleAsync()
+        {
+            if (_currentSeason.IsNeedForUpdate())
+            {
+                try
+                {
+                    var res = await _shClient.Ex.GetAnimeFromSeasonAsync();
+                    if (!res.IsSuccessStatusCode()) return 0;
+
+                    _currentSeason.Update(res.Body);
+                }
+                catch (Exception)
+                {
+                    return 0;
+                }
+            }
+
+            return Fun.GetOneRandomFrom(_currentSeason.GetIds());
+        }
+
+        public async Task<string> GetAndApplyRewardAsync(User user)
         {
             var reward = Fun.GetOneRandomFrom(_rewardsPool);
             switch (reward)
@@ -131,7 +156,7 @@ namespace Sanakan.Services.PocketWaifu
 
                     var pack = new BoosterPack
                     {
-                        Title = reward == LotteryReward.CardsFromSeason ? Fun.GetOneRandomFrom(_currentSeason): 0,
+                        Title = reward == LotteryReward.CardsFromSeason ? await GetRandomTitleAsync() : 0,
                         CardCnt = reward == LotteryReward.CardsBig ? 20 : 2,
                         RarityExcludedFromPack = new List<RarityExcluded>(),
                         Characters = new List<BoosterPackCharacter>(),

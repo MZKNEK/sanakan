@@ -5,9 +5,9 @@ using System.Collections.Generic;
 
 namespace Sanakan.Services.PocketWaifu
 {
-    public class CharacterIdUpdate
+    public class ListIdUpdate
     {
-        public CharacterIdUpdate()
+        public ListIdUpdate()
         {
             EventEnabled = false;
             Ids = new List<ulong>();
