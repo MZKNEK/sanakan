@@ -219,13 +219,13 @@ namespace Sanakan.Services.PocketWaifu
                     {
                         embed.ImageUrl = await _waifu.GetSafariViewAsync(pokeImage, newCard, trashChannel);
                         embed.Description = $"{winner.Mention} zdobył na polowaniu i wsadził do klatki:\n"
-                                        + $"{newCard.GetString(false, false, true)}\n({newCard.Title})";
+                                        + $"{newCard.ToHeartWishlist()}{newCard.GetString(false, false, true)}\n({newCard.Title})";
                         await msg.ModifyAsync(x => x.Embed = embed.Build());
 
                         var privEmb = new EmbedBuilder()
                         {
                             Color = EMType.Info.Color(),
-                            Description = $"Na [polowaniu]({msg.GetJumpUrl()}) zdobyłeś: {newCard.GetString(false, false, true)}"
+                            Description = $"Na [polowaniu]({msg.GetJumpUrl()}) zdobyłeś: {newCard.ToHeartWishlist()}{newCard.GetString(false, false, true)}"
                         };
 
                         var priv = await winner.CreateDMChannelAsync();
