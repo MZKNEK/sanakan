@@ -293,6 +293,11 @@ namespace Sanakan.Modules
             }
         }
 
+        [Command("czas", RunMode = RunMode.Async)]
+        [Summary("wyświetla czas serwera")]
+        [Remarks("")]
+        public async Task ShowTimeAsync() => await ReplyAsync("", embed: $"{DateTime.Now}".ToEmbedMessage(EMType.Info).Build());
+
         [Command("rozdajm", RunMode = RunMode.Async)]
         [Summary("rozdaje karty kilka razy")]
         [Remarks("1 10 5 10")]
