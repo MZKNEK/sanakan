@@ -410,7 +410,7 @@ namespace Sanakan.Modules
                         var thisCard = loteryCards.FirstOrDefault(x => x.Id == wid);
                         if (thisCard.Rarity == Rarity.SSS) wonSSS = true;
 
-                        cardsIds.Add(thisCard.GetString(false, false, true));
+                        cardsIds.Add($"{thisCard.ToHeartWishlist()}{thisCard.GetString(false, false, true)}");
 
                         thisCard.Active = false;
                         thisCard.InCage = false;
