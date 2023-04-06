@@ -298,7 +298,7 @@ namespace Sanakan.Services.Session.Models
 
                                 await db.SaveChangesAsync();
 
-                                await msg.ModifyAsync(x => x.Embed = $"{Name}\n\n**Utworzono:** {newCard.GetString(false, false, true)}".ToEmbedMessage(EMType.Success).Build());
+                                await msg.ModifyAsync(x => x.Embed = $"{Name}\n\n**Utworzono:** {newCard.ToHeartWishlist()}{newCard.GetString(false, false, true)}".ToEmbedMessage(EMType.Success).Build());
                             }
                         }
                     }
