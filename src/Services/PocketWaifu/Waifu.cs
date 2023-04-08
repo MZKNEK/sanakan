@@ -2249,7 +2249,7 @@ namespace Sanakan.Services.PocketWaifu
 
                     int tidx = 0;
                     var urls = res.Body.Pictures.GetPicList();
-                    if (itemCnt == 0)
+                    if (string.Equals(detail, "lista", StringComparison.CurrentCultureIgnoreCase))
                         return ExecutionResult.FromSuccess("Obrazki: \n" + string.Join("\n", urls.Select(x => $"{++tidx}: {x}")), EMType.Info);
 
                     if (itemCnt > urls.Count)
