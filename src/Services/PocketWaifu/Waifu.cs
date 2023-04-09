@@ -2146,6 +2146,8 @@ namespace Sanakan.Services.PocketWaifu
                     return ExecutionResult.FromError($"tego przedmiotu ({item.Name}) nie powinno tutaj być!");
             }
 
+            item.Count -= itemCnt;
+
             return ExecutionResult.FromSuccess(str.ToString());
         }
 
