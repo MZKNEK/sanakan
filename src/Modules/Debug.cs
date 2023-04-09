@@ -431,7 +431,7 @@ namespace Sanakan.Modules
                     QueryCacheManager.ExpireTag(new string[] { $"user-{Context.User.Id}", "users", $"user-{id}" });
 
                     var msgType = wonSSS ? EMType.Warning : EMType.Success;
-                    var embToSend =  $"Loterie wygrywa {winner.Mention}.\nOtrzymuje: {string.Join("\n", cardsIds)}".TrimToLength(2000).ToEmbedMessage(msgType);
+                    var embToSend =  $"Loterie wygrywa {winner.Mention} i otrzymuje:\n\n{string.Join("\n", cardsIds)}".TrimToLength(2000).ToEmbedMessage(msgType);
                     if (progress > -1) embToSend.Footer = (new EmbedFooterBuilder()).WithText($"{progress+1}/{howMuch}");
                     msg = await ReplyAsync(embed: embToSend.Build());
 
