@@ -143,6 +143,8 @@ namespace Sanakan.Services.Session.Models
                     if (int.TryParse(itemCnt, out var count))
                     {
                         itemCount = count;
+                        if (itemCount < 1)
+                            itemCount = 1;
                     }
                 }
             }
