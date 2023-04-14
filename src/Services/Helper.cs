@@ -176,6 +176,7 @@ namespace Sanakan.Services
                     Prefix = GetModGroupPrefix(module, false),
                     Commands = module.Commands
                         .Where(x => !string.IsNullOrEmpty(x.Name))
+                        .OrderBy(x => x.Name)
                         .Select(x => $"`{x.Name}`")
                         .ToList()
                 };
@@ -195,6 +196,7 @@ namespace Sanakan.Services
                 Prefix = module.Name,
                 Commands = module.Commands
                     .Where(cmd => !string.IsNullOrEmpty(cmd.Name))
+                    .OrderBy(x => x.Name)
                     .Select(cmd => $"`{cmd.Name}`")
                     .Distinct()
                     .ToList()
