@@ -1,5 +1,12 @@
 ﻿#pragma warning disable 1591
 
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
+using System.Linq;
+using System.Net.Http;
+using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
@@ -13,13 +20,6 @@ using Sanakan.Services.Commands;
 using Sanakan.Services.Executor;
 using Sanakan.Services.PocketWaifu;
 using Shinden;
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.IO;
-using System.Linq;
-using System.Net.Http;
-using System.Threading.Tasks;
 using Z.EntityFramework.Plus;
 
 namespace Sanakan.Modules
@@ -1028,10 +1028,10 @@ namespace Sanakan.Modules
         [Summary("generuje kartę i daje ją użytkownikowi")]
         [Remarks("Sniku 54861")]
         public async Task GenerateCardAsync([Summary("nazwa użytkownika")]SocketGuildUser user, [Summary("id postaci na shinden (nie podanie - losowo)")]ulong id = 0,
-            [Summary("jakość karty (nie podanie - losowo)")]Rarity rarity = Rarity.E)
+            [Summary("ranga karty (nie podanie - losowo)")]Rarity rarity = Rarity.E, [Summary("jakość karty (nadpisuje range)")]Quality quality = Quality.Broken)
         {
             var character = (id == 0) ? await _waifu.GetRandomCharacterAsync() : (await _shClient.GetCharacterInfoAsync(id)).Body;
-            var card = (rarity == Rarity.E) ? _waifu.GenerateNewCard(user, character) : _waifu.GenerateNewCard(user, character, rarity);
+            var card = (rarity == Rarity.E && quality == Quality.Broken) ? _waifu.GenerateNewCard(user, character) : _waifu.GenerateNewCard(user, character, rarity, quality);
 
             card.Source = CardSource.GodIntervention;
             using (var db = new Database.DatabaseContext(Config))

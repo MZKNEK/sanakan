@@ -65,6 +65,18 @@ namespace Sanakan.Services.PocketWaifu
             { "mega",       Quality.Omega   },
         };
 
+        private static List<Dere> _dereToRandomize = new List<Dere>
+        {
+            Dere.Tsundere,
+            Dere.Kamidere,
+            Dere.Deredere,
+            Dere.Yandere,
+            Dere.Dandere,
+            Dere.Kuudere,
+            Dere.Mayadere,
+            Dere.Bodere
+        };
+
         private static double[,] _dereDmgRelation = new double[DERE_TAB_SIZE, DERE_TAB_SIZE]
         {
             //Tsundere, Kamidere, Deredere, Yandere, Dandere, Kuudere, Mayadere, Bodere, Yami, Raito, Yato
@@ -813,20 +825,7 @@ namespace Sanakan.Services.PocketWaifu
             => Fun.GetRandomValue(Math.Min(card.Rarity.GetHealthMin(), card.GetHealthMax() + 1),
                 Math.Max(card.Rarity.GetHealthMin(), card.GetHealthMax() + 1));
 
-        static public Dere RandomizeDere()
-        {
-            return Fun.GetOneRandomFrom(new List<Dere>()
-            {
-                Dere.Tsundere,
-                Dere.Kamidere,
-                Dere.Deredere,
-                Dere.Yandere,
-                Dere.Dandere,
-                Dere.Kuudere,
-                Dere.Mayadere,
-                Dere.Bodere
-            });
-        }
+        static public Dere RandomizeDere() => Fun.GetOneRandomFrom(_dereToRandomize);
 
         static public Card GenerateNewCard(string name, string title, string image, Rarity rarity)
         {
@@ -881,6 +880,17 @@ namespace Sanakan.Services.PocketWaifu
             card.Health = RandomizeHealth(card);
 
             _ = card.CalculateCardPower();
+
+            return card;
+        }
+
+        public Card GenerateNewCard(IUser user, ICharacterInfo character, Rarity rarity, Quality quality)
+        {
+            var card = GenerateNewCard(user, character, (quality != Quality.Broken) ? Rarity.SSS : rarity);
+
+            card.FromFigure = quality != Quality.Broken;
+            card.QualityOnStart = quality;
+            card.Quality = quality;
 
             return card;
         }
