@@ -2443,7 +2443,7 @@ namespace Sanakan.Modules
                     return;
                 }
 
-                var msgs = await _waifu.GetWaifuFromCharacterSearchResult($"[**{response.Body}**]({response.Body.CharacterUrl}) posiadają:", cards, !showNames, Context.Guild, showShindenUrl);
+                var msgs = await _waifu.GetWaifuFromCharacterSearchResult($"[{response.Body}]({response.Body.CharacterUrl}) posiadają:", cards, !showNames, Context.Guild, showShindenUrl);
                 if (msgs.Count == 1)
                 {
                     await ReplyAsync("", embed: msgs.First());

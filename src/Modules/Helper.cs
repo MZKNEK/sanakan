@@ -149,10 +149,10 @@ namespace Sanakan.Modules
                 .AppendLine($"**Sanakan ({typeof(Sanakan).Assembly.GetName().Version})**:")
                 .AppendLine($"**Czas działania**: `{DateTime.Now - proc.StartTime:d'd 'hh\\:mm\\:ss}`")
                 .AppendLine()
-                .Append("[**Strona**](https://sanakan.pl/) | ")
-                .Append("[**GitHub**](https://github.com/MZKNEK/sanakan.git) | ")
-                .Append("[**Wiki**](https://wiki.sanakan.pl/) | ")
-                .Append("[**Karty**](https://waifu.sanakan.pl/#/)");
+                .Append("[Strona](https://sanakan.pl/) | ")
+                .Append("[GitHub](https://github.com/MZKNEK/sanakan.git) | ")
+                .Append("[Wiki](https://wiki.sanakan.pl/) | ")
+                .Append("[Karty](https://waifu.sanakan.pl/#/)");
 
                 await ReplyAsync("", embed: info.ToString().ToEmbedMessage(EMType.Bot).Build());
             }
