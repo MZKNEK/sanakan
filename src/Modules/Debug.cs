@@ -1282,7 +1282,7 @@ namespace Sanakan.Modules
 
                     _spawn.ForceSpawnCard(sch, tch, mention);
 
-                    await ReplyAsync("", embed: new EmbedBuilder().WithImageUrl("https://i.imgur.com/jjX9xxu.gif").WithColor(EMType.Bot.Color()).Build());
+                    await ReplyAsync("", embed: new EmbedBuilder().WithImageUrl("https://sanakan.pl/i/gif/seal_ok.gif").WithColor(EMType.Bot.Color()).Build());
                     return;
                 }
                 await ReplyAsync("", embed: "Serwer nie jest poprawnie skonfigurowany.".ToEmbedMessage(EMType.Error).Build());

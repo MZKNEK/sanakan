@@ -1918,7 +1918,7 @@ namespace Sanakan.Modules
         [Command("szczegół strony")]
         [Alias("szczegoł strony", "szczegol strony", "szczegól strony", "site fg", "site foreground")]
         [Summary("zmienia obrazek nakładany na tło profilu na stronie waifu (500 TC)")]
-        [Remarks("https://i.imgur.com/eQoaZid.png"), RequireWaifuCommandChannel]
+        [Remarks("https://sanakan.pl/i/example_foreground.png"), RequireWaifuCommandChannel]
         public async Task ChangeWaifuSiteForegroundAsync([Summary("bezpośredni adres do obrazka")] string imgUrl)
         {
             var tcCost = 500;
@@ -1950,7 +1950,7 @@ namespace Sanakan.Modules
         [Command("tło strony")]
         [Alias("tlo strony", "site bg", "site background")]
         [Summary("zmienia obrazek tła profilu na stronie waifu (2000 TC)")]
-        [Remarks("https://i.imgur.com/wmDhRWd.jpeg"), RequireWaifuCommandChannel]
+        [Remarks("https://sanakan.pl/i/example_background.jpg"), RequireWaifuCommandChannel]
         public async Task ChangeWaifuSiteBackgroundAsync([Summary("bezpośredni adres do obrazka")] string imgUrl)
         {
             var tcCost = 2000;

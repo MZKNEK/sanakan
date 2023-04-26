@@ -46,7 +46,7 @@ namespace Sanakan.Preconditions
                 }
             }
 
-            return PreconditionResult.FromError($"|IMAGE|https://i.imgur.com/YEuawi2.gif|Wymagany poziom do użycia polecenia: {_level}!");
+            return PreconditionResult.FromError($"|IMAGE|https://sanakan.pl/i/gif/small.gif|Wymagany poziom do użycia polecenia: {_level}!");
         }
     }
 }

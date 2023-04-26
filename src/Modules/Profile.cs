@@ -348,7 +348,7 @@ namespace Sanakan.Modules
         [Command("styl")]
         [Alias("style")]
         [Summary("zmienia styl profilu (koszt 3000 SC/1000 TC)")]
-        [Remarks("1 https://i.imgur.com/8UK8eby.png sc"), RequireCommandChannel]
+        [Remarks("1 https://sanakan.pl/i/example_style_1.png sc"), RequireCommandChannel]
         public async Task ChangeStyleAsync([Summary("typ stylu (statystyki(0), obrazek(1), brzydkie(2), karcianka(3))")]ProfileType type, [Summary("bezpośredni adres do obrazka gdy wybrany styl 1 lub 2 (325 x 272)")]string imgUrl = null, [Summary("waluta (SC/TC)")]SCurrency currency = SCurrency.Sc)
         {
             var scCost = 3000;
@@ -411,7 +411,7 @@ namespace Sanakan.Modules
         [Command("tło")]
         [Alias("tlo", "bg", "background")]
         [Summary("zmienia obrazek tła profilu (koszt 5000 SC/2500 TC)")]
-        [Remarks("https://i.imgur.com/LjVxiv8.png sc"), RequireCommandChannel]
+        [Remarks("https://sanakan.pl/i/example_profile_bg.png sc"), RequireCommandChannel]
         public async Task ChangeBackgroundAsync([Summary("bezpośredni adres do obrazka (450 x 145)")]string imgUrl, [Summary("waluta (SC/TC)")]SCurrency currency = SCurrency.Sc)
         {
             var tcCost = 2500;

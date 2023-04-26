@@ -42,18 +42,18 @@ namespace Sanakan.Services
 
         private static List<string> _botReactions = new List<string>()
         {
-            "https://i.imgur.com/TCkjWz1.gif",
-            "https://i.imgur.com/BLHMLQ8.gif",
-            "https://i.imgur.com/X4UdBxZ.gif",
-            "https://i.imgur.com/d9BDTmh.gif",
-            "https://i.imgur.com/uzVz5EX.gif",
-            "https://i.imgur.com/e8TGJAN.gif",
-            "https://i.imgur.com/UbZXkYl.gif",
-            "https://i.imgur.com/DCTKfiK.gif",
-            "https://i.imgur.com/tUjmshl.gif",
-            "https://i.imgur.com/NFbvUls.gif",
-            "https://i.imgur.com/SGIRLxB.gif",
-            "https://i.imgur.com/9kylf9Z.gif"
+            "https://sanakan.pl/i/gif/mute_1.gif",
+            "https://sanakan.pl/i/gif/mute_2.gif",
+            "https://sanakan.pl/i/gif/mute_3.gif",
+            "https://sanakan.pl/i/gif/mute_4.gif",
+            "https://sanakan.pl/i/gif/mute_5.gif",
+            "https://sanakan.pl/i/gif/mute_6.gif",
+            "https://sanakan.pl/i/gif/mute_7.gif",
+            "https://sanakan.pl/i/gif/mute_8.gif",
+            "https://sanakan.pl/i/gif/mute_9.gif",
+            "https://sanakan.pl/i/gif/mute_10.gif",
+            "https://sanakan.pl/i/gif/mute_11.gif",
+            "https://sanakan.pl/i/gif/mute_12.gif"
         };
 
         public static int GetRandomValue(int max) => GetRandomValue(0, max);
