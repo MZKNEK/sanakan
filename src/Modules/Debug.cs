@@ -261,6 +261,33 @@ namespace Sanakan.Modules
             }
         }
 
+        [Command("rcu")]
+        [Summary("podmienia custom url na kartach")]
+        [Remarks("Sniku https://i.imgur.com/ https://sanakan.pl/i/ss/")]
+        public async Task UpdateCardsCustomImageUrlAsync([Summary("nazwa użytkownika")]SocketGuildUser user, [Summary("stary url")]string oldUrl, [Summary("nowy url")]string newUrl)
+        {
+            using (var db = new Database.DatabaseContext(Config))
+            {
+                var cards = db.Cards.AsQueryable().AsSplitQuery().Where(x => x.GameDeckId == user.Id && x.CustomImage != null && x.CustomImage.StartsWith(oldUrl)).ToList();
+                if (cards.Count < 1)
+                {
+                    await ReplyAsync("", embed: $"{Context.User.Mention} nie odnaleziono kart.".ToEmbedMessage(EMType.Error).Build());
+                    return;
+                }
+
+                foreach (var card in cards)
+                {
+                    card.CustomImage = card.CustomImage.Replace(oldUrl, newUrl);
+                }
+
+                await db.SaveChangesAsync();
+
+                QueryCacheManager.ExpireTag(new string[] { $"users" });
+
+                await ReplyAsync("", embed: $"Zaktualizowano {cards.Count} kart.".ToEmbedMessage(EMType.Success).Build());
+            }
+        }
+
         [Command("cup")]
         [Summary("wymusza update na kartach")]
         [Remarks("3123 121")]
@@ -1286,6 +1313,24 @@ namespace Sanakan.Modules
                     return;
                 }
                 await ReplyAsync("", embed: "Serwer nie jest poprawnie skonfigurowany.".ToEmbedMessage(EMType.Error).Build());
+            }
+        }
+
+        [Command("sci", RunMode = RunMode.Async)]
+        [Summary("wypisuje url do obrazka karty")]
+        [Remarks("")]
+        public async Task ShowCustomImageUrl([Summary("WIDs")]params ulong[] ids)
+        {
+            using (var db = new Database.DatabaseContext(Config))
+            {
+                var cards = db.Cards.AsQueryable().AsSplitQuery().Where(x => ids.Any(c => c == x.Id)).ToList();
+                if (cards.Count < 1)
+                {
+                    await ReplyAsync("", embed: $"{Context.User.Mention} nie odnaleziono kart.".ToEmbedMessage(EMType.Error).Build());
+                    return;
+                }
+
+                await ReplyAsync("", embed: $"{string.Join("\n", cards.Select(x => $"{x.Id}: {x.CustomImage ?? "---"}"))}".ToEmbedMessage(EMType.Info).Build());
             }
         }
 
