@@ -45,7 +45,7 @@ namespace Sanakan.Services
                     result.Status = EStatus.Ok;
                     result.MessageType = EMType.Success;
                     result.Message = "Adres jest poprawny!";
-                };
+                }
                 break;
 
                 case ImageUrlCheckResult.WrongExtension:

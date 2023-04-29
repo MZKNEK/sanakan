@@ -14,7 +14,7 @@ namespace Sanakan.Extensions
     public enum ImageUrlCheckResult
     {
         Ok, NotUrl, WrongExtension, BlacklistedHost
-    };
+    }
 
     public static class StringExtension
     {
