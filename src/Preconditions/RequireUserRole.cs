@@ -31,7 +31,7 @@ namespace Sanakan.Preconditions
                 if (user.Roles.Any(x => x.Id == role.Id)) return PreconditionResult.FromSuccess();
                 if (user.GuildPermissions.Administrator) return PreconditionResult.FromSuccess();
 
-                return PreconditionResult.FromError($"Do użycia tego polecenia wymagana jest rola {role.Mention}");
+                return PreconditionResult.FromError($"Do użycia tego polecenia wymagana jest rola {role.Mention} {gConfig.NoUserRoleHelp}");
             }
         }
     }

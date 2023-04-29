@@ -28,6 +28,7 @@ namespace Sanakan.Database.Models.Configuration
         public bool Supervision { get; set; }
         public bool ChaosMode { get; set; }
         public string Prefix { get; set; }
+        public string NoUserRoleHelp { get; set; }
 
         public virtual Waifu WaifuConfig { get; set; }
 
