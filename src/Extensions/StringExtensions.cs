@@ -11,6 +11,11 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Sanakan.Extensions
 {
+    public enum ImageUrlCheckResult
+    {
+        Ok, NotUrl, WrongExtension, BlacklistedHost
+    };
+
     public static class StringExtension
     {
         private static readonly string[] _bbCodes =
@@ -19,6 +24,17 @@ namespace Sanakan.Extensions
             "left", "font", "align", "mail", "img", "small", "sub", "sup", "p", "gvideo", "bull",
             "copyright", "registered", "tm", "indent", "iframe", "url", "youtube", "i", "b", "s",
             "u", "color", "size"
+        };
+
+        private static readonly string[] _imgExtensions = { ".png", ".jpg", ".jpeg", ".gif", ".webp" };
+
+        private static readonly string[] _imageServices =
+        {
+            "sanakan.pl",
+            "i.imgur.com",
+            "cdn.discordapp.com",
+            "dl.dropboxusercontent.com",
+            "cdn.imgchest.com"
         };
 
         public static EmbedBuilder ToEmbedMessage(this string message, EMType type = EMType.Neutral, bool icon = false)
@@ -52,22 +68,28 @@ namespace Sanakan.Extensions
         public static List<string> GetURLs(this string s) =>
             new Regex(@"(http|ftp|https):\/\/([\w\-_]+(?:(?:\.[\w\-_]+)+))([\w\-\.,@?^=%&amp;:/~\+#]*[\w\-\@?^=%&amp;/~\+#])?", RegexOptions.Compiled | RegexOptions.IgnoreCase).Matches(s).Select(x => x.Value).ToList();
 
-        public static bool IsURLToImage(this string s)
+        public static ImageUrlCheckResult CheckImageUrl(this string s, bool checkHosts = true)
         {
-            var http = s.Split(':').FirstOrDefault();
-            bool hasHttp = !(http == null || (!http.Equals("http") && !http.Equals("https")));
-
-            bool hasRightExt = false;
-            var ext = s.Split('.').LastOrDefault();
-            var extensions = new string[] { "png", "jpg", "jpeg", "gif"};
-            if (ext != null)
+            try
             {
-                ext = ext.ToLower();
-                hasRightExt = extensions.Any(x => x.Equals(ext));
-            }
+                var url = new Uri(s);
+                var ext = System.IO.Path.GetExtension(url.AbsoluteUri);
 
-            return hasHttp && hasRightExt;
+                if (string.IsNullOrEmpty(ext) || !_imgExtensions.Any(x => x.Equals(ext, StringComparison.CurrentCultureIgnoreCase)))
+                    return ImageUrlCheckResult.WrongExtension;
+
+                if (checkHosts && !_imageServices.Any(x => x.Equals(url.Host, StringComparison.CurrentCultureIgnoreCase)))
+                    return ImageUrlCheckResult.BlacklistedHost;
+
+                return ImageUrlCheckResult.Ok;
+            }
+            catch (Exception)
+            {
+                return ImageUrlCheckResult.NotUrl;
+            }
         }
+
+        public static bool IsUrlToImage(this string s) => s.CheckImageUrl(false) == ImageUrlCheckResult.Ok;
 
         public static string GetQMarksIfEmpty(this string s)
         {

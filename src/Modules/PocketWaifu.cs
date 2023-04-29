@@ -1932,7 +1932,7 @@ namespace Sanakan.Modules
                     return;
                 }
 
-                if (!imgUrl.IsURLToImage())
+                if (imgUrl.CheckImageUrl() != ImageUrlCheckResult.Ok)
                 {
                     await ReplyAsync("", embed: "Nie wykryto obrazka! Upewnij się, że podałeś poprawny adres!".ToEmbedMessage(EMType.Error).Build());
                     return;
@@ -1964,7 +1964,7 @@ namespace Sanakan.Modules
                     return;
                 }
 
-                if (!imgUrl.IsURLToImage())
+                if (imgUrl.CheckImageUrl() != ImageUrlCheckResult.Ok)
                 {
                     await ReplyAsync("", embed: "Nie wykryto obrazka! Upewnij się, że podałeś poprawny adres!".ToEmbedMessage(EMType.Error).Build());
                     return;

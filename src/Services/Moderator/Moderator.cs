@@ -466,7 +466,7 @@ namespace Sanakan.Services
             {
                 var first = message.Attachments.First();
 
-                if (first.Url.IsURLToImage())
+                if (first.Url.IsUrlToImage())
                     image = first.Url;
             }
 

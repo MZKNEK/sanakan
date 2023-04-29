@@ -321,10 +321,10 @@ namespace Sanakan.Services
 
         public async Task<SaveResult> SaveProfileImageAsync(string imgUrl, string path, int width = 0, int height = 0, bool streach = false)
         {
-            if (imgUrl == null)
+            if (string.IsNullOrEmpty(imgUrl))
                 return SaveResult.BadUrl;
 
-            if (!imgUrl.IsURLToImage())
+            if (!imgUrl.IsUrlToImage())
                 return SaveResult.BadUrl;
 
             try

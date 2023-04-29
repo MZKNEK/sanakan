@@ -30,6 +30,41 @@ namespace Sanakan.Services
             Status = EStatus.Ok,
         };
 
+        static public ExecutionResult From(ImageUrlCheckResult res)
+        {
+            var result = new ExecutionResult
+            {
+                MessageType = EMType.Error,
+                Status = EStatus.Error
+            };
+
+            switch(res)
+            {
+                case ImageUrlCheckResult.Ok:
+                {
+                    result.Status = EStatus.Ok;
+                    result.MessageType = EMType.Success;
+                    result.Message = "Adres jest poprawny!";
+                };
+                break;
+
+                case ImageUrlCheckResult.WrongExtension:
+                    result.Message = "Nie wykryto obrazka! Adres ma niedozwolone rozszerzenie!";
+                break;
+
+                case ImageUrlCheckResult.BlacklistedHost:
+                    result.Message = "Host podanego adresu nie znajduje się na białej liście!";
+                break;
+
+                default:
+                case ImageUrlCheckResult.NotUrl:
+                    result.Message = "Nie wykryto obrazka! Upewnij się, że podałeś poprawny adres!";
+                break;
+            }
+
+            return result;
+        }
+
         public bool IsOk() => Status == EStatus.Ok;
         public bool IsError() => Status == EStatus.Error;
 

@@ -2275,8 +2275,9 @@ namespace Sanakan.Services.PocketWaifu
                     break;
 
                 case ItemType.SetCustomImage:
-                    if (!detail.IsURLToImage())
-                        return ExecutionResult.FromError("Nie wykryto obrazka! Upewnij się, że podałeś poprawny adres!");
+                    var imgRes = detail.CheckImageUrl();
+                    if (imgRes != ImageUrlCheckResult.Ok)
+                        return ExecutionResult.From(imgRes);
 
                     if (card.Image == null && !card.FromFigure)
                         return ExecutionResult.FromError("Aby ustawić własny obrazek, karta musi posiadać wcześniej ustawiony główny (na stronie)!");
@@ -2286,8 +2287,9 @@ namespace Sanakan.Services.PocketWaifu
                     break;
 
                 case ItemType.SetCustomBorder:
-                    if (!detail.IsURLToImage())
-                        return ExecutionResult.FromError("Nie wykryto obrazka! Upewnij się, że podałeś poprawny adres!");
+                    var imgRes2 = detail.CheckImageUrl();
+                    if (imgRes2 != ImageUrlCheckResult.Ok)
+                        return ExecutionResult.From(imgRes2);
 
                     if (card.Image == null)
                         return ExecutionResult.FromError("Aby ustawić ramkę, karta musi posiadać wcześniej ustawiony obrazek na stronie!");
