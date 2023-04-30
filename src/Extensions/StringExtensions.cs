@@ -68,7 +68,9 @@ namespace Sanakan.Extensions
         public static List<string> GetURLs(this string s) =>
             new Regex(@"(http|ftp|https):\/\/([\w\-_]+(?:(?:\.[\w\-_]+)+))([\w\-\.,@?^=%&amp;:/~\+#]*[\w\-\@?^=%&amp;/~\+#])?", RegexOptions.Compiled | RegexOptions.IgnoreCase).Matches(s).Select(x => x.Value).ToList();
 
-        public static ImageUrlCheckResult CheckImageUrl(this string s, bool checkHosts = true)
+        public static ImageUrlCheckResult CheckImageUrl(this string s) => s.CheckImageUrl(_imageServices);
+
+        public static ImageUrlCheckResult CheckImageUrl(this string s, string[] allowedHosts)
         {
             try
             {
@@ -78,7 +80,7 @@ namespace Sanakan.Extensions
                 if (string.IsNullOrEmpty(ext) || !_imgExtensions.Any(x => x.Equals(ext, StringComparison.CurrentCultureIgnoreCase)))
                     return ImageUrlCheckResult.WrongExtension;
 
-                if (checkHosts && !_imageServices.Any(x => x.Equals(url.Host, StringComparison.CurrentCultureIgnoreCase)))
+                if (allowedHosts != null && !allowedHosts.Any(x => x.Equals(url.Host, StringComparison.CurrentCultureIgnoreCase)))
                     return ImageUrlCheckResult.BlacklistedHost;
 
                 return ImageUrlCheckResult.Ok;
@@ -89,7 +91,7 @@ namespace Sanakan.Extensions
             }
         }
 
-        public static bool IsUrlToImage(this string s) => s.CheckImageUrl(false) == ImageUrlCheckResult.Ok;
+        public static bool IsUrlToImage(this string s) => s.CheckImageUrl(null) == ImageUrlCheckResult.Ok;
 
         public static string GetQMarksIfEmpty(this string s)
         {

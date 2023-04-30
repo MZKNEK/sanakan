@@ -6,6 +6,7 @@ using Discord.WebSocket;
 using Sanakan.Config;
 using Sanakan.Extensions;
 using Sanakan.Preconditions;
+using Sanakan.Services;
 using Sanakan.Services.Commands;
 using Sanakan.Services.Session;
 using Sanakan.Services.Session.Models;
@@ -19,19 +20,25 @@ namespace Sanakan.Modules
     [Name("Ogólne")]
     public class Helper : SanakanModuleBase<SocketCommandContext>
     {
+        private readonly DateTime _fixImageThreshold = new DateTime(2023, 5, 15);
+        private readonly string[] _allowedHostToFix = { "i.imgur.com" };
+
+        private Services.PocketWaifu.Waifu _waifu;
         private Services.Moderator _moderation;
         private SessionManager _session;
         private Services.Helper _helper;
         private ILogger _logger;
         private IConfig _config;
 
-        public Helper(Services.Helper helper, Services.Moderator moderation, SessionManager session, ILogger logger, IConfig config)
+        public Helper(Services.Helper helper, Services.Moderator moderation, SessionManager session,
+            ILogger logger, IConfig config, Services.PocketWaifu.Waifu  waifu)
         {
             _moderation = moderation;
             _session = session;
             _helper = helper;
             _logger = logger;
             _config = config;
+            _waifu = waifu;
         }
 
         [Command("pomoc", RunMode = RunMode.Async)]
@@ -155,6 +162,71 @@ namespace Sanakan.Modules
                 .Append("[Karty](https://waifu.sanakan.pl/#/)");
 
                 await ReplyAsync("", embed: info.ToString().ToEmbedMessage(EMType.Bot).Build());
+            }
+        }
+
+        [Command("napraw obrazek")]
+        [Alias("fix image")]
+        [Summary("naprawia wygaśnięty obrazek karty ustawiony przed 15.05.2023")]
+        [Remarks("123123"), RequireWaifuCommandChannel]
+        public async Task FixCardCustomImage([Summary("WID")] ulong wid, [Summary("bezpośredni adres do obrazka")] string url)
+        {
+            var imgRes = url.CheckImageUrl();
+            if (imgRes != ImageUrlCheckResult.Ok)
+            {
+                await ReplyAsync("", embed: ExecutionResult.From(imgRes).ToEmbedMessage($"{Context.User.Mention} ").Build());
+                return;
+            }
+
+            using (var db = new Database.DatabaseContext(Config))
+            {
+                var botuser = await db.GetUserOrCreateAsync(Context.User.Id);
+                var thisCard = botuser.GetCard(wid);
+                if (thisCard == null)
+                {
+                    await ReplyAsync("", embed: $"{Context.User.Mention} nie odnaleziono karty.".ToEmbedMessage(EMType.Error).Build());
+                    return;
+                }
+
+                if (thisCard.CustomImage == null)
+                {
+                    await ReplyAsync("", embed: $"{Context.User.Mention} ta karta nie ma ustawionego niestandardowego obrazka.".ToEmbedMessage(EMType.Error).Build());
+                    return;
+                }
+
+                if (thisCard.CustomImageDate >= _fixImageThreshold)
+                {
+                    await ReplyAsync("", embed: $"{Context.User.Mention} ta karta nie spełnia wymogów polecenia niestandardowego obrazka. Obrazek został ustawiony za późno.".ToEmbedMessage(EMType.Error).Build());
+                    return;
+                }
+
+                if (thisCard.CustomImage.CheckImageUrl(_allowedHostToFix) != ImageUrlCheckResult.Ok)
+                {
+                    await ReplyAsync("", embed: $"{Context.User.Mention} ta karta nie spełnia wymogów polecenia niestandardowego obrazka. Hosting to nie imgur.".ToEmbedMessage(EMType.Error).Build());
+                    return;
+                }
+
+                if (thisCard.FixedCustomImageCnt > 0)
+                {
+                    await ReplyAsync("", embed: $"{Context.User.Mention} na tej karcie już raz został naprawiony niestandardowy obrazek.".ToEmbedMessage(EMType.Error).Build());
+                    return;
+                }
+
+                if ((await _helper.GetResponseFromUrl(thisCard.CustomImage)) == System.Net.HttpStatusCode.OK)
+                {
+                    await ReplyAsync("", embed: $"{Context.User.Mention} obecnie ustawiony adres do niestandardowego obrazka jest poprawny.".ToEmbedMessage(EMType.Error).Build());
+                    return;
+                }
+
+                thisCard.CustomImage = url;
+                thisCard.FixedCustomImageCnt++;
+                thisCard.CustomImageDate = DateTime.Now;
+
+                await db.SaveChangesAsync();
+
+                _waifu.DeleteCardImageIfExist(thisCard);
+
+                await ReplyAsync("", embed: $"{Context.User.Mention} obrazek został poprawiony!".ToEmbedMessage(EMType.Success).Build());
             }
         }
 

@@ -3,6 +3,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
+using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
 using Discord;
@@ -16,6 +18,7 @@ namespace Sanakan.Services
     public class Helper
     {
         private IConfig _config;
+        private HttpClient _httpClient;
 
         public IEnumerable<ModuleInfo> PublicModulesInfo { get; set; }
         public Dictionary<string, ModuleInfo> PrivateModulesInfo { get; set; }
@@ -23,10 +26,14 @@ namespace Sanakan.Services
         public Helper(IConfig config)
         {
             _config = config;
+            _httpClient = new HttpClient(new HttpClientHandler { AllowAutoRedirect = false });
 
             PublicModulesInfo = new List<ModuleInfo>();
             PrivateModulesInfo = new Dictionary<string, ModuleInfo>();
         }
+
+        public async Task<HttpStatusCode> GetResponseFromUrl(string url)
+            => (await _httpClient.GetAsync(url)).StatusCode;
 
         public string GivePublicHelp()
         {

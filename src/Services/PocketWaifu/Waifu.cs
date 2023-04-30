@@ -836,6 +836,7 @@ namespace Sanakan.Services.PocketWaifu
                 Attack = RandomizeAttack(rarity),
                 Expedition = CardExpedition.None,
                 QualityOnStart = Quality.Broken,
+                CustomImageDate = DateTime.Now,
                 ExpeditionDate = DateTime.Now,
                 PAS = PreAssembledFigure.None,
                 TagList = new List<CardTag>(),
@@ -843,6 +844,7 @@ namespace Sanakan.Services.PocketWaifu
                 StarStyle = StarStyle.Full,
                 Source = CardSource.Other,
                 Quality = Quality.Broken,
+                FixedCustomImageCnt = 0,
                 Title = title ?? "????",
                 Dere = RandomizeDere(),
                 Curse = CardCurse.None,
@@ -2283,6 +2285,7 @@ namespace Sanakan.Services.PocketWaifu
                         return ExecutionResult.FromError("Aby ustawić własny obrazek, karta musi posiadać wcześniej ustawiony główny (na stronie)!");
 
                     card.CustomImage = detail;
+                    card.CustomImageDate = DateTime.Now;
                     consumeItem = !card.FromFigure;
                     break;
 

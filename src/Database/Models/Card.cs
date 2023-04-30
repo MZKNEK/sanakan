@@ -83,6 +83,8 @@ namespace Sanakan.Database.Models
         public CardCurse Curse { get; set; }
         public double CardPower { get; set; }
         public int WhoWantsCount {get; set; }
+        public DateTime CustomImageDate { get; set; }
+        public int FixedCustomImageCnt { get; set; }
 
         public int EnhanceCnt { get; set; }
         public bool FromFigure { get; set; }
