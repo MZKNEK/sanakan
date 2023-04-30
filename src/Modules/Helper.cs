@@ -167,7 +167,7 @@ namespace Sanakan.Modules
 
         [Command("napraw obrazek")]
         [Alias("fix image")]
-        [Summary("naprawia wygaśnięty obrazek karty ustawiony przed 15.05.2023")]
+        [Summary("naprawia wygasły obrazek karty ustawiony przed 15.05.2023")]
         [Remarks("123123"), RequireWaifuCommandChannel]
         public async Task FixCardCustomImage([Summary("WID")] ulong wid, [Summary("bezpośredni adres do obrazka")] string url)
         {
@@ -196,13 +196,13 @@ namespace Sanakan.Modules
 
                 if (thisCard.CustomImageDate >= _fixImageThreshold)
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} ta karta nie spełnia wymogów polecenia niestandardowego obrazka. Obrazek został ustawiony za późno.".ToEmbedMessage(EMType.Error).Build());
+                    await ReplyAsync("", embed: $"{Context.User.Mention} ta karta nie spełnia wymogów polecenia. Obrazek został ustawiony za późno.".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
                 if (thisCard.CustomImage.CheckImageUrl(_allowedHostToFix) != ImageUrlCheckResult.Ok)
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} ta karta nie spełnia wymogów polecenia niestandardowego obrazka. Hosting to nie imgur.".ToEmbedMessage(EMType.Error).Build());
+                    await ReplyAsync("", embed: $"{Context.User.Mention} ta karta nie spełnia wymogów polecenia. Hosting to nie imgur.".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
