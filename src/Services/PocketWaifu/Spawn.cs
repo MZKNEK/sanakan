@@ -187,6 +187,8 @@ namespace Sanakan.Services.PocketWaifu
         {
             return new Executable("safari", new Task<Task>(async () =>
             {
+                bool isOnUserWishlist = false;
+
                 using (var db = new Database.DatabaseContext(_config))
                 {
                     var botUser = await db.GetUserOrCreateAsync(winner.Id);
@@ -197,7 +199,7 @@ namespace Sanakan.Services.PocketWaifu
                     var wwc = await db.WishlistCountData.AsQueryable().FirstOrDefaultAsync(x => x.Id == newCard.Character);
                     newCard.WhoWantsCount = wwc?.Count ?? 0;
 
-                    botUser.GameDeck.RemoveCharacterFromWishList(newCard.Character, db);
+                    isOnUserWishlist = botUser.GameDeck.RemoveCharacterFromWishList(newCard.Character, db);
                     botUser.GameDeck.Cards.Add(newCard);
 
                     QueryCacheManager.ExpireTag(new string[] { $"user-{botUser.Id}", "users" });
@@ -219,13 +221,13 @@ namespace Sanakan.Services.PocketWaifu
                     {
                         embed.ImageUrl = await _waifu.GetSafariViewAsync(pokeImage, newCard, trashChannel);
                         embed.Description = $"{winner.Mention} zdobył na polowaniu i wsadził do klatki:\n"
-                                        + $"{newCard.ToHeartWishlist()}{newCard.GetString(false, false, true)}\n({newCard.Title})";
+                                        + $"{newCard.ToHeartWishlist(isOnUserWishlist)}{newCard.GetString(false, false, true)}\n({newCard.Title})";
                         await msg.ModifyAsync(x => x.Embed = embed.Build());
 
                         var privEmb = new EmbedBuilder()
                         {
                             Color = EMType.Info.Color(),
-                            Description = $"Na [polowaniu]({msg.GetJumpUrl()}) zdobyłeś: {newCard.ToHeartWishlist()}{newCard.GetString(false, false, true)}"
+                            Description = $"Na [polowaniu]({msg.GetJumpUrl()}) zdobyłeś: {newCard.ToHeartWishlist(isOnUserWishlist)}{newCard.GetString(false, false, true)}"
                         };
 
                         var priv = await winner.CreateDMChannelAsync();

@@ -1103,7 +1103,7 @@ namespace Sanakan.Modules
                 var card = _waifu.GenerateNewCard(Context.User, character,
                     new List<Rarity>() { Rarity.SS, Rarity.S, Rarity.A });
 
-                bool wasOnWishlist = await botuser.GameDeck.RemoveCharacterFromWishListAsync(card.Character, db);
+                bool isOnUserWishlist = await botuser.GameDeck.RemoveCharacterFromWishListAsync(card.Character, db);
                 card.Affection += botuser.GameDeck.AffectionFromKarma();
                 card.Source = CardSource.Daily;
 
@@ -1114,7 +1114,7 @@ namespace Sanakan.Modules
 
                 await db.SaveChangesAsync();
 
-                var wishStr = card.ToHeartWishlist(wasOnWishlist);
+                var wishStr = card.ToHeartWishlist(isOnUserWishlist);
 
                 QueryCacheManager.ExpireTag(new string[] { $"user-{botuser.Id}", "users" });
 

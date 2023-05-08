@@ -270,6 +270,7 @@ namespace Sanakan.Services.Session.Models
                             var user = await db.GetUserOrCreateAsync(P1.User.Id);
                             var newCard = _waifu.GenerateNewCard(P1.User, character, GetRarityFromValue(GetValue()));
 
+                            bool isOnUserWishlist = await user.GameDeck.RemoveCharacterFromWishListAsync(newCard.Character, db);
                             var wwc = await db.WishlistCountData.AsQueryable().FirstOrDefaultAsync(x => x.Id == newCard.Character);
                             newCard.WhoWantsCount = wwc?.Count ?? 0;
 
@@ -300,7 +301,7 @@ namespace Sanakan.Services.Session.Models
 
                                 await db.SaveChangesAsync();
 
-                                await msg.ModifyAsync(x => x.Embed = $"{Name}\n\n**Utworzono:** {newCard.ToHeartWishlist()}{newCard.GetString(false, false, true)}".ToEmbedMessage(EMType.Success).Build());
+                                await msg.ModifyAsync(x => x.Embed = $"{Name}\n\n**Utworzono:** {newCard.ToHeartWishlist(isOnUserWishlist)}{newCard.GetString(false, false, true)}".ToEmbedMessage(EMType.Success).Build());
                             }
                         }
                     }
