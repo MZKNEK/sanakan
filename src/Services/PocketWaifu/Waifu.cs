@@ -1287,6 +1287,11 @@ namespace Sanakan.Services.PocketWaifu
             return characaters;
         }
 
+        public async Task<List<ulong>> GetCharactersFromSeasonAsync()
+        {
+            return await _shClient.Ex.GetAnimeFromSeasonAsync(true);
+        }
+
         public async Task<ITitleInfo> GetInfoFromTitleAsync(ulong titleId)
         {
             ITitleInfo info = null;
@@ -1324,6 +1329,15 @@ namespace Sanakan.Services.PocketWaifu
                         if (id.HasValue)
                         {
                             chara = await GetCharacterInfoAsync(id.Value);
+                        }
+                    }
+                    else if (pack.CardSourceFromPack == CardSource.Lottery)
+                    {
+                        var charsInSeason = await GetCharactersFromSeasonAsync();
+                        if (!charsInSeason.IsNullOrEmpty())
+                        {
+                            var charId = Fun.GetOneRandomFrom(charsInSeason);
+                            chara = await GetCharacterInfoAsync(charId);
                         }
                     }
                 }
