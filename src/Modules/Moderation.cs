@@ -1606,7 +1606,7 @@ namespace Sanakan.Modules
 
         [Command("check")]
         [Summary("sprawdza użytkownika")]
-        [Remarks("Karna"), RequireAnyAdminRole]
+        [Remarks("Karna"), RequireAnyAdminOrModRole]
         public async Task CheckUserAsync([Summary("użytkownik")] SocketGuildUser user)
         {
             string report = "**Globalki:** ✅\n\n";
