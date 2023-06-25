@@ -2086,7 +2086,7 @@ namespace Sanakan.Services.PocketWaifu
                 itemCnt = 1;
 
             var item = itemList[itemNumber - 1];
-            if (item.Count < itemCnt)
+            if (item.Count < itemCnt && item.Type != ItemType.ChangeCardImage)
                 return ExecutionResult.FromError("nie posiadasz tylu sztuk tego przedmiotu.");
 
             if (!item.Type.CanBeUsedWithNormalUseCommand())
