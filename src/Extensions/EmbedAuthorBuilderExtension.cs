@@ -22,9 +22,9 @@ namespace Sanakan.Extensions
         {
             if (user is SocketGuildUser guildUser)
             {
-                return guildUser.Nickname ?? user.Username;
+                return (guildUser.Nickname ?? user.GlobalName) ?? user.Username;
             }
-            return user.Username;
+            return user.GlobalName ?? user.Username;
         }
 
         public static EmbedBuilder WithUser(this EmbedBuilder builder, IUser user, bool includeId = false)
@@ -40,11 +40,11 @@ namespace Sanakan.Extensions
 
             if (user is SocketGuildUser sUser)
             {
-                builder.WithName($"{sUser.Nickname ?? sUser.Username}{id}");
+                builder.WithName($"{(sUser.Nickname ?? sUser.GlobalName) ?? sUser.Username}{id}");
             }
             else
             {
-                builder.WithName($"{user.Username}{id}");
+                builder.WithName($"{user.GlobalName ?? user.Username}{id}");
             }
 
             return builder.WithIconUrl(user.GetUserOrDefaultAvatarUrl(true));

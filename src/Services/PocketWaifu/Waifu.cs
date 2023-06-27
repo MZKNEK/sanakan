@@ -1516,7 +1516,7 @@ namespace Sanakan.Services.PocketWaifu
                 imageUrl = await GetWaifuProfileImageAsync(card, trashChannel);
             }
 
-            string ownerString = ((owner as SocketGuildUser)?.Nickname ?? owner?.Username) ?? "????";
+            string ownerString = (((owner as SocketGuildUser)?.Nickname ?? owner?.GlobalName) ?? owner?.Username) ?? "????";
 
             return new EmbedBuilder
             {
@@ -1540,7 +1540,7 @@ namespace Sanakan.Services.PocketWaifu
             }
 
             string imgUrls = $"[_obrazek_]({imageUrl})\n[_możesz zmienić obrazek tutaj_]({card.GetCharacterUrl()}/edit_crossroad)";
-            string ownerString = ((owner as SocketGuildUser)?.Nickname ?? owner?.Username) ?? "????";
+            string ownerString = (((owner as SocketGuildUser)?.Nickname ?? owner?.GlobalName) ?? owner?.Username) ?? "????";
 
             return new EmbedBuilder
             {

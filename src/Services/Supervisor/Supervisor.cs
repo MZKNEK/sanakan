@@ -341,7 +341,7 @@ namespace Sanakan.Services.Supervisor
                     foreach(var toBan in susspect.GetUsersToBan())
                     {
                         var thisUser = user.Guild.GetUser(toBan);
-                        await user.Guild.AddBanAsync(thisUser, 1, $"Supervisor(ban) raid/scam [{user.Nickname}]");
+                        await user.Guild.AddBanAsync(thisUser, 1, $"Supervisor(ban) raid/scam [{user.GetUserNickInGuild()}]");
                     }
                 }
             }

@@ -1456,7 +1456,7 @@ namespace Sanakan.Modules
                         {
                             if (response.Body?.Points != null)
                             {
-                                if (response.Body.Points.Any(x => x.Name.Equals(user.Nickname ?? user.Username)))
+                                if (response.Body.Points.Any(x => x.Name.Equals((user.Nickname ?? user.GlobalName) ?? user.Username)))
                                     card.Affection += 0.8;
                             }
                         }

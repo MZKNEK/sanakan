@@ -127,7 +127,7 @@ namespace Sanakan.Modules
 
                 var usr = Context.User as SocketGuildUser;
                 var info = _moderation.GetBanUserInfo(user, duration, reason);
-                await _moderation.NotifyAboutPenaltyAsync(user, notifChannel, info, $"{usr.Nickname ?? usr.Username}");
+                await _moderation.NotifyAboutPenaltyAsync(user, notifChannel, info, $"{usr.GetUserNickInGuild()}");
                 await _moderation.BanUserAsync(user, info, db);
             }
 
@@ -211,7 +211,7 @@ namespace Sanakan.Modules
 
                 var usr = Context.User as SocketGuildUser;
                 var info = await _moderation.MuteUserAsync(user, muteRole, null, userRole, db, duration, reason);
-                await _moderation.NotifyAboutPenaltyAsync(user, notifChannel, info, $"{usr.Nickname ?? usr.Username}");
+                await _moderation.NotifyAboutPenaltyAsync(user, notifChannel, info, $"{usr.GetUserNickInGuild()}");
             }
 
             await ReplyAsync("", embed: $"{user.Mention} został wyciszony.".ToEmbedMessage(EMType.Success)
@@ -259,7 +259,7 @@ namespace Sanakan.Modules
 
                 var usr = Context.User as SocketGuildUser;
                 var info = await _moderation.MuteUserAsync(user, muteRole, muteModRole, userRole, db, duration, reason, config.ModeratorRoles);
-                await _moderation.NotifyAboutPenaltyAsync(user, notifChannel, info, $"{usr.Nickname ?? usr.Username}");
+                await _moderation.NotifyAboutPenaltyAsync(user, notifChannel, info, $"{usr.GetUserNickInGuild()}");
             }
 
             await ReplyAsync("", embed: $"{user.Mention} został wyciszony.".ToEmbedMessage(EMType.Success)
@@ -1660,7 +1660,7 @@ namespace Sanakan.Modules
                     {
                         if (user.Roles.Contains(userRole))
                         {
-                            var realNick = user.Nickname ?? user.Username;
+                            var realNick = (user.Nickname ?? user.GlobalName) ?? user.Username;
                             if (duser.Shinden != 0)
                             {
                                 var res = await _shClient.User.GetAsync(duser.Shinden);
@@ -1847,7 +1847,7 @@ namespace Sanakan.Modules
                 }
 
                 var usr = Context.User as SocketGuildUser;
-                string byWho = $"{usr.Nickname ?? usr.Username}";
+                string byWho = usr.GetUserNickInGuild();
 
                 if (warning)
                 {

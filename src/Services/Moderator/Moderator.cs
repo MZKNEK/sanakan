@@ -479,7 +479,7 @@ namespace Sanakan.Services
                 Footer = new EmbedFooterBuilder
                 {
                     IconUrl = who.GetUserOrDefaultAvatarUrl(),
-                    Text = $"Przez: {who.Nickname ?? who.Username}",
+                    Text = $"Przez: {who.GetUserNickInGuild()}",
                 },
             }.Build();
         }

@@ -264,6 +264,12 @@ namespace Sanakan.Services
                 },
                 new EmbedFieldBuilder
                 {
+                    Name = "Global",
+                    Value = user.GlobalName ?? "Brak",
+                    IsInline = true
+                },
+                new EmbedFieldBuilder
+                {
                     Name = "Pseudo",
                     Value = user.Nickname ?? "Brak",
                     IsInline = true

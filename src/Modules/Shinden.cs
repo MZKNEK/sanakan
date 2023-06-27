@@ -195,7 +195,7 @@ namespace Sanakan.Modules
             if (response.IsSuccessStatusCode())
             {
                 var user = response.Body;
-                var userNameInDiscord = (Context.User as SocketGuildUser).Nickname ?? Context.User.Username;
+                var userNameInDiscord = Context.User.GetUserNickInGuild();
 
                 if (!user.Name.Equals(userNameInDiscord))
                 {
