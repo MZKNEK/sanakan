@@ -2082,11 +2082,11 @@ namespace Sanakan.Services.PocketWaifu
             if (itemNumber <= 0 || itemNumber > itemList.Count)
                 return ExecutionResult.FromError("nie masz aż tylu przedmiotów.");
 
-            if (!int.TryParse(detail, out var itemCnt) || itemCnt < 1)
+            var item = itemList[itemNumber - 1];
+            if (!int.TryParse(detail, out var itemCnt) || itemCnt < 1 || item.Type == ItemType.ChangeCardImage)
                 itemCnt = 1;
 
-            var item = itemList[itemNumber - 1];
-            if (item.Count < itemCnt && item.Type != ItemType.ChangeCardImage)
+            if (item.Count < itemCnt)
                 return ExecutionResult.FromError("nie posiadasz tylu sztuk tego przedmiotu.");
 
             if (!item.Type.CanBeUsedWithNormalUseCommand())
@@ -2280,10 +2280,10 @@ namespace Sanakan.Services.PocketWaifu
                     if (string.Equals(detail, "lista", StringComparison.CurrentCultureIgnoreCase))
                         return ExecutionResult.FromSuccess("Obrazki: \n" + string.Join("\n", urls.Select(x => $"{++tidx}: {x}")), EMType.Info);
 
-                    if (itemCnt > urls.Count)
+                    if (!int.TryParse(detail, out var urlIdx) || urlIdx <= 0 || urlIdx > urls.Count)
                         return ExecutionResult.FromError("Nie odnaleziono obrazka!");
 
-                    var turl = urls[itemCnt - 1];
+                    var turl = urls[urlIdx - 1];
                     if (card.GetImage() == turl)
                         return ExecutionResult.FromError("Taki obrazek jest już ustawiony!");
 
