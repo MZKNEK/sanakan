@@ -162,6 +162,7 @@ namespace Sanakan
                 .AddSingleton<Services.Shinden>()
                 .AddSingleton<Services.LandManager>()
                 .AddSingleton<Services.PocketWaifu.Lottery>()
+                .AddSingleton<Services.Time.ISystemTime>(new Services.Time.SystemTime())
                 .BuildServiceProvider();
         }
     }

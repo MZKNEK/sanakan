@@ -19,6 +19,7 @@ using Sanakan.Preconditions;
 using Sanakan.Services.Commands;
 using Sanakan.Services.Executor;
 using Sanakan.Services.PocketWaifu;
+using Sanakan.Services.Time;
 using Shinden;
 using Z.EntityFramework.Plus;
 
@@ -30,12 +31,14 @@ namespace Sanakan.Modules
         private Waifu _waifu;
         private Spawn _spawn;
         private IConfig _config;
+        private ISystemTime _time;
         private IExecutor _executor;
         private Services.Helper _helper;
         private ShindenClient _shClient;
         private Services.ImageProcessing _img;
 
-        public Debug(Waifu waifu, ShindenClient shClient, Services.Helper helper, Services.ImageProcessing img, IConfig config, IExecutor executor, Spawn spawn)
+        public Debug(Waifu waifu, ShindenClient shClient, Services.Helper helper, Services.ImageProcessing img,
+            IConfig config, IExecutor executor, Spawn spawn, ISystemTime time)
         {
             _shClient = shClient;
             _executor = executor;
@@ -43,6 +46,7 @@ namespace Sanakan.Modules
             _config = config;
             _waifu = waifu;
             _spawn = spawn;
+            _time = time;
             _img = img;
         }
 
@@ -323,7 +327,7 @@ namespace Sanakan.Modules
         [Command("czas", RunMode = RunMode.Async)]
         [Summary("wyświetla czas serwera")]
         [Remarks("")]
-        public async Task ShowTimeAsync() => await ReplyAsync("", embed: $"{DateTime.Now}".ToEmbedMessage(EMType.Info).Build());
+        public async Task ShowTimeAsync() => await ReplyAsync("", embed: $"{_time.Now()}".ToEmbedMessage(EMType.Info).Build());
 
         [Command("rozdajm", RunMode = RunMode.Async)]
         [Summary("rozdaje karty kilka razy")]
@@ -343,7 +347,7 @@ namespace Sanakan.Modules
         public async Task GiveawayCardsAsync([Summary("id użytkownika")]ulong id, [Summary("liczba kart")]uint count, [Summary("czas w minutach")]uint duration = 5, [Summary("które wywołanie?"), Hidden]long progress = -1, [Summary("ile wywołań?"), Hidden]uint howMuch = 0)
         {
             var emote = Emote.Parse("<a:success:467493778752798730>");
-            var time = DateTime.Now.AddMinutes(duration);
+            var time = _time.Now().AddMinutes(duration);
 
             var mention = "";
             using (var db = new Database.DatabaseContext(_config))
@@ -1251,7 +1255,7 @@ namespace Sanakan.Modules
 
                 if (time > 0)
                 {
-                    thisCard.ExpeditionDate = DateTime.Now.AddMinutes(-time);
+                    thisCard.ExpeditionDate = _time.Now().AddMinutes(-time);
                 }
 
                 thisCard.Expedition = expedition;
