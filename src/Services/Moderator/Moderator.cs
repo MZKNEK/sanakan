@@ -13,6 +13,7 @@ using Sanakan.Config;
 using Sanakan.Database.Models.Configuration;
 using Sanakan.Database.Models.Management;
 using Sanakan.Extensions;
+using Sanakan.Services.Time;
 using Shinden.Logger;
 using Z.EntityFramework.Plus;
 
@@ -37,15 +38,17 @@ namespace Sanakan.Services
     public class Moderator
     {
         private DiscordSocketClient _client;
+        private ISystemTime _time;
         private ILogger _logger;
         private IConfig _config;
         private Timer _timer;
 
-        public Moderator(ILogger logger, IConfig config, DiscordSocketClient client)
+        public Moderator(ILogger logger, IConfig config, DiscordSocketClient client, ISystemTime time)
         {
             _logger = logger;
             _config = config;
             _client = client;
+            _time = time;
 
             _timer = new Timer(async _ =>
             {
@@ -80,7 +83,7 @@ namespace Sanakan.Services
                     var muteModRole = guild.GetRole(gconfig.ModMuteRole);
                     var muteRole = guild.GetRole(gconfig.MuteRole);
 
-                    if ((DateTime.Now - penalty.StartDate).TotalHours < penalty.DurationInHours)
+                    if ((_time.Now() - penalty.StartDate).TotalHours < penalty.DurationInHours)
                     {
                         var muteMod = penalty.Roles.Any(x => gconfig.ModeratorRoles.Any(z => z.Role == x.Role)) ? muteModRole : null;
                         _ = Task.Run(async () => { await MuteUserGuildAsync(user, muteRole, penalty.Roles, muteMod); });
@@ -95,7 +98,7 @@ namespace Sanakan.Services
                 }
                 else
                 {
-                    if ((DateTime.Now - penalty.StartDate).TotalHours > penalty.DurationInHours)
+                    if ((_time.Now() - penalty.StartDate).TotalHours > penalty.DurationInHours)
                     {
                         if (penalty.Type == PenaltyType.Ban)
                         {
@@ -569,7 +572,7 @@ namespace Sanakan.Services
                     Reason = reason,
                     Guild = user.Guild.Id,
                     Type = PenaltyType.Ban,
-                    StartDate = DateTime.Now,
+                    StartDate = _time.Now(),
                     DurationInHours = duration,
                     Roles = new List<OwnedRole>(),
                 },
@@ -619,7 +622,7 @@ namespace Sanakan.Services
                     Reason = reason,
                     Guild = user.Guild.Id,
                     Type = PenaltyType.Mute,
-                    StartDate = DateTime.Now,
+                    StartDate = _time.Now(),
                     DurationInHours = duration,
                     Roles = new List<OwnedRole>(),
                 },

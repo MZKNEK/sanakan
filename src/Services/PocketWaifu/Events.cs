@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using Sanakan.Database.Models;
 using Sanakan.Extensions;
+using Sanakan.Services.Time;
 using Shinden;
 
 namespace Sanakan.Services.PocketWaifu
@@ -202,10 +203,12 @@ namespace Sanakan.Services.PocketWaifu
         };
 
         private ShindenClient _shClient;
+        private ISystemTime _time;
 
-        public Events(ShindenClient client)
+        public Events(ShindenClient client, ISystemTime time)
         {
             _shClient = client;
+            _time = time;
         }
 
         private EventType CheckChanceBasedOnTime(CardExpedition expedition, Tuple<double, double> duration)
@@ -376,7 +379,7 @@ namespace Sanakan.Services.PocketWaifu
 
                 case EventType.Fight:
                 {
-                    var enemyCard = Waifu.GenerateNewCard("Miecu", "Bajeczka", null, Waifu.RandomizeRarity());
+                    var enemyCard = Waifu.GenerateNewCard("Miecu", "Bajeczka", null, Waifu.RandomizeRarity(), _time.Now());
                     var result = Waifu.GetFightWinner(card, enemyCard);
 
                     string resStr = result == FightWinner.Card1 ? "zwycięstwo!" : "przegrana!";

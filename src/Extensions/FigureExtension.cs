@@ -130,7 +130,7 @@ namespace Sanakan.Extensions
             return eQ;
         }
 
-        public static Card ToCard(this Figure figure)
+        public static Card ToCard(this Figure figure, DateTime creationTime)
         {
             var quality = figure.GetAvgQuality();
             var card = new Card
@@ -140,11 +140,11 @@ namespace Sanakan.Extensions
                 Expedition = CardExpedition.None,
                 LastIdOwner = figure.GameDeckId,
                 RestartCnt = figure.RestartCnt,
-                ExpeditionDate = DateTime.Now,
+                ExpeditionDate = creationTime,
                 PAS = PreAssembledFigure.None,
                 TagList = new List<CardTag>(),
                 Character = figure.Character,
-                CreationDate = DateTime.Now,
+                CreationDate = creationTime,
                 StarStyle = StarStyle.Full,
                 Source = CardSource.Figure,
                 RarityOnStart = Rarity.SSS,

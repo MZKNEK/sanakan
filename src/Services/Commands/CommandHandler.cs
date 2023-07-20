@@ -9,6 +9,7 @@ using Sanakan.Database.Models.Analytics;
 using Sanakan.Extensions;
 using Sanakan.Services.Executor;
 using Sanakan.Services.PocketWaifu;
+using Sanakan.Services.Time;
 using Shinden.Logger;
 using System;
 using System.Linq;
@@ -24,13 +25,16 @@ namespace Sanakan.Services.Commands
         private IServiceProvider _provider;
         private CommandService _cmd;
         private IExecutor _executor;
+        private ISystemTime _time;
         private ILogger _logger;
         private IConfig _config;
         private Helper _helper;
         private Timer _timer;
 
-        public CommandHandler(DiscordSocketClient client, IConfig config, ILogger logger, IExecutor executor)
+        public CommandHandler(DiscordSocketClient client, IConfig config, ILogger logger,
+            IExecutor executor, ISystemTime time)
         {
+            _time = time;
             _client = client;
             _config = config;
             _logger = logger;
@@ -48,7 +52,7 @@ namespace Sanakan.Services.Commands
                         {
                             dba.SystemData.Add(new SystemAnalytics
                             {
-                                MeasureDate = DateTime.Now,
+                                MeasureDate = _time.Now(),
                                 Value = proc.WorkingSet64 / 1048576,
                                 Type = SystemAnalyticsEventType.Ram,
                             });
@@ -136,7 +140,7 @@ namespace Sanakan.Services.Commands
                             CmdName = res.Command.Match.Command.Name,
                             GuildId = context.Guild?.Id ?? 0,
                             UserId = context.User.Id,
-                            Date = DateTime.Now,
+                            Date = _time.Now(),
                             CmdParams = param,
                         });
                         await dbc.SaveChangesAsync();

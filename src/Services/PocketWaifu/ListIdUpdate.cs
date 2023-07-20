@@ -26,14 +26,14 @@ namespace Sanakan.Services.PocketWaifu
         public void SetEventIds(List<ulong> ids)
             => EventIds = ids;
 
-        public void Update(List<ulong> ids)
+        public void Update(List<ulong> ids, DateTime updateTime)
         {
-            LastUpdate = DateTime.Now;
+            LastUpdate = updateTime;
             Ids = ids;
         }
 
-        public bool IsNeedForUpdate()
-            => (DateTime.Now - LastUpdate).TotalDays >= 1;
+        public bool IsNeedForUpdate(DateTime currentTime)
+            => (currentTime - LastUpdate).TotalDays >= 1;
 
         public bool EventEnabled { get; set; }
         public List<ulong> EventIds { get; private set; }

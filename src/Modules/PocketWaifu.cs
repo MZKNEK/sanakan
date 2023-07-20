@@ -17,6 +17,7 @@ using Sanakan.Services.Executor;
 using Sanakan.Services.PocketWaifu;
 using Sanakan.Services.Session;
 using Sanakan.Services.Session.Models;
+using Sanakan.Services.Time;
 using Shinden.Logger;
 using Z.EntityFramework.Plus;
 using Sden = Shinden;
@@ -30,14 +31,16 @@ namespace Sanakan.Modules
         private SessionManager _session;
         private Services.Helper _helepr;
         private IExecutor _executor;
+        private ISystemTime _time;
         private Lottery _lottery;
         private ILogger _logger;
         private IConfig _config;
         private Waifu _waifu;
 
         public PocketWaifu(Waifu waifu, Sden.ShindenClient client, ILogger logger, Lottery lottery,
-            SessionManager session, IConfig config, IExecutor executor, Services.Helper helper)
+            SessionManager session, IConfig config, IExecutor executor, Services.Helper helper, ISystemTime time)
         {
+            _time = time;
             _waifu = waifu;
             _logger = logger;
             _config = config;
@@ -284,10 +287,11 @@ namespace Sanakan.Modules
                     return;
                 }
 
-                var card = fig.ToCard();
+                var endTime = _time.Now();
+                var card = fig.ToCard(endTime);
                 deck.Cards.Add(card);
 
-                fig.CompletionDate = DateTime.Now;
+                fig.CompletionDate = endTime;
                 fig.IsComplete = true;
                 fig.IsFocus = false;
 
@@ -1091,7 +1095,7 @@ namespace Sanakan.Modules
                 }
                 mission.Count();
 
-                freeCard.EndsAt = DateTime.Now.AddHours(22);
+                freeCard.EndsAt = _time.Now().AddHours(22);
 
                 var character = await _waifu.GetRandomCharacterAsync();
                 if (character == null)
@@ -1205,7 +1209,7 @@ namespace Sanakan.Modules
                 if (card.CanGiveRing()) ++itemCnt;
                 if (botuser.GameDeck.CanCreateAngel()) ++itemCnt;
 
-                market.EndsAt = DateTime.Now.AddHours(nextMarket);
+                market.EndsAt = _time.Now().AddHours(nextMarket);
                 card.Affection += 0.1;
 
                 _ = card.CalculateCardPower();
@@ -1317,7 +1321,7 @@ namespace Sanakan.Modules
                 if (card.CanGiveBloodOrUpgradeToSSS()) ++itemCnt;
                 if (botuser.GameDeck.CanCreateDemon()) ++itemCnt;
 
-                market.EndsAt = DateTime.Now.AddHours(nextMarket);
+                market.EndsAt = _time.Now().AddHours(nextMarket);
                 card.Affection -= 0.2;
 
                 _ = card.CalculateCardPower();
@@ -1461,7 +1465,7 @@ namespace Sanakan.Modules
                             }
                         }
 
-                        var span = DateTime.Now - card.CreationDate;
+                        var span = _time.Now() - card.CreationDate;
                         if (span.TotalDays > 5) card.Affection -= (int)span.TotalDays * 0.1;
 
                         _ = card.CalculateCardPower();
@@ -1480,7 +1484,7 @@ namespace Sanakan.Modules
                     thisCard.InCage = false;
                     cntIn = 1;
 
-                    var span = DateTime.Now - thisCard.CreationDate;
+                    var span = _time.Now() - thisCard.CreationDate;
                     if (span.TotalDays > 5) thisCard.Affection -= (int)span.TotalDays * 0.1;
 
                     _ = thisCard.CalculateCardPower();
@@ -2755,7 +2759,7 @@ namespace Sanakan.Modules
                     }
 
                     card.Expedition = expedition;
-                    card.ExpeditionDate = DateTime.Now;
+                    card.ExpeditionDate = _time.Now();
                 }
 
                 var mission = botUser.TimeStatuses.FirstOrDefault(x => x.Type == Database.Models.StatusType.DExpeditions);
@@ -2818,7 +2822,7 @@ namespace Sanakan.Modules
 
                 if (!pvpDailyMax.IsActive())
                 {
-                    pvpDailyMax.EndsAt = DateTime.Now.Date.AddHours(3).AddDays(1);
+                    pvpDailyMax.EndsAt = _time.Now().Date.AddHours(3).AddDays(1);
                     duser.GameDeck.PVPDailyGamesPlayed = 0;
                 }
 
@@ -2828,9 +2832,9 @@ namespace Sanakan.Modules
                     return;
                 }
 
-                if ((DateTime.Now - duser.GameDeck.PVPSeasonBeginDate.AddMonths(1)).TotalSeconds > 1)
+                if ((_time.Now() - duser.GameDeck.PVPSeasonBeginDate.AddMonths(1)).TotalSeconds > 1)
                 {
-                    duser.GameDeck.PVPSeasonBeginDate = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1);
+                    duser.GameDeck.PVPSeasonBeginDate = new DateTime(_time.Now().Year, _time.Now().Month, 1);
                     duser.GameDeck.SeasonalPVPRank = 0;
                 }
 

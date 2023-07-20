@@ -17,6 +17,7 @@ using Sanakan.Api.Models;
 using Sanakan.Config;
 using Sanakan.Extensions;
 using Sanakan.Services.Executor;
+using Sanakan.Services.Time;
 using Shinden;
 using Shinden.Logger;
 using Z.EntityFramework.Plus;
@@ -29,12 +30,15 @@ namespace Sanakan.Api.Controllers
     {
         private readonly IConfig _config;
         private readonly ILogger _logger;
+        private readonly ISystemTime _time;
         private readonly IExecutor _executor;
         private readonly ShindenClient _shClient;
         private readonly DiscordSocketClient _client;
 
-        public UserController(DiscordSocketClient client, ShindenClient shClient, ILogger logger, IExecutor executor, IConfig config)
+        public UserController(DiscordSocketClient client, ShindenClient shClient, ILogger logger,
+            IExecutor executor, IConfig config, ISystemTime time)
         {
+            _time = time;
             _config = config;
             _client = client;
             _logger = logger;
@@ -111,7 +115,7 @@ namespace Sanakan.Api.Controllers
                 var currUser = ControllerContext.HttpContext.User;
                 if (currUser.HasClaim(x => x.Type == ClaimTypes.Webpage))
                 {
-                    tokenData = UserTokenBuilder.BuildUserToken(_config, user);
+                    tokenData = UserTokenBuilder.BuildUserToken(_config, user, _time);
                 }
 
                 return new UserWithToken()
@@ -144,7 +148,7 @@ namespace Sanakan.Api.Controllers
                 var currUser = ControllerContext.HttpContext.User;
                 if (currUser.HasClaim(x => x.Type == ClaimTypes.Webpage))
                 {
-                    tokenData = UserTokenBuilder.BuildUserToken(_config, user);
+                    tokenData = UserTokenBuilder.BuildUserToken(_config, user, _time);
                 }
 
                 return new UserWithToken()
@@ -316,7 +320,7 @@ namespace Sanakan.Api.Controllers
                         {
                             Value = value,
                             DiscordId = user.Id,
-                            Date = DateTime.Now,
+                            Date = _time.Now(),
                             ShindenId = user.Shinden,
                             Source = Database.Models.Analytics.TransferSource.ByDiscordId,
                         });
@@ -366,7 +370,7 @@ namespace Sanakan.Api.Controllers
                         {
                             Value = value,
                             DiscordId = user.Id,
-                            Date = DateTime.Now,
+                            Date = _time.Now(),
                             ShindenId = user.Shinden,
                             Source = Database.Models.Analytics.TransferSource.ByShindenId,
                         });

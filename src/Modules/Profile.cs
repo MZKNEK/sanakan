@@ -15,6 +15,7 @@ using Sanakan.Services;
 using Sanakan.Services.Commands;
 using Sanakan.Services.Session;
 using Sanakan.Services.Session.Models;
+using Sanakan.Services.Time;
 using Z.EntityFramework.Plus;
 
 namespace Sanakan.Modules
@@ -24,9 +25,11 @@ namespace Sanakan.Modules
     {
         private Services.Profile _profile;
         private SessionManager _session;
+        private ISystemTime _time;
 
-        public Profile(Services.Profile prof, SessionManager session)
+        public Profile(Services.Profile prof, SessionManager session, ISystemTime time)
         {
+            _time = time;
             _profile = prof;
             _session = session;
         }
@@ -549,7 +552,7 @@ namespace Sanakan.Modules
 
                 if (color == FColor.CleanColor)
                 {
-                    colort.EndsAt = DateTime.Now;
+                    colort.EndsAt = _time.Now();
                     await _profile.RomoveUserColorAsync(user);
                 }
                 else
@@ -561,7 +564,7 @@ namespace Sanakan.Modules
                     else
                     {
                         await _profile.RomoveUserColorAsync(user, color);
-                        colort.EndsAt = DateTime.Now.AddMonths(1);
+                        colort.EndsAt = _time.Now().AddMonths(1);
                     }
 
                     var gConfig = await db.GetCachedGuildFullConfigAsync(Context.Guild.Id);

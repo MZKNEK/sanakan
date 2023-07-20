@@ -3,25 +3,30 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Sanakan.Services.Time;
 
 namespace Sanakan.Services.Supervisor
 {
     public class SupervisorEntity
     {
+        private readonly ISystemTime _timeProvider;
+
         public List<SupervisorMessage> Messages { get; private set; }
         public DateTime LastMessage { get; private set; }
         public int TotalMessages { get; private set; }
 
-        public SupervisorEntity(string contentOfFirstMessage) : this()
+        public SupervisorEntity(string contentOfFirstMessage, ISystemTime timeProvider) : this(timeProvider)
         {
             TotalMessages = 1;
-            Messages.Add(new SupervisorMessage(contentOfFirstMessage));
+            Messages.Add(new SupervisorMessage(contentOfFirstMessage, timeProvider));
         }
 
-        public SupervisorEntity()
+        public SupervisorEntity(ISystemTime timeProvider)
         {
+            _timeProvider = timeProvider;
+
             Messages = new List<SupervisorMessage>();
-            LastMessage = DateTime.Now;
+            LastMessage = _timeProvider.Now();
             TotalMessages = 0;
         }
 
@@ -30,20 +35,20 @@ namespace Sanakan.Services.Supervisor
             var msg = Messages.FirstOrDefault(x => x.Content == content);
             if (msg == null)
             {
-                msg = new SupervisorMessage(content, 0);
+                msg = new SupervisorMessage(content, _timeProvider, 0);
                 Messages.Add(msg);
             }
             return msg;
         }
 
-        public bool IsValid() => (DateTime.Now - LastMessage).TotalMinutes <= 2;
+        public bool IsValid() => (_timeProvider.Now() - LastMessage).TotalMinutes <= 2;
         public void Add(SupervisorMessage message) => Messages.Add(message);
         public int Inc()
         {
-            if ((DateTime.Now - LastMessage).TotalSeconds > 5)
+            if ((_timeProvider.Now() - LastMessage).TotalSeconds > 5)
                 TotalMessages = 0;
 
-            LastMessage = DateTime.Now;
+            LastMessage = _timeProvider.Now();
 
             return ++TotalMessages;
         }

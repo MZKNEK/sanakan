@@ -10,6 +10,7 @@ using Sanakan.Services;
 using Sanakan.Services.Commands;
 using Sanakan.Services.Session;
 using Sanakan.Services.Session.Models;
+using Sanakan.Services.Time;
 using Shinden.Logger;
 using System;
 using System.Linq;
@@ -27,11 +28,12 @@ namespace Sanakan.Modules
         private Services.Moderator _moderation;
         private SessionManager _session;
         private Services.Helper _helper;
+        private ISystemTime _time;
         private ILogger _logger;
         private IConfig _config;
 
         public Helper(Services.Helper helper, Services.Moderator moderation, SessionManager session,
-            ILogger logger, IConfig config, Services.PocketWaifu.Waifu  waifu)
+            ILogger logger, IConfig config, Services.PocketWaifu.Waifu  waifu, ISystemTime time)
         {
             _moderation = moderation;
             _session = session;
@@ -39,6 +41,7 @@ namespace Sanakan.Modules
             _logger = logger;
             _config = config;
             _waifu = waifu;
+            _time = time;
         }
 
         [Command("pomoc", RunMode = RunMode.Async)]
@@ -154,7 +157,7 @@ namespace Sanakan.Modules
             {
                 var info = new System.Text.StringBuilder()
                 .AppendLine($"**Sanakan ({typeof(Sanakan).Assembly.GetName().Version})**:")
-                .AppendLine($"**Czas działania**: `{DateTime.Now - proc.StartTime:d'd 'hh\\:mm\\:ss}`")
+                .AppendLine($"**Czas działania**: `{_time.Now() - proc.StartTime:d'd 'hh\\:mm\\:ss}`")
                 .AppendLine()
                 .Append("[Strona](https://sanakan.pl/) | ")
                 .Append("[GitHub](https://github.com/MZKNEK/sanakan.git) | ")
@@ -220,7 +223,7 @@ namespace Sanakan.Modules
 
                 thisCard.CustomImage = url;
                 thisCard.FixedCustomImageCnt++;
-                thisCard.CustomImageDate = DateTime.Now;
+                thisCard.CustomImageDate = _time.Now();
 
                 await db.SaveChangesAsync();
 
@@ -284,7 +287,7 @@ namespace Sanakan.Modules
                     return;
                 }
 
-                if ((DateTime.Now - repMsg.CreatedAt.DateTime.ToLocalTime()).TotalHours > 3)
+                if ((_time.Now() - repMsg.CreatedAt.DateTime.ToLocalTime()).TotalHours > 3)
                 {
                     await ReplyAsync("", embed: "Można raportować tylko wiadomości, które nie są starsze od 3h.".ToEmbedMessage(EMType.Bot).Build());
                     return;

@@ -16,6 +16,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Z.EntityFramework.Plus;
+using Sanakan.Services.Time;
 
 namespace Sanakan.Modules
 {
@@ -23,13 +24,16 @@ namespace Sanakan.Modules
     public class Fun : SanakanModuleBase<SocketCommandContext>
     {
         private Services.Fun _fun;
+        private ISystemTime _time;
         private Moderator _moderation;
         private SessionManager _session;
         private Services.PocketWaifu.Spawn _spawn;
 
-        public Fun(Services.Fun fun, Moderator moderation, SessionManager session, Services.PocketWaifu.Spawn spawn)
+        public Fun(Services.Fun fun, Moderator moderation, SessionManager session,
+            Services.PocketWaifu.Spawn spawn, ISystemTime time)
         {
             _fun = fun;
+            _time = time;
             _spawn = spawn;
             _session = session;
             _moderation = moderation;
@@ -66,7 +70,7 @@ namespace Sanakan.Modules
                 }
                 mission.Count();
 
-                daily.EndsAt = DateTime.Now.AddHours(20);
+                daily.EndsAt = _time.Now().AddHours(20);
                 botuser.ScCnt += 100;
 
                 await db.SaveChangesAsync();
@@ -171,7 +175,7 @@ namespace Sanakan.Modules
                     return;
                 }
 
-                hourly.EndsAt = DateTime.Now.AddHours(1);
+                hourly.EndsAt = _time.Now().AddHours(1);
                 botuser.ScCnt += 5;
 
                 var mission = botuser.TimeStatuses.FirstOrDefault(x => x.Type == Database.Models.StatusType.DHourly);

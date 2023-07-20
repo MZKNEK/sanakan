@@ -15,6 +15,7 @@ using Sanakan.Database.Models;
 using Sanakan.Extensions;
 using Sanakan.Services.Executor;
 using Sanakan.Services.PocketWaifu;
+using Sanakan.Services.Time;
 using Shinden;
 using Z.EntityFramework.Plus;
 
@@ -26,11 +27,13 @@ namespace Sanakan.Api.Controllers
     {
         private readonly Waifu _waifu;
         private readonly IConfig _config;
+        private readonly ISystemTime _time;
         private readonly IExecutor _executor;
         private readonly ShindenClient _shClient;
 
-        public WaifuController(ShindenClient shClient, Waifu waifu, IExecutor executor, IConfig config)
+        public WaifuController(ShindenClient shClient, Waifu waifu, IExecutor executor, IConfig config, ISystemTime time)
         {
+            _time = time;
             _waifu = waifu;
             _config = config;
             _executor = executor;
@@ -595,7 +598,7 @@ namespace Sanakan.Api.Controllers
                 var currUser = ControllerContext.HttpContext.User;
                 if (currUser.HasClaim(x => x.Type == ClaimTypes.Webpage))
                 {
-                    tokenData = UserTokenBuilder.BuildUserToken(_config, user);
+                    tokenData = UserTokenBuilder.BuildUserToken(_config, user, _time);
                 }
 
                 return new UserWithToken()

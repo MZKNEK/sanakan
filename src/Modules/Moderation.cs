@@ -14,6 +14,7 @@ using Sanakan.Extensions;
 using Sanakan.Preconditions;
 using Sanakan.Services;
 using Sanakan.Services.Commands;
+using Sanakan.Services.Time;
 using Shinden;
 using Z.EntityFramework.Plus;
 
@@ -23,13 +24,16 @@ namespace Sanakan.Modules
     public class Moderation : SanakanModuleBase<SocketCommandContext>
     {
         private IConfig _config;
+        private ISystemTime _time;
         private Services.Helper _helper;
         private ShindenClient _shClient;
         private Services.Profile _profile;
         private Services.Moderator _moderation;
 
-        public Moderation(Services.Helper helper, Services.Moderator moderation, Services.Profile prof, ShindenClient sh, IConfig config)
+        public Moderation(Services.Helper helper, Services.Moderator moderation, Services.Profile prof,
+            ShindenClient sh, IConfig config, ISystemTime time)
         {
+            _time = time;
             _shClient = sh;
             _profile = prof;
             _config = config;
@@ -1696,7 +1700,7 @@ namespace Sanakan.Modules
         public async Task GetRandomUserAsync([Summary("długość w minutach")] uint duration)
         {
             var emote = new Emoji("🎰");
-            var time = DateTime.Now.AddMinutes(duration);
+            var time = _time.Now().AddMinutes(duration);
             var msg = await ReplyAsync("", embed: $"Loteria! zareaguj {emote}, aby wziąć udział.\n\n Koniec `{time.ToShortTimeString()}:{time.Second:00}`".ToEmbedMessage(EMType.Bot).Build());
 
             await msg.AddReactionAsync(emote);

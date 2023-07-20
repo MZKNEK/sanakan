@@ -12,6 +12,7 @@ using Microsoft.EntityFrameworkCore;
 using Sanakan.Database.Models;
 using Sanakan.Extensions;
 using Sanakan.Services.PocketWaifu.Fight;
+using Sanakan.Services.Time;
 using Shinden;
 using Shinden.Logger;
 using Shinden.Models;
@@ -202,13 +203,16 @@ namespace Sanakan.Services.PocketWaifu
         private Events _events;
         private Helper _helper;
         private ILogger _logger;
+        private ISystemTime _time;
         private ImageProcessing _img;
         private ShindenClient _shClient;
         private DiscordSocketClient _client;
 
-        public Waifu(ImageProcessing img, ShindenClient client, Events events, ILogger logger, DiscordSocketClient discord, Helper helper)
+        public Waifu(ImageProcessing img, ShindenClient client, Events events, ILogger logger,
+            DiscordSocketClient discord, Helper helper, ISystemTime time)
         {
             _img = img;
+            _time = time;
             _events = events;
             _logger = logger;
             _helper = helper;
@@ -729,7 +733,7 @@ namespace Sanakan.Services.PocketWaifu
                         return $"{discordUser.Mention} masz już taką figurkę.".ToEmbedMessage(EMType.Error).Build();
                     }
 
-                    var figure = thisItem.Item.Type.ToPAFigure();
+                    var figure = thisItem.Item.Type.ToPAFigure(_time.Now());
                     if (figure != null) bUser.GameDeck.Figures.Add(figure);
 
                     IncreaseMoneySpentOnCards(type, bUser, realCost);
@@ -827,7 +831,8 @@ namespace Sanakan.Services.PocketWaifu
 
         static public Dere RandomizeDere() => Fun.GetOneRandomFrom(_dereToRandomize);
 
-        static public Card GenerateNewCard(string name, string title, string image, Rarity rarity)
+        static public Card GenerateNewCard(string name, string title, string image, Rarity rarity,
+            DateTime creationTime)
         {
             var card = new Card
             {
@@ -836,11 +841,11 @@ namespace Sanakan.Services.PocketWaifu
                 Attack = RandomizeAttack(rarity),
                 Expedition = CardExpedition.None,
                 QualityOnStart = Quality.Broken,
-                CustomImageDate = DateTime.Now,
-                ExpeditionDate = DateTime.Now,
+                CustomImageDate = creationTime,
+                ExpeditionDate = creationTime,
                 PAS = PreAssembledFigure.None,
                 TagList = new List<CardTag>(),
-                CreationDate = DateTime.Now,
+                CreationDate = creationTime,
                 StarStyle = StarStyle.Full,
                 Source = CardSource.Other,
                 Quality = Quality.Broken,
@@ -901,7 +906,7 @@ namespace Sanakan.Services.PocketWaifu
         {
             var card = GenerateNewCard(character.ToString(),
                 character?.Relations?.OrderBy(x => x.Id)?.FirstOrDefault()?.Title ?? "????",
-                character.HasImage ? character.PictureUrl : string.Empty, rarity);
+                character.HasImage ? character.PictureUrl : string.Empty, rarity, _time.Now());
 
             card.Character = character.Id;
 
@@ -1093,14 +1098,14 @@ namespace Sanakan.Services.PocketWaifu
         public async Task<ICharacterInfo> GetRandomCharacterAsync()
         {
             int check = 2;
-            if (CharId.IsNeedForUpdate())
+            if (CharId.IsNeedForUpdate(_time.Now()))
             {
                 try
                 {
                     var characters = await _shClient.Ex.GetAllCharactersFromAnimeAsync();
                     if (!characters.IsSuccessStatusCode()) return null;
 
-                    CharId.Update(characters.Body);
+                    CharId.Update(characters.Body, _time.Now());
                 }
                 catch (Exception)
                 {
@@ -1452,7 +1457,7 @@ namespace Sanakan.Services.PocketWaifu
             else
             {
                 imageUrl = imageLocation;
-                if ((DateTime.Now - File.GetCreationTime(imageLocation)).TotalHours > 4)
+                if ((_time.Now() - File.GetCreationTime(imageLocation)).TotalHours > 4)
                     imageUrl = await GenerateAndSaveCardAsync(card);
             }
 
@@ -1704,7 +1709,7 @@ namespace Sanakan.Services.PocketWaifu
         public Tuple<double, double> GetRealTimeOnExpeditionInMinutes(Card card, double karma)
         {
             var maxMinutes = card.CalculateMaxTimeOnExpeditionInMinutes(karma);
-            var realMin = (DateTime.Now - card.ExpeditionDate).TotalMinutes;
+            var realMin = (_time.Now() - card.ExpeditionDate).TotalMinutes;
             var durationMin = realMin;
 
             if (maxMinutes < durationMin)
@@ -2299,7 +2304,7 @@ namespace Sanakan.Services.PocketWaifu
                         return ExecutionResult.FromError("Aby ustawić własny obrazek, karta musi posiadać wcześniej ustawiony główny (na stronie)!");
 
                     card.CustomImage = detail;
-                    card.CustomImageDate = DateTime.Now;
+                    card.CustomImageDate = _time.Now();
                     consumeItem = !card.FromFigure;
                     break;
 
@@ -2380,7 +2385,7 @@ namespace Sanakan.Services.PocketWaifu
                     if (user.GameDeck.Figures.Any(x => x.Character == card.Character))
                         return ExecutionResult.FromError("już posiadasz figurkę tej postaci.");
 
-                    var figure = item.ToFigure(card);
+                    var figure = item.ToFigure(card, _time.Now());
                     if (figure != null)
                     {
                         user.GameDeck.Figures.Add(figure);

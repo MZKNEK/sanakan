@@ -11,6 +11,7 @@ using Sanakan.Services.Executor;
 using Sanakan.Services.PocketWaifu;
 using Sanakan.Services.Session;
 using Sanakan.Services.Supervisor;
+using Sanakan.Services.Time;
 using Shinden;
 using Shinden.Logger;
 using System;
@@ -31,6 +32,7 @@ namespace Sanakan
         private DeletedLog _deleted;
         private Daemonizer _daemon;
         private Greeting _greeting;
+        private ISystemTime _time;
         private Profile _profile;
         private IConfig _config;
         private ILogger _logger;
@@ -98,22 +100,23 @@ namespace Sanakan
                 tmpCnf.Shinden.UserAgent, tmpCnf.Shinden.Marmolade), _logger,
                 LogLevel.Error, tmpCnf.Shinden.BaseUri, TimeSpan.FromSeconds(5));
 
+            _time = new SystemTime();
             _helper = new Helper(_config);
-            _events = new Events(_shindenClient);
+            _events = new Events(_shindenClient, _time);
             _img = new ImageProcessing(_shindenClient);
             _deleted = new DeletedLog(_client, _config);
             _chaos = new Chaos(_client, _config, _logger);
             _executor = new SynchronizedExecutor(_logger);
-            _mod = new Moderator(_logger, _config, _client);
+            _mod = new Moderator(_logger, _config, _client, _time);
             _daemon = new Daemonizer(_client, _logger, _config);
             _waifu = new Waifu(_img, _shindenClient, _events, _logger,
-                 _client, _helper);
+                 _client, _helper, _time);
             _sessions = new SessionManager(_client, _executor, _logger);
-            _supervisor = new Supervisor(_client, _config, _logger, _mod);
+            _supervisor = new Supervisor(_client, _config, _logger, _mod, _time);
             _greeting = new Greeting(_client, _logger, _config, _executor);
-            _exp = new ExperienceManager(_client, _executor, _config, _img);
-            _spawn = new Spawn(_client, _executor, _waifu, _config, _logger);
-            _handler = new CommandHandler(_client, _config, _logger, _executor);
+            _exp = new ExperienceManager(_client, _executor, _config, _img, _time);
+            _spawn = new Spawn(_client, _executor, _waifu, _config, _logger, _time);
+            _handler = new CommandHandler(_client, _config, _logger, _executor, _time);
             _profile = new Profile(_client, _shindenClient, _img, _logger, _config);
         }
 
@@ -155,6 +158,7 @@ namespace Sanakan
                 .AddSingleton(_chaos)
                 .AddSingleton(_waifu)
                 .AddSingleton(_spawn)
+                .AddSingleton(_time)
                 .AddSingleton(_mod)
                 .AddSingleton(_exp)
                 .AddSingleton(_img)
@@ -162,7 +166,6 @@ namespace Sanakan
                 .AddSingleton<Services.Shinden>()
                 .AddSingleton<Services.LandManager>()
                 .AddSingleton<Services.PocketWaifu.Lottery>()
-                .AddSingleton<Services.Time.ISystemTime>(new Services.Time.SystemTime())
                 .BuildServiceProvider();
         }
     }

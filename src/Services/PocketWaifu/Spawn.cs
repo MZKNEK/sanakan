@@ -12,6 +12,7 @@ using Sanakan.Config;
 using Sanakan.Database.Models;
 using Sanakan.Extensions;
 using Sanakan.Services.Executor;
+using Sanakan.Services.Time;
 using Shinden.Logger;
 using Shinden.Models;
 using Z.EntityFramework.Plus;
@@ -22,6 +23,7 @@ namespace Sanakan.Services.PocketWaifu
     {
         private DiscordSocketClient _client;
         private IExecutor _executor;
+        private ISystemTime _time;
         private ILogger _logger;
         private IConfig _config;
         private Waifu _waifu;
@@ -31,13 +33,15 @@ namespace Sanakan.Services.PocketWaifu
 
         private Emoji ClaimEmote = new Emoji("🖐");
 
-        public Spawn(DiscordSocketClient client, IExecutor executor, Waifu waifu, IConfig config, ILogger logger)
+        public Spawn(DiscordSocketClient client, IExecutor executor, Waifu waifu, IConfig config,
+            ILogger logger, ISystemTime time)
         {
             _executor = executor;
             _client = client;
             _logger = logger;
             _config = config;
             _waifu = waifu;
+            _time = time;
 
             ServerCounter = new Dictionary<ulong, long>();
             UserCounter = new Dictionary<ulong, long>();
@@ -208,7 +212,7 @@ namespace Sanakan.Services.PocketWaifu
                     {
                         Value = 1,
                         UserId = winner.Id,
-                        MeasureDate = DateTime.Now,
+                        MeasureDate = _time.Now(),
                         GuildId = trashChannel?.Guild?.Id ?? 0,
                         Type = Database.Models.Analytics.UserAnalyticsEventType.Card
                     });
@@ -256,7 +260,7 @@ namespace Sanakan.Services.PocketWaifu
             newCard.InCage = true;
 
             var pokeImage = _waifu.GetRandomSarafiImage();
-            var time = DateTime.Now.AddMinutes(5);
+            var time = _time.Now().AddMinutes(5);
             var embed = new EmbedBuilder
             {
                 Color = EMType.Bot.Color(),
@@ -307,7 +311,7 @@ namespace Sanakan.Services.PocketWaifu
 
                     if (!pCnt.IsActive())
                     {
-                        pCnt.EndsAt = DateTime.Now.Date.AddDays(1);
+                        pCnt.EndsAt = _time.Now().Date.AddDays(1);
                         pCnt.IValue = 0;
                     }
 
@@ -334,7 +338,7 @@ namespace Sanakan.Services.PocketWaifu
                             {
                                 Value = 1,
                                 UserId = user.Id,
-                                MeasureDate = DateTime.Now,
+                                MeasureDate = _time.Now(),
                                 GuildId = gUser?.Guild?.Id ?? 0,
                                 Type = Database.Models.Analytics.UserAnalyticsEventType.Pack
                             });

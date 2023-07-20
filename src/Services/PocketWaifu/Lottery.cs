@@ -6,6 +6,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Sanakan.Database.Models;
 using Sanakan.Extensions;
+using Sanakan.Services.Time;
 using Shinden;
 
 namespace Sanakan.Services.PocketWaifu
@@ -108,10 +109,12 @@ namespace Sanakan.Services.PocketWaifu
         }.ToRealList();
 
         private ShindenClient _shClient;
+        private ISystemTime _time;
 
-        public Lottery(ShindenClient client)
+        public Lottery(ShindenClient client, ISystemTime time)
         {
             _shClient = client;
+            _time = time;
         }
 
         public static List<(Quality, float)> GetPartQualityChances() => _figurePartsQuality.GetChances();
@@ -124,14 +127,14 @@ namespace Sanakan.Services.PocketWaifu
 
         public async Task<ulong> GetRandomTitleAsync()
         {
-            if (_currentSeason.IsNeedForUpdate())
+            if (_currentSeason.IsNeedForUpdate(_time.Now()))
             {
                 try
                 {
                     var res = await _shClient.Ex.GetAnimeFromSeasonAsync();
                     if (!res.IsSuccessStatusCode()) return 0;
 
-                    _currentSeason.Update(res.Body);
+                    _currentSeason.Update(res.Body, _time.Now());
                 }
                 catch (Exception)
                 {

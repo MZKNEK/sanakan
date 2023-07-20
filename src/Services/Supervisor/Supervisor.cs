@@ -9,6 +9,7 @@ using Discord;
 using Discord.WebSocket;
 using Sanakan.Config;
 using Sanakan.Extensions;
+using Sanakan.Services.Time;
 using Shinden.Logger;
 
 namespace Sanakan.Services.Supervisor
@@ -30,16 +31,18 @@ namespace Sanakan.Services.Supervisor
 
         private DiscordSocketClient _client;
         private Moderator _moderator;
+        private ISystemTime _time;
         private ILogger _logger;
         private IConfig _config;
         private Timer _timer;
 
-        public Supervisor(DiscordSocketClient client, IConfig config, ILogger logger, Moderator moderator)
+        public Supervisor(DiscordSocketClient client, IConfig config, ILogger logger, Moderator moderator, ISystemTime time)
         {
             _moderator = moderator;
             _client = client;
             _config = config;
             _logger = logger;
+            _time = time;
 
             _guilds = new Dictionary<ulong, Dictionary<ulong, SupervisorEntity>>();
             _guildsJoin = new Dictionary<ulong, Dictionary<string, SupervisorJoinEntity>>();
@@ -117,21 +120,21 @@ namespace Sanakan.Services.Supervisor
                 var messageContent = GetMessageContent(message);
                 if (!guild.Any(x => x.Key == user.Id))
                 {
-                    guild.Add(user.Id, new SupervisorEntity(messageContent));
+                    guild.Add(user.Id, new SupervisorEntity(messageContent, _time));
                     return;
                 }
 
                 var susspect = guild[user.Id];
                 if (!susspect.IsValid())
                 {
-                    susspect = new SupervisorEntity(messageContent);
+                    susspect = new SupervisorEntity(messageContent, _time);
                     return;
                 }
 
                 var thisMessage = susspect.Get(messageContent);
                 if (!thisMessage.IsValid())
                 {
-                    thisMessage = new SupervisorMessage(messageContent);
+                    thisMessage = new SupervisorMessage(messageContent, _time);
                 }
 
                 if (gConfig.AdminRole != 0)
@@ -250,7 +253,7 @@ namespace Sanakan.Services.Supervisor
                 foreach (var guild in toClean)
                 {
                     foreach (var uId in guild.Value)
-                        _guilds[guild.Key][uId] = new SupervisorEntity();
+                        _guilds[guild.Key][uId] = new SupervisorEntity(_time);
                 }
 
                 var toClean2 = new Dictionary<ulong, List<string>>();
@@ -268,7 +271,7 @@ namespace Sanakan.Services.Supervisor
                 foreach (var guild in toClean2)
                 {
                     foreach (var nick in guild.Value)
-                        _guildsJoin[guild.Key][nick] = new SupervisorJoinEntity();
+                        _guildsJoin[guild.Key][nick] = new SupervisorJoinEntity(_time);
                 }
             }
             catch (Exception ex)
@@ -324,14 +327,14 @@ namespace Sanakan.Services.Supervisor
                 var guild = _guildsJoin[user.Guild.Id];
                 if (!guild.Any(x => x.Key == user.Username))
                 {
-                    guild.Add(user.Username, new SupervisorJoinEntity(user.Id));
+                    guild.Add(user.Username, new SupervisorJoinEntity(user.Id, _time));
                     return;
                 }
 
                 var susspect = guild[user.Username];
                 if (!susspect.IsValid())
                 {
-                    susspect = new SupervisorJoinEntity(user.Id);
+                    susspect = new SupervisorJoinEntity(user.Id, _time);
                     return;
                 }
 

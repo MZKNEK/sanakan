@@ -9,6 +9,7 @@ using Microsoft.EntityFrameworkCore;
 using Sanakan.Config;
 using Sanakan.Extensions;
 using Sanakan.Services.Executor;
+using Sanakan.Services.Time;
 
 namespace Sanakan.Services
 {
@@ -26,13 +27,16 @@ namespace Sanakan.Services
         private DiscordSocketClient _client;
         private ImageProcessing _img;
         private IExecutor _executor;
+        private ISystemTime _time;
         private IConfig _config;
 
-        public ExperienceManager(DiscordSocketClient client, IExecutor executor, IConfig config, ImageProcessing img)
+        public ExperienceManager(DiscordSocketClient client, IExecutor executor, IConfig config,
+            ImageProcessing img, ISystemTime time)
         {
             _executor = executor;
             _client = client;
             _config = config;
+            _time = time;
             _img = img;
 
             _exp = new Dictionary<ulong, double>();
@@ -67,7 +71,7 @@ namespace Sanakan.Services
                     Value = level,
                     UserId = user.Id,
                     GuildId = user.Guild.Id,
-                    MeasureDate = DateTime.Now,
+                    MeasureDate = _time.Now(),
                     Type = Database.Models.Analytics.UserAnalyticsEventType.Level
                 });
                 dba.SaveChanges();
@@ -132,11 +136,11 @@ namespace Sanakan.Services
         {
             if (!_saved.Any(x => x.Key == userId))
             {
-                _saved.Add(userId, DateTime.Now);
+                _saved.Add(userId, _time.Now());
                 return false;
             }
 
-            return (DateTime.Now - _saved[userId].AddMinutes(30)).TotalSeconds > 1;
+            return (_time.Now() - _saved[userId].AddMinutes(30)).TotalSeconds > 1;
         }
 
         private void CountMessage(ulong userId, bool isCommand)
@@ -181,7 +185,7 @@ namespace Sanakan.Services
             if (fullP < 1) return;
 
             _exp[message.Author.Id] -= fullP;
-            _saved[user.Id] = DateTime.Now;
+            _saved[user.Id] = _time.Now();
 
             var task = CreateTask(user, message.Channel, fullP, _messages[user.Id], _commands[user.Id], _characters[user.Id], calculateExp);
             _characters[user.Id] = 0;
@@ -228,7 +232,7 @@ namespace Sanakan.Services
             if (!fMn.IsActive())
                 fMn.IValue = 101;
 
-            fMn.EndsAt = DateTime.Now.AddMinutes(10);
+            fMn.EndsAt = _time.Now().AddMinutes(10);
             if (--fMn.IValue < 20) fMn.IValue = 20;
             double ratio = fMn.IValue / 100d;
 
@@ -260,9 +264,9 @@ namespace Sanakan.Services
                     var usr = await db.GetUserOrCreateAsync(user.Id);
                     if (usr == null) return;
 
-                    if ((DateTime.Now - usr.MeasureDate.AddMonths(1)).TotalSeconds > 1)
+                    if ((_time.Now() - usr.MeasureDate.AddMonths(1)).TotalSeconds > 1)
                     {
-                        usr.MeasureDate = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1);
+                        usr.MeasureDate = new DateTime(_time.Now().Year, _time.Now().Month, 1);
                         usr.MessagesCntAtDate = usr.MessagesCnt;
                         usr.CharacterCntFromDate = characters;
                     }

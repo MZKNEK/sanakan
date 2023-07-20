@@ -4,6 +4,7 @@ using Discord.Commands;
 using Discord.WebSocket;
 using Sanakan.Config;
 using Sanakan.Extensions;
+using Sanakan.Services.Time;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -59,12 +60,13 @@ namespace Sanakan.Preconditions
                 }
             }
 
+            var tService = (ISystemTime)services.GetService(typeof(ISystemTime));
             var userId = _method == DelayMethod.PerUser ? user.Id : 1;
             var cmdKey = (command.Name, context.User.Id);
             if (_entries.ContainsKey(cmdKey))
             {
                 var lastUse = _entries[cmdKey];
-                if (lastUse + _time > DateTime.Now)
+                if (lastUse + _time > tService.Now())
                 {
                     switch (_responseType)
                     {
@@ -72,21 +74,21 @@ namespace Sanakan.Preconditions
                             return PreconditionResult.FromError($"{context.User.Mention} to polecenie możesz użyć raz na jakiś czas.");
 
                         case ResType.HourMin:
-                            var min = (int)(lastUse + _time - DateTime.Now).TotalMinutes;
+                            var min = (int)(lastUse + _time - tService.Now()).TotalMinutes;
                             return PreconditionResult.FromError($"{context.User.Mention} to polecenie możesz użyć za {min / 60}h {min % 60}m.");
 
                         default:
                         case ResType.MinSec:
-                            var sec = (int)(lastUse + _time - DateTime.Now).TotalSeconds;
+                            var sec = (int)(lastUse + _time - tService.Now()).TotalSeconds;
                             return PreconditionResult.FromError($"{context.User.Mention} to polecenie możesz użyć za {sec / 60}m {sec % 60}s.");
                     }
                 }
 
-                _entries[cmdKey] = DateTime.Now;
+                _entries[cmdKey] = tService.Now();
             }
             else
             {
-                _entries.Add(cmdKey, DateTime.Now);
+                _entries.Add(cmdKey, tService.Now());
             }
 
             return PreconditionResult.FromSuccess();

@@ -11,6 +11,7 @@ using System.Security.Claims;
 using Sanakan.Config;
 using Sanakan.Extensions;
 using Sanakan.Api.Models;
+using Sanakan.Services.Time;
 
 namespace Sanakan.Api.Controllers
 {
@@ -18,11 +19,13 @@ namespace Sanakan.Api.Controllers
     [Route("api/[controller]")]
     public class TokenController : ControllerBase
     {
+        private readonly ISystemTime _time;
         private readonly IConfig _config;
 
-        public TokenController(IConfig config)
+        public TokenController(IConfig config, ISystemTime time)
         {
             _config = config;
+            _time = time;
         }
 
         /// <summary>
@@ -63,7 +66,7 @@ namespace Sanakan.Api.Controllers
             var token = new JwtSecurityToken(config.Jwt.Issuer,
               config.Jwt.Issuer,
               claims,
-              expires: DateTime.Now.AddHours(24),
+              expires: _time.Now().AddHours(24),
               signingCredentials: creds);
 
             return new TokenData()

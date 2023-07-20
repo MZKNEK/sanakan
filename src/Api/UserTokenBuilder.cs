@@ -7,12 +7,13 @@ using System.Text;
 using Microsoft.IdentityModel.Tokens;
 using Sanakan.Api.Models;
 using Sanakan.Config;
+using Sanakan.Services.Time;
 
 namespace Sanakan.Api
 {
     public static class UserTokenBuilder
     {
-        public static TokenData BuildUserToken(IConfig conf, Database.Models.User user)
+        public static TokenData BuildUserToken(IConfig conf, Database.Models.User user, ISystemTime timeProvider)
         {
             var config = conf.Get();
 
@@ -28,7 +29,7 @@ namespace Sanakan.Api
             var token = new JwtSecurityToken(config.Jwt.Issuer,
               config.Jwt.Issuer,
               claims,
-              expires: DateTime.Now.AddMinutes(30),
+              expires: timeProvider.Now().AddMinutes(30),
               signingCredentials: creds);
 
             return new TokenData()
