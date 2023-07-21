@@ -21,18 +21,21 @@ using Sanakan.Services.PocketWaifu;
 using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Serialization;
 using Microsoft.OpenApi.Models;
+using Sanakan.Services.Time;
 
 namespace Sanakan.Api
 {
     public static class BotWebHost
     {
-        public static void RunWebHost(DiscordSocketClient client, ShindenClient shinden, Waifu waifu, IConfig config, Services.Helper helper, IExecutor executor, Shinden.Logger.ILogger logger)
+        public static void RunWebHost(DiscordSocketClient client, ShindenClient shinden, Waifu waifu, IConfig config, Services.Helper helper,
+            IExecutor executor, Shinden.Logger.ILogger logger, ISystemTime time)
         {
             new Thread(() =>
             {
                 Thread.CurrentThread.IsBackground = true;
                 CreateWebHostBuilder(config).ConfigureServices(services =>
                 {
+                    services.AddSingleton(time);
                     services.AddSingleton(waifu);
                     services.AddSingleton(logger);
                     services.AddSingleton(client);

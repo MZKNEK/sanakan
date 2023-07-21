@@ -58,7 +58,7 @@ namespace Sanakan
             await _client.StartAsync();
 
             var services = BuildServiceProvider();
-            BotWebHost.RunWebHost(_client, _shindenClient, _waifu, _config, _helper, _executor, _logger);
+            BotWebHost.RunWebHost(_client, _shindenClient, _waifu, _config, _helper, _executor, _logger, _time);
 
             _executor.Initialize(services);
             _sessions.Initialize(services);
