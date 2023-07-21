@@ -55,9 +55,9 @@ namespace Sanakan.Modules
                     botuser.TimeStatuses.Add(daily);
                 }
 
-                if (daily.IsActive())
+                if (daily.IsActive(_time.Now()))
                 {
-                    var timeTo = (int)daily.RemainingMinutes();
+                    var timeTo = (int)daily.RemainingMinutes(_time.Now());
                     await ReplyAsync("", embed: $"{Context.User.Mention} następne drobne możesz otrzymać dopiero za {timeTo / 60}h {timeTo % 60}m!".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
@@ -68,7 +68,7 @@ namespace Sanakan.Modules
                     mission = Database.Models.StatusType.WDaily.NewTimeStatus();
                     botuser.TimeStatuses.Add(mission);
                 }
-                mission.Count();
+                mission.Count(_time.Now());
 
                 daily.EndsAt = _time.Now().AddHours(20);
                 botuser.ScCnt += 100;
@@ -168,9 +168,9 @@ namespace Sanakan.Modules
                     botuser.TimeStatuses.Add(hourly);
                 }
 
-                if (hourly.IsActive())
+                if (hourly.IsActive(_time.Now()))
                 {
-                    var timeTo = (int)hourly.RemainingSeconds();
+                    var timeTo = (int)hourly.RemainingSeconds(_time.Now());
                     await ReplyAsync("", embed: $"{Context.User.Mention} następne zaskórniaki możesz otrzymać dopiero za {timeTo / 60}m {timeTo % 60}s!".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
@@ -184,7 +184,7 @@ namespace Sanakan.Modules
                     mission = Database.Models.StatusType.DHourly.NewTimeStatus();
                     botuser.TimeStatuses.Add(mission);
                 }
-                mission.Count();
+                mission.Count(_time.Now());
 
                 await db.SaveChangesAsync();
 

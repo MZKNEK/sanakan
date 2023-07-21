@@ -23,16 +23,16 @@ namespace Sanakan.Extensions
         public static bool SendAnyMsgInMonth(this User u)
             => (u.MessagesCnt - u.MessagesCntAtDate) > 0;
 
-        public static bool IsCharCounterActive(this User u)
-            => DateTime.Now.Month == u.MeasureDate.Month && DateTime.Now.Year == u.MeasureDate.Year;
+        public static bool IsCharCounterActive(this User u, DateTime currentTime)
+            => currentTime.Month == u.MeasureDate.Month && currentTime.Year == u.MeasureDate.Year;
 
-        public static bool IsPVPSeasonalRankActive(this GameDeck d)
-            => DateTime.Now.Month == d.PVPSeasonBeginDate.Month && DateTime.Now.Year == d.PVPSeasonBeginDate.Year;
+        public static bool IsPVPSeasonalRankActive(this GameDeck d, DateTime currentTime)
+            => currentTime.Month == d.PVPSeasonBeginDate.Month && currentTime.Year == d.PVPSeasonBeginDate.Year;
 
-        public static bool IsPVPSeasonalRankActive(this User u)
-            => u.GameDeck.IsPVPSeasonalRankActive();
+        public static bool IsPVPSeasonalRankActive(this User u, DateTime currentTime)
+            => u.GameDeck.IsPVPSeasonalRankActive(currentTime);
 
-        public static User Default(this User u, ulong id)
+        public static User Default(this User u, ulong id, DateTime creationTime)
         {
             var user = new User
             {
@@ -54,7 +54,7 @@ namespace Sanakan.Extensions
                 StatsReplacementProfileUri = "none",
                 TimeStatuses = new List<TimeStatus>(),
                 BackgroundProfileUri = $"./Pictures/defBg.png",
-                MeasureDate = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1),
+                MeasureDate = new DateTime(creationTime.Year, creationTime.Month, 1),
                 GameDeck = new GameDeck
                 {
                     Id = id,
@@ -85,7 +85,7 @@ namespace Sanakan.Extensions
                     Wishes = new List<WishlistObject>(),
                     PvPStats = new List<CardPvPStats>(),
                     BoosterPacks = new List<BoosterPack>(),
-                    PVPSeasonBeginDate = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1),
+                    PVPSeasonBeginDate = new DateTime(creationTime.Year, creationTime.Month, 1),
                     ExpContainer = new ExpContainer
                     {
                         Id = id,

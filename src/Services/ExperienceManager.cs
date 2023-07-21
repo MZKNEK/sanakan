@@ -229,7 +229,7 @@ namespace Sanakan.Services
                 botUser.TimeStatuses.Add(fMn);
             }
 
-            if (!fMn.IsActive())
+            if (!fMn.IsActive(_time.Now()))
                 fMn.IValue = 101;
 
             fMn.EndsAt = _time.Now().AddMinutes(10);
@@ -247,7 +247,7 @@ namespace Sanakan.Services
                 {
                     if (!db.Users.Any(x => x.Id == user.Id))
                     {
-                        var bUser = new Database.Models.User().Default(user.Id);
+                        var bUser = new Database.Models.User().Default(user.Id, _time.Now());
                         db.Users.Add(bUser);
                         await db.SaveChangesAsync();
                     }

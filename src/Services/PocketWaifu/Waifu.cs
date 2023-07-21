@@ -2109,7 +2109,7 @@ namespace Sanakan.Services.PocketWaifu
                     mission = Database.Models.StatusType.DUsedItems.NewTimeStatus();
                     user.TimeStatuses.Add(mission);
                 }
-                mission.Count(itemCnt);
+                mission.Count(_time.Now(), itemCnt);
 
                 if (item.Count <= 0)
                     user.GameDeck.Items.Remove(item);

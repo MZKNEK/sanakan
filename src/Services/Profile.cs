@@ -13,6 +13,7 @@ using Microsoft.EntityFrameworkCore;
 using Sanakan.Config;
 using Sanakan.Database.Models;
 using Sanakan.Extensions;
+using Sanakan.Services.Time;
 using Shinden;
 using Shinden.Logger;
 using Z.EntityFramework.Plus;
@@ -100,16 +101,19 @@ namespace Sanakan.Services
         private DiscordSocketClient _client;
         private ShindenClient _shClient;
         private ImageProcessing _img;
+        private ISystemTime _time;
         private ILogger _logger;
         private IConfig _config;
         private Timer _timer;
 
-        public Profile(DiscordSocketClient client, ShindenClient shClient, ImageProcessing img, ILogger logger, IConfig config)
+        public Profile(DiscordSocketClient client, ShindenClient shClient, ImageProcessing img,
+            ILogger logger, IConfig config, ISystemTime time)
         {
             _shClient = shClient;
             _client = client;
             _logger = logger;
             _config = config;
+            _time = time;
             _img = img;
 
 #if !DEBUG
@@ -138,7 +142,7 @@ namespace Sanakan.Services
             var subs = context.TimeStatuses.AsNoTracking().FromCache(new[] { "users" }).Where(x => x.Type.IsSubType());
             foreach (var sub in subs)
             {
-                if (sub.IsActive())
+                if (sub.IsActive(_time.Now()))
                     continue;
 
                 var guild = _client.GetGuild(sub.Guild);
@@ -253,10 +257,10 @@ namespace Sanakan.Services
                     return list.OrderByDescending(x => x.MessagesCnt).ToList();
 
                 case TopType.PostsMonthly:
-                    return list.Where(x => x.IsCharCounterActive()).OrderByDescending(x => x.MessagesCnt - x.MessagesCntAtDate).ToList();
+                    return list.Where(x => x.IsCharCounterActive(_time.Now())).OrderByDescending(x => x.MessagesCnt - x.MessagesCntAtDate).ToList();
 
                 case TopType.PostsMonthlyCharacter:
-                    return list.Where(x => x.IsCharCounterActive() && x.SendAnyMsgInMonth()).OrderByDescending(x => x.CharacterCntFromDate / (x.MessagesCnt - x.MessagesCntAtDate)).ToList();
+                    return list.Where(x => x.IsCharCounterActive(_time.Now()) && x.SendAnyMsgInMonth()).OrderByDescending(x => x.CharacterCntFromDate / (x.MessagesCnt - x.MessagesCntAtDate)).ToList();
 
                 case TopType.Commands:
                     return list.OrderByDescending(x => x.CommandsCnt).ToList();
@@ -280,7 +284,7 @@ namespace Sanakan.Services
                     return list.Where(x => x.GameDeck.GlobalPVPRank > 0).OrderByDescending(x => x.GameDeck.GlobalPVPRank).ToList();
 
                 case TopType.PvpSeason:
-                    return list.Where(x => x.IsPVPSeasonalRankActive() && x.GameDeck.SeasonalPVPRank > 0).OrderByDescending(x => x.GameDeck.SeasonalPVPRank).ToList();
+                    return list.Where(x => x.IsPVPSeasonalRankActive(_time.Now()) && x.GameDeck.SeasonalPVPRank > 0).OrderByDescending(x => x.GameDeck.SeasonalPVPRank).ToList();
             }
         }
 

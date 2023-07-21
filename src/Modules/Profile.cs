@@ -73,7 +73,7 @@ namespace Sanakan.Modules
                 {
                     subs = "";
                     foreach (var sub in rsubs)
-                        subs += $"{sub.ToView()}\n";
+                        subs += $"{sub.ToView(_time.Now())}\n";
                 }
 
                 await ReplyAsync("", embed: $"**Subskrypcje** {Context.User.Mention}:\n\n{subs.TrimToLength(1950)}".ToEmbedMessage(EMType.Info).Build());
@@ -301,17 +301,17 @@ namespace Sanakan.Modules
                 if (claim)
                 {
                     var rewards = new List<string>();
-                    var allClaimedBefore = dailyQuests.Count(x => x.IsClaimed()) == dailyQuests.Count;
+                    var allClaimedBefore = dailyQuests.Count(x => x.IsClaimed(_time.Now())) == dailyQuests.Count;
                     foreach(var d in dailyQuests)
                     {
-                        if (d.CanClaim())
+                        if (d.CanClaim(_time.Now()))
                         {
                             d.Claim(botuser);
                             rewards.Add(d.Type.GetRewardString());
                         }
                     }
 
-                    if (!allClaimedBefore && dailyQuests.Count(x => x.IsClaimed()) == dailyQuests.Count)
+                    if (!allClaimedBefore && dailyQuests.Count(x => x.IsClaimed(_time.Now())) == dailyQuests.Count)
                     {
                         botuser.AcCnt += 10;
                         rewards.Add("10 AC");
@@ -319,7 +319,7 @@ namespace Sanakan.Modules
 
                     foreach(var w in weeklyQuests)
                     {
-                        if (w.CanClaim())
+                        if (w.CanClaim(_time.Now()))
                         {
                             w.Claim(botuser);
                             rewards.Add(w.Type.GetRewardString());
@@ -341,8 +341,8 @@ namespace Sanakan.Modules
 
                 string dailyTip = "Za wykonanie wszystkich dziennych misji można otrzymać 10 AC.";
                 string totalTip = "Dzienne misje odświeżają się o północy, a tygodniowe co niedzielę.";
-                string daily = $"**Dzienne misje:**\n\n{string.Join("\n", dailyQuests.Select(x => x.ToView()))}";
-                string weekly = $"**Tygodniowe misje:**\n\n{string.Join("\n", weeklyQuests.Select(x => x.ToView()))}";
+                string daily = $"**Dzienne misje:**\n\n{string.Join("\n", dailyQuests.Select(x => x.ToView(_time.Now())))}";
+                string weekly = $"**Tygodniowe misje:**\n\n{string.Join("\n", weeklyQuests.Select(x => x.ToView(_time.Now())))}";
 
                 await ReplyAsync("", embed: $"{daily}\n\n{dailyTip}\n\n\n{weekly}\n\n{totalTip}".ToEmbedMessage(EMType.Bot).WithUser(Context.User).Build());
             }
@@ -557,7 +557,7 @@ namespace Sanakan.Modules
                 }
                 else
                 {
-                    if (_profile.HasSameColor(user, color) && colort.IsActive())
+                    if (_profile.HasSameColor(user, color) && colort.IsActive(_time.Now()))
                     {
                         colort.EndsAt = colort.EndsAt.AddMonths(1);
                     }

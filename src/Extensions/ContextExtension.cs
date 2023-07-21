@@ -98,7 +98,7 @@ namespace Sanakan.Extensions
 
             if (user == null)
             {
-                user = user.Default(userId);
+                user = user.Default(userId, DateTime.Now);
                 await context.Users.AddAsync(user);
             }
 

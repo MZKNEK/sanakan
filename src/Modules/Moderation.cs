@@ -1630,7 +1630,7 @@ namespace Sanakan.Modules
                             report = $"**Globalki:** ❗\n\n";
                             await user.RemoveRoleAsync(globalRole);
                         }
-                        else if (!sub.IsActive())
+                        else if (!sub.IsActive(_time.Now()))
                         {
                             report = $"**Globalki:** ⚠\n\n";
                             await user.RemoveRoleAsync(globalRole);
@@ -1648,7 +1648,7 @@ namespace Sanakan.Modules
                         kolorRep = $"**Kolor:** ❗\n\n";
                         await _profile.RomoveUserColorAsync(user);
                     }
-                    else if (!sub.IsActive())
+                    else if (!sub.IsActive(_time.Now()))
                     {
                         kolorRep = $"**Kolor:** ⚠\n\n";
                         await _profile.RomoveUserColorAsync(user);

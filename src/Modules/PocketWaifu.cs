@@ -523,7 +523,7 @@ namespace Sanakan.Modules
                     }
 
                     if (pack.CardSourceFromPack != CardSource.Api)
-                        mission.Count();
+                        mission.Count(_time.Now());
 
                     if (pack.CardSourceFromPack == CardSource.Activity || pack.CardSourceFromPack == CardSource.Migration)
                     {
@@ -1074,9 +1074,9 @@ namespace Sanakan.Modules
 
                 var ns = freeCard.Sub(TimeSpan.FromHours(cnt));
 
-                if (ns.IsActive())
+                if (ns.IsActive(_time.Now()))
                 {
-                    var timeTo = (int)ns.RemainingMinutes();
+                    var timeTo = (int)ns.RemainingMinutes(_time.Now());
                     await ReplyAsync("", embed: $"{Context.User.Mention} możesz otrzymać następną darmową kartę dopiero za {timeTo / 60}h {timeTo % 60}m!".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
@@ -1093,7 +1093,7 @@ namespace Sanakan.Modules
                     mission = Database.Models.StatusType.WCardPlus.NewTimeStatus();
                     botuser.TimeStatuses.Add(mission);
                 }
-                mission.Count();
+                mission.Count(_time.Now());
 
                 freeCard.EndsAt = _time.Now().AddHours(22);
 
@@ -1173,9 +1173,9 @@ namespace Sanakan.Modules
                     botuser.TimeStatuses.Add(market);
                 }
 
-                if (market.IsActive())
+                if (market.IsActive(_time.Now()))
                 {
-                    var timeTo = (int)market.RemainingMinutes();
+                    var timeTo = (int)market.RemainingMinutes(_time.Now());
                     await ReplyAsync("", embed: $"{Context.User.Mention} możesz udać się ponownie na rynek za {timeTo / 60}h {timeTo % 60}m!".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
@@ -1186,7 +1186,7 @@ namespace Sanakan.Modules
                     mission = Database.Models.StatusType.DMarket.NewTimeStatus();
                     botuser.TimeStatuses.Add(mission);
                 }
-                mission.Count();
+                mission.Count(_time.Now());
 
                 int nextMarket = 20 - (int)(botuser.GameDeck.Karma / 100);
                 if (nextMarket > 22) nextMarket = 22;
@@ -1285,9 +1285,9 @@ namespace Sanakan.Modules
                     botuser.TimeStatuses.Add(market);
                 }
 
-                if (market.IsActive())
+                if (market.IsActive(_time.Now()))
                 {
-                    var timeTo = (int)market.RemainingMinutes();
+                    var timeTo = (int)market.RemainingMinutes(_time.Now());
                     await ReplyAsync("", embed: $"{Context.User.Mention} możesz udać się ponownie na czarny rynek za {timeTo / 60}h {timeTo % 60}m!".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
@@ -1298,7 +1298,7 @@ namespace Sanakan.Modules
                     mission = Database.Models.StatusType.DMarket.NewTimeStatus();
                     botuser.TimeStatuses.Add(mission);
                 }
-                mission.Count();
+                mission.Count(_time.Now());
 
                 int nextMarket = 20 + (int)(botuser.GameDeck.Karma / 100);
                 if (nextMarket > 22) nextMarket = 22;
@@ -2768,7 +2768,7 @@ namespace Sanakan.Modules
                     mission = Database.Models.StatusType.DExpeditions.NewTimeStatus();
                     botUser.TimeStatuses.Add(mission);
                 }
-                mission.Count(cardsSelected.Count);
+                mission.Count(_time.Now(), cardsSelected.Count);
 
                 await db.SaveChangesAsync();
 
@@ -2820,7 +2820,7 @@ namespace Sanakan.Modules
                     duser.TimeStatuses.Add(pvpDailyMax);
                 }
 
-                if (!pvpDailyMax.IsActive())
+                if (!pvpDailyMax.IsActive(_time.Now()))
                 {
                     pvpDailyMax.EndsAt = _time.Now().Date.AddHours(3).AddDays(1);
                     duser.GameDeck.PVPDailyGamesPlayed = 0;
@@ -2900,7 +2900,7 @@ namespace Sanakan.Modules
                     mission = Database.Models.StatusType.DPvp.NewTimeStatus();
                     duser.TimeStatuses.Add(mission);
                 }
-                mission.Count();
+                mission.Count(_time.Now());
 
                 var info = duser.GameDeck.CalculatePVPParams(denemy.GameDeck, res);
                 await db.SaveChangesAsync();
@@ -3143,7 +3143,7 @@ namespace Sanakan.Modules
                 }
 
                 var seasonString = "----";
-                if (bUser.GameDeck.IsPVPSeasonalRankActive())
+                if (bUser.GameDeck.IsPVPSeasonalRankActive(_time.Now()))
                     seasonString = $"{bUser.GameDeck.GetRankName()} ({bUser.GameDeck.SeasonalPVPRank})";
                 var globalString = $"{bUser.GameDeck.GetRankName(bUser.GameDeck.GlobalPVPRank)} ({bUser.GameDeck.GlobalPVPRank})";
 
@@ -3201,7 +3201,7 @@ namespace Sanakan.Modules
                 var wPvp = bUser.GameDeck?.PvPStats?.Count(x => x.Result == FightResult.Win && x.Type == FightType.NewVersus);
 
                 var seasonString = "----";
-                if (bUser.GameDeck.IsPVPSeasonalRankActive())
+                if (bUser.GameDeck.IsPVPSeasonalRankActive(_time.Now()))
                     seasonString = $"{bUser.GameDeck.GetRankName()} ({bUser.GameDeck.SeasonalPVPRank})";
 
                 var globalString = $"{bUser.GameDeck.GetRankName(bUser.GameDeck.GlobalPVPRank)} ({bUser.GameDeck.GlobalPVPRank})";

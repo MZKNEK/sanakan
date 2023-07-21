@@ -190,24 +190,24 @@ namespace Sanakan.Extensions
             status.EndsAt = DateTime.MinValue;
         }
 
-        public static void Count(this TimeStatus status, int times = 1)
+        public static void Count(this TimeStatus status, DateTime currentTime, int times = 1)
         {
             if (status.Type.IsQuest())
             {
-                if (status.IsActive() && !status.BValue)
+                if (status.IsActive(currentTime) && !status.BValue)
                 {
                     status.IValue += times;
                 }
-                else if (!status.IsActive())
+                else if (!status.IsActive(currentTime))
                 {
                     status.IValue = times;
                     status.BValue = false;
 
                     if (status.Type.IsDailyQuestType())
-                        status.EndsAt = DateTime.Now.Date.AddDays(1);
+                        status.EndsAt = currentTime.Date.AddDays(1);
 
                     if (status.Type.IsWeeklyQuestType())
-                        status.EndsAt = DateTime.Now.Date.AddDays(7 - (int) DateTime.Now.DayOfWeek);
+                        status.EndsAt = currentTime.Date.AddDays(7 - (int) currentTime.DayOfWeek);
                 }
             }
 
@@ -256,43 +256,45 @@ namespace Sanakan.Extensions
             }
         }
 
-        public static bool IsClaimed(this TimeStatus status) => status.IsActive() && status.BValue;
+        public static bool IsClaimed(this TimeStatus status, DateTime currentTime)
+            => status.IsActive(currentTime) && status.BValue;
 
-        public static bool CanClaim(this TimeStatus status) => status.IsActive() && !status.BValue
-            && status.Type.IsQuest() && status.IValue >= status.Type.ToComplete();
+        public static bool CanClaim(this TimeStatus status, DateTime currentTime)
+            => status.IsActive(currentTime) && !status.BValue && status.Type.IsQuest()
+                && status.IValue >= status.Type.ToComplete();
 
-        public static double RemainingMinutes(this TimeStatus status)
-            => (status.EndsAt - DateTime.Now).TotalMinutes;
+        public static double RemainingMinutes(this TimeStatus status, DateTime currentTime)
+            => (status.EndsAt - currentTime).TotalMinutes;
 
-        public static double RemainingSeconds(this TimeStatus status)
-            => (status.EndsAt - DateTime.Now).TotalSeconds;
+        public static double RemainingSeconds(this TimeStatus status, DateTime currentTime)
+            => (status.EndsAt - currentTime).TotalSeconds;
 
         public static bool IsSet(this TimeStatus status)
             => status.EndsAt !=  DateTime.MinValue;
 
-        public static bool HasEnded(this TimeStatus status)
-            => status.EndsAt < DateTime.Now;
+        public static bool HasEnded(this TimeStatus status, DateTime currentTime)
+            => status.EndsAt < currentTime;
 
-        public static bool IsActive(this TimeStatus status)
-            => status.IsSet() && !status.HasEnded();
+        public static bool IsActive(this TimeStatus status, DateTime currentTime)
+            => status.IsSet() && !status.HasEnded(currentTime);
 
-        public static string ToView(this TimeStatus status)
+        public static string ToView(this TimeStatus status, DateTime currentTime)
         {
             if (status.Type.IsQuest())
             {
                 long max = status.Type.ToComplete();
-                long actualProgress = status.IsActive() ? status.IValue : 0;
+                long actualProgress = status.IsActive(currentTime) ? status.IValue : 0;
 
                 string progress = (actualProgress >= max) ? (status.BValue ? _claimed.ToString() : _toClaim.ToString())
                     : $"[{actualProgress}/{status.Type.ToComplete()}]";
 
-                string reward = status.IsActive() && status.BValue ? "" : $"\nNagroda: `{status.Type.GetRewardString()}`";
+                string reward = status.IsActive(currentTime) && status.BValue ? "" : $"\nNagroda: `{status.Type.GetRewardString()}`";
 
                 return $"{status.Type.Icon()} **{status.Type.Name()}** {progress}{reward}";
             }
 
             string dateValue = status.EndsAt.ToShortDateTime();
-            if (status.HasEnded()) dateValue = "nieaktywne";
+            if (status.HasEnded(currentTime)) dateValue = "nieaktywne";
 
             return $"{status.Type.Name()} do `{dateValue}`";
         }

@@ -309,7 +309,7 @@ namespace Sanakan.Services.PocketWaifu
                         botUser.TimeStatuses.Add(pCnt);
                     }
 
-                    if (!pCnt.IsActive())
+                    if (!pCnt.IsActive(_time.Now()))
                     {
                         pCnt.EndsAt = _time.Now().Date.AddDays(1);
                         pCnt.IValue = 0;
