@@ -273,7 +273,7 @@ namespace Sanakan.Services.PocketWaifu
             await msg.AddReactionAsync(ClaimEmote);
         }
 
-        private void HandleUserAsync(SocketUserMessage message)
+        private void HandleUser(SocketUserMessage message)
         {
             var author = message.Author;
             if (!UserCounter.Any(x => x.Key == author.Id))
@@ -383,7 +383,7 @@ namespace Sanakan.Services.PocketWaifu
                 if (config == null) return;
 
                 var noExp = config.ChannelsWithoutExp.Any(x => x.Channel == msg.Channel.Id);
-                if (!noExp) HandleUserAsync(msg);
+                if (!noExp && user.Roles.Any(x => x.Id == config.UserRole)) HandleUser(msg);
 
                 var sch = user.Guild.GetTextChannel(config.WaifuConfig.SpawnChannel);
                 var tch = user.Guild.GetTextChannel(config.WaifuConfig.TrashSpawnChannel);
