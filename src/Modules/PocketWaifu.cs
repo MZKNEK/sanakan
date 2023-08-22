@@ -1723,40 +1723,41 @@ namespace Sanakan.Modules
                 if (wishlists.Count < 1)
                 {
                     await ReplyAsync("", embed: $"Nikt nie chce tej karty.".ToEmbedMessage(EMType.Error).Build());
-                    return;
-                }
-
-                var usersStr = await _waifu.GetWhoWantsCardsStringAsync(wishlists, showNames, Context.Guild);
-                if (usersStr.Count > 50)
-                {
-                    try
-                    {
-                        var msgs = usersStr.SplitList();
-                        var dm = await Context.User.CreateDMChannelAsync();
-                        for (int i = 0; i < msgs.Count; i++)
-                        {
-                            var mes = $"**[{i + 1}/{msgs.Count}]:**\n\n{string.Join('\n', msgs[i])}";
-                            if (i == 0) mes = $"**{thisCards.GetNameWithUrl()} chcą ({usersStr.Count})** {mes}";
-                            await dm.SendMessageAsync("", embed: mes.ToEmbedMessage(EMType.Info).Build());
-                            await Task.Delay(TimeSpan.FromSeconds(2));
-                        }
-                        await ReplyAsync("", embed: $"{Context.User.Mention} lista poszła na PW!".ToEmbedMessage(EMType.Success).Build());
-                    }
-                    catch (Exception)
-                    {
-                        await ReplyAsync("", embed: $"{Context.User.Mention} nie można wysłać do Ciebie PW!".ToEmbedMessage(EMType.Error).Build());
-                    }
                 }
                 else
                 {
-                    await ReplyAsync("", embed: $"**{thisCards.GetNameWithUrl()} chcą ({usersStr.Count}):**\n\n {string.Join('\n', usersStr)}".TrimToLength(2000).ToEmbedMessage(EMType.Info).Build());
+                    var usersStr = await _waifu.GetWhoWantsCardsStringAsync(wishlists, showNames, Context.Guild);
+                    if (usersStr.Count > 50)
+                    {
+                        try
+                        {
+                            var msgs = usersStr.SplitList();
+                            var dm = await Context.User.CreateDMChannelAsync();
+                            for (int i = 0; i < msgs.Count; i++)
+                            {
+                                var mes = $"**[{i + 1}/{msgs.Count}]:**\n\n{string.Join('\n', msgs[i])}";
+                                if (i == 0) mes = $"**{thisCards.GetNameWithUrl()} chcą ({usersStr.Count})** {mes}";
+                                await dm.SendMessageAsync("", embed: mes.ToEmbedMessage(EMType.Info).Build());
+                                await Task.Delay(TimeSpan.FromSeconds(2));
+                            }
+                            await ReplyAsync("", embed: $"{Context.User.Mention} lista poszła na PW!".ToEmbedMessage(EMType.Success).Build());
+                        }
+                        catch (Exception)
+                        {
+                            await ReplyAsync("", embed: $"{Context.User.Mention} nie można wysłać do Ciebie PW!".ToEmbedMessage(EMType.Error).Build());
+                        }
+                    }
+                    else
+                    {
+                        await ReplyAsync("", embed: $"**{thisCards.GetNameWithUrl()} chcą ({usersStr.Count}):**\n\n {string.Join('\n', usersStr)}".TrimToLength(2000).ToEmbedMessage(EMType.Info).Build());
+                    }
                 }
 
                 var exe = new Executable($"kc-check-{thisCards.Character}", new Task<Task>(async () =>
                 {
                     using (var dbs = new Database.DatabaseContext(_config))
                     {
-                        var wCount = (await dbs.GameDecks.Include(x => x.Wishes).AsNoTracking().Where(x => !x.WishlistIsPrivate && x.Wishes.Any(c => c.Type == WishlistObjectType.Character && c.ObjectId == thisCards.Character)).ToListAsync()).Count;
+                        var wCount = await dbs.GameDecks.Include(x => x.Wishes).AsNoTracking().Where(x => !x.WishlistIsPrivate && x.Wishes.Any(c => c.Type == WishlistObjectType.Character && c.ObjectId == thisCards.Character)).CountAsync();
                         var ww = await dbs.CreateOrChangeWishlistCountByAsync(thisCards.Character, thisCards.Name, wCount, true);
                         if (ww)
                         {
