@@ -1719,7 +1719,7 @@ namespace Sanakan.Modules
                     return;
                 }
 
-                var wishlists = db.GameDecks.Include(x => x.Wishes).Include(x => x.User).Where(x => !x.WishlistIsPrivate && (x.Wishes.Any(c => c.Type == WishlistObjectType.Card && c.ObjectId == thisCards.Id) || x.Wishes.Any(c => c.Type == WishlistObjectType.Character && c.ObjectId == thisCards.Character))).ToList();
+                var wishlists = db.GameDecks.Include(x => x.Wishes).Include(x => x.User).AsNoTracking().Where(x => !x.WishlistIsPrivate && (x.Wishes.Any(c => c.Type == WishlistObjectType.Card && c.ObjectId == thisCards.Id) || x.Wishes.Any(c => c.Type == WishlistObjectType.Character && c.ObjectId == thisCards.Character))).ToList();
                 if (wishlists.Count < 1)
                 {
                     await ReplyAsync("", embed: $"Nikt nie chce tej karty.".ToEmbedMessage(EMType.Error).Build());
@@ -1756,7 +1756,7 @@ namespace Sanakan.Modules
                 {
                     using (var dbs = new Database.DatabaseContext(_config))
                     {
-                        var wCount = await dbs.GameDecks.Include(x => x.Wishes).AsNoTracking().Where(x => !x.WishlistIsPrivate && x.Wishes.Any(c => c.Type == WishlistObjectType.Character && c.ObjectId == thisCards.Character)).CountAsync();
+                        var wCount = (await dbs.GameDecks.Include(x => x.Wishes).AsNoTracking().Where(x => !x.WishlistIsPrivate && x.Wishes.Any(c => c.Type == WishlistObjectType.Character && c.ObjectId == thisCards.Character)).ToListAsync()).Count;
                         var ww = await dbs.CreateOrChangeWishlistCountByAsync(thisCards.Character, thisCards.Name, wCount, true);
                         if (ww)
                         {
