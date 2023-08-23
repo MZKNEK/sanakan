@@ -12,10 +12,15 @@ namespace Sanakan.Services.Supervisor
     {
         private readonly ISystemTime _timeProvider;
 
-        private static List<string> BannableStrings = new List<string>()
+        private static readonly List<string> _bannableStrings = new List<string>()
         {
             "dliscord.com", ".gift", "discorl.com", "dliscord-giveaway.ru", "dlscordniltro.com", "dlscocrd.club",
             "dliscordl.com", "boostnltro.com", "discord-gifte", "dlscordapps.com"
+        };
+
+        private static readonly List<string> _whitelistUrls = new List<string>()
+        {
+            "tenor.com", "imgur.com", "sanakan.pl", "shinden.pl"
         };
 
         public SupervisorMessage(string content, ISystemTime timeProvider, int count = 1)
@@ -31,8 +36,9 @@ namespace Sanakan.Services.Supervisor
         public string Content { get; private set; }
         public int Count { get; private set; }
 
+        public bool UrlIsOnWhitelist() => Content.GetURLs().All(x => _whitelistUrls.Any(u => x.Contains(u)));
         public bool ContainsUrl() => Content.GetURLs().Count > 0;
-        public bool IsBannable() => BannableStrings.Any(x => Content.Contains(x));
+        public bool IsBannable() => _bannableStrings.Any(x => Content.Contains(x));
         public bool IsValid() => (_timeProvider.Now() - PreviousOccurrence).TotalMinutes <= 1;
         public int Inc()
         {

@@ -151,7 +151,7 @@ namespace Sanakan.Services.Supervisor
                 bool isBannable = thisMessage.IsBannable();
                 if (_config.Get().GiveBanForUrlSpam)
                 {
-                    isBannable |= thisMessage.ContainsUrl();
+                    isBannable |= thisMessage.ContainsUrl() && !thisMessage.UrlIsOnWhitelist();
                 }
 
                 bool hasRole = user.Roles.Any(x => x.Id == gConfig.UserRole || x.Id == gConfig.MuteRole) || gConfig.UserRole == 0;
