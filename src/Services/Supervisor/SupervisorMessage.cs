@@ -36,8 +36,6 @@ namespace Sanakan.Services.Supervisor
         public string Content { get; private set; }
         public int Count { get; private set; }
 
-        public bool UrlIsOnWhitelist() => Content.GetURLs().All(x => _whitelistUrls.Any(u => x.Contains(u)));
-        public bool ContainsUrl() => Content.GetURLs().Count > 0;
         public bool IsBannable() => _bannableStrings.Any(x => Content.Contains(x));
         public bool IsValid() => (_timeProvider.Now() - PreviousOccurrence).TotalMinutes <= 1;
         public int Inc()
@@ -48,6 +46,21 @@ namespace Sanakan.Services.Supervisor
             PreviousOccurrence = _timeProvider.Now();
 
             return ++Count;
+        }
+
+        public bool AnyUrl(bool countUrls = false)
+        {
+            bool found = false;
+            foreach (var url in Content.GetURLs())
+            {
+                if (!_whitelistUrls.Any(x => url.Contains(x)))
+                {
+                    found = true;
+                    if (countUrls)
+                        Count++;
+                }
+            }
+            return found;
         }
     }
 }
