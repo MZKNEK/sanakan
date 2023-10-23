@@ -453,8 +453,8 @@ namespace Sanakan.Services.PocketWaifu
                 new ItemWithCost(999,   ItemType.SetCustomImage.ToItem()),
                 new ItemWithCost(659,   ItemType.SetCustomBorder.ToItem()),
                 new ItemWithCost(149,   ItemType.ChangeStarType.ToItem()),
-                new ItemWithCost(99,    ItemType.RandomBoosterPackSingleE.ToItem()),
-                new ItemWithCost(999,   ItemType.BigRandomBoosterPackE.ToItem()),
+                new ItemWithCost(104,   ItemType.RandomBoosterPackSingleE.ToItem()),
+                new ItemWithCost(997,   ItemType.BigRandomBoosterPackE.ToItem()),
                 new ItemWithCost(1199,  ItemType.RandomTitleBoosterPackSingleE.ToItem()),
                 new ItemWithCost(199,   ItemType.RandomNormalBoosterPackB.ToItem()),
                 new ItemWithCost(499,   ItemType.RandomNormalBoosterPackA.ToItem()),
@@ -468,14 +468,14 @@ namespace Sanakan.Services.PocketWaifu
         {
             return new ItemWithCost[]
             {
-                new ItemWithCost(169,    ItemType.AffectionRecoveryNormal.ToItem()),
-                new ItemWithCost(1699,   ItemType.IncreaseExpBig.ToItem()),
-                new ItemWithCost(1699,   ItemType.CheckAffection.ToItem()),
-                new ItemWithCost(16999,  ItemType.IncreaseUpgradeCnt.ToItem()),
-                new ItemWithCost(46999,  ItemType.BetterIncreaseUpgradeCnt.ToItem()),
-                new ItemWithCost(4699,   ItemType.ChangeCardImage.ToItem()),
-                new ItemWithCost(269999, ItemType.SetCustomImage.ToItem()),
-                new ItemWithCost(699999, ItemType.IncreaseUltimateAll.ToItem()),
+                new ItemWithCost(169,   ItemType.AffectionRecoveryNormal.ToItem()),
+                new ItemWithCost(1699,  ItemType.IncreaseExpBig.ToItem()),
+                new ItemWithCost(1699,  ItemType.CheckAffection.ToItem()),
+                new ItemWithCost(16999, ItemType.IncreaseUpgradeCnt.ToItem()),
+                new ItemWithCost(46999, ItemType.BetterIncreaseUpgradeCnt.ToItem()),
+                new ItemWithCost(4699,  ItemType.ChangeCardImage.ToItem()),
+                new ItemWithCost(26999, ItemType.SetCustomImage.ToItem()),
+                new ItemWithCost(69999, ItemType.IncreaseUltimateAll.ToItem()),
             };
         }
 
@@ -484,10 +484,10 @@ namespace Sanakan.Services.PocketWaifu
             return new ItemWithCost[]
             {
                 new ItemWithCost(6,     ItemType.AffectionRecoveryBig.ToItem()),
-                new ItemWithCost(65,    ItemType.IncreaseExpBig.ToItem()),
-                new ItemWithCost(500,   ItemType.IncreaseUpgradeCnt.ToItem()),
-                new ItemWithCost(1800,  ItemType.SetCustomImage.ToItem()),
-                new ItemWithCost(150,   ItemType.RandomBoosterPackSingleE.ToItem()),
+                new ItemWithCost(35,    ItemType.IncreaseExpBig.ToItem()),
+                new ItemWithCost(395,   ItemType.IncreaseUpgradeCnt.ToItem()),
+                new ItemWithCost(1565,  ItemType.SetCustomImage.ToItem()),
+                new ItemWithCost(165,   ItemType.RandomBoosterPackSingleE.ToItem()),
                 new ItemWithCost(1500,  ItemType.BigRandomBoosterPackE.ToItem()),
             };
         }

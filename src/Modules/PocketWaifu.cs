@@ -544,7 +544,7 @@ namespace Sanakan.Modules
                     if (await bUser.GameDeck.RemoveCharacterFromWishListAsync(card.Character, db))
                         charactersOnWishlist.Add(card.Name);
 
-                    if (checkWishlists && count == 1)
+                    if (checkWishlists)
                     {
                         bool isOnUserWishlist = charactersOnWishlist.Any(x => x == card.Name);
                         var wishlistsCnt = allWWCnt.FirstOrDefault(x => x.Id == card.Character)?.Count ?? 0;
@@ -578,10 +578,10 @@ namespace Sanakan.Modules
 
                 foreach (var card in totalCards)
                 {
-                    if (checkWishlists && count == 1)
+                    if (checkWishlists)
                     {
                         bool isOnUserWishlist = charactersOnWishlist.Any(x => x == card.Name);
-                        if ((card.WhoWantsCount < destroyCards && !isOnUserWishlist) && destroyCards > 0)
+                        if (card.WhoWantsCount < destroyCards && !isOnUserWishlist && destroyCards > 0)
                         {
                             openString += "🖤 ";
                         }
