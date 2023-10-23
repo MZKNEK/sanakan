@@ -48,6 +48,14 @@ namespace Sanakan.Api.Models
         /// Wiadomość do kanału raportów
         /// </summary>
         AdminNotify,
+        /// <summary>
+        /// Wiadomość do kanału nowych epizodów
+        /// </summary>
+        NewEpisodePLAI,
+        /// <summary>
+        /// Wiadomość do kanału nowych epizodów
+        /// </summary>
+        NewEpisodeAI,
     }
 
     /// <summary>
