@@ -454,7 +454,7 @@ namespace Sanakan.Services.PocketWaifu
                 new ItemWithCost(659,   ItemType.SetCustomBorder.ToItem()),
                 new ItemWithCost(149,   ItemType.ChangeStarType.ToItem()),
                 new ItemWithCost(104,   ItemType.RandomBoosterPackSingleE.ToItem()),
-                new ItemWithCost(997,   ItemType.BigRandomBoosterPackE.ToItem()),
+                new ItemWithCost(985,   ItemType.BigRandomBoosterPackE.ToItem()),
                 new ItemWithCost(1199,  ItemType.RandomTitleBoosterPackSingleE.ToItem()),
                 new ItemWithCost(199,   ItemType.RandomNormalBoosterPackB.ToItem()),
                 new ItemWithCost(499,   ItemType.RandomNormalBoosterPackA.ToItem()),
@@ -471,11 +471,11 @@ namespace Sanakan.Services.PocketWaifu
                 new ItemWithCost(169,   ItemType.AffectionRecoveryNormal.ToItem()),
                 new ItemWithCost(1699,  ItemType.IncreaseExpBig.ToItem()),
                 new ItemWithCost(1699,  ItemType.CheckAffection.ToItem()),
-                new ItemWithCost(16999, ItemType.IncreaseUpgradeCnt.ToItem()),
-                new ItemWithCost(46999, ItemType.BetterIncreaseUpgradeCnt.ToItem()),
+                new ItemWithCost(9999,  ItemType.IncreaseUpgradeCnt.ToItem()),
+                new ItemWithCost(16999, ItemType.BetterIncreaseUpgradeCnt.ToItem()),
                 new ItemWithCost(4699,  ItemType.ChangeCardImage.ToItem()),
-                new ItemWithCost(26999, ItemType.SetCustomImage.ToItem()),
-                new ItemWithCost(69999, ItemType.IncreaseUltimateAll.ToItem()),
+                new ItemWithCost(65999, ItemType.SetCustomImage.ToItem()),
+                new ItemWithCost(19999, ItemType.IncreaseUltimateAll.ToItem()),
             };
         }
 
@@ -486,7 +486,7 @@ namespace Sanakan.Services.PocketWaifu
                 new ItemWithCost(6,     ItemType.AffectionRecoveryBig.ToItem()),
                 new ItemWithCost(35,    ItemType.IncreaseExpBig.ToItem()),
                 new ItemWithCost(395,   ItemType.IncreaseUpgradeCnt.ToItem()),
-                new ItemWithCost(1565,  ItemType.SetCustomImage.ToItem()),
+                new ItemWithCost(1665,  ItemType.SetCustomImage.ToItem()),
                 new ItemWithCost(165,   ItemType.RandomBoosterPackSingleE.ToItem()),
                 new ItemWithCost(1500,  ItemType.BigRandomBoosterPackE.ToItem()),
             };
