@@ -61,6 +61,7 @@ namespace Sanakan.Database
         public DbSet<TransferAnalytics> TransferData { get; set; }
         public DbSet<CommandsAnalytics> CommandsData { get; set; }
         public DbSet<WishlistCount> WishlistCountData { get; set; }
+        public DbSet<UserActivity> UserActivities { get; set; }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
@@ -366,9 +367,15 @@ namespace Sanakan.Database
                 entity.HasKey(e => e.Id);
             });
 
+            // Other
             // add trigger after update
             // UPDATE `Cards` SET `WhoWantsCount` = NEW.Count WHERE `Character` = NEW.Id
             modelBuilder.Entity<WishlistCount>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+            });
+
+            modelBuilder.Entity<UserActivity>(entity =>
             {
                 entity.HasKey(e => e.Id);
             });
