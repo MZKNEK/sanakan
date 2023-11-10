@@ -1648,7 +1648,7 @@ namespace Sanakan.Services.PocketWaifu
             var content = new List<Embed>();
             for (int i = 0; i < contentTable.Count; i++)
             {
-                if (temp.Length + contentTable[i].Length > 2000)
+                if (temp.Length + contentTable[i].Length > 3500)
                 {
                     content.Add(new EmbedBuilder()
                     {

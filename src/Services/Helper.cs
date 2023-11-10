@@ -450,18 +450,16 @@ namespace Sanakan.Services
             try
             {
                 var dm = await user.CreateDMChannelAsync();
-                while (!embeds.IsNullOrEmpty())
+                foreach (var emb in embeds)
                 {
-                    await dm.SendMessageAsync("", embeds: embeds.Take(10).ToArray());
+                    await dm.SendMessageAsync("", embed: emb);
                     await Task.Delay(delay);
-
-                    embeds = embeds.Skip(10).ToList();
                 }
                 return ExecutionResult.FromSuccess("lista poszła na PW!");
             }
             catch (Exception ex)
             {
-                return ExecutionResult.FromError($"coś poszło nie tak [{embeds.Count()}]: {ex.Message}".TrimToLength(3500));
+                return ExecutionResult.FromError($"coś poszło nie tak [{embeds.Count()}]:\n\n{ex.Message}".TrimToLength(2000));
             }
         }
     }
