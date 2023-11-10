@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Discord.WebSocket;
 using Microsoft.EntityFrameworkCore;
 using Sanakan.Config;
+using Sanakan.Database.Models;
 using Sanakan.Extensions;
 using Sanakan.Services.Executor;
 using Sanakan.Services.Time;
@@ -310,6 +311,9 @@ namespace Sanakan.Services
                             }
                         }
                     });
+
+                    await db.UserActivities.AddAsync(new UserActivityBuilder(_time)
+                        .WithUser(usr).WithType(ActivityType.LevelUp, (ulong)newLevel).Build());
 
                     await db.SaveChangesAsync();
                 }

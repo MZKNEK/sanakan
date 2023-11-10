@@ -334,6 +334,17 @@ namespace Sanakan.Modules
         [Remarks("1 10 5 10")]
         public async Task GiveawayCardsMultiAsync([Summary("id użytkownika")]ulong id, [Summary("liczba kart")]uint count, [Summary("czas w minutach")]uint duration = 5, [Summary("liczba powtórzeń")]uint repeat = 1)
         {
+            var exe = new Executable("lotery-start", new Task<Task>(async () =>
+            {
+                using (var db = new Database.DatabaseContext(Config))
+                {
+                    await db.UserActivities.AddAsync(new Services.UserActivityBuilder(_time)
+                        .WithType(Database.Models.ActivityType.LotteryStarted).Build());
+                    await db.SaveChangesAsync();
+                }
+            }), Priority.High);
+            await _executor.TryAdd(exe, TimeSpan.FromSeconds(1));
+
             for (uint i = 0; i < repeat; i++)
             {
                 await GiveawayCardsAsync(id, count, duration, i, repeat);
@@ -464,6 +475,9 @@ namespace Sanakan.Modules
                     var embToSend =  $"Loterie wygrywa {winner.Mention} i otrzymuje:\n\n{string.Join("\n", cardsIds)}".TrimToLength(2000).ToEmbedMessage(msgType);
                     if (progress > -1) embToSend.Footer = (new EmbedFooterBuilder()).WithText($"{progress+1}/{howMuch}");
                     msg = await ReplyAsync(embed: embToSend.Build());
+
+                    await db.UserActivities.AddAsync(new Services.UserActivityBuilder(_time)
+                        .WithUser(user).WithType(Database.Models.ActivityType.WonLottery).Build());
 
                     try
                     {

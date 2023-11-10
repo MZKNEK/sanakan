@@ -639,6 +639,10 @@ namespace Sanakan.Services
 
             await db.Penalties.AddAsync(exInfo.Info);
 
+            var botUser = await db.Users.AsNoTracking().FirstOrDefaultAsync(x => x.Id == user.Id);
+            await db.UserActivities.AddAsync(new UserActivityBuilder(_time)
+                .WithUser(botUser).WithType(Database.Models.ActivityType.Muted).Build());
+
             if (userRole != null)
             {
                 if (user.Roles.Contains(userRole))

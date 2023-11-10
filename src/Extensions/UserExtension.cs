@@ -485,10 +485,15 @@ namespace Sanakan.Extensions
             }
         }
 
-        public static void RemoveCardFromWishList(this GameDeck deck, ulong id)
+        public static bool RemoveCardFromWishList(this GameDeck deck, ulong id)
         {
             var en = deck.Wishes.FirstOrDefault(x => x.Type == WishlistObjectType.Card && x.ObjectId == id);
-            if (en != null) deck.Wishes.Remove(en);
+            if (en != null)
+            {
+                deck.Wishes.Remove(en);
+                return true;
+            }
+            return false;
         }
 
         public static EmbedBuilder GetStatsView(this User u, IUser user)

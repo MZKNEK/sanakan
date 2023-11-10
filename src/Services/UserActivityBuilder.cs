@@ -32,17 +32,41 @@ namespace Sanakan.Services
         public UserActivityBuilder WithCard(Card card)
         {
             _activity.TargetId = card.Id;
-            _activity.UserId = card.GameDeckId;
             _cardText = card.GetShortString(true);
-            if (card.GameDeck != null && card.GameDeck.User != null)
+            if (_activity.UserId == 0 && card.GameDeck != null && card.GameDeck.User != null)
             {
                 _activity.ShindenId = card.GameDeck.User.Shinden;
+            }
+            if (_activity.UserId == 0)
+            {
+                _activity.UserId = card.GameDeckId;
             }
             return this;
         }
 
         public UserActivityBuilder WithType(ActivityType type)
         {
+            switch (type)
+            {
+                case ActivityType.AcquiredCardSSS:
+                case ActivityType.AcquiredCardKC:
+                case ActivityType.AcquiredCardWishlist:
+                case ActivityType.AcquiredCarcUltimate:
+                case ActivityType.UsedScalpel:
+                case ActivityType.CreatedYato:
+                case ActivityType.CreatedYami:
+                case ActivityType.CreatedRaito:
+                case ActivityType.CreatedSSS:
+                case ActivityType.CreatedUltiamte:
+                case ActivityType.AddedToWishlistCard:
+                {
+                    if (string.IsNullOrEmpty(_cardText))
+                    {
+                        throw new Exception("Missing card text!");
+                    }
+                }
+                break;
+            }
             _typeWasSet = true;
             _activity.Type = type;
             switch (_activity.Type)

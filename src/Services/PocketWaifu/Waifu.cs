@@ -2218,6 +2218,7 @@ namespace Sanakan.Services.PocketWaifu
 
             var consumeItem = true;
             var embedColor = EMType.Bot;
+            UserActivityBuilder activity = null;
             var textRelation = card.GetAffectionString();
             double karmaChange = item.Type.GetBaseKarmaChange() * itemCnt;
             double affectionInc = item.Type.GetBaseAffection() * itemCnt;
@@ -2306,6 +2307,7 @@ namespace Sanakan.Services.PocketWaifu
                     card.CustomImage = detail;
                     card.CustomImageDate = _time.Now();
                     consumeItem = !card.FromFigure;
+                    activity = new UserActivityBuilder(_time).WithUser(user).WithCard(card).WithType(Database.Models.ActivityType.UsedScalpel);
                     break;
 
                 case ItemType.SetCustomBorder:
@@ -2437,7 +2439,7 @@ namespace Sanakan.Services.PocketWaifu
             if (textRelation != card.GetAffectionString())
                 str.Append($"\nNowa relacja to *{card.GetAffectionString()}*.");
 
-            return ExecutionResult.FromSuccess(str.ToString(), embedColor);
+            return activity == null ? ExecutionResult.FromSuccess(str.ToString(), embedColor) : ExecutionResult.FromSuccessWithActivity(str.ToString(), activity, embedColor);
         }
 
         public async Task<ExecutionResult> CheckWishlistAndSendToDMAsync(Database.DatabaseContext db, IUser discordUser, User user,

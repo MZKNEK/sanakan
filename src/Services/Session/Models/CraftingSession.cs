@@ -11,6 +11,7 @@ using Sanakan.Config;
 using Sanakan.Database.Models;
 using Sanakan.Extensions;
 using Sanakan.Services.PocketWaifu;
+using Sanakan.Services.Time;
 using Z.EntityFramework.Plus;
 
 namespace Sanakan.Services.Session.Models
@@ -23,6 +24,7 @@ namespace Sanakan.Services.Session.Models
         public string Name { get; set; }
         public string Tips { get; set; }
 
+        private ISystemTime _time;
         private IConfig _config;
         private Waifu _waifu;
 
@@ -35,13 +37,14 @@ namespace Sanakan.Services.Session.Models
 
         public IEmote[] StartReactions => new IEmote[] { AcceptEmote, DeclineEmote };
 
-        public CraftingSession(IUser owner, Waifu waifu, IConfig config) : base(owner)
+        public CraftingSession(IUser owner, Waifu waifu, IConfig config, ISystemTime time) : base(owner)
         {
             Event = ExecuteOn.AllEvents;
             RunMode = RunMode.Sync;
             TimeoutMs = 120000;
             _config = config;
             _waifu = waifu;
+            _time = time;
 
             Message = null;
 
@@ -300,6 +303,11 @@ namespace Sanakan.Services.Session.Models
                                 user.GameDeck.Cards.Add(newCard);
 
                                 await db.SaveChangesAsync();
+
+                                if (db.AddActivityFromNewCard(newCard, isOnUserWishlist, _time, user))
+                                {
+                                    await db.SaveChangesAsync();
+                                }
 
                                 await msg.ModifyAsync(x => x.Embed = $"{Name}\n\n**Utworzono:** {newCard.ToHeartWishlist(isOnUserWishlist)}{newCard.GetString(false, false, true)}".ToEmbedMessage(EMType.Success).Build());
                             }

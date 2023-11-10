@@ -11,6 +11,7 @@ using Sanakan.Preconditions;
 using Sanakan.Services.Commands;
 using Sanakan.Services.Session;
 using Sanakan.Services.Session.Models;
+using Sanakan.Services.Time;
 using Z.EntityFramework.Plus;
 using Shden = Shinden;
 
@@ -20,14 +21,16 @@ namespace Sanakan.Modules
     public class Shinden : SanakanModuleBase<SocketCommandContext>
     {
         private Shden.ShindenClient _shclient;
-        private SessionManager _session;
         private Services.Shinden _shinden;
+        private SessionManager _session;
+        private ISystemTime _time;
 
-        public Shinden(Shden.ShindenClient client, SessionManager session, Services.Shinden shinden)
+        public Shinden(Shden.ShindenClient client, SessionManager session, Services.Shinden shinden, ISystemTime time)
         {
             _shclient = client;
             _session = session;
             _shinden = shinden;
+            _time = time;
         }
 
         [Command("odcinki", RunMode = RunMode.Async)]
@@ -221,6 +224,9 @@ namespace Sanakan.Modules
 
                     var botuser = await db.GetUserOrCreateAsync(Context.User.Id);
                     botuser.Shinden = shindenId;
+
+                    await db.UserActivities.AddAsync(new Services.UserActivityBuilder(_time)
+                        .WithUser(botuser).WithType(Database.Models.ActivityType.Connected).Build());
 
                     await db.SaveChangesAsync();
 

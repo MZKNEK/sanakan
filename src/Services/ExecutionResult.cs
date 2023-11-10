@@ -15,12 +15,22 @@ namespace Sanakan.Services
         public EStatus Status { get; private set; }
         public string Message { get; private set; }
         public EMType MessageType { get; private set; }
+        public UserActivityBuilder Activity { get; private set; }
 
         static public ExecutionResult FromError(string msg, EMType type = EMType.Error) => new ExecutionResult
         {
             Message = msg,
             MessageType = type,
             Status = EStatus.Error,
+            Activity = null,
+        };
+
+        static public ExecutionResult FromSuccessWithActivity(string msg, UserActivityBuilder builder, EMType type = EMType.Success) => new ExecutionResult
+        {
+            Message = msg,
+            MessageType = type,
+            Status = EStatus.Ok,
+            Activity = builder,
         };
 
         static public ExecutionResult FromSuccess(string msg, EMType type = EMType.Success) => new ExecutionResult
@@ -28,6 +38,7 @@ namespace Sanakan.Services
             Message = msg,
             MessageType = type,
             Status = EStatus.Ok,
+            Activity = null,
         };
 
         static public ExecutionResult From(ImageUrlCheckResult res)
@@ -67,6 +78,7 @@ namespace Sanakan.Services
 
         public bool IsOk() => Status == EStatus.Ok;
         public bool IsError() => Status == EStatus.Error;
+        public bool IsActivity() => Activity != null;
 
         public EmbedBuilder ToEmbedMessage(string prefix = "", string suffix = "") => $"{prefix}{Message}{suffix}".ToEmbedMessage(MessageType);
 

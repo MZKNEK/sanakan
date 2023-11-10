@@ -10,6 +10,7 @@ using Discord.WebSocket;
 using Sanakan.Config;
 using Sanakan.Extensions;
 using Sanakan.Services.PocketWaifu;
+using Sanakan.Services.Time;
 using Z.EntityFramework.Plus;
 
 namespace Sanakan.Services.Session.Models
@@ -28,6 +29,7 @@ namespace Sanakan.Services.Session.Models
         public string Tips { get; set; }
 
         private ExchangeStatus State;
+        private ISystemTime _time;
         private IConfig _config;
 
         private readonly Emoji AcceptEmote = new Emoji("✅");
@@ -42,7 +44,7 @@ namespace Sanakan.Services.Session.Models
 
         public IEmote[] StartReactions => new IEmote[] { OneEmote, TwoEmote };
 
-        public ExchangeSession(IUser owner, IUser exchanger, IConfig config) : base(owner)
+        public ExchangeSession(IUser owner, IUser exchanger, IConfig config, ISystemTime time) : base(owner)
         {
             State = ExchangeStatus.Add;
             Event = ExecuteOn.AllEvents;
@@ -50,6 +52,7 @@ namespace Sanakan.Services.Session.Models
             RunMode = RunMode.Sync;
             TimeoutMs = 120000;
             _config = config;
+            _time = time;
 
             Message = null;
 
@@ -335,7 +338,7 @@ namespace Sanakan.Services.Session.Models
                                 var card = user1.GetCard(c.Id);
                                 if (card != null)
                                 {
-                                    await card.ExchangeWithAsync(u1Data, u2Data, db);
+                                    await card.ExchangeWithAsync(u1Data, u2Data, db, _time);
                                 }
                             }
 
@@ -344,7 +347,7 @@ namespace Sanakan.Services.Session.Models
                                 var card = user2.GetCard(c.Id);
                                 if (card != null)
                                 {
-                                    await card.ExchangeWithAsync(u2Data, u1Data, db);
+                                    await card.ExchangeWithAsync(u2Data, u1Data, db, _time);
                                 }
                             }
 

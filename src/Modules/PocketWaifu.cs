@@ -274,7 +274,7 @@ namespace Sanakan.Modules
         {
             using (var db = new Database.DatabaseContext(Config))
             {
-                var deck = db.GameDecks.Include(x => x.Figures).Include(x => x.Cards).ThenInclude(x => x.ArenaStats).Where(x => x.Id == Context.User.Id).FirstOrDefault();
+                var deck = db.GameDecks.Include(x => x.User).Include(x => x.Figures).Include(x => x.Cards).ThenInclude(x => x.ArenaStats).Where(x => x.Id == Context.User.Id).FirstOrDefault();
                 var fig = deck.Figures.FirstOrDefault(x => x.IsFocus);
                 if (fig == null)
                 {
@@ -294,6 +294,11 @@ namespace Sanakan.Modules
                 fig.CompletionDate = endTime;
                 fig.IsComplete = true;
                 fig.IsFocus = false;
+
+                await db.SaveChangesAsync();
+
+                await db.UserActivities.AddAsync(new Services.UserActivityBuilder(_time)
+                    .WithCard(card).WithType(Database.Models.ActivityType.CreatedUltiamte).Build());
 
                 await db.SaveChangesAsync();
 
@@ -422,6 +427,10 @@ namespace Sanakan.Modules
                 {
                     await ReplyAsync("", embed: res.ToEmbedMessage($"{Context.User.Mention} ").Build());
                     return;
+                }
+                else if (res.IsActivity())
+                {
+                    await db.UserActivities.AddAsync(res.Activity.Build());
                 }
 
                 await ReplyAsync("", embed: res.ToEmbedMessage().WithUser(Context.User).Build());
@@ -569,13 +578,13 @@ namespace Sanakan.Modules
                 }
 
                 await db.SaveChangesAsync();
-                await db.Database.CloseConnectionAsync();
                 QueryCacheManager.ExpireTag(new string[] { $"user-{bUser.Id}", "users" });
 
                 string openString = "";
                 string packString = $"{count} pakietów";
                 if (count == 1) packString = $"pakietu **{packs.First().Name}**";
 
+                bool saveAgain = false;
                 foreach (var card in totalCards)
                 {
                     if (checkWishlists)
@@ -588,11 +597,21 @@ namespace Sanakan.Modules
                         else
                         {
                             openString += card.ToHeartWishlist(isOnUserWishlist);
+                            if (db.AddActivityFromNewCard(card, isOnUserWishlist, _time, bUser))
+                            {
+                                saveAgain = true;
+                            }
                         }
                     }
                     openString += $"{card.GetString(false, false, true)}\n";
                 }
 
+                if (saveAgain)
+                {
+                    await db.SaveChangesAsync();
+                }
+
+                await db.Database.CloseConnectionAsync();
                 await ReplyAsync("", embed: $"{Context.User.Mention} z {packString} wypadło:\n\n{openString.TrimToLength(1950)}".ToEmbedMessage(EMType.Success).Build());
             }
         }
@@ -824,6 +843,9 @@ namespace Sanakan.Modules
                             }
                             ++bUser.Stats.UpgradedToSSS;
                         }
+
+                        await db.UserActivities.AddAsync(new Services.UserActivityBuilder(_time)
+                            .WithUser(bUser).WithCard(card).WithType(Database.Models.ActivityType.CreatedSSS).Build());
                     }
                 }
 
@@ -1119,6 +1141,10 @@ namespace Sanakan.Modules
                 await db.SaveChangesAsync();
 
                 var wishStr = card.ToHeartWishlist(isOnUserWishlist);
+                if (db.AddActivityFromNewCard(card, isOnUserWishlist, _time, botuser))
+                {
+                    await db.SaveChangesAsync();
+                }
 
                 QueryCacheManager.ExpireTag(new string[] { $"user-{botuser.Id}", "users" });
 
@@ -1574,6 +1600,11 @@ namespace Sanakan.Modules
                         }
                         response = card.GetString(false, false, true);
                         obj.ObjectName = $"{card.Id} - {card.Name}";
+                        if (!bUser.GameDeck.WishlistIsPrivate)
+                        {
+                            await db.UserActivities.AddAsync(new Services.UserActivityBuilder(_time)
+                               .WithUser(bUser).WithCard(card).WithType(Database.Models.ActivityType.AddedToWishlistCard).Build());
+                        }
                         break;
 
                     case WishlistObjectType.Title:
@@ -1585,6 +1616,11 @@ namespace Sanakan.Modules
                         }
                         response = res1.Body.Title;
                         obj.ObjectName = res1.Body.Title;
+                        if (!bUser.GameDeck.WishlistIsPrivate)
+                        {
+                            await db.UserActivities.AddAsync(new Services.UserActivityBuilder(_time)
+                               .WithUser(bUser).WithType(Database.Models.ActivityType.AddedToWishlistTitle, id).Build());
+                        }
                         break;
 
                     case WishlistObjectType.Character:
@@ -1597,6 +1633,11 @@ namespace Sanakan.Modules
                         response = res2.Body.ToString();
                         obj.ObjectName = response;
                         await db.CreateOrChangeWishlistCountByAsync(obj.ObjectId, obj.ObjectName);
+                        if (!bUser.GameDeck.WishlistIsPrivate)
+                        {
+                            await db.UserActivities.AddAsync(new Services.UserActivityBuilder(_time)
+                               .WithUser(bUser).WithType(Database.Models.ActivityType.AddedToWishlistCharacter, id).Build());
+                        }
                         break;
                 }
 
@@ -2559,7 +2600,7 @@ namespace Sanakan.Modules
                 return;
             }
 
-            var session = new ExchangeSession(user1, user2, _config);
+            var session = new ExchangeSession(user1, user2, _config, _time);
             if (_session.SessionExist(session))
             {
                 await ReplyAsync("", embed: $"{user1.Mention} Ty lub twój partner znajdujecie się obecnie w trakcie wymiany.".ToEmbedMessage(EMType.Error).Build());
@@ -2617,7 +2658,7 @@ namespace Sanakan.Modules
             var user1 = Context.User as SocketGuildUser;
             if (user1 == null) return;
 
-            var session = new CraftingSession(user1, _waifu, _config);
+            var session = new CraftingSession(user1, _waifu, _config, _time);
             if (_session.SessionExist(session))
             {
                 await ReplyAsync("", embed: $"{user1.Mention} już masz otwarte menu tworzenia kart.".ToEmbedMessage(EMType.Error).Build());
@@ -3079,6 +3120,9 @@ namespace Sanakan.Modules
                 if (blood.Count > 3) blood.Count -= 3;
                 else bUser.GameDeck.Items.Remove(blood);
 
+                var activity = new Services.UserActivityBuilder(_time)
+                    .WithUser(bUser).WithCard(thisCard);
+
                 if (bUser.GameDeck.CanCreateDemon())
                 {
                     if (thisCard.Dere == Dere.Yami)
@@ -3091,11 +3135,13 @@ namespace Sanakan.Modules
                     {
                         thisCard.Dere = Dere.Yato;
                         bUser.Stats.YatoUpgrades += 1;
+                        activity.WithType(Database.Models.ActivityType.CreatedYato);
                     }
                     else
                     {
                         thisCard.Dere = Dere.Yami;
                         bUser.Stats.YamiUpgrades += 1;
+                        activity.WithType(Database.Models.ActivityType.CreatedYami);
                     }
                 }
                 else if (bUser.GameDeck.CanCreateAngel())
@@ -3110,13 +3156,17 @@ namespace Sanakan.Modules
                     {
                         thisCard.Dere = Dere.Yato;
                         bUser.Stats.YatoUpgrades += 1;
+                        activity.WithType(Database.Models.ActivityType.CreatedYato);
                     }
                     else
                     {
                         thisCard.Dere = Dere.Raito;
                         bUser.Stats.RaitoUpgrades += 1;
+                        activity.WithType(Database.Models.ActivityType.CreatedRaito);
                     }
                 }
+
+                await db.UserActivities.AddAsync(activity.Build());
 
                 await db.SaveChangesAsync();
                 QueryCacheManager.ExpireTag(new string[] { $"user-{bUser.Id}", "users" });

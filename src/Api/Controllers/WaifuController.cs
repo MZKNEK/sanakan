@@ -87,6 +87,26 @@ namespace Sanakan.Api.Controllers
         }
 
         /// <summary>
+        /// Pobiera listę aktywności
+        /// </summary>
+        /// <param name="count">liczba wpisów</param>
+        /// <param name="users">id użytkowników shinden</param>
+        /// <returns>lista aktywności</returns>
+        [HttpPost("user/activity/{count}")]
+        public async Task<IEnumerable<UserActivity>> GetUsersActivitiesAsync(uint count, [FromBody]List<ulong> users)
+        {
+            using (var db = new Database.DatabaseContext(_config))
+            {
+                var query = db.UserActivities.AsQueryable().AsSplitQuery().AsNoTracking();
+                if (!users.IsNullOrEmpty())
+                {
+                    query = query.Where(x => users.Any(c => c == x.ShindenId));
+                }
+                return count == 0 ? await query.ToListAsync() : await query.Take((int)count).ToListAsync();
+            }
+        }
+
+        /// <summary>
         /// Pobiera x kart z przefiltrowanej listy wszystkich kart
         /// </summary>
         /// <param name="offset">przesunięcie</param>
