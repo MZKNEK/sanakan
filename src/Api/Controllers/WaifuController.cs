@@ -102,7 +102,7 @@ namespace Sanakan.Api.Controllers
                 {
                     query = query.Where(x => users.Any(c => c == x.ShindenId));
                 }
-                return count == 0 ? await query.ToListAsync() : await query.Take((int)count).ToListAsync();
+                return count == 0 ? await query.OrderByDescending(x => x.Id).ToListAsync() : await query.OrderByDescending(x => x.Id).Take((int)count).ToListAsync();
             }
         }
 

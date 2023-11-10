@@ -285,6 +285,8 @@ namespace Sanakan.Services
                     if (newLevel != usr.Level && calculateExp)
                     {
                         usr.Level = newLevel;
+                        await db.UserActivities.AddAsync(new UserActivityBuilder(_time)
+                            .WithUser(usr).WithType(ActivityType.LevelUp, (ulong)newLevel).Build());
                         _ = Task.Run(async () => { await NotifyAboutLevelAsync(user, channel, newLevel); });
                     }
 
@@ -311,9 +313,6 @@ namespace Sanakan.Services
                             }
                         }
                     });
-
-                    await db.UserActivities.AddAsync(new UserActivityBuilder(_time)
-                        .WithUser(usr).WithType(ActivityType.LevelUp, (ulong)newLevel).Build());
 
                     await db.SaveChangesAsync();
                 }
