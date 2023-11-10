@@ -450,9 +450,10 @@ namespace Sanakan.Services
             try
             {
                 var dm = await user.CreateDMChannelAsync();
-                foreach (var emb in embeds)
+                while (!embeds.IsNullOrEmpty())
                 {
-                    await dm.SendMessageAsync("", embed: emb);
+                    await dm.SendMessageAsync("", embeds: embeds.Take(10).ToArray());
+                    embeds = embeds.Skip(10).ToList();
                     await Task.Delay(delay);
                 }
                 return ExecutionResult.FromSuccess("lista poszła na PW!");

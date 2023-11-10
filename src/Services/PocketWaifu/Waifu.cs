@@ -1141,7 +1141,7 @@ namespace Sanakan.Services.PocketWaifu
             var contentString = new StringBuilder($"{title}\n\n");
             foreach (var card in cards)
             {
-                AppendMessage(list, 2000, contentString, await GetCardInfo(card, mention, guild, shindenUrls));
+                AppendMessage(list, contentString, await GetCardInfo(card, mention, guild, shindenUrls));
             }
 
             list.Add(new EmbedBuilder()
@@ -1167,10 +1167,10 @@ namespace Sanakan.Services.PocketWaifu
 
                 foreach (var card in cardsG)
                 {
-                    AppendMessage(list, 2000, tempContentString, await GetCardInfo(card, mention, guild, shindenUrls));
+                    AppendMessage(list, tempContentString, await GetCardInfo(card, mention, guild, shindenUrls));
                 }
 
-                AppendMessage(list, 2000, contentString, tempContentString.ToString());
+                AppendMessage(list, contentString, tempContentString.ToString());
                 tempContentString.Clear();
             }
 
@@ -1196,9 +1196,9 @@ namespace Sanakan.Services.PocketWaifu
             return $"[{(user?.GetUserNickInGuild() ?? "????")}](https://shinden.pl/user/{card.GameDeck.User.Shinden}): **[{card.Id}]** **{card.GetCardRealRarity()}** {card.GetStatusIcons()}\n";
         }
 
-        private void AppendMessage(List<Embed> embeds, int maxLength, StringBuilder currentContent, ReadOnlySpan<char> nextPart)
+        private void AppendMessage(List<Embed> embeds, StringBuilder currentContent, string nextPart)
         {
-            if (currentContent.Length + nextPart.Length > maxLength)
+            if (currentContent.Length + nextPart.Length > 1600)
             {
                 embeds.Add(new EmbedBuilder() { Color = EMType.Info.Color(), Description = currentContent.ToString() }.Build());
                 currentContent.Clear();
