@@ -32,7 +32,11 @@ namespace Sanakan.Services
         public UserActivityBuilder WithCard(Card card)
         {
             _activity.TargetId = card.Id;
-            _cardText = card.GetShortString(true);
+            _cardText = $"<w@{card.Id}> <c@{card.Character}>";
+            if (card.WhoWantsCount > 1)
+            {
+                _cardText = $"({card.WhoWantsCount}) {_cardText}";
+            }
             if (_activity.UserId == 0 && card.GameDeck != null && card.GameDeck.User != null)
             {
                 _activity.ShindenId = card.GameDeck.User.Shinden;
