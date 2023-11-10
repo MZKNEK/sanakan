@@ -453,14 +453,15 @@ namespace Sanakan.Services
                 while (!embeds.IsNullOrEmpty())
                 {
                     await dm.SendMessageAsync("", embeds: embeds.Take(10).ToArray());
-                    embeds = embeds.Skip(10).ToList();
                     await Task.Delay(delay);
+
+                    embeds = embeds.Skip(10).ToList();
                 }
                 return ExecutionResult.FromSuccess("lista poszła na PW!");
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                return ExecutionResult.FromError("nie można wysłać do Ciebie PW!");
+                return ExecutionResult.FromError($"coś poszło nie tak [{embeds.Count()}]: {ex.Message}".TrimToLength(3500));
             }
         }
     }
