@@ -195,6 +195,22 @@ namespace Sanakan.Api.Controllers
         }
 
         /// <summary>
+        /// Pobiera kartę
+        /// </summary>
+        /// <param name="id">id użytkownika shindena</param>
+        /// <returns>karta</returns>
+        /// <response code="404">Card not found</response>
+        [HttpGet("card/{id}/view")]
+        public async Task<CardFinalView> GetCardViewAsync(ulong id)
+        {
+            using (var db = new Database.DatabaseContext(_config))
+            {
+                var card = await db.Cards.AsQueryable().Where(x => x.Id == id).Include(x => x.ArenaStats).Include(x => x.TagList).AsNoTracking().FirstOrDefaultAsync();
+                return card.ToView();
+            }
+        }
+
+        /// <summary>
         /// Pobiera surową listę życzeń użtykownika
         /// </summary>
         /// <param name="id">id użytkownika shindena</param>
