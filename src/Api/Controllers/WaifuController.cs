@@ -164,7 +164,7 @@ namespace Sanakan.Api.Controllers
 
                 var cards = FilterCardsByTags(await query.ToListAsync(), filter);
 
-                return new FilteredCards{TotalCards = cards.Count, Cards = cards.Skip((int)offset).Take((int)count).ToView()};
+                return new FilteredCards{TotalCards = cards.Count, Cards = cards.Skip((int)offset).Take((int)count).ToView(id)};
             }
         }
 
@@ -190,7 +190,7 @@ namespace Sanakan.Api.Controllers
                 }
 
                 var cards = await db.Cards.AsQueryable().AsSplitQuery().Where(x => x.GameDeckId == user.GameDeck.Id).Include(x=> x.ArenaStats).Include(x => x.TagList).Skip((int)offset).Take((int)count).AsNoTracking().ToListAsync();
-                return cards.ToView();
+                return cards.ToView(id);
             }
         }
 
@@ -205,7 +205,24 @@ namespace Sanakan.Api.Controllers
         {
             using (var db = new Database.DatabaseContext(_config))
             {
-                var card = await db.Cards.AsQueryable().Where(x => x.Id == id).Include(x => x.ArenaStats).Include(x => x.TagList).AsNoTracking().FirstOrDefaultAsync();
+                var card = await db.Cards.AsQueryable().Where(x => x.Id == id).Include(x => x.ArenaStats)
+                    .Include(x => x.TagList).Include(x => x.GameDeck).ThenInclude(x => x.User)
+                    .AsNoTracking().FirstOrDefaultAsync();
+
+                if (card == null)
+                {
+                    await "Card not found".ToResponse(404).ExecuteResultAsync(ControllerContext);
+                    return new CardFinalView();
+                }
+
+                if (card.GameDeck.User.Shinden != 0)
+                {
+                    var res = await _shClient.User.GetAsync(card.GameDeck.User.Shinden);
+                    if (res.IsSuccessStatusCode())
+                    {
+                        return card.ToViewUser(res.Body.Name);
+                    }
+                }
                 return card.ToView();
             }
         }
@@ -323,7 +340,7 @@ namespace Sanakan.Api.Controllers
                     BackgroundImageUrl = user.GameDeck.BackgroundImageUrl,
                     ForegroundImageUrl = user.GameDeck.ForegroundImageUrl,
                     Expeditions = user.GameDeck.Cards.Where(x => x.Expedition != CardExpedition.None).ToExpeditionView(user.GameDeck.Karma),
-                    Gallery = user.GameDeck.Cards.Where(x => x.HasTag("galeria")).Take(user.GameDeck.CardsInGallery).OrderBy(x => x.Rarity).ThenByDescending(x => x.Quality).ToView()
+                    Gallery = user.GameDeck.Cards.Where(x => x.HasTag("galeria")).Take(user.GameDeck.CardsInGallery).OrderBy(x => x.Rarity).ThenByDescending(x => x.Quality).ToView(id)
                 };
             }
         }

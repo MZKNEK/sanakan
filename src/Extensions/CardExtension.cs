@@ -958,8 +958,11 @@ namespace Sanakan.Extensions
             return 2d - rarity.ValueModifier();
         }
 
-        public static Api.Models.CardFinalView ToView(this Card c)
-            => Api.Models.CardFinalView.ConvertFromRaw(c);
+        public static Api.Models.CardFinalView ToViewUser(this Card c, string name, ulong shinden = 0)
+            => Api.Models.CardFinalView.ConvertFromRawWithUserInfo(c, name, shinden);
+
+        public static Api.Models.CardFinalView ToView(this Card c, ulong shindenId = 0)
+            => Api.Models.CardFinalView.ConvertFromRaw(c, shindenId);
 
         public static Api.Models.ExpeditionCard ToExpeditionView(this Card c, double karma)
             => Api.Models.ExpeditionCard.ConvertFromRaw(c, karma);
@@ -971,10 +974,10 @@ namespace Sanakan.Extensions
             return list;
         }
 
-        public static List<Api.Models.CardFinalView> ToView(this IEnumerable<Card> clist)
+        public static List<Api.Models.CardFinalView> ToView(this IEnumerable<Card> clist, ulong shindenId = 0)
         {
             var list = new List<Api.Models.CardFinalView>();
-            foreach (var c in clist) list.Add(c.ToView());
+            foreach (var c in clist) list.Add(c.ToView(shindenId));
             return list;
         }
 

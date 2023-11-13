@@ -18,9 +18,17 @@ namespace Sanakan.Api.Models
         /// </summary>
         public ulong Id { get; set; }
         /// <summary>
+        /// Nazwa użytkownika
+        /// </summary>
+        public string Username { get; set; }
+        /// <summary>
         /// Id posiadacza karty na discordzie
         /// </summary>
         public ulong DiscordId { get; set; }
+        /// <summary>
+        /// Id posiadacza karty na shindenie
+        /// </summary>
+        public ulong ShindenId { get; set; }
         /// <summary>
         /// Czy karta jest w talii
         /// </summary>
@@ -150,7 +158,19 @@ namespace Sanakan.Api.Models
         /// </summary>
         public int WhoWantsCount { get; set; }
 
-        public static CardFinalView ConvertFromRaw(Card card)
+        public static CardFinalView ConvertFromRawWithUserInfo(Card card, string username, ulong shindenId = 0)
+        {
+            var finalCard = ConvertFromRaw(card);
+            if (finalCard == null) return null;
+
+            if (finalCard.ShindenId == 0)
+                finalCard.ShindenId = shindenId;
+
+            finalCard.Username = username;
+            return finalCard;
+        }
+
+        public static CardFinalView ConvertFromRaw(Card card, ulong shindenId = 0)
         {
             if (card == null) return null;
 
@@ -186,6 +206,7 @@ namespace Sanakan.Api.Models
                 HasCustomImage = card.CustomImage != null,
                 HasCustomBorder = card.CustomBorder != null,
                 ImageUrl = $"https://cdn2.shinden.eu/{card.Id}.webp",
+                ShindenId =  card?.GameDeck?.User?.Shinden ?? shindenId,
                 IsOnExpedition = card.Expedition != CardExpedition.None,
                 SmallImageUrl = $"https://cdn2.shinden.eu/small/{card.Id}.webp",
                 ProfileImageUrl = $"https://cdn2.shinden.eu/profile/{card.Id}.webp",
