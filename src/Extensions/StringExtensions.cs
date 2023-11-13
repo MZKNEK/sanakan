@@ -32,7 +32,6 @@ namespace Sanakan.Extensions
         {
             "sanakan.pl",
             "i.imgur.com",
-            "cdn.discordapp.com",
             "dl.dropboxusercontent.com",
             "cdn.imgchest.com"
         };

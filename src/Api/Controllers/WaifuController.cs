@@ -197,7 +197,7 @@ namespace Sanakan.Api.Controllers
         /// <summary>
         /// Pobiera kartę
         /// </summary>
-        /// <param name="id">id użytkownika shindena</param>
+        /// <param name="id">id karty</param>
         /// <returns>karta</returns>
         /// <response code="404">Card not found</response>
         [HttpGet("card/{id}/view")]

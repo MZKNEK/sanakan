@@ -21,8 +21,19 @@ namespace Sanakan.Modules
     [Name("Ogólne")]
     public class Helper : SanakanModuleBase<SocketCommandContext>
     {
-        private readonly DateTime _fixImageThreshold = new DateTime(2023, 5, 15);
-        private readonly string[] _allowedHostToFix = { "i.imgur.com" };
+        private class FixableHosting
+        {
+            public string Name;
+            public bool Enabled;
+            public DateTime Threshold;
+            public string[] Host;
+        }
+
+        private readonly FixableHosting[] _fixableHostings =
+        {
+            new FixableHosting { Name = "imgur",   Enabled = false, Threshold = new DateTime(2023, 5, 15),  Host = new []{ "i.imgur.com" } },
+            new FixableHosting { Name = "discord", Enabled = false, Threshold = new DateTime(2023, 11, 13), Host = new []{ "cdn.discordapp.com" } },
+        };
 
         private Services.PocketWaifu.Waifu _waifu;
         private Services.Moderator _moderation;
@@ -170,7 +181,7 @@ namespace Sanakan.Modules
 
         [Command("napraw obrazek")]
         [Alias("fix image")]
-        [Summary("naprawia wygasły obrazek karty ustawiony przed 15.05.2023")]
+        [Summary("naprawia wygasły obrazek karty ustawiony przed imgur: 15.05.2023, discord: 13.11.2023")]
         [Remarks("123123"), RequireWaifuCommandChannel]
         public async Task FixCardCustomImage([Summary("WID")] ulong wid, [Summary("bezpośredni adres do obrazka")] string url)
         {
@@ -178,6 +189,12 @@ namespace Sanakan.Modules
             if (imgRes != ImageUrlCheckResult.Ok)
             {
                 await ReplyAsync("", embed: ExecutionResult.From(imgRes).ToEmbedMessage($"{Context.User.Mention} ").Build());
+                return;
+            }
+
+            if (!_fixableHostings.Any(x => x.Enabled))
+            {
+                await ReplyAsync("", embed: $"{Context.User.Mention} obecnie funkcja naprawiania obrazków jest wyłączona.".ToEmbedMessage(EMType.Error).Build());
                 return;
             }
 
@@ -197,15 +214,17 @@ namespace Sanakan.Modules
                     return;
                 }
 
-                if (thisCard.CustomImageDate >= _fixImageThreshold)
+                var hostingData = _fixableHostings.FirstOrDefault(x => x.Enabled && thisCard.CustomImage.CheckImageUrl(x.Host) == ImageUrlCheckResult.Ok);
+                if (hostingData == null)
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} ta karta nie spełnia wymogów polecenia. Obrazek został ustawiony za późno.".ToEmbedMessage(EMType.Error).Build());
+                    var hosts = string.Join(' ', _fixableHostings.Where(x => x.Enabled).Select(x => x.Name));
+                    await ReplyAsync("", embed: $"{Context.User.Mention} ta karta nie spełnia wymogów polecenia. Hosting obrazka jest niepoprawny. Dozwolone to: {hosts}".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
-                if (thisCard.CustomImage.CheckImageUrl(_allowedHostToFix) != ImageUrlCheckResult.Ok)
+                if (thisCard.CustomImageDate >= hostingData.Threshold)
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} ta karta nie spełnia wymogów polecenia. Hosting to nie imgur.".ToEmbedMessage(EMType.Error).Build());
+                    await ReplyAsync("", embed: $"{Context.User.Mention} ta karta nie spełnia wymogów polecenia. Obrazek został ustawiony za późno.".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
