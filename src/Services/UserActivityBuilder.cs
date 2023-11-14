@@ -56,7 +56,7 @@ namespace Sanakan.Services
                 _activity.UserId = card.GameDeckId;
             }
             _misc.Add($"w:[{card.Id}] {card.GetCardRealRarity()}");
-            _misc.Add($"wp:{card.GetCardParams()}");
+            _misc.Add($"wp:H{card.GetHealthWithPenalty()} A{card.GetAttackWithBonus()} D{card.GetDefenceWithBonus()}");
             _misc.Add($"c:{card.Name.Trim()}");
             return this;
         }
