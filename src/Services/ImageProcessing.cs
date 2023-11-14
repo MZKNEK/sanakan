@@ -48,7 +48,6 @@ namespace Sanakan.Services
                 new DomainData("www.dropbox.com") { Transform = TransformDropboxAsync },
                 new DomainData("dl.dropboxusercontent.com"),
                 new DomainData("onedrive.live.com"),
-                new DomainData("public.am.files.1drv.com"),
             };
         }
 
@@ -98,7 +97,7 @@ namespace Sanakan.Services
 
                 if (checkExt)
                 {
-                    var ext = Path.GetExtension(url.AbsoluteUri);
+                    var ext = Path.GetExtension(url.AbsoluteUri).Replace(".", "");
                     if (string.IsNullOrEmpty(ext) || !_extensions.Any(x => x.Equals(ext, StringComparison.CurrentCultureIgnoreCase)))
                         return ImageUrlCheckResult.WrongExtension;
                 }
