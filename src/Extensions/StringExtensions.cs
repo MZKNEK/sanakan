@@ -32,6 +32,7 @@ namespace Sanakan.Extensions
         private static readonly DomainData[] _imageServices =
         {
             new DomainData("sanakan.pl"),
+            new DomainData("i.imgur.com"),
             new DomainData("dl.dropboxusercontent.com"),
             new DomainData("cdn.imgchest.com"),
             new DomainData("onedrive.live.com") { CheckExt = false },
