@@ -41,6 +41,24 @@ namespace Sanakan.Services
             _colors = new Dictionary<string, Color>();
         }
 
+        public async Task<(bool, string)> IsUrlToImage(string url)
+        {
+            try
+            {
+                var res = await _httpClient.GetAsync(url);
+                if (res.IsSuccessStatusCode)
+                {
+                    var type = res.Content.Headers.ContentType.MediaType.Split("/");
+                    return (type.First().Equals("image", StringComparison.CurrentCultureIgnoreCase), type.Last());
+                }
+                return (false, string.Empty);
+            }
+            catch (Exception)
+            {
+                return (false, string.Empty);
+            }
+        }
+
         private async Task<Stream> GetImageFromUrlAsync(string url, bool fixExt = false)
         {
             try
@@ -109,7 +127,7 @@ namespace Sanakan.Services
             return font;
         }
 
-        private void CheckProfileImageSize(Image image, Size size, bool strech)
+        private void CheckImageSize(Image image, Size size, bool strech)
         {
             if (image.Width > size.Width || image.Height > size.Height)
             {
@@ -145,7 +163,7 @@ namespace Sanakan.Services
                 using (var image = Image.Load(stream))
                 {
                     if (size.Height > 0 || size.Width > 0)
-                        CheckProfileImageSize(image, size, strech);
+                        CheckImageSize(image, size, strech);
 
                     image.SaveToPath(path);
                 }

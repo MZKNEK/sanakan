@@ -8,6 +8,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using Discord;
 using Microsoft.AspNetCore.Mvc;
+using Sanakan.Services;
 
 namespace Sanakan.Extensions
 {
@@ -28,12 +29,13 @@ namespace Sanakan.Extensions
 
         private static readonly string[] _imgExtensions = { ".png", ".jpg", ".jpeg", ".gif", ".webp" };
 
-        private static readonly string[] _imageServices =
+        private static readonly DomainData[] _imageServices =
         {
-            "sanakan.pl",
-            "i.imgur.com",
-            "dl.dropboxusercontent.com",
-            "cdn.imgchest.com"
+            new DomainData("sanakan.pl"),
+            new DomainData("dl.dropboxusercontent.com"),
+            new DomainData("cdn.imgchest.com"),
+            new DomainData("onedrive.live.com") { CheckExt = false },
+            new DomainData("public.am.files.1drv.com") { CheckExt = false },
         };
 
         public static EmbedBuilder ToEmbedMessage(this string message, EMType type = EMType.Neutral, bool icon = false)
@@ -69,18 +71,27 @@ namespace Sanakan.Extensions
 
         public static ImageUrlCheckResult CheckImageUrl(this string s) => s.CheckImageUrl(_imageServices);
 
-        public static ImageUrlCheckResult CheckImageUrl(this string s, string[] allowedHosts)
+        public static ImageUrlCheckResult CheckImageUrl(this string s, DomainData[] allowedHosts)
         {
             try
             {
+                var checkExt = true;
                 var url = new Uri(s);
-                var ext = System.IO.Path.GetExtension(url.AbsoluteUri);
+                if (allowedHosts != null)
+                {
+                    var host = allowedHosts.FirstOrDefault(x => x.Url.Equals(url.Host, StringComparison.CurrentCultureIgnoreCase));
+                    if (host == null)
+                        return ImageUrlCheckResult.BlacklistedHost;
 
-                if (string.IsNullOrEmpty(ext) || !_imgExtensions.Any(x => x.Equals(ext, StringComparison.CurrentCultureIgnoreCase)))
-                    return ImageUrlCheckResult.WrongExtension;
+                    checkExt = host.CheckExt;
+                }
 
-                if (allowedHosts != null && !allowedHosts.Any(x => x.Equals(url.Host, StringComparison.CurrentCultureIgnoreCase)))
-                    return ImageUrlCheckResult.BlacklistedHost;
+                if (checkExt)
+                {
+                    var ext = System.IO.Path.GetExtension(url.AbsoluteUri);
+                    if (string.IsNullOrEmpty(ext) || !_imgExtensions.Any(x => x.Equals(ext, StringComparison.CurrentCultureIgnoreCase)))
+                        return ImageUrlCheckResult.WrongExtension;
+                }
 
                 return ImageUrlCheckResult.Ok;
             }

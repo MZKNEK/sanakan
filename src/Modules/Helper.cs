@@ -26,13 +26,13 @@ namespace Sanakan.Modules
             public string Name;
             public bool Enabled;
             public DateTime Threshold;
-            public string[] Host;
+            public DomainData[] Host;
         }
 
         private readonly FixableHosting[] _fixableHostings =
         {
-            new FixableHosting { Name = "imgur",   Enabled = false, Threshold = new DateTime(2023, 5, 15),  Host = new []{ "i.imgur.com" } },
-            new FixableHosting { Name = "discord", Enabled = false, Threshold = new DateTime(2023, 11, 13), Host = new []{ "cdn.discordapp.com" } },
+            new FixableHosting { Name = "imgur",   Enabled = true, Threshold = new DateTime(2023, 5, 15),  Host = new []{ new DomainData("i.imgur.com") } },
+            new FixableHosting { Name = "discord", Enabled = true, Threshold = new DateTime(2023, 11, 13), Host = new []{ new DomainData("cdn.discordapp.com") } },
         };
 
         private Services.PocketWaifu.Waifu _waifu;

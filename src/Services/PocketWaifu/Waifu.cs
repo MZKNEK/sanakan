@@ -66,6 +66,8 @@ namespace Sanakan.Services.PocketWaifu
             { "mega",       Quality.Omega   },
         };
 
+        private static string[] _imgExtWithAlpha = { "png", "webp" };
+
         private static List<Dere> _dereToRandomize = new List<Dere>
         {
             Dere.Tsundere,
@@ -2306,6 +2308,13 @@ namespace Sanakan.Services.PocketWaifu
 
                     if (card.Image == null && !card.FromFigure)
                         return ExecutionResult.FromError("Aby ustawić własny obrazek, karta musi posiadać wcześniej ustawiony główny (na stronie)!");
+
+                    var (isUrlToImage, imageExt) = await _img.IsUrlToImage(detail);
+                    if (!isUrlToImage)
+                        return ExecutionResult.FromError("Nie został podany bezpośredni adres do obrazka!");
+
+                    if (card.FromFigure && _imgExtWithAlpha.Any(x => x.Equals(imageExt, StringComparison.CurrentCultureIgnoreCase)))
+                        return ExecutionResult.FromError("Format obrazka nie pozwala na przeźroczystość, która jest wymagana do kart ultimate!");
 
                     card.CustomImage = detail;
                     card.CustomImageDate = _time.Now();
