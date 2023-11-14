@@ -1,6 +1,7 @@
 #pragma warning disable 1591
 
 using System;
+using System.Collections.Generic;
 using Sanakan.Database.Models;
 using Sanakan.Extensions;
 using Sanakan.Services.Time;
@@ -11,6 +12,7 @@ namespace Sanakan.Services
     {
         private readonly ISystemTime _time;
         private UserActivity _activity;
+        private List<string> _misc;
         private string _cardText;
         private bool _typeWasSet;
 
@@ -19,13 +21,21 @@ namespace Sanakan.Services
             _time = time;
             _cardText = "";
             _typeWasSet = false;
+            _misc = new List<string>();
             _activity = new UserActivity();
         }
 
-        public UserActivityBuilder WithUser(User user)
+        public UserActivityBuilder WithUser(User user, Discord.IUser dUser)
+            => WithUser(user, dUser.GetUserNickInGuild());
+
+        public UserActivityBuilder WithUser(User user, string name = "")
         {
             _activity.ShindenId = user.Shinden;
             _activity.UserId = user.Id;
+            if (!string.IsNullOrEmpty(name))
+            {
+                _misc.Add($"u:{name}");
+            }
             return this;
         }
 
@@ -45,6 +55,15 @@ namespace Sanakan.Services
             {
                 _activity.UserId = card.GameDeckId;
             }
+            _misc.Add($"w:[{card.Id}] {card.GetCardRealRarity()}");
+            _misc.Add($"wp:{card.GetCardParams()}");
+            _misc.Add($"c:{card.Name.Trim()}");
+            return this;
+        }
+
+        public UserActivityBuilder AddMisc(string misc)
+        {
+            _misc.Add(misc);
             return this;
         }
 
@@ -210,6 +229,7 @@ namespace Sanakan.Services
                 throw new Exception("Missing text!");
             }
 
+            _activity.Misc = string.Join(';', _misc);
             _activity.Date = _time.Now();
             return _activity;
         }

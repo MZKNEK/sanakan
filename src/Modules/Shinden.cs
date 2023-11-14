@@ -226,7 +226,7 @@ namespace Sanakan.Modules
                     botuser.Shinden = shindenId;
 
                     await db.UserActivities.AddAsync(new Services.UserActivityBuilder(_time)
-                        .WithUser(botuser).WithType(Database.Models.ActivityType.Connected).Build());
+                        .WithUser(botuser, userNameInDiscord).WithType(Database.Models.ActivityType.Connected).Build());
 
                     await db.SaveChangesAsync();
 

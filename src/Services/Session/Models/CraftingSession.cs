@@ -304,7 +304,7 @@ namespace Sanakan.Services.Session.Models
 
                                 await db.SaveChangesAsync();
 
-                                if (db.AddActivityFromNewCard(newCard, isOnUserWishlist, _time, user))
+                                if (db.AddActivityFromNewCard(newCard, isOnUserWishlist, _time, user, context.User.GetUserNickInGuild()))
                                 {
                                     await db.SaveChangesAsync();
                                 }

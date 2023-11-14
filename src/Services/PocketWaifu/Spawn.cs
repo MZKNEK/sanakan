@@ -217,6 +217,11 @@ namespace Sanakan.Services.PocketWaifu
                         Type = Database.Models.Analytics.UserAnalyticsEventType.Card
                     });
                     await db.SaveChangesAsync();
+
+                    if (db.AddActivityFromNewCard(newCard, isOnUserWishlist, _time, botUser, winner.GetUserNickInGuild()))
+                    {
+                        await db.SaveChangesAsync();
+                    }
                 }
 
                 _ = Task.Run(async () =>

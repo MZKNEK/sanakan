@@ -641,7 +641,7 @@ namespace Sanakan.Services
 
             var botUser = await db.Users.AsNoTracking().FirstOrDefaultAsync(x => x.Id == user.Id);
             await db.UserActivities.AddAsync(new UserActivityBuilder(_time)
-                .WithUser(botUser).WithType(Database.Models.ActivityType.Muted).Build());
+                .WithUser(botUser, user).WithType(Database.Models.ActivityType.Muted).Build());
 
             if (userRole != null)
             {

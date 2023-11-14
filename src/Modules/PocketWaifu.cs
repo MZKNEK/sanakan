@@ -297,7 +297,7 @@ namespace Sanakan.Modules
 
                 await db.SaveChangesAsync();
 
-                await db.UserActivities.AddAsync(new Services.UserActivityBuilder(_time)
+                await db.UserActivities.AddAsync(new Services.UserActivityBuilder(_time).WithUser(deck.User, Context.User)
                     .WithCard(card).WithType(Database.Models.ActivityType.CreatedUltiamte).Build());
 
                 await db.SaveChangesAsync();
@@ -430,7 +430,7 @@ namespace Sanakan.Modules
                 }
                 else if (res.IsActivity())
                 {
-                    await db.UserActivities.AddAsync(res.Activity.Build());
+                    await db.UserActivities.AddAsync(res.Activity.AddMisc($"u:{Context.User.GetUserNickInGuild()}").Build());
                 }
 
                 await ReplyAsync("", embed: res.ToEmbedMessage().WithUser(Context.User).Build());
@@ -597,7 +597,7 @@ namespace Sanakan.Modules
                         else
                         {
                             openString += card.ToHeartWishlist(isOnUserWishlist);
-                            if (db.AddActivityFromNewCard(card, isOnUserWishlist, _time, bUser))
+                            if (db.AddActivityFromNewCard(card, isOnUserWishlist, _time, bUser, Context.User.GetUserNickInGuild()))
                             {
                                 saveAgain = true;
                             }
@@ -844,8 +844,8 @@ namespace Sanakan.Modules
                             ++bUser.Stats.UpgradedToSSS;
                         }
 
-                        await db.UserActivities.AddAsync(new Services.UserActivityBuilder(_time)
-                            .WithUser(bUser).WithCard(card).WithType(Database.Models.ActivityType.CreatedSSS).Build());
+                        await db.UserActivities.AddAsync(new Services.UserActivityBuilder(_time).WithUser(bUser, Context.User)
+                            .WithCard(card).WithType(Database.Models.ActivityType.CreatedSSS).Build());
                     }
                 }
 
@@ -1141,7 +1141,7 @@ namespace Sanakan.Modules
                 await db.SaveChangesAsync();
 
                 var wishStr = card.ToHeartWishlist(isOnUserWishlist);
-                if (db.AddActivityFromNewCard(card, isOnUserWishlist, _time, botuser))
+                if (db.AddActivityFromNewCard(card, isOnUserWishlist, _time, botuser, Context.User.GetUserNickInGuild()))
                 {
                     await db.SaveChangesAsync();
                 }
@@ -1603,7 +1603,7 @@ namespace Sanakan.Modules
                         if (!bUser.GameDeck.WishlistIsPrivate)
                         {
                             await db.UserActivities.AddAsync(new Services.UserActivityBuilder(_time)
-                               .WithUser(bUser).WithCard(card).WithType(Database.Models.ActivityType.AddedToWishlistCard).Build());
+                               .WithUser(bUser, Context.User).WithCard(card).WithType(Database.Models.ActivityType.AddedToWishlistCard).Build());
                         }
                         break;
 
@@ -1618,8 +1618,8 @@ namespace Sanakan.Modules
                         obj.ObjectName = res1.Body.Title;
                         if (!bUser.GameDeck.WishlistIsPrivate)
                         {
-                            await db.UserActivities.AddAsync(new Services.UserActivityBuilder(_time)
-                               .WithUser(bUser).WithType(Database.Models.ActivityType.AddedToWishlistTitle, id).Build());
+                            await db.UserActivities.AddAsync(new Services.UserActivityBuilder(_time).AddMisc($"t:{res1.Body.Title}")
+                               .WithUser(bUser, Context.User).WithType(Database.Models.ActivityType.AddedToWishlistTitle, id).Build());
                         }
                         break;
 
@@ -1635,8 +1635,8 @@ namespace Sanakan.Modules
                         await db.CreateOrChangeWishlistCountByAsync(obj.ObjectId, obj.ObjectName);
                         if (!bUser.GameDeck.WishlistIsPrivate)
                         {
-                            await db.UserActivities.AddAsync(new Services.UserActivityBuilder(_time)
-                               .WithUser(bUser).WithType(Database.Models.ActivityType.AddedToWishlistCharacter, id).Build());
+                            await db.UserActivities.AddAsync(new Services.UserActivityBuilder(_time).AddMisc($"c:{response.ToString().Trim()}")
+                               .WithUser(bUser, Context.User).WithType(Database.Models.ActivityType.AddedToWishlistCharacter, id).Build());
                         }
                         break;
                 }
@@ -3121,7 +3121,7 @@ namespace Sanakan.Modules
                 else bUser.GameDeck.Items.Remove(blood);
 
                 var activity = new Services.UserActivityBuilder(_time)
-                    .WithUser(bUser).WithCard(thisCard);
+                    .WithUser(bUser, Context.User).WithCard(thisCard);
 
                 if (bUser.GameDeck.CanCreateDemon())
                 {

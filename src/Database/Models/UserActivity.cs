@@ -21,5 +21,6 @@ namespace Sanakan.Database.Models
         public ActivityType Type { get; set; }
         public string Text { get; set; }
         public DateTime Date { get; set; }
+        public string Misc { get; set; }
     }
 }

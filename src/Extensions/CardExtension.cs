@@ -988,12 +988,12 @@ namespace Sanakan.Extensions
             return $"💗 ({card.WhoWantsCount}) ";
         }
 
-        public static bool AddActivityFromNewCard(this Database.DatabaseContext db, Card card, bool isOnUserWishlist, ISystemTime time, User user)
+        public static bool AddActivityFromNewCard(this Database.DatabaseContext db, Card card, bool isOnUserWishlist, ISystemTime time, User user, string username)
         {
             if (isOnUserWishlist || card.WhoWantsCount >= 3)
             {
                 db.UserActivities.Add(new Services.UserActivityBuilder(time)
-                    .WithUser(user).WithCard(card)
+                    .WithUser(user, username).WithCard(card)
                     .WithType(isOnUserWishlist ?
                         Database.Models.ActivityType.AcquiredCardWishlist :
                         Database.Models.ActivityType.AcquiredCardKC).Build());
@@ -1049,8 +1049,8 @@ namespace Sanakan.Extensions
             card.MarketValue = Math.Max(Math.Min(card.MarketValue, 10), 0.001);
         }
 
-        public static async Task ExchangeWithAsync(this Card card, (User user, int count, string tag)
-            source, (User user, int count, string tag) target, DatabaseContext db, ISystemTime time)
+        public static async Task ExchangeWithAsync(this Card card, (User user, int count, string tag, string username)
+            source, (User user, int count, string tag, string username) target, DatabaseContext db, ISystemTime time)
         {
             card.Active = false;
             card.TagList.Clear();
@@ -1068,12 +1068,12 @@ namespace Sanakan.Extensions
             {
                 card.IsTradable = false;
 
-                await db.UserActivities.AddAsync(new UserActivityBuilder(time).WithUser(target.user)
+                await db.UserActivities.AddAsync(new UserActivityBuilder(time).WithUser(target.user, target.username)
                     .WithCard(card).WithType(Database.Models.ActivityType.AcquiredCarcUltimate).Build());
             }
             else if (card.Rarity == Rarity.SSS)
             {
-                await db.UserActivities.AddAsync(new UserActivityBuilder(time).WithUser(target.user)
+                await db.UserActivities.AddAsync(new UserActivityBuilder(time).WithUser(target.user, target.username)
                     .WithCard(card).WithType(Database.Models.ActivityType.AcquiredCardSSS).Build());
             }
 
@@ -1087,7 +1087,7 @@ namespace Sanakan.Extensions
             var isOnUserWishlist = target.user.GameDeck.RemoveCardFromWishList(card.Id)
                 || await target.user.GameDeck.RemoveCharacterFromWishListAsync(card.Character, db);
 
-            db.AddActivityFromNewCard(card, isOnUserWishlist, time, target.user);
+            db.AddActivityFromNewCard(card, isOnUserWishlist, time, target.user, target.username);
         }
 
         public static bool IsProtectedFromDiscarding(this Card card) => card.InCage || card.HasTag("ulubione") || card.FromFigure || card.Expedition != CardExpedition.None;

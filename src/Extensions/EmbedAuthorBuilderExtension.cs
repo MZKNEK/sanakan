@@ -20,6 +20,7 @@ namespace Sanakan.Extensions
 
         public static string GetUserNickInGuild(this IUser user)
         {
+            if (user == null) return "????";
             if (user is SocketGuildUser guildUser)
             {
                 return (guildUser.Nickname ?? user.GlobalName) ?? user.Username;

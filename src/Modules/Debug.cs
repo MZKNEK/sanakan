@@ -477,7 +477,7 @@ namespace Sanakan.Modules
                     msg = await ReplyAsync(embed: embToSend.Build());
 
                     await db.UserActivities.AddAsync(new Services.UserActivityBuilder(_time)
-                        .WithUser(user).WithType(Database.Models.ActivityType.WonLottery).Build());
+                        .WithUser(winnerUser, winner).WithType(Database.Models.ActivityType.WonLottery).Build());
 
                     try
                     {

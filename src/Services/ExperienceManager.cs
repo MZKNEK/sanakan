@@ -286,7 +286,7 @@ namespace Sanakan.Services
                     {
                         usr.Level = newLevel;
                         await db.UserActivities.AddAsync(new UserActivityBuilder(_time)
-                            .WithUser(usr).WithType(ActivityType.LevelUp, (ulong)newLevel).Build());
+                            .WithUser(usr, user).WithType(ActivityType.LevelUp, (ulong)newLevel).Build());
                         _ = Task.Run(async () => { await NotifyAboutLevelAsync(user, channel, newLevel); });
                     }
 

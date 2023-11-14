@@ -330,8 +330,8 @@ namespace Sanakan.Services.Session.Models
                             var user1 = await db.GetUserOrCreateAsync(P1.User.Id);
                             var user2 = await db.GetUserOrCreateAsync(P2.User.Id);
 
-                            var u1Data = (user1, P1.Cards.Count > 0 ? P1.Cards.Count : 1, P1.Tag);
-                            var u2Data = (user2, P2.Cards.Count > 0 ? P2.Cards.Count : 1, P2.Tag);
+                            var u1Data = (user1, P1.Cards.Count > 0 ? P1.Cards.Count : 1, P1.Tag, P1.User.GetUserNickInGuild());
+                            var u2Data = (user2, P2.Cards.Count > 0 ? P2.Cards.Count : 1, P2.Tag, P2.User.GetUserNickInGuild());
 
                             foreach (var c in P1.Cards)
                             {
