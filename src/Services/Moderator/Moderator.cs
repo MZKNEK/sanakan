@@ -38,17 +38,19 @@ namespace Sanakan.Services
     public class Moderator
     {
         private DiscordSocketClient _client;
+        private ImageProcessing _img;
         private ISystemTime _time;
         private ILogger _logger;
         private IConfig _config;
         private Timer _timer;
 
-        public Moderator(ILogger logger, IConfig config, DiscordSocketClient client, ISystemTime time)
+        public Moderator(ILogger logger, IConfig config, DiscordSocketClient client, ISystemTime time, ImageProcessing img)
         {
             _logger = logger;
             _config = config;
             _client = client;
             _time = time;
+            _img = img;
 
             _timer = new Timer(async _ =>
             {
@@ -469,7 +471,7 @@ namespace Sanakan.Services
             {
                 var first = message.Attachments.First();
 
-                if (first.Url.IsUrlToImage())
+                if (_img.IsUrlToImageSimple(first.Url))
                     image = first.Url;
             }
 

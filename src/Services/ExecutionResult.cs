@@ -67,6 +67,10 @@ namespace Sanakan.Services
                     result.Message = "Host podanego adresu nie znajduje się na białej liście!";
                 break;
 
+                case ImageUrlCheckResult.TransformError:
+                    result.Message = "Nie udało się zamienić adresu znanego hosta na poprawy!";
+                break;
+
                 default:
                 case ImageUrlCheckResult.NotUrl:
                     result.Message = "Nie wykryto obrazka! Upewnij się, że podałeś poprawny adres!";

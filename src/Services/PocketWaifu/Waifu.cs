@@ -2302,14 +2302,14 @@ namespace Sanakan.Services.PocketWaifu
                     break;
 
                 case ItemType.SetCustomImage:
-                    var imgRes = detail.CheckImageUrl();
+                    var imgRes = _img.CheckImageUrl(ref detail);
                     if (imgRes != ImageUrlCheckResult.Ok)
                         return ExecutionResult.From(imgRes);
 
                     if (card.Image == null && !card.FromFigure)
                         return ExecutionResult.FromError("Aby ustawić własny obrazek, karta musi posiadać wcześniej ustawiony główny (na stronie)!");
 
-                    var (isUrlToImage, imageExt) = await _img.IsUrlToImage(detail);
+                    var (isUrlToImage, imageExt) = await _img.IsUrlToImageAsync(detail);
                     if (!isUrlToImage)
                         return ExecutionResult.FromError("Nie został podany bezpośredni adres do obrazka!");
 
@@ -2323,7 +2323,7 @@ namespace Sanakan.Services.PocketWaifu
                     break;
 
                 case ItemType.SetCustomBorder:
-                    var imgRes2 = detail.CheckImageUrl();
+                    var imgRes2 = _img.CheckImageUrl(ref detail);
                     if (imgRes2 != ImageUrlCheckResult.Ok)
                         return ExecutionResult.From(imgRes2);
 

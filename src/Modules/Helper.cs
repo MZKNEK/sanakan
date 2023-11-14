@@ -36,15 +36,16 @@ namespace Sanakan.Modules
         };
 
         private Services.PocketWaifu.Waifu _waifu;
-        private Services.Moderator _moderation;
         private SessionManager _session;
         private Services.Helper _helper;
+        private Moderator _moderation;
+        private ImageProcessing _img;
         private ISystemTime _time;
         private ILogger _logger;
         private IConfig _config;
 
         public Helper(Services.Helper helper, Services.Moderator moderation, SessionManager session,
-            ILogger logger, IConfig config, Services.PocketWaifu.Waifu  waifu, ISystemTime time)
+            ILogger logger, IConfig config, Services.PocketWaifu.Waifu  waifu, ISystemTime time, ImageProcessing img)
         {
             _moderation = moderation;
             _session = session;
@@ -53,6 +54,7 @@ namespace Sanakan.Modules
             _config = config;
             _waifu = waifu;
             _time = time;
+            _img = img;
         }
 
         [Command("pomoc", RunMode = RunMode.Async)]
@@ -185,7 +187,7 @@ namespace Sanakan.Modules
         [Remarks("123123"), RequireWaifuCommandChannel]
         public async Task FixCardCustomImage([Summary("WID")] ulong wid, [Summary("bezpośredni adres do obrazka")] string url)
         {
-            var imgRes = url.CheckImageUrl();
+            var imgRes = _img.CheckImageUrl(ref url);
             if (imgRes != ImageUrlCheckResult.Ok)
             {
                 await ReplyAsync("", embed: ExecutionResult.From(imgRes).ToEmbedMessage($"{Context.User.Mention} ").Build());
@@ -214,7 +216,7 @@ namespace Sanakan.Modules
                     return;
                 }
 
-                var hostingData = _fixableHostings.FirstOrDefault(x => x.Enabled && thisCard.CustomImage.CheckImageUrl(x.Host) == ImageUrlCheckResult.Ok);
+                var hostingData = _fixableHostings.FirstOrDefault(x => x.Enabled && _img.CheckImageUrlSimple(thisCard.CustomImage, x.Host) == ImageUrlCheckResult.Ok);
                 if (hostingData == null)
                 {
                     var hosts = string.Join(' ', _fixableHostings.Where(x => x.Enabled).Select(x => x.Name));

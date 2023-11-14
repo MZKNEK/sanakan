@@ -14,7 +14,7 @@ namespace Sanakan.Extensions
 {
     public enum ImageUrlCheckResult
     {
-        Ok, NotUrl, WrongExtension, BlacklistedHost
+        Ok, NotUrl, WrongExtension, BlacklistedHost, TransformError
     }
 
     public static class StringExtension
@@ -25,18 +25,6 @@ namespace Sanakan.Extensions
             "left", "font", "align", "mail", "img", "small", "sub", "sup", "p", "gvideo", "bull",
             "copyright", "registered", "tm", "indent", "iframe", "url", "youtube", "i", "b", "s",
             "u", "color", "size"
-        };
-
-        private static readonly string[] _imgExtensions = { ".png", ".jpg", ".jpeg", ".gif", ".webp" };
-
-        private static readonly DomainData[] _imageServices =
-        {
-            new DomainData("sanakan.pl"),
-            new DomainData("i.imgur.com"),
-            new DomainData("dl.dropboxusercontent.com"),
-            new DomainData("cdn.imgchest.com"),
-            new DomainData("onedrive.live.com") { CheckExt = false },
-            new DomainData("public.am.files.1drv.com") { CheckExt = false },
         };
 
         public static EmbedBuilder ToEmbedMessage(this string message, EMType type = EMType.Neutral, bool icon = false)
@@ -69,40 +57,6 @@ namespace Sanakan.Extensions
 
         public static List<string> GetURLs(this string s) =>
             new Regex(@"(http|ftp|https):\/\/([\w\-_]+(?:(?:\.[\w\-_]+)+))([\w\-\.,@?^=%&amp;:/~\+#]*[\w\-\@?^=%&amp;/~\+#])?", RegexOptions.Compiled | RegexOptions.IgnoreCase).Matches(s).Select(x => x.Value).ToList();
-
-        public static ImageUrlCheckResult CheckImageUrl(this string s) => s.CheckImageUrl(_imageServices);
-
-        public static ImageUrlCheckResult CheckImageUrl(this string s, DomainData[] allowedHosts)
-        {
-            try
-            {
-                var checkExt = true;
-                var url = new Uri(s);
-                if (allowedHosts != null)
-                {
-                    var host = allowedHosts.FirstOrDefault(x => x.Url.Equals(url.Host, StringComparison.CurrentCultureIgnoreCase));
-                    if (host == null)
-                        return ImageUrlCheckResult.BlacklistedHost;
-
-                    checkExt = host.CheckExt;
-                }
-
-                if (checkExt)
-                {
-                    var ext = System.IO.Path.GetExtension(url.AbsoluteUri);
-                    if (string.IsNullOrEmpty(ext) || !_imgExtensions.Any(x => x.Equals(ext, StringComparison.CurrentCultureIgnoreCase)))
-                        return ImageUrlCheckResult.WrongExtension;
-                }
-
-                return ImageUrlCheckResult.Ok;
-            }
-            catch (Exception)
-            {
-                return ImageUrlCheckResult.NotUrl;
-            }
-        }
-
-        public static bool IsUrlToImage(this string s) => s.CheckImageUrl(null) == ImageUrlCheckResult.Ok;
 
         public static string GetQMarksIfEmpty(this string s)
         {

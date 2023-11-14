@@ -27,6 +27,7 @@ namespace Sanakan.Modules
     [Name("PocketWaifu"), RequireUserRole]
     public class PocketWaifu : SanakanModuleBase<SocketCommandContext>
     {
+        private Services.ImageProcessing _img;
         private Sden.ShindenClient _shclient;
         private SessionManager _session;
         private Services.Helper _helepr;
@@ -38,8 +39,10 @@ namespace Sanakan.Modules
         private Waifu _waifu;
 
         public PocketWaifu(Waifu waifu, Sden.ShindenClient client, ILogger logger, Lottery lottery,
-            SessionManager session, IConfig config, IExecutor executor, Services.Helper helper, ISystemTime time)
+            SessionManager session, IConfig config, IExecutor executor, Services.Helper helper,
+            ISystemTime time, Services.ImageProcessing img)
         {
+            _img = img;
             _time = time;
             _waifu = waifu;
             _logger = logger;
@@ -1978,7 +1981,7 @@ namespace Sanakan.Modules
                     return;
                 }
 
-                if (imgUrl.CheckImageUrl() != ImageUrlCheckResult.Ok)
+                if (_img.CheckImageUrl(ref imgUrl) != ImageUrlCheckResult.Ok)
                 {
                     await ReplyAsync("", embed: "Nie wykryto obrazka! Upewnij się, że podałeś poprawny adres!".ToEmbedMessage(EMType.Error).Build());
                     return;
@@ -2010,7 +2013,7 @@ namespace Sanakan.Modules
                     return;
                 }
 
-                if (imgUrl.CheckImageUrl() != ImageUrlCheckResult.Ok)
+                if (_img.CheckImageUrl(ref imgUrl) != ImageUrlCheckResult.Ok)
                 {
                     await ReplyAsync("", embed: "Nie wykryto obrazka! Upewnij się, że podałeś poprawny adres!".ToEmbedMessage(EMType.Error).Build());
                     return;

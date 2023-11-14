@@ -31,6 +31,7 @@ namespace Sanakan.Services
         private readonly ShindenClient _shclient;
         private Dictionary<string, Color> _colors;
         private Dictionary<(FontFamily, float), Font> _fonts;
+        private readonly List<DomainData> _imageServices;
         private readonly string[] _extensions = new[] { "png", "jpg", "jpeg", "gif", "webp" };
 
         public ImageProcessing(ShindenClient shinden)
@@ -39,9 +40,80 @@ namespace Sanakan.Services
             _httpClient = new HttpClient();
             _fonts = new Dictionary<(FontFamily, float), Font>();
             _colors = new Dictionary<string, Color>();
+            _imageServices = new List<DomainData>
+            {
+                new DomainData("sanakan.pl", true),
+                new DomainData("i.imgur.com", true),
+                new DomainData("cdn.imgchest.com", true),
+                new DomainData("www.dropbox.com") { Transform = TransformDropboxAsync },
+                new DomainData("dl.dropboxusercontent.com"),
+                new DomainData("onedrive.live.com"),
+                new DomainData("public.am.files.1drv.com"),
+            };
         }
 
-        public async Task<(bool, string)> IsUrlToImage(string url)
+        private async Task<string> TransformDropboxAsync(string url)
+        {
+            var res = await _httpClient.GetAsync(url.Replace("www.dropbox", "dl.dropbox"));
+            if (res.IsSuccessStatusCode)
+            {
+                return res.RequestMessage.RequestUri.AbsoluteUri;
+            }
+            return string.Empty;
+        }
+
+        public ImageUrlCheckResult CheckImageUrlSimple(string str, IEnumerable<DomainData> allowedHosts)
+            => CheckImageUrl(ref str, allowedHosts);
+
+        public ImageUrlCheckResult CheckImageUrlSimple(string str)
+            => CheckImageUrl(ref str, _imageServices);
+
+        public ImageUrlCheckResult CheckImageUrl(ref string str)
+            => CheckImageUrl(ref str, _imageServices);
+
+        public ImageUrlCheckResult CheckImageUrl(ref string str, IEnumerable<DomainData> allowedHosts)
+        {
+            try
+            {
+                var checkExt = false;
+                var url = new Uri(str);
+                if (allowedHosts != null)
+                {
+                    var host = allowedHosts.FirstOrDefault(x => x.Url.Equals(url.Host, StringComparison.CurrentCultureIgnoreCase));
+                    if (host == null)
+                        return ImageUrlCheckResult.BlacklistedHost;
+
+                    if (host.Transform != null)
+                    {
+                        var newStr = host.Transform(str).Result;
+                        if (string.IsNullOrEmpty(newStr))
+                            return ImageUrlCheckResult.TransformError;
+
+                        str = newStr;
+                        url = new Uri(newStr);
+                    }
+
+                    checkExt = host.CheckExt;
+                }
+
+                if (checkExt)
+                {
+                    var ext = Path.GetExtension(url.AbsoluteUri);
+                    if (string.IsNullOrEmpty(ext) || !_extensions.Any(x => x.Equals(ext, StringComparison.CurrentCultureIgnoreCase)))
+                        return ImageUrlCheckResult.WrongExtension;
+                }
+
+                return ImageUrlCheckResult.Ok;
+            }
+            catch (Exception)
+            {
+                return ImageUrlCheckResult.NotUrl;
+            }
+        }
+
+        public bool IsUrlToImageSimple(string url) => CheckImageUrl(ref url, null) == ImageUrlCheckResult.Ok;
+
+        public async Task<(bool, string)> IsUrlToImageAsync(string url)
         {
             try
             {
