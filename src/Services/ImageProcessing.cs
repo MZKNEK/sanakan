@@ -55,7 +55,7 @@ namespace Sanakan.Services
 
         private async Task<string> TransformGoogleAsync(string url)
         {
-            var newUrl = url.Replace("/view", "").Replace("drive.google.com/file/d/", "drive.google.com/uc?id=");
+            var newUrl = url.Replace("?usp=sharing", "").Replace("/view", "").Replace("drive.google.com/file/d/", "drive.google.com/uc?id=");
             var res = await _httpClient.GetAsync(newUrl);
             if (res.IsSuccessStatusCode && res.Content.Headers.ContentType.MediaType.StartsWith("image"))
             {
