@@ -55,10 +55,11 @@ namespace Sanakan.Services
 
         private async Task<string> TransformGoogleAsync(string url)
         {
-            var res = await _httpClient.GetAsync(url.Replace("/view", "").Replace("drive.google.com/file/d/", "drive.google.com/uc?id="));
-            if (res.IsSuccessStatusCode)
+            var newUrl = url.Replace("/view", "").Replace("drive.google.com/file/d/", "drive.google.com/uc?id=");
+            var res = await _httpClient.GetAsync(newUrl);
+            if (res.IsSuccessStatusCode && res.Content.Headers.ContentType.MediaType.StartsWith("image"))
             {
-                return res.RequestMessage.RequestUri.AbsoluteUri;
+                return newUrl;
             }
             return string.Empty;
         }
@@ -66,7 +67,7 @@ namespace Sanakan.Services
         private async Task<string> TransformDropboxAsync(string url)
         {
             var res = await _httpClient.GetAsync(url.Replace("www.dropbox", "dl.dropbox"));
-            if (res.IsSuccessStatusCode)
+            if (res.IsSuccessStatusCode && res.Content.Headers.ContentType.MediaType.StartsWith("image"))
             {
                 return res.RequestMessage.RequestUri.AbsoluteUri;
             }
