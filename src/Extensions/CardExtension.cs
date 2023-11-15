@@ -42,7 +42,7 @@ namespace Sanakan.Extensions
                     .ToString();
 
         public static string GetShortString(this Card card, bool nameAsUrl = false) =>
-             $"**[{card.Id}]** {(nameAsUrl ? card.GetNameWithUrl() : card.Name)} **{card.GetCardRealRarity()}**";
+             $"{card.GetIdWithUrl()} {(nameAsUrl ? card.GetNameWithUrl() : card.Name)} **{card.GetCardRealRarity()}**";
 
         public static string GetCardRealRarity(this Card card) =>
             card.FromFigure ? card.Quality.ToName() : card.Rarity.ToString();
@@ -235,9 +235,11 @@ namespace Sanakan.Extensions
             return string.Join(" ", icons);
         }
 
+        public static string GetIdWithUrl(this Card card) => $"**[[{card.Id}](https://waifu.sanakan.pl/#/card/{card.Id})]**";
+
         public static string GetDescSmall(this Card card)
         {
-            return $"**[{card.Id}]** *({card.Character}) KC: {card.WhoWantsCount} PWR: {card.CalculateCardPower():F}*\n"
+            return $"{card.GetIdWithUrl()} *({card.Character}) KC: {card.WhoWantsCount} PWR: {card.CalculateCardPower():F}*\n"
                 + $"{card.GetString(true, true, true, false, true)}\n"
                 + $"_{card.Title}_\n\n"
                 + $"{card.Dere}\n"

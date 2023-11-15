@@ -2799,7 +2799,7 @@ namespace Sanakan.Modules
                 {
                     if (!card.ValidExpedition(expedition, botUser.GameDeck.Karma))
                     {
-                        await ReplyAsync("", embed: $"{Context.User.Mention} **[{card.Id}]** ta karta nie może się udać na tę wyprawę.".ToEmbedMessage(EMType.Error).Build());
+                        await ReplyAsync("", embed: $"{Context.User.Mention} {card.GetIdWithUrl()} ta karta nie może się udać na tę wyprawę.".ToEmbedMessage(EMType.Error).Build());
                         return;
                     }
 

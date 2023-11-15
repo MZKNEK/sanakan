@@ -1190,7 +1190,7 @@ namespace Sanakan.Services.PocketWaifu
             if (mention)
             {
                 var userId = card.GameDeckId == 1 ? (guild?.CurrentUser?.Id ?? 1) : card.GameDeckId;
-                return $"<@{userId}>: **[{card.Id}]** **{card.GetCardRealRarity()}** {card.GetStatusIcons()}\n";
+                return $"<@{userId}>: {card.GetIdWithUrl()} **{card.GetCardRealRarity()}** {card.GetStatusIcons()}\n";
             }
 
             var user = guild?.GetUser(card.GameDeckId) ?? await _client.GetUserAsync(card.GameDeckId);
