@@ -12,6 +12,7 @@ using Discord.WebSocket;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.IdentityModel.Tokens;
 using Sanakan.Api.Models;
 using Sanakan.Config;
@@ -33,15 +34,17 @@ namespace Sanakan.Api.Controllers
         private readonly ISystemTime _time;
         private readonly IExecutor _executor;
         private readonly ShindenClient _shClient;
+        private readonly IMemoryCache _nameCache;
         private readonly DiscordSocketClient _client;
 
         public UserController(DiscordSocketClient client, ShindenClient shClient, ILogger logger,
-            IExecutor executor, IConfig config, ISystemTime time)
+            IExecutor executor, IConfig config, ISystemTime time, IMemoryCache cache)
         {
             _time = time;
             _config = config;
             _client = client;
             _logger = logger;
+            _nameCache = cache;
             _executor = executor;
             _shClient = shClient;
         }
@@ -85,12 +88,21 @@ namespace Sanakan.Api.Controllers
         [HttpGet("shinden/{id}/username")]
         public async Task<string> GetShindenUsernameByShindenId(ulong id)
         {
+            if (_nameCache.TryGetValue(id, out string username))
+            {
+                return username;
+            }
+
             var res = await _shClient.User.GetAsync(id);
             if (!res.IsSuccessStatusCode())
             {
                 await "User not found!".ToResponse(404).ExecuteResultAsync(ControllerContext);
                 return null;
             }
+
+            _nameCache.Set(id, res.Body.Name, new MemoryCacheEntryOptions()
+                .SetAbsoluteExpiration(TimeSpan.FromHours(12)));
+
             return res.Body.Name;
         }
 

@@ -8,7 +8,9 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using Sanakan.Api.Models;
 using Sanakan.Config;
 using Sanakan.Database.Models;
@@ -30,12 +32,14 @@ namespace Sanakan.Api.Controllers
         private readonly ISystemTime _time;
         private readonly IExecutor _executor;
         private readonly ShindenClient _shClient;
+        private readonly IMemoryCache _nameCache;
 
-        public WaifuController(ShindenClient shClient, Waifu waifu, IExecutor executor, IConfig config, ISystemTime time)
+        public WaifuController(ShindenClient shClient, Waifu waifu, IExecutor executor, IConfig config, ISystemTime time, IMemoryCache cache)
         {
             _time = time;
             _waifu = waifu;
             _config = config;
+            _nameCache = cache;
             _executor = executor;
             _shClient = shClient;
         }
@@ -217,9 +221,17 @@ namespace Sanakan.Api.Controllers
 
                 if (card.GameDeck.User.Shinden != 0)
                 {
+                    if (_nameCache.TryGetValue(card.GameDeck.User.Shinden, out string username))
+                    {
+                        return card.ToViewUser(username);
+                    }
+
                     var res = await _shClient.User.GetAsync(card.GameDeck.User.Shinden);
                     if (res.IsSuccessStatusCode())
                     {
+                        _nameCache.Set(card.GameDeck.User.Shinden, res.Body.Name, new MemoryCacheEntryOptions()
+                            .SetAbsoluteExpiration(TimeSpan.FromHours(12)));
+
                         return card.ToViewUser(res.Body.Name);
                     }
                 }

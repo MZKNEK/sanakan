@@ -50,6 +50,7 @@ namespace Sanakan.Api
             WebHost.CreateDefaultBuilder().ConfigureServices(services =>
             {
                 var tmpCnf = config.Get();
+                services.AddMemoryCache();
                 services.AddSingleton(config);
                 services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(opt =>
                 {
