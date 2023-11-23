@@ -113,7 +113,7 @@ namespace Sanakan
                  _client, _helper, _time);
             _sessions = new SessionManager(_client, _executor, _logger);
             _supervisor = new Supervisor(_client, _config, _logger, _mod, _time);
-            _greeting = new Greeting(_client, _logger, _config, _executor);
+            _greeting = new Greeting(_client, _logger, _config, _executor, _time);
             _exp = new ExperienceManager(_client, _executor, _config, _img, _time);
             _spawn = new Spawn(_client, _executor, _waifu, _config, _logger, _time);
             _handler = new CommandHandler(_client, _config, _logger, _executor, _time);

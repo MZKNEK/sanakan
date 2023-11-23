@@ -9,6 +9,7 @@ using Microsoft.EntityFrameworkCore;
 using Sanakan.Config;
 using Sanakan.Extensions;
 using Sanakan.Services.Executor;
+using Sanakan.Services.Time;
 using Shinden.Logger;
 using Z.EntityFramework.Plus;
 
@@ -18,21 +19,43 @@ namespace Sanakan.Services
     {
         private DiscordSocketClient _client { get; set; }
         private IExecutor _executor { get; set; }
+        private ISystemTime _time { get; set; }
         private ILogger _logger { get; set; }
         private IConfig _config { get; set; }
 
-        public Greeting(DiscordSocketClient client, ILogger logger, IConfig config, IExecutor exe)
+        public Greeting(DiscordSocketClient client, ILogger logger, IConfig config, IExecutor exe, ISystemTime time)
         {
             _client = client;
             _logger = logger;
             _config = config;
             _executor = exe;
+            _time = time;
 
 #if !DEBUG
             _client.LeftGuild += BotLeftGuildAsync;
             _client.UserJoined += UserJoinedAsync;
+            _client.UserBanned += UserBannedAsync;
             _client.UserLeft += UserLeftAsync;
 #endif
+        }
+
+        private async Task UserBannedAsync(SocketUser user, SocketGuild guild)
+        {
+            using (var db = new Database.DatabaseContext(_config))
+            {
+                var botUser = await db.GetCachedNoGameDeckUserAsync(user.Id);
+                await db.UserActivities.AddAsync(new UserActivityBuilder(_time)
+                    .WithUser(botUser, user).WithType(Database.Models.ActivityType.Banned).Build());
+                await db.SaveChangesAsync();
+
+                var config = await db.GetCachedGuildFullConfigAsync(guild.Id);
+                if (config == null) return;
+
+                var notifCh = guild.GetTextChannel(config.NotificationChannel);
+                if (notifCh == null) return;
+
+                await notifCh.SendMessageAsync("", embed: "Poleciał, szczegółów raczej brak.".ToEmbedMessage(EMType.Error).WithUser(user, true).Build());
+            }
         }
 
         private async Task BotLeftGuildAsync(SocketGuild guild)

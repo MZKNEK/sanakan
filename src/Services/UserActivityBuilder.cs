@@ -26,12 +26,18 @@ namespace Sanakan.Services
         }
 
         public UserActivityBuilder WithUser(User user, Discord.IUser dUser)
-            => WithUser(user, dUser.GetUserNickInGuild());
+        {
+            _activity.UserId = dUser?.Id ?? 0;
+            return WithUser(user, dUser.GetUserNickInGuild());
+        }
 
         public UserActivityBuilder WithUser(User user, string name = "")
         {
-            _activity.ShindenId = user.Shinden;
-            _activity.UserId = user.Id;
+            _activity.ShindenId = user?.Shinden ?? 0;
+            if (_activity.UserId == 0)
+            {
+                _activity.UserId = user?.Id ?? 0;
+            }
             if (!string.IsNullOrEmpty(name))
             {
                 _misc.Add($"u:{name}");

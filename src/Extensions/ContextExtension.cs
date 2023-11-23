@@ -55,6 +55,12 @@ namespace Sanakan.Extensions
                 .Include(x => x.GameDeck).ThenInclude(x => x.Figures).AsNoTracking().AsSplitQuery().FromCacheAsync(new string[] { $"user-{userId}", "users" })).FirstOrDefault();
         }
 
+        public static async Task<User> GetCachedNoGameDeckUserAsync(this Database.DatabaseContext context, ulong userId)
+        {
+            return (await context.Users.AsQueryable().Where(x => x.Id == userId).Include(x => x.Stats).Include(x => x.SMConfig).Include(x => x.TimeStatuses)
+                .AsNoTracking().AsSplitQuery().FromCacheAsync(new string[] { $"user-{userId}-s" })).FirstOrDefault();
+        }
+
         public static async Task<User> GetCachedFullUserByShindenIdAsync(this Database.DatabaseContext context, ulong userId)
         {
             return (await context.Users.AsQueryable().Where(x => x.Shinden == userId).Include(x => x.Stats).Include(x => x.SMConfig).Include(x => x.TimeStatuses).Include(x => x.GameDeck).ThenInclude(x => x.PvPStats)
