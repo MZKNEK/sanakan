@@ -111,6 +111,20 @@ namespace Sanakan.Api.Controllers
         }
 
         /// <summary>
+        /// Pobiera listę aktywności od konkretnego id
+        /// </summary>
+        /// <param name="lastId">id aktywności od której zacząć nową liste</param>
+        /// <returns>lista aktywności</returns>
+        [HttpGet("user/activity/{lastId}")]
+        public async Task<IEnumerable<UserActivity>> GetUsersActivitiesFromIdAsync(ulong lastId)
+        {
+            using (var db = new Database.DatabaseContext(_config))
+            {
+                return await db.UserActivities.AsQueryable().Where(x => x.Id > lastId).AsNoTracking().OrderByDescending(x => x.Id).ToListAsync();
+            }
+        }
+
+        /// <summary>
         /// Pobiera x kart z przefiltrowanej listy wszystkich kart
         /// </summary>
         /// <param name="offset">przesunięcie</param>
