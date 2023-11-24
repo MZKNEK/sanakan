@@ -466,6 +466,9 @@ namespace Sanakan.Modules
                         idsToSelect.Remove(wid);
                     }
 
+                    await db.UserActivities.AddAsync(new Services.UserActivityBuilder(_time)
+                        .WithUser(winnerUser, winner).WithType(Database.Models.ActivityType.WonLottery).Build());
+
                     await db.SaveChangesAsync();
                     await msg.DeleteAsync();
 
@@ -475,9 +478,6 @@ namespace Sanakan.Modules
                     var embToSend =  $"Loterie wygrywa {winner.Mention} i otrzymuje:\n\n{string.Join("\n", cardsIds)}".TrimToLength(2000).ToEmbedMessage(msgType);
                     if (progress > -1) embToSend.Footer = (new EmbedFooterBuilder()).WithText($"{progress+1}/{howMuch}");
                     msg = await ReplyAsync(embed: embToSend.Build());
-
-                    await db.UserActivities.AddAsync(new Services.UserActivityBuilder(_time)
-                        .WithUser(winnerUser, winner).WithType(Database.Models.ActivityType.WonLottery).Build());
 
                     try
                     {
