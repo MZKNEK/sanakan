@@ -463,6 +463,8 @@ namespace Sanakan.Modules
                         cardsIds.Add($"{thisCard.ToHeartWishlist(isOnUserWishlist)}{thisCard.GetString(false, false, true)}");
                         winnerUser.GameDeck.RemoveCardFromWishList(thisCard.Id);
 
+                        db.AddActivityFromNewCard(thisCard, isOnUserWishlist, _time, winnerUser, winner.GetUserNickInGuild());
+
                         idsToSelect.Remove(wid);
                     }
 
