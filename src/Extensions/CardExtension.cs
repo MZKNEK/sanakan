@@ -34,7 +34,7 @@ namespace Sanakan.Extensions
 
         public static string GetString(this Card card, bool withoutId = false, bool withUpgrades = false,
             bool nameAsUrl = false, bool allowZero = false, bool showBaseHp = false) => new StringBuilder()
-                    .Append(withoutId ? "" : $"**[{card.Id}]** ")
+                    .Append(withoutId ? "" : $"{card.GetIdWithUrl()} ")
                     .Append(nameAsUrl ? card.GetNameWithUrl() : card.Name)
                     .Append($" **{card.GetCardRealRarity()}** ")
                     .Append(card.GetCardParams(showBaseHp, allowZero))
@@ -260,7 +260,7 @@ namespace Sanakan.Extensions
                 + $"**W klatce:** {card.InCage.GetYesNo()}\n"
                 + $"**Aktywna:** {card.Active.GetYesNo()}\n"
                 + $"**Możliwość wymiany:** {card.IsTradable.GetYesNo()}\n\n"
-                + $"**WID:** {card.Id} *({card.Character})*\n"
+                + $"**WID:** {card.GetIdWithUrl()} *({card.Character})*\n"
                 + $"**Restarty:** {card.RestartCnt}\n"
                 + $"**Pochodzenie:** {card.Source.GetString()}\n"
                 + $"**Moc:** {card.CalculateCardPower():F}\n"
