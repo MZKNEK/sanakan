@@ -23,7 +23,7 @@ namespace Sanakan.Extensions
             return new EmbedBuilder()
             {
                 Title = info.Title.TrimToLength(EmbedBuilder.MaxTitleLength),
-                Description = info.Description.Content.TrimToLength(1000),
+                Description = info.Description.Content.TrimToLength(1500),
                 ThumbnailUrl = info.CoverUrl,
                 Color = EMType.Info.Color(),
                 Fields = info.GetFields(),
@@ -219,7 +219,7 @@ namespace Sanakan.Extensions
             return new EmbedBuilder()
             {
                 Title = info.Title.TrimToLength(EmbedBuilder.MaxTitleLength),
-                Description = info.Description.Content.TrimToLength(1000),
+                Description = info.Description.Content.TrimToLength(1500),
                 ThumbnailUrl = info.CoverUrl,
                 Color = EMType.Info.Color(),
                 Fields = info.GetFields(),

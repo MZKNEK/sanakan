@@ -13,7 +13,7 @@ namespace Sanakan.Extensions
             return new EmbedBuilder()
             {
                 Title = $"{info} ({info.Id})".TrimToLength(EmbedBuilder.MaxTitleLength),
-                Description = info?.Biography?.Content?.TrimToLength(1000),
+                Description = info?.Biography?.Content?.TrimToLength(1500),
                 Color = EMType.Info.Color(),
                 ImageUrl = info.PictureUrl,
                 Fields = info.GetFields(),

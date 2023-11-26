@@ -1733,7 +1733,7 @@ namespace Sanakan.Modules
                 pairs.Add(new Tuple<int, int>(first, second));
             }
 
-            await ReplyAsync("", embed: $"**Pary**:\n\n{string.Join("\n", pairs.Select(x => $"{x.Item1} - {x.Item2}"))}".TrimToLength(2000).ToEmbedMessage(EMType.Success).Build());
+            await ReplyAsync("", embed: $"**Pary**:\n\n{string.Join("\n", pairs.Select(x => $"{x.Item1} - {x.Item2}"))}".TrimToLength().ToEmbedMessage(EMType.Success).Build());
         }
 
         [Command("pozycja gracza", RunMode = RunMode.Async)]
@@ -1756,7 +1756,7 @@ namespace Sanakan.Modules
                 pairs.Add(new Tuple<string, int>(player, number));
             }
 
-            await ReplyAsync("", embed: $"**Numerki**:\n\n{string.Join("\n", pairs.Select(x => $"{x.Item1} - {x.Item2}"))}".TrimToLength(2000).ToEmbedMessage(EMType.Success).Build());
+            await ReplyAsync("", embed: $"**Numerki**:\n\n{string.Join("\n", pairs.Select(x => $"{x.Item1} - {x.Item2}"))}".TrimToLength().ToEmbedMessage(EMType.Success).Build());
         }
 
         [Command("raport")]

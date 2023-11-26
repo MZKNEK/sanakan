@@ -282,7 +282,7 @@ namespace Sanakan.Api.Controllers
                             if (channel == null) continue;
 
                             await channel.SendMessageAsync("", embed: ($"Potencjalne multikonto:\nDID: {id.DiscordUserId} <@{id.DiscordUserId}>\nSID: {sUser.Id}\n"
-                                + $"SN: {sUser.Name}\n\noDID: {string.Join(",", oldUsers.Select(x => $"{x.Id} <@{x.Id}>"))}").TrimToLength(2000).ToEmbedMessage(EMType.Error).Build());
+                                + $"SN: {sUser.Name}\n\noDID: {string.Join(",", oldUsers.Select(x => $"{x.Id} <@{x.Id}>"))}").TrimToLength().ToEmbedMessage(EMType.Error).Build());
                         }
                     }
                     return;

@@ -76,7 +76,7 @@ namespace Sanakan.Modules
                         subs += $"{sub.ToView(_time.Now())}\n";
                 }
 
-                await ReplyAsync("", embed: $"**Subskrypcje** {Context.User.Mention}:\n\n{subs.TrimToLength(1950)}".ToEmbedMessage(EMType.Info).Build());
+                await ReplyAsync("", embed: $"**Subskrypcje** {Context.User.Mention}:\n\n{subs.TrimToLength()}".ToEmbedMessage(EMType.Info).Build());
             }
         }
 

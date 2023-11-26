@@ -1090,7 +1090,7 @@ namespace Sanakan.Services.PocketWaifu
                 {
                     Color = EMType.Info.Color(),
                     Footer = new EmbedFooterBuilder().WithText($"(S: {++page}) MOC {list.Sum(x => x.CalculateCardPower()):F}"),
-                    Description = ("**Twoje aktywne karty to**:\n\n" + string.Join("\n", p)).TrimToLength(1800),
+                    Description = ("**Twoje aktywne karty to**:\n\n" + string.Join("\n", p)).TrimToLength(),
                 }.Build());
             }
 
@@ -1203,7 +1203,7 @@ namespace Sanakan.Services.PocketWaifu
 
         private void AppendMessage(List<Embed> embeds, StringBuilder currentContent, string nextPart)
         {
-            if (currentContent.Length + nextPart.Length > 1600)
+            if (currentContent.Length + nextPart.Length > 3000)
             {
                 embeds.Add(new EmbedBuilder() { Color = EMType.Info.Color(), Description = currentContent.ToString() }.Build());
                 currentContent.Clear();
@@ -1239,7 +1239,7 @@ namespace Sanakan.Services.PocketWaifu
             return new EmbedBuilder
             {
                 Color = EMType.Info.Color(),
-                Description = $"{user.Mention} twoje pakiety:\n\n{packString.TrimToLength(1900)}"
+                Description = $"{user.Mention} twoje pakiety:\n\n{packString.TrimToLength()}"
             }.Build();
         }
 
@@ -1265,7 +1265,7 @@ namespace Sanakan.Services.PocketWaifu
                 var embed = new EmbedBuilder
                 {
                     Color = EMType.Info.Color(),
-                    Description = $"{user.Mention} twoje przedmioty **({i + 1}/{list.Count})**:\n\n{string.Join("\n", list[i]).TrimToLength(1900)}"
+                    Description = $"{user.Mention} twoje przedmioty **({i + 1}/{list.Count})**:\n\n{string.Join("\n", list[i]).TrimToLength()}"
                 };
                 pages.Add(embed.Build());
             }
@@ -1560,7 +1560,7 @@ namespace Sanakan.Services.PocketWaifu
                 {
                     Text = $"Należy do: {ownerString}"
                 },
-                Description = $"{card.GetDesc()}{imgUrls}".TrimToLength(1800)
+                Description = $"{card.GetDesc()}{imgUrls}".TrimToLength(2500)
             }.Build();
         }
 
@@ -1601,7 +1601,7 @@ namespace Sanakan.Services.PocketWaifu
             return new EmbedBuilder
             {
                 Color = EMType.Info.Color(),
-                Description = $"**{name}**:\n\n{embedString}".TrimToLength(2000)
+                Description = $"**{name}**:\n\n{embedString}".TrimToLength()
             }.Build();
         }
 

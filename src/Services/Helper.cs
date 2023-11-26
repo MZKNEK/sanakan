@@ -403,7 +403,7 @@ namespace Sanakan.Services
             return new EmbedBuilder
             {
                 Footer = new EmbedFooterBuilder().WithText($"Zgłasza: {reportAuthor}".TrimToLength(EmbedFooterBuilder.MaxFooterTextLength)),
-                Description = message.Content?.TrimToLength(1500) ?? "sam załącznik",
+                Description = message.Content?.TrimToLength(2500) ?? "sam załącznik",
                 Author = new EmbedAuthorBuilder().WithUser(message.Author),
                 Color = EMType.Error.Color(),
                 Fields = new List<EmbedFieldBuilder>
@@ -459,7 +459,7 @@ namespace Sanakan.Services
             }
             catch (Exception ex)
             {
-                return ExecutionResult.FromError($"coś poszło nie tak [{embeds.Count()}]:\n\n{ex.Message}".TrimToLength(2000));
+                return ExecutionResult.FromError($"coś poszło nie tak [{embeds.Count()}]:\n\n{ex.Message}".TrimToLength());
             }
         }
     }

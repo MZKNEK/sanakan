@@ -503,7 +503,7 @@ namespace Sanakan.Extensions
             return new EmbedBuilder
             {
                 Color = EMType.Info.Color(),
-                Description = $"**Statystyki** {user.Mention}:\n\n{stats}\n{u.Stats.ToView()}".TrimToLength(1950)
+                Description = $"**Statystyki** {user.Mention}:\n\n{stats}\n{u.Stats.ToView()}".TrimToLength()
             };
         }
 

@@ -39,7 +39,7 @@ namespace Sanakan.Services.Session.Models
 
             if (await Message.Channel.GetMessageAsync(Message.Id) is IUserMessage msg)
             {
-                await msg.ModifyAsync(x => x.Embed = $"{DuelName}{deathLog.TrimToLength(1400)}{winString}".ToEmbedMessage(EMType.Error).Build());
+                await msg.ModifyAsync(x => x.Embed = $"{DuelName}{deathLog.TrimToLength(2500)}{winString}".ToEmbedMessage(EMType.Error).Build());
             }
 
             using (var db = new Database.DatabaseContext(_config))

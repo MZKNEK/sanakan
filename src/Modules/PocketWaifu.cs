@@ -156,7 +156,7 @@ namespace Sanakan.Modules
                 {
                     Color = EMType.Info.Color(),
                     Author = new EmbedAuthorBuilder().WithUser(Context.User),
-                    Description = $"**{item.Name}**\n_{item.Type.Desc()}_\n\nLiczba: **{item.Count}**".TrimToLength(1900)
+                    Description = $"**{item.Name}**\n_{item.Type.Desc()}_\n\nLiczba: **{item.Count}**".TrimToLength()
                 };
 
                 await ReplyAsync("", embed: embed.Build());
@@ -229,7 +229,7 @@ namespace Sanakan.Modules
                 }
                 else
                 {
-                    await ReplyAsync("", embed: deck.GetFiguresList().TrimToLength(2000).ToEmbedMessage(EMType.Info).WithAuthor(new EmbedAuthorBuilder().WithUser(Context.User)).Build());
+                    await ReplyAsync("", embed: deck.GetFiguresList().TrimToLength().ToEmbedMessage(EMType.Info).WithAuthor(new EmbedAuthorBuilder().WithUser(Context.User)).Build());
                 }
             }
         }
@@ -324,7 +324,7 @@ namespace Sanakan.Modules
                     return;
                 }
 
-                await ReplyAsync("", embed: fig.GetDesc().TrimToLength(2000).ToEmbedMessage(EMType.Info)
+                await ReplyAsync("", embed: fig.GetDesc().TrimToLength().ToEmbedMessage(EMType.Info)
                     .WithUser(Context.Guild.GetUser(fig.GameDeckId)).Build());
             }
         }
@@ -347,7 +347,7 @@ namespace Sanakan.Modules
                 SocketUser user = Context.Guild.GetUser(card.GameDeck.UserId);
                 if (user == null) user = Context.Client.GetUser(card.GameDeck.UserId);
 
-                await ReplyAsync("", embed: card.GetDescSmall().TrimToLength(2000).ToEmbedMessage(EMType.Info).WithAuthor(new EmbedAuthorBuilder().WithUser(user)).Build());
+                await ReplyAsync("", embed: card.GetDescSmall().TrimToLength().ToEmbedMessage(EMType.Info).WithAuthor(new EmbedAuthorBuilder().WithUser(user)).Build());
             }
         }
 
@@ -615,7 +615,7 @@ namespace Sanakan.Modules
                 }
 
                 await db.Database.CloseConnectionAsync();
-                await ReplyAsync("", embed: $"{Context.User.Mention} z {packString} wypadło:\n\n{openString.TrimToLength(1950)}".ToEmbedMessage(EMType.Success).Build());
+                await ReplyAsync("", embed: $"{Context.User.Mention} z {packString} wypadło:\n\n{openString.TrimToLength()}".ToEmbedMessage(EMType.Success).Build());
             }
         }
 
@@ -1793,7 +1793,7 @@ namespace Sanakan.Modules
                     }
                     else
                     {
-                        await ReplyAsync("", embed: $"**{thisCards.GetNameWithUrl()} chcą ({usersStr.Count}):**\n\n {string.Join('\n', usersStr)}".TrimToLength(2000).ToEmbedMessage(EMType.Info).Build());
+                        await ReplyAsync("", embed: $"**{thisCards.GetNameWithUrl()} chcą ({usersStr.Count}):**\n\n {string.Join('\n', usersStr)}".TrimToLength().ToEmbedMessage(EMType.Info).Build());
                     }
                 }
 
@@ -1838,7 +1838,7 @@ namespace Sanakan.Modules
                 }
 
                 var usersStr = await _waifu.GetWhoWantsCardsStringAsync(wishlists, showNames, Context.Guild);
-                await ReplyAsync("", embed: $"**Karty z {response.Body.Title} chcą:**\n\n {string.Join('\n', usersStr)}".TrimToLength(2000).ToEmbedMessage(EMType.Info).Build());
+                await ReplyAsync("", embed: $"**Karty z {response.Body.Title} chcą:**\n\n {string.Join('\n', usersStr)}".TrimToLength().ToEmbedMessage(EMType.Info).Build());
             }
         }
 
@@ -2953,7 +2953,7 @@ namespace Sanakan.Modules
                 _ = Task.Run(async () =>
                 {
                     string wStr = fight.Winner == null ? "Remis!" : $"Zwycięża {fight.Winner.User.Mention}!";
-                    await ReplyAsync("", embed: $"⚔️ **Pojedynek**:\n{Context.User.Mention} vs. {euser.Mention}\n\n{deathLog.TrimToLength(2000)}\n{wStr}\n{info}".ToEmbedMessage(EMType.Bot).Build());
+                    await ReplyAsync("", embed: $"⚔️ **Pojedynek**:\n{Context.User.Mention} vs. {euser.Mention}\n\n{deathLog.TrimToLength()}\n{wStr}\n{info}".ToEmbedMessage(EMType.Bot).Build());
                 });
             }
         }

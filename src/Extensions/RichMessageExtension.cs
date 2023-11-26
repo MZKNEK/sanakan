@@ -62,7 +62,7 @@ namespace Sanakan.Extensions
                 Timestamp = msg.Timestamp,
                 ImageUrl = msg.ImageUrl ?? "",
                 Color = msg.MessageType.ToColor(),
-                Description = (msg.Description ?? "").ConvertBBCodeToMarkdown().TrimToLength(1800),
+                Description = (msg.Description ?? "").ConvertBBCodeToMarkdown().TrimToLength(2500),
                 ThumbnailUrl = msg.ThumbnailUrl ?? "",
             };
 

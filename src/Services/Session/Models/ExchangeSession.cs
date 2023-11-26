@@ -74,7 +74,7 @@ namespace Sanakan.Services.Session.Models
             return new EmbedBuilder
             {
                 Color = EMType.Warning.Color(),
-                Description = $"{Name}\n\n{P1.CustomString}\n\n{P2.CustomString}\n\n{Tips}".TrimToLength(2000)
+                Description = $"{Name}\n\n{P1.CustomString}\n\n{P2.CustomString}\n\n{Tips}".TrimToLength()
             }.Build();
         }
 

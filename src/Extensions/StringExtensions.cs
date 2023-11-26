@@ -32,7 +32,7 @@ namespace Sanakan.Extensions
             return new EmbedBuilder().WithColor(type.Color()).WithDescription($"{type.Emoji(!icon)}{message}");
         }
 
-        public static string TrimToLength(this string s, int length)
+        public static string TrimToLength(this string s, int length = 3000)
         {
             if (s == null) return "";
             if (s.Length <= length) return s;
