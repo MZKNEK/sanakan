@@ -2422,7 +2422,7 @@ namespace Sanakan.Services.PocketWaifu
 
         public async Task<ExecutionResult> CheckWishlistAndSendToDMAsync(Database.DatabaseContext db, IUser discordUser, User user,
             bool hideFavs = true, bool hideBlocked = true, bool hideNames = true, bool showShindenUrl = false, SocketGuild guild = null,
-            bool showContentOnly = false, ulong filrerById = 0, bool ignoreTitles = false)
+            bool showContentOnly = false, ulong filrerById = 0, bool ignoreTitles = false, bool tldr = false)
         {
             if (user == null)
                 return ExecutionResult.FromError("ta osoba nie ma profilu bota.");
@@ -2438,7 +2438,7 @@ namespace Sanakan.Services.PocketWaifu
             var c = user.GameDeck.GetCardsWishList();
 
             if (showContentOnly)
-                return await _helper.SendEmbedsOnDMAsync(discordUser, await GetContentOfWishlistAsync(c, p, t));
+                return await _helper.SendEmbedsOnDMAsync(discordUser, await GetContentOfWishlistAsync(c, p, t), tldr);
 
             var cards = await GetCardsFromWishlistAsync(c, p, t, db, user.GameDeck.Cards);
 
@@ -2456,7 +2456,7 @@ namespace Sanakan.Services.PocketWaifu
             if (cards.IsNullOrEmpty())
                 return ExecutionResult.FromError("nie odnaleziono kart.");
 
-            return await _helper.SendEmbedsOnDMAsync(discordUser, await GetWaifuFromCharacterTitleSearchResultAsync(cards, hideNames, guild, showShindenUrl));
+            return await _helper.SendEmbedsOnDMAsync(discordUser, await GetWaifuFromCharacterTitleSearchResultAsync(cards, hideNames, guild, showShindenUrl), tldr);
         }
     }
 }

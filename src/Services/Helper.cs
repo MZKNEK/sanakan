@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
@@ -442,18 +443,28 @@ namespace Sanakan.Services
             }.Build();
         }
 
-        public async Task<ExecutionResult> SendEmbedsOnDMAsync(IUser user, IEnumerable<Embed> embeds)
-            => await SendEmbedsOnDMAsync(user, embeds, TimeSpan.FromSeconds(2));
+        public async Task<ExecutionResult> SendEmbedsOnDMAsync(IUser user, IEnumerable<Embed> embeds, bool tldr = false)
+            => await SendEmbedsOnDMAsync(user, embeds, TimeSpan.FromSeconds(2), tldr);
 
-        public async Task<ExecutionResult> SendEmbedsOnDMAsync(IUser user, IEnumerable<Embed> embeds, TimeSpan delay)
+        public async Task<ExecutionResult> SendEmbedsOnDMAsync(IUser user, IEnumerable<Embed> embeds, TimeSpan delay, bool tldr)
         {
             try
             {
                 var dm = await user.CreateDMChannelAsync();
-                foreach (var emb in embeds)
+                if (tldr || embeds.Count() >= 30)
                 {
-                    await dm.SendMessageAsync("", embed: emb);
-                    await Task.Delay(delay);
+                    using (var stream = GenerateStreamFromString(string.Join("\n", embeds.Select(x => x.Description))))
+                    {
+                        await dm.SendFileAsync(stream, "tldr.txt");
+                    }
+                }
+                else
+                {
+                    foreach (var emb in embeds)
+                    {
+                        await dm.SendMessageAsync("", embed: emb);
+                        await Task.Delay(delay);
+                    }
                 }
                 return ExecutionResult.FromSuccess("lista poszła na PW!");
             }
@@ -461,6 +472,16 @@ namespace Sanakan.Services
             {
                 return ExecutionResult.FromError($"coś poszło nie tak [{embeds.Count()}]:\n\n{ex.Message}".TrimToLength());
             }
+        }
+
+        private Stream GenerateStreamFromString(string str)
+        {
+            var stream = new MemoryStream();
+            var writer = new StreamWriter(stream);
+            writer.Write(str);
+            writer.Flush();
+            stream.Position = 0;
+            return stream;
         }
     }
 }
