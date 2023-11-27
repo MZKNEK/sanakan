@@ -227,68 +227,65 @@ namespace Sanakan.Services
             }
         }
 
-        public List<User> GetTopUsers(List<User> list, TopType type)
-            => GetRangeMax(OrderUsersByTop(list, type), 50);
+        public Task<IEnumerable<User>> GetTopUsers(IQueryable<User> list, TopType type)
+            => OrderUsersByTop(list, type).Take(50).QFromCacheAsync();
 
-        private List<T> GetRangeMax<T>(List<T> list, int range)
-            => list.GetRange(0, list.Count > range ? range : list.Count);
-
-        private List<User> OrderUsersByTop(List<User> list, TopType type)
+        private IOrderedQueryable<User> OrderUsersByTop(IQueryable<User> list, TopType type)
         {
             switch (type)
             {
                 default:
                 case TopType.Level:
-                    return list.OrderByDescending(x => x.ExpCnt).ToList();
+                    return list.OrderByDescending(x => x.ExpCnt);
 
                 case TopType.ScCnt:
-                    return list.OrderByDescending(x => x.ScCnt).ToList();
+                    return list.OrderByDescending(x => x.ScCnt);
 
                 case TopType.TcCnt:
-                    return list.OrderByDescending(x => x.TcCnt).ToList();
+                    return list.OrderByDescending(x => x.TcCnt);
 
                 case TopType.AcCnt:
-                    return list.OrderByDescending(x => x.AcCnt).ToList();
+                    return list.OrderByDescending(x => x.AcCnt);
 
                 case TopType.PcCnt:
-                    return list.OrderByDescending(x => x.GameDeck.PVPCoins).ToList();
+                    return list.OrderByDescending(x => x.GameDeck.PVPCoins);
 
                 case TopType.Posts:
-                    return list.OrderByDescending(x => x.MessagesCnt).ToList();
+                    return list.OrderByDescending(x => x.MessagesCnt);
 
                 case TopType.PostsMonthly:
-                    return list.Where(x => x.IsCharCounterActive(_time.Now())).OrderByDescending(x => x.MessagesCnt - x.MessagesCntAtDate).ToList();
+                    return list.Where(x => _time.Now().Month == x.MeasureDate.Month && _time.Now().Year == x.MeasureDate.Year).OrderByDescending(x => x.MessagesCnt - x.MessagesCntAtDate);
 
                 case TopType.PostsMonthlyCharacter:
-                    return list.Where(x => x.IsCharCounterActive(_time.Now()) && x.SendAnyMsgInMonth()).OrderByDescending(x => x.CharacterCntFromDate / (x.MessagesCnt - x.MessagesCntAtDate)).ToList();
+                    return list.Where(x => _time.Now().Month == x.MeasureDate.Month && _time.Now().Year == x.MeasureDate.Year && x.MessagesCnt - x.MessagesCntAtDate > 0).OrderByDescending(x => x.CharacterCntFromDate / (x.MessagesCnt - x.MessagesCntAtDate));
 
                 case TopType.Commands:
-                    return list.OrderByDescending(x => x.CommandsCnt).ToList();
+                    return list.OrderByDescending(x => x.CommandsCnt);
 
                 case TopType.Card:
-                    return list.OrderByDescending(x => x.GameDeck.GetStrongestCardPower()).ToList();
+                    return list.OrderByDescending(x => x.GameDeck.Cards.Max(c => c.CardPower));
 
                 case TopType.Cards:
-                    return list.OrderByDescending(x => x.GameDeck.Cards.Count).ToList();
+                    return list.OrderByDescending(x => x.GameDeck.Cards.Count);
 
                 case TopType.CardsPower:
-                    return list.OrderByDescending(x => x.GameDeck.Cards.Sum(c => c.CardPower)).ToList();
+                    return list.OrderByDescending(x => x.GameDeck.Cards.Sum(c => c.CardPower));
 
                 case TopType.Karma:
-                    return list.OrderByDescending(x => x.GameDeck.Karma).ToList();
+                    return list.OrderByDescending(x => x.GameDeck.Karma);
 
                 case TopType.KarmaNegative:
-                    return list.OrderBy(x => x.GameDeck.Karma).ToList();
+                    return list.OrderBy(x => x.GameDeck.Karma);
 
                 case TopType.Pvp:
-                    return list.Where(x => x.GameDeck.GlobalPVPRank > 0).OrderByDescending(x => x.GameDeck.GlobalPVPRank).ToList();
+                    return list.Where(x => x.GameDeck.GlobalPVPRank > 0).OrderByDescending(x => x.GameDeck.GlobalPVPRank);
 
                 case TopType.PvpSeason:
-                    return list.Where(x => x.IsPVPSeasonalRankActive(_time.Now()) && x.GameDeck.SeasonalPVPRank > 0).OrderByDescending(x => x.GameDeck.SeasonalPVPRank).ToList();
+                    return list.Where(x => _time.Now().Month == x.GameDeck.PVPSeasonBeginDate.Month && _time.Now().Year == x.GameDeck.PVPSeasonBeginDate.Year && x.GameDeck.SeasonalPVPRank > 0).OrderByDescending(x => x.GameDeck.SeasonalPVPRank);
             }
         }
 
-        public List<string> BuildListView(List<User> list, TopType type, SocketGuild guild)
+        public List<string> BuildListView(IEnumerable<User> list, TopType type, SocketGuild guild)
         {
             var view = new List<string>();
 

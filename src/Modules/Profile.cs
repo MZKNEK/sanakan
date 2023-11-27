@@ -218,8 +218,7 @@ namespace Sanakan.Modules
             var building = await ReplyAsync("", embed: $"🔨 Trwa budowanie topki...".ToEmbedMessage(EMType.Bot).Build());
             using (var db = new Database.DatabaseContext(Config))
             {
-                var users = await db.GetCachedAllUsersAsync();
-                session.ListItems = _profile.BuildListView(_profile.GetTopUsers(users, type), type, Context.Guild);
+                session.ListItems = _profile.BuildListView(await _profile.GetTopUsers(db.GetQueryableAllUsers(), type), type, Context.Guild);
             }
 
             session.Event = ExecuteOn.ReactionAdded;

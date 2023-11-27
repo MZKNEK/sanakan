@@ -89,6 +89,19 @@ namespace Sanakan.Extensions
                 .FromCacheAsync(new MemoryCacheEntryOptions{ AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(6) })).ToList();
         }
 
+        public static IQueryable<User> GetQueryableAllUsers(this Database.DatabaseContext context)
+        {
+            return context.Users.AsQueryable().Include(x => x.Stats).Include(x => x.SMConfig).Include(x => x.TimeStatuses).Include(x => x.GameDeck).ThenInclude(x => x.PvPStats).Include(x => x.GameDeck).ThenInclude(x => x.Wishes)
+                .Include(x => x.GameDeck).ThenInclude(x => x.Items).Include(x => x.GameDeck).ThenInclude(x => x.ExpContainer).Include(x => x.GameDeck).ThenInclude(x => x.Cards).ThenInclude(x => x.ArenaStats)
+                .Include(x => x.GameDeck).ThenInclude(x => x.BoosterPacks).ThenInclude(x => x.Characters).Include(x => x.GameDeck).ThenInclude(x => x.BoosterPacks).ThenInclude(x => x.RarityExcludedFromPack)
+                .Include(x => x.GameDeck).ThenInclude(x => x.Cards).ThenInclude(x => x.TagList).Include(x => x.GameDeck).ThenInclude(x => x.Figures).AsNoTracking().AsSplitQuery();
+        }
+
+        public static Task<IEnumerable<User>> QFromCacheAsync(this IQueryable<User> list)
+        {
+            return list.FromCacheAsync(new MemoryCacheEntryOptions{ AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(6) });
+        }
+
         public static async Task<List<GameDeck>> GetCachedPlayersForPVP(this Database.DatabaseContext context, ulong ignore = 1)
         {
             return (await context.GameDecks.AsQueryable().Where(x => x.DeckPower > UserExtension.MIN_DECK_POWER && x.DeckPower < UserExtension.MAX_DECK_POWER && x.UserId != ignore).AsNoTracking().AsSplitQuery().FromCacheAsync(new MemoryCacheEntryOptions{ AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(2) })).ToList();
