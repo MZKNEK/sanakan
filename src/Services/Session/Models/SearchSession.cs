@@ -12,13 +12,17 @@ namespace Sanakan.Services.Session.Models
 {
     public class SearchSession : Session
     {
+        private readonly Shinden _shinden;
+
         public IMessage[] Messages { get; set; }
         public List<IQuickSearch> SList { get; set; }
         public List<IPersonSearch> PList { get; set; }
         public ShindenClient ShindenClient { get; set; }
 
-        public SearchSession(IUser owner, ShindenClient client) : base(owner)
+        public SearchSession(IUser owner, ShindenClient client, Shinden shinden) : base(owner)
         {
+            _shinden = shinden;
+
             Event = ExecuteOn.Message;
             RunMode = RunMode.Async;
             ShindenClient = client;
@@ -46,7 +50,7 @@ namespace Sanakan.Services.Session.Models
                 {
                     if (number > 0 && SList.Count >= number)
                     {
-                        var info = (await ShindenClient.Title.GetInfoAsync(SList.ToArray()[number - 1])).Body;
+                        var info = await _shinden.GetInfoFromTitleAsync(SList.ToArray()[number - 1].Id);
                         await context.Channel.SendMessageAsync("", false, info.ToEmbed());
                         await context.Message.DeleteAsync();
                         return true;
@@ -56,7 +60,7 @@ namespace Sanakan.Services.Session.Models
                 {
                     if (number > 0 && PList.Count >= number)
                     {
-                        var info = (await ShindenClient.GetCharacterInfoAsync(PList.ToArray()[number - 1])).Body;
+                        var info = await _shinden.GetCharacterInfoAsync(PList.ToArray()[number - 1].Id);
                         await context.Channel.SendMessageAsync("", false, info.ToEmbed());
                         await context.Message.DeleteAsync();
                         return true;

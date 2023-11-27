@@ -99,7 +99,7 @@ namespace Sanakan.Modules
         [Remarks("Gintoki")]
         public async Task SearchCharacterAsync([Summary("czy szukać tytułów?")]bool longSearch, [Summary("imię")][Remainder]string name)
         {
-            var session = new SearchSession(Context.User, _shclient);
+            var session = new SearchSession(Context.User, _shclient, _shinden);
             if (_session.SessionExist(session)) return;
 
             var response = await _shclient.Search.CharacterAsync(name);
@@ -112,7 +112,7 @@ namespace Sanakan.Modules
             var list = response.Body;
             if (list.Count == 1)
             {
-                var info = (await _shclient.GetCharacterInfoAsync(list.First())).Body;
+                var info = await _shinden.GetCharacterInfoAsync(list.First().Id);
                 await ReplyAsync("", false, info.ToEmbed());
                 return;
             }

@@ -24,6 +24,7 @@ namespace Sanakan
         private SynchronizedExecutor _executor;
         private ShindenClient _shindenClient;
         private DiscordSocketClient _client;
+        private Services.Shinden _shinden;
         private SessionManager _sessions;
         private CommandHandler _handler;
         private ExperienceManager _exp;
@@ -107,11 +108,12 @@ namespace Sanakan
             _deleted = new DeletedLog(_client, _config);
             _chaos = new Chaos(_client, _config, _logger);
             _executor = new SynchronizedExecutor(_logger);
+            _sessions = new SessionManager(_client, _executor, _logger);
             _mod = new Moderator(_logger, _config, _client, _time, _img);
             _daemon = new Daemonizer(_client, _logger, _config);
+            _shinden = new Services.Shinden(_shindenClient, _sessions, _img);
             _waifu = new Waifu(_img, _shindenClient, _events, _logger,
-                 _client, _helper, _time);
-            _sessions = new SessionManager(_client, _executor, _logger);
+                 _client, _helper, _time, _shinden);
             _supervisor = new Supervisor(_client, _config, _logger, _mod, _time);
             _greeting = new Greeting(_client, _logger, _config, _executor, _time);
             _exp = new ExperienceManager(_client, _executor, _config, _img, _time);
@@ -150,6 +152,7 @@ namespace Sanakan
                 .AddSingleton(_shindenClient)
                 .AddSingleton(_sessions)
                 .AddSingleton(_profile)
+                .AddSingleton(_shinden)
                 .AddSingleton(_config)
                 .AddSingleton(_logger)
                 .AddSingleton(_client)
@@ -163,7 +166,6 @@ namespace Sanakan
                 .AddSingleton(_exp)
                 .AddSingleton(_img)
                 .AddSingleton<Services.Fun>()
-                .AddSingleton<Services.Shinden>()
                 .AddSingleton<Services.LandManager>()
                 .AddSingleton<Services.PocketWaifu.Lottery>()
                 .BuildServiceProvider();

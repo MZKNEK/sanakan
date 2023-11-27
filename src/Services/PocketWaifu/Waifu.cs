@@ -205,13 +205,14 @@ namespace Sanakan.Services.PocketWaifu
         private Events _events;
         private Helper _helper;
         private ILogger _logger;
+        private Shinden _shinden;
         private ISystemTime _time;
         private ImageProcessing _img;
         private ShindenClient _shClient;
         private DiscordSocketClient _client;
 
         public Waifu(ImageProcessing img, ShindenClient client, Events events, ILogger logger,
-            DiscordSocketClient discord, Helper helper, ISystemTime time)
+            DiscordSocketClient discord, Helper helper, ISystemTime time, Shinden shinden)
         {
             _img = img;
             _time = time;
@@ -219,6 +220,7 @@ namespace Sanakan.Services.PocketWaifu
             _logger = logger;
             _helper = helper;
             _client = discord;
+            _shinden = shinden;
             _shClient = client;
         }
 
@@ -664,12 +666,12 @@ namespace Sanakan.Services.PocketWaifu
             {
                 case ItemType.RandomTitleBoosterPackSingleE:
                     if (itemCount < 0) itemCount = 0;
-                    var titleInfo = await GetInfoFromTitleAsync((ulong)itemCount);
+                    var titleInfo = await _shinden.GetInfoFromTitleAsync((ulong)itemCount);
                     if (titleInfo == null)
                     {
                         return $"{discordUser.Mention} nie odnaleziono tytułu o podanym id.".ToEmbedMessage(EMType.Error).Build();
                     }
-                    var charsInTitle = await GetCharactersFromTitleAsync(titleInfo.Id);
+                    var charsInTitle = await _shinden.GetCharactersFromTitleAsync(titleInfo.Id);
                     if (charsInTitle == null || charsInTitle.Count < 1)
                     {
                         return $"{discordUser.Mention} nie odnaleziono postaci pod podanym tytułem.".ToEmbedMessage(EMType.Error).Build();
@@ -1116,12 +1118,12 @@ namespace Sanakan.Services.PocketWaifu
             }
 
             ulong id = Fun.GetOneRandomFrom(CharId.GetIds());
-            var chara = await GetCharacterInfoAsync(id);
+            var chara = await _shinden.GetCharacterInfoAsync(id);
 
             while (chara is null && --check > 0)
             {
                 id = Fun.GetOneRandomFrom(CharId.GetIds());
-                chara = await GetCharacterInfoAsync(id);
+                chara = await _shinden.GetCharacterInfoAsync(id);
 
                 await Task.Delay(TimeSpan.FromMilliseconds(500));
             }
@@ -1273,45 +1275,9 @@ namespace Sanakan.Services.PocketWaifu
             return pages;
         }
 
-        public async Task<ICharacterInfo> GetCharacterInfoAsync(ulong characterId)
-        {
-            ICharacterInfo character = null;
-            try
-            {
-                var res = await _shClient.GetCharacterInfoAsync(characterId);
-                if (res.IsSuccessStatusCode()) character = res.Body;
-            }
-            catch (Exception) { }
-            return character;
-        }
-
-        public async Task<List<IRelation>> GetCharactersFromTitleAsync(ulong titleId)
-        {
-            List<IRelation> characaters = null;
-            try
-            {
-                var res = await _shClient.Title.GetCharactersAsync(titleId);
-                if (res.IsSuccessStatusCode()) characaters = res.Body;
-            }
-            catch (Exception) { }
-            return characaters;
-        }
-
         public async Task<List<ulong>> GetCharactersFromSeasonAsync()
         {
             return await _shClient.Ex.GetAnimeFromSeasonAsync(true);
-        }
-
-        public async Task<ITitleInfo> GetInfoFromTitleAsync(ulong titleId)
-        {
-            ITitleInfo info = null;
-            try
-            {
-                var res = await _shClient.Title.GetInfoAsync(titleId);
-                if (res.IsSuccessStatusCode()) info = res.Body;
-            }
-            catch (Exception) { }
-            return info;
         }
 
         public async Task<List<Card>> OpenBoosterPackAsync(IUser user, BoosterPack pack)
@@ -1328,17 +1294,17 @@ namespace Sanakan.Services.PocketWaifu
                     if (pack.Characters.Count > 1)
                         id = Fun.GetOneRandomFrom(pack.Characters);
 
-                    chara = await GetCharacterInfoAsync(id.Character);
+                    chara = await _shinden.GetCharacterInfoAsync(id.Character);
                 }
                 else if (pack.Title != 0)
                 {
-                    var charsInTitle = await GetCharactersFromTitleAsync(pack.Title);
+                    var charsInTitle = await _shinden.GetCharactersFromTitleAsync(pack.Title);
                     if (charsInTitle != null && charsInTitle.Count > 0)
                     {
                         var id = Fun.GetOneRandomFrom(charsInTitle).CharacterId;
                         if (id.HasValue)
                         {
-                            chara = await GetCharacterInfoAsync(id.Value);
+                            chara = await _shinden.GetCharacterInfoAsync(id.Value);
                         }
                     }
                     else if (pack.CardSourceFromPack == CardSource.Lottery)
@@ -1347,7 +1313,7 @@ namespace Sanakan.Services.PocketWaifu
                         if (!charsInSeason.IsNullOrEmpty())
                         {
                             var charId = Fun.GetOneRandomFrom(charsInSeason);
-                            chara = await GetCharacterInfoAsync(charId);
+                            chara = await _shinden.GetCharacterInfoAsync(charId);
                         }
                     }
                 }
@@ -1621,7 +1587,7 @@ namespace Sanakan.Services.PocketWaifu
 
             foreach (var character in charactersId)
             {
-                var charInfo = await GetCharacterInfoAsync(character);
+                var charInfo = await _shinden.GetCharacterInfoAsync(character);
                 if (charInfo != null)
                 {
                     contentTable.Add($"**P[{charInfo.Id}]** [{charInfo}]({charInfo.CharacterUrl})");
@@ -1634,7 +1600,7 @@ namespace Sanakan.Services.PocketWaifu
 
             foreach (var title in titlesId)
             {
-                var titleInfo = await GetInfoFromTitleAsync(title);
+                var titleInfo = await _shinden.GetInfoFromTitleAsync(title);
                 if (titleInfo != null)
                 {
                     var url = "https://shinden.pl/";
@@ -1692,7 +1658,7 @@ namespace Sanakan.Services.PocketWaifu
             {
                 foreach (var id in titlesId)
                 {
-                    var charsFromTitle = await GetCharactersFromTitleAsync(id);
+                    var charsFromTitle = await _shinden.GetCharactersFromTitleAsync(id);
                     if (charsFromTitle != null && charsFromTitle.Count > 0)
                     {
                         characters.AddRange(charsFromTitle.Where(x => x.CharacterId.HasValue).Select(x => x.CharacterId.Value));

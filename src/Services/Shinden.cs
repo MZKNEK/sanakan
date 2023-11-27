@@ -8,6 +8,7 @@ using System.Net;
 using System.Threading.Tasks;
 using Discord.Commands;
 using Discord.WebSocket;
+using Microsoft.Extensions.Caching.Memory;
 using Sanakan.Extensions;
 using Sanakan.Services.PocketWaifu;
 using Sanakan.Services.Session;
@@ -24,6 +25,10 @@ namespace Sanakan.Services
 
     public class Shinden
     {
+        private static MemoryCache _titleRelationCache = new MemoryCache(new MemoryCacheOptions());
+        private static MemoryCache _characterCache = new MemoryCache(new MemoryCacheOptions());
+        private static MemoryCache _titleCache = new MemoryCache(new MemoryCacheOptions());
+
         private Dictionary<string, string> _customNames = new Dictionary<string, string>
         {
             {"fate/loli",   "Fate/kaleid Liner Prisma Illya"},
@@ -41,6 +46,60 @@ namespace Sanakan.Services
             _shClient = client;
             _session = session;
             _img = img;
+        }
+
+        public async Task<ICharacterInfo> GetCharacterInfoAsync(ulong characterId)
+        {
+            ICharacterInfo character = null;
+            try
+            {
+                if (_characterCache.TryGetValue(characterId, out character))
+                    return character;
+
+                var res = await _shClient.GetCharacterInfoAsync(characterId);
+                if (res.IsSuccessStatusCode()) character = res.Body;
+
+                _characterCache.Set(characterId, character, new MemoryCacheEntryOptions()
+                    .SetAbsoluteExpiration(TimeSpan.FromHours(12)));
+            }
+            catch (Exception) { }
+            return character;
+        }
+
+        public async Task<List<IRelation>> GetCharactersFromTitleAsync(ulong titleId)
+        {
+            List<IRelation> characaters = null;
+            try
+            {
+                if (_titleRelationCache.TryGetValue(titleId, out characaters))
+                    return characaters;
+
+                var res = await _shClient.Title.GetCharactersAsync(titleId);
+                if (res.IsSuccessStatusCode()) characaters = res.Body;
+
+                _titleRelationCache.Set(titleId, characaters, new MemoryCacheEntryOptions()
+                    .SetAbsoluteExpiration(TimeSpan.FromHours(12)));
+            }
+            catch (Exception) { }
+            return characaters;
+        }
+
+        public async Task<ITitleInfo> GetInfoFromTitleAsync(ulong titleId)
+        {
+            ITitleInfo info = null;
+            try
+            {
+                if (_titleCache.TryGetValue(titleId, out info))
+                    return info;
+
+                var res = await _shClient.Title.GetInfoAsync(titleId);
+                if (res.IsSuccessStatusCode()) info = res.Body;
+
+                _titleRelationCache.Set(titleId, info, new MemoryCacheEntryOptions()
+                    .SetAbsoluteExpiration(TimeSpan.FromHours(12)));
+            }
+            catch (Exception) { }
+            return info;
         }
 
         public UrlParsingError ParseUrlToShindenId(string url, out ulong shindenId)
@@ -80,10 +139,10 @@ namespace Sanakan.Services
                     Title = string.Empty
                 };
 
-                var res = await _shClient.GetCharacterInfoAsync(ch);
-                if (res.IsSuccessStatusCode())
+                var info = await GetCharacterInfoAsync(ch.Id);
+                if (info != null)
                 {
-                    entity.Title = res.Body?.Relations?.OrderBy(x => x.Id)?.FirstOrDefault()?.Title ?? string.Empty;
+                    entity.Title = info?.Relations?.OrderBy(x => x.Id)?.FirstOrDefault()?.Title ?? string.Empty;
                 }
 
                 list.Add(entity);
@@ -121,7 +180,7 @@ namespace Sanakan.Services
             if (_customNames.ContainsKey(customTitle))
                 title = _customNames[customTitle];
 
-            var session = new SearchSession(context.User, _shClient);
+            var session = new SearchSession(context.User, _shClient, this);
             if (_session.SessionExist(session)) return;
 
             var res = await QuickSearchAsync(title, type);
@@ -136,7 +195,7 @@ namespace Sanakan.Services
 
             if (list.Count == 1)
             {
-                var info = (await _shClient.Title.GetInfoAsync(list.First())).Body;
+                var info = await GetInfoFromTitleAsync(list.First().Id);
                 await context.Channel.SendMessageAsync("", false, info.ToEmbed());
             }
             else
