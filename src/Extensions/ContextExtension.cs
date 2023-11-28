@@ -107,6 +107,20 @@ namespace Sanakan.Extensions
             return (await context.GameDecks.AsQueryable().Where(x => x.DeckPower > UserExtension.MIN_DECK_POWER && x.DeckPower < UserExtension.MAX_DECK_POWER && x.UserId != ignore).AsNoTracking().AsSplitQuery().FromCacheAsync(new MemoryCacheEntryOptions{ AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(2) })).ToList();
         }
 
+        public static async Task<User> GetUserOrCreateSimpleAsync(this Database.DatabaseContext context, ulong userId)
+        {
+            var user = await context.Users.AsQueryable().Where(x => x.Id == userId).Include(x => x.Stats).Include(x => x.SMConfig).Include(x => x.TimeStatuses).Include(x => x.GameDeck).ThenInclude(x => x.Wishes)
+                .Include(x => x.GameDeck).ThenInclude(x => x.ExpContainer).AsSplitQuery().FirstOrDefaultAsync();
+
+            if (user == null)
+            {
+                user = user.Default(userId, DateTime.Now);
+                await context.Users.AddAsync(user);
+            }
+
+            return user;
+        }
+
         public static async Task<User> GetUserOrCreateAsync(this Database.DatabaseContext context, ulong userId)
         {
             var user = await context.Users.AsQueryable().Where(x => x.Id == userId).Include(x => x.Stats).Include(x => x.SMConfig).Include(x => x.TimeStatuses).Include(x => x.GameDeck).ThenInclude(x => x.PvPStats).Include(x => x.GameDeck).ThenInclude(x => x.Wishes)
@@ -131,7 +145,7 @@ namespace Sanakan.Extensions
 
         public static async Task<User> GetBaseUserAndDontTrackAsync(this Database.DatabaseContext context, ulong userId)
         {
-            return await context.Users.AsQueryable().AsNoTracking().AsSplitQuery().FirstOrDefaultAsync(x => x.Id == userId);
+            return await context.Users.AsQueryable().AsNoTracking().FirstOrDefaultAsync(x => x.Id == userId);
         }
 
         public static async Task<User> GetUserAndDontTrackAsync(this Database.DatabaseContext context, ulong userId)

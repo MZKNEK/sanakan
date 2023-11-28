@@ -244,7 +244,7 @@ namespace Sanakan.Modules
         {
             using (var db = new Database.DatabaseContext(Config))
             {
-                var botuser = await db.GetUserOrCreateAsync(Context.User.Id);
+                var botuser = await db.GetUserOrCreateSimpleAsync(Context.User.Id);
                 botuser.ShowWaifuInProfile = !botuser.ShowWaifuInProfile;
 
                 string result = botuser.ShowWaifuInProfile ? "załączony" : "wyłączony";
@@ -293,7 +293,7 @@ namespace Sanakan.Modules
         {
             using (var db = new Database.DatabaseContext(Config))
             {
-                var botuser = await db.GetUserOrCreateAsync(Context.User.Id);
+                var botuser = await db.GetUserOrCreateSimpleAsync(Context.User.Id);
                 var weeklyQuests = botuser.CreateOrGetAllWeeklyQuests();
                 var dailyQuests = botuser.CreateOrGetAllDailyQuests();
 
@@ -358,7 +358,7 @@ namespace Sanakan.Modules
 
             using (var db = new Database.DatabaseContext(Config))
             {
-                var botuser = await db.GetUserOrCreateAsync(Context.User.Id);
+                var botuser = await db.GetUserOrCreateSimpleAsync(Context.User.Id);
                 if (botuser.ScCnt < scCost && currency == SCurrency.Sc)
                 {
                     await ReplyAsync("", embed: $"{Context.User.Mention} nie posiadasz wystarczającej liczby SC!".ToEmbedMessage(EMType.Error).Build());
@@ -421,7 +421,7 @@ namespace Sanakan.Modules
 
             using (var db = new Database.DatabaseContext(Config))
             {
-                var botuser = await db.GetUserOrCreateAsync(Context.User.Id);
+                var botuser = await db.GetUserOrCreateSimpleAsync(Context.User.Id);
                 if (botuser.ScCnt < scCost && currency == SCurrency.Sc)
                 {
                     await ReplyAsync("", embed: $"{Context.User.Mention} nie posiadasz wystarczającej liczby SC!".ToEmbedMessage(EMType.Error).Build());
@@ -478,7 +478,7 @@ namespace Sanakan.Modules
 
             using (var db = new Database.DatabaseContext(Config))
             {
-                var botuser = await db.GetUserOrCreateAsync(user.Id);
+                var botuser = await db.GetUserOrCreateSimpleAsync(user.Id);
                 if (botuser.TcCnt < cost)
                 {
                     await ReplyAsync("", embed: $"{user.Mention} nie posiadasz wystarczającej liczby TC!".ToEmbedMessage(EMType.Error).Build());
@@ -534,7 +534,7 @@ namespace Sanakan.Modules
 
             using (var db = new Database.DatabaseContext(Config))
             {
-                var botuser = await db.GetUserOrCreateAsync(user.Id);
+                var botuser = await db.GetUserOrCreateSimpleAsync(user.Id);
                 var points = currency == SCurrency.Tc ? botuser.TcCnt : botuser.ScCnt;
                 if (points < color.Price(currency))
                 {

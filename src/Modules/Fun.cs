@@ -47,7 +47,7 @@ namespace Sanakan.Modules
         {
             using (var db = new Database.DatabaseContext(Config))
             {
-                var botuser = await db.GetUserOrCreateAsync(Context.User.Id);
+                var botuser = await db.GetUserOrCreateSimpleAsync(Context.User.Id);
                 var daily = botuser.TimeStatuses.FirstOrDefault(x => x.Type == Database.Models.StatusType.Daily);
                 if (daily == null)
                 {
@@ -160,7 +160,7 @@ namespace Sanakan.Modules
         {
             using (var db = new Database.DatabaseContext(Config))
             {
-                var botuser = await db.GetUserOrCreateAsync(Context.User.Id);
+                var botuser = await db.GetUserOrCreateSimpleAsync(Context.User.Id);
                 var hourly = botuser.TimeStatuses.FirstOrDefault(x => x.Type == Database.Models.StatusType.Hourly);
                 if (hourly == null)
                 {
@@ -228,7 +228,7 @@ namespace Sanakan.Modules
 
             using (var db = new Database.DatabaseContext(Config))
             {
-                var botuser = await db.GetUserOrCreateAsync(Context.User.Id);
+                var botuser = await db.GetUserOrCreateSimpleAsync(Context.User.Id);
                 if (botuser.ScCnt < amount)
                 {
                     await ReplyAsync("", embed: $"{Context.User.Mention} nie posiadasz wystarczającej liczby SC!".ToEmbedMessage(EMType.Error).Build());
@@ -279,7 +279,7 @@ namespace Sanakan.Modules
 
             using (var db = new Database.DatabaseContext(Config))
             {
-                var botuser = await db.GetUserOrCreateAsync(Context.User.Id);
+                var botuser = await db.GetUserOrCreateSimpleAsync(Context.User.Id);
                 if (!botuser.ApplySlotMachineSetting(setting, value))
                 {
                     await ReplyAsync("", embed: $"Podano niewłaściwą wartość parametru!".ToEmbedMessage(EMType.Error).Build());
@@ -308,7 +308,7 @@ namespace Sanakan.Modules
 
             using (var db = new Database.DatabaseContext(Config))
             {
-                var botuser = await db.GetUserOrCreateAsync(Context.User.Id);
+                var botuser = await db.GetUserOrCreateSimpleAsync(Context.User.Id);
                 var machine = new SlotMachine(botuser);
 
                 var toPay = machine.ToPay();
@@ -355,8 +355,8 @@ namespace Sanakan.Modules
                     return;
                 }
 
-                var targetUser = await db.GetUserOrCreateAsync(user.Id);
-                var thisUser = await db.GetUserOrCreateAsync(Context.User.Id);
+                var targetUser = await db.GetUserOrCreateSimpleAsync(user.Id);
+                var thisUser = await db.GetUserOrCreateSimpleAsync(Context.User.Id);
 
                 if (thisUser.ScCnt < value)
                 {

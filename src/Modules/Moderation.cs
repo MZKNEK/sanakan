@@ -1618,7 +1618,7 @@ namespace Sanakan.Modules
             {
                 var guildConfig = await db.GetCachedGuildFullConfigAsync(user.Guild.Id);
 
-                var duser = await db.GetUserOrCreateAsync(user.Id);
+                var duser = await db.GetUserOrCreateSimpleAsync(user.Id);
                 var globalRole = user.Guild.GetRole(guildConfig.GlobalEmotesRole);
                 if (globalRole != null)
                 {
@@ -1855,7 +1855,7 @@ namespace Sanakan.Modules
 
                 if (warning)
                 {
-                    var dbUser = await db.GetUserOrCreateAsync(user.Id);
+                    var dbUser = await db.GetUserOrCreateSimpleAsync(user.Id);
 
                     ++dbUser.Warnings;
 

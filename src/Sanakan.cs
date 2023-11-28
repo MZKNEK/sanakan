@@ -87,7 +87,7 @@ namespace Sanakan
                 GatewayIntents = GatewayIntents.All,
                 LogLevel = LogSeverity.Error,
                 AlwaysDownloadUsers = true,
-                MessageCacheSize = 200
+                MessageCacheSize = 600
             });
 
             _client.Log += log =>

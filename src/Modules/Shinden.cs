@@ -222,7 +222,7 @@ namespace Sanakan.Modules
                         return;
                     }
 
-                    var botuser = await db.GetUserOrCreateAsync(Context.User.Id);
+                    var botuser = await db.GetUserOrCreateSimpleAsync(Context.User.Id);
                     botuser.Shinden = shindenId;
 
                     await db.UserActivities.AddAsync(new Services.UserActivityBuilder(_time)

@@ -185,7 +185,7 @@ namespace Sanakan.Modules
         {
             using (var db = new Database.DatabaseContext(Config))
             {
-                var targetUser = await db.GetUserOrCreateAsync(user.Id);
+                var targetUser = await db.GetUserOrCreateSimpleAsync(user.Id);
 
                 targetUser.IsBlacklisted = !targetUser.IsBlacklisted;
                 await db.SaveChangesAsync();
@@ -587,7 +587,7 @@ namespace Sanakan.Modules
         {
             using (var db = new Database.DatabaseContext(Config))
             {
-                var bUser = await db.GetUserOrCreateAsync(user.Id);
+                var bUser = await db.GetUserOrCreateSimpleAsync(user.Id);
 
                 bUser.Level = level;
                 bUser.ExpCnt = Services.ExperienceManager.CalculateExpForLevel(level);
@@ -1136,7 +1136,7 @@ namespace Sanakan.Modules
         {
             using (var db = new Database.DatabaseContext(Config))
             {
-                var botuser = await db.GetUserOrCreateAsync(user.Id);
+                var botuser = await db.GetUserOrCreateSimpleAsync(user.Id);
                 botuser.ScCnt += amount;
 
                 await db.SaveChangesAsync();
@@ -1154,7 +1154,7 @@ namespace Sanakan.Modules
         {
             using (var db = new Database.DatabaseContext(Config))
             {
-                var botuser = await db.GetUserOrCreateAsync(user.Id);
+                var botuser = await db.GetUserOrCreateSimpleAsync(user.Id);
                 botuser.AcCnt += amount;
 
                 await db.SaveChangesAsync();
@@ -1172,7 +1172,7 @@ namespace Sanakan.Modules
         {
             using (var db = new Database.DatabaseContext(Config))
             {
-                var botuser = await db.GetUserOrCreateAsync(user.Id);
+                var botuser = await db.GetUserOrCreateSimpleAsync(user.Id);
                 botuser.TcCnt += amount;
 
                 await db.SaveChangesAsync();
@@ -1190,7 +1190,7 @@ namespace Sanakan.Modules
         {
             using (var db = new Database.DatabaseContext(Config))
             {
-                var botuser = await db.GetUserOrCreateAsync(user.Id);
+                var botuser = await db.GetUserOrCreateSimpleAsync(user.Id);
                 botuser.GameDeck.PVPCoins += amount;
 
                 await db.SaveChangesAsync();
@@ -1208,7 +1208,7 @@ namespace Sanakan.Modules
         {
             using (var db = new Database.DatabaseContext(Config))
             {
-                var botuser = await db.GetUserOrCreateAsync(user.Id);
+                var botuser = await db.GetUserOrCreateSimpleAsync(user.Id);
                 botuser.GameDeck.CTCnt += amount;
 
                 await db.SaveChangesAsync();
@@ -1226,7 +1226,7 @@ namespace Sanakan.Modules
         {
             using (var db = new Database.DatabaseContext(Config))
             {
-                var botuser = await db.GetUserOrCreateAsync(user.Id);
+                var botuser = await db.GetUserOrCreateSimpleAsync(user.Id);
                 botuser.ExpCnt += amount;
 
                 await db.SaveChangesAsync();
@@ -1244,7 +1244,7 @@ namespace Sanakan.Modules
         {
             using (var db = new Database.DatabaseContext(Config))
             {
-                var botuser = await db.GetUserOrCreateAsync(user.Id);
+                var botuser = await db.GetUserOrCreateSimpleAsync(user.Id);
                 botuser.Warnings += amount;
 
                 await db.SaveChangesAsync();

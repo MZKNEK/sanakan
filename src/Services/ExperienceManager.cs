@@ -262,7 +262,7 @@ namespace Sanakan.Services
             {
                 using (var db = new Database.DatabaseContext(_config))
                 {
-                    var usr = await db.GetUserOrCreateAsync(user.Id);
+                    var usr = await db.GetUserOrCreateSimpleAsync(user.Id);
                     if (usr == null) return;
 
                     if ((_time.Now() - usr.MeasureDate.AddMonths(1)).TotalSeconds > 1)

@@ -292,7 +292,7 @@ namespace Sanakan.Api.Controllers
                 {
                     using (var dbs = new Database.DatabaseContext(_config))
                     {
-                        botUser = await dbs.GetUserOrCreateAsync(id.DiscordUserId);
+                        botUser = await dbs.GetUserOrCreateSimpleAsync(id.DiscordUserId);
                         botUser.Shinden = sUser.Id;
 
                         await dbs.SaveChangesAsync();
@@ -337,7 +337,7 @@ namespace Sanakan.Api.Controllers
                             Source = Database.Models.Analytics.TransferSource.ByDiscordId,
                         });
 
-                        user = dbc.GetUserOrCreateAsync(id).Result;
+                        user = dbc.GetUserOrCreateSimpleAsync(id).Result;
                         user.TcCnt += value;
 
                         await dbc.SaveChangesAsync();
