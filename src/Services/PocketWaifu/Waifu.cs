@@ -1198,14 +1198,14 @@ namespace Sanakan.Services.PocketWaifu
             var user = guild?.GetUser(card.GameDeckId) ?? await _client.GetUserAsync(card.GameDeckId);
 
             if (!shindenUrls || card?.GameDeck?.User?.Shinden == 0 || card?.GameDeckId == 1)
-                return $"{(user?.GetUserNickInGuild() ?? "????")}: **[{card.Id}]** **{card.GetCardRealRarity()}** {card.GetStatusIcons()}\n";
+                return $"{(user?.GetUserNickInGuild() ?? "????")}: {card.GetIdWithUrl()} **{card.GetCardRealRarity()}** {card.GetStatusIcons()}\n";
 
-            return $"[{(user?.GetUserNickInGuild() ?? "????")}](https://shinden.pl/user/{card.GameDeck.User.Shinden}): **[{card.Id}]** **{card.GetCardRealRarity()}** {card.GetStatusIcons()}\n";
+            return $"[{(user?.GetUserNickInGuild() ?? "????")}](https://shinden.pl/user/{card.GameDeck.User.Shinden}): {card.GetIdWithUrl()} **{card.GetCardRealRarity()}** {card.GetStatusIcons()}\n";
         }
 
         private void AppendMessage(List<Embed> embeds, StringBuilder currentContent, string nextPart)
         {
-            if (currentContent.Length + nextPart.Length > 3000)
+            if (currentContent.Length + nextPart.Length > 3600)
             {
                 embeds.Add(new EmbedBuilder() { Color = EMType.Info.Color(), Description = currentContent.ToString() }.Build());
                 currentContent.Clear();
