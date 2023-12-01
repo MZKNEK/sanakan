@@ -120,7 +120,7 @@ namespace Sanakan.Api
             {
                 logging.ClearProviders();
                 logging.AddConsole(x => x.DisableColors = true);
-                logging.SetMinimumLevel(LogLevel.Information);
+                logging.SetMinimumLevel(LogLevel.Warning);
             })
             .Configure(app =>
             {

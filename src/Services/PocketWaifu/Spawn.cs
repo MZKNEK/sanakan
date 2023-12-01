@@ -208,14 +208,6 @@ namespace Sanakan.Services.PocketWaifu
 
                     QueryCacheManager.ExpireTag(new string[] { $"user-{botUser.Id}", "users" });
 
-                    db.UsersData.Add(new Database.Models.Analytics.UserAnalytics
-                    {
-                        Value = 1,
-                        UserId = winner.Id,
-                        MeasureDate = _time.Now(),
-                        GuildId = trashChannel?.Guild?.Id ?? 0,
-                        Type = Database.Models.Analytics.UserAnalyticsEventType.Card
-                    });
                     await db.SaveChangesAsync();
 
                     if (db.AddActivityFromNewCard(newCard, isOnUserWishlist, _time, botUser, winner.GetUserNickInGuild()))
@@ -335,20 +327,6 @@ namespace Sanakan.Services.PocketWaifu
                     _ = Task.Run(async () =>
                     {
                         await channel.SendMessageAsync("", embed: $"{user.Mention} otrzymał pakiet losowych kart.".ToEmbedMessage(EMType.Bot).Build());
-
-                        var gUser = user as SocketGuildUser;
-                        using (var dba = new Database.DatabaseContext(_config))
-                        {
-                            dba.UsersData.Add(new Database.Models.Analytics.UserAnalytics
-                            {
-                                Value = 1,
-                                UserId = user.Id,
-                                MeasureDate = _time.Now(),
-                                GuildId = gUser?.Guild?.Id ?? 0,
-                                Type = Database.Models.Analytics.UserAnalyticsEventType.Pack
-                            });
-                            await dba.SaveChangesAsync();
-                        }
                     });
                 }
             }));

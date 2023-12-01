@@ -64,19 +64,6 @@ namespace Sanakan.Services
                     await channel.SendFileAsync(badgeStream, $"{user.Id}.png");
                 }
             }
-
-            using (var dba = new Database.DatabaseContext(_config))
-            {
-                dba.UsersData.Add(new Database.Models.Analytics.UserAnalytics
-                {
-                    Value = level,
-                    UserId = user.Id,
-                    GuildId = user.Guild.Id,
-                    MeasureDate = _time.Now(),
-                    Type = Database.Models.Analytics.UserAnalyticsEventType.Level
-                });
-                dba.SaveChanges();
-            }
         }
 
         private async Task HandleMessageAsync(SocketMessage message)

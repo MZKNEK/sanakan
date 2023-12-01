@@ -44,11 +44,11 @@ namespace Sanakan.Services.Executor
 
         public Task<bool> TryAdd(IExecutable task, TimeSpan timeout)
         {
-            _logger.Log($"Executor: adding new task, on pool: {_queue.Count} /hi: {_hiQueue.Count}");
             if (AddToQueue(task, timeout))
             {
                 return Task.FromResult(true);
             }
+            _logger.Log($"Executor: adding new task, on pool: {_queue.Count} /hi: {_hiQueue.Count}");
             return Task.FromResult(false);
         }
 
@@ -105,7 +105,6 @@ namespace Sanakan.Services.Executor
                 try
                 {
                     _logger.Log($"Executor: running {taskName}");
-
                     var watch = Stopwatch.StartNew();
                     await cmd.ExecuteAsync(_provider);
                     _logger.Log($"Executor: completed {taskName} in {watch.ElapsedMilliseconds}ms");
@@ -113,11 +112,6 @@ namespace Sanakan.Services.Executor
                 catch (Exception ex)
                 {
                     _logger.Log($"Executor: {taskName} - {ex}");
-                }
-
-                using (var proc = Process.GetCurrentProcess())
-                {
-                    _logger.Log($"mem usage: {proc.WorkingSet64 / 1048576} MiB");
                 }
             }
         }
