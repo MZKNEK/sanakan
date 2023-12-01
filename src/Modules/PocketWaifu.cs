@@ -2416,9 +2416,7 @@ namespace Sanakan.Modules
         {
             using (var db = new Database.DatabaseContext(Config))
             {
-                var botUser = await db.GetCachedFullUserAsync(Context.User.Id);
-                var active = botUser.GameDeck.Cards.Where(x => x.Active).ToList();
-
+                var active = db.Cards.AsQueryable().AsNoTracking().Where(x => x.Active && x.GameDeckId == Context.User.Id).ToList();
                 if (wid == 0)
                 {
                     if (active.Count < 1)
@@ -2432,10 +2430,10 @@ namespace Sanakan.Modules
                     return;
                 }
 
-                var bUser = await db.GetUserOrCreateAsync(Context.User.Id);
-                var thisCard = bUser.GameDeck.Cards.FirstOrDefault(x => x.Id == wid);
+                var bUser = await db.GetUserOrCreateSimpleAsync(Context.User.Id);
+                var thisCard = db.Cards.AsQueryable().FirstOrDefault(x => x.Id == wid);
 
-                if (thisCard == null)
+                if (thisCard == null || thisCard.GameDeckId != Context.User.Id)
                 {
                     await ReplyAsync("", embed: $"{Context.User.Mention} nie odnaleziono karty.".ToEmbedMessage(EMType.Error).Build());
                     return;
