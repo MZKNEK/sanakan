@@ -439,7 +439,7 @@ namespace Sanakan.Api.Controllers
                         try
                         {
                             _waifu.DeleteCardImageIfExist(card);
-                            _ = _waifu.GenerateAndSaveCardAsync(card).Result;
+                            await _waifu.GenerateAndSaveCardAsync(card);
                         }
                         catch (Exception) { }
 
@@ -492,7 +492,7 @@ namespace Sanakan.Api.Controllers
                             try
                             {
                                 _waifu.DeleteCardImageIfExist(card);
-                                _ = _waifu.GenerateAndSaveCardAsync(card).Result;
+                                await _waifu.GenerateAndSaveCardAsync(card);
                             }
                             catch (Exception) { }
 

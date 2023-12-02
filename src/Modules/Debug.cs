@@ -174,7 +174,7 @@ namespace Sanakan.Modules
             using (var db = new Database.DatabaseContext(Config))
             {
                 var bUsers = await db.Users.AsQueryable().Where(x => x.IsBlacklisted).AsNoTracking().ToListAsync();
-                await ReplyAsync("", embed: $"**Czarna lista:**\n\n{string.Join("\n", bUsers.Select(x => (Context.Client.GetUserAsync(x.Id).Result?.Username ?? "????") + $" {x.Id}"))}".ToEmbedMessage(EMType.Info).Build());
+                await ReplyAsync("", embed: $"**Czarna lista:**\n\n{string.Join("\n", bUsers.Select(x => (Context.Client.GetUserAsync(x.Id).GetAwaiter().GetResult()?.Username ?? "????") + $" {x.Id}"))}".ToEmbedMessage(EMType.Info).Build());
             }
         }
 

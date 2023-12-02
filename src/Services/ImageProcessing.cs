@@ -97,7 +97,7 @@ namespace Sanakan.Services
 
                     if (host.Transform != null)
                     {
-                        var newStr = host.Transform(str).Result;
+                        var newStr = host.Transform(str).GetAwaiter().GetResult();
                         if (string.IsNullOrEmpty(newStr))
                             return ImageUrlCheckResult.TransformError;
 
@@ -370,7 +370,7 @@ namespace Sanakan.Services
             var mExp = TextMeasurer.Measure(expText, new TextOptions(rangFont));
             profilePic.Mutate(x => x.DrawText(expText, rangFont, GetOrCreateColor("#ffffff"), new Point(135 + ((int)(305 - mExp.Width) / 2), 201)));
 
-            using (var inside = GetProfileInside(shindenUser, botUser))
+            using (var inside = await GetProfileInside(shindenUser, botUser))
             {
                 profilePic.Mutate(x => x.DrawImage(inside, new Point(125, 228), 1));
             }
@@ -378,7 +378,7 @@ namespace Sanakan.Services
             return profilePic;
         }
 
-        private Image<Rgba32> GetProfileInside(IUserInfo shindenUser, User botUser)
+        private async Task<Image<Rgba32>> GetProfileInside(IUserInfo shindenUser, User botUser)
         {
             var image = new Image<Rgba32>(325, 272);
 
@@ -418,7 +418,7 @@ namespace Sanakan.Services
 
                 case ProfileType.Cards:
                     {
-                        using (var cardsBg = GetCardsProfileImage(botUser).Result)
+                        using (var cardsBg = await GetCardsProfileImage(botUser))
                         {
                             image.Mutate(x => x.DrawImage(cardsBg, new Point(0, 0), 1));
                         }

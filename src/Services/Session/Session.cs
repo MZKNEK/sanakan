@@ -100,7 +100,7 @@ namespace Sanakan.Services.Session
 
                 try
                 {
-                    var res = OnExecute(context, this).Result;
+                    var res = OnExecute(context, this).GetAwaiter().GetResult();
                     if (res && RunMode == RunMode.Sync && OnSyncEnd != null)
                     {
                         _ = Task.Run(async () =>
