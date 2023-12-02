@@ -16,6 +16,8 @@ namespace Sanakan.Database.Models.Analytics
         public DateTime Date { get; set; }
         public ulong DiscordId { get; set; }
         public ulong ShindenId { get; set; }
+        public long ValueBefore { get; set; }
+        public long ExpectedValue { get; set; }
         public TransferSource Source { get; set; }
     }
 }

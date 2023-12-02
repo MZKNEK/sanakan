@@ -328,21 +328,24 @@ namespace Sanakan.Api.Controllers
                 {
                     using (var dbc = new Database.DatabaseContext(_config))
                     {
+                        user = await dbc.GetUserOrCreateSimpleAsync(id);
+                        var beforeChange = user.TcCnt;
+                        user.TcCnt += value;
+
+                        QueryCacheManager.ExpireTag(new string[] { $"user-{user.Id}", "users" });
+
                         dbc.TransferData.Add(new Database.Models.Analytics.TransferAnalytics()
                         {
                             Value = value,
                             DiscordId = user.Id,
                             Date = _time.Now(),
                             ShindenId = user.Shinden,
+                            ValueBefore = beforeChange,
+                            ExpectedValue = user.TcCnt,
                             Source = Database.Models.Analytics.TransferSource.ByDiscordId,
                         });
 
-                        user = dbc.GetUserOrCreateSimpleAsync(id).Result;
-                        user.TcCnt += value;
-
                         await dbc.SaveChangesAsync();
-
-                        QueryCacheManager.ExpireTag(new string[] { $"user-{user.Id}", "users" });
                     }
                 }), Priority.High);
 
@@ -373,7 +376,8 @@ namespace Sanakan.Api.Controllers
                 {
                     using (var dbs = new Database.DatabaseContext(_config))
                     {
-                        user = dbs.Users.FirstOrDefault(x => x.Shinden == id);
+                        user = await dbs.Users.AsQueryable().FirstOrDefaultAsync(x => x.Shinden == id);
+                        var beforeChange = user.TcCnt;
                         user.TcCnt += value;
 
                         QueryCacheManager.ExpireTag(new string[] { $"user-{user.Id}", "users" });
@@ -384,6 +388,8 @@ namespace Sanakan.Api.Controllers
                             DiscordId = user.Id,
                             Date = _time.Now(),
                             ShindenId = user.Shinden,
+                            ValueBefore = beforeChange,
+                            ExpectedValue = user.TcCnt,
                             Source = Database.Models.Analytics.TransferSource.ByShindenId,
                         });
 
