@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
+using System.Threading;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
@@ -28,6 +29,8 @@ namespace Sanakan.Modules
     [Name("Debug"), Group("dev"), DontAutoLoad, RequireDev]
     public class Debug : SanakanModuleBase<SocketCommandContext>
     {
+        private static Dictionary<string, CancellationTokenSource>  _lotteries = new Dictionary<string, CancellationTokenSource>();
+
         private Waifu _waifu;
         private Spawn _spawn;
         private IConfig _config;
@@ -345,11 +348,50 @@ namespace Sanakan.Modules
             }), Priority.High);
             await _executor.TryAdd(exe, TimeSpan.FromSeconds(1));
 
+            var source = new CancellationTokenSource();
+            var lid = $"{Context.User.Id}{_time.Now()}-{repeat}";
+            _lotteries.Add(lid, source);
+
             for (uint i = 0; i < repeat; i++)
             {
                 await GiveawayCardsAsync(id, count, duration, i, repeat);
                 await Task.Delay(TimeSpan.FromSeconds(10));
+
+                if (source.Token.IsCancellationRequested)
+                {
+                    source.Dispose();
+                    await ReplyAsync("", embed: $"Loteria `{lid}` anulowana.".ToEmbedMessage(EMType.Bot).Build());
+                    return;
+                }
             }
+
+            if (_lotteries.ContainsKey(lid))
+            {
+                _lotteries.Remove(lid);
+                source.Dispose();
+            }
+        }
+
+        [Command("rozdajmkill", RunMode = RunMode.Async)]
+        [Summary("wyłącza loterie")]
+        [Remarks("1233633432534543")]
+        public async Task ShowOrKillLotteryAsync([Summary("id loteri"), Remainder]string lid = "")
+        {
+            if (string.IsNullOrEmpty(lid))
+            {
+                await ReplyAsync("", embed: $"Aktywne loterie:\n\n{string.Join('\n', _lotteries.Select(x => x.Key))}".ToEmbedMessage(EMType.Bot).Build());
+                return;
+            }
+
+            if (_lotteries.ContainsKey(lid))
+            {
+                _lotteries[lid].Cancel();
+                _lotteries.Remove(lid);
+                await ReplyAsync("", embed: "Rest in pepperoni.".ToEmbedMessage(EMType.Bot).Build());
+                return;
+            }
+
+            await ReplyAsync("", embed: "??????????".ToEmbedMessage(EMType.Error).Build());
         }
 
         [Command("rozdaj", RunMode = RunMode.Async)]
