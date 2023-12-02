@@ -349,7 +349,7 @@ namespace Sanakan.Modules
             await _executor.TryAdd(exe, TimeSpan.FromSeconds(1));
 
             var source = new CancellationTokenSource();
-            var lid = $"{Context.User.Id}{_time.Now()}-{repeat}";
+            var lid = $"{Context.User.Id}{_time.Now()}-{repeat}".Replace(' ', 'x');
             _lotteries.Add(lid, source);
 
             for (uint i = 0; i < repeat; i++)
