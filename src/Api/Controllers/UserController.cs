@@ -288,7 +288,7 @@ namespace Sanakan.Api.Controllers
                     return;
                 }
 
-                var exe = new Executable($"api-register u{id.DiscordUserId}", new Task<Task>(async () =>
+                var exe = new Executable($"api-register u{id.DiscordUserId}", new Func<Task>(async () =>
                 {
                     using (var dbs = new Database.DatabaseContext(_config))
                     {
@@ -324,7 +324,7 @@ namespace Sanakan.Api.Controllers
                     return;
                 }
 
-                var exe = new Executable($"api-tc u{id} ({value})", new Task<Task>(async () =>
+                var exe = new Executable($"api-tc u{id} ({value})", new Func<Task>(async () =>
                 {
                     using (var dbc = new Database.DatabaseContext(_config))
                     {
@@ -372,7 +372,7 @@ namespace Sanakan.Api.Controllers
                     return;
                 }
 
-                var exe = new Executable($"api-tc su{id} ({value})", new Task<Task>(async () =>
+                var exe = new Executable($"api-tc su{id} ({value})", new Func<Task>(async () =>
                 {
                     using (var dbs = new Database.DatabaseContext(_config))
                     {

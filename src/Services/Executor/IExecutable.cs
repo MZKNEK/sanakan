@@ -16,6 +16,6 @@ namespace Sanakan.Services.Executor
     {
         string GetName();
         Priority GetPriority();
-        Task<Task<bool>> ExecuteAsync(IServiceProvider provider);
+        Task<bool> ExecuteAsync(IServiceProvider provider);
     }
 }

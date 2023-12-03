@@ -93,10 +93,10 @@ namespace Sanakan.Services.Session
 
         public IExecutable GetExecutable(SessionContext context)
         {
-            return new Executable($"session-{this}", new Task<Task>(() =>
+            return new Executable($"session-{this}", new Task<bool>(() =>
             {
                 if (OnExecute == null)
-                    return Task.FromResult(true);
+                    return true;
 
                 try
                 {
@@ -110,7 +110,7 @@ namespace Sanakan.Services.Session
                        });
                     }
 
-                    return Task.FromResult(res);
+                    return res;
                 }
                 catch (Exception ex)
                 {
@@ -119,7 +119,7 @@ namespace Sanakan.Services.Session
                         string sessionName = Id ?? this.ToString();
                         _logger.Log($"In {sessionName} session: {ex}");
                     }
-                    return Task.FromResult(false);
+                    return false;
                 }
             }));
         }

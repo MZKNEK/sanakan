@@ -7,15 +7,25 @@ namespace Sanakan.Services.Executor
 {
     public class Executable : IExecutable
     {
-        private Task<Task> _task { get; set; }
+        private Func<Task> _task { get; set; }
+        private Task _internalTask { get; set; }
 
         private readonly string _name;
         private readonly Priority _priority;
 
-        public Executable(string name, Task<Task> task, Priority priority = Priority.Normal)
+        public Executable(string name, Func<Task> task, Priority priority = Priority.Normal)
         {
             _name = name;
             _task = task;
+            _internalTask = null;
+            _priority = priority;
+        }
+
+        public Executable(string name, Task task, Priority priority = Priority.Normal)
+        {
+            _name = name;
+            _task = null;
+            _internalTask = task;
             _priority = priority;
         }
 
@@ -23,23 +33,33 @@ namespace Sanakan.Services.Executor
 
         public string GetName() => _name;
 
-        public void Wait() => _task.Unwrap().Wait();
-        public async Task WaitAsync() => await _task.Unwrap();
+        public void Wait()
+        {
+            while (_internalTask is null) {}
+            _internalTask.Wait();
+        }
 
-        public async Task<Task<bool>> ExecuteAsync(IServiceProvider provider)
+        public async Task<bool> ExecuteAsync(IServiceProvider provider)
         {
             try
             {
-                _task.Start();
-
-                await _task.ConfigureAwait(false);
-
-                if (_task.Unwrap() is Task<bool> bTask)
+                if (_internalTask is null)
                 {
-                    return Task.FromResult(bTask.Result);
+                    _internalTask = _task();
+                }
+                else
+                {
+                    _internalTask.Start();
                 }
 
-                return Task.FromResult(true);
+                await _internalTask.ConfigureAwait(false);
+
+                if (_internalTask is Task<bool> bTask)
+                {
+                    return bTask.GetAwaiter().GetResult();
+                }
+
+                return true;
             }
             catch (Exception ex)
             {

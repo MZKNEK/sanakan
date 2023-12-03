@@ -337,7 +337,7 @@ namespace Sanakan.Modules
         [Remarks("1 10 5 10")]
         public async Task GiveawayCardsMultiAsync([Summary("id użytkownika")]ulong id, [Summary("liczba kart")]uint count, [Summary("czas w minutach")]uint duration = 5, [Summary("liczba powtórzeń")]uint repeat = 1)
         {
-            var exe = new Executable("lotery-start", new Task<Task>(async () =>
+            var exe = new Executable("lotery-start", new Func<Task>(async () =>
             {
                 using (var db = new Database.DatabaseContext(Config))
                 {
@@ -456,7 +456,7 @@ namespace Sanakan.Modules
                 }
             }
 
-            var exe = new Executable("lotery", new Task<Task>(async () =>
+            var exe = new Executable("lotery", new Func<Task>(async () =>
             {
                 using (var db = new Database.DatabaseContext(Config))
                 {

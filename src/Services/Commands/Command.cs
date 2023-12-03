@@ -27,10 +27,10 @@ namespace Sanakan.Services.Commands
         public ParseResult Result { get; private set; }
         public ICommandContext Context { get; private set; }
 
-        public async Task<Task<bool>> ExecuteAsync(IServiceProvider provider)
+        public async Task<bool> ExecuteAsync(IServiceProvider provider)
         {
             var result = await Match.ExecuteAsync(Context, Result, provider).ConfigureAwait(false);
-            if (result.IsSuccess) return Task.FromResult(true);
+            if (result.IsSuccess) return true;
 
             throw new Exception(result.ErrorReason);
         }

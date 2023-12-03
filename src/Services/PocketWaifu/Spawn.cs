@@ -189,7 +189,7 @@ namespace Sanakan.Services.PocketWaifu
         private Executable GetSafariExe(EmbedBuilder embed, IUserMessage msg, Card newCard,
             SafariImage pokeImage, ICharacterInfo character, ITextChannel trashChannel, IUser winner)
         {
-            return new Executable("safari", new Task<Task>(async () =>
+            return new Executable("safari", new Func<Task>(async () =>
             {
                 bool isOnUserWishlist = false;
 
@@ -292,7 +292,7 @@ namespace Sanakan.Services.PocketWaifu
 
         private void SpawnUserPacket(SocketUser user, ISocketMessageChannel channel)
         {
-            var exe = new Executable($"packet u{user.Id}", new Task<Task>(async () =>
+            var exe = new Executable($"packet u{user.Id}", new Func<Task>(async () =>
             {
                 using (var db = new Database.DatabaseContext(_config))
                 {

@@ -227,9 +227,9 @@ namespace Sanakan.Services
             return (long) (exp * ratio);
         }
 
-        private Task<Task> CreateUserTask(SocketGuildUser user)
+        private Func<Task> CreateUserTask(SocketGuildUser user)
         {
-            return new Task<Task>(async () =>
+            return new Func<Task>(async () =>
             {
                 using (var db = new Database.DatabaseContext(_config))
                 {
@@ -243,9 +243,9 @@ namespace Sanakan.Services
             });
         }
 
-        private Task<Task> CreateTask(SocketGuildUser user, ISocketMessageChannel channel, long exp, ulong messages, ulong commands, ulong characters, bool calculateExp)
+        private Func<Task> CreateTask(SocketGuildUser user, ISocketMessageChannel channel, long exp, ulong messages, ulong commands, ulong characters, bool calculateExp)
         {
-            return new Task<Task>(async () =>
+            return new Func<Task>(async () =>
             {
                 using (var db = new Database.DatabaseContext(_config))
                 {

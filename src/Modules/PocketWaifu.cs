@@ -1799,7 +1799,7 @@ namespace Sanakan.Modules
                     }
                 }
 
-                var exe = new Executable($"kc-check-{thisCards.Character}", new Task<Task>(async () =>
+                var exe = new Executable($"kc-check-{thisCards.Character}", new Func<Task>(async () =>
                 {
                     using (var dbs = new Database.DatabaseContext(_config))
                     {

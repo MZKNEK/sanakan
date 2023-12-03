@@ -386,7 +386,7 @@ namespace Sanakan.Api.Controllers
                 return;
             }
 
-            var exe = new Executable($"api-repair oc{oldId} c{newId}", new Task<Task>(async () =>
+            var exe = new Executable($"api-repair oc{oldId} c{newId}", new Func<Task>(async () =>
             {
                 using (var db = new Database.DatabaseContext(_config))
                 {
@@ -417,7 +417,7 @@ namespace Sanakan.Api.Controllers
         [HttpPost("cards/character/{id}/update"), Authorize(Policy = "Site")]
         public async Task UpdateCardInfoAsync(ulong id, [FromBody]Models.CharacterCardInfoUpdate newData)
         {
-            var exe = new Executable($"update cards-{id} img", new Task<Task>(async () =>
+            var exe = new Executable($"update cards-{id} img", new Func<Task>(async () =>
             {
                 using (var db = new Database.DatabaseContext(_config))
                 {
@@ -477,7 +477,7 @@ namespace Sanakan.Api.Controllers
                 return;
             }
 
-            var exe = new Executable($"update cards-{id}", new Task<Task>(async () =>
+            var exe = new Executable($"update cards-{id}", new Func<Task>(async () =>
                 {
                     using (var db = new Database.DatabaseContext(_config))
                     {
@@ -611,7 +611,7 @@ namespace Sanakan.Api.Controllers
                     return;
                 }
 
-                var exe = new Executable($"api-packet u{id}", new Task<Task>(async () =>
+                var exe = new Executable($"api-packet u{id}", new Func<Task>(async () =>
                 {
                     using (var dbs = new Database.DatabaseContext(_config))
                     {
@@ -655,7 +655,7 @@ namespace Sanakan.Api.Controllers
                 }
 
                 var discordId = user.Id;
-                var exe = new Executable($"api-packet u{discordId}", new Task<Task>(async () =>
+                var exe = new Executable($"api-packet u{discordId}", new Func<Task>(async () =>
                 {
                     using (var dbs = new Database.DatabaseContext(_config))
                     {
@@ -743,7 +743,7 @@ namespace Sanakan.Api.Controllers
                 cards.AddRange(await _waifu.OpenBoosterPackAsync(null, pack));
             }
 
-            var exe = new Executable($"api-packet-open u{discordId}", new Task<Task>(async () =>
+            var exe = new Executable($"api-packet-open u{discordId}", new Func<Task>(async () =>
             {
                 using (var db = new Database.DatabaseContext(_config))
                 {
@@ -765,7 +765,7 @@ namespace Sanakan.Api.Controllers
                 return null;
             }
 
-            await exe.WaitAsync();
+            exe.Wait();
 
             return cards;
         }
@@ -814,7 +814,7 @@ namespace Sanakan.Api.Controllers
                         bPackName = pack.Name;
                     }
 
-                    var exe = new Executable($"api-packet-open u{discordId}", new Task<Task>(async () =>
+                    var exe = new Executable($"api-packet-open u{discordId}", new Func<Task>(async () =>
                     {
                         using (var db = new Database.DatabaseContext(_config))
                         {
@@ -894,7 +894,7 @@ namespace Sanakan.Api.Controllers
                         }
                     }
 
-                    var exe = new Executable($"api-deck u{discordId}", new Task<Task>(async () =>
+                    var exe = new Executable($"api-deck u{discordId}", new Func<Task>(async () =>
                     {
                         using (var db = new Database.DatabaseContext(_config))
                         {

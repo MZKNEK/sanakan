@@ -66,7 +66,7 @@ namespace Sanakan.Services.Executor
                 {
                     _cts.Cancel();
                     _cts = new CancellationTokenSource();
-                });
+                }).ConfigureAwait(false);
 
                 try
                 {
@@ -106,7 +106,7 @@ namespace Sanakan.Services.Executor
                 {
                     _logger.Log($"Executor: running {taskName}");
                     var watch = Stopwatch.StartNew();
-                    await cmd.ExecuteAsync(_provider);
+                    await cmd.ExecuteAsync(_provider).ConfigureAwait(false);
                     _logger.Log($"Executor: completed {taskName} in {watch.ElapsedMilliseconds}ms");
                 }
                 catch (Exception ex)

@@ -136,7 +136,7 @@ namespace Sanakan.Services
             if (_client.Guilds.Any(x => x.Id != guild.Id && x.Users.Any(u => u.Id == user.Id)))
                 return;
 
-            var moveTask = new Task<Task>(async () =>
+            var moveTask = new Func<Task>(async () =>
             {
                 try
                 {
