@@ -57,10 +57,12 @@ namespace Sanakan.Services
                     return character;
 
                 var res = await _shClient.GetCharacterInfoAsync(characterId);
-                if (res.IsSuccessStatusCode()) character = res.Body;
-
-                _characterCache.Set(characterId, character, new MemoryCacheEntryOptions()
-                    .SetAbsoluteExpiration(TimeSpan.FromHours(12)));
+                if (res.IsSuccessStatusCode())
+                {
+                    character = res.Body;
+                    _characterCache.Set(characterId, character, new MemoryCacheEntryOptions()
+                        .SetAbsoluteExpiration(TimeSpan.FromHours(12)));
+                }
             }
             catch (Exception) { }
             return character;
@@ -75,10 +77,12 @@ namespace Sanakan.Services
                     return characaters;
 
                 var res = await _shClient.Title.GetCharactersAsync(titleId);
-                if (res.IsSuccessStatusCode()) characaters = res.Body;
-
-                _titleRelationCache.Set(titleId, characaters, new MemoryCacheEntryOptions()
-                    .SetAbsoluteExpiration(TimeSpan.FromHours(12)));
+                if (res.IsSuccessStatusCode())
+                {
+                    characaters = res.Body;
+                    _titleRelationCache.Set(titleId, characaters, new MemoryCacheEntryOptions()
+                        .SetAbsoluteExpiration(TimeSpan.FromHours(12)));
+                }
             }
             catch (Exception) { }
             return characaters;
@@ -93,10 +97,12 @@ namespace Sanakan.Services
                     return info;
 
                 var res = await _shClient.Title.GetInfoAsync(titleId);
-                if (res.IsSuccessStatusCode()) info = res.Body;
-
-                _titleRelationCache.Set(titleId, info, new MemoryCacheEntryOptions()
-                    .SetAbsoluteExpiration(TimeSpan.FromHours(12)));
+                if (res.IsSuccessStatusCode())
+                {
+                     info = res.Body;
+                    _titleRelationCache.Set(titleId, info, new MemoryCacheEntryOptions()
+                        .SetAbsoluteExpiration(TimeSpan.FromHours(12)));
+                }
             }
             catch (Exception) { }
             return info;
