@@ -64,6 +64,7 @@ namespace Sanakan.Services
             _misc.Add($"w:[{card.Id}] {card.GetCardRealRarity()}");
             _misc.Add($"wp:H{card.GetHealthWithPenalty()} A{card.GetAttackWithBonus()} D{card.GetDefenceWithBonus()}");
             _misc.Add($"c:{card.Name.Trim()}");
+            _misc.Add($"kc:{card.WhoWantsCount}");
             return this;
         }
 
@@ -79,6 +80,7 @@ namespace Sanakan.Services
             {
                 case ActivityType.AcquiredCardSSS:
                 case ActivityType.AcquiredCardKC:
+                case ActivityType.AcquiredCardHighKC:
                 case ActivityType.AcquiredCardWishlist:
                 case ActivityType.AcquiredCarcUltimate:
                 case ActivityType.UsedScalpel:
@@ -125,6 +127,9 @@ namespace Sanakan.Services
                     _activity.Text = $"Użytkownik zdobył kartę SSS: {_cardText}";
                 break;
                 case ActivityType.AcquiredCardKC:
+                    _activity.Text = $"Użytkownik zdobył kartę z KC: {_cardText}";
+                break;
+                case ActivityType.AcquiredCardHighKC:
                     _activity.Text = $"Użytkownik zdobył kartę z dużą liczbą KC: {_cardText}";
                 break;
                 case ActivityType.AcquiredCardWishlist:
@@ -193,6 +198,7 @@ namespace Sanakan.Services
                 case ActivityType.AddedToWishlistCard:
                 case ActivityType.AcquiredCardSSS:
                 case ActivityType.AcquiredCardKC:
+                case ActivityType.AcquiredCardHighKC:
                 case ActivityType.AcquiredCardWishlist:
                 case ActivityType.AcquiredCarcUltimate:
                 case ActivityType.UsedScalpel:

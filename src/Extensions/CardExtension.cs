@@ -992,13 +992,13 @@ namespace Sanakan.Extensions
 
         public static bool AddActivityFromNewCard(this Database.DatabaseContext db, Card card, bool isOnUserWishlist, ISystemTime time, User user, string username)
         {
-            if (isOnUserWishlist || card.WhoWantsCount >= 3)
+            if (isOnUserWishlist || card.WhoWantsCount >= 1)
             {
                 db.UserActivities.Add(new Services.UserActivityBuilder(time)
                     .WithUser(user, username).WithCard(card)
-                    .WithType(isOnUserWishlist ?
-                        Database.Models.ActivityType.AcquiredCardWishlist :
-                        Database.Models.ActivityType.AcquiredCardKC).Build());
+                    .WithType(isOnUserWishlist ? Database.Models.ActivityType.AcquiredCardWishlist :
+                        (card.WhoWantsCount >= 30 ? Database.Models.ActivityType.AcquiredCardHighKC:
+                        Database.Models.ActivityType.AcquiredCardKC)).Build());
                 return true;
             }
             return false;

@@ -9,7 +9,8 @@ namespace Sanakan.Database.Models
         LevelUp, Muted, Banned, Kicked, Connected, LotteryStarted, WonLottery,
         AcquiredCardSSS, AcquiredCardKC, AcquiredCardWishlist, AcquiredCarcUltimate, UsedScalpel,
         CreatedYato, CreatedYami, CreatedRaito, CreatedSSS, CreatedUltiamte,
-        AddedToWishlistCharacter, AddedToWishlistTitle, AddedToWishlistCard
+        AddedToWishlistCharacter, AddedToWishlistTitle, AddedToWishlistCard,
+        AcquiredCardHighKC
     }
 
     public class UserActivity
