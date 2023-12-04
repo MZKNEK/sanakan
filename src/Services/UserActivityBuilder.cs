@@ -48,11 +48,11 @@ namespace Sanakan.Services
         public UserActivityBuilder WithCard(Card card)
         {
             _activity.TargetId = card.Id;
-            _cardText = $"<w@{card.Id}> <c@{card.Character}>";
-            if (card.WhoWantsCount > 1)
+            _cardText = card.WhoWantsCount switch
             {
-                _cardText = $"({card.WhoWantsCount}) {_cardText}";
-            }
+                0 => $"<w@{card.Id}> <c@{card.Character}>",
+                _ => $"({card.WhoWantsCount}) <w@{card.Id}> <c@{card.Character}>"
+            };
             if (_activity.UserId == 0 && card.GameDeck != null && card.GameDeck.User != null)
             {
                 _activity.ShindenId = card.GameDeck.User.Shinden;
