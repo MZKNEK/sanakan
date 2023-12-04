@@ -503,6 +503,7 @@ namespace Sanakan.Modules
                 if (!user.Roles.Contains(gRole))
                     await user.AddRoleAsync(gRole);
 
+                global.BValue = true;
                 global.EndsAt = global.EndsAt.AddMonths(1);
                 botuser.TcCnt -= cost;
 
@@ -551,6 +552,7 @@ namespace Sanakan.Modules
 
                 if (color == FColor.CleanColor)
                 {
+                    colort.BValue = false;
                     colort.EndsAt = _time.Now();
                     await _profile.RomoveUserColorAsync(user);
                 }
@@ -566,6 +568,7 @@ namespace Sanakan.Modules
                         colort.EndsAt = _time.Now().AddMonths(1);
                     }
 
+                    colort.BValue = true;
                     var gConfig = await db.GetCachedGuildFullConfigAsync(Context.Guild.Id);
                     if (!await _profile.SetUserColorAsync(user, gConfig.AdminRole, color))
                     {

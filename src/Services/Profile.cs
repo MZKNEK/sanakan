@@ -13,6 +13,7 @@ using Microsoft.EntityFrameworkCore;
 using Sanakan.Config;
 using Sanakan.Database.Models;
 using Sanakan.Extensions;
+using Sanakan.Services.Executor;
 using Sanakan.Services.Time;
 using Shinden;
 using Shinden.Logger;
@@ -104,16 +105,18 @@ namespace Sanakan.Services
         private ISystemTime _time;
         private ILogger _logger;
         private IConfig _config;
+        private IExecutor _exe;
         private Timer _timer;
 
         public Profile(DiscordSocketClient client, ShindenClient shClient, ImageProcessing img,
-            ILogger logger, IConfig config, ISystemTime time)
+            ILogger logger, IConfig config, ISystemTime time, IExecutor exe)
         {
             _shClient = shClient;
             _client = client;
             _logger = logger;
             _config = config;
             _time = time;
+            _exe = exe;
             _img = img;
 
 #if !DEBUG
@@ -121,10 +124,7 @@ namespace Sanakan.Services
             {
                 try
                 {
-                    using (var db = new Database.DatabaseContext(_config))
-                    {
-                        await CyclicCheckAsync(db);
-                    }
+                    await CyclicCheckAsync();
                 }
                 catch (Exception ex)
                 {
@@ -132,35 +132,56 @@ namespace Sanakan.Services
                 }
             },
             null,
-            TimeSpan.FromMinutes(1),
-            TimeSpan.FromMinutes(1));
+            TimeSpan.FromMinutes(5),
+            TimeSpan.FromMinutes(10));
 #endif
         }
 
-        private async Task CyclicCheckAsync(Database.DatabaseContext context)
+        private async Task CyclicCheckAsync()
         {
-            var subs = context.TimeStatuses.AsNoTracking().FromCache(new[] { "users" }).Where(x => x.Type.IsSubType());
-            foreach (var sub in subs)
+            using (var db = new Database.DatabaseContext(_config))
             {
-                if (sub.IsActive(_time.Now()))
-                    continue;
-
-                var guild = _client.GetGuild(sub.Guild);
-                switch (sub.Type)
+                if (db.TimeStatuses.AsQueryable().AsNoTracking()
+                    .Any(x => (x.Type == StatusType.Color || x.Type == StatusType.Globals) && x.BValue))
                 {
-                    case StatusType.Globals:
-                        var guildConfig = await context.GetCachedGuildFullConfigAsync(sub.Guild);
-                        await RemoveRoleAsync(guild, guildConfig?.GlobalEmotesRole ?? 0, sub.UserId);
-                        break;
-
-                    case StatusType.Color:
-                        await RomoveUserColorAsync(guild.GetUser(sub.UserId));
-                        break;
-
-                    default:
-                        break;
+                    return;
                 }
             }
+
+            var task = new Executable($"subs check", new Func<Task>(async () =>
+            {
+                using (var db = new Database.DatabaseContext(_config))
+                {
+                    var subs = await db.TimeStatuses.AsQueryable().AsNoTracking()
+                        .Where(x => (x.Type == StatusType.Color || x.Type == StatusType.Globals) && x.BValue).ToListAsync();
+
+                    foreach (var sub in subs)
+                    {
+                        if (sub.IsActive(_time.Now()))
+                            continue;
+
+                        var guild = _client.GetGuild(sub.Guild);
+                        switch (sub.Type)
+                        {
+                            case StatusType.Globals:
+                                sub.BValue = false;
+                                var guildConfig = await db.GetCachedGuildFullConfigAsync(sub.Guild);
+                                await RemoveRoleAsync(guild, guildConfig?.GlobalEmotesRole ?? 0, sub.UserId);
+                                break;
+
+                            case StatusType.Color:
+                                sub.BValue = false;
+                                await RomoveUserColorAsync(guild.GetUser(sub.UserId));
+                                break;
+
+                            default:
+                                break;
+                        }
+                    }
+                }
+            }));
+
+            await _exe.TryAdd(task, TimeSpan.FromSeconds(1));
         }
 
         private async Task RemoveRoleAsync(SocketGuild guild, ulong roleId, ulong userId)

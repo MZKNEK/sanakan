@@ -119,7 +119,7 @@ namespace Sanakan
             _exp = new ExperienceManager(_client, _executor, _config, _img, _time);
             _spawn = new Spawn(_client, _executor, _waifu, _config, _logger, _time);
             _handler = new CommandHandler(_client, _config, _logger, _executor, _time);
-            _profile = new Profile(_client, _shindenClient, _img, _logger, _config, _time);
+            _profile = new Profile(_client, _shindenClient, _img, _logger, _config, _time, _executor);
         }
 
         private void LoadConfig()
