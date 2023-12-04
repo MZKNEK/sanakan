@@ -122,7 +122,6 @@ namespace Sanakan.Services.Session
                         {
                             if (await session.GetExecutable(context).ExecuteAsync(_provider).ConfigureAwait(false))
                                 await DisposeAsync(session).ConfigureAwait(false);
-
                         });
                         break;
 

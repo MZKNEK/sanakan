@@ -141,7 +141,7 @@ namespace Sanakan.Services
         {
             using (var db = new Database.DatabaseContext(_config))
             {
-                if (db.TimeStatuses.AsQueryable().AsNoTracking()
+                if (!db.TimeStatuses.AsQueryable().AsNoTracking()
                     .Any(x => (x.Type == StatusType.Color || x.Type == StatusType.Globals) && x.BValue))
                 {
                     return;
@@ -152,25 +152,24 @@ namespace Sanakan.Services
             {
                 using (var db = new Database.DatabaseContext(_config))
                 {
-                    var subs = await db.TimeStatuses.AsQueryable().AsNoTracking()
-                        .Where(x => (x.Type == StatusType.Color || x.Type == StatusType.Globals) && x.BValue).ToListAsync();
-
+                    bool save = false;
+                    var subs = await db.TimeStatuses.AsQueryable().Where(x => (x.Type == StatusType.Color || x.Type == StatusType.Globals) && x.BValue).ToListAsync();
                     foreach (var sub in subs)
                     {
                         if (sub.IsActive(_time.Now()))
                             continue;
 
+                        save = true;
+                        sub.BValue = false;
                         var guild = _client.GetGuild(sub.Guild);
                         switch (sub.Type)
                         {
                             case StatusType.Globals:
-                                sub.BValue = false;
                                 var guildConfig = await db.GetCachedGuildFullConfigAsync(sub.Guild);
                                 await RemoveRoleAsync(guild, guildConfig?.GlobalEmotesRole ?? 0, sub.UserId);
                                 break;
 
                             case StatusType.Color:
-                                sub.BValue = false;
                                 await RomoveUserColorAsync(guild.GetUser(sub.UserId));
                                 break;
 
@@ -178,6 +177,9 @@ namespace Sanakan.Services
                                 break;
                         }
                     }
+
+                    if (save)
+                        await db.SaveChangesAsync();
                 }
             }));
 
