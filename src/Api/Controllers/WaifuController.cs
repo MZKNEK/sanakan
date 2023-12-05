@@ -171,6 +171,12 @@ namespace Sanakan.Api.Controllers
                     return new FilteredCards{TotalCards = 0, Cards = new List<CardFinalView>()};
                 }
 
+                if (user.IsBlacklisted)
+                {
+                    await "User on blacklist".ToResponse(401).ExecuteResultAsync(ControllerContext);
+                    return new FilteredCards{TotalCards = 0, Cards = new List<CardFinalView>()};
+                }
+
                 var query = db.Cards.AsQueryable().AsSplitQuery().Where(x => x.GameDeckId == user.GameDeck.Id).Include(x=> x.ArenaStats).Include(x => x.TagList).AsNoTracking();
                 if (!string.IsNullOrEmpty(filter.SearchText))
                 {
@@ -203,6 +209,12 @@ namespace Sanakan.Api.Controllers
                 if (user == null)
                 {
                     await "User not found".ToResponse(404).ExecuteResultAsync(ControllerContext);
+                    return new List<CardFinalView>();
+                }
+
+                if (user.IsBlacklisted)
+                {
+                    await "User on blacklist".ToResponse(401).ExecuteResultAsync(ControllerContext);
                     return new List<CardFinalView>();
                 }
 
@@ -272,6 +284,12 @@ namespace Sanakan.Api.Controllers
                     return new List<WishlistObject>();
                 }
 
+                if (user.IsBlacklisted)
+                {
+                    await "User on blacklist".ToResponse(401).ExecuteResultAsync(ControllerContext);
+                    return new List<WishlistObject>();
+                }
+
                 if (user.GameDeck.WishlistIsPrivate)
                 {
                     await "User wishlist is private".ToResponse(401).ExecuteResultAsync(ControllerContext);
@@ -320,6 +338,12 @@ namespace Sanakan.Api.Controllers
                 if (user == null)
                 {
                     await "User not found".ToResponse(404).ExecuteResultAsync(ControllerContext);
+                    return new UserSiteProfile();
+                }
+
+                if (user.IsBlacklisted)
+                {
+                    await "User on blacklist".ToResponse(401).ExecuteResultAsync(ControllerContext);
                     return new UserSiteProfile();
                 }
 
