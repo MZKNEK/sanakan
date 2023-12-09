@@ -348,7 +348,7 @@ namespace Sanakan.Services
             if (string.IsNullOrEmpty(imgUrl))
                 return SaveResult.BadUrl;
 
-            if (_img.IsUrlToImageSimple(imgUrl))
+            if (!_img.IsUrlToImageSimple(imgUrl))
                 return SaveResult.BadUrl;
 
             try
