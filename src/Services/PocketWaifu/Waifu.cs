@@ -662,6 +662,7 @@ namespace Sanakan.Services.PocketWaifu
 
             ulong boosterPackTitleId = 0;
             string boosterPackTitleName = "";
+            const int minCharactersInPack = 12;
             switch (thisItem.Item.Type)
             {
                 case ItemType.RandomTitleBoosterPackSingleE:
@@ -676,9 +677,9 @@ namespace Sanakan.Services.PocketWaifu
                     {
                         return $"{discordUser.Mention} nie odnaleziono postaci pod podanym tytułem.".ToEmbedMessage(EMType.Error).Build();
                     }
-                    if (charsInTitle.Select(x => x.CharacterId).Where(x => x.HasValue).Distinct().Count() < 8)
+                    if (charsInTitle.Select(x => x.CharacterId).Where(x => x.HasValue).Distinct().Count() < minCharactersInPack)
                     {
-                        return $"{discordUser.Mention} nie można kupić pakietu z tytułu z mniejszą liczbą postaci jak 8.".ToEmbedMessage(EMType.Error).Build();
+                        return $"{discordUser.Mention} nie można kupić pakietu z tytułu z mniejszą liczbą postaci jak {minCharactersInPack}.".ToEmbedMessage(EMType.Error).Build();
                     }
                     boosterPackTitleName = $" ({titleInfo.Title})";
                     boosterPackTitleId = titleInfo.Id;
