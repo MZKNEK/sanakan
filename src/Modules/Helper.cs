@@ -185,7 +185,7 @@ namespace Sanakan.Modules
         [Alias("fix image")]
         [Summary("naprawia wygasły obrazek karty ustawiony przed imgur: 15.05.2023, discord: 13.11.2023")]
         [Remarks("123123"), RequireWaifuCommandChannel]
-        public async Task FixCardCustomImage([Summary("WID")] ulong wid, [Summary("bezpośredni adres do obrazka")] string url)
+        public async Task FixCardCustomImageAsync([Summary("WID")] ulong wid, [Summary("bezpośredni adres do obrazka")] string url)
         {
             var imgRes = _img.CheckImageUrl(ref url);
             if (imgRes != ImageUrlCheckResult.Ok)
@@ -230,9 +230,9 @@ namespace Sanakan.Modules
                     return;
                 }
 
-                if (thisCard.FixedCustomImageCnt > 0)
+                if (thisCard.FixedCustomImageCnt > 1)
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} na tej karcie już raz został naprawiony niestandardowy obrazek.".ToEmbedMessage(EMType.Error).Build());
+                    await ReplyAsync("", embed: $"{Context.User.Mention} na tej karcie już dwa razy został naprawiony niestandardowy obrazek.".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
