@@ -85,6 +85,7 @@ namespace Sanakan.Database.Models
         public int WhoWantsCount {get; set; }
         public DateTime CustomImageDate { get; set; }
         public int FixedCustomImageCnt { get; set; }
+        public bool IsAnimatedImage { get; set; }
 
         public int EnhanceCnt { get; set; }
         public bool FromFigure { get; set; }

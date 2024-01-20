@@ -6,6 +6,7 @@ using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Drawing;
 using SixLabors.ImageSharp.Drawing.Processing;
 using SixLabors.ImageSharp.Formats;
+using SixLabors.ImageSharp.Formats.Gif;
 using SixLabors.ImageSharp.Formats.Jpeg;
 using SixLabors.ImageSharp.Formats.Png;
 using SixLabors.ImageSharp.Formats.Webp;
@@ -16,6 +17,7 @@ namespace Sanakan.Extensions
 {
     public static class ImageExtension
     {
+        private static IImageEncoder _gifEncoder = new GifEncoder();
         private static IImageEncoder _pngEncoder = new PngEncoder();
         private static IImageEncoder _jpgEncoder = new JpegEncoder()
         {
@@ -50,6 +52,14 @@ namespace Sanakan.Extensions
             return stream;
         }
 
+        public static Stream ToGifStream(this Image img)
+        {
+            var stream = new MemoryStream();
+            img.Save(stream, _gifEncoder);
+            stream.Seek(0, SeekOrigin.Begin);
+            return stream;
+        }
+
         public static string SaveToPath(this Image img, string path)
         {
             var extension = path.Split(".").Last().ToLower();
@@ -57,6 +67,7 @@ namespace Sanakan.Extensions
             {
                 "webp" => _webpEncoder,
                 "png" => _pngEncoder,
+                "gif" => _gifEncoder,
                 _ => _jpgEncoder
             };
             img.Save(path, encoder);

@@ -905,12 +905,7 @@ namespace Sanakan.Services
 
         private async Task<Image> GetCharacterPictureAsync(string characterUrl, bool ultimate)
         {
-            var characterImg = Image.Load($"./Pictures/PW/empty.png");
-            if (ultimate)
-            {
-                characterImg = new Image<Rgba32>(475, 667);
-            }
-
+            var characterImg = ultimate ? new Image<Rgba32>(475, 667) : Image.Load($"./Pictures/PW/empty.png");
             using (var stream = await GetImageFromUrlAsync(characterUrl ?? "http://cdn.shinden.eu/cdn1/other/placeholders/title/225x350.jpg", true))
             {
                 if (stream == null)
@@ -1454,8 +1449,11 @@ namespace Sanakan.Services
             return image;
         }
 
-        public async Task<Image<Rgba32>> GetWaifuInProfileCardAsync(Card card)
+        public async Task<Image> GetWaifuInProfileCardAsync(Card card)
         {
+            if (card.IsAnimatedImage)
+                return await GetAnimatedWaifuCardAsync(card, true);
+
             var image = new Image<Rgba32>(475, 667);
 
             ApplyBorderBack(image, card);
@@ -1538,6 +1536,9 @@ namespace Sanakan.Services
 
         public async Task<Image> GetWaifuCardAsync(Card card)
         {
+            if (card.IsAnimatedImage)
+                return await GetAnimatedWaifuCardAsync(card);
+
             var image = await GetWaifuCardNoStatsAsync(card);
 
             if (card.FromFigure)
@@ -1550,6 +1551,76 @@ namespace Sanakan.Services
             }
 
             return image;
+        }
+
+        private async Task<Image> GetAnimatedWaifuCardAsync(Card card, bool noStatsImage = false)
+        {
+            var characterImg = card.FromFigure ? new Image<Rgba32>(475, 667) : Image.Load($"./Pictures/PW/empty.png");
+            using (var stream = await GetImageFromUrlAsync(card.GetImage() ?? "http://cdn.shinden.eu/cdn1/other/placeholders/title/225x350.jpg", true))
+            {
+                using (var image = stream is null ? characterImg : Image.Load(stream))
+                {
+                    image.Mutate(x => x.Resize(new ResizeOptions
+                    {
+                        Mode = ResizeMode.Max,
+                        Size = new Size(characterImg.Width, 0)
+                    }));
+
+                    int startY = 0;
+                    if (characterImg.Height > image.Height)
+                        startY = (characterImg.Height / 2) - (image.Height / 2);
+
+                    var animation = new Image<Rgba32>(475, 667);
+                    var ometa = image.Metadata.GetGifMetadata();
+                    var nmeta = animation.Metadata.GetGifMetadata();
+
+                    nmeta.RepeatCount = ometa.RepeatCount;
+                    nmeta.ColorTableMode = SixLabors.ImageSharp.Formats.Gif.GifColorTableMode.Local;
+
+                    for (int i = 0; i < image.Frames.Count; i++)
+                    {
+                        using var oldFrame = image.Frames.CloneFrame(i);
+                        using var newFrame = new Image<Rgba32>(475, 667);
+                        using var newFrameChar = characterImg.CloneAs<Rgba32>();
+                        var oldFrameMetadata = oldFrame.Frames.RootFrame.Metadata.GetGifMetadata();
+                        var newFrameMetadata = newFrame.Frames.RootFrame.Metadata.GetGifMetadata();
+                        newFrameMetadata.FrameDelay = oldFrameMetadata.FrameDelay;
+
+                        newFrameChar.Mutate(x => x.DrawImage(oldFrame, new Point(0, startY), 1));
+
+                        ApplyBorderBack(newFrame, card);
+
+                        var mov = card.FromFigure ? 0 : 13;
+                        newFrame.Mutate(x => x.DrawImage(newFrameChar, new Point(mov, mov), 1));
+
+                        using (var border = GenerateBorder(card))
+                        {
+                            newFrame.Mutate(x => x.DrawImage(border, new Point(0, 0), 1));
+                        }
+
+                        if (AllowStatsOnNoStatsImage(card))
+                        {
+                            ApplyUltimateStats(newFrame, card);
+                        }
+                        else if (!noStatsImage)
+                        {
+                            if (card.FromFigure)
+                            {
+                                ApplyUltimateStats(newFrame, card);
+                            }
+                            else
+                            {
+                                ApplyStats(newFrame, card, !card.HasImage());
+                            }
+                        }
+
+                        animation.Frames.AddFrame(newFrame.Frames.RootFrame);
+                    }
+
+                    animation.Frames.RemoveFrame(0);
+                    return animation;
+                }
+            }
         }
     }
 }

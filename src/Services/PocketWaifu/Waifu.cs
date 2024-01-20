@@ -66,7 +66,7 @@ namespace Sanakan.Services.PocketWaifu
             { "mega",       Quality.Omega   },
         };
 
-        private static string[] _imgExtWithAlpha = { "png", "webp" };
+        private static string[] _imgExtWithAlpha = { "png", "webp", "gif" };
 
         private static List<Dere> _dereToRandomize = new List<Dere>
         {
@@ -855,6 +855,7 @@ namespace Sanakan.Services.PocketWaifu
                 Source = CardSource.Other,
                 Quality = Quality.Broken,
                 FixedCustomImageCnt = 0,
+                IsAnimatedImage = false,
                 Title = title ?? "????",
                 Dere = RandomizeDere(),
                 Curse = CardCurse.None,
@@ -1346,9 +1347,10 @@ namespace Sanakan.Services.PocketWaifu
 
         public async Task<string> GenerateAndSaveCardAsync(Card card, CardImageType type = CardImageType.Normal)
         {
-            string imageLocation = $"{Dir.Cards}/{card.Id}.webp";
-            string sImageLocation = $"{Dir.CardsMiniatures}/{card.Id}.webp";
-            string pImageLocation = $"{Dir.CardsInProfiles}/{card.Id}.webp";
+            var ext = card.IsAnimatedImage ? "gif" : "webp";
+            string imageLocation = $"{Dir.Cards}/{card.Id}.{ext}";
+            string sImageLocation = $"{Dir.CardsMiniatures}/{card.Id}.{ext}";
+            string pImageLocation = $"{Dir.CardsInProfiles}/{card.Id}.{ext}";
 
             try
             {
@@ -1384,33 +1386,26 @@ namespace Sanakan.Services.PocketWaifu
 
         public void DeleteCardImageIfExist(Card card)
         {
-            string imageLocationOld = $"{Dir.Cards}/{card.Id}.png";
-            string sImageLocationOld = $"{Dir.CardsMiniatures}/{card.Id}.png";
-            string pImageLocationOld = $"{Dir.CardsInProfiles}/{card.Id}.png";
-
-            string imageLocation = $"{Dir.Cards}/{card.Id}.webp";
-            string sImageLocation = $"{Dir.CardsMiniatures}/{card.Id}.webp";
-            string pImageLocation = $"{Dir.CardsInProfiles}/{card.Id}.webp";
+            var toRemove = new List<string>()
+            {
+                $"{Dir.Cards}/{card.Id}.png",
+                $"{Dir.CardsMiniatures}/{card.Id}.png",
+                $"{Dir.CardsInProfiles}/{card.Id}.png",
+                $"{Dir.Cards}/{card.Id}.webp",
+                $"{Dir.CardsMiniatures}/{card.Id}.webp",
+                $"{Dir.CardsInProfiles}/{card.Id}.webp",
+                $"{Dir.Cards}/{card.Id}.gif",
+                $"{Dir.CardsMiniatures}/{card.Id}.gif",
+                $"{Dir.CardsInProfiles}/{card.Id}.gif",
+            };
 
             try
             {
-                if (File.Exists(imageLocationOld))
-                    File.Delete(imageLocationOld);
-
-                if (File.Exists(sImageLocationOld))
-                    File.Delete(sImageLocationOld);
-
-                if (File.Exists(pImageLocationOld))
-                    File.Delete(pImageLocationOld);
-
-                if (File.Exists(imageLocation))
-                    File.Delete(imageLocation);
-
-                if (File.Exists(sImageLocation))
-                    File.Delete(sImageLocation);
-
-                if (File.Exists(pImageLocation))
-                    File.Delete(pImageLocation);
+                foreach (var tr in toRemove)
+                {
+                    if (File.Exists(tr))
+                        File.Delete(tr);
+                }
             }
             catch (Exception) { }
         }
@@ -1418,8 +1413,9 @@ namespace Sanakan.Services.PocketWaifu
         private async Task<string> GetCardUrlIfExistAsync(Card card, bool defaultStr = false, bool force = false)
         {
             string imageUrl = null;
-            string imageLocation = $"{Dir.Cards}/{card.Id}.webp";
-            string sImageLocation = $"{Dir.CardsMiniatures}/{card.Id}.webp";
+            var ext = card.IsAnimatedImage ? "gif" : "webp";
+            string imageLocation = $"{Dir.Cards}/{card.Id}.{ext}";
+            string sImageLocation = $"{Dir.CardsMiniatures}/{card.Id}.{ext}";
 
             if (!File.Exists(imageLocation) || !File.Exists(sImageLocation) || force)
             {

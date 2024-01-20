@@ -173,6 +173,7 @@ namespace Sanakan.Api.Models
         public static CardFinalView ConvertFromRaw(Card card, ulong shindenId = 0)
         {
             if (card == null) return null;
+            var ext = card.IsAnimatedImage ? "gif" : "webp";
 
             return new CardFinalView
             {
@@ -205,11 +206,11 @@ namespace Sanakan.Api.Models
                 ExpCntForNextLevel = card.ExpToUpgrade(),
                 HasCustomImage = card.CustomImage != null,
                 HasCustomBorder = card.CustomBorder != null,
-                ImageUrl = $"https://cdn2.shinden.eu/{card.Id}.webp",
+                ImageUrl = $"https://cdn2.shinden.eu/{card.Id}.{ext}",
                 ShindenId =  card?.GameDeck?.User?.Shinden ?? shindenId,
                 IsOnExpedition = card.Expedition != CardExpedition.None,
-                SmallImageUrl = $"https://cdn2.shinden.eu/small/{card.Id}.webp",
-                ProfileImageUrl = $"https://cdn2.shinden.eu/profile/{card.Id}.webp",
+                SmallImageUrl = $"https://cdn2.shinden.eu/small/{card.Id}.{ext}",
+                ProfileImageUrl = $"https://cdn2.shinden.eu/profile/{card.Id}.{ext}",
                 Tags = card.TagList.Select(x => x.Name).ToList()
             };
         }
