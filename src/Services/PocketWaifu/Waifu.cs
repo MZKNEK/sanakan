@@ -1134,10 +1134,18 @@ namespace Sanakan.Services.PocketWaifu
 
         public async Task<string> GetWaifuProfileImageAsync(Card card, ITextChannel trashCh)
         {
-            var uri = await GenerateAndSaveCardAsync(card, CardImageType.Profile);
-            var fs = await trashCh.SendFileAsync(uri);
-            var im = fs.Attachments.FirstOrDefault();
-            return im.Url;
+            var url = Api.Models.CardFinalView.GetCardProfileInShindenUrl(card);
+            var uri = await GetCardProfileUrlIfExistAsync(card, true);
+            try
+            {
+                var fs = await trashCh.SendFileAsync(uri);
+                var im = fs.Attachments.FirstOrDefault();
+            }
+            catch (Exception ex)
+            {
+                _logger.Log($"Sending file: {ex.Message}");
+            }
+            return url;
         }
 
         public async Task<List<Embed>> GetWaifuFromCharacterSearchResult(string title, IEnumerable<Card> cards, bool mention, SocketGuild guild = null, bool shindenUrls = false)
@@ -1425,7 +1433,28 @@ namespace Sanakan.Services.PocketWaifu
             else
             {
                 imageUrl = imageLocation;
-                if ((_time.Now() - File.GetCreationTime(imageLocation)).TotalHours > 4)
+                if ((_time.Now() - File.GetCreationTime(imageLocation)).TotalHours > 4 && !card.IsAnimatedImage)
+                    imageUrl = await GenerateAndSaveCardAsync(card);
+            }
+
+            return defaultStr ? (imageUrl ?? imageLocation) : imageUrl;
+        }
+
+        private async Task<string> GetCardProfileUrlIfExistAsync(Card card, bool defaultStr = false, bool force = false)
+        {
+            string imageUrl = null;
+            var ext = card.IsAnimatedImage ? "gif" : "webp";
+            string imageLocation = $"{Dir.CardsInProfiles}/{card.Id}.{ext}";
+
+            if (!File.Exists(imageLocation) || force)
+            {
+                if (card.Id != 0)
+                    imageUrl = await GenerateAndSaveCardAsync(card);
+            }
+            else
+            {
+                imageUrl = imageLocation;
+                if ((_time.Now() - File.GetCreationTime(imageLocation)).TotalHours > 4 && !card.IsAnimatedImage)
                     imageUrl = await GenerateAndSaveCardAsync(card);
             }
 
@@ -1480,8 +1509,16 @@ namespace Sanakan.Services.PocketWaifu
                 imageUrl = await GetCardUrlIfExistAsync(card, true);
                 if (imageUrl != null)
                 {
-                    var msg = await trashChannel.SendFileAsync(imageUrl);
-                    imageUrl = msg.Attachments.First().Url;
+                    try
+                    {
+                        var msg = await trashChannel.SendFileAsync(imageUrl);
+                        imageUrl = msg.Attachments.First().Url;
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.Log($"Sending file: {ex.Message}");
+                        imageUrl = Api.Models.CardFinalView.GetCardBaseInShindenUrl(card);
+                    }
                 }
             }
             else
@@ -1508,8 +1545,16 @@ namespace Sanakan.Services.PocketWaifu
             string imageUrl = await GetCardUrlIfExistAsync(card, true);
             if (imageUrl != null)
             {
-                var msg = await trashChannel.SendFileAsync(imageUrl);
-                imageUrl = msg.Attachments.First().Url;
+                try
+                {
+                    var msg = await trashChannel.SendFileAsync(imageUrl);
+                    imageUrl = msg.Attachments.First().Url;
+                }
+                catch (Exception ex)
+                {
+                    _logger.Log($"Sending file: {ex.Message}");
+                    imageUrl = Api.Models.CardFinalView.GetCardBaseInShindenUrl(card);
+                }
             }
 
             string imgUrls = $"[_obrazek_]({imageUrl})\n[_możesz zmienić obrazek tutaj_]({card.GetCharacterUrl()}/edit_crossroad)";

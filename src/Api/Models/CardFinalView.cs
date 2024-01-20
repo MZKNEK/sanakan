@@ -170,10 +170,18 @@ namespace Sanakan.Api.Models
             return finalCard;
         }
 
+        public static string GetCardMiniInShindenUrl(Card card)
+            => $"https://cdn2.shinden.eu/small/{card.Id}.{(card.IsAnimatedImage ? "gif" : "webp")}";
+
+        public static string GetCardBaseInShindenUrl(Card card)
+            => $"https://cdn2.shinden.eu/{card.Id}.{(card.IsAnimatedImage ? "gif" : "webp")}";
+
+        public static string GetCardProfileInShindenUrl(Card card)
+            => $"https://cdn2.shinden.eu/profile/{card.Id}.{(card.IsAnimatedImage ? "gif" : "webp")}";
+
         public static CardFinalView ConvertFromRaw(Card card, ulong shindenId = 0)
         {
             if (card == null) return null;
-            var ext = card.IsAnimatedImage ? "gif" : "webp";
 
             return new CardFinalView
             {
@@ -206,11 +214,11 @@ namespace Sanakan.Api.Models
                 ExpCntForNextLevel = card.ExpToUpgrade(),
                 HasCustomImage = card.CustomImage != null,
                 HasCustomBorder = card.CustomBorder != null,
-                ImageUrl = $"https://cdn2.shinden.eu/{card.Id}.{ext}",
+                ImageUrl = GetCardBaseInShindenUrl(card),
                 ShindenId =  card?.GameDeck?.User?.Shinden ?? shindenId,
                 IsOnExpedition = card.Expedition != CardExpedition.None,
-                SmallImageUrl = $"https://cdn2.shinden.eu/small/{card.Id}.{ext}",
-                ProfileImageUrl = $"https://cdn2.shinden.eu/profile/{card.Id}.{ext}",
+                SmallImageUrl = GetCardMiniInShindenUrl(card),
+                ProfileImageUrl = GetCardProfileInShindenUrl(card),
                 Tags = card.TagList.Select(x => x.Name).ToList()
             };
         }
