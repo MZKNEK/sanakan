@@ -811,7 +811,7 @@ namespace Sanakan.Services
             var nickNameColor = color.RawValue.ToString("X6");
             var baseImg = new Image<Rgba32>((int)estimatedLength, 100);
 
-            baseImg.Mutate(x => x.BackgroundColor(GetOrCreateColor("#36393e")));
+            baseImg.Mutate(x => x.BackgroundColor(Color.Transparent));
             baseImg.Mutate(x => x.DrawText(msgText1, textFont, Color.Gray, new Point(98 + (int)lvlLength.Width, 75)));
             baseImg.Mutate(x => x.DrawText(name, nickNameFont, GetOrCreateColor(nickNameColor), new Point(98, 5)));
             baseImg.Mutate(x => x.DrawText(msgText2, textFont, Color.Gray, new Point(98, 30)));
@@ -879,7 +879,7 @@ namespace Sanakan.Services
             int realHeight = (int)(firstColumnMaxLength.Height + 2) * (inFirstColumn + 1);
 
             var imgBase = new Image<Rgba32>(realWidth, realHeight);
-            imgBase.Mutate(x => x.BackgroundColor(GetOrCreateColor("#36393e")));
+            imgBase.Mutate(x => x.BackgroundColor(GetOrCreateColor("#313338")));
             imgBase.Mutate(x => x.DrawText("Lista:", message, GetOrCreateColor("#000000"), new Point(0, 0)));
 
             for (int i = 0; i < arrayOfColours.Length; i++)
@@ -1285,7 +1285,7 @@ namespace Sanakan.Services
             switch (card.Quality)
             {
                 case Quality.Jota: return $"./Pictures/PW/CG/{card.Quality}/Border/{card.Dere}_Border.png";
-                default: return  $"./Pictures/PW/CG/{card.Quality}/BorderBack.png";
+                default: return $"./Pictures/PW/CG/{card.Quality}/BorderBack.png";
             }
         }
 
@@ -1511,7 +1511,7 @@ namespace Sanakan.Services
             img.Mutate(x => x.DrawImage(win, new Point(Xiw, Yi), 1));
             img.Mutate(x => x.DrawImage(los, new Point(Xil, Yi), 1));
 
-            var options = new RichTextOptions(nameFont) { HorizontalAlignment = HorizontalAlignment.Center, WrappingLength = win.Width, Origin = new Point(Xiw, Yt)};
+            var options = new RichTextOptions(nameFont) { HorizontalAlignment = HorizontalAlignment.Center, WrappingLength = win.Width, Origin = new Point(Xiw, Yt) };
             img.Mutate(x => x.DrawText(options, info.Winner.Name, GetOrCreateColor(image != null ? image.Color : DuelImage.DefaultColor())));
             options.Origin = new Point(Xil, Yt);
             img.Mutate(x => x.DrawText(options, info.Loser.Name, GetOrCreateColor(image != null ? image.Color : DuelImage.DefaultColor())));
