@@ -66,7 +66,7 @@ namespace Sanakan.Services.PocketWaifu
             { "mega",       Quality.Omega   },
         };
 
-        private static string[] _imgExtWithAlpha = { "png", "webp", "gif" };
+        private static string[] _imgExtWithAlpha = { "png", "webp", "gif", "apng" };
 
         private static List<Dere> _dereToRandomize = new List<Dere>
         {
@@ -1139,7 +1139,7 @@ namespace Sanakan.Services.PocketWaifu
             try
             {
                 var fs = await trashCh.SendFileAsync(uri);
-                var im = fs.Attachments.FirstOrDefault();
+                url = fs.Attachments.First().Url;
             }
             catch (Exception ex)
             {

@@ -66,6 +66,7 @@ namespace Sanakan.Extensions
             var encoder = extension switch
             {
                 "webp" => _webpEncoder,
+                "apng" => _pngEncoder,
                 "png" => _pngEncoder,
                 "gif" => _gifEncoder,
                 _ => _jpgEncoder
