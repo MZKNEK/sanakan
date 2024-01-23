@@ -327,10 +327,15 @@ namespace Sanakan.Modules
             }
         }
 
-        [Command("czas", RunMode = RunMode.Async)]
+        [Command("time", RunMode = RunMode.Async)]
         [Summary("wyświetla czas serwera")]
         [Remarks("")]
-        public async Task ShowTimeAsync() => await ReplyAsync("", embed: $"{_time.Now()}".ToEmbedMessage(EMType.Info).Build());
+        public async Task ShowTimeAsync() => await ReplyAsync("", embed: $"{DateTime.Now}".ToEmbedMessage(EMType.Info).Build());
+
+        [Command("btime", RunMode = RunMode.Async)]
+        [Summary("wyświetla czas bota")]
+        [Remarks("")]
+        public async Task ShowBotTimeAsync() => await ReplyAsync("", embed: $"{_time.Now()}".ToEmbedMessage(EMType.Info).Build());
 
         [Command("rozdajm", RunMode = RunMode.Async)]
         [Summary("rozdaje karty kilka razy")]
