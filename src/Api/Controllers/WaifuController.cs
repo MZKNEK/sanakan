@@ -930,7 +930,7 @@ namespace Sanakan.Api.Controllers
 
             if (packs.Count < 1)
             {
-                await "Data is Invalid".ToResponse(500).ExecuteResultAsync(context);;
+                await "Data is Invalid".ToResponse(500).ExecuteResultAsync(context);
                 return null;
             }
 

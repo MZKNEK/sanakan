@@ -1825,6 +1825,11 @@ namespace Sanakan.Services.PocketWaifu
             Dictionary<string, int> items = new Dictionary<string, int>();
 
             var duration = GetRealTimeOnExpeditionInMinutes(card, user.GameDeck.Karma);
+            if (duration.Item1 < 0 || duration.Item2 < 0)
+            {
+                return "Coś poszło nie tak, wyprawa nie została zakończona.";
+            }
+
             var baseExp = GetBaseExpPerMinuteFromExpedition(card.Expedition, card.Rarity);
             var baseItemsCnt = GetBaseItemsPerMinuteFromExpedition(card.Expedition, card.Rarity);
             var multiplier = (duration.Item2 < 60) ? ((duration.Item2 < 30) ? 5d : 3d) : 1d;
