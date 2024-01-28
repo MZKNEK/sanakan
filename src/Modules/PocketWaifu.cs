@@ -2620,6 +2620,18 @@ namespace Sanakan.Modules
                     return;
                 }
 
+                if (duser1.IsBlacklisted || duser2.IsBlacklisted)
+                {
+                    await ReplyAsync("", embed: "Jeden z graczy znajduje się na czarnej liście!".ToEmbedMessage(EMType.Error).Build());
+                    return;
+                }
+
+                if (duser1.GameDeck.MaxNumberOfCards <= duser1.GameDeck.Cards.Count || duser2.GameDeck.MaxNumberOfCards <= duser2.GameDeck.Cards.Count)
+                {
+                    await ReplyAsync("", embed: "Jeden z graczy nie posiada już miejsca na karty!".ToEmbedMessage(EMType.Error).Build());
+                    return;
+                }
+
                 session.P1 = new PlayerInfo
                 {
                     Tag = tag,
