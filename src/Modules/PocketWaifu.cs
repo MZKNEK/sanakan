@@ -716,7 +716,7 @@ namespace Sanakan.Modules
 
                 try
                 {
-                    await card.Update(Context.User, _shclient);
+                    await card.Update(Context.User, _shclient, defaultImage);
 
                     var wCount = await db.GameDecks.Include(x => x.Wishes).AsNoTracking().Where(x => !x.WishlistIsPrivate && x.Wishes.Any(c => c.Type == WishlistObjectType.Character && c.ObjectId == card.Character)).CountAsync();
                     await db.WishlistCountData.CreateOrChangeWishlistCountByAsync(card.Character, card.Name, wCount, true);
