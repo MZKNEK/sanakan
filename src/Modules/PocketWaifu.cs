@@ -1569,7 +1569,7 @@ namespace Sanakan.Modules
         [Alias("wadd", "zdodaj")]
         [Summary("dodaje kartę/tytuł/postać do listy życzeń")]
         [Remarks("karta 4212"), RequireWaifuCommandChannel]
-        public async Task AddToWishlistAsync([Summary("typ (p - postać, t - tytuł, c - karta)")] WishlistObjectType type, [Summary("ID/WID")] ulong id)
+        public async Task AddToWishlistAsync([Summary("typ (p - postać, t - tytuł)")] WishlistObjectType type, [Summary("ID/WID")] ulong id)
         {
             using (var db = new Database.DatabaseContext(Config))
             {
@@ -1590,25 +1590,8 @@ namespace Sanakan.Modules
                 switch (type)
                 {
                     case WishlistObjectType.Card:
-                        var card = db.Cards.FirstOrDefault(x => x.Id == id);
-                        if (card == null)
-                        {
-                            await ReplyAsync("", embed: "Taka karta nie istnieje!".ToEmbedMessage(EMType.Error).Build());
-                            return;
-                        }
-                        if (card.GameDeckId == bUser.Id)
-                        {
-                            await ReplyAsync("", embed: "Już posiadasz taką kartę!".ToEmbedMessage(EMType.Error).Build());
-                            return;
-                        }
-                        response = card.GetString(false, false, true);
-                        obj.ObjectName = $"{card.Id} - {card.Name}";
-                        if (!bUser.GameDeck.WishlistIsPrivate)
-                        {
-                            await db.UserActivities.AddAsync(new Services.UserActivityBuilder(_time)
-                               .WithUser(bUser, Context.User).WithCard(card).WithType(Database.Models.ActivityType.AddedToWishlistCard).Build());
-                        }
-                        break;
+                        await ReplyAsync("", embed: $"{Context.User.Mention} dodawanie kart do listy życzeń nie jest już wspierane!".ToEmbedMessage(EMType.Error).Build());
+                        return;
 
                     case WishlistObjectType.Title:
                         var res1 = await _shclient.Title.GetInfoAsync(id);
@@ -1758,14 +1741,14 @@ namespace Sanakan.Modules
         {
             using (var db = new Database.DatabaseContext(Config))
             {
-                var thisCards = db.Cards.Include(x => x.TagList).FirstOrDefault(x => x.Id == wid);
+                var thisCards = db.Cards.AsNoTracking().Include(x => x.TagList).FirstOrDefault(x => x.Id == wid);
                 if (thisCards == null)
                 {
                     await ReplyAsync("", embed: $"Nie odnaleziono karty.".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
-                var wishlists = db.GameDecks.Include(x => x.Wishes).Include(x => x.User).AsNoTracking().Where(x => !x.WishlistIsPrivate && (x.Wishes.Any(c => c.Type == WishlistObjectType.Card && c.ObjectId == thisCards.Id) || x.Wishes.Any(c => c.Type == WishlistObjectType.Character && c.ObjectId == thisCards.Character))).ToList();
+                var wishlists = await db.GameDecks.AsQueryable().AsNoTracking().Where(x => !x.WishlistIsPrivate).Include(x => x.Wishes).Include(x => x.User).Where(x => x.Wishes.Any(c => c.Type == WishlistObjectType.Character && c.ObjectId == thisCards.Character)).ToListAsync();
                 if (wishlists.Count < 1)
                 {
                     await ReplyAsync("", embed: $"Nikt nie chce tej karty.".ToEmbedMessage(EMType.Error).Build());
