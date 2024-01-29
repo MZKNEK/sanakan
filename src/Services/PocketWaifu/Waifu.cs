@@ -1449,13 +1449,13 @@ namespace Sanakan.Services.PocketWaifu
             if (!File.Exists(imageLocation) || force)
             {
                 if (card.Id != 0)
-                    imageUrl = await GenerateAndSaveCardAsync(card);
+                    imageUrl = await GenerateAndSaveCardAsync(card, CardImageType.Profile);
             }
             else
             {
                 imageUrl = imageLocation;
                 if ((_time.Now() - File.GetCreationTime(imageLocation)).TotalHours > 4 && !card.IsAnimatedImage)
-                    imageUrl = await GenerateAndSaveCardAsync(card);
+                    imageUrl = await GenerateAndSaveCardAsync(card, CardImageType.Profile);
             }
 
             return defaultStr ? (imageUrl ?? imageLocation) : imageUrl;
