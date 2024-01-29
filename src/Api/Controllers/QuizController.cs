@@ -54,7 +54,7 @@ namespace Sanakan.Api.Controllers
         /// <param name="question">pytanie</param>
         /// <response code="500">Internal Server Error</response>
         [HttpPost("question")]
-        public async Task AddQuestionAsync([FromBody]Database.Models.Question question)
+        public async Task<ActionResult> AddQuestionAsync([FromBody]Database.Models.Question question)
         {
             using (var db = new Database.DatabaseContext(_config))
             {
@@ -63,7 +63,7 @@ namespace Sanakan.Api.Controllers
 
                 QueryCacheManager.ExpireTag(new string[] { $"quiz" });
             }
-            await "Question added!".ToResponse(200).ExecuteResultAsync(ControllerContext);
+            return "Question added!".ToResponse(200);
         }
 
         /// <summary>
@@ -73,7 +73,7 @@ namespace Sanakan.Api.Controllers
         /// <response code="404">Question not found</response>
         /// <response code="500">Internal Server Error</response>
         [HttpDelete("question/{id}")]
-        public async Task RemoveQuestionAsync(ulong id)
+        public async Task<ActionResult> RemoveQuestionAsync(ulong id)
         {
             using (var db = new Database.DatabaseContext(_config))
             {
@@ -85,11 +85,10 @@ namespace Sanakan.Api.Controllers
 
                     QueryCacheManager.ExpireTag(new string[] { $"quiz" });
 
-                    await "Question removed!".ToResponse(200).ExecuteResultAsync(ControllerContext);
-                    return;
+                    return "Question removed!".ToResponse(200);
                 }
             }
-            await "Question not found!".ToResponse(404).ExecuteResultAsync(ControllerContext);
+            return "Question not found!".ToResponse(404);
         }
     }
 }

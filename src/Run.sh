@@ -1,7 +1,7 @@
 #!/bin/bash
 rval=1
 while ((rval == 1)); do
-    dotnet ./bin/Release/netcoreapp3.1/Sanakan.dll
+    dotnet ./bin/Release/net8/Sanakan.dll
     rval=$?
     echo "$rval"
     if test -f "./updateNow";

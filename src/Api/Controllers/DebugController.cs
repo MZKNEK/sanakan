@@ -30,6 +30,7 @@ namespace Sanakan.Api.Controllers
         {
             await _client.LogoutAsync();
             _logger.Log("Kill app from web.");
+            Ok().ExecuteResult(ControllerContext);
             await Task.Delay(1500);
             Environment.Exit(0);
         }
@@ -43,6 +44,7 @@ namespace Sanakan.Api.Controllers
             await _client.LogoutAsync();
             System.IO.File.Create("./updateNow");
             _logger.Log("Update app from web.");
+            Ok().ExecuteResult(ControllerContext);
             await Task.Delay(1500);
             Environment.Exit(200);
         }

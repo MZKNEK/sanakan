@@ -72,12 +72,14 @@ namespace Sanakan.Database
             };
             optionsBuilder.UseMySql(_config.Get().ConnectionString,
                 new MySqlServerVersion(new System.Version(5, 7)),
-                mySqlOptions => mySqlOptions.CharSetBehavior(CharSetBehavior.NeverAppend).EnableRetryOnFailure());
+                mySqlOptions => mySqlOptions.EnableRetryOnFailure());
         }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
+
+            modelBuilder.HasCharSet("utf8mb4", DelegationModes.ApplyToDatabases);
 
             // User
             modelBuilder.Entity<Question>(entity =>

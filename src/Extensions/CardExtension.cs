@@ -744,7 +744,7 @@ namespace Sanakan.Extensions
 
         public static string GetImage(this Card card) => card.CustomImage ?? card.Image;
 
-        public static async Task Update(this Card card, IUser user, Shinden.ShindenClient client)
+        public static async Task Update(this Card card, IUser user, Shinden.ShindenClient client, bool updateTitle = false)
         {
             var response = await client.GetCharacterInfoAsync(card.Character);
             if (!response.IsSuccessStatusCode())
@@ -762,7 +762,10 @@ namespace Sanakan.Extensions
             card.Unique = false;
             card.Name = response.Body.ToString();
             card.Image = response.Body.HasImage ? response.Body.PictureUrl : null;
-            card.Title = response.Body?.Relations?.OrderBy(x => x.Id).FirstOrDefault()?.Title ?? "????";
+            if (updateTitle)
+            {
+                card.Title = response.Body?.Relations?.OrderBy(x => x.Id).FirstOrDefault()?.Title ?? "????";
+            }
         }
 
         public static bool TryParse(this StarStyle star, string s, out StarStyle type)

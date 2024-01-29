@@ -716,7 +716,7 @@ namespace Sanakan.Modules
 
                 try
                 {
-                    await card.Update(Context.User, _shclient);
+                    await card.Update(Context.User, _shclient, defaultImage);
 
                     var wCount = await db.GameDecks.Include(x => x.Wishes).AsNoTracking().Where(x => !x.WishlistIsPrivate && x.Wishes.Any(c => c.Type == WishlistObjectType.Character && c.ObjectId == card.Character)).CountAsync();
                     await db.WishlistCountData.CreateOrChangeWishlistCountByAsync(card.Character, card.Name, wCount, true);
@@ -2617,6 +2617,18 @@ namespace Sanakan.Modules
                 if (duser1 == null || duser2 == null)
                 {
                     await ReplyAsync("", embed: "Jeden z graczy nie posiada profilu!".ToEmbedMessage(EMType.Error).Build());
+                    return;
+                }
+
+                if (duser1.IsBlacklisted || duser2.IsBlacklisted)
+                {
+                    await ReplyAsync("", embed: "Jeden z graczy znajduje się na czarnej liście!".ToEmbedMessage(EMType.Error).Build());
+                    return;
+                }
+
+                if (duser1.GameDeck.MaxNumberOfCards <= duser1.GameDeck.Cards.Count || duser2.GameDeck.MaxNumberOfCards <= duser2.GameDeck.Cards.Count)
+                {
+                    await ReplyAsync("", embed: "Jeden z graczy nie posiada już miejsca na karty!".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 

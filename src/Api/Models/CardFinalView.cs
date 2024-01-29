@@ -150,6 +150,10 @@ namespace Sanakan.Api.Models
         /// </summary>
         public DateTime CreatedAt { get; set; }
         /// <summary>
+        /// Data ustawienia skalpela
+        /// </summary>
+        public DateTime ScalpelAt { get; set; }
+        /// <summary>
         /// Tagi znajdujące się na karcie
         /// </summary>
         public List<string> Tags { get; set; }
@@ -209,6 +213,7 @@ namespace Sanakan.Api.Models
                 CreatedAt = card.CreationDate,
                 CardPower = card.CardPower,
                 DiscordId = card.GameDeckId,
+                ScalpelAt = card.CustomImageDate,
                 WhoWantsCount = card.WhoWantsCount,
                 Value = card.GetThreeStateMarketValue(),
                 ExpCntForNextLevel = card.ExpToUpgrade(),

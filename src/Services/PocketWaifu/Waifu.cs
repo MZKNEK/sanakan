@@ -66,7 +66,7 @@ namespace Sanakan.Services.PocketWaifu
             { "mega",       Quality.Omega   },
         };
 
-        private static string[] _imgExtWithAlpha = { "png", "webp", "gif" };
+        private static string[] _imgExtWithAlpha = { "png", "webp", "gif", "apng" };
 
         private static List<Dere> _dereToRandomize = new List<Dere>
         {
@@ -1139,7 +1139,7 @@ namespace Sanakan.Services.PocketWaifu
             try
             {
                 var fs = await trashCh.SendFileAsync(uri);
-                var im = fs.Attachments.FirstOrDefault();
+                url = fs.Attachments.First().Url;
             }
             catch (Exception ex)
             {
@@ -1825,6 +1825,11 @@ namespace Sanakan.Services.PocketWaifu
             Dictionary<string, int> items = new Dictionary<string, int>();
 
             var duration = GetRealTimeOnExpeditionInMinutes(card, user.GameDeck.Karma);
+            if (duration.Item1 < 0 || duration.Item2 < 0)
+            {
+                return "Coś poszło nie tak, wyprawa nie została zakończona.";
+            }
+
             var baseExp = GetBaseExpPerMinuteFromExpedition(card.Expedition, card.Rarity);
             var baseItemsCnt = GetBaseItemsPerMinuteFromExpedition(card.Expedition, card.Rarity);
             var multiplier = (duration.Item2 < 60) ? ((duration.Item2 < 30) ? 5d : 3d) : 1d;

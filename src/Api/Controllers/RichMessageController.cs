@@ -37,7 +37,7 @@ namespace Sanakan.Api.Controllers
         /// <response code="404">Message not found</response>
         /// <response code="500">Internal Server Error</response>
         [HttpDelete("{id}")]
-        public async Task DeleteRichMessageAsync(ulong id)
+        public ActionResult DeleteRichMessage(ulong id)
         {
             var config = _config.Get();
 
@@ -68,7 +68,7 @@ namespace Sanakan.Api.Controllers
                 }
             });
 
-            await "Message deleted!".ToResponse(200).ExecuteResultAsync(ControllerContext);
+            return "Message deleted!".ToResponse(200);
         }
 
         /// <summary>
@@ -83,7 +83,7 @@ namespace Sanakan.Api.Controllers
         /// <response code="404">Message not found</response>
         /// <response code="500">Internal Server Error</response>
         [HttpPut("{id}")]
-        public async Task ModifyeRichMessageAsync(ulong id, [FromBody, Required]Models.RichMessage message)
+        public ActionResult ModifyeRichMessage(ulong id, [FromBody, Required]Models.RichMessage message)
         {
             var config = _config.Get();
 
@@ -114,7 +114,7 @@ namespace Sanakan.Api.Controllers
                 }
             });
 
-            await "Message modified!".ToResponse(200).ExecuteResultAsync(ControllerContext);
+            return "Message modified!".ToResponse(200);
         }
 
         /// <summary>
@@ -128,7 +128,7 @@ namespace Sanakan.Api.Controllers
         /// <param name="mention">czy oznanczyć zainteresowanych</param>
         /// <response code="500">Internal Server Error</response>
         [HttpPost]
-        public async Task PostRichMessageAsync([FromBody, Required]Models.RichMessage message, [FromQuery]bool? mention)
+        public async Task<ActionResult> PostRichMessageAsync([FromBody, Required]Models.RichMessage message, [FromQuery]bool? mention)
         {
             var config = _config.Get();
             if (!mention.HasValue) mention = false;
@@ -187,17 +187,15 @@ namespace Sanakan.Api.Controllers
 
             if (msgList.Count == 0)
             {
-                await "Message not send!".ToResponse(400).ExecuteResultAsync(ControllerContext);
-                return;
+                return "Message not send!".ToResponse(400);
             }
 
             if (msgList.Count > 1)
             {
-                await "Message sended!".ToResponseRich(msgList).ExecuteResultAsync(ControllerContext);
-                return;
+                return "Message sended!".ToResponseRich(msgList);
             }
 
-            await "Message sended!".ToResponseRich(msgList.First()).ExecuteResultAsync(ControllerContext);
+            return "Message sended!".ToResponseRich(msgList.First());
         }
 
         /// <summary>
