@@ -688,6 +688,45 @@ namespace Sanakan.Modules
             }
         }
 
+        [Command("napraw tytuł")]
+        [Alias("fix title", "napraw tytul")]
+        [Summary("zmienia tytuł na karcie")]
+        [Remarks("5412 Słabe ssało"), RequireWaifuCommandChannel]
+        public async Task UpdateCardTitleAsync([Summary("WID")] ulong id, [Summary("tytuł lub jego część")][Remainder] string title)
+        {
+            using (var db = new Database.DatabaseContext(Config))
+            {
+                var card = db.Cards.Where(x => x.GameDeckId == Context.User.Id).FirstOrDefault(x => x.Id == id);
+                if (card == null)
+                {
+                    await ReplyAsync("", embed: $"{Context.User.Mention} nie posiadasz takiej karty.".ToEmbedMessage(EMType.Error).Build());
+                    return;
+                }
+
+                var response = await _shclient.GetCharacterInfoAsync(card.Character);
+                if (!response.IsSuccessStatusCode() || response?.Body?.Relations?.Count == 0)
+                {
+                    card.Unique = true;
+                    card.Title = title;
+                }
+                else
+                {
+                    var nTitle = response.Body.Relations.FirstOrDefault(x => x.Title.Contains(title))?.Title ?? "";
+                    if (string.IsNullOrEmpty(nTitle))
+                    {
+                        await ReplyAsync("", embed: $"{Context.User.Mention} nie odnaleziono takiego tytułu w powiązaniach postaci.".ToEmbedMessage(EMType.Error).Build());
+                        return;
+                    }
+                    title = nTitle;
+                }
+
+                card.Title = title;
+                await db.SaveChangesAsync();
+
+                await ReplyAsync("", embed: $"{Context.User.Mention} ustawiono tytuł na: {title}.".ToEmbedMessage(EMType.Success).Build());
+            }
+        }
+
         [Command("aktualizuj")]
         [Alias("update")]
         [Summary("pobiera dane na tamat karty z shindena")]
