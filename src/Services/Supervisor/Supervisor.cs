@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using AsyncKeyedLock;
 using Discord;
 using Discord.WebSocket;
 using Sanakan.Config;
@@ -24,8 +25,8 @@ namespace Sanakan.Services.Supervisor
         private const int COMMAND_MOD = 2;
         private const int UNCONNECTED_MOD = -2;
 
-        private SemaphoreSlim _semaphore = new SemaphoreSlim(1, 1);
-        private SemaphoreSlim _semaphoreJoin = new SemaphoreSlim(1, 1);
+        private AsyncNonKeyedLocker _semaphore = new(1);
+        private AsyncNonKeyedLocker _semaphoreJoin = new(1);
         private Dictionary<ulong, Dictionary<ulong, SupervisorEntity>> _guilds;
         private Dictionary<ulong, Dictionary<string, SupervisorJoinEntity>> _guildsJoin;
 
@@ -49,15 +50,9 @@ namespace Sanakan.Services.Supervisor
 
             _timer = new Timer(async _ =>
             {
-                await _semaphore.WaitAsync();
-
-                try
+                using (_semaphore.LockAsync())
                 {
                     AutoValidate();
-                }
-                finally
-                {
-                    _semaphore.Release();
                 }
             },
             null,
@@ -86,15 +81,9 @@ namespace Sanakan.Services.Supervisor
 
             _ = Task.Run(async () =>
             {
-                await _semaphore.WaitAsync();
-
-                try
+                using (_semaphore.LockAsync())
                 {
                     await Analize(user, msg);
-                }
-                finally
-                {
-                    _semaphore.Release();
                 }
             });
 
@@ -294,15 +283,9 @@ namespace Sanakan.Services.Supervisor
 
             _ = Task.Run(async () =>
             {
-                await _semaphoreJoin.WaitAsync();
-
-                try
+                using (_semaphoreJoin.LockAsync())
                 {
                     await AnalizeJoin(usr);
-                }
-                finally
-                {
-                    _semaphoreJoin.Release();
                 }
             });
 

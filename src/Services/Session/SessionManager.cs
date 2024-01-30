@@ -1,5 +1,6 @@
 ﻿#pragma warning disable 1591
 
+using AsyncKeyedLock;
 using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
@@ -21,7 +22,7 @@ namespace Sanakan.Services.Session
         private ILogger _logger;
         private Timer _timer;
 
-        private SemaphoreSlim _semaphore = new SemaphoreSlim(1, 1);
+        private AsyncNonKeyedLocker _semaphore = new(1);
         private List<ISession> _sessions = new List<ISession>();
 
         public SessionManager(DiscordSocketClient client, IExecutor executor, ILogger logger)
@@ -53,19 +54,13 @@ namespace Sanakan.Services.Session
             if (SessionExist(session))
                 return false;
 
-            await _semaphore.WaitAsync();
-
-            try
+            using (_semaphore.LockAsync())
             {
                 if (_sessions.Count < 1)
                     ToggleAutoValidation(true);
 
                 _sessions.Add(session);
                 session.MarkAsAdded();
-            }
-            finally
-            {
-                _semaphore.Release();
             }
 
             return true;
@@ -88,18 +83,12 @@ namespace Sanakan.Services.Session
 
 		private async Task DisposeAsync(ISession session)
         {
-            await _semaphore.WaitAsync();
-
-            try
+            using (_semaphore.LockAsync())
             {
                 if (_sessions.Contains(session))
                     _sessions.Remove(session);
 
                 await session.DisposeAsync().ConfigureAwait(false);
-            }
-            finally
-            {
-                _semaphore.Release();
             }
         }
 
