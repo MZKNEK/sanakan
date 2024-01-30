@@ -327,6 +327,11 @@ namespace Sanakan.Modules
             }
         }
 
+        [Command("cotakdługo", RunMode = RunMode.Async)]
+        [Summary("wyświetla nazwę obecnego polecenia")]
+        [Remarks("")]
+        public async Task ShowTaskNameAsync() => await ReplyAsync("", embed: $"{_executor.WhatIsRunning()}".ToEmbedMessage(EMType.Info).Build());
+
         [Command("time", RunMode = RunMode.Async)]
         [Summary("wyświetla czas serwera")]
         [Remarks("")]

@@ -599,7 +599,6 @@ namespace Sanakan.Api.Controllers
                     }
 
                     return File(await System.IO.File.ReadAllBytesAsync(cardImage), $"image/{cardImage.Split('.').Last()}");
-                    // await ControllerContext.HttpContext.Response.SendFileAsync(cardImage);
                 }
             }
             else

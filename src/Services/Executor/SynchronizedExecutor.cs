@@ -21,11 +21,13 @@ namespace Sanakan.Services.Executor
         private BlockingCollection<IExecutable> _hiQueue = new BlockingCollection<IExecutable>(QueueLength);
 
         private Timer _timer;
+        private string _currentTaskName;
         private CancellationTokenSource _cts { get; set; }
 
         public SynchronizedExecutor(ILogger logger)
         {
             _logger = logger;
+            _currentTaskName = "";
             _cts = new CancellationTokenSource();
 
             _timer = new Timer(async _ =>
@@ -40,6 +42,11 @@ namespace Sanakan.Services.Executor
         public void Initialize(IServiceProvider provider)
         {
             _provider = provider;
+        }
+
+        public string WhatIsRunning()
+        {
+            return _currentTaskName;
         }
 
         public Task<bool> TryAdd(IExecutable task, TimeSpan timeout)
@@ -102,6 +109,7 @@ namespace Sanakan.Services.Executor
             if (SelectQueue().TryTake(out var cmd, 100))
             {
                 var taskName = cmd.GetName();
+                _currentTaskName = taskName;
                 try
                 {
                     _logger.Log($"Executor: running {taskName}");
@@ -112,6 +120,10 @@ namespace Sanakan.Services.Executor
                 catch (Exception ex)
                 {
                     _logger.Log($"Executor: {taskName} - {ex}");
+                }
+                finally
+                {
+                    _currentTaskName = "";
                 }
             }
         }
