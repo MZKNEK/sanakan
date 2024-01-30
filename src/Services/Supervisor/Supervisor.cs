@@ -50,7 +50,7 @@ namespace Sanakan.Services.Supervisor
 
             _timer = new Timer(async _ =>
             {
-                using (_semaphore.LockAsync())
+                using (await _semaphore.LockAsync())
                 {
                     AutoValidate();
                 }
@@ -81,7 +81,7 @@ namespace Sanakan.Services.Supervisor
 
             _ = Task.Run(async () =>
             {
-                using (_semaphore.LockAsync())
+                using (await _semaphore.LockAsync())
                 {
                     await Analize(user, msg);
                 }
@@ -283,7 +283,7 @@ namespace Sanakan.Services.Supervisor
 
             _ = Task.Run(async () =>
             {
-                using (_semaphoreJoin.LockAsync())
+                using (await _semaphoreJoin.LockAsync())
                 {
                     await AnalizeJoin(usr);
                 }

@@ -54,7 +54,7 @@ namespace Sanakan.Services.Session
             if (SessionExist(session))
                 return false;
 
-            using (_semaphore.LockAsync())
+            using (await _semaphore.LockAsync())
             {
                 if (_sessions.Count < 1)
                     ToggleAutoValidation(true);
@@ -83,7 +83,7 @@ namespace Sanakan.Services.Session
 
 		private async Task DisposeAsync(ISession session)
         {
-            using (_semaphore.LockAsync())
+            using (await _semaphore.LockAsync())
             {
                 if (_sessions.Contains(session))
                     _sessions.Remove(session);
