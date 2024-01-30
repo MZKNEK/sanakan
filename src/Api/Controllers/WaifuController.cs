@@ -5,8 +5,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
+using Discord.WebSocket;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
@@ -32,12 +32,14 @@ namespace Sanakan.Api.Controllers
         private readonly IExecutor _executor;
         private readonly ShindenClient _shClient;
         private readonly IMemoryCache _nameCache;
+        private readonly DiscordSocketClient _client;
 
-        public WaifuController(ShindenClient shClient, Waifu waifu, IExecutor executor, IConfig config, ISystemTime time, IMemoryCache cache)
+        public WaifuController(ShindenClient shClient, Waifu waifu, IExecutor executor, IConfig config, ISystemTime time, IMemoryCache cache, DiscordSocketClient client)
         {
             _time = time;
             _waifu = waifu;
             _config = config;
+            _client = client;
             _nameCache = cache;
             _executor = executor;
             _shClient = shClient;
@@ -242,6 +244,11 @@ namespace Sanakan.Api.Controllers
                     if (_nameCache.TryGetValue(card.GameDeck.User.Shinden, out string username))
                     {
                         return card.ToViewUser(username);
+                    }
+
+                    if (card.GameDeck.User.Shinden == 1)
+                    {
+                        return card.ToViewUser(_client.CurrentUser.GetUserNickInGuild());
                     }
 
                     var res = await _shClient.User.GetAsync(card.GameDeck.User.Shinden);
