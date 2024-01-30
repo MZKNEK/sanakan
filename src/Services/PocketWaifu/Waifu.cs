@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using AsyncKeyedLock;
 using Discord;
 using Discord.WebSocket;
 using Microsoft.EntityFrameworkCore;
@@ -79,6 +80,13 @@ namespace Sanakan.Services.PocketWaifu
             Dere.Mayadere,
             Dere.Bodere
         };
+
+        private static readonly AsyncKeyedLocker<ulong> _cardGenLocker = new(x =>
+        {
+            x.PoolSize = 100;
+            x.PoolInitialFill = 5;
+            x.MaxCount = 1;
+        });
 
         private static double[,] _dereDmgRelation = new double[DERE_TAB_SIZE, DERE_TAB_SIZE]
         {
@@ -1353,43 +1361,49 @@ namespace Sanakan.Services.PocketWaifu
             return cardsFromPack;
         }
 
-        public async Task<string> GenerateAndSaveCardAsync(Card card, CardImageType type = CardImageType.Normal)
+        public async Task<string> GenerateAndSaveCardAsync(Card card, CardImageType type = CardImageType.Normal, bool fromApi = false)
         {
             var ext = card.IsAnimatedImage ? "gif" : "webp";
             string imageLocation = $"{Dir.Cards}/{card.Id}.{ext}";
             string sImageLocation = $"{Dir.CardsMiniatures}/{card.Id}.{ext}";
             string pImageLocation = $"{Dir.CardsInProfiles}/{card.Id}.{ext}";
 
-            try
+            var toReturn = type switch
             {
-                using (var image = await _img.GetWaifuCardAsync(card))
+                CardImageType.Small => sImageLocation,
+                CardImageType.Profile => pImageLocation,
+                CardImageType.Normal => imageLocation,
+                _ => "",
+            };
+
+            if (fromApi && _cardGenLocker.IsInUse(card.Id))
+                return toReturn;
+
+            using (await _cardGenLocker.LockAsync(card.Id))
+            {
+                if (File.Exists(toReturn))
+                    return toReturn;
+
+                try
                 {
-                    image.SaveToPath(imageLocation);
-                    image.SaveToPath(sImageLocation, 133);
-                }
+                    using (var image = await _img.GetWaifuCardAsync(card))
+                    {
+                        image.SaveToPath(imageLocation);
+                        image.SaveToPath(sImageLocation, 133);
+                    }
 
-                using (var cardImage = await _img.GetWaifuInProfileCardAsync(card))
+                    using (var cardImage = await _img.GetWaifuInProfileCardAsync(card))
+                    {
+                        cardImage.SaveToPath(pImageLocation);
+                    }
+                }
+                catch (Exception ex)
                 {
-                    cardImage.SaveToPath(pImageLocation);
+                    _logger.Log($"Error while generating card {card.Id}: {ex.Message}");
                 }
             }
-            catch (Exception ex)
-            {
-                _logger.Log($"Error while generating card {card.Id}: {ex.Message}");
-            }
 
-            switch (type)
-            {
-                case CardImageType.Small:
-                    return sImageLocation;
-
-                case CardImageType.Profile:
-                    return pImageLocation;
-
-                default:
-                case CardImageType.Normal:
-                    return imageLocation;
-            }
+            return toReturn;
         }
 
         public void DeleteCardImageIfExist(Card card)
