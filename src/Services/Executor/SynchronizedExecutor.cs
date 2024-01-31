@@ -5,6 +5,7 @@ using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
+using AsyncKeyedLock;
 using Shinden.Logger;
 
 namespace Sanakan.Services.Executor
@@ -16,7 +17,7 @@ namespace Sanakan.Services.Executor
         private IServiceProvider _provider;
         private ILogger _logger;
 
-        private SemaphoreSlim _semaphore = new SemaphoreSlim(1, 1);
+        private AsyncNonKeyedLocker _semaphore = new(1);
         private BlockingCollection<IExecutable> _queue = new BlockingCollection<IExecutable>(QueueLength);
         private BlockingCollection<IExecutable> _hiQueue = new BlockingCollection<IExecutable>(QueueLength);
 
@@ -64,26 +65,22 @@ namespace Sanakan.Services.Executor
             if (_queue.Count < 1 && _hiQueue.Count < 1)
                 return;
 
-            if (!await _semaphore.WaitAsync(0))
-                return;
-
-            try
+            using (var releaser = await _semaphore.LockAsync(0))
             {
-                _ = Task.Run(async () => await ProcessCommandsAsync()).ContinueWith(_ =>
+                if (releaser.EnteredSemaphore)
                 {
-                    _cts.Cancel();
-                    _cts = new CancellationTokenSource();
-                }).ConfigureAwait(false);
+                    _ = Task.Run(async () => await ProcessCommandsAsync()).ContinueWith(_ =>
+                    {
+                        _cts.Cancel();
+                        _cts = new CancellationTokenSource();
+                    }).ConfigureAwait(false);
 
-                try
-                {
-                    await Task.Delay(TimeSpan.FromSeconds(90), _cts.Token);
+                    try
+                    {
+                        await Task.Delay(TimeSpan.FromSeconds(90), _cts.Token);
+                    }
+                    catch (Exception) { }
                 }
-                catch (Exception) { }
-            }
-            finally
-            {
-                _semaphore.Release();
             }
         }
 
