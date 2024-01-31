@@ -150,6 +150,10 @@ namespace Sanakan.Api.Models
         /// </summary>
         public DateTime CreatedAt { get; set; }
         /// <summary>
+        /// Data ustawienia skalpela
+        /// </summary>
+        public DateTime ScalpelAt { get; set; }
+        /// <summary>
         /// Tagi znajdujące się na karcie
         /// </summary>
         public List<string> Tags { get; set; }
@@ -197,6 +201,7 @@ namespace Sanakan.Api.Models
                 RestartCnt = card.RestartCnt,
                 Rarity = card.Rarity,
                 Dere = card.Dere,
+                ScalpelAt = card.CustomImageDate,
                 Defence = card.GetDefenceWithBonus(),
                 Attack = card.GetAttackWithBonus(),
                 BaseHealth = card.Health,

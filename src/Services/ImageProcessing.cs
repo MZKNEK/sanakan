@@ -811,7 +811,7 @@ namespace Sanakan.Services
             var nickNameColor = color.RawValue.ToString("X6");
             var baseImg = new Image<Rgba32>((int)estimatedLength, 100);
 
-            baseImg.Mutate(x => x.BackgroundColor(GetOrCreateColor("#36393e")));
+            baseImg.Mutate(x => x.BackgroundColor(GetOrCreateColor("#313338")));
             baseImg.Mutate(x => x.DrawText(msgText1, textFont, Color.Gray, new Point(98 + (int)lvlLength.Width, 75)));
             baseImg.Mutate(x => x.DrawText(name, nickNameFont, GetOrCreateColor(nickNameColor), new Point(98, 5)));
             baseImg.Mutate(x => x.DrawText(msgText2, textFont, Color.Gray, new Point(98, 30)));
@@ -879,7 +879,7 @@ namespace Sanakan.Services
             int realHeight = (int)(firstColumnMaxLength.Height + 2) * (inFirstColumn + 1);
 
             var imgBase = new Image<Rgba32>(realWidth, realHeight);
-            imgBase.Mutate(x => x.BackgroundColor(GetOrCreateColor("#36393e")));
+            imgBase.Mutate(x => x.BackgroundColor(GetOrCreateColor("#313338")));
             imgBase.Mutate(x => x.DrawText("Lista:", message, GetOrCreateColor("#000000"), new Point(0, 0)));
 
             for (int i = 0; i < arrayOfColours.Length; i++)

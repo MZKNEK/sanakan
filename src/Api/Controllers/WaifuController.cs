@@ -12,6 +12,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Sanakan.Api.Models;
 using Sanakan.Config;
+using Discord.WebSocket;
 using Sanakan.Database.Models;
 using Sanakan.Extensions;
 using Sanakan.Services.Executor;
@@ -32,11 +33,14 @@ namespace Sanakan.Api.Controllers
         private readonly IExecutor _executor;
         private readonly ShindenClient _shClient;
         private readonly IMemoryCache _nameCache;
+        private readonly DiscordSocketClient _client;
 
-        public WaifuController(ShindenClient shClient, Waifu waifu, IExecutor executor, IConfig config, ISystemTime time, IMemoryCache cache)
+        public WaifuController(ShindenClient shClient, Waifu waifu, IExecutor executor,
+            IConfig config, ISystemTime time, IMemoryCache cache, DiscordSocketClient client)
         {
             _time = time;
             _waifu = waifu;
+            _client = client;
             _config = config;
             _nameCache = cache;
             _executor = executor;
@@ -251,6 +255,11 @@ namespace Sanakan.Api.Controllers
                         return card.ToViewUser(username);
                     }
 
+                    if (card.GameDeck.User.Shinden == 1)
+                    {
+                        return card.ToViewUser(_client.CurrentUser.GetUserNickInGuild());
+                    }
+
                     var res = await _shClient.User.GetAsync(card.GameDeck.User.Shinden);
                     if (res.IsSuccessStatusCode())
                     {
@@ -389,7 +398,8 @@ namespace Sanakan.Api.Controllers
                     BackgroundImageUrl = user.GameDeck.BackgroundImageUrl,
                     ForegroundImageUrl = user.GameDeck.ForegroundImageUrl,
                     Expeditions = user.GameDeck.Cards.Where(x => x.Expedition != CardExpedition.None).ToExpeditionView(user.GameDeck.Karma),
-                    Gallery = user.GameDeck.Cards.Where(x => x.HasTag("galeria")).Take(user.GameDeck.CardsInGallery).OrderBy(x => x.Rarity).ThenByDescending(x => x.Quality).ToView(id)
+                    Gallery = user.GameDeck.Cards.Where(x => x.HasTag("galeria")).Take(user.GameDeck.CardsInGallery)
+                        .OrderBy(x => x.Rarity).ThenByDescending(x => x.Quality).ThenBy(x => !x.IsAnimatedImage).ThenBy(x => x.Character).ToView(id)
                 };
             }
         }
@@ -456,13 +466,9 @@ namespace Sanakan.Api.Controllers
                         if (newData?.CharacterName != null)
                             card.Name = newData.CharacterName;
 
-                        if (newData?.CardSeriesTitle != null)
-                            card.Title = newData.CardSeriesTitle;
-
                         try
                         {
                             _waifu.DeleteCardImageIfExist(card);
-                            await _waifu.GenerateAndSaveCardAsync(card);
                         }
                         catch (Exception) { }
 
@@ -515,7 +521,6 @@ namespace Sanakan.Api.Controllers
                             try
                             {
                                 _waifu.DeleteCardImageIfExist(card);
-                                await _waifu.GenerateAndSaveCardAsync(card);
                             }
                             catch (Exception) { }
 
@@ -601,7 +606,7 @@ namespace Sanakan.Api.Controllers
                     }
 
                     _waifu.DeleteCardImageIfExist(card);
-                    var cardImage = await _waifu.GenerateAndSaveCardAsync(card);
+                    var cardImage = await _waifu.GenerateAndSaveCardAsync(card, CardImageType.Normal, true);
                     if (!System.IO.File.Exists(cardImage))
                     {
                         await "Card not generated!".ToResponse(500).ExecuteResultAsync(ControllerContext);

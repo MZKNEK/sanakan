@@ -13,6 +13,7 @@ using Sanakan.Database.Models;
 using Sanakan.Extensions;
 using Sanakan.Services.PocketWaifu.Fight;
 using Sanakan.Services.Time;
+using AsyncKeyedLock;
 using Shinden;
 using Shinden.Logger;
 using Shinden.Models;
@@ -65,6 +66,13 @@ namespace Sanakan.Services.PocketWaifu
             { "ypsilon",    Quality.Epsilon },
             { "mega",       Quality.Omega   },
         };
+
+        private static readonly AsyncKeyedLocker<ulong> _cardGenLocker = new AsyncKeyedLocker<ulong>(x =>
+        {
+            x.PoolSize = 100;
+            x.PoolInitialFill = 5;
+            x.MaxCount = 1;
+        });
 
         private static string[] _imgExtWithAlpha = { "png", "webp", "gif" };
 
@@ -1135,11 +1143,11 @@ namespace Sanakan.Services.PocketWaifu
         public async Task<string> GetWaifuProfileImageAsync(Card card, ITextChannel trashCh)
         {
             var url = Api.Models.CardFinalView.GetCardProfileInShindenUrl(card);
-            var uri = await GetCardProfileUrlIfExistAsync(card, true);
+            var uri = await GetCardProfileUrlIfExistAsync(card);
             try
             {
                 var fs = await trashCh.SendFileAsync(uri);
-                var im = fs.Attachments.FirstOrDefault();
+                url = fs.Attachments.First().Url;
             }
             catch (Exception ex)
             {
@@ -1353,43 +1361,48 @@ namespace Sanakan.Services.PocketWaifu
             return cardsFromPack;
         }
 
-        public async Task<string> GenerateAndSaveCardAsync(Card card, CardImageType type = CardImageType.Normal)
+        public async Task<string> GenerateAndSaveCardAsync(Card card, CardImageType type = CardImageType.Normal, bool fromApi = false)
         {
             var ext = card.IsAnimatedImage ? "gif" : "webp";
             string imageLocation = $"{Dir.Cards}/{card.Id}.{ext}";
             string sImageLocation = $"{Dir.CardsMiniatures}/{card.Id}.{ext}";
             string pImageLocation = $"{Dir.CardsInProfiles}/{card.Id}.{ext}";
 
-            try
+            var toReturn = type switch
             {
-                using (var image = await _img.GetWaifuCardAsync(card))
+                CardImageType.Small => sImageLocation,
+                CardImageType.Profile => pImageLocation,
+                _ => imageLocation,
+            };
+
+            if (fromApi && _cardGenLocker.IsInUse(card.Id))
+                return toReturn;
+
+            using (await _cardGenLocker.LockAsync(card.Id))
+            {
+                if (File.Exists(toReturn))
+                    return toReturn;
+
+                try
                 {
-                    image.SaveToPath(imageLocation);
-                    image.SaveToPath(sImageLocation, 133);
-                }
+                    using (var image = await _img.GetWaifuCardAsync(card))
+                    {
+                        image.SaveToPath(imageLocation);
+                        image.SaveToPath(sImageLocation, 133);
+                    }
 
-                using (var cardImage = await _img.GetWaifuInProfileCardAsync(card))
+                    using (var cardImage = await _img.GetWaifuInProfileCardAsync(card))
+                    {
+                        cardImage.SaveToPath(pImageLocation);
+                    }
+                }
+                catch (Exception ex)
                 {
-                    cardImage.SaveToPath(pImageLocation);
+                    _logger.Log($"Error while generating card {card.Id}: {ex.Message}");
                 }
             }
-            catch (Exception ex)
-            {
-                _logger.Log($"Error while generating card {card.Id}: {ex.Message}");
-            }
 
-            switch (type)
-            {
-                case CardImageType.Small:
-                    return sImageLocation;
-
-                case CardImageType.Profile:
-                    return pImageLocation;
-
-                default:
-                case CardImageType.Normal:
-                    return imageLocation;
-            }
+            return toReturn;
         }
 
         public void DeleteCardImageIfExist(Card card)
@@ -1418,47 +1431,21 @@ namespace Sanakan.Services.PocketWaifu
             catch (Exception) { }
         }
 
-        private async Task<string> GetCardUrlIfExistAsync(Card card, bool defaultStr = false, bool force = false)
+        private async Task<string> GetCardUrlIfExistAsync(Card card, bool force = false)
         {
-            string imageUrl = null;
-            var ext = card.IsAnimatedImage ? "gif" : "webp";
+            string ext = card.IsAnimatedImage ? "gif" : "webp";
             string imageLocation = $"{Dir.Cards}/{card.Id}.{ext}";
             string sImageLocation = $"{Dir.CardsMiniatures}/{card.Id}.{ext}";
-
-            if (!File.Exists(imageLocation) || !File.Exists(sImageLocation) || force)
-            {
-                if (card.Id != 0)
-                    imageUrl = await GenerateAndSaveCardAsync(card);
-            }
-            else
-            {
-                imageUrl = imageLocation;
-                if ((_time.Now() - File.GetCreationTime(imageLocation)).TotalHours > 4 && !card.IsAnimatedImage)
-                    imageUrl = await GenerateAndSaveCardAsync(card);
-            }
-
-            return defaultStr ? (imageUrl ?? imageLocation) : imageUrl;
+            bool generate = (!File.Exists(imageLocation) || !File.Exists(sImageLocation) || force) && card.Id != 0;
+            return generate ? await GenerateAndSaveCardAsync(card) : imageLocation;
         }
 
-        private async Task<string> GetCardProfileUrlIfExistAsync(Card card, bool defaultStr = false, bool force = false)
+        private async Task<string> GetCardProfileUrlIfExistAsync(Card card, bool force = false)
         {
-            string imageUrl = null;
-            var ext = card.IsAnimatedImage ? "gif" : "webp";
+            string ext = card.IsAnimatedImage ? "gif" : "webp";
             string imageLocation = $"{Dir.CardsInProfiles}/{card.Id}.{ext}";
-
-            if (!File.Exists(imageLocation) || force)
-            {
-                if (card.Id != 0)
-                    imageUrl = await GenerateAndSaveCardAsync(card);
-            }
-            else
-            {
-                imageUrl = imageLocation;
-                if ((_time.Now() - File.GetCreationTime(imageLocation)).TotalHours > 4 && !card.IsAnimatedImage)
-                    imageUrl = await GenerateAndSaveCardAsync(card);
-            }
-
-            return defaultStr ? (imageUrl ?? imageLocation) : imageUrl;
+            bool generate = (!File.Exists(imageLocation) || force) && card.Id != 0;
+            return generate ? await GenerateAndSaveCardAsync(card, CardImageType.Profile) : imageLocation;
         }
 
         public SafariImage GetRandomSarafiImage()
@@ -1506,7 +1493,7 @@ namespace Sanakan.Services.PocketWaifu
             string imageUrl = null;
             if (showStats)
             {
-                imageUrl = await GetCardUrlIfExistAsync(card, true);
+                imageUrl = await GetCardUrlIfExistAsync(card);
                 if (imageUrl != null)
                 {
                     try
@@ -1542,7 +1529,7 @@ namespace Sanakan.Services.PocketWaifu
 
         public async Task<Embed> BuildCardViewAsync(Card card, ITextChannel trashChannel, SocketUser owner)
         {
-            string imageUrl = await GetCardUrlIfExistAsync(card, true);
+            string imageUrl = await GetCardUrlIfExistAsync(card);
             if (imageUrl != null)
             {
                 try
@@ -1825,6 +1812,11 @@ namespace Sanakan.Services.PocketWaifu
             Dictionary<string, int> items = new Dictionary<string, int>();
 
             var duration = GetRealTimeOnExpeditionInMinutes(card, user.GameDeck.Karma);
+            if (duration.Item1 < 0 || duration.Item2 < 0)
+            {
+                return "Coś poszło nie tak, wyprawa nie została zakończona.";
+            }
+
             var baseExp = GetBaseExpPerMinuteFromExpedition(card.Expedition, card.Rarity);
             var baseItemsCnt = GetBaseItemsPerMinuteFromExpedition(card.Expedition, card.Rarity);
             var multiplier = (duration.Item2 < 60) ? ((duration.Item2 < 30) ? 5d : 3d) : 1d;

@@ -168,7 +168,7 @@ namespace Sanakan.Modules
                         return;
                     }
 
-                    await Context.Channel.SendFileAsync(stream, $"{usr.Id}.png", $"{Shden.API.Url.GetProfileURL(botUser.Shinden)}");
+                    await Context.Channel.SendFileAsync(stream, $"{usr.Id}.png", $"<{Shden.API.Url.GetProfileURL(botUser.Shinden)}>");
                 }
             }
         }

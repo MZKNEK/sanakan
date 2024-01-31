@@ -1,6 +1,7 @@
 ﻿#pragma warning disable 1591
 
 using System;
+using AsyncKeyedLock;
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Threading;
@@ -14,9 +15,10 @@ namespace Sanakan.Services.Executor
         private const int QueueLength = 100;
 
         private IServiceProvider _provider;
+        private string _currentTaskName;
         private ILogger _logger;
 
-        private SemaphoreSlim _semaphore = new SemaphoreSlim(1, 1);
+        private AsyncNonKeyedLocker _semaphore = new AsyncNonKeyedLocker(1);
         private BlockingCollection<IExecutable> _queue = new BlockingCollection<IExecutable>(QueueLength);
         private BlockingCollection<IExecutable> _hiQueue = new BlockingCollection<IExecutable>(QueueLength);
 
@@ -26,6 +28,7 @@ namespace Sanakan.Services.Executor
         public SynchronizedExecutor(ILogger logger)
         {
             _logger = logger;
+            _currentTaskName = "";
             _cts = new CancellationTokenSource();
 
             _timer = new Timer(async _ =>
@@ -40,6 +43,11 @@ namespace Sanakan.Services.Executor
         public void Initialize(IServiceProvider provider)
         {
             _provider = provider;
+        }
+
+        public string WhatIsRunning()
+        {
+            return _currentTaskName;
         }
 
         public Task<bool> TryAdd(IExecutable task, TimeSpan timeout)
@@ -57,26 +65,22 @@ namespace Sanakan.Services.Executor
             if (_queue.Count < 1 && _hiQueue.Count < 1)
                 return;
 
-            if (!await _semaphore.WaitAsync(0))
-                return;
-
-            try
+            using (var releaser = await _semaphore.LockAsync(0).ConfigureAwait(false))
             {
-                _ = Task.Run(async () => await ProcessCommandsAsync()).ContinueWith(_ =>
+                if (releaser.EnteredSemaphore)
                 {
-                    _cts.Cancel();
-                    _cts = new CancellationTokenSource();
-                }).ConfigureAwait(false);
+                    _ = Task.Run(async () => await ProcessCommandsAsync()).ContinueWith(_ =>
+                    {
+                        _cts.Cancel();
+                        _cts = new CancellationTokenSource();
+                    }).ConfigureAwait(false);
 
-                try
-                {
-                    await Task.Delay(TimeSpan.FromSeconds(90), _cts.Token);
+                    try
+                    {
+                        await Task.Delay(TimeSpan.FromSeconds(90), _cts.Token);
+                    }
+                    catch (Exception) { }
                 }
-                catch (Exception) { }
-            }
-            finally
-            {
-                _semaphore.Release();
             }
         }
 
@@ -102,6 +106,8 @@ namespace Sanakan.Services.Executor
             if (SelectQueue().TryTake(out var cmd, 100))
             {
                 var taskName = cmd.GetName();
+                 _currentTaskName = taskName;
+
                 try
                 {
                     _logger.Log($"Executor: running {taskName}");
@@ -112,6 +118,10 @@ namespace Sanakan.Services.Executor
                 catch (Exception ex)
                 {
                     _logger.Log($"Executor: {taskName} - {ex}");
+                }
+                finally
+                {
+                    _currentTaskName = "";
                 }
             }
         }
