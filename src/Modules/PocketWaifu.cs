@@ -2180,6 +2180,12 @@ namespace Sanakan.Modules
                     return;
                 }
 
+                if (bUser.GameDeck.Cards.Count + count > bUser.GameDeck.MaxNumberOfCards)
+                {
+                    await ReplyAsync("", embed: $"{Context.User.Mention} nie masz miejsca na tyle kart!".ToEmbedMessage(EMType.Error).Build());
+                    return;
+                }
+
                 if (fragments.Count == price)
                 {
                     bUser.GameDeck.Items.Remove(fragments);
