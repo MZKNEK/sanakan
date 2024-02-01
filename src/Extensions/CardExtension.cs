@@ -750,7 +750,9 @@ namespace Sanakan.Extensions
             var response = await client.GetCharacterInfoAsync(card.Character);
             if (!response.IsSuccessStatusCode())
             {
-                card.Unique = true;
+                if (response.Code == System.Net.HttpStatusCode.NotFound)
+                    card.Unique = true;
+
                 throw new Exception($"Couldn't get card info!");
             }
 

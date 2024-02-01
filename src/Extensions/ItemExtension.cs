@@ -312,6 +312,7 @@ namespace Sanakan.Extensions
                 case ItemType.IncreaseUltimateHealth: return 0.6;
                 case ItemType.IncreaseUltimateAll: return 1.2;
                 case ItemType.FigureSkeleton: return -1;
+                case ItemType.CardFragment: return -0.1;
 
                 default: return 0;
             }

@@ -1812,7 +1812,8 @@ namespace Sanakan.Modules
                 var response = await _shclient.GetCharacterInfoAsync(card.Character);
                 if (!response.IsSuccessStatusCode() || response?.Body?.Relations?.Count == 0)
                 {
-                    card.Unique = true;
+                    if (response.Code == System.Net.HttpStatusCode.NotFound)
+                        card.Unique = true;
                 }
                 else
                 {
@@ -2785,6 +2786,7 @@ namespace Sanakan.Modules
                 }
 
                 long scrapes = 0;
+                double totalKarma = 0;
                 var userItems = buser.GetAllItems().ToArray();
                 foreach (var it in items)
                 {
@@ -2800,12 +2802,15 @@ namespace Sanakan.Modules
                         return;
                     }
 
+                    totalKarma += it.Count * thisItem.Type.GetBaseKarmaChange() * 0.25;
                     scrapes += it.Count * thisItem.Type.CValue();
                     thisItem.Count -= it.Count;
 
                     if (thisItem.Count < 1)
                         buser.GameDeck.Items.Remove(thisItem);
                 }
+
+                buser.GameDeck.Karma -= totalKarma;
 
                 var tItem = buser.GameDeck.Items.FirstOrDefault(x => x.Type == ItemType.CardFragment);
                 if (tItem == null)
