@@ -112,7 +112,7 @@ namespace Sanakan.Modules
         {
             using (var db = new Database.DatabaseContext(Config))
             {
-                var bUser = await db.GetCachedFullUserAsync(Context.User.Id);
+                var bUser = await db.GetUserAndDontTrackAsync(Context.User.Id);
                 var itemList = bUser.GetAllItems();
 
                 if (itemList.IsNullOrEmpty())
@@ -415,12 +415,6 @@ namespace Sanakan.Modules
         [Remarks("1 4212 2"), RequireWaifuCommandChannel]
         public async Task UseItemOnCardAsync([Summary("nr przedmiotu")] int itemNumber, [Summary("WID")] ulong wid = 0, [Summary("liczba przedmiotów/link do obrazka/typ gwiazdki")] string detail = "1", [Hidden] bool itemToExp = false)
         {
-            if (_session.SessionExist(Context.User, typeof(CraftingSession)))
-            {
-                await ReplyAsync("", embed: $"{Context.User.Mention} nie możesz używać przedmiotów, gdy masz otwarte menu tworzenia kart.".ToEmbedMessage(EMType.Error).Build());
-                return;
-            }
-
             using (var db = new Database.DatabaseContext(Config))
             {
                 var bUser = await db.GetUserOrCreateAsync(Context.User.Id);
@@ -2163,6 +2157,84 @@ namespace Sanakan.Modules
             }
         }
 
+        [Command("druciarstwo")]
+        [Alias("tinkering")]
+        [Summary("towrzy karty z ich fragmentów(maks 20)")]
+        [Remarks("5"), RequireAnyCommandChannelOrLevel(60)]
+        public async Task MakeCardsFromFragmentsAsync([Summary("ilość kart do utworzenia")]uint count = 1)
+        {
+            if (count < 1)
+                count = 1;
+
+            if (count > 20)
+                count = 20;
+
+            long price = 1515 * count;
+            using (var db = new Database.DatabaseContext(Config))
+            {
+                var bUser = await db.GetUserOrCreateAsync(Context.User.Id);
+                var fragments = bUser.GameDeck.Items.FirstOrDefault(x => x.Type == ItemType.CardFragment);
+                if (fragments == null || fragments.Count < price)
+                {
+                    await ReplyAsync("", embed: $"{Context.User.Mention} niestety nie ma wystarczającej liczby fragmentów.".ToEmbedMessage(EMType.Error).Build());
+                    return;
+                }
+
+                if (fragments.Count == price)
+                {
+                    bUser.GameDeck.Items.Remove(fragments);
+                }
+                else fragments.Count -= price;
+
+                var totalCards = new List<Card>();
+                var charactersOnWishlist = new List<string>();
+                var allWWCnt = await db.WishlistCountData.AsQueryable().AsNoTracking().ToListAsync();
+                for (int i = 0; i < count; i++)
+                {
+                    var character = await _waifu.GetRandomCharacterAsync();
+                    if (character == null)
+                    {
+                        await ReplyAsync("", embed: "Brak połączania z Shindenem!".ToEmbedMessage(EMType.Error).Build());
+                        return;
+                    }
+
+                    var card = _waifu.GenerateNewCard(Context.User, character, Rarity.E);
+                    card.Affection += bUser.GameDeck.AffectionFromKarma();
+                    card.Source = CardSource.Crafting;
+
+                    totalCards.Add(card);
+                    if (await bUser.GameDeck.RemoveCharacterFromWishListAsync(card.Character, db))
+                        charactersOnWishlist.Add(card.Name);
+
+
+                    card.WhoWantsCount = allWWCnt.FirstOrDefault(x => x.Id == card.Character)?.Count ?? 0;
+                    bUser.GameDeck.Cards.Add(card);
+                }
+
+                await db.SaveChangesAsync();
+                QueryCacheManager.ExpireTag(new string[] { $"user-{bUser.Id}", "users" });
+
+                string openString = "";
+                bool saveAgain = false;
+                foreach (var card in totalCards)
+                {
+                    bool isOnUserWishlist = charactersOnWishlist.Any(x => x == card.Name);
+                    openString += $"{card.ToHeartWishlist(isOnUserWishlist)}{card.GetString(false, false, true)}\n";
+                    if (db.AddActivityFromNewCard(card, isOnUserWishlist, _time, bUser, Context.User.GetUserNickInGuild()))
+                    {
+                        saveAgain = true;
+                    }
+                }
+
+                if (saveAgain)
+                {
+                    await db.SaveChangesAsync();
+                }
+
+                await ReplyAsync("", embed: $"{Context.User.Mention} utworzone karty to:\n\n {openString}".ToEmbedMessage(EMType.Success).Build());
+            }
+        }
+
         [Command("wymień na kule")]
         [Alias("wymien na kule", "crystal")]
         [Summary("zmienia naszyjnik i bukiet kwiatów na kryształową kulę (koszt 5 CT)")]
@@ -2685,58 +2757,60 @@ namespace Sanakan.Modules
             }
         }
 
-        [Command("tworzenie")]
-        [Alias("crafting")]
-        [Summary("tworzy kartę z przedmiotów")]
-        [Remarks(""), RequireWaifuCommandChannel]
-        public async Task CraftCardAsync()
+        [Command("barter")]
+        [Alias("scrape")]
+        [Summary("wymienia przedmioty na fragementy kart")]
+        [Remarks("3:30 5:40 1:0"), RequireWaifuCommandChannel]
+        public async Task ChangeItemsToCardFragmentsAsync([Summary("nr przedmiotu:ilość przedmiotu(0 traktowane jako wszystkie)")] params ItemCountPair[] items)
         {
-            var user1 = Context.User as SocketGuildUser;
-            if (user1 == null) return;
-
-            var session = new CraftingSession(user1, _waifu, _config, _time);
-            if (_session.SessionExist(session))
+            if (items.IsNullOrEmpty())
             {
-                await ReplyAsync("", embed: $"{user1.Mention} już masz otwarte menu tworzenia kart.".ToEmbedMessage(EMType.Error).Build());
+                await ReplyAsync("", embed: $"{Context.User.Mention} lista przedmiotów jest niepoprawna.".ToEmbedMessage(EMType.Error).Build());
                 return;
             }
 
             using (var db = new Database.DatabaseContext(Config))
             {
-                var duser1 = await db.GetCachedFullUserAsync(user1.Id);
-                if (duser1 == null)
+                var buser = await db.Users.AsQueryable().Where(x => x.Id == Context.User.Id).Include(x => x.GameDeck).ThenInclude(x => x.Items).FirstOrDefaultAsync();
+                if (buser == null || buser.GameDeck.Items.IsNullOrEmpty())
                 {
-                    await ReplyAsync("", embed: "Gracz nie posiada profilu bota!".ToEmbedMessage(EMType.Error).Build());
+                    await ReplyAsync("", embed: $"{Context.User.Mention} nie masz żadnych przemiotów.".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
-                if (duser1.GameDeck.Cards.Count + 1 > duser1.GameDeck.MaxNumberOfCards)
+                long scrapes = 0;
+                var userItems = buser.GetAllItems().ToArray();
+                foreach (var it in items)
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} nie masz już miejsca na kolejną kartę!".ToEmbedMessage(EMType.Error).Build());
-                    return;
+                    var thisItem = userItems[it.Item - 1];
+                    if (it.Count == 0)
+                    {
+                        it.Count = thisItem.Count;
+                    }
+
+                    if (thisItem.Count < it.Count)
+                    {
+                        await ReplyAsync("", embed: $"{Context.User.Mention} nie masz wystarczająco dużej liczby: `{thisItem.Name}`".ToEmbedMessage(EMType.Error).Build());
+                        return;
+                    }
+
+                    scrapes += it.Count * thisItem.Type.CValue();
+                    thisItem.Count -= it.Count;
+
+                    if (thisItem.Count < 1)
+                        buser.GameDeck.Items.Remove(thisItem);
                 }
 
-                session.P1 = new PlayerInfo
+                var tItem = buser.GameDeck.Items.FirstOrDefault(x => x.Type == ItemType.CardFragment);
+                if (tItem == null)
                 {
-                    User = user1,
-                    Dbuser = duser1,
-                    Accepted = false,
-                    CustomString = "",
-                    Items = new List<Item>()
-                };
+                    tItem = ItemType.CardFragment.ToItem(scrapes);
+                    buser.GameDeck.Items.Add(tItem);
+                }
+                else tItem.Count += scrapes;
 
-                session.Name = "⚒ **Tworzenie:**";
-                session.Tips = $"Polecenia: `dodaj/usuń [nr przedmiotu] [liczba]`.";
-                session.Items = duser1.GameDeck.Items.ToList();
-
-                var res = await _helepr.SendEmbedsOnDMAsync(Context.User, _waifu.GetItemList(Context.User, session.Items));
-                await ReplyAsync("", embed: res.ToEmbedMessage($"{Context.User.Mention} ").Build());
-
-                var msg = await ReplyAsync("", embed: session.BuildEmbed());
-                await msg.AddReactionsAsync(session.StartReactions);
-                session.Message = msg;
-
-                await _session.TryAddSession(session);
+                await db.SaveChangesAsync();
+                await ReplyAsync("", embed: $"{Context.User.Mention} udało się zyskać **{scrapes}** fragmentów, masz ich w sumie już **{tItem.Count}**.".ToEmbedMessage(EMType.Success).Build());
             }
         }
 

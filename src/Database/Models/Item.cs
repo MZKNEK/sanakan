@@ -49,7 +49,8 @@ namespace Sanakan.Database.Models
         IncreaseUltimateAttack,
         IncreaseUltimateDefence,
         IncreaseUltimateHealth,
-        IncreaseUltimateAll
+        IncreaseUltimateAll,
+        CardFragment
     }
 
     public class Item

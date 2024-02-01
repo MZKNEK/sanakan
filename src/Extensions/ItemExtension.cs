@@ -88,6 +88,8 @@ namespace Sanakan.Extensions
                     return $"Resetuje warość karty do początkowego poziomu.";
                 case ItemType.LotteryTicket:
                     return $"Zapewnia jedno wejście na loterię.";
+                case ItemType.CardFragment:
+                    return $"Pozwalalają utworzyć kartę po uzbieraniu ich odpowiedniej liczby.";
                 case ItemType.IncreaseUltimateAttack:
                     return $"Zwiększa atak karcie ultimate.";
                 case ItemType.IncreaseUltimateDefence:
@@ -229,6 +231,8 @@ namespace Sanakan.Extensions
                     return $"Marker";
                 case ItemType.LotteryTicket:
                     return $"Przepustka";
+                case ItemType.CardFragment:
+                    return $"Fragment karty";
                 case ItemType.IncreaseUltimateAttack:
                     return $"Czerwona pigułka";
                 case ItemType.IncreaseUltimateDefence:
@@ -318,6 +322,7 @@ namespace Sanakan.Extensions
             switch (type)
             {
                 case ItemType.LotteryTicket:
+                case ItemType.CardFragment:
                     return false;
 
                 default:
@@ -362,6 +367,7 @@ namespace Sanakan.Extensions
                 case ItemType.IncreaseUltimateDefence:
                 case ItemType.IncreaseUltimateHealth:
                 case ItemType.IncreaseUltimateAll:
+                case ItemType.CardFragment:
                 // special case
                 case ItemType.CardParamsReRoll:
                 case ItemType.DereReRoll:
@@ -491,6 +497,8 @@ namespace Sanakan.Extensions
                     return 100;
                 case ItemType.IncreaseUltimateAll:
                     return 800;
+                case ItemType.CardFragment:
+                    return 0;
 
                 default:
                     return 1;
