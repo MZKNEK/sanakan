@@ -440,9 +440,9 @@ namespace Sanakan.Modules
 
         [Command("lazyp")]
         [Alias("lp")]
-        [Summary("otwiera pierwszy pakiet z domyślnie ustawionym niszczeniem kc na 2 oraz tagiem wymiana")]
+        [Summary("otwiera pierwszy pakiet z domyślnie ustawionym niszczeniem kc na 3 oraz tagiem wymiana")]
         [Remarks("2 nie Wymiana Ulubione"), RequireAnyCommandChannelOrLevel(200)]
-        public async Task OpenPacketLazyModeAsync([Summary("czy zniszczyć karty nie będące na liście życzeń i nie posiadające danej kc?")] uint destroyCards = 2, [Summary("czy zamienić niszczenie na uwalnianie?")] bool changeToRelease = false,
+        public async Task OpenPacketLazyModeAsync([Summary("czy zniszczyć karty nie będące na liście życzeń i nie posiadające danej kc?")] uint destroyCards = 3, [Summary("czy zamienić niszczenie na uwalnianie?")] bool changeToRelease = false,
             [Summary("oznacz niezniszczone karty")] string tag = "wymiana", [Summary("oznacz karty z wishlisty")] string tagWishlist = "ulubione")
                 => await OpenPacketAsync(1, 1, true, destroyCards, changeToRelease, tag, tagWishlist);
 
@@ -2158,17 +2158,38 @@ namespace Sanakan.Modules
             }
         }
 
+        [Command("lazyt")]
+        [Alias("lt")]
+        [Summary("towrzy karty z ich fragmentów z domyślnie ustawionym niszczeniem kc na 3 oraz tagiem wymiana")]
+        [Remarks("2 3 nie Wymiana Ulubione"), RequireAnyCommandChannelOrLevel(200)]
+        public async Task MakeCardsFromFragmentsLazyModeAsync([Summary("ilość kart do utworzenia")] uint count = 20, [Summary("czy zniszczyć karty nie będące na liście życzeń i nie posiadające danej kc?")] uint destroyCards = 3,
+            [Summary("czy zamienić niszczenie na uwalnianie?")] bool changeToRelease = false, [Summary("oznacz niezniszczone karty")] string tag = "wymiana", [Summary("oznacz karty z wishlisty")] string tagWishlist = "ulubione")
+                => await MakeCardsFromFragmentsAsync(count, destroyCards, changeToRelease, tag, tagWishlist);
+
         [Command("druciarstwo")]
         [Alias("tinkering")]
         [Summary("towrzy karty z ich fragmentów(maks 20)")]
-        [Remarks("5"), RequireAnyCommandChannelOrLevel(60)]
-        public async Task MakeCardsFromFragmentsAsync([Summary("ilość kart do utworzenia")]uint count = 1)
+        [Remarks("5"), RequireWaifuCommandChannel]
+        public async Task MakeCardsFromFragmentsAsync([Summary("ilość kart do utworzenia")] uint count = 1, [Summary("czy zniszczyć karty nie będące na liście życzeń i nie posiadające danej kc?")] uint destroyCards = 0,
+            [Summary("czy zamienić niszczenie na uwalnianie?")] bool changeToRelease = false, [Summary("oznacz niezniszczone karty")] string tag = "", [Summary("oznacz karty z wishlisty")] string tagWishlist = "")
         {
             if (count < 1)
                 count = 1;
 
             if (count > 20)
                 count = 20;
+
+            if (!string.IsNullOrEmpty(tag) && tag.Contains(" "))
+            {
+                await ReplyAsync("", embed: $"{Context.User.Mention} oznaczenie nie może zawierać spacji.".ToEmbedMessage(EMType.Error).Build());
+                return;
+            }
+
+            if (!string.IsNullOrEmpty(tagWishlist) && tagWishlist.Contains(" "))
+            {
+                await ReplyAsync("", embed: $"{Context.User.Mention} oznaczenie nie może zawierać spacji.".ToEmbedMessage(EMType.Error).Build());
+                return;
+            }
 
             long price = 1515 * count;
             using (var db = new Database.DatabaseContext(Config))
@@ -2210,11 +2231,28 @@ namespace Sanakan.Modules
                     card.Source = CardSource.Crafting;
 
                     totalCards.Add(card);
-                    if (await bUser.GameDeck.RemoveCharacterFromWishListAsync(card.Character, db))
+
+                    bool isOnUserWishlist = await bUser.GameDeck.RemoveCharacterFromWishListAsync(card.Character, db);
+                    if (isOnUserWishlist)
                         charactersOnWishlist.Add(card.Name);
 
+                    var wishlistsCnt = allWWCnt.FirstOrDefault(x => x.Id == card.Character)?.Count ?? 0;
+                    if (destroyCards > 0)
+                    {
+                        if (wishlistsCnt < destroyCards && !isOnUserWishlist)
+                        {
+                            card.DestroyOrRelease(bUser, changeToRelease);
+                            continue;
+                        }
+                    }
 
-                    card.WhoWantsCount = allWWCnt.FirstOrDefault(x => x.Id == card.Character)?.Count ?? 0;
+                    if (!string.IsNullOrEmpty(tag) && !isOnUserWishlist)
+                        card.TagList.Add(new CardTag { Name = tag });
+
+                    if (!string.IsNullOrEmpty(tagWishlist) && isOnUserWishlist)
+                        card.TagList.Add(new CardTag { Name = tagWishlist });
+
+                    card.WhoWantsCount = wishlistsCnt;
                     bUser.GameDeck.Cards.Add(card);
                 }
 
@@ -2226,11 +2264,19 @@ namespace Sanakan.Modules
                 foreach (var card in totalCards)
                 {
                     bool isOnUserWishlist = charactersOnWishlist.Any(x => x == card.Name);
-                    openString += $"{card.ToHeartWishlist(isOnUserWishlist)}{card.GetString(false, false, true)}\n";
-                    if (db.AddActivityFromNewCard(card, isOnUserWishlist, _time, bUser, Context.User.GetUserNickInGuild()))
+                    if (card.WhoWantsCount < destroyCards && !isOnUserWishlist && destroyCards > 0)
                     {
-                        saveAgain = true;
+                        openString += "🖤 ";
                     }
+                    else
+                    {
+                        openString += $"{card.ToHeartWishlist(isOnUserWishlist)}";
+                        if (db.AddActivityFromNewCard(card, isOnUserWishlist, _time, bUser, Context.User.GetUserNickInGuild()))
+                        {
+                            saveAgain = true;
+                        }
+                    }
+                    openString += $"{card.GetString(false, false, true)}\n";
                 }
 
                 if (saveAgain)
