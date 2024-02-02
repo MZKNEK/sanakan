@@ -1065,12 +1065,33 @@ namespace Sanakan.Modules
             }
         }
 
+        [Command("lazyc")]
+        [Alias("lc")]
+        [Summary("dostajesz jedną darmową kart z domyślnie ustawionym niszczeniem kc na 3 oraz tagiem wymiana")]
+        [Remarks("3 nie Wymiana Ulubione"), RequireAnyCommandChannelOrLevel(40)]
+        public async Task GetLazyFreeCardAsync([Summary("czy zniszczyć karty nie będące na liście życzeń i nie posiadające danej kc?")] uint destroyCards = 3,
+            [Summary("czy zamienić niszczenie na uwalnianie?")] bool changeToRelease = false, [Summary("oznacz niezniszczone karty")] string tag = "wymiana", [Summary("oznacz karty z wishlisty")] string tagWishlist = "ulubione")
+                => await GetFreeCardAsync(destroyCards, changeToRelease, tag, tagWishlist);
+
         [Command("karta+")]
         [Alias("free card")]
         [Summary("dostajesz jedną darmową kartę")]
-        [Remarks(""), RequireAnyCommandChannelOrLevel(40)]
-        public async Task GetFreeCardAsync()
+        [Remarks("3 nie Wymiana Ulubione"), RequireAnyCommandChannelOrLevel(40)]
+        public async Task GetFreeCardAsync([Summary("czy zniszczyć karty nie będące na liście życzeń i nie posiadające danej kc?")] uint destroyCards = 0,
+            [Summary("czy zamienić niszczenie na uwalnianie?")] bool changeToRelease = false, [Summary("oznacz niezniszczone karty")] string tag = "", [Summary("oznacz karty z wishlisty")] string tagWishlist = "")
         {
+            if (!string.IsNullOrEmpty(tag) && tag.Contains(" "))
+            {
+                await ReplyAsync("", embed: $"{Context.User.Mention} oznaczenie nie może zawierać spacji.".ToEmbedMessage(EMType.Error).Build());
+                return;
+            }
+
+            if (!string.IsNullOrEmpty(tagWishlist) && tagWishlist.Contains(" "))
+            {
+                await ReplyAsync("", embed: $"{Context.User.Mention} oznaczenie nie może zawierać spacji.".ToEmbedMessage(EMType.Error).Build());
+                return;
+            }
+
             using (var db = new Database.DatabaseContext(Config))
             {
                 var botuser = await db.GetUserOrCreateAsync(Context.User.Id);
@@ -1130,14 +1151,29 @@ namespace Sanakan.Modules
                 card.Affection += botuser.GameDeck.AffectionFromKarma();
                 card.Source = CardSource.Daily;
 
-                botuser.GameDeck.Cards.Add(card);
-
                 var wishlists = db.GameDecks.Include(x => x.Wishes).AsNoTracking().Where(x => !x.WishlistIsPrivate && x.Wishes.Any(c => c.Type == WishlistObjectType.Character && c.ObjectId == card.Character)).ToList();
                 card.WhoWantsCount = wishlists.Count;
 
+                if (destroyCards > 0 && card.WhoWantsCount < destroyCards && !isOnUserWishlist)
+                {
+                    card.DestroyOrRelease(botuser, changeToRelease);
+                }
+                else
+                {
+                    if (!string.IsNullOrEmpty(tag) && !isOnUserWishlist)
+                        card.TagList.Add(new CardTag { Name = tag });
+
+                    if (!string.IsNullOrEmpty(tagWishlist) && isOnUserWishlist)
+                        card.TagList.Add(new CardTag { Name = tagWishlist });
+
+                    botuser.GameDeck.Cards.Add(card);
+                }
+
                 await db.SaveChangesAsync();
 
-                var wishStr = card.ToHeartWishlist(isOnUserWishlist);
+                bool cardDestroyed = card.WhoWantsCount < destroyCards && !isOnUserWishlist && destroyCards > 0;
+                string wishStr = cardDestroyed ? "🖤 " : card.ToHeartWishlist(isOnUserWishlist);
+
                 if (db.AddActivityFromNewCard(card, isOnUserWishlist, _time, botuser, Context.User.GetUserNickInGuild()))
                 {
                     await db.SaveChangesAsync();
@@ -2875,6 +2911,9 @@ namespace Sanakan.Modules
                 else tItem.Count += scrapes;
 
                 await db.SaveChangesAsync();
+
+                QueryCacheManager.ExpireTag(new string[] { $"user-{buser.Id}" });
+
                 await ReplyAsync("", embed: $"{Context.User.Mention} udało się zyskać **{scrapes}** fragmentów, masz ich w sumie już **{tItem.Count}**.".ToEmbedMessage(EMType.Success).Build());
             }
         }

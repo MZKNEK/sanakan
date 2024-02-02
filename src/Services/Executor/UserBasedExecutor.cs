@@ -26,7 +26,6 @@ namespace Sanakan.Services.Executor
 
         private BlockingCollection<IExecutable> _queue = new BlockingCollection<IExecutable>(100);
 
-
         public UserBasedExecutor(ILogger logger)
         {
             _logger = logger;
@@ -56,7 +55,6 @@ namespace Sanakan.Services.Executor
                 await Task.Delay(TimeSpan.FromMilliseconds(10));
                 _ = Task.Run(async () => await RunWorker());
                 return true;
-
             }
             return false;
         }
