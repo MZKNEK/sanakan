@@ -2228,7 +2228,7 @@ namespace Sanakan.Modules
 
                     var card = _waifu.GenerateNewCard(Context.User, character, Rarity.E);
                     card.Affection += bUser.GameDeck.AffectionFromKarma();
-                    card.Source = CardSource.Crafting;
+                    card.Source = CardSource.Tinkering;
 
                     totalCards.Add(card);
 
