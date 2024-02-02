@@ -239,7 +239,7 @@ namespace Sanakan.Services.PocketWaifu
                         _logger.Log($"In Safari: {ex}");
                     }
                 });
-            }));
+            }), winner.Id);
         }
 
         private async Task SpawnCardAsync(ITextChannel spawnChannel, ITextChannel trashChannel, string mention)
@@ -329,7 +329,7 @@ namespace Sanakan.Services.PocketWaifu
                         await channel.SendMessageAsync("", embed: $"{user.Mention} otrzymał pakiet losowych kart.".ToEmbedMessage(EMType.Bot).Build());
                     });
                 }
-            }));
+            }), user.Id);
 
             _executor.TryAdd(exe, TimeSpan.FromSeconds(1));
         }

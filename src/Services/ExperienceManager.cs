@@ -108,7 +108,7 @@ namespace Sanakan.Services
                     if (!db.Users.AsNoTracking().Any(x => x.Id == user.Id))
                     {
                         var task = CreateUserTask(user);
-                        await _executor.TryAdd(new Executable("add user", task), TimeSpan.FromSeconds(1));
+                        await _executor.TryAdd(new Executable("add user", task, user.Id), TimeSpan.FromSeconds(1));
                     }
                 }
             }
@@ -180,7 +180,7 @@ namespace Sanakan.Services
             _messages[user.Id] = 0;
             _commands[user.Id] = 0;
 
-            _executor.TryAdd(new Executable("add exp", task), TimeSpan.FromSeconds(1));
+            _executor.TryAdd(new Executable("add exp", task, user.Id), TimeSpan.FromSeconds(1));
         }
 
         private double GetPointsFromMsg(SocketMessage message)

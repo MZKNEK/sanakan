@@ -437,7 +437,7 @@ namespace Sanakan.Api.Controllers
 
                     QueryCacheManager.ExpireTag(userRelease.ToArray());
                 }
-            }), Priority.High);
+            }), 0, Priority.High);
 
             await _executor.TryAdd(exe, TimeSpan.FromSeconds(1));
             await "Success".ToResponse(200).ExecuteResultAsync(ControllerContext);
@@ -479,7 +479,7 @@ namespace Sanakan.Api.Controllers
 
                     QueryCacheManager.ExpireTag(userRelease.ToArray());
                 }
-            }), Priority.High);
+            }), 0, Priority.High);
 
             await _executor.TryAdd(exe, TimeSpan.FromSeconds(1));
             await "Started!".ToResponse(200).ExecuteResultAsync(ControllerContext);
@@ -657,7 +657,7 @@ namespace Sanakan.Api.Controllers
 
                         QueryCacheManager.ExpireTag(new string[] { $"user-{botUser.Id}", "users" });
                     }
-                }));
+                }), id);
 
                 await _executor.TryAdd(exe, TimeSpan.FromSeconds(1));
                 await "Boosterpack added!".ToResponse(200).ExecuteResultAsync(ControllerContext);
@@ -701,7 +701,7 @@ namespace Sanakan.Api.Controllers
 
                         QueryCacheManager.ExpireTag(new string[] { $"user-{botUser.Id}", "users" });
                     }
-                }));
+                }), user.Id);
 
                 await _executor.TryAdd(exe, TimeSpan.FromSeconds(1));
 
@@ -790,7 +790,7 @@ namespace Sanakan.Api.Controllers
 
                     QueryCacheManager.ExpireTag(new string[] { $"user-{botUser.Id}", "users" });
                 }
-            }));
+            }), discordId);
 
             if (!await _executor.TryAdd(exe, TimeSpan.FromSeconds(1)))
             {
@@ -877,7 +877,7 @@ namespace Sanakan.Api.Controllers
 
                             QueryCacheManager.ExpireTag(new string[] { $"user-{botUser.Id}", "users" });
                         }
-                    }));
+                    }), discordId);
 
                     await _executor.TryAdd(exe, TimeSpan.FromSeconds(1));
 
@@ -939,7 +939,7 @@ namespace Sanakan.Api.Controllers
 
                             QueryCacheManager.ExpireTag(new string[] { $"user-{botUser.Id}", "users" });
                         }
-                    }));
+                    }), discordId);
 
                     await _executor.TryAdd(exe, TimeSpan.FromSeconds(1));
                     await "Card status toggled".ToResponse(200).ExecuteResultAsync(ControllerContext);

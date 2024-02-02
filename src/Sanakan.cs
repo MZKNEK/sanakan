@@ -21,7 +21,7 @@ namespace Sanakan
 {
     class Sanakan
     {
-        private SynchronizedExecutor _executor;
+        private UserBasedExecutor _executor;
         private ShindenClient _shindenClient;
         private DiscordSocketClient _client;
         private Services.Shinden _shinden;
@@ -107,7 +107,7 @@ namespace Sanakan
             _img = new ImageProcessing(_shindenClient);
             _deleted = new DeletedLog(_client, _config);
             _chaos = new Chaos(_client, _config, _logger);
-            _executor = new SynchronizedExecutor(_logger);
+            _executor = new UserBasedExecutor(_logger);
             _sessions = new SessionManager(_client, _executor, _logger);
             _mod = new Moderator(_logger, _config, _client, _time, _img);
             _daemon = new Daemonizer(_client, _logger, _config);

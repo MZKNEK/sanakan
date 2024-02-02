@@ -1,8 +1,11 @@
 ﻿#pragma warning disable 1591
 
+using Discord;
 using Discord.Commands;
 using Sanakan.Services.Executor;
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace Sanakan.Services.Commands
@@ -22,6 +25,18 @@ namespace Sanakan.Services.Commands
         public Priority GetPriority() => _priority;
 
         public string GetName() => $"cmd-{Match.Command.Name}";
+
+        public IEnumerable<ulong> GetOwners()
+        {
+            var owners = new List<ulong>() { Context.User.Id };
+            var users = Result.ArgValues.Where(x => x.Values.Any(c => c.Value is Discord.IUser)).SelectMany(x => x.Values);
+            foreach (var user in users)
+            {
+                if (user.Value is Discord.IUser s)
+                    owners.Add(s.Id);
+            }
+            return owners;
+        }
 
         public CommandMatch Match { get; private set; }
         public ParseResult Result { get; private set; }

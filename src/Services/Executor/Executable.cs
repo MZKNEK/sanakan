@@ -1,6 +1,7 @@
 ﻿#pragma warning disable 1591
 
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace Sanakan.Services.Executor
@@ -12,22 +13,29 @@ namespace Sanakan.Services.Executor
 
         private readonly string _name;
         private readonly Priority _priority;
+        private readonly List<ulong> _owners;
 
-        public Executable(string name, Func<Task> task, Priority priority = Priority.Normal)
+        public Executable(string name, Func<Task> task, ulong owner = 0, Priority priority = Priority.Normal)
         {
             _name = name;
             _task = task;
             _internalTask = null;
             _priority = priority;
+            _owners =  new List<ulong>() {owner};
         }
 
-        public Executable(string name, Task task, Priority priority = Priority.Normal)
+        public Executable(string name, Task task, ulong owner = 0, Priority priority = Priority.Normal)
         {
             _name = name;
             _task = null;
             _internalTask = task;
             _priority = priority;
+            _owners =  new List<ulong>() {owner};
         }
+
+        public void AddOwner(ulong id) => _owners.Add(id);
+
+        public IEnumerable<ulong> GetOwners() => _owners;
 
         public Priority GetPriority() => _priority;
 

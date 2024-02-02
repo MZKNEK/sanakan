@@ -299,7 +299,7 @@ namespace Sanakan.Api.Controllers
 
                         QueryCacheManager.ExpireTag(new string[] { $"user-{user.Id}", "users" });
                     }
-                }), Priority.High);
+                }), id.DiscordUserId, Priority.High);
 
                 await _executor.TryAdd(exe, TimeSpan.FromSeconds(1));
                 await "User connected!".ToResponse(200).ExecuteResultAsync(ControllerContext);
@@ -347,7 +347,7 @@ namespace Sanakan.Api.Controllers
 
                         await dbc.SaveChangesAsync();
                     }
-                }), Priority.High);
+                }), id, Priority.High);
 
                 await _executor.TryAdd(exe, TimeSpan.FromSeconds(1));
                 await "TC added!".ToResponse(200).ExecuteResultAsync(ControllerContext);
@@ -395,7 +395,7 @@ namespace Sanakan.Api.Controllers
 
                         await dbs.SaveChangesAsync();
                     }
-                }), Priority.High);
+                }), user.Id, Priority.High);
 
                 await _executor.TryAdd(exe, TimeSpan.FromSeconds(1));
                 await "TC added!".ToResponse(200).ExecuteResultAsync(ControllerContext);

@@ -93,7 +93,7 @@ namespace Sanakan.Services.Session
 
         public IExecutable GetExecutable(SessionContext context)
         {
-            return new Executable($"session-{this}", new Task<bool>(() =>
+            var task = new Executable($"session-{this}", new Task<bool>(() =>
             {
                 if (OnExecute == null)
                     return true;
@@ -121,7 +121,12 @@ namespace Sanakan.Services.Session
                     }
                     return false;
                 }
-            }));
+            }), _owners.First().Id);
+
+            foreach (var u in _owners)
+                task.AddOwner(u.Id);
+
+            return task;
         }
     }
 }

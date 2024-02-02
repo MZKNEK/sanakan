@@ -355,7 +355,7 @@ namespace Sanakan.Modules
                         .WithType(Database.Models.ActivityType.LotteryStarted).Build());
                     await db.SaveChangesAsync();
                 }
-            }), Priority.High);
+            }), 1, Priority.High);
             await _executor.TryAdd(exe, TimeSpan.FromSeconds(1));
 
             var source = new CancellationTokenSource();
@@ -402,6 +402,65 @@ namespace Sanakan.Modules
             }
 
             await ReplyAsync("", embed: "??????????".ToEmbedMessage(EMType.Error).Build());
+        }
+
+        [Command("test lrt")]
+        [Summary("odpala długo wykonującego się polecenie")]
+        [Remarks("30")]
+        public async Task StartLongRunningTaskAsync([Summary("czas działania w sekundach")]uint time = 30)
+        {
+            await Context.Message.AddReactionAsync(new Emoji("✋"));
+            await Task.Delay(TimeSpan.FromSeconds(time));
+            await Context.Message.AddReactionAsync(new Emoji("👌"));
+        }
+
+        [Command("test wlrt")]
+        [Summary("odpala długo wykonującego się polecenie z dodatkowym userem")]
+        [Remarks("Jeeda 30")]
+        public async Task StartLongRunningTaskWithUserAsync([Summary("nazwa użytkownika")]SocketGuildUser user, [Summary("czas działania w sekundach")]uint time = 30)
+        {
+            _ = user;
+            await Context.Message.AddReactionAsync(new Emoji("✋"));
+            await Task.Delay(TimeSpan.FromSeconds(time));
+            await Context.Message.AddReactionAsync(new Emoji("👌"));
+        }
+
+        [Command("test mlrt", RunMode = RunMode.Async)]
+        [Summary("odpala długo wykonującego się polecenie należące do kilku osób")]
+        [Remarks("30 1 2 3")]
+        public async Task StartMultiLongRunningTaskAsync([Summary("czas działania w sekundach")]uint time = 30,  [Summary("id")]params ulong[] ids)
+        {
+            var exe = new Executable("test mlrt", new Func<Task>(async () =>
+            {
+                await Context.Message.AddReactionAsync(new Emoji("✋"));
+                await Task.Delay(TimeSpan.FromSeconds(time));
+                await Context.Message.AddReactionAsync(new Emoji("👌"));
+            }), 1);
+
+            exe.AddOwner(Context.User.Id);
+
+            if (ids.IsNullOrEmpty())
+            {
+                foreach(var id in ids)
+                    exe.AddOwner(id);
+            }
+
+            await _executor.TryAdd(exe, TimeSpan.FromSeconds(1));
+        }
+
+        [Command("test glrt", RunMode = RunMode.Async)]
+        [Summary("odpala długo wykonującego się polecenie blokujące globalnie")]
+        [Remarks("30")]
+        public async Task StartMultiLongRunningGlobalTaskAsync([Summary("czas działania w sekundach")]uint time = 30)
+        {
+            var exe = new Executable("test glrt", new Func<Task>(async () =>
+            {
+                await Context.Message.AddReactionAsync(new Emoji("✋"));
+                await Task.Delay(TimeSpan.FromSeconds(time));
+                await Context.Message.AddReactionAsync(new Emoji("👌"));
+            }), 0);
+
+            await _executor.TryAdd(exe, TimeSpan.FromSeconds(1));
         }
 
         [Command("rozdaj", RunMode = RunMode.Async)]
@@ -546,7 +605,7 @@ namespace Sanakan.Modules
                     }
                     catch(Exception){}
                 }
-            }), Priority.High);
+            }), winner.Id, Priority.High);
 
             await _executor.TryAdd(exe, TimeSpan.FromSeconds(1));
             await msg.RemoveAllReactionsAsync();

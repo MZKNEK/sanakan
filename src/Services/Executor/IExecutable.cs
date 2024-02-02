@@ -1,6 +1,7 @@
 ﻿#pragma warning disable 1591
 
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace Sanakan.Services.Executor
@@ -16,6 +17,7 @@ namespace Sanakan.Services.Executor
     {
         string GetName();
         Priority GetPriority();
+        IEnumerable<ulong> GetOwners();
         Task<bool> ExecuteAsync(IServiceProvider provider);
     }
 }
