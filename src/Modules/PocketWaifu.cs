@@ -1798,7 +1798,14 @@ namespace Sanakan.Modules
         [Alias("fix title", "napraw tytul")]
         [Summary("zmienia tytuł na karcie")]
         [Remarks("5412 Słabe ssało"), RequireWaifuCommandChannel]
-        public async Task UpdateCardTitleAsync([Summary("WID")] ulong id, [Summary("tytuł lub jego część")][Remainder] string title)
+        public async Task UpdateCardTitleLoosyAsync([Summary("WID")] ulong id, [Summary("tytuł lub jego część")][Remainder] string title)
+            => await UpdateCardTitleAsync(false, id, title);
+
+        [Command("napraw tytuł")]
+        [Alias("fix title", "napraw tytul")]
+        [Summary("zmienia tytuł na karcie")]
+        [Remarks("5412 Słabe ssało"), RequireWaifuCommandChannel]
+        public async Task UpdateCardTitleAsync([Summary("czy wymusić?")]bool force, [Summary("WID")] ulong id, [Summary("tytuł lub jego część")][Remainder] string title)
         {
             using (var db = new Database.DatabaseContext(Config))
             {
@@ -1818,6 +1825,7 @@ namespace Sanakan.Modules
                 else
                 {
                     var nTitle = response.Body.Relations.FirstOrDefault(x => x.Title.Contains(title))?.Title ?? "";
+                    if (force) nTitle = response.Body.Relations.FirstOrDefault(x => x.Title.Equals(title))?.Title ?? "";
                     if (string.IsNullOrEmpty(nTitle))
                     {
                         await ReplyAsync("", embed: $"{Context.User.Mention} nie odnaleziono takiego tytułu w powiązaniach postaci.".ToEmbedMessage(EMType.Error).Build());
