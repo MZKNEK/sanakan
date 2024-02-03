@@ -10,6 +10,11 @@ namespace Sanakan.Database.Models
         Stats, Img, StatsWithImg, Cards
     }
 
+    public enum CharacterPoolType
+    {
+        Anime, Manga, All
+    }
+
     public class User
     {
         public ulong Id { get; set; }
@@ -30,6 +35,7 @@ namespace Sanakan.Database.Models
         public ulong CharacterCntFromDate { get; set; }
         public bool ShowWaifuInProfile { get; set; }
         public long Warnings { get; set; }
+        public CharacterPoolType PoolType { get; set; }
 
         public virtual UserStats Stats { get; set; }
         public virtual GameDeck GameDeck { get; set; }

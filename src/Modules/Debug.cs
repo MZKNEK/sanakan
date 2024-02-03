@@ -169,7 +169,7 @@ namespace Sanakan.Modules
             }
         }
 
-        [Command("sbl", RunMode = RunMode.Async)]
+        [Command("show blacklist", RunMode = RunMode.Async)]
         [Summary("wypisuje listę użytkowników na czarnej liśćie")]
         [Remarks("")]
         public async Task ShowBlacklistedUsersAsync()
@@ -196,6 +196,24 @@ namespace Sanakan.Modules
                 QueryCacheManager.ExpireTag(new string[] { $"user-{Context.User.Id}", "users" });
 
                 await ReplyAsync("", embed: $"{user.Mention} - blacklist: {targetUser.IsBlacklisted}".ToEmbedMessage(EMType.Success).Build());
+            }
+        }
+
+        [Command("pool")]
+        [Summary("zmienia użytkownikowi źródło postaci")]
+        [Remarks("Karna 1")]
+        public async Task SetUserPoolAsync([Summary("nazwa użytkownika")]SocketGuildUser user, [Summary("żródło")]CharacterPoolType poolType)
+        {
+            using (var db = new Database.DatabaseContext(Config))
+            {
+                var targetUser = await db.GetUserOrCreateSimpleAsync(user.Id);
+
+                targetUser.PoolType = poolType;
+                await db.SaveChangesAsync();
+
+                QueryCacheManager.ExpireTag(new string[] { $"user-{Context.User.Id}", "users" });
+
+                await ReplyAsync("", embed: $"{user.Mention}: {targetUser.PoolType}".ToEmbedMessage(EMType.Success).Build());
             }
         }
 
@@ -1187,7 +1205,7 @@ namespace Sanakan.Modules
         public async Task GenerateCardAsync([Summary("nazwa użytkownika")]SocketGuildUser user, [Summary("id postaci na shinden (nie podanie - losowo)")]ulong id = 0,
             [Summary("ranga karty (nie podanie - losowo)")]Rarity rarity = Rarity.E, [Summary("jakość karty (nadpisuje range)")]Quality quality = Quality.Broken)
         {
-            var character = (id == 0) ? await _waifu.GetRandomCharacterAsync() : (await _shClient.GetCharacterInfoAsync(id)).Body;
+            var character = (id == 0) ? await _waifu.GetRandomCharacterAsync(CharacterPoolType.All) : (await _shClient.GetCharacterInfoAsync(id)).Body;
             var card = (rarity == Rarity.E && quality == Quality.Broken) ? _waifu.GenerateNewCard(user, character) : _waifu.GenerateNewCard(user, character, rarity, quality);
 
             card.Source = CardSource.GodIntervention;

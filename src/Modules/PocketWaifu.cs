@@ -521,7 +521,7 @@ namespace Sanakan.Modules
                 var charactersOnWishlist = new List<string>();
                 foreach (var pack in packs)
                 {
-                    var cards = await _waifu.OpenBoosterPackAsync(Context.User, pack);
+                    var cards = await _waifu.OpenBoosterPackAsync(Context.User, pack, bUser.PoolType);
                     if (cards.Count < pack.CardCnt)
                     {
                         await ReplyAsync("", embed: $"{Context.User.Mention} nie udało się otworzyć pakietu. Brak połączania z Shindenem!".ToEmbedMessage(EMType.Error).Build());
@@ -1137,7 +1137,7 @@ namespace Sanakan.Modules
 
                 freeCard.EndsAt = _time.Now().AddHours(22);
 
-                var character = await _waifu.GetRandomCharacterAsync();
+                var character = await _waifu.GetRandomCharacterAsync(botuser.PoolType);
                 if (character == null)
                 {
                     await ReplyAsync("", embed: "Brak połączania z Shindenem!".ToEmbedMessage(EMType.Error).Build());
@@ -2272,7 +2272,7 @@ namespace Sanakan.Modules
                 var allWWCnt = await db.WishlistCountData.AsQueryable().AsNoTracking().ToListAsync();
                 for (int i = 0; i < count; i++)
                 {
-                    var character = await _waifu.GetRandomCharacterAsync();
+                    var character = await _waifu.GetRandomCharacterAsync(bUser.PoolType);
                     if (character == null)
                     {
                         await ReplyAsync("", embed: "Brak połączania z Shindenem!".ToEmbedMessage(EMType.Error).Build());

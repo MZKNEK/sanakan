@@ -244,7 +244,7 @@ namespace Sanakan.Services.PocketWaifu
 
         private async Task SpawnCardAsync(ITextChannel spawnChannel, ITextChannel trashChannel, string mention)
         {
-            var character = await _waifu.GetRandomCharacterAsync();
+            var character = await _waifu.GetRandomCharacterAsync(CharacterPoolType.Anime);
             if (character == null)
             {
                 _logger.Log("In Satafi: bad shinden connection");

@@ -754,6 +754,7 @@ namespace Sanakan.Api.Controllers
             }
 
             ulong discordId = 0;
+            CharacterPoolType poolType = CharacterPoolType.Anime;
             using (var db = new Database.DatabaseContext(_config))
             {
                 var bUser = await db.Users.AsQueryable().Where(x => x.Shinden == id).Include(x => x.GameDeck).ThenInclude(x => x.Cards).AsNoTracking().AsSplitQuery().FirstOrDefaultAsync();
@@ -768,12 +769,13 @@ namespace Sanakan.Api.Controllers
                     return null;
                 }
                 discordId = bUser.Id;
+                poolType = bUser.PoolType;
             }
 
             var cards = new List<Card>();
             foreach (var pack in packs)
             {
-                cards.AddRange(await _waifu.OpenBoosterPackAsync(null, pack));
+                cards.AddRange(await _waifu.OpenBoosterPackAsync(null, pack, poolType));
             }
 
             var exe = new Executable($"api-packet-open u{discordId}", new Func<Task>(async () =>
@@ -843,7 +845,7 @@ namespace Sanakan.Api.Controllers
                             return null;
                         }
 
-                        cards = await _waifu.OpenBoosterPackAsync(null, pack);
+                        cards = await _waifu.OpenBoosterPackAsync(null, pack, botUserCh.PoolType);
                         bPackName = pack.Name;
                     }
 

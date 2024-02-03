@@ -44,7 +44,9 @@ namespace Sanakan.Services.PocketWaifu
     public class Waifu
     {
         private const int DERE_TAB_SIZE = ((int)Dere.Yato) + 1;
-        private static ListIdUpdate CharId = new ListIdUpdate();
+        private static ListIdUpdate CharIdAnime = new ListIdUpdate();
+        private static ListIdUpdate CharIdManga = new ListIdUpdate();
+        private static ListIdUpdate CharIdAll = new ListIdUpdate();
 
         private static List<string> _qualityNamesList = Enum.GetNames(typeof(Quality)).ToList();
 
@@ -235,11 +237,11 @@ namespace Sanakan.Services.PocketWaifu
 
         static public double GetDereDmgMultiplier(Card atk, Card def) => _dereDmgRelation[(int)def.Dere, (int)atk.Dere];
 
-        public bool GetEventSate() => CharId.EventEnabled;
+        public bool GetEventSate() => CharIdAnime.EventEnabled;
 
-        public void SetEventState(bool state) => CharId.EventEnabled = state;
+        public void SetEventState(bool state) => CharIdAnime.EventEnabled = state;
 
-        public void SetEventIds(List<ulong> ids) => CharId.SetEventIds(ids);
+        public void SetEventIds(List<ulong> ids) => CharIdAnime.SetEventIds(ids);
 
         public List<Card> GetListInRightOrder(IEnumerable<Card> list, HaremType type, string tag)
         {
@@ -1111,17 +1113,30 @@ namespace Sanakan.Services.PocketWaifu
             return msg;
         }
 
-        public async Task<ICharacterInfo> GetRandomCharacterAsync()
+        public async Task<ICharacterInfo> GetRandomCharacterAsync(CharacterPoolType type)
         {
             int check = 2;
-            if (CharId.IsNeedForUpdate(_time.Now()))
+            var idPool = type switch
+            {
+                CharacterPoolType.Anime => CharIdAnime,
+                CharacterPoolType.Manga => CharIdManga,
+                _ => CharIdAll,
+            };
+
+            if (idPool.IsNeedForUpdate(_time.Now()))
             {
                 try
                 {
-                    var characters = await _shClient.Ex.GetAllCharactersFromAnimeAsync();
+                    var characters = type switch
+                    {
+                        CharacterPoolType.Anime => await _shClient.Ex.GetAllCharactersFromAnimeAsync(),
+                        CharacterPoolType.Manga => await _shClient.Ex.GetAllCharactersFromMangaAsync(),
+                        _ => await _shClient.Ex.GetAllCharactersAsync(),
+                    };
+
                     if (!characters.IsSuccessStatusCode()) return null;
 
-                    CharId.Update(characters.Body, _time.Now());
+                    idPool.Update(characters.Body, _time.Now());
                 }
                 catch (Exception)
                 {
@@ -1129,12 +1144,12 @@ namespace Sanakan.Services.PocketWaifu
                 }
             }
 
-            ulong id = Fun.GetOneRandomFrom(CharId.GetIds());
+            ulong id = Fun.GetOneRandomFrom(idPool.GetIds());
             var chara = await _shinden.GetCharacterInfoAsync(id);
 
             while (chara is null && --check > 0)
             {
-                id = Fun.GetOneRandomFrom(CharId.GetIds());
+                id = Fun.GetOneRandomFrom(idPool.GetIds());
                 chara = await _shinden.GetCharacterInfoAsync(id);
 
                 await Task.Delay(TimeSpan.FromMilliseconds(500));
@@ -1300,7 +1315,7 @@ namespace Sanakan.Services.PocketWaifu
             return await _shClient.Ex.GetAnimeFromSeasonAsync(true);
         }
 
-        public async Task<List<Card>> OpenBoosterPackAsync(IUser user, BoosterPack pack)
+        public async Task<List<Card>> OpenBoosterPackAsync(IUser user, BoosterPack pack, CharacterPoolType poolType)
         {
             int errorCnt = 0;
             var cardsFromPack = new List<Card>();
@@ -1339,7 +1354,7 @@ namespace Sanakan.Services.PocketWaifu
                 }
                 else
                 {
-                    chara = await GetRandomCharacterAsync();
+                    chara = await GetRandomCharacterAsync(poolType);
                 }
 
                 if (chara != null)
@@ -2334,7 +2349,7 @@ namespace Sanakan.Services.PocketWaifu
                     if (!isUrlToImage)
                         return ExecutionResult.FromError("Nie został podany bezpośredni adres do obrazka!");
 
-                    if (card.FromFigure && _imgExtWithAlpha.Any(x => x.Equals(imageExt, StringComparison.CurrentCultureIgnoreCase)))
+                    if (card.FromFigure && !_imgExtWithAlpha.Any(x => x.Equals(imageExt, StringComparison.CurrentCultureIgnoreCase)))
                         return ExecutionResult.FromError("Format obrazka nie pozwala na przeźroczystość, która jest wymagana do kart ultimate!");
 
                     bool isAnim = item.Type == ItemType.SetCustomAnimatedImage;
