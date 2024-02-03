@@ -438,6 +438,31 @@ namespace Sanakan.Modules
             }
         }
 
+        [Command("chce wszystkie waifu")]
+        [Alias("i want them all")]
+        [Summary("zwiększa pule postaci o te z mang")]
+        [Remarks(""), RequireWaifuCommandChannel]
+        public async Task SetCharacterPoolAsync()
+        {
+            using (var db = new Database.DatabaseContext(Config))
+            {
+                var bUser = await db.GetUserOrCreateAsync(Context.User.Id);
+                if (bUser.PoolType != CharacterPoolType.Anime)
+                {
+                    await ReplyAsync("", embed: $"{Context.User.Mention} twoja pula postaci została już wcześniej zmieniona.".ToEmbedMessage(EMType.Error).Build());
+                    return;
+                }
+
+                bUser.PoolType = CharacterPoolType.All;
+
+                await db.SaveChangesAsync();
+
+                await ReplyAsync("", embed: $"{Context.User.Mention} twoja pula postaci została rozszezrona.".ToEmbedMessage(EMType.Success).Build());
+
+                QueryCacheManager.ExpireTag(new string[] { $"user-{bUser.Id}", "users" });
+            }
+        }
+
         [Command("lazyp")]
         [Alias("lp")]
         [Summary("otwiera pierwszy pakiet z domyślnie ustawionym niszczeniem kc na 3 oraz tagiem wymiana")]

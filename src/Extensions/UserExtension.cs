@@ -51,6 +51,7 @@ namespace Sanakan.Extensions
                 CharacterCntFromDate = 0,
                 ShowWaifuInProfile = false,
                 ProfileType = ProfileType.Stats,
+                PoolType = CharacterPoolType.Anime,
                 StatsReplacementProfileUri = "none",
                 TimeStatuses = new List<TimeStatus>(),
                 BackgroundProfileUri = $"./Pictures/defBg.png",
