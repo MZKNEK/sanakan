@@ -318,7 +318,7 @@ namespace Sanakan.Extensions
                 case ItemType.IncreaseUltimateAll: return 1.2;
                 case ItemType.FigureSkeleton: return -1;
                 case ItemType.CardFragment: return -0.1;
-                case ItemType.BloodOfYourWaifu: return -2;
+                case ItemType.BloodOfYourWaifu: return -1.5;
 
                 default: return 0;
             }
@@ -506,7 +506,7 @@ namespace Sanakan.Extensions
                 case ItemType.IncreaseUltimateAll:
                     return 800;
                 case ItemType.BloodOfYourWaifu:
-                    return 350;
+                    return 450;
                 case ItemType.CardFragment:
                     return 0;
 

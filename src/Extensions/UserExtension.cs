@@ -416,7 +416,7 @@ namespace Sanakan.Extensions
 
         public static bool IsNeutral(this GameDeck deck) => IsKarmaNeutral(deck.Karma);
 
-        public static bool IsKarmaNeutral(this double karma) => karma > -10 && karma < 10;
+        public static bool IsKarmaNeutral(this double karma) => karma > -45 && karma < 45;
 
         public static double AffectionFromKarma(this GameDeck deck)
         {

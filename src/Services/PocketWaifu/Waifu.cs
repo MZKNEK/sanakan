@@ -156,8 +156,9 @@ namespace Sanakan.Services.PocketWaifu
                     (ItemType.AffectionRecoveryGreat,   15),
                     (ItemType.IncreaseExpBig,           12),
                     (ItemType.IncreaseExpSmall,         8),
-                    (ItemType.IncreaseUpgradeCnt,       3),
-                    (ItemType.BetterIncreaseUpgradeCnt, 2),
+                    (ItemType.IncreaseUpgradeCnt,       5),
+                    (ItemType.BetterIncreaseUpgradeCnt, 4),
+                    (ItemType.BloodOfYourWaifu,         1),
                 }.ToRealList()
             },
             {CardExpedition.DarkItems, new List<(ItemType, int)>
@@ -1725,22 +1726,22 @@ namespace Sanakan.Services.PocketWaifu
             switch (expedition)
             {
                 case CardExpedition.NormalItemWithExp:
-                    cnt = 1.7;
+                    cnt += 1.7;
                     break;
 
                 case CardExpedition.ExtremeItemWithExp:
-                    cnt = 13.6;
+                    cnt += 13.6;
                     break;
 
                 case CardExpedition.LightItemWithExp:
                 case CardExpedition.DarkItemWithExp:
                     if (card.Dere == Dere.Yami || card.Dere == Dere.Raito)
                     {
-                        cnt = 5.1;
+                        cnt += 5.1;
                     }
                     else
                     {
-                        cnt = 4.2;
+                        cnt += 4.2;
                     }
                     break;
 
@@ -1748,25 +1749,25 @@ namespace Sanakan.Services.PocketWaifu
                 case CardExpedition.LightItems:
                     if (card.Dere == Dere.Yami || card.Dere == Dere.Raito)
                     {
-                        cnt = 8.9;
+                        cnt += 8.9;
                     }
                     else
                     {
-                        cnt = 7.2;
+                        cnt += 7.2;
                     }
                     break;
 
                 case CardExpedition.UltimateEasy:
                 case CardExpedition.UltimateMedium:
-                    cnt = 1.4;
+                    cnt += 1.4;
                     break;
 
                 case CardExpedition.UltimateHard:
-                    cnt = 2.3;
+                    cnt += 2.3;
                     break;
 
                 case CardExpedition.UltimateHardcore:
-                    cnt = 1.1;
+                    cnt += 1.1;
                     break;
 
                 default:
@@ -1791,21 +1792,21 @@ namespace Sanakan.Services.PocketWaifu
             switch (expedition)
             {
                 case CardExpedition.NormalItemWithExp:
-                    baseExp = 1.6;
+                    baseExp += 1.6;
                     break;
 
                 case CardExpedition.ExtremeItemWithExp:
-                    baseExp = 5.8;
+                    baseExp += 5.8;
                     break;
 
                 case CardExpedition.LightItemWithExp:
                 case CardExpedition.DarkItemWithExp:
-                    baseExp = 3.1;
+                    baseExp += 3.1;
                     break;
 
                 case CardExpedition.LightExp:
                 case CardExpedition.DarkExp:
-                    baseExp = 11.6;
+                    baseExp += 11.6;
                     break;
 
                 case CardExpedition.DarkItems:
@@ -1885,12 +1886,12 @@ namespace Sanakan.Services.PocketWaifu
                 totalExp /= 2;
             }
 
-            if (duration.Item1 <= 1 || user.GameDeck.CanCreateDemon())
+            if (duration.Item1 <= 2 || user.GameDeck.CanCreateDemon())
             {
                 karmaCost /= 2.5;
             }
 
-            if (duration.Item1 >= 2160 || user.GameDeck.CanCreateAngel())
+            if (duration.Item1 >= 4140 || user.GameDeck.CanCreateAngel())
             {
                 karmaCost *= 2.5;
             }
@@ -2357,7 +2358,7 @@ namespace Sanakan.Services.PocketWaifu
 
                     if (card.Dere == Dere.Yami || card.Dere == Dere.Yato)
                     {
-                        affectionInc = 5;
+                        affectionInc = 3.5;
                         karmaChange -= 0.5;
                         card.AttackBonus += 2 * itemCnt;
                         str.Append($"Zwiększono się siła karty!");
@@ -2375,8 +2376,8 @@ namespace Sanakan.Services.PocketWaifu
 
                     if (card.CanGiveBloodOrUpgradeToSSS())
                     {
-                        karmaChange += 1;
                         affectionInc = 1;
+                        karmaChange += 1.5;
                         card.UpgradesCnt += 1 * itemCnt;
                         str.Append($"Zwiększono liczbę ulepszeń do {card.UpgradesCnt}!");
                         break;

@@ -785,16 +785,11 @@ namespace Sanakan.Extensions
         public static double GetCostOfExpeditionPerMinuteRaw(this Card card, CardExpedition expedition = CardExpedition.None)
         {
             expedition = (expedition == CardExpedition.None) ? card.Expedition : expedition;
-            var mod = card.FromFigure ? 0.45 : 1;
+            var mod = card.Quality.ValueModifierReverse();
 
             if (card.Dere == Dere.Yami || card.Dere == Dere.Raito)
             {
-                mod *= 0.8;
-            }
-
-            if (card.Dere == Dere.Yato)
-            {
-                mod *= 0.5;
+                mod *=  0.9;
             }
 
             switch (expedition)
@@ -809,7 +804,7 @@ namespace Sanakan.Extensions
                 case CardExpedition.LightExp:
                 case CardExpedition.LightItems:
                 case CardExpedition.DarkItems:
-                    return 0.12 * (mod + 0.25);
+                    return 0.11 * (mod + 0.2);
 
                 case CardExpedition.DarkItemWithExp:
                 case CardExpedition.LightItemWithExp:
@@ -844,7 +839,7 @@ namespace Sanakan.Extensions
                 case CardExpedition.DarkItems:
                 case CardExpedition.DarkExp:
                     if (card.Dere == Dere.Yato)
-                        return 0.0008;
+                        return 0.0028;
                     return 0.0018;
 
                 case CardExpedition.LightItemWithExp:
@@ -880,20 +875,20 @@ namespace Sanakan.Extensions
             {
                 case CardExpedition.NormalItemWithExp:
                 case CardExpedition.ExtremeItemWithExp:
-                    addOFK = 0;
+                    addOFK = karma.IsKarmaNeutral() ? 5 : 0;
                     break;
 
                 case CardExpedition.LightExp:
                 case CardExpedition.LightItems:
                 case CardExpedition.LightItemWithExp:
-                    if (addOFK > 5) addOFK = 5;
+                    if (addOFK > 7) addOFK = 7;
                     break;
 
                 case CardExpedition.DarkItems:
                 case CardExpedition.DarkExp:
                 case CardExpedition.DarkItemWithExp:
                     addOFK = -addOFK;
-                    if (addOFK > 10) addOFK = 10;
+                    if (addOFK > 12) addOFK = 12;
                     break;
 
                 case CardExpedition.UltimateEasy:
@@ -922,14 +917,14 @@ namespace Sanakan.Extensions
             switch (dere)
             {
                 case Dere.Tsundere:
-                    return 0.6;
+                    return 0.5;
 
                 case Dere.Yami:
                 case Dere.Raito:
-                    return 1.35;
+                    return 1.45;
 
                 case Dere.Yato:
-                    return 1.55;
+                    return 1.85;
 
                 default:
                     return 1;
@@ -957,16 +952,37 @@ namespace Sanakan.Extensions
         {
             switch (rarity)
             {
-                case Rarity.SS: return 1.15;
-                case Rarity.S: return 1.05;
-                case Rarity.A: return 0.95;
-                case Rarity.B: return 0.90;
-                case Rarity.C: return 0.85;
+                case Rarity.SS: return 1.2;
+                case Rarity.S: return 1.1;
+                case Rarity.A: return 1;
+                case Rarity.B: return 0.95;
+                case Rarity.C: return 0.90;
                 case Rarity.D: return 0.80;
                 case Rarity.E: return 0.70;
 
                 case Rarity.SSS:
-                default: return 1.3;
+                default: return 1.4;
+            }
+        }
+
+        public static double ValueModifier(this Quality quality)
+        {
+            switch (quality)
+            {
+                case Quality.Omega: return 1.95;
+                case Quality.Sigma: return 1.70;
+                case Quality.Lambda: return 1.60;
+                case Quality.Jota: return 1.45;
+                case Quality.Theta: return 1.4;
+                case Quality.Zeta: return 1.35;
+                case Quality.Epsilon: return 1.3;
+                case Quality.Delta: return 1.25;
+                case Quality.Gamma: return 1.2;
+                case Quality.Beta: return 1.15;
+                case Quality.Alpha: return 1.1;
+
+                case Quality.Broken:
+                default: return 1;
             }
         }
 
@@ -978,6 +994,11 @@ namespace Sanakan.Extensions
         public static double ValueModifierReverse(this Rarity rarity)
         {
             return 2d - rarity.ValueModifier();
+        }
+
+        public static double ValueModifierReverse(this Quality quality)
+        {
+            return 2d - quality.ValueModifier();
         }
 
         public static Api.Models.CardFinalView ToViewUser(this Card c, string name, ulong shinden = 0)
