@@ -474,6 +474,7 @@ namespace Sanakan.Services.PocketWaifu
                 new ItemWithCost(899,   ItemType.RandomNormalBoosterPackS.ToItem()),
                 new ItemWithCost(1299,  ItemType.RandomNormalBoosterPackSS.ToItem()),
                 new ItemWithCost(569,   ItemType.ResetCardValue.ToItem()),
+                new ItemWithCost(9999,  ItemType.SetCustomAnimatedImage.ToItem()),
             };
         }
 
@@ -2320,6 +2321,7 @@ namespace Sanakan.Services.PocketWaifu
                     card.CustomImage = turl;
                     break;
 
+                case ItemType.SetCustomAnimatedImage:
                 case ItemType.SetCustomImage:
                     var imgRes = _img.CheckImageUrl(ref detail);
                     if (imgRes != ImageUrlCheckResult.Ok)
@@ -2335,9 +2337,12 @@ namespace Sanakan.Services.PocketWaifu
                     if (card.FromFigure && _imgExtWithAlpha.Any(x => x.Equals(imageExt, StringComparison.CurrentCultureIgnoreCase)))
                         return ExecutionResult.FromError("Format obrazka nie pozwala na przeźroczystość, która jest wymagana do kart ultimate!");
 
+                    bool isAnim = item.Type == ItemType.SetCustomAnimatedImage;
+
                     card.CustomImage = detail;
+                    card.IsAnimatedImage = isAnim;
                     card.CustomImageDate = _time.Now();
-                    consumeItem = !card.FromFigure;
+                    consumeItem = isAnim || !card.FromFigure;
                     activity = new UserActivityBuilder(_time).WithUser(user).WithCard(card).WithType(Database.Models.ActivityType.UsedScalpel);
                     break;
 

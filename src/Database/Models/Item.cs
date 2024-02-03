@@ -51,7 +51,8 @@ namespace Sanakan.Database.Models
         IncreaseUltimateHealth,
         IncreaseUltimateAll,
         CardFragment,
-        BloodOfYourWaifu
+        BloodOfYourWaifu,
+        SetCustomAnimatedImage
     }
 
     public class Item

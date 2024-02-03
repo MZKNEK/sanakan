@@ -52,6 +52,8 @@ namespace Sanakan.Extensions
                     return "Pozwala sprawdzić dokładny poziom relacji z kartą.";
                 case ItemType.SetCustomImage:
                     return "Pozwala ustawić własny obrazek karcie. Zalecany wymiary 448x650.";
+                case ItemType.SetCustomAnimatedImage:
+                    return "Pozwala ustawić własny animowany obrazek karcie. Zalecany wymiary 448x650.";
                 case ItemType.IncreaseExpSmall:
                     return "Dodaje odrobinę punktów doświadczenia do karty.";
                 case ItemType.IncreaseExpBig:
@@ -127,6 +129,7 @@ namespace Sanakan.Extensions
                 case ItemType.ChangeCardImage:
                     return "Ustawiono nowy obrazek.";
                 case ItemType.SetCustomImage:
+                case ItemType.SetCustomAnimatedImage:
                     return "Ustawiono nowy obrazek. Pamiętaj jednak, że dodanie nieodpowiedniego obrazka może skutkować skasowaniem karty!";
                 case ItemType.SetCustomBorder:
                     return "Ustawiono nowy obrazek jako ramkę. Pamiętaj jednak, że dodanie nieodpowiedniego obrazka może skutkować skasowaniem karty!";
@@ -195,6 +198,8 @@ namespace Sanakan.Extensions
                     return "Kryształowa kula";
                 case ItemType.SetCustomImage:
                     return "Skalpel";
+                case ItemType.SetCustomAnimatedImage:
+                    return "Kamera";
                 case ItemType.IncreaseExpSmall:
                     return $"Mleko truskawkowe{quality}";
                 case ItemType.IncreaseExpBig:
@@ -277,6 +282,7 @@ namespace Sanakan.Extensions
                 case ItemType.CardParamsReRoll: return 0.2;
                 case ItemType.CheckAffection: return 0.2;
                 case ItemType.SetCustomImage: return 0.5;
+                case ItemType.SetCustomAnimatedImage: return 5;
                 case ItemType.IncreaseExpSmall: return 0.15;
                 case ItemType.IncreaseExpBig: return 0.25;
                 case ItemType.ChangeStarType: return 0.3;
@@ -306,6 +312,7 @@ namespace Sanakan.Extensions
                 case ItemType.ChangeStarType: return 0.001;
                 case ItemType.ChangeCardImage: return 0.001;
                 case ItemType.SetCustomImage: return 0.001;
+                case ItemType.SetCustomAnimatedImage: return 0.001;
                 case ItemType.SetCustomBorder: return 0.001;
                 case ItemType.IncreaseUpgradeCnt: return 1;
                 case ItemType.ResetCardValue: return 0.5;
@@ -507,6 +514,8 @@ namespace Sanakan.Extensions
                     return 800;
                 case ItemType.BloodOfYourWaifu:
                     return 450;
+                case ItemType.SetCustomAnimatedImage:
+                    return 3250;
                 case ItemType.CardFragment:
                     return 0;
 
