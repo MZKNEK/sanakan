@@ -90,6 +90,8 @@ namespace Sanakan.Extensions
                     return $"Zapewnia jedno wejście na loterię.";
                 case ItemType.CardFragment:
                     return $"Pozwalalają utworzyć kartę po uzbieraniu ich odpowiedniej liczby.";
+                case ItemType.BloodOfYourWaifu:
+                    return $"Nie mam pojęcia co zamierzasz z tym zrobić.";
                 case ItemType.IncreaseUltimateAttack:
                     return $"Zwiększa atak karcie ultimate.";
                 case ItemType.IncreaseUltimateDefence:
@@ -233,6 +235,8 @@ namespace Sanakan.Extensions
                     return $"Przepustka";
                 case ItemType.CardFragment:
                     return $"Fragment karty";
+                case ItemType.BloodOfYourWaifu:
+                    return $"Kropla krwi twojej waifu";
                 case ItemType.IncreaseUltimateAttack:
                     return $"Czerwona pigułka";
                 case ItemType.IncreaseUltimateDefence:
@@ -283,6 +287,7 @@ namespace Sanakan.Extensions
                 case ItemType.IncreaseUltimateDefence: return 0.35;
                 case ItemType.IncreaseUltimateHealth: return 0.55;
                 case ItemType.IncreaseUltimateAll: return 2.2;
+                case ItemType.BloodOfYourWaifu: return 1.5;
 
                 default: return 0;
             }
@@ -313,6 +318,7 @@ namespace Sanakan.Extensions
                 case ItemType.IncreaseUltimateAll: return 1.2;
                 case ItemType.FigureSkeleton: return -1;
                 case ItemType.CardFragment: return -0.1;
+                case ItemType.BloodOfYourWaifu: return -2;
 
                 default: return 0;
             }
@@ -369,6 +375,7 @@ namespace Sanakan.Extensions
                 case ItemType.IncreaseUltimateHealth:
                 case ItemType.IncreaseUltimateAll:
                 case ItemType.CardFragment:
+                case ItemType.BloodOfYourWaifu:
                 // special case
                 case ItemType.CardParamsReRoll:
                 case ItemType.DereReRoll:
@@ -498,6 +505,8 @@ namespace Sanakan.Extensions
                     return 100;
                 case ItemType.IncreaseUltimateAll:
                     return 800;
+                case ItemType.BloodOfYourWaifu:
+                    return 350;
                 case ItemType.CardFragment:
                     return 0;
 

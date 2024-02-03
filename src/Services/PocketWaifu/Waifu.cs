@@ -139,7 +139,7 @@ namespace Sanakan.Services.PocketWaifu
         {
             {CardExpedition.NormalItemWithExp, new List<(ItemType, int)>
                 {
-                    (ItemType.AffectionRecoverySmall,   50),
+                    (ItemType.AffectionRecoverySmall,   55),
                     (ItemType.AffectionRecoveryNormal,  37),
                     (ItemType.DereReRoll,               10),
                     (ItemType.CardParamsReRoll,         10),
@@ -151,9 +151,9 @@ namespace Sanakan.Services.PocketWaifu
             },
             {CardExpedition.ExtremeItemWithExp, new List<(ItemType, int)>
                 {
-                    (ItemType.AffectionRecoveryNormal,  36),
+                    (ItemType.AffectionRecoveryNormal,  31),
                     (ItemType.AffectionRecoveryBig,     28),
-                    (ItemType.AffectionRecoveryGreat,   12),
+                    (ItemType.AffectionRecoveryGreat,   15),
                     (ItemType.IncreaseExpBig,           12),
                     (ItemType.IncreaseExpSmall,         8),
                     (ItemType.IncreaseUpgradeCnt,       3),
@@ -186,20 +186,20 @@ namespace Sanakan.Services.PocketWaifu
             },
             {CardExpedition.LightItems, new List<(ItemType, int)>
                 {
-                    (ItemType.AffectionRecoverySmall,   50),
-                    (ItemType.AffectionRecoveryNormal,  38),
-                    (ItemType.IncreaseExpSmall,         15),
-                    (ItemType.AffectionRecoveryBig,     13),
-                    (ItemType.AffectionRecoveryGreat,   7),
-                    (ItemType.CardParamsReRoll,         6),
-                    (ItemType.IncreaseUpgradeCnt,       2),
+                    (ItemType.AffectionRecoveryNormal,  50),
+                    (ItemType.AffectionRecoverySmall,   38),
+                    (ItemType.IncreaseExpSmall,         18),
+                    (ItemType.AffectionRecoveryBig,     14),
+                    (ItemType.AffectionRecoveryGreat,   10),
+                    (ItemType.CardParamsReRoll,         7),
+                    (ItemType.IncreaseUpgradeCnt,       4),
                     (ItemType.BetterIncreaseUpgradeCnt, 1),
                 }.ToRealList()
             },
             {CardExpedition.LightItemWithExp, new List<(ItemType, int)>
                 {
-                    (ItemType.AffectionRecoverySmall,   49),
-                    (ItemType.AffectionRecoveryNormal,  34),
+                    (ItemType.AffectionRecoveryNormal,  49),
+                    (ItemType.AffectionRecoverySmall,   34),
                     (ItemType.AffectionRecoveryBig,     14),
                     (ItemType.DereReRoll,               13),
                     (ItemType.AffectionRecoveryGreat,   7),
@@ -1718,28 +1718,42 @@ namespace Sanakan.Services.PocketWaifu
             return new Tuple<double, double>(durationMin, realMin);
         }
 
-        public double GetBaseItemsPerMinuteFromExpedition(CardExpedition expedition, Rarity rarity)
+        public double GetBaseItemsPerMinuteFromExpedition(CardExpedition expedition, Card card)
         {
             var cnt = 0d;
 
             switch (expedition)
             {
                 case CardExpedition.NormalItemWithExp:
-                    cnt = 1.9;
+                    cnt = 1.7;
                     break;
 
                 case CardExpedition.ExtremeItemWithExp:
-                    cnt = 10.1;
+                    cnt = 13.6;
                     break;
 
                 case CardExpedition.LightItemWithExp:
                 case CardExpedition.DarkItemWithExp:
-                    cnt = 4.2;
+                    if (card.Dere == Dere.Yami || card.Dere == Dere.Raito)
+                    {
+                        cnt = 5.1;
+                    }
+                    else
+                    {
+                        cnt = 4.2;
+                    }
                     break;
 
                 case CardExpedition.DarkItems:
                 case CardExpedition.LightItems:
-                    cnt = 7.2;
+                    if (card.Dere == Dere.Yami || card.Dere == Dere.Raito)
+                    {
+                        cnt = 8.9;
+                    }
+                    else
+                    {
+                        cnt = 7.2;
+                    }
                     break;
 
                 case CardExpedition.UltimateEasy:
@@ -1761,12 +1775,16 @@ namespace Sanakan.Services.PocketWaifu
                     return 0;
             }
 
-            cnt *= rarity.ValueModifier();
+            cnt *= card.Rarity.ValueModifier();
+            if (card.Dere == Dere.Yato)
+            {
+                cnt *= 1.5;
+            }
 
             return cnt / 60d;
         }
 
-        public double GetBaseExpPerMinuteFromExpedition(CardExpedition expedition, Rarity rarity)
+        public double GetBaseExpPerMinuteFromExpedition(CardExpedition expedition, Card card)
         {
             var baseExp = 0d;
 
@@ -1802,7 +1820,7 @@ namespace Sanakan.Services.PocketWaifu
                     return 0;
             }
 
-            baseExp *= rarity.ValueModifier();
+            baseExp *= card.Rarity.ValueModifier();
 
             return baseExp / 60d;
         }
@@ -1817,8 +1835,8 @@ namespace Sanakan.Services.PocketWaifu
                 return "Coś poszło nie tak, wyprawa nie została zakończona.";
             }
 
-            var baseExp = GetBaseExpPerMinuteFromExpedition(card.Expedition, card.Rarity);
-            var baseItemsCnt = GetBaseItemsPerMinuteFromExpedition(card.Expedition, card.Rarity);
+            var baseExp = GetBaseExpPerMinuteFromExpedition(card.Expedition, card);
+            var baseItemsCnt = GetBaseItemsPerMinuteFromExpedition(card.Expedition, card);
             var multiplier = (duration.Item2 < 60) ? ((duration.Item2 < 30) ? 5d : 3d) : 1d;
 
             var totalExp = GetProgressiveValueFromExpedition(baseExp, duration.Item1, 15d);
@@ -2331,6 +2349,43 @@ namespace Sanakan.Services.PocketWaifu
                         return ExecutionResult.FromError("Aby ustawić ramkę, karta musi posiadać wcześniej ustawiony obrazek na stronie!");
 
                     card.CustomBorder = detail;
+                    break;
+
+                case ItemType.BloodOfYourWaifu:
+                    if (card.Curse == CardCurse.BloodBlockade)
+                        return ExecutionResult.FromError("na tej karcie ciąży klątwa!");
+
+                    if (card.Dere == Dere.Yami || card.Dere == Dere.Yato)
+                    {
+                        affectionInc = 5;
+                        karmaChange -= 0.5;
+                        card.AttackBonus += 2 * itemCnt;
+                        str.Append($"Zwiększono się siła karty!");
+                        break;
+                    }
+
+                    if (card.Dere == Dere.Raito)
+                    {
+                        affectionInc = -10;
+                        karmaChange -= 1;
+                        card.Curse = CardCurse.LoweredStats;
+                        str.Append($"Karta została spaczona!");
+                        break;
+                    }
+
+                    if (card.CanGiveBloodOrUpgradeToSSS())
+                    {
+                        karmaChange += 1;
+                        affectionInc = 1;
+                        card.UpgradesCnt += 1 * itemCnt;
+                        str.Append($"Zwiększono liczbę ulepszeń do {card.UpgradesCnt}!");
+                        break;
+                    }
+
+                    affectionInc = -5;
+                    karmaChange -= 0.5;
+                    embedColor = EMType.Error;
+                    str.Append($"Karta się przeraziła!");
                     break;
 
                 case ItemType.BetterIncreaseUpgradeCnt:

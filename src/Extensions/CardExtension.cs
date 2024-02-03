@@ -785,7 +785,17 @@ namespace Sanakan.Extensions
         public static double GetCostOfExpeditionPerMinuteRaw(this Card card, CardExpedition expedition = CardExpedition.None)
         {
             expedition = (expedition == CardExpedition.None) ? card.Expedition : expedition;
-            var mod = card.FromFigure ? 0.65 : 1;
+            var mod = card.FromFigure ? 0.45 : 1;
+
+            if (card.Dere == Dere.Yami || card.Dere == Dere.Raito)
+            {
+                mod *= 0.8;
+            }
+
+            if (card.Dere == Dere.Yato)
+            {
+                mod *= 0.5;
+            }
 
             switch (expedition)
             {
@@ -799,7 +809,7 @@ namespace Sanakan.Extensions
                 case CardExpedition.LightExp:
                 case CardExpedition.LightItems:
                 case CardExpedition.DarkItems:
-                    return 0.12;
+                    return 0.12 * (mod + 0.25);
 
                 case CardExpedition.DarkItemWithExp:
                 case CardExpedition.LightItemWithExp:
@@ -833,12 +843,16 @@ namespace Sanakan.Extensions
                 case CardExpedition.DarkItemWithExp:
                 case CardExpedition.DarkItems:
                 case CardExpedition.DarkExp:
+                    if (card.Dere == Dere.Yato)
+                        return 0.0008;
                     return 0.0018;
 
                 case CardExpedition.LightItemWithExp:
                 case CardExpedition.LightExp:
                 case CardExpedition.LightItems:
-                    return 0.0042;
+                    if (card.Dere == Dere.Yato)
+                        return 0.0012;
+                    return 0.0032;
 
                 default:
                 case CardExpedition.UltimateEasy:
@@ -859,7 +873,7 @@ namespace Sanakan.Extensions
 
             if (karma.IsKarmaNeutral())
             {
-                affOffset += 4d;
+                affOffset += 12d;
             }
 
             switch (expedition)
@@ -1027,7 +1041,7 @@ namespace Sanakan.Extensions
                 ? card.GetMaxExpToChest(chLvl)
                 : card.ExpCnt);
 
-            user.GameDeck.Karma -= 1;
+            user.GameDeck.Karma -= user.GameDeck.CanCreateDemon() ? 0.4 : 0.75;
             user.Stats.DestroyedCards += 1;
 
             if (card.MarketValue >= 0.05)
@@ -1044,7 +1058,7 @@ namespace Sanakan.Extensions
                 ? card.GetMaxExpToChest(chLvl)
                 : (card.ExpCnt / 2));
 
-            user.GameDeck.Karma += 1;
+            user.GameDeck.Karma += user.GameDeck.CanCreateAngel() ? 0.9 : 1.1;
             user.Stats.ReleasedCards += 1;
         }
 

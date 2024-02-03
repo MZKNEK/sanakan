@@ -1292,7 +1292,15 @@ namespace Sanakan.Modules
                 if (Services.Fun.TakeATry(3))
                 {
                     botuser.GameDeck.CTCnt += 1;
-                    reward += "+1CT";
+                    reward += "\nUps, twoja waifu się potknęła a Ty się jeszcze z tego cieszysz. (+1CT)\n";
+
+                    if (Services.Fun.TakeATry(10))
+                    {
+                        var bitem = ItemType.BloodOfYourWaifu.ToItem();
+                        botuser.GameDeck.AddItem(bitem);
+
+                        reward += $"+{bitem.Name}";
+                    }
                 }
 
                 await db.SaveChangesAsync();
@@ -1906,11 +1914,11 @@ namespace Sanakan.Modules
 
         [Command("wyzwól")]
         [Alias("unleash", "wyzwol")]
-        [Summary("zmienia kartę niewymienialną na wymienialną (250 CT lub 2000 CT w przypadku ultimate)")]
+        [Summary("zmienia kartę niewymienialną na wymienialną (300/150 CT lub 2000 CT w przypadku ultimate)")]
         [Remarks("8651"), RequireWaifuCommandChannel]
         public async Task UnleashCardAsync([Summary("WID")] ulong wid)
         {
-            int cost = 250;
+            int cost = 300;
             using (var db = new Database.DatabaseContext(Config))
             {
                 var bUser = await db.GetUserOrCreateAsync(Context.User.Id);
@@ -1934,6 +1942,7 @@ namespace Sanakan.Modules
                     return;
                 }
 
+                if (bUser.GameDeck.CanCreateAngel()) cost /= 2;
                 if (thisCard.FromFigure) cost = 2000;
 
                 if (bUser.GameDeck.CTCnt < cost)
