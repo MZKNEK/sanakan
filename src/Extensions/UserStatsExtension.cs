@@ -10,9 +10,20 @@ namespace Sanakan.Extensions
         {
             if (stats == null) return "";
 
-            return $"**Wydane TC**:\n**-Na pakiety**: {stats.WastedTcOnCards}\n**-Na przedmioty**: {stats.WastedTcOnCookies}\n\n**Stracone SC**: {stats.ScLost}\n**Dochód SC**: {stats.IncomeInSc}\n"
-                + $"**Gier na automacie**: { stats.SlotMachineGames}\n**Rzutów monetą**: {stats.Tail + stats.Head}\n**-Trafień**: {stats.Hit}\n**-Pudeł**: {stats.Misd}\n\n"
-                + $"**Pakiety otwarte**:\n**-Aktywność**: {stats.OpenedBoosterPacksActivity}\n**-Inne**: {stats.OpenedBoosterPacks}";
+            return $"**Wydane TC**:\n"
+                + $"**-Na pakiety**: {stats.WastedTcOnCards}\n"
+                + $"**-Na przedmioty**: {stats.WastedTcOnCookies}\n\n"
+                + $"**Wydane TC lub AC na pakiety**: {stats.WastedPuzzlesOnCards}\n"
+                + $"**Wydane PC na przedmioty**: {stats.WastedPuzzlesOnCookies}\n\n"
+                + $"**Stracone SC**: {stats.ScLost}\n"
+                + $"**Dochód SC**: {stats.IncomeInSc}\n"
+                + $"**Gier na automacie**: { stats.SlotMachineGames}\n"
+                + $"**Rzutów monetą**: {stats.Tail + stats.Head}\n"
+                + $"**-Trafień**: {stats.Hit}\n"
+                + $"**-Pudeł**: {stats.Misd}\n\n"
+                + $"**Pakiety otwarte**:\n"
+                + $"**-Aktywność**: {stats.OpenedBoosterPacksActivity}\n"
+                + $"**-Inne**: {stats.OpenedBoosterPacks}";
         }
     }
 }

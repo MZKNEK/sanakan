@@ -741,7 +741,7 @@ namespace Sanakan.Services.PocketWaifu
                         }
                     }
 
-                    bUser.Stats.WastedPuzzlesOnCards += realCost;
+                    IncreaseMoneySpentOnCards(type, bUser, realCost);
                 }
                 else if (thisItem.Item.Type.IsPreAssembledFigure())
                 {
@@ -2175,9 +2175,10 @@ namespace Sanakan.Services.PocketWaifu
                             return ExecutionResult.FromError("typy części się nie zgadzają.");
 
                         var expFromPart = item.ToExpForPart(activeFigure.SkeletonQuality);
-                        activeFigure.PartExp += expFromPart * itemCnt;
+                        var totalExp = expFromPart * itemCnt;
+                        activeFigure.PartExp += totalExp;
 
-                        str.Append($"Dodano do wybranej części figurki {expFromPart:F} punktów konstrukcji. W sumie posiada ich {activeFigure.PartExp:F}.");
+                        str.Append($"Dodano do wybranej części figurki {totalExp:F} punktów konstrukcji. W sumie posiada ich {activeFigure.PartExp:F}.");
                         break;
                     }
 

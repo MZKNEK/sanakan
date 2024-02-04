@@ -449,7 +449,7 @@ namespace Sanakan.Modules
                 var bUser = await db.GetUserOrCreateAsync(Context.User.Id);
                 if (bUser.PoolType != CharacterPoolType.Anime)
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} twoja pula postaci została już wcześniej zmieniona.".ToEmbedMessage(EMType.Error).Build());
+                    await ReplyAsync("", embed: $"{Context.User.Mention} twoja pula postaci została już wcześniej rozszerzona.".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
@@ -457,7 +457,7 @@ namespace Sanakan.Modules
 
                 await db.SaveChangesAsync();
 
-                await ReplyAsync("", embed: $"{Context.User.Mention} twoja pula postaci została rozszezrona.".ToEmbedMessage(EMType.Success).Build());
+                await ReplyAsync("", embed: $"{Context.User.Mention} twoja pula postaci została rozszerzona.".ToEmbedMessage(EMType.Success).Build());
 
                 QueryCacheManager.ExpireTag(new string[] { $"user-{bUser.Id}", "users" });
             }
