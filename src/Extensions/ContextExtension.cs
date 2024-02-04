@@ -145,7 +145,7 @@ namespace Sanakan.Extensions
 
         public static async Task<User> GetBaseUserAndDontTrackAsync(this Database.DatabaseContext context, ulong userId)
         {
-            return await context.Users.AsQueryable().AsNoTracking().FirstOrDefaultAsync(x => x.Id == userId);
+            return await context.Users.AsQueryable().AsNoTracking().Include(x => x.Stats).FirstOrDefaultAsync(x => x.Id == userId);
         }
 
         public static async Task<User> GetUserAndDontTrackAsync(this Database.DatabaseContext context, ulong userId)

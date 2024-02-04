@@ -121,7 +121,10 @@ namespace Sanakan.Extensions
                     OpenedBoosterPacks = 0,
                     LotteryTicketsUsed = 0,
                     WastedPuzzlesOnCards = 0,
+                    WastedActivityOnCards = 0,
                     WastedPuzzlesOnCookies = 0,
+                    WastedActivityOnCookies = 0,
+                    WastedPuzzlesOnCardsReal = 0,
                     OpenedBoosterPacksActivity = 0,
                 },
                 SMConfig = new SlotMachineConfig

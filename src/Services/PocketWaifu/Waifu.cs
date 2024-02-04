@@ -585,6 +585,9 @@ namespace Sanakan.Services.PocketWaifu
                     break;
 
                 case ShopType.Activity:
+                    user.Stats.WastedActivityOnCookies += cost;
+                    break;
+
                 default:
                     break;
             }
@@ -599,10 +602,13 @@ namespace Sanakan.Services.PocketWaifu
                     break;
 
                 case ShopType.Pvp:
-                    user.Stats.WastedPuzzlesOnCards += cost;
+                    user.Stats.WastedPuzzlesOnCardsReal += cost;
                     break;
 
                 case ShopType.Activity:
+                    user.Stats.WastedActivityOnCards += cost;
+                    break;
+
                 default:
                     break;
             }

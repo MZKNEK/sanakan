@@ -33,6 +33,9 @@ namespace Sanakan.Database.Models
         public long UpgradedToSSS { get; set; }
         public long WastedPuzzlesOnCookies { get; set; }
         public long WastedPuzzlesOnCards { get; set; }
+        public long WastedPuzzlesOnCardsReal { get; set; }
+        public long WastedActivityOnCookies { get; set; }
+        public long WastedActivityOnCards { get; set; }
 
         public long LotteryTicketsUsed { get; set; }
         public long ReversedKarmaCnt { get; set; }
