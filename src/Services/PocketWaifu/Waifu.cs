@@ -1157,18 +1157,26 @@ namespace Sanakan.Services.PocketWaifu
             return chara;
         }
 
+        private bool FileIsTooBigToSend(string file)
+        {
+            return File.Exists(file) && (new FileInfo(file).Length / 1000 / 1000) > 25;
+        }
+
         public async Task<string> GetWaifuProfileImageAsync(Card card, ITextChannel trashCh)
         {
             var url = Api.Models.CardFinalView.GetCardProfileInShindenUrl(card);
             var uri = await GetCardProfileUrlIfExistAsync(card);
-            try
+            if (!card.IsAnimatedImage || (card.IsAnimatedImage && !FileIsTooBigToSend(uri)))
             {
-                var fs = await trashCh.SendFileAsync(uri);
-                url = fs.Attachments.First().Url;
-            }
-            catch (Exception ex)
-            {
-                _logger.Log($"Sending file: {ex.Message}");
+                try
+                {
+                    var fs = await trashCh.SendFileAsync(uri);
+                    url = fs.Attachments.First().Url;
+                }
+                catch (Exception ex)
+                {
+                    _logger.Log($"Sending file: {ex.Message}");
+                }
             }
             return url;
         }
@@ -1505,31 +1513,28 @@ namespace Sanakan.Services.PocketWaifu
             return msg.Attachments.First().Url;
         }
 
-        public async Task<Embed> BuildCardImageAsync(Card card, ITextChannel trashChannel, SocketUser owner, bool showStats)
+        public async Task<string> GetWaifuCardImageAsync(Card card, ITextChannel trashCh)
         {
-            string imageUrl = null;
-            if (showStats)
+            var url = Api.Models.CardFinalView.GetCardBaseInShindenUrl(card);
+            var uri = await GetCardUrlIfExistAsync(card);
+            if (!card.IsAnimatedImage || (card.IsAnimatedImage && !FileIsTooBigToSend(uri)))
             {
-                imageUrl = await GetCardUrlIfExistAsync(card);
-                if (imageUrl != null)
+                try
                 {
-                    try
-                    {
-                        var msg = await trashChannel.SendFileAsync(imageUrl);
-                        imageUrl = msg.Attachments.First().Url;
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.Log($"Sending file: {ex.Message}");
-                        imageUrl = Api.Models.CardFinalView.GetCardBaseInShindenUrl(card);
-                    }
+                    var fs = await trashCh.SendFileAsync(uri);
+                    url = fs.Attachments.First().Url;
+                }
+                catch (Exception ex)
+                {
+                    _logger.Log($"Sending file: {ex.Message}");
                 }
             }
-            else
-            {
-                imageUrl = await GetWaifuProfileImageAsync(card, trashChannel);
-            }
+            return url;
+        }
 
+        public async Task<Embed> BuildCardImageAsync(Card card, ITextChannel trashChannel, SocketUser owner, bool showStats)
+        {
+            string imageUrl = showStats ? await GetWaifuCardImageAsync(card, trashChannel) : await GetWaifuProfileImageAsync(card, trashChannel);
             string ownerString = (((owner as SocketGuildUser)?.Nickname ?? owner?.GlobalName) ?? owner?.Username) ?? "????";
 
             return new EmbedBuilder
@@ -1546,21 +1551,7 @@ namespace Sanakan.Services.PocketWaifu
 
         public async Task<Embed> BuildCardViewAsync(Card card, ITextChannel trashChannel, SocketUser owner)
         {
-            string imageUrl = await GetCardUrlIfExistAsync(card);
-            if (imageUrl != null)
-            {
-                try
-                {
-                    var msg = await trashChannel.SendFileAsync(imageUrl);
-                    imageUrl = msg.Attachments.First().Url;
-                }
-                catch (Exception ex)
-                {
-                    _logger.Log($"Sending file: {ex.Message}");
-                    imageUrl = Api.Models.CardFinalView.GetCardBaseInShindenUrl(card);
-                }
-            }
-
+            string imageUrl = await GetWaifuCardImageAsync(card, trashChannel);
             string imgUrls = $"[_obrazek_]({imageUrl})\n[_możesz zmienić obrazek tutaj_]({card.GetCharacterUrl()}/edit_crossroad)";
             string ownerString = (((owner as SocketGuildUser)?.Nickname ?? owner?.GlobalName) ?? owner?.Username) ?? "????";
 
