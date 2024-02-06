@@ -25,7 +25,7 @@ namespace Sanakan.Services.PocketWaifu
 
     public class Lottery
     {
-        private static ListIdUpdate _currentSeason = new ListIdUpdate();
+        private static CharacterPool<ulong> _currentSeason = new CharacterPool<ulong>();
 
         private static List<Quality> _figurePartsQuality = new List<(Quality, int)>
         {
@@ -142,7 +142,7 @@ namespace Sanakan.Services.PocketWaifu
                 }
             }
 
-            return Fun.GetOneRandomFrom(_currentSeason.GetIds());
+            return _currentSeason.GetOneRandom();
         }
 
         public async Task<string> GetAndApplyRewardAsync(User user)

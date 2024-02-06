@@ -359,6 +359,21 @@ namespace Sanakan.Extensions
             else thisItem.Count += item.Count;
         }
 
+        public static bool RemoveItem(this GameDeck deck, Item item)
+        {
+            var thisItem = deck.Items.FirstOrDefault(x => x.Type == item.Type && x.Quality == item.Quality);
+            if (thisItem != null)
+            {
+                thisItem.Count -= item.Count;
+
+                if (thisItem.Count < 1)
+                    deck.Items.Remove(thisItem);
+
+                return true;
+            }
+            return false;
+        }
+
         public static double GetDeckPower(this GameDeck deck) => deck.DeckPower;
 
         public static bool NeedToSetDeckAgain(this GameDeck deck) => deck.DeckPower == -1;

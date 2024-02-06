@@ -44,9 +44,9 @@ namespace Sanakan.Services.PocketWaifu
     public class Waifu
     {
         private const int DERE_TAB_SIZE = ((int)Dere.Yato) + 1;
-        private static ListIdUpdate CharIdAnime = new ListIdUpdate();
-        private static ListIdUpdate CharIdManga = new ListIdUpdate();
-        private static ListIdUpdate CharIdAll = new ListIdUpdate();
+        private static CharacterPool<ulong> _charIdAnime = new CharacterPool<ulong>();
+        private static CharacterPool<ulong> _charIdManga = new CharacterPool<ulong>();
+        private static CharacterPool<ulong> _charIdAll = new CharacterPool<ulong>();
 
         private static List<string> _qualityNamesList = Enum.GetNames(typeof(Quality)).ToList();
 
@@ -236,12 +236,6 @@ namespace Sanakan.Services.PocketWaifu
         }
 
         static public double GetDereDmgMultiplier(Card atk, Card def) => _dereDmgRelation[(int)def.Dere, (int)atk.Dere];
-
-        public bool GetEventSate() => CharIdAnime.EventEnabled;
-
-        public void SetEventState(bool state) => CharIdAnime.EventEnabled = state;
-
-        public void SetEventIds(List<ulong> ids) => CharIdAnime.SetEventIds(ids);
 
         public List<Card> GetListInRightOrder(IEnumerable<Card> list, HaremType type, string tag)
         {
@@ -1124,9 +1118,9 @@ namespace Sanakan.Services.PocketWaifu
             int check = 2;
             var idPool = type switch
             {
-                CharacterPoolType.Anime => CharIdAnime,
-                CharacterPoolType.Manga => CharIdManga,
-                _ => CharIdAll,
+                CharacterPoolType.Anime => _charIdAnime,
+                CharacterPoolType.Manga => _charIdManga,
+                _ => _charIdAll,
             };
 
             if (idPool.IsNeedForUpdate(_time.Now()))
@@ -1150,15 +1144,15 @@ namespace Sanakan.Services.PocketWaifu
                 }
             }
 
-            ulong id = Fun.GetOneRandomFrom(idPool.GetIds());
+            ulong id = idPool.GetOneRandom();
             var chara = await _shinden.GetCharacterInfoAsync(id);
 
             while (chara is null && --check > 0)
             {
-                id = Fun.GetOneRandomFrom(idPool.GetIds());
-                chara = await _shinden.GetCharacterInfoAsync(id);
-
                 await Task.Delay(TimeSpan.FromMilliseconds(500));
+
+                id = idPool.GetOneRandom();
+                chara = await _shinden.GetCharacterInfoAsync(id);
             }
             return chara;
         }

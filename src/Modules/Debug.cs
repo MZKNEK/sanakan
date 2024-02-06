@@ -1085,58 +1085,6 @@ namespace Sanakan.Modules
             await ReplyAsync("", embed: $"Safari: `{config.SafariEnabled.GetYesNo()}` `Zapisano: {save.GetYesNo()}`".ToEmbedMessage(EMType.Success).Build());
         }
 
-        [Command("twevent"), Priority(1)]
-        [Summary("wyłącza/załącza event waifu")]
-        [Remarks("")]
-        public async Task ToggleWaifuEventAsync()
-        {
-            var state = _waifu.GetEventSate();
-            _waifu.SetEventState(!state);
-
-            await ReplyAsync("", embed: $"Waifu event: `{(!state).GetYesNo()}`.".ToEmbedMessage(EMType.Success).Build());
-        }
-
-        [Command("wevent"), Priority(1)]
-        [Summary("ustawia id eventu (kasowane są po restarcie)")]
-        [Remarks("https://pastebin.com/raw/Y6a8gH5P")]
-        public async Task SetWaifuEventIdsAsync([Summary("link do pliku z id postaci oddzielnymi średnikami")]string url)
-        {
-            using (var client = new HttpClient())
-            {
-                var ids = new List<ulong>();
-                var res = await client.GetAsync(url);
-                if (res.IsSuccessStatusCode)
-                {
-                    using (var body = await res.Content.ReadAsStreamAsync())
-                    {
-                        using (var sr = new StreamReader(body))
-                        {
-                            var content = await sr.ReadToEndAsync();
-
-                            try
-                            {
-                                ids = content.Split(";").Select(x => ulong.Parse(x)).ToList();
-                            }
-                            catch (Exception ex)
-                            {
-                                await ReplyAsync("", embed: $"Format pliku jest niepoprawny! ({ex.Message})".ToEmbedMessage(EMType.Error).Build());
-                                return;
-                            }
-                        }
-                    }
-
-                    if (ids.Count > 0)
-                    {
-                        _waifu.SetEventIds(ids);
-                        await ReplyAsync("", embed: $"Ustawiono `{ids.Count}` id.".ToEmbedMessage(EMType.Success).Build());
-                        return;
-                    }
-                }
-            }
-
-            await ReplyAsync("", embed: $"Nie udało się odczytać pliku.".ToEmbedMessage(EMType.Error).Build());
-        }
-
         [Command("lvlbadge", RunMode = RunMode.Async)]
         [Summary("generuje przykładowy obrazek otrzymania poziomu")]
         [Remarks("")]
@@ -1196,6 +1144,30 @@ namespace Sanakan.Modules
 
                 string cnt = (count > 1) ? $" x{count}" : "";
                 await ReplyAsync("", embed: $"{user.Mention} otrzymał _{item.Name}_{cnt}.".ToEmbedMessage(EMType.Success).Build());
+            }
+        }
+
+        [Command("ritem"), Priority(1)]
+        [Summary("odejmuje od użytkownika x sztuk przedmiotu")]
+        [Remarks("Sniku 2 1")]
+        public async Task RemoveItemAsync([Summary("nazwa użytkownika")]SocketGuildUser user, [Summary("przedmiot")]ItemType itemType, [Summary("liczba przedmiotów")]uint count = 1,
+            [Summary("jakość przedmiotu")]Quality quality = Quality.Broken)
+        {
+            var item = itemType.ToItem(count, quality);
+            using (var db = new Database.DatabaseContext(Config))
+            {
+                var botuser = await db.GetUserOrCreateAsync(user.Id);
+                if (botuser.GameDeck.RemoveItem(item))
+                {
+                    await db.SaveChangesAsync();
+
+                    string cnt = (count > 1) ? $" x{count}" : "";
+                    await ReplyAsync("", embed: $"{user.Mention} stracił _{item.Name}_{cnt}.".ToEmbedMessage(EMType.Success).Build());
+
+                    QueryCacheManager.ExpireTag(new string[] { $"user-{botuser.Id}", "users" });
+                    return;
+                }
+                await ReplyAsync("", embed: $"{user.Mention} nie posiada _{item.Name}_.".ToEmbedMessage(EMType.Error).Build());
             }
         }
 
