@@ -2911,6 +2911,7 @@ namespace Sanakan.Modules
 
                 long scrapes = 0;
                 double totalKarma = 0;
+                var errors = new List<string>();
                 var userItems = buser.GetAllItems().ToArray();
                 foreach (var it in items)
                 {
@@ -2920,10 +2921,18 @@ namespace Sanakan.Modules
                         it.Count = thisItem.Count;
                     }
 
+                    if (thisItem.Type.IsProtected() && !it.Force)
+                    {
+                        errors.Add($"{thisItem.Name}x{it.Count}");
+                        continue;
+                    }
+
                     if (thisItem.Count < it.Count)
                     {
-                        await ReplyAsync("", embed: $"{Context.User.Mention} nie masz wystarczająco dużej liczby: `{thisItem.Name}`".ToEmbedMessage(EMType.Error).Build());
-                        return;
+                        if (!it.Force)
+                            errors.Add($"{thisItem.Name}x{it.Count - thisItem.Count}");
+
+                        it.Count = thisItem.Count;
                     }
 
                     totalKarma += it.Count * thisItem.Type.GetBaseKarmaChange() * 0.25;
@@ -2948,7 +2957,9 @@ namespace Sanakan.Modules
 
                 QueryCacheManager.ExpireTag(new string[] { $"user-{buser.Id}" });
 
-                await ReplyAsync("", embed: $"{Context.User.Mention} udało się zyskać **{scrapes}** fragmentów, masz ich w sumie już **{tItem.Count}**.".ToEmbedMessage(EMType.Success).Build());
+                string errorInfo = errors.Count > 0 ? $"\n\nNie udało się wymienić:\n{string.Join("\n", errors)}": "";
+                await ReplyAsync("", embed: $"{Context.User.Mention} udało się zyskać **{scrapes}** fragmentów, masz ich w sumie już **{tItem.Count}**.{errorInfo}"
+                    .ToEmbedMessage(errors.Count > 0 ? EMType.Warning : EMType.Success).Build());
             }
         }
 

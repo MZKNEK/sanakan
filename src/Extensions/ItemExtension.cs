@@ -468,6 +468,34 @@ namespace Sanakan.Extensions
             }
         }
 
+        public static bool IsProtected(this ItemType type)
+        {
+            switch (type)
+            {
+                case ItemType.CheckAffection:
+                case ItemType.SetCustomImage:
+                case ItemType.ChangeStarType:
+                case ItemType.SetCustomBorder:
+                case ItemType.ChangeCardImage:
+                case ItemType.ResetCardValue:
+                case ItemType.LotteryTicket:
+                case ItemType.IncreaseUltimateAttack:
+                case ItemType.IncreaseUltimateDefence:
+                case ItemType.IncreaseUltimateHealth:
+                case ItemType.IncreaseUltimateAll:
+                case ItemType.SetCustomAnimatedImage:
+                case ItemType.PreAssembledMegumin:
+                case ItemType.PreAssembledGintoki:
+                case ItemType.PreAssembledAsuna:
+                case ItemType.FigureSkeleton:
+                case ItemType.CardFragment:
+                    return true;
+
+                default:
+                    return false;
+            }
+        }
+
         public static long CValue(this ItemType type)
         {
             switch (type)

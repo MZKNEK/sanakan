@@ -6,6 +6,7 @@ namespace Sanakan.Services.PocketWaifu
     {
         public uint Item;
         public long Count;
+        public bool Force;
 
         public override string ToString()
         {

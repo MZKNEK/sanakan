@@ -2,7 +2,6 @@
 
 using Discord.Commands;
 using System;
-using System.Linq;
 using System.Threading.Tasks;
 
 namespace Sanakan.TypeReaders
@@ -13,9 +12,13 @@ namespace Sanakan.TypeReaders
         {
             if (!string.IsNullOrEmpty(input))
             {
-                var ret = new Services.PocketWaifu.ItemCountPair();
-                var spr = input.Split(':').ToArray();
-                if (spr.Length > 0 && uint.TryParse(spr[0], out ret.Item))
+                var ret = new Services.PocketWaifu.ItemCountPair
+                {
+                    Force = input.StartsWith('!')
+                };
+
+                var spr = input.Split(':');
+                if (spr.Length > 0 && uint.TryParse(spr[0].AsSpan().Slice(ret.Force ? 1 : 0), out ret.Item))
                 {
                     if (spr.Length > 1 && uint.TryParse(spr[1], out var ic))
                         ret.Count = ic;
