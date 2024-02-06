@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography;
 using Discord.WebSocket;
 using Sanakan.Database.Models;
 using Sanakan.Extensions;
@@ -60,7 +61,7 @@ namespace Sanakan.Services
 
         public static string GetRandomMuteReactionGif() => GetOneRandomFrom(_botReactions);
 
-        public static int GetRandomValue(int min, int max) => _rand.Next(min, max);
+        public static int GetRandomValue(int min, int max) => RandomNumberGenerator.GetInt32(min, max);
 
         public static bool TakeATry(int chance) => GetRandomValue(chance) == 1;
 

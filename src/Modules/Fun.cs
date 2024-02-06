@@ -237,7 +237,7 @@ namespace Sanakan.Modules
 
                 botuser.ScCnt -= amount;
                 var thrown = _fun.RandomizeSide();
-                var embed = $"{Context.User.Mention} pudło! Obecnie posiadasz {botuser.ScCnt} SC.".ToEmbedMessage(EMType.Error);
+                var embed = $"{Context.User.Mention} pudło!\n\nObecnie posiadasz {botuser.ScCnt} SC.".ToEmbedMessage(EMType.Error);
 
                 botuser.Stats.Tail += (thrown == CoinSide.Tail) ? 1 : 0;
                 botuser.Stats.Head += (thrown == CoinSide.Head) ? 1 : 0;
@@ -247,7 +247,7 @@ namespace Sanakan.Modules
                     ++botuser.Stats.Hit;
                     botuser.ScCnt += amount * 2;
                     botuser.Stats.IncomeInSc += amount;
-                    embed = $"{Context.User.Mention} trafiony zatopiony! Obecnie posiadasz {botuser.ScCnt} SC.".ToEmbedMessage(EMType.Success);
+                    embed = $"{Context.User.Mention} trafiony zatopiony!\n\nObecnie posiadasz {botuser.ScCnt} SC.".ToEmbedMessage(EMType.Success);
                 }
                 else
                 {
@@ -260,8 +260,8 @@ namespace Sanakan.Modules
 
                 QueryCacheManager.ExpireTag(new string[] { $"user-{botuser.Id}", "users" });
 
+                embed.ImageUrl = $"https://sanakan.pl/i/coin{(int)thrown}.png";
                 await ReplyAsync("", embed: embed.Build());
-                await Context.Channel.SendFileAsync($"./Pictures/coin{(int)thrown}.png");
             }
         }
 
@@ -318,7 +318,6 @@ namespace Sanakan.Modules
                     return;
                 }
                 var win = machine.Play(new SlotWickedRandom());
-                // var win = machine.Play(new SlotEqualRandom());
                 botuser.ScCnt += win - toPay;
 
                 await db.SaveChangesAsync();
