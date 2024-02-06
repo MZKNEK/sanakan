@@ -116,6 +116,7 @@ namespace Sanakan.Services.SlotMachine
             switch(User.SMConfig.Rows)
             {
                 case SlotMachineSelectedRows.r3:
+                    win += CheckColumns(rBeat, ref list);
                     win += CheckRow(2, rBeat, ref list);
                     goto case SlotMachineSelectedRows.r2;
                 case SlotMachineSelectedRows.r2:
@@ -134,6 +135,26 @@ namespace Sanakan.Services.SlotMachine
                 for (int j = 0; j < Slots; j++)
                     Row[i, j] = rng.Next(0, SlotMachineSlots.max.Value()).ToSMS();
             }
+        }
+
+        private long CheckColumns(long beat, ref List<SlotMachineWinSlots> list)
+        {
+            long total = 0;
+            for (int i = 0; i < Slots; i++)
+            {
+                SlotMachineSlots ft = Row[0, i];
+                if (ft == Row[1, i] && ft == Row[2, i])
+                {
+                    list.Add(ft.WinType(3));
+                    if (ft == SlotMachineSlots.q)
+                    {
+                        User.SMConfig.PsayMode += ft.WinValue(3);
+                        continue;
+                    }
+                    total += ft.WinValue(3, User.SMConfig.PsayMode > 0) * beat;
+                }
+            }
+            return total;
         }
 
         private long CheckRow(int index, long beat, ref List<SlotMachineWinSlots> list)
