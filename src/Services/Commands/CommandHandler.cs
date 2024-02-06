@@ -84,6 +84,7 @@ namespace Sanakan.Services.Commands
             _cmd.AddTypeReader<ConfigType>(new TypeReaders.ConfigTypeReader());
             _cmd.AddTypeReader<CoinSide>(new TypeReaders.CoinSideTypeReader());
             _cmd.AddTypeReader<HaremType>(new TypeReaders.HaremTypeReader());
+            _cmd.AddTypeReader<ItemType>(new TypeReaders.ItemTypeReader());
             _cmd.AddTypeReader<TopType>(new TypeReaders.TopTypeReader());
             _cmd.AddTypeReader<bool>(new TypeReaders.BoolTypeReader());
 
