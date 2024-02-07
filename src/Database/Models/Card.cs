@@ -86,6 +86,8 @@ namespace Sanakan.Database.Models
         public DateTime CustomImageDate { get; set; }
         public int FixedCustomImageCnt { get; set; }
         public bool IsAnimatedImage { get; set; }
+        public int RatePositive { get; set; }
+        public int RateNegative { get; set; }
 
         public int EnhanceCnt { get; set; }
         public bool FromFigure { get; set; }

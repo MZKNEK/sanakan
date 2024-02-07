@@ -21,6 +21,7 @@ namespace Sanakan.Database.Models.Configuration
         public ulong NsfwChannel { get; set; }
         public ulong LogChannel { get; set; }
         public ulong GreetingChannel { get; set; }
+        public ulong NitroRole { get; set; }
         public string WelcomeMessage { get; set; }
         public string WelcomeMessagePW { get; set; }
         public string GoodbyeMessage { get; set; }

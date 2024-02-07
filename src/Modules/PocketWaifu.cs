@@ -300,6 +300,8 @@ namespace Sanakan.Modules
 
                 await db.SaveChangesAsync();
 
+                fig.CreatedCardId = card.Id;
+
                 await db.UserActivities.AddAsync(new Services.UserActivityBuilder(_time).WithUser(deck.User, Context.User)
                     .WithCard(card).WithType(Database.Models.ActivityType.CreatedUltiamte).Build());
 

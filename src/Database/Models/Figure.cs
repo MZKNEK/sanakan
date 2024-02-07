@@ -40,6 +40,7 @@ namespace Sanakan.Database.Models
         public int RestartCnt { get; set; }
         public ulong Character { get; set; }
         public bool IsComplete { get; set; }
+        public ulong CreatedCardId { get; set; }
         public PreAssembledFigure PAS { get; set; }
         public Quality SkeletonQuality { get; set; }
         public DateTime CompletionDate { get; set; }

@@ -135,6 +135,7 @@ namespace Sanakan.Extensions
             var quality = figure.GetAvgQuality();
             var card = new Card
             {
+                CustomImageDate = DateTime.MinValue,
                 ArenaStats = new CardArenaStats(),
                 FirstIdOwner = figure.GameDeckId,
                 Expedition = CardExpedition.None,
@@ -150,6 +151,8 @@ namespace Sanakan.Extensions
                 RarityOnStart = Rarity.SSS,
                 QualityOnStart = quality,
                 Defence = figure.Defence,
+                FixedCustomImageCnt = 0,
+                IsAnimatedImage = false,
                 Health = figure.Health,
                 Curse = CardCurse.None,
                 Attack = figure.Attack,
@@ -165,6 +168,8 @@ namespace Sanakan.Extensions
                 FromFigure = true,
                 WhoWantsCount = 0,
                 DefenceBonus = 0,
+                RateNegative = 0,
+                RatePositive = 0,
                 HealthBonus = 0,
                 AttackBonus = 0,
                 UpgradesCnt = 0,
@@ -174,6 +179,7 @@ namespace Sanakan.Extensions
                 InCage = false,
                 Active = false,
                 Affection = 0,
+                CardPower = 0,
                 Image = null,
                 ExpCnt = 0,
             };
