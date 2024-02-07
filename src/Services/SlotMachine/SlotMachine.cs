@@ -8,6 +8,9 @@ namespace Sanakan.Services.SlotMachine
 {
     public class SlotMachine
     {
+        private const string ok = "\\✔";
+        private const string nok = "\\✖";
+
         private const int Rows = 3;
         private const int Slots = 5;
 
@@ -23,45 +26,23 @@ namespace Sanakan.Services.SlotMachine
 
         public long ToPay() => User.SMConfig.Beat.Value() * User.SMConfig.Multiplier.Value() * User.SMConfig.Rows.Value();
 
-        private string RowIsSelected(int index)
+        private string RowIsSelected(int index) => User.SMConfig.Rows switch
         {
-            string nok = "✖";
-            string ok = "✔";
-
-            switch (User.SMConfig.Rows)
-            {
-                case SlotMachineSelectedRows.r3:
-                {
-                    return ok;
-                }
-
-                case SlotMachineSelectedRows.r2:
-                {
-                    if (index == 0 || index == 1)
-                        return ok;
-                    else
-                        return nok;
-                }
-
-                case SlotMachineSelectedRows.r1:
-                default:
-                {
-                    if (index == 1)
-                        return ok;
-                    else
-                        return nok;
-                }
-            }
-        }
+            SlotMachineSelectedRows.r3 => ok,
+            SlotMachineSelectedRows.r2 => (index == 0 || index == 1) ? ok : nok,
+            SlotMachineSelectedRows.r1 => index == 1 ? ok : nok,
+            _ => nok
+        };
 
         public string Draw()
         {
             string[] m = new string[Rows];
             for (int i = 0; i < Rows; i++)
             {
-                m[i] += RowIsSelected(i) + " ";               
+                m[i] += RowIsSelected(i) + " ";
                 for (int j = 0; j < Slots; j++)
                     m[i] += Row[i, j].Icon(User.SMConfig.PsayMode > 0);
+                m[i] += " ";
             }
             return string.Join("\n", m);
         }
@@ -75,7 +56,7 @@ namespace Sanakan.Services.SlotMachine
                 tl.Add(RowIsSelected(i) + " ");
                 for (int j = 0; j < Slots; j++)
                     tl.Add(Row[i, j].Icon(User.SMConfig.PsayMode > 0));
-
+                tl.Add(" ");
                 ucs.Add(tl);
             }
             return ucs;
@@ -89,7 +70,7 @@ namespace Sanakan.Services.SlotMachine
             var win = GetWin(ref lst);
             UpdateStats(win, lst);
 
-            if (User.SMConfig.PsayMode > 0) 
+            if (User.SMConfig.PsayMode > 0)
                 --User.SMConfig.PsayMode;
 
             return win;
