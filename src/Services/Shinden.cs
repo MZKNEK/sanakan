@@ -61,7 +61,7 @@ namespace Sanakan.Services
                 {
                     character = res.Body;
                     _characterCache.Set(characterId, character, new MemoryCacheEntryOptions()
-                        .SetAbsoluteExpiration(TimeSpan.FromHours(12)));
+                        .SetAbsoluteExpiration(TimeSpan.FromHours(8)));
                 }
             }
             catch (Exception) { }
@@ -81,7 +81,7 @@ namespace Sanakan.Services
                 {
                     characaters = res.Body;
                     _titleRelationCache.Set(titleId, characaters, new MemoryCacheEntryOptions()
-                        .SetAbsoluteExpiration(TimeSpan.FromHours(12)));
+                        .SetAbsoluteExpiration(TimeSpan.FromHours(8)));
                 }
             }
             catch (Exception) { }
@@ -101,7 +101,7 @@ namespace Sanakan.Services
                 {
                      info = res.Body;
                     _titleRelationCache.Set(titleId, info, new MemoryCacheEntryOptions()
-                        .SetAbsoluteExpiration(TimeSpan.FromHours(12)));
+                        .SetAbsoluteExpiration(TimeSpan.FromHours(8)));
                 }
             }
             catch (Exception) { }

@@ -251,6 +251,9 @@ namespace Sanakan.Extensions
 
         public static string GetDesc(this Card card)
         {
+            string scalpelInfo = (!string.IsNullOrEmpty(card.CustomImage) && card.CustomImageDate != DateTime.MinValue)
+                ? $"**Ustawiono obrazek:** {card.CustomImageDate.ToShortDateTime()}\n**Animacja:** {card.IsAnimatedImage.GetYesNo()}\n" : "";
+
             return $"{card.GetNameWithUrl()} **{card.GetCardRealRarity()}**\n"
                 + $"*{card.Title ?? "????"}*\n\n"
                 + $"*{card.GetCardParams(true, false, true)}*\n\n"
@@ -265,6 +268,7 @@ namespace Sanakan.Extensions
                 + $"**Pochodzenie:** {card.Source.GetString()}\n"
                 + $"**Moc:** {card.CalculateCardPower():F}\n"
                 + $"**Charakter:** {card.Dere}\n"
+                + $"**Utworzona:** {card.CreationDate.ToShortDateTime()}\n{scalpelInfo}"
                 + $"**KC:** {card.WhoWantsCount}\n"
                 + $"**Tagi:** {(card.TagList.IsNullOrEmpty() ? "---" : string.Join(" ", card.TagList.Select(x => x.Name)))}\n"
                 + $"{card.GetStatusIcons()}\n\n";

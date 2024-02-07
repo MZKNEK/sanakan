@@ -29,6 +29,7 @@ namespace Sanakan.Modules
     {
         private Services.ImageProcessing _img;
         private Sden.ShindenClient _shclient;
+        private Services.Shinden _shinden;
         private SessionManager _session;
         private Services.Helper _helepr;
         private IExecutor _executor;
@@ -40,7 +41,7 @@ namespace Sanakan.Modules
 
         public PocketWaifu(Waifu waifu, Sden.ShindenClient client, ILogger logger, Lottery lottery,
             SessionManager session, IConfig config, IExecutor executor, Services.Helper helper,
-            ISystemTime time, Services.ImageProcessing img)
+            ISystemTime time, Services.ImageProcessing img, Services.Shinden shinden)
         {
             _img = img;
             _time = time;
@@ -48,6 +49,7 @@ namespace Sanakan.Modules
             _logger = logger;
             _config = config;
             _helepr = helper;
+            _shinden = shinden;
             _lottery = lottery;
             _shclient = client;
             _session = session;
@@ -1549,12 +1551,12 @@ namespace Sanakan.Modules
                     foreach (var card in cardsInCage)
                     {
                         card.InCage = false;
-                        var response = await _shclient.GetCharacterInfoAsync(card.Id);
-                        if (response.IsSuccessStatusCode())
+                        var charInfo = await _shinden.GetCharacterInfoAsync(card.Character);
+                        if (charInfo != null)
                         {
-                            if (response.Body?.Points != null)
+                            if (charInfo?.Points != null)
                             {
-                                if (response.Body.Points.Any(x => x.Name.Equals((user.Nickname ?? user.GlobalName) ?? user.Username)))
+                                if (charInfo.Points.Any(x => x.Name.Equals((user.Nickname ?? user.GlobalName) ?? user.Username)))
                                     card.Affection += 0.8;
                             }
                         }
@@ -1675,13 +1677,13 @@ namespace Sanakan.Modules
                         break;
 
                     case WishlistObjectType.Character:
-                        var res2 = await _shclient.GetCharacterInfoAsync(id);
-                        if (!res2.IsSuccessStatusCode())
+                        var charInfo = await _shinden.GetCharacterInfoAsync(id);
+                        if (charInfo == null)
                         {
                             await ReplyAsync("", embed: $"Nie odnaleziono postaci!".ToEmbedMessage(EMType.Error).Build());
                             return;
                         }
-                        response = res2.Body.ToString();
+                        response = charInfo.ToString();
                         obj.ObjectName = response;
                         await db.CreateOrChangeWishlistCountByAsync(obj.ObjectId, obj.ObjectName);
                         if (!bUser.GameDeck.WishlistIsPrivate)
@@ -2701,8 +2703,8 @@ namespace Sanakan.Modules
         [Remarks("51 tak tak"), RequireWaifuCommandChannel]
         public async Task SearchCharacterCardsAsync([Summary("id postaci na shinden")] ulong id, [Summary("czy zamienić oznaczenia na nicki?")] bool showNames = false, [Summary("czy dodać linki do profili?")] bool showShindenUrl = false)
         {
-            var response = await _shclient.GetCharacterInfoAsync(id);
-            if (!response.IsSuccessStatusCode())
+            var charInfo = await _shinden.GetCharacterInfoAsync(id);
+            if (charInfo == null)
             {
                 await ReplyAsync("", embed: $"Nie odnaleziono postaci na shindenie!".ToEmbedMessage(EMType.Error).Build());
                 return;
@@ -2714,11 +2716,11 @@ namespace Sanakan.Modules
 
                 if (cards.Count() < 1)
                 {
-                    await ReplyAsync("", embed: $"Nie odnaleziono kart {response.Body}".ToEmbedMessage(EMType.Error).Build());
+                    await ReplyAsync("", embed: $"Nie odnaleziono kart {charInfo}".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
-                var msgs = await _waifu.GetWaifuFromCharacterSearchResult($"[{response.Body}]({response.Body.CharacterUrl}) posiadają:", cards, !showNames, Context.Guild, showShindenUrl);
+                var msgs = await _waifu.GetWaifuFromCharacterSearchResult($"[{charInfo}]({charInfo.CharacterUrl}) posiadają:", cards, !showNames, Context.Guild, showShindenUrl);
                 if (msgs.Count == 1)
                 {
                     await ReplyAsync("", embed: msgs.First());

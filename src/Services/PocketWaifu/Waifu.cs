@@ -2313,12 +2313,12 @@ namespace Sanakan.Services.PocketWaifu
                     return ExecutionResult.FromError("Nie rozpoznano typu gwiazdki!");
 
                 case ItemType.ChangeCardImage:
-                    var res = await _shClient.GetCharacterInfoAsync(card.Character);
-                    if (!res.IsSuccessStatusCode())
+                    var charIf = await _shinden.GetCharacterInfoAsync(card.Character);
+                    if (charIf == null)
                         return ExecutionResult.FromError("Nie odnaleziono postaci na shinden!");
 
                     int tidx = 0;
-                    var urls = res.Body.Pictures.GetPicList();
+                    var urls = charIf.Pictures.GetPicList();
                     if (string.Equals(detail, "lista", StringComparison.CurrentCultureIgnoreCase))
                         return ExecutionResult.FromSuccess("Obrazki: \n" + string.Join("\n", urls.Select(x => $"{++tidx}: {x}")), EMType.Info);
 
@@ -2492,13 +2492,12 @@ namespace Sanakan.Services.PocketWaifu
             if (card.Character == user.GameDeck.Waifu)
                 affectionInc *= 1.15;
 
-            var response = await _shClient.GetCharacterInfoAsync(card.Character);
-            if (response.IsSuccessStatusCode())
+            var charInfo = await _shinden.GetCharacterInfoAsync(card.Character);
+            if (charInfo != null)
             {
-                if (response.Body?.Points != null)
+                if (charInfo?.Points != null)
                 {
-                    var ordered = response.Body.Points.OrderByDescending(x => x.Points);
-                    if (ordered.Any(x => x.Name == userName))
+                    if (charInfo.Points.Any(x => x.Name.Equals(userName)))
                         affectionInc *= 1.1;
                 }
             }
