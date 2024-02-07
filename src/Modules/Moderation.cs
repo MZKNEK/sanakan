@@ -676,6 +676,36 @@ namespace Sanakan.Modules
 
                 await ReplyAsync("", embed: $"Ustawiono {role.Mention} jako rolę użytkownika.".ToEmbedMessage(EMType.Success).Build());
             }
+
+        }
+
+        [Command("nitror")]
+        [Summary("ustawia role nitro")]
+        [Remarks("34125343243432"), RequireAdminRole]
+        public async Task SetNitroRoleAsync([Summary("id roli")] SocketRole role)
+        {
+            if (role == null)
+            {
+                await ReplyAsync("", embed: "Nie odnaleziono roli na serwerze.".ToEmbedMessage(EMType.Error).Build());
+                return;
+            }
+
+            using (var db = new Database.DatabaseContext(Config))
+            {
+                var config = await db.GetGuildConfigOrCreateAsync(Context.Guild.Id);
+                if (config.NitroRole == role.Id)
+                {
+                    await ReplyAsync("", embed: $"Rola {role.Mention} już jest ustawiona jako rola nitro.".ToEmbedMessage(EMType.Bot).Build());
+                    return;
+                }
+
+                config.NitroRole = role.Id;
+                await db.SaveChangesAsync();
+
+                QueryCacheManager.ExpireTag(new string[] { $"config-{Context.Guild.Id}" });
+
+                await ReplyAsync("", embed: $"Ustawiono {role.Mention} jako rolę nitro.".ToEmbedMessage(EMType.Success).Build());
+            }
         }
 
         [Command("muter")]

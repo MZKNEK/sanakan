@@ -537,7 +537,9 @@ namespace Sanakan.Modules
             {
                 var botuser = await db.GetUserOrCreateSimpleAsync(user.Id);
                 var points = currency == SCurrency.Tc ? botuser.TcCnt : botuser.ScCnt;
-                if (points < color.Price(currency))
+                var gConfig = await db.GetCachedGuildFullConfigAsync(Context.Guild.Id);
+                var hasNitro = gConfig.NitroRole != 0 && ((Context.User as SocketGuildUser)?.Roles?.Any(x => x.Id == gConfig.NitroRole) ?? false);
+                if (!hasNitro && points < color.Price(currency))
                 {
                     await ReplyAsync("", embed: $"{user.Mention} nie posiadasz wystarczającej liczby {currency.ToString().ToUpper()}!".ToEmbedMessage(EMType.Error).Build());
                     return;
@@ -569,20 +571,22 @@ namespace Sanakan.Modules
                     }
 
                     colort.BValue = true;
-                    var gConfig = await db.GetCachedGuildFullConfigAsync(Context.Guild.Id);
-                    if (!await _profile.SetUserColorAsync(user, gConfig.AdminRole, color))
+                    if (!await _profile.SetUserColorAsync(user, gConfig.MuteRole, color))
                     {
                         await ReplyAsync("", embed: $"Coś poszło nie tak!".ToEmbedMessage(EMType.Error).Build());
                         return;
                     }
 
-                    if (currency == SCurrency.Tc)
+                    if (!hasNitro)
                     {
-                        botuser.TcCnt -= color.Price(currency);
-                    }
-                    else
-                    {
-                        botuser.ScCnt -= color.Price(currency);
+                        if (currency == SCurrency.Tc)
+                        {
+                            botuser.TcCnt -= color.Price(currency);
+                        }
+                        else
+                        {
+                            botuser.ScCnt -= color.Price(currency);
+                        }
                     }
                 }
 

@@ -166,7 +166,7 @@ namespace Sanakan.Modules
         [Command("karta obrazek", RunMode = RunMode.Async)]
         [Alias("card image", "ci", "ko")]
         [Summary("pozwala wyświetlić obrazek karty")]
-        [Remarks("685 nie"), RequireAnyCommandChannelOrLevel(40)]
+        [Remarks("685 nie"), RequireAnyCommandChannelLevelOrNitro(40)]
         public async Task ShowCardImageAsync([Summary("WID")] ulong wid, [Summary("czy wyświetlić statystyki?")] bool showStats = false)
         {
             using (var db = new Database.DatabaseContext(Config))
@@ -1095,7 +1095,7 @@ namespace Sanakan.Modules
         [Command("lazyc")]
         [Alias("lc")]
         [Summary("dostajesz jedną darmową kart z domyślnie ustawionym niszczeniem kc na 3 oraz tagiem wymiana")]
-        [Remarks("3 nie Wymiana Ulubione"), RequireAnyCommandChannelOrLevel(40)]
+        [Remarks("3 nie Wymiana Ulubione"), RequireAnyCommandChannelLevelOrNitro(40)]
         public async Task GetLazyFreeCardAsync([Summary("czy zniszczyć karty nie będące na liście życzeń i nie posiadające danej kc?")] uint destroyCards = 3,
             [Summary("czy zamienić niszczenie na uwalnianie?")] bool changeToRelease = false, [Summary("oznacz niezniszczone karty")] string tag = "wymiana", [Summary("oznacz karty z wishlisty")] string tagWishlist = "ulubione")
                 => await GetFreeCardAsync(destroyCards, changeToRelease, tag, tagWishlist);
@@ -1103,7 +1103,7 @@ namespace Sanakan.Modules
         [Command("karta+")]
         [Alias("free card")]
         [Summary("dostajesz jedną darmową kartę")]
-        [Remarks("3 nie Wymiana Ulubione"), RequireAnyCommandChannelOrLevel(40)]
+        [Remarks("3 nie Wymiana Ulubione"), RequireAnyCommandChannelLevelOrNitro(40)]
         public async Task GetFreeCardAsync([Summary("czy zniszczyć karty nie będące na liście życzeń i nie posiadające danej kc?")] uint destroyCards = 0,
             [Summary("czy zamienić niszczenie na uwalnianie?")] bool changeToRelease = false, [Summary("oznacz niezniszczone karty")] string tag = "", [Summary("oznacz karty z wishlisty")] string tagWishlist = "")
         {
@@ -2208,7 +2208,7 @@ namespace Sanakan.Modules
         [Command("loteria")]
         [Alias("lottery", "dej")]
         [Summary("wybierasz się na loterię i liczysz że coś fajnego Ci z niej wypadnie (wymagana przepustka)")]
-        [Remarks(""), RequireAnyCommandChannelOrLevel(60)]
+        [Remarks(""), RequireAnyCommandChannelLevelOrNitro(60)]
         public async Task GoToLotteryAsync()
         {
             using (var db = new Database.DatabaseContext(Config))
@@ -3439,7 +3439,7 @@ namespace Sanakan.Modules
         [Command("karcianka-", RunMode = RunMode.Async)]
         [Alias("cpf-")]
         [Summary("wyświetla uproszczony profil PocketWaifu")]
-        [Remarks("Karna"), RequireAnyCommandChannelOrLevel(40)]
+        [Remarks("Karna"), RequireAnyCommandChannelLevelOrNitro(40)]
         public async Task ShowSimpleProfileAsync([Summary("nazwa użytkownika")] SocketGuildUser usr = null)
         {
             var user = (usr ?? Context.User) as SocketGuildUser;
