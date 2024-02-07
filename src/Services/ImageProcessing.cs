@@ -747,7 +747,7 @@ namespace Sanakan.Services
                 color = Discord.Color.DarkerGrey;
 
             var baseImg = new Image<Rgba32>(500, 320);
-            baseImg.Mutate(x => x.BackgroundColor(GetOrCreateColor("#36393e")));
+            baseImg.Mutate(x => x.BackgroundColor(GetOrCreateColor("#313338")));
 
             using (var template = Image.Load("./Pictures/siteStatsBody.png"))
             {
@@ -777,12 +777,12 @@ namespace Sanakan.Services
                         image.Mutate(x => x.DrawImage(stats, new Point(0, 128), 1));
                     }
                 }
-                baseImg.Mutate(x => x.DrawImage(image, new Point(5, 71), 1));
+                baseImg.Mutate(x => x.DrawImage(image, new Point(5, 65), 1));
             }
 
             using (var image = await GetLastRWList(lastRead, lastWatch))
             {
-                baseImg.Mutate(x => x.DrawImage(image, new Point(330, 69), 1));
+                baseImg.Mutate(x => x.DrawImage(image, new Point(330, 63), 1));
             }
 
             return baseImg;
