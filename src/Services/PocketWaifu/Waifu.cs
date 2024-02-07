@@ -1898,7 +1898,7 @@ namespace Sanakan.Services.PocketWaifu
                 totalExp /= 2;
             }
 
-            if (duration.Item1 <= 30 || user.GameDeck.CanCreateDemon())
+            if (duration.Item1 <= 90 && user.GameDeck.CanCreateDemon())
             {
                 karmaCost /= 2.5;
             }

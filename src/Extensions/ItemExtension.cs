@@ -323,9 +323,9 @@ namespace Sanakan.Extensions
                 case ItemType.IncreaseUltimateDefence: return 0.4;
                 case ItemType.IncreaseUltimateHealth: return 0.6;
                 case ItemType.IncreaseUltimateAll: return 1.2;
-                case ItemType.FigureSkeleton: return -1;
-                case ItemType.CardFragment: return -0.1;
-                case ItemType.BloodOfYourWaifu: return -1.5;
+                case ItemType.FigureSkeleton: return -0.7;
+                case ItemType.CardFragment: return -0.005;
+                case ItemType.BloodOfYourWaifu: return -0.8;
 
                 default: return 0;
             }
