@@ -2099,15 +2099,16 @@ namespace Sanakan.Services.PocketWaifu
             }
 
             string actionStr = release ? "uwolni" : "zniszczy";
+            string lettery = ignored.Count > 1 ? "" : "y";
 
             if (ignored.Count == cardsForDiscarding.Count)
                 return ExecutionResult.FromError($"nie udało się {actionStr}ć żadnej karty, najpewniej znajdują się one w klatce lub są oznaczone jako ulubione.");
 
             var response = new StringBuilder().Append($"{actionStr}ł ");
-            response.Append(realDiscardedCount > 1 ? $"{realDiscardedCount} kart" : $"kartę: {cardsForDiscarding.First().GetString(false, false, true)}");
+            response.Append(realDiscardedCount > 1 ? $"{realDiscardedCount} kart" : $"kartę: {cardsForDiscarding.Where(x => !ignored.Any(c => c.Id == x.Id)).First().GetString(false, false, true)}");
 
             if (ignored.Any())
-                response.Append($"\n\n ❗ Nie udało się {actionStr}ć {ignored.Count} kart!");
+                response.Append($"\n\n ❗ Nie udało się {actionStr}ć {ignored.Count} kart{lettery}!");
 
             return ExecutionResult.FromSuccess(response.ToString());
         }

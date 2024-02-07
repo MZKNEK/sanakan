@@ -281,19 +281,28 @@ namespace Sanakan.Extensions
         {
             if (deck.Figures.Count < 1) return "Nie posiadasz figurek.";
 
-            return string.Join("\n", deck.Figures.Select(x => $"**[{x.Id}]** *{x.SkeletonQuality.ToName()}* [{x.Name}]({Shinden.API.Url.GetCharacterURL(x.Character)}) {x.IsActive()}"));
+            return string.Join("\n", deck.Figures.Select(x => $"**[{x.Id}]** *{x.SkeletonQuality.ToName("??")}* [{x.Name}]({Shinden.API.Url.GetCharacterURL(x.Character)}) {x.IsActive()}"));
         }
 
         public static string GetDesc(this Figure fig)
         {
             var name =  $"[{fig.Name}]({Shinden.API.Url.GetCharacterURL(fig.Character)})";
-
-            return $"**[{fig.Id}] Figurka {fig.SkeletonQuality.ToName()}**\n{name}\n*{fig.ExpCnt:F} / {CardExtension.ExpToUpgrade(Rarity.SSS, true, fig.SkeletonQuality)} exp*\n\n"
-                + $"**Aktywna część:**\n {fig.FocusedPart.ToName()} *{fig.PartExp:F} pk*\n\n"
-                + $"**Części:**\n*Głowa*: {fig.HeadQuality.ToName("brak")}\n*Tułów*: {fig.BodyQuality.ToName("brak")}\n"
-                + $"*Prawa ręka*: {fig.RightArmQuality.ToName("brak")}\n*Lewa ręka*: {fig.LeftArmQuality.ToName("brak")}\n"
-                + $"*Prawa noga*: {fig.RightLegQuality.ToName("brak")}\n*Lewa noga*: {fig.LeftLegQuality.ToName("brak")}\n"
+            var desc = fig.IsComplete
+                ? $"**Ukończona**: {fig.CompletionDate.ToShortDateTime()}\n"
+                + $"**WID**: {fig.CreatedCardId}"
+                : $"*{fig.ExpCnt:F} / {CardExtension.ExpToUpgrade(Rarity.SSS, true, fig.SkeletonQuality)} exp*\n\n"
+                + $"**Aktywna część:**\n"
+                + $"{fig.FocusedPart.ToName()} *{fig.PartExp:F} pk*\n\n"
+                + $"**Części:**\n"
+                + $"*Głowa*: {fig.HeadQuality.ToName("brak")}\n"
+                + $"*Tułów*: {fig.BodyQuality.ToName("brak")}\n"
+                + $"*Prawa ręka*: {fig.RightArmQuality.ToName("brak")}\n"
+                + $"*Lewa ręka*: {fig.LeftArmQuality.ToName("brak")}\n"
+                + $"*Prawa noga*: {fig.RightLegQuality.ToName("brak")}\n"
+                + $"*Lewa noga*: {fig.LeftLegQuality.ToName("brak")}\n"
                 + $"*Ciuchy*: {fig.ClothesQuality.ToName("brak")}";
+
+            return $"**[{fig.Id}] Figurka {fig.SkeletonQuality.ToName("??")}**\n{name}\n**Aktywna**: {fig.IsFocus.GetYesNo()}\n{desc}";
         }
     }
 }

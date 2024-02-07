@@ -2959,9 +2959,9 @@ namespace Sanakan.Modules
 
                 QueryCacheManager.ExpireTag(new string[] { $"user-{buser.Id}" });
 
-                string errorInfo = errors.Count > 0 ? $"\n\nNie udało się wymienić:\n{string.Join("\n", errors)}": "";
+                string errorInfo = errors.Count > 0 ? $"\n\n❗ Nie udało się wymienić:\n\n{string.Join("\n", errors)}": "";
                 await ReplyAsync("", embed: $"{Context.User.Mention} udało się zyskać **{scrapes}** fragmentów, masz ich w sumie już **{tItem.Count}**.{errorInfo}"
-                    .ToEmbedMessage(errors.Count > 0 ? EMType.Warning : EMType.Success).Build());
+                    .ToEmbedMessage(errors.Count >= items.Length ? EMType.Warning : EMType.Success).Build());
             }
         }
 

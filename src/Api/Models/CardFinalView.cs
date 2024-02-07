@@ -154,6 +154,14 @@ namespace Sanakan.Api.Models
         /// </summary>
         public DateTime ScalpelAt { get; set; }
         /// <summary>
+        /// Liczba plusów
+        /// </summary>
+        public int RatePositive { get; set; }
+        /// <summary>
+        /// Liczba minusów
+        /// </summary>
+        public int RateNegative { get; set; }
+        /// <summary>
         /// Tagi znajdujące się na karcie
         /// </summary>
         public List<string> Tags { get; set; }
@@ -207,6 +215,8 @@ namespace Sanakan.Api.Models
                 BaseHealth = card.Health,
                 FinalHealth = card.GetHealthWithPenalty(),
                 Name = card.Name,
+                RateNegative = card.RateNegative,
+                RatePositive = card.RatePositive,
                 CharacterUrl = card.GetCharacterUrl(),
                 Source = card.Source.GetString(),
                 AnimeTitle = card.Title ?? "????",
