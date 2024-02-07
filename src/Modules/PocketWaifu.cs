@@ -296,6 +296,9 @@ namespace Sanakan.Modules
                 var card = fig.ToCard(endTime);
                 deck.Cards.Add(card);
 
+                var wishlists = db.GameDecks.Include(x => x.Wishes).AsNoTracking().Where(x => !x.WishlistIsPrivate && x.Wishes.Any(c => c.Type == WishlistObjectType.Character && c.ObjectId == card.Character)).ToList();
+                card.WhoWantsCount = wishlists.Count;
+
                 fig.CompletionDate = endTime;
                 fig.IsComplete = true;
                 fig.IsFocus = false;

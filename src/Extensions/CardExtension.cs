@@ -249,9 +249,9 @@ namespace Sanakan.Extensions
                 + $"{card.GetStatusIcons()}";
         }
 
-        public static string GetDesc(this Card card)
+        public static string GetDesc(this Card card, bool hideScalelInfo)
         {
-            string scalpelInfo = (!string.IsNullOrEmpty(card.CustomImage) && card.CustomImageDate != DateTime.MinValue)
+            string scalpelInfo = (!string.IsNullOrEmpty(card.CustomImage) && !hideScalelInfo)
                 ? $"**Ustawiono obrazek:** {card.CustomImageDate.ToShortDateTime()}\n**Animacja:** {card.IsAnimatedImage.GetYesNo()}\n" : "";
 
             return $"{card.GetNameWithUrl()} **{card.GetCardRealRarity()}**\n"

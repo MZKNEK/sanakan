@@ -47,6 +47,7 @@ namespace Sanakan.Services.PocketWaifu
         private static CharacterPool<ulong> _charIdAnime = new CharacterPool<ulong>();
         private static CharacterPool<ulong> _charIdManga = new CharacterPool<ulong>();
         private static CharacterPool<ulong> _charIdAll = new CharacterPool<ulong>();
+        private DateTime _hiddeScalpelBeforeDate = new DateTime(2023, 5, 1);
 
         private static List<string> _qualityNamesList = Enum.GetNames(typeof(Quality)).ToList();
 
@@ -1557,6 +1558,7 @@ namespace Sanakan.Services.PocketWaifu
             string imageUrl = await GetWaifuCardImageAsync(card, trashChannel);
             string imgUrls = $"[_obrazek_]({imageUrl})\n[_możesz zmienić obrazek tutaj_]({card.GetCharacterUrl()}/edit_crossroad)";
             string ownerString = (((owner as SocketGuildUser)?.Nickname ?? owner?.GlobalName) ?? owner?.Username) ?? "????";
+            bool hideScalpelInfo = card.CustomImageDate < _hiddeScalpelBeforeDate;
 
             return new EmbedBuilder
             {
@@ -1566,7 +1568,7 @@ namespace Sanakan.Services.PocketWaifu
                 {
                     Text = $"Należy do: {ownerString}"
                 },
-                Description = $"{card.GetDesc()}{imgUrls}".TrimToLength(2500)
+                Description = $"{card.GetDesc(hideScalpelInfo)}{imgUrls}".TrimToLength(2500)
             }.Build();
         }
 
