@@ -560,7 +560,7 @@ namespace Sanakan.Modules
                 }
                 else
                 {
-                    if (_profile.HasSameColor(user, color) && colort.IsActive(_time.Now()))
+                    if (!hasNitro && _profile.HasSameColor(user, color) && colort.IsActive(_time.Now()))
                     {
                         colort.EndsAt = colort.EndsAt.AddMonths(1);
                     }
