@@ -52,7 +52,9 @@ namespace Sanakan.Database.Models
         IncreaseUltimateAll,
         CardFragment,
         BloodOfYourWaifu,
-        SetCustomAnimatedImage
+        SetCustomAnimatedImage,
+        HolyWater,
+        GlassVial
     }
 
     public class Item

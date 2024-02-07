@@ -162,6 +162,7 @@ namespace Sanakan.Services.PocketWaifu
                     (ItemType.IncreaseUpgradeCnt,       5),
                     (ItemType.BetterIncreaseUpgradeCnt, 4),
                     (ItemType.BloodOfYourWaifu,         1),
+                    (ItemType.GlassVial,               1),
                 }.ToRealList()
             },
             {CardExpedition.DarkItems, new List<(ItemType, int)>
@@ -487,6 +488,7 @@ namespace Sanakan.Services.PocketWaifu
                 new ItemWithCost(4699,  ItemType.ChangeCardImage.ToItem()),
                 new ItemWithCost(65999, ItemType.SetCustomImage.ToItem()),
                 new ItemWithCost(19999, ItemType.IncreaseUltimateAll.ToItem()),
+                new ItemWithCost(5999, ItemType.GlassVial.ToItem()),
             };
         }
 
@@ -500,6 +502,7 @@ namespace Sanakan.Services.PocketWaifu
                 new ItemWithCost(1665,  ItemType.SetCustomImage.ToItem()),
                 new ItemWithCost(165,   ItemType.RandomBoosterPackSingleE.ToItem()),
                 new ItemWithCost(1500,  ItemType.BigRandomBoosterPackE.ToItem()),
+                new ItemWithCost(1985, ItemType.GlassVial.ToItem()),
             };
         }
 
@@ -2406,6 +2409,18 @@ namespace Sanakan.Services.PocketWaifu
                     embedColor = EMType.Error;
                     str.Append($"Karta się przeraziła!");
                     break;
+
+                case ItemType.HolyWater:
+                    if (card.Curse == CardCurse.None) {
+                        return ExecutionResult.FromError("Karta nie wie, co ma z tym zrobić!");
+                    } else {
+                        if (card.Dere != Dere.Yato) {
+                            if(Services.Fun.TakeATry(10))
+                                card.Dere = Waifu.RandomizeDere();
+                        }
+                        card.Curse = CardCurse.None;
+                        break;
+                    }
 
                 case ItemType.BetterIncreaseUpgradeCnt:
                     if (card.Curse == CardCurse.BloodBlockade)

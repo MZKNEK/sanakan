@@ -1441,6 +1441,13 @@ namespace Sanakan.Modules
                     reward += $"+{item.Name}\n";
                 }
 
+                if (Services.Fun.TakeATry(3))
+                    {
+                        var bitem = ItemType.GlassVial.ToItem();
+                        botuser.GameDeck.AddItem(bitem);
+                        reward += $"\nTwoja waifu okradła inne stoisko.\n +{bitem.Name}";
+                    }
+
                 await db.SaveChangesAsync();
 
                 QueryCacheManager.ExpireTag(new string[] { $"user-{botuser.Id}", "users" });
@@ -2432,6 +2439,80 @@ namespace Sanakan.Modules
                 QueryCacheManager.ExpireTag(new string[] { $"user-{bUser.Id}", "users" });
 
                 await ReplyAsync("", embed: $"{Context.User.Mention} uzyskał *{item3.Name}*".ToEmbedMessage(EMType.Success).Build());
+            }
+        }
+
+        [Command("wymień na wodę")]
+        [Alias("wymien na wode", "holy water")]
+        [Summary("zamienia przedmioty na wodę święconą")]
+        [Remarks(""), RequireWaifuCommandChannel]
+        public async Task ExchangeToHolyWaterAsync()
+        {
+            int cost = 100;
+            using (var db = new Database.DatabaseContext(Config))
+            {
+                var bUser = await db.GetUserOrCreateAsync(Context.User.Id);
+                var itemList = bUser.GetAllItems();
+                var item1 = itemList.FirstOrDefault(x => x.Type == ItemType.BetterIncreaseUpgradeCnt);
+                if (item1 == null || item1.Count < 5)
+                {
+                    await ReplyAsync("", embed: $"{Context.User.Mention} nie masz wystarczającej liczby {ItemType.BetterIncreaseUpgradeCnt.ToItem().Name}.".ToEmbedMessage(EMType.Error).Build());
+                    return;
+                }
+
+                var item2 = itemList.FirstOrDefault(x => x.Type == ItemType.BloodOfYourWaifu);
+                if (item2 == null || item2.Count < 5)
+                {
+                    await ReplyAsync("", embed: $"{Context.User.Mention} nie masz wystarczającej liczby {ItemType.BloodOfYourWaifu.ToItem().Name}.".ToEmbedMessage(EMType.Error).Build());
+                    return;
+                }
+            
+                var item3 = itemList.FirstOrDefault(x => x.Type == ItemType.GlassVial);
+                if (item3 == null)
+                {
+                    await ReplyAsync("", embed: $"{Context.User.Mention} nie masz wystarczającej liczby {ItemType.GlassVial.ToItem().Name}.".ToEmbedMessage(EMType.Error).Build());
+                    return;
+                }
+
+                if (bUser.GameDeck.CTCnt < cost)
+                {
+                    await ReplyAsync("", embed: $"{Context.User.Mention} nie masz wystarczającej liczby CT.".ToEmbedMessage(EMType.Error).Build());
+                    return;
+                }
+
+                if (item1.Count == 5)
+                {
+                    bUser.GameDeck.Items.Remove(item1);
+                }
+                else item1.Count -= 5;
+
+                if (item2.Count == 5)
+                {
+                    bUser.GameDeck.Items.Remove(item2);
+                }
+                else item2.Count -= 5;
+
+                if (item3.Count == 1)
+                {
+                    bUser.GameDeck.Items.Remove(item3);
+                }
+                else item3.Count--;
+
+                var item4 = itemList.FirstOrDefault(x => x.Type == ItemType.HolyWater);
+                if (item4 == null)
+                {
+                    item4 = ItemType.HolyWater.ToItem();
+                    bUser.GameDeck.Items.Add(item4);
+                }
+                else item4.Count++;
+
+                bUser.GameDeck.CTCnt -= cost;
+
+                await db.SaveChangesAsync();
+
+                QueryCacheManager.ExpireTag(new string[] { $"user-{bUser.Id}", "users" });
+
+                await ReplyAsync("", embed: $"{Context.User.Mention} uzyskał *{item4.Name}*".ToEmbedMessage(EMType.Success).Build());
             }
         }
 

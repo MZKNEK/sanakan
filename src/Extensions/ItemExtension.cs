@@ -94,6 +94,10 @@ namespace Sanakan.Extensions
                     return $"Pozwalalają utworzyć kartę po uzbieraniu ich odpowiedniej liczby.";
                 case ItemType.BloodOfYourWaifu:
                     return $"Nie mam pojęcia co zamierzasz z tym zrobić.";
+                case ItemType.HolyWater:
+                    return $"Pozwala oczyścić spaczoną kartę.";
+                case ItemType.GlassVial:
+                    return $"Na pewno do czegoś się przyda.";
                 case ItemType.IncreaseUltimateAttack:
                     return $"Zwiększa atak karcie ultimate.";
                 case ItemType.IncreaseUltimateDefence:
@@ -143,6 +147,8 @@ namespace Sanakan.Extensions
                     return $"Nowa moc karty to: 🔥{card.GetAttackWithBonus()} 🛡{card.GetDefenceWithBonus()}!";
                 case ItemType.CheckAffection:
                     return $"Relacja wynosi: `{card.Affection:F}`";
+                case ItemType.HolyWater:
+                    return $"Karta została oczyszczona!";
                 case ItemType.IncreaseUltimateAttack:
                     return $"Zwiększono atak karty!";
                 case ItemType.IncreaseUltimateDefence:
@@ -242,6 +248,10 @@ namespace Sanakan.Extensions
                     return $"Fragment karty";
                 case ItemType.BloodOfYourWaifu:
                     return $"Kropla krwi twojej waifu";
+                case ItemType.HolyWater:
+                    return $"Woda święcona";
+                case ItemType.GlassVial:
+                    return $"Szklana fiolka";
                 case ItemType.IncreaseUltimateAttack:
                     return $"Czerwona pigułka";
                 case ItemType.IncreaseUltimateDefence:
@@ -294,6 +304,7 @@ namespace Sanakan.Extensions
                 case ItemType.IncreaseUltimateHealth: return 0.55;
                 case ItemType.IncreaseUltimateAll: return 2.2;
                 case ItemType.BloodOfYourWaifu: return 1.5;
+                case ItemType.HolyWater: return 2;
 
                 default: return 0;
             }
@@ -326,6 +337,7 @@ namespace Sanakan.Extensions
                 case ItemType.FigureSkeleton: return -0.7;
                 case ItemType.CardFragment: return -0.005;
                 case ItemType.BloodOfYourWaifu: return -0.8;
+                case ItemType.HolyWater: return 1;
 
                 default: return 0;
             }
@@ -337,6 +349,7 @@ namespace Sanakan.Extensions
             {
                 case ItemType.LotteryTicket:
                 case ItemType.CardFragment:
+                case ItemType.GlassVial:
                     return false;
 
                 default:
@@ -383,6 +396,7 @@ namespace Sanakan.Extensions
                 case ItemType.IncreaseUltimateAll:
                 case ItemType.CardFragment:
                 case ItemType.BloodOfYourWaifu:
+                case ItemType.HolyWater:
                 // special case
                 case ItemType.CardParamsReRoll:
                 case ItemType.DereReRoll:
@@ -489,6 +503,8 @@ namespace Sanakan.Extensions
                 case ItemType.PreAssembledAsuna:
                 case ItemType.FigureSkeleton:
                 case ItemType.CardFragment:
+                case ItemType.HolyWater:
+                case ItemType.GlassVial:
                     return true;
 
                 default:
@@ -544,6 +560,10 @@ namespace Sanakan.Extensions
                     return 450;
                 case ItemType.SetCustomAnimatedImage:
                     return 3250;
+                case ItemType.HolyWater:
+                    return 750;
+                case ItemType.GlassVial:
+                    return 350;
                 case ItemType.CardFragment:
                     return 0;
 
