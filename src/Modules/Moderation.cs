@@ -676,7 +676,6 @@ namespace Sanakan.Modules
 
                 await ReplyAsync("", embed: $"Ustawiono {role.Mention} jako rolę użytkownika.".ToEmbedMessage(EMType.Success).Build());
             }
-
         }
 
         [Command("nitror")]

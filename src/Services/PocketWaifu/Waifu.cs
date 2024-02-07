@@ -1898,12 +1898,12 @@ namespace Sanakan.Services.PocketWaifu
                 totalExp /= 2;
             }
 
-            if (duration.Item1 <= 2 || user.GameDeck.CanCreateDemon())
+            if (duration.Item1 <= 30 || user.GameDeck.CanCreateDemon())
             {
                 karmaCost /= 2.5;
             }
 
-            if (duration.Item1 >= 4140 || user.GameDeck.CanCreateAngel())
+            if (duration.Item1 >= 4140 && user.GameDeck.CanCreateAngel())
             {
                 karmaCost *= 2.5;
             }
