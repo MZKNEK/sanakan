@@ -104,8 +104,6 @@ namespace Sanakan.Database.Models
 
         public virtual ICollection<CardTag> TagList { get; set; }
 
-        public virtual CardArenaStats ArenaStats { get; set; }
-
         public ulong GameDeckId { get; set; }
         [JsonIgnore]
         public virtual GameDeck GameDeck { get; set; }

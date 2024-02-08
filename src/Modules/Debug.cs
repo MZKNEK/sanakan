@@ -685,7 +685,7 @@ namespace Sanakan.Modules
         {
             using (var db = new Database.DatabaseContext(Config))
             {
-                var thisCards = db.Cards.AsQueryable().Include(x => x.TagList).Include(x => x.ArenaStats).AsSingleQuery().Where(x => wids.Contains(x.Id)).ToList();
+                var thisCards = db.Cards.AsQueryable().Include(x => x.TagList).AsSingleQuery().Where(x => wids.Contains(x.Id)).ToList();
                 if (thisCards.Count < 1)
                 {
                     await ReplyAsync("", embed: "Nie odnaleziono kart!".ToEmbedMessage(EMType.Bot).Build());

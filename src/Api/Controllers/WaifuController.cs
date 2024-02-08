@@ -80,8 +80,8 @@ namespace Sanakan.Api.Controllers
         {
             using (var db = new Database.DatabaseContext(_config))
             {
-                var user = await db.Users.AsQueryable().Where(x => x.Shinden == id).Include(x => x.GameDeck).ThenInclude(x => x.Cards).ThenInclude(x => x.ArenaStats).Include(x => x.GameDeck)
-                    .ThenInclude(x => x.Cards).ThenInclude(x => x.TagList).AsNoTracking().AsSplitQuery().FirstOrDefaultAsync();
+                var user = await db.Users.AsQueryable().Where(x => x.Shinden == id)
+                    .Include(x => x.GameDeck).ThenInclude(x => x.Cards).ThenInclude(x => x.TagList).AsNoTracking().AsSplitQuery().FirstOrDefaultAsync();
 
                 if (user == null)
                 {
@@ -139,7 +139,7 @@ namespace Sanakan.Api.Controllers
         {
             using (var db = new Database.DatabaseContext(_config))
             {
-                var query = db.Cards.AsQueryable().AsSplitQuery().Include(x=> x.ArenaStats).Include(x => x.TagList).AsNoTracking();
+                var query = db.Cards.AsQueryable().AsSplitQuery().Include(x => x.TagList).AsNoTracking();
                 if (!string.IsNullOrEmpty(filter.SearchText))
                 {
                     query = query.Where(x => x.Name.Contains(filter.SearchText) || x.Title.Contains(filter.SearchText) || x.Id.ToString().Contains(filter.SearchText));
@@ -181,7 +181,7 @@ namespace Sanakan.Api.Controllers
                     return new FilteredCards{TotalCards = 0, Cards = new List<CardFinalView>()};
                 }
 
-                var query = db.Cards.AsQueryable().AsSplitQuery().Where(x => x.GameDeckId == user.GameDeck.Id).Include(x=> x.ArenaStats).Include(x => x.TagList).AsNoTracking();
+                var query = db.Cards.AsQueryable().AsSplitQuery().Where(x => x.GameDeckId == user.GameDeck.Id).Include(x => x.TagList).AsNoTracking();
                 if (!string.IsNullOrEmpty(filter.SearchText))
                 {
                     query = query.Where(x => x.Name.Contains(filter.SearchText) || x.Title.Contains(filter.SearchText) || x.Id.ToString().Contains(filter.SearchText));
@@ -222,7 +222,7 @@ namespace Sanakan.Api.Controllers
                     return new List<CardFinalView>();
                 }
 
-                var cards = await db.Cards.AsQueryable().AsSplitQuery().Where(x => x.GameDeckId == user.GameDeck.Id).Include(x=> x.ArenaStats).Include(x => x.TagList).Skip((int)offset).Take((int)count).AsNoTracking().ToListAsync();
+                var cards = await db.Cards.AsQueryable().AsSplitQuery().Where(x => x.GameDeckId == user.GameDeck.Id).Include(x => x.TagList).Skip((int)offset).Take((int)count).AsNoTracking().ToListAsync();
                 return cards.ToView(id);
             }
         }
@@ -238,7 +238,7 @@ namespace Sanakan.Api.Controllers
         {
             using (var db = new Database.DatabaseContext(_config))
             {
-                var card = await db.Cards.AsQueryable().Where(x => x.Id == id).Include(x => x.ArenaStats)
+                var card = await db.Cards.AsQueryable().Where(x => x.Id == id)
                     .Include(x => x.TagList).Include(x => x.GameDeck).ThenInclude(x => x.User)
                     .AsNoTracking().FirstOrDefaultAsync();
 
@@ -341,8 +341,8 @@ namespace Sanakan.Api.Controllers
         {
             using (var db = new Database.DatabaseContext(_config))
             {
-                var user = await db.Users.AsQueryable().AsSplitQuery().Where(x => x.Shinden == id).Include(x => x.GameDeck).ThenInclude(x => x.Cards).ThenInclude(x => x.ArenaStats).Include(x => x.GameDeck)
-                    .ThenInclude(x => x.Cards).ThenInclude(x => x.TagList).AsNoTracking().FirstOrDefaultAsync();
+                var user = await db.Users.AsQueryable().AsSplitQuery().Where(x => x.Shinden == id)
+                    .Include(x => x.GameDeck).ThenInclude(x => x.Cards).ThenInclude(x => x.TagList).AsNoTracking().FirstOrDefaultAsync();
 
                 if (user == null)
                 {
@@ -576,7 +576,7 @@ namespace Sanakan.Api.Controllers
         {
             using (var db = new Database.DatabaseContext(_config))
             {
-                return await db.Cards.Include(x => x.ArenaStats).Include(x => x.TagList).Where(x => x.TagList.Any(c => c.Name.Equals(tag, StringComparison.CurrentCultureIgnoreCase))).AsNoTracking().ToListAsync();
+                return await db.Cards.Include(x => x.TagList).Where(x => x.TagList.Any(c => c.Name.Equals(tag, StringComparison.CurrentCultureIgnoreCase))).AsNoTracking().ToListAsync();
             }
         }
 

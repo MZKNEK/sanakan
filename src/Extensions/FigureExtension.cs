@@ -136,7 +136,6 @@ namespace Sanakan.Extensions
             var card = new Card
             {
                 CustomImageDate = DateTime.MinValue,
-                ArenaStats = new CardArenaStats(),
                 FirstIdOwner = figure.GameDeckId,
                 Expedition = CardExpedition.None,
                 LastIdOwner = figure.GameDeckId,

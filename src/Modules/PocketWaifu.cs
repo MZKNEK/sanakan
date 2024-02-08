@@ -173,7 +173,7 @@ namespace Sanakan.Modules
         {
             using (var db = new Database.DatabaseContext(Config))
             {
-                var card = db.Cards.Include(x => x.GameDeck).Include(x => x.ArenaStats).Include(x => x.TagList).AsNoTracking().FirstOrDefault(x => x.Id == wid);
+                var card = db.Cards.Include(x => x.GameDeck).Include(x => x.TagList).AsNoTracking().FirstOrDefault(x => x.Id == wid);
                 if (card == null)
                 {
                     await ReplyAsync("", embed: $"{Context.User.Mention} taka karta nie istnieje.".ToEmbedMessage(EMType.Error).Build());
@@ -279,7 +279,7 @@ namespace Sanakan.Modules
         {
             using (var db = new Database.DatabaseContext(Config))
             {
-                var deck = db.GameDecks.Include(x => x.User).Include(x => x.Figures).Include(x => x.Cards).ThenInclude(x => x.ArenaStats).Where(x => x.Id == Context.User.Id).FirstOrDefault();
+                var deck = db.GameDecks.Include(x => x.User).Include(x => x.Figures).Include(x => x.Cards).Where(x => x.Id == Context.User.Id).FirstOrDefault();
                 var fig = deck.Figures.FirstOrDefault(x => x.IsFocus);
                 if (fig == null)
                 {
@@ -344,7 +344,7 @@ namespace Sanakan.Modules
         {
             using (var db = new Database.DatabaseContext(Config))
             {
-                var card = db.Cards.Include(x => x.GameDeck).Include(x => x.ArenaStats).Include(x => x.TagList).AsNoTracking().FirstOrDefault(x => x.Id == wid);
+                var card = db.Cards.Include(x => x.GameDeck).Include(x => x.TagList).AsNoTracking().FirstOrDefault(x => x.Id == wid);
                 if (card == null)
                 {
                     await ReplyAsync("", embed: $"{Context.User.Mention} taka karta nie istnieje.".ToEmbedMessage(EMType.Error).Build());
@@ -366,7 +366,7 @@ namespace Sanakan.Modules
         {
             using (var db = new Database.DatabaseContext(Config))
             {
-                var card = db.Cards.Include(x => x.GameDeck).Include(x => x.ArenaStats).Include(x => x.TagList).AsNoTracking().FirstOrDefault(x => x.Id == wid);
+                var card = db.Cards.Include(x => x.GameDeck).Include(x => x.TagList).AsNoTracking().FirstOrDefault(x => x.Id == wid);
                 if (card == null)
                 {
                     await ReplyAsync("", embed: $"{Context.User.Mention} taka karta nie istnieje.".ToEmbedMessage(EMType.Error).Build());

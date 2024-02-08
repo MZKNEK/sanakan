@@ -855,7 +855,6 @@ namespace Sanakan.Services.PocketWaifu
             var card = new Card
             {
                 Defence = RandomizeDefence(rarity),
-                ArenaStats = new CardArenaStats(),
                 Attack = RandomizeAttack(rarity),
                 Expedition = CardExpedition.None,
                 QualityOnStart = Quality.Broken,
