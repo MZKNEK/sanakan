@@ -34,6 +34,7 @@ namespace Sanakan.Database.Models
         public long MaxNumberOfCards { get; set; }
         public int CardsInGallery { get; set; }
         public ulong PremiumWaifu { get; set; }
+        public int MaxNumberOfTags { get; set; }
 
         public virtual ICollection<Card> Cards { get; set; }
         public virtual ICollection<Item> Items { get; set; }

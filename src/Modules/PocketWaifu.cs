@@ -2455,6 +2455,40 @@ namespace Sanakan.Modules
             }
         }
 
+        [Command("moje oznaczenia", RunMode = RunMode.Async)]
+        [Alias("my tags")]
+        [Summary("wypisuej dostepne oznaczenia")]
+        [Remarks(""), RequireWaifuCommandChannel]
+        public async Task ShowUserTagsAsync()
+        {
+            using (var db = new Database.DatabaseContext(Config))
+            {
+                var buser = await db.GetBaseUserAndDontTrackAsync(Context.User.Id);
+
+                var tags = new List<(Tag Tag, long Count)>();
+                foreach (var tag in buser.GameDeck.Tags)
+                    tags.Add((tag, await db.Cards.AsQueryable().AsNoTracking().CountAsync(x => x.GameDeckId == buser.Id &&  x.Tags.Contains(tag))));
+
+                var dtag = new List<(TagIcon Tag, long Count)>();
+                var favs = _tags.GetTag(Services.PocketWaifu.TagType.Favorite);
+                dtag.Add((favs, await db.Cards.AsQueryable().AsNoTracking().CountAsync(x => x.GameDeckId == buser.Id &&  x.Tags.Any(x => x.Id == favs.Id))));
+                var exch = _tags.GetTag(Services.PocketWaifu.TagType.Exchange);
+                dtag.Add((exch, await db.Cards.AsQueryable().AsNoTracking().CountAsync(x => x.GameDeckId == buser.Id &&  x.Tags.Any(x => x.Id == exch.Id))));
+                var gall = _tags.GetTag(Services.PocketWaifu.TagType.Gallery);
+                dtag.Add((gall, await db.Cards.AsQueryable().AsNoTracking().CountAsync(x => x.GameDeckId == buser.Id &&  x.Tags.Any(x => x.Id == gall.Id))));
+                var rese = _tags.GetTag(Services.PocketWaifu.TagType.Reservation);
+                dtag.Add((rese, await db.Cards.AsQueryable().AsNoTracking().CountAsync(x => x.GameDeckId == buser.Id &&  x.Tags.Any(x => x.Id == rese.Id))));
+                var tras = _tags.GetTag(Services.PocketWaifu.TagType.TrashBin);
+                dtag.Add((tras, await db.Cards.AsQueryable().AsNoTracking().CountAsync(x => x.GameDeckId == buser.Id &&  x.Tags.Any(x => x.Id == tras.Id))));
+
+                await ReplyAsync("", embed: ($"**Własne oznaczenia**: `{tags.Count}/{buser.GameDeck.MaxNumberOfTags}`\n\n"
+                                          + $"{string.Join("\n", tags.Select(x => $"**{x.Tag.Name}** `{x.Count}`"))}\n\n"
+                                          + $"**Domyślne oznaczenia**:\n\n"
+                                          + $"{string.Join("\n", dtag.Select(x => $"{x.Tag.Icon} **{x.Tag.Name}** `{x.Count}`"))}")
+                                          .ToEmbedMessage(EMType.Info).WithUser(Context.User).Build());
+            }
+        }
+
         [Command("oznacz")]
         [Alias("tag")]
         [Summary("dodaje tag do kart")]

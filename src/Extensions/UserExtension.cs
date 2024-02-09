@@ -69,6 +69,7 @@ namespace Sanakan.Extensions
                     PremiumWaifu = 0,
                     GlobalPVPRank = 0,
                     SeasonalPVPRank = 0,
+                    MaxNumberOfTags = 5,
                     CardsInGallery = 10,
                     MatachMakingRatio = 0,
                     Tags = new List<Tag>(),
