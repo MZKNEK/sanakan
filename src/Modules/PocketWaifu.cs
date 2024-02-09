@@ -35,16 +35,18 @@ namespace Sanakan.Modules
         private IExecutor _executor;
         private ISystemTime _time;
         private Lottery _lottery;
+        private TagHelper _tags;
         private ILogger _logger;
         private IConfig _config;
         private Waifu _waifu;
 
         public PocketWaifu(Waifu waifu, Sden.ShindenClient client, ILogger logger, Lottery lottery,
             SessionManager session, IConfig config, IExecutor executor, Services.Helper helper,
-            ISystemTime time, Services.ImageProcessing img, Services.Shinden shinden)
+            ISystemTime time, Services.ImageProcessing img, Services.Shinden shinden, TagHelper tags)
         {
             _img = img;
             _time = time;
+            _tags = tags;
             _waifu = waifu;
             _logger = logger;
             _config = config;
@@ -173,7 +175,7 @@ namespace Sanakan.Modules
         {
             using (var db = new Database.DatabaseContext(Config))
             {
-                var card = db.Cards.Include(x => x.GameDeck).Include(x => x.ArenaStats).Include(x => x.TagList).AsNoTracking().FirstOrDefault(x => x.Id == wid);
+                var card = db.Cards.Include(x => x.GameDeck).AsNoTracking().FirstOrDefault(x => x.Id == wid);
                 if (card == null)
                 {
                     await ReplyAsync("", embed: $"{Context.User.Mention} taka karta nie istnieje.".ToEmbedMessage(EMType.Error).Build());
@@ -279,7 +281,7 @@ namespace Sanakan.Modules
         {
             using (var db = new Database.DatabaseContext(Config))
             {
-                var deck = db.GameDecks.Include(x => x.User).Include(x => x.Figures).Include(x => x.Cards).ThenInclude(x => x.ArenaStats).Where(x => x.Id == Context.User.Id).FirstOrDefault();
+                var deck = db.GameDecks.Include(x => x.User).Include(x => x.Figures).Include(x => x.Cards).Where(x => x.Id == Context.User.Id).FirstOrDefault();
                 var fig = deck.Figures.FirstOrDefault(x => x.IsFocus);
                 if (fig == null)
                 {
@@ -344,7 +346,7 @@ namespace Sanakan.Modules
         {
             using (var db = new Database.DatabaseContext(Config))
             {
-                var card = db.Cards.Include(x => x.GameDeck).Include(x => x.ArenaStats).Include(x => x.TagList).AsNoTracking().FirstOrDefault(x => x.Id == wid);
+                var card = db.Cards.Include(x => x.GameDeck).Include(x => x.Tags).AsNoTracking().FirstOrDefault(x => x.Id == wid);
                 if (card == null)
                 {
                     await ReplyAsync("", embed: $"{Context.User.Mention} taka karta nie istnieje.".ToEmbedMessage(EMType.Error).Build());
@@ -354,7 +356,7 @@ namespace Sanakan.Modules
                 SocketUser user = Context.Guild.GetUser(card.GameDeck.UserId);
                 if (user == null) user = Context.Client.GetUser(card.GameDeck.UserId);
 
-                await ReplyAsync("", embed: card.GetDescSmall().TrimToLength().ToEmbedMessage(EMType.Info).WithAuthor(new EmbedAuthorBuilder().WithUser(user)).Build());
+                await ReplyAsync("", embed: card.GetDescSmall(_tags).TrimToLength().ToEmbedMessage(EMType.Info).WithAuthor(new EmbedAuthorBuilder().WithUser(user)).Build());
             }
         }
 
@@ -366,7 +368,7 @@ namespace Sanakan.Modules
         {
             using (var db = new Database.DatabaseContext(Config))
             {
-                var card = db.Cards.Include(x => x.GameDeck).Include(x => x.ArenaStats).Include(x => x.TagList).AsNoTracking().FirstOrDefault(x => x.Id == wid);
+                var card = db.Cards.Include(x => x.GameDeck).Include(x => x.Tags).AsNoTracking().FirstOrDefault(x => x.Id == wid);
                 if (card == null)
                 {
                     await ReplyAsync("", embed: $"{Context.User.Mention} taka karta nie istnieje.".ToEmbedMessage(EMType.Error).Build());
@@ -597,10 +599,16 @@ namespace Sanakan.Modules
 
                         card.WhoWantsCount = wishlistsCnt;
                         if (!string.IsNullOrEmpty(tag) && !isOnUserWishlist)
-                            card.TagList.Add(new CardTag { Name = tag });
+                        {
+                            var btag = await db.GetTagAsync(_tags, tag, Context.User.Id);
+                            if (btag != null) card.Tags.Add(btag);
+                        }
 
                         if (!string.IsNullOrEmpty(tagWishlist) && isOnUserWishlist)
-                            card.TagList.Add(new CardTag { Name = tagWishlist });
+                        {
+                            var btag = await db.GetTagAsync(_tags, tagWishlist, Context.User.Id);
+                            if (btag != null) card.Tags.Add(btag);
+                        }
                     }
                     card.Affection += bUser.GameDeck.AffectionFromKarma();
                     bUser.GameDeck.Cards.Add(card);
@@ -1045,7 +1053,7 @@ namespace Sanakan.Modules
                         return;
                     }
 
-                    if (card.IsProtectedFromDiscarding())
+                    if (card.IsProtectedFromDiscarding(_tags))
                     {
                         await ReplyAsync("", embed: $"{Context.User.Mention} tej karty z jakiegoś powodu nie można zniszczyć.".ToEmbedMessage(EMType.Error).Build());
                         return;
@@ -1193,10 +1201,16 @@ namespace Sanakan.Modules
                 else
                 {
                     if (!string.IsNullOrEmpty(tag) && !isOnUserWishlist)
-                        card.TagList.Add(new CardTag { Name = tag });
+                    {
+                        var btag = await db.GetTagAsync(_tags, tag, Context.User.Id);
+                        if (btag != null) card.Tags.Add(btag);
+                    }
 
                     if (!string.IsNullOrEmpty(tagWishlist) && isOnUserWishlist)
-                        card.TagList.Add(new CardTag { Name = tagWishlist });
+                    {
+                        var btag = await db.GetTagAsync(_tags, tagWishlist, Context.User.Id);
+                        if (btag != null) card.Tags.Add(btag);
+                    }
 
                     botuser.GameDeck.Cards.Add(card);
                 }
@@ -1497,7 +1511,7 @@ namespace Sanakan.Modules
                 var broken = new List<Card>();
                 foreach (var card in cardsToSac)
                 {
-                    if (card.IsProtectedFromDiscarding())
+                    if (card.IsProtectedFromDiscarding(_tags))
                     {
                         broken.Add(card);
                         continue;
@@ -1818,7 +1832,7 @@ namespace Sanakan.Modules
         {
             using (var db = new Database.DatabaseContext(Config))
             {
-                var thisCards = await db.Cards.AsNoTracking().Include(x => x.TagList).FirstOrDefaultAsync(x => x.Id == wid);
+                var thisCards = await db.Cards.AsNoTracking().Include(x => x.Tags).FirstOrDefaultAsync(x => x.Id == wid);
                 if (thisCards == null)
                 {
                     await ReplyAsync("", embed: $"Nie odnaleziono karty.".ToEmbedMessage(EMType.Error).Build());
@@ -2339,10 +2353,16 @@ namespace Sanakan.Modules
                     }
 
                     if (!string.IsNullOrEmpty(tag) && !isOnUserWishlist)
-                        card.TagList.Add(new CardTag { Name = tag });
+                    {
+                        var btag = await db.GetTagAsync(_tags, tag, Context.User.Id);
+                        if (btag != null) card.Tags.Add(btag);
+                    }
 
                     if (!string.IsNullOrEmpty(tagWishlist) && isOnUserWishlist)
-                        card.TagList.Add(new CardTag { Name = tagWishlist });
+                    {
+                        var btag = await db.GetTagAsync(_tags, tagWishlist, Context.User.Id);
+                        if (btag != null) card.Tags.Add(btag);
+                    }
 
                     card.WhoWantsCount = wishlistsCnt;
                     bUser.GameDeck.Cards.Add(card);
@@ -2441,7 +2461,7 @@ namespace Sanakan.Modules
                 await ReplyAsync("", embed: $"{Context.User.Mention} uzyskał *{item3.Name}*".ToEmbedMessage(EMType.Success).Build());
             }
         }
-
+        
         [Command("wymień na wodę")]
         [Alias("wymien na wode", "holy water")]
         [Summary("zamienia przedmioty na wodę święconą")]
@@ -2516,40 +2536,174 @@ namespace Sanakan.Modules
             }
         }
 
+        [Command("moje oznaczenia", RunMode = RunMode.Async)]
+        [Alias("my tags")]
+        [Summary("wypisuje dostepne oznaczenia")]
+        [Remarks(""), RequireAnyCommandChannelLevelOrNitro(60)]
+        public async Task ShowUserTagsAsync()
+        {
+            using (var db = new Database.DatabaseContext(Config))
+            {
+                var buser = await db.GetBaseUserAndDontTrackAsync(Context.User.Id);
+
+                var tags = new List<(Tag Tag, long Count)>();
+                foreach (var tag in buser.GameDeck.Tags)
+                    tags.Add((tag, await db.Cards.AsQueryable().AsNoTracking().CountAsync(x => x.GameDeckId == buser.Id &&  x.Tags.Contains(tag))));
+
+                var dtag = new List<(TagIcon Tag, long Count)>();
+                var favs = _tags.GetTag(Services.PocketWaifu.TagType.Favorite);
+                dtag.Add((favs, await db.Cards.AsQueryable().AsNoTracking().CountAsync(x => x.GameDeckId == buser.Id &&  x.Tags.Any(x => x.Id == favs.Id))));
+                var exch = _tags.GetTag(Services.PocketWaifu.TagType.Exchange);
+                dtag.Add((exch, await db.Cards.AsQueryable().AsNoTracking().CountAsync(x => x.GameDeckId == buser.Id &&  x.Tags.Any(x => x.Id == exch.Id))));
+                var gall = _tags.GetTag(Services.PocketWaifu.TagType.Gallery);
+                dtag.Add((gall, await db.Cards.AsQueryable().AsNoTracking().CountAsync(x => x.GameDeckId == buser.Id &&  x.Tags.Any(x => x.Id == gall.Id))));
+                var rese = _tags.GetTag(Services.PocketWaifu.TagType.Reservation);
+                dtag.Add((rese, await db.Cards.AsQueryable().AsNoTracking().CountAsync(x => x.GameDeckId == buser.Id &&  x.Tags.Any(x => x.Id == rese.Id))));
+                var tras = _tags.GetTag(Services.PocketWaifu.TagType.TrashBin);
+                dtag.Add((tras, await db.Cards.AsQueryable().AsNoTracking().CountAsync(x => x.GameDeckId == buser.Id &&  x.Tags.Any(x => x.Id == tras.Id))));
+
+                await ReplyAsync("", embed: ($"**Własne oznaczenia**: `{tags.Count}/{buser.GameDeck.MaxNumberOfTags}`\n\n"
+                                          + $"{string.Join("\n", tags.Select(x => $"**{x.Tag.Name}** `{x.Count}`"))}\n\n"
+                                          + $"**Domyślne oznaczenia**:\n\n"
+                                          + $"{string.Join("\n", dtag.Select(x => $"{x.Tag.Icon} **{x.Tag.Name}** `{x.Count}`"))}")
+                                          .ToEmbedMessage(EMType.Info).WithUser(Context.User).Build());
+            }
+        }
+
+        [Command("utwórz oznaczenie")]
+        [Alias("create tag", "utworz oznaczenie")]
+        [Summary("tworzy oznaczenie")]
+        [Remarks("konie"), RequireWaifuCommandChannel]
+        public async Task CreateUserTagAsync([Summary("oznaczenie (nie może zawierać spacji)")] string tag)
+        {
+            if (tag.Contains(" "))
+            {
+                await ReplyAsync("", embed: $"{Context.User.Mention} oznaczenie nie może zawierać spacji.".ToEmbedMessage(EMType.Error).Build());
+                return;
+            }
+
+            using (var db = new Database.DatabaseContext(Config))
+            {
+                var buser = await db.GetUserOrCreateSimpleAsync(Context.User.Id);
+                if (buser.GameDeck.MaxNumberOfTags <= buser.GameDeck.Tags.Count)
+                {
+                    await ReplyAsync("", embed: $"{Context.User.Mention} nie możesz utworzyć już więcej oznaczeń, skasuj jakieś lub zwiększ ich limit.".ToEmbedMessage(EMType.Error).Build());
+                    return;
+                }
+
+                if (_tags.IsSimilar(tag))
+                {
+                    await ReplyAsync("", embed: $"{Context.User.Mention} istnieje bardzo podobne oznaczenie domyślne, użyj go lub wymyśl inne.".ToEmbedMessage(EMType.Error).Build());
+                    return;
+                }
+
+                if (buser.GameDeck.Tags.Any(x => x.Name.Equals(tag, StringComparison.CurrentCultureIgnoreCase)))
+                {
+                    await ReplyAsync("", embed: $"{Context.User.Mention} już posiadasz takie oznaczenie.".ToEmbedMessage(EMType.Error).Build());
+                    return;
+                }
+
+                buser.GameDeck.Tags.Add(new Tag { Name = tag });
+                await db.SaveChangesAsync();
+
+                await ReplyAsync("", embed: $"{Context.User.Mention} utworzono nowe oznaczenie: `{tag}`".ToEmbedMessage(EMType.Success).Build());
+            }
+        }
+
+        [Command("modyfikuj oznaczenie")]
+        [Alias("modify tag")]
+        [Summary("zmienia lub kasuje oznaczenie")]
+        [Remarks("zmień konie konina"), RequireWaifuCommandChannel]
+        public async Task ChangeUserTagAsync([Summary("rodzaj akcji (usuń/zmień)")]ModifyTagActionType action, [Summary("oznaczenie (nie może zawierać spacji)")] string oldTag, [Summary("oznaczenie (nie może zawierać spacji, opcjonalne)")] string newTag = "")
+        {
+            if (oldTag.Contains(" "))
+            {
+                await ReplyAsync("", embed: $"{Context.User.Mention} oznaczenie nie może zawierać spacji.".ToEmbedMessage(EMType.Error).Build());
+                return;
+            }
+
+            if (action == ModifyTagActionType.Rename && newTag.Contains(" "))
+            {
+                await ReplyAsync("", embed: $"{Context.User.Mention} oznaczenie nie może zawierać spacji.".ToEmbedMessage(EMType.Error).Build());
+                return;
+            }
+
+            using (var db = new Database.DatabaseContext(Config))
+            {
+                var buser = await db.GetUserOrCreateSimpleAsync(Context.User.Id);
+                var thisTag = buser.GameDeck.Tags.FirstOrDefault(x => x.Name.Equals(oldTag, StringComparison.CurrentCultureIgnoreCase));
+                if (thisTag is null)
+                {
+                    await ReplyAsync("", embed: $"{Context.User.Mention} nie odnaleziono oznaczenia.".ToEmbedMessage(EMType.Error).Build());
+                    return;
+                }
+
+                var response = $"skasowano oznaczenie `{oldTag}`";
+                if (action == ModifyTagActionType.Delete)
+                {
+                    buser.GameDeck.Tags.Remove(thisTag);
+                }
+                else
+                {
+                    if (_tags.IsSimilar(newTag))
+                    {
+                        await ReplyAsync("", embed: $"{Context.User.Mention} istnieje bardzo podobne oznaczenie domyślne, użyj go lub wymyśl inne.".ToEmbedMessage(EMType.Error).Build());
+                        return;
+                    }
+
+                    if (buser.GameDeck.Tags.Any(x => x.Id != thisTag.Id && x.Name.Equals(newTag, StringComparison.CurrentCultureIgnoreCase)))
+                    {
+                        await ReplyAsync("", embed: $"{Context.User.Mention} już posiadasz takie oznaczenie.".ToEmbedMessage(EMType.Error).Build());
+                        return;
+                    }
+
+                    response = $"nazwa została zmieniona z `{oldTag}` na `{newTag}`";
+                    thisTag.Name = newTag;
+                }
+
+                await db.SaveChangesAsync();
+                await ReplyAsync("", embed: $"{Context.User.Mention} {response}".ToEmbedMessage(EMType.Success).Build());
+            }
+        }
+
         [Command("oznacz")]
         [Alias("tag")]
         [Summary("dodaje tag do kart")]
         [Remarks("konie 231 12341 22"), RequireWaifuCommandChannel]
         public async Task ChangeCardTagAsync([Summary("oznaczenie (nie może zawierać spacji)")] string tag, [Summary("WIDs")] params ulong[] wids)
         {
+            if (tag.Contains(" "))
+            {
+                await ReplyAsync("", embed: $"{Context.User.Mention} oznaczenie nie może zawierać spacji.".ToEmbedMessage(EMType.Error).Build());
+                return;
+            }
+
             using (var db = new Database.DatabaseContext(Config))
             {
-                var bUser = await db.GetUserOrCreateAsync(Context.User.Id);
-                var cardsSelected = bUser.GameDeck.Cards.Where(x => wids.Any(c => c == x.Id)).ToList();
-
-                if (cardsSelected.Count < 1)
+                var thisTag = await db.GetTagAsync(_tags, tag, Context.User.Id);
+                if (thisTag is null)
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} nie odnaleziono kart.".ToEmbedMessage(EMType.Error).Build());
+                    await ReplyAsync("", embed: $"{Context.User.Mention} nie odnaleziono oznaczenia `{tag}`".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
-                if (tag.Contains(" "))
+                var cardsSelected = await db.Cards.AsQueryable().Where(x => x.GameDeckId == Context.User.Id).Include(x => x.Tags)
+                    .Where(x => wids.Any(c => c == x.Id) && !x.Tags.Any(t => t.Id == thisTag.Id)).ToListAsync();
+
+                if (cardsSelected.IsNullOrEmpty())
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} oznaczenie nie może zawierać spacji.".ToEmbedMessage(EMType.Error).Build());
+                    await ReplyAsync("", embed: $"{Context.User.Mention} nie odnaleziono nieoznaczonych kart.".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
                 foreach (var thisCard in cardsSelected)
-                {
-                    if (!thisCard.HasTag(tag))
-                        thisCard.TagList.Add(new CardTag { Name = tag });
-                }
+                    thisCard.Tags.Add(thisTag);
 
                 await db.SaveChangesAsync();
 
-                QueryCacheManager.ExpireTag(new string[] { $"user-{bUser.Id}", "users" });
+                QueryCacheManager.ExpireTag(new string[] { $"user-{Context.User.Id}", "users" });
 
-                await ReplyAsync("", embed: $"{Context.User.Mention} oznaczył {cardsSelected.Count} kart.".ToEmbedMessage(EMType.Success).Build());
+                await ReplyAsync("", embed: $"{Context.User.Mention} oznaczono {cardsSelected.Count} kart.".ToEmbedMessage(EMType.Success).Build());
             }
         }
 
@@ -2561,23 +2715,23 @@ namespace Sanakan.Modules
         {
             using (var db = new Database.DatabaseContext(Config))
             {
-                var bUser = await db.GetUserOrCreateAsync(Context.User.Id);
-                var cardsSelected = bUser.GameDeck.Cards.Where(x => wids.Any(c => c == x.Id)).ToList();
+                var cardsSelected = await db.Cards.AsQueryable().Where(x => x.GameDeckId == Context.User.Id).Include(x => x.Tags)
+                    .Where(x => wids.Any(c => c == x.Id) && x.Tags.Any()).ToListAsync();
 
-                if (cardsSelected.Count < 1)
+                if (cardsSelected.IsNullOrEmpty())
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} nie odnaleziono kart.".ToEmbedMessage(EMType.Error).Build());
+                    await ReplyAsync("", embed: $"{Context.User.Mention} nie odnaleziono nieoznaczonych kart.".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
                 foreach (var thisCard in cardsSelected)
-                    thisCard.TagList.Clear();
+                    thisCard.Tags.Clear();
 
                 await db.SaveChangesAsync();
 
-                QueryCacheManager.ExpireTag(new string[] { $"user-{bUser.Id}", "users" });
+                QueryCacheManager.ExpireTag(new string[] { $"user-{Context.User.Id}", "users" });
 
-                await ReplyAsync("", embed: $"{Context.User.Mention} zdjął tagi z {cardsSelected.Count} kart.".ToEmbedMessage(EMType.Success).Build());
+                await ReplyAsync("", embed: $"{Context.User.Mention} usunięto oznaczenie z {cardsSelected.Count} kart.".ToEmbedMessage(EMType.Success).Build());
             }
         }
 
@@ -2587,31 +2741,36 @@ namespace Sanakan.Modules
         [Remarks("konie"), RequireWaifuCommandChannel]
         public async Task ChangeCardsTagAsync([Summary("oznaczenie (nie może zawierać spacji)")] string tag)
         {
+            if (tag.Contains(" "))
+            {
+                await ReplyAsync("", embed: $"{Context.User.Mention} oznaczenie nie może zawierać spacji.".ToEmbedMessage(EMType.Error).Build());
+                return;
+            }
+
             using (var db = new Database.DatabaseContext(Config))
             {
-                var bUser = await db.GetUserOrCreateAsync(Context.User.Id);
-                var untaggedCards = bUser.GameDeck.Cards.Where(x => x.TagList.Count < 1).ToList();
+                var thisTag = await db.GetTagAsync(_tags, tag, Context.User.Id);
+                if (thisTag is null)
+                {
+                    await ReplyAsync("", embed: $"{Context.User.Mention} nie odnaleziono oznaczenia `{tag}`".ToEmbedMessage(EMType.Error).Build());
+                    return;
+                }
 
-                if (untaggedCards.Count < 1)
+                var untaggedCards = await db.Cards.AsQueryable().Where(x => x.GameDeckId == Context.User.Id).Include(x => x.Tags).Where(x => !x.Tags.Any()).ToListAsync();
+                if (untaggedCards.IsNullOrEmpty())
                 {
                     await ReplyAsync("", embed: $"{Context.User.Mention} nie odnaleziono nieoznaczonych kart.".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
-                if (tag.Contains(" "))
-                {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} oznaczenie nie może zawierać spacji.".ToEmbedMessage(EMType.Error).Build());
-                    return;
-                }
-
                 foreach (var card in untaggedCards)
-                    card.TagList.Add(new CardTag { Name = tag });
+                    card.Tags.Add(thisTag);
 
                 await db.SaveChangesAsync();
 
-                QueryCacheManager.ExpireTag(new string[] { $"user-{bUser.Id}", "users" });
+                QueryCacheManager.ExpireTag(new string[] { $"user-{Context.User.Id}", "users" });
 
-                await ReplyAsync("", embed: $"{Context.User.Mention} oznaczył {untaggedCards.Count} kart.".ToEmbedMessage(EMType.Success).Build());
+                await ReplyAsync("", embed: $"{Context.User.Mention} oznaczono {untaggedCards.Count} kart.".ToEmbedMessage(EMType.Success).Build());
             }
         }
 
@@ -2621,13 +2780,14 @@ namespace Sanakan.Modules
         [Remarks("konie wymiana"), RequireWaifuCommandChannel]
         public async Task ReplaceCardsTagAsync([Summary("stare oznaczenie")] string oldTag, [Summary("nowe oznaczenie")] string newTag = "%$-1")
         {
+            bool removeTag = newTag.Equals("%$-1");
             if (newTag.Contains(" "))
             {
                 await ReplyAsync("", embed: $"{Context.User.Mention} oznaczenie nie może zawierać spacji.".ToEmbedMessage(EMType.Error).Build());
                 return;
             }
 
-            if (newTag == oldTag)
+            if (!removeTag && newTag.Equals(oldTag, StringComparison.CurrentCultureIgnoreCase))
             {
                 await ReplyAsync("", embed: $"{Context.User.Mention} nowe oznaczenie nie może być takie samo jak stare.".ToEmbedMessage(EMType.Error).Build());
                 return;
@@ -2635,32 +2795,43 @@ namespace Sanakan.Modules
 
             using (var db = new Database.DatabaseContext(Config))
             {
-                var bUser = await db.GetUserOrCreateAsync(Context.User.Id);
-                var cards = bUser.GameDeck.Cards.Where(x => x.HasTag(oldTag)).ToList();
-
-                if (cards.Count < 1)
+                var oldt = await db.GetTagAsync(_tags, oldTag, Context.User.Id);
+                if (oldt is null)
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} nie odnaleziono nieoznaczonych kart.".ToEmbedMessage(EMType.Error).Build());
+                    await ReplyAsync("", embed: $"{Context.User.Mention} nie odnaleziono oznaczenia `{oldTag}`".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
-                foreach (var card in cards)
+                var newt = await db.GetTagAsync(_tags, newTag, Context.User.Id);
+                if (!removeTag && newt is null)
                 {
-                    var thisTag = card.TagList.FirstOrDefault(x => x.Name.Equals(oldTag, StringComparison.CurrentCultureIgnoreCase));
-                    if (thisTag != null)
-                    {
-                        card.TagList.Remove(thisTag);
+                    await ReplyAsync("", embed: $"{Context.User.Mention} nie odnaleziono oznaczenia `{oldTag}`".ToEmbedMessage(EMType.Error).Build());
+                    return;
+                }
 
-                        if (!card.HasTag(newTag) && newTag != "%$-1")
-                            card.TagList.Add(new CardTag { Name = newTag });
-                    }
+                var newTagId = removeTag ? 0 : newt.Id;
+                var cardsSelected = await db.Cards.AsQueryable().Where(x => x.GameDeckId == Context.User.Id).Include(x => x.Tags)
+                    .Where(x => x.Tags.Any(t => t.Id == oldt.Id) && !x.Tags.Any(t => t.Id == newTagId)).ToListAsync();
+
+                if (cardsSelected.IsNullOrEmpty())
+                {
+                    await ReplyAsync("", embed: $"{Context.User.Mention} nie odnaleziono oznaczonych kart.".ToEmbedMessage(EMType.Error).Build());
+                    return;
+                }
+
+                foreach (var card in cardsSelected)
+                {
+                    card.Tags.Remove(oldt);
+                    if (!removeTag)
+                        card.Tags.Add(newt);
                 }
 
                 await db.SaveChangesAsync();
 
-                QueryCacheManager.ExpireTag(new string[] { $"user-{bUser.Id}", "users" });
+                QueryCacheManager.ExpireTag(new string[] { $"user-{Context.User.Id}", "users" });
 
-                await ReplyAsync("", embed: $"{Context.User.Mention} oznaczył {cards.Count} kart.".ToEmbedMessage(EMType.Success).Build());
+                string thing = removeTag ? "skasowane" : "zmienione";
+                await ReplyAsync("", embed: $"{Context.User.Mention} {thing} zostało oznaczenie na {cardsSelected.Count} kartach.".ToEmbedMessage(EMType.Success).Build());
             }
         }
 
@@ -2672,31 +2843,30 @@ namespace Sanakan.Modules
         {
             using (var db = new Database.DatabaseContext(Config))
             {
-                var bUser = await db.GetUserOrCreateAsync(Context.User.Id);
-                var cardsSelected = bUser.GameDeck.Cards.Where(x => wids.Any(c => c == x.Id)).ToList();
-
-                if (cardsSelected.Count < 1)
+                var thisTag = await db.GetTagAsync(_tags, tag, Context.User.Id);
+                if (thisTag is null)
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} nie odnaleziono kart.".ToEmbedMessage(EMType.Error).Build());
+                    await ReplyAsync("", embed: $"{Context.User.Mention} nie odnaleziono oznaczenia `{tag}`".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
-                int counter = 0;
-                foreach (var thisCard in cardsSelected)
+                var cardsSelected = await db.Cards.AsQueryable().Where(x => x.GameDeckId == Context.User.Id).Include(x => x.Tags)
+                    .Where(x => wids.Any(c => c == x.Id) && x.Tags.Any(t => t.Id == thisTag.Id)).ToListAsync();
+
+                if (cardsSelected.IsNullOrEmpty())
                 {
-                    var tTag = thisCard.TagList.FirstOrDefault(x => x.Name.Equals(tag, StringComparison.CurrentCultureIgnoreCase));
-                    if (tTag != null)
-                    {
-                        ++counter;
-                        thisCard.TagList.Remove(tTag);
-                    }
+                    await ReplyAsync("", embed: $"{Context.User.Mention} nie odnaleziono nieoznaczonych kart.".ToEmbedMessage(EMType.Error).Build());
+                    return;
                 }
+
+                foreach (var card in cardsSelected)
+                    card.Tags.Remove(thisTag);
 
                 await db.SaveChangesAsync();
 
-                QueryCacheManager.ExpireTag(new string[] { $"user-{bUser.Id}", "users" });
+                QueryCacheManager.ExpireTag(new string[] { $"user-{Context.User.Id}", "users" });
 
-                await ReplyAsync("", embed: $"{Context.User.Mention} zdjął tag {tag} z {counter} kart.".ToEmbedMessage(EMType.Success).Build());
+                await ReplyAsync("", embed: $"{Context.User.Mention} skasowane zostało oznaczenie `{tag}` z {cardsSelected.Count} kart.".ToEmbedMessage(EMType.Success).Build());
             }
         }
 
@@ -2796,7 +2966,7 @@ namespace Sanakan.Modules
 
             using (var db = new Database.DatabaseContext(Config))
             {
-                var cards = await db.Cards.Include(x => x.TagList).Include(x => x.GameDeck).ThenInclude(x => x.User).Where(x => x.Character == id).AsNoTracking().FromCacheAsync(new[] { "users" });
+                var cards = await db.Cards.Include(x => x.Tags).Include(x => x.GameDeck).ThenInclude(x => x.User).Where(x => x.Character == id).AsNoTracking().FromCacheAsync(new[] { "users" });
 
                 if (cards.Count() < 1)
                 {
@@ -2840,11 +3010,14 @@ namespace Sanakan.Modules
                     return;
                 }
 
-                var cards = await db.Cards.AsQueryable().Include(x => x.TagList).Include(x => x.GameDeck).ThenInclude(x => x.User).AsSplitQuery()
+                var cards = await db.Cards.AsQueryable().Include(x => x.Tags).Include(x => x.GameDeck).ThenInclude(x => x.User).AsSplitQuery()
                     .Where(x => x.GameDeckId != user.Id && response.Body.Select(x => x.Id).Contains(x.Character)).AsNoTracking().ToListAsync();
 
                 if (!showFavs)
-                    cards = cards.Where(x => !x.HasTag("ulubione")).ToList();
+                {
+                    var tid = _tags.GetTagId(Services.PocketWaifu.TagType.Favorite);
+                    cards = cards.Where(x => !x.Tags.Any(t => t.Id == tid)).ToList();
+                }
 
                 if (cards.Count < 1)
                 {
@@ -2880,7 +3053,7 @@ namespace Sanakan.Modules
 
             using (var db = new Database.DatabaseContext(Config))
             {
-                var cards = await db.Cards.AsQueryable().Include(x => x.TagList).Include(x => x.GameDeck).AsSplitQuery().Where(x => characterIds.Contains(x.Character)).AsNoTracking().FromCacheAsync(new[] { "users" });
+                var cards = await db.Cards.AsQueryable().Include(x => x.Tags).Include(x => x.GameDeck).AsSplitQuery().Where(x => characterIds.Contains(x.Character)).AsNoTracking().FromCacheAsync(new[] { "users" });
 
                 if (cards.Count() < 1)
                 {
@@ -2915,7 +3088,7 @@ namespace Sanakan.Modules
                 return;
             }
 
-            var session = new ExchangeSession(user1, user2, _config, _time);
+            var session = new ExchangeSession(user1, user2, _config, _time, _tags);
             if (_session.SessionExist(session))
             {
                 await ReplyAsync("", embed: $"{user1.Mention} Ty lub twój partner znajdujecie się obecnie w trakcie wymiany.".ToEmbedMessage(EMType.Error).Build());
@@ -3141,7 +3314,7 @@ namespace Sanakan.Modules
 
                 foreach (var card in cardsSelected)
                 {
-                    if (!card.ValidExpedition(expedition, botUser.GameDeck.Karma))
+                    if (!card.ValidExpedition(expedition, botUser.GameDeck.Karma, _tags))
                     {
                         await ReplyAsync("", embed: $"{Context.User.Mention} {card.GetIdWithUrl()} ta karta nie może się udać na tę wyprawę.".ToEmbedMessage(EMType.Error).Build());
                         return;

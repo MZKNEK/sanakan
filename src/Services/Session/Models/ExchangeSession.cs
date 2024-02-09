@@ -30,6 +30,7 @@ namespace Sanakan.Services.Session.Models
 
         private ExchangeStatus State;
         private ISystemTime _time;
+        private TagHelper _tags;
         private IConfig _config;
 
         private readonly Emoji AcceptEmote = new Emoji("✅");
@@ -44,7 +45,7 @@ namespace Sanakan.Services.Session.Models
 
         public IEmote[] StartReactions => new IEmote[] { OneEmote, TwoEmote };
 
-        public ExchangeSession(IUser owner, IUser exchanger, IConfig config, ISystemTime time) : base(owner)
+        public ExchangeSession(IUser owner, IUser exchanger, IConfig config, ISystemTime time, TagHelper tags) : base(owner)
         {
             State = ExchangeStatus.Add;
             Event = ExecuteOn.AllEvents;
@@ -53,6 +54,7 @@ namespace Sanakan.Services.Session.Models
             TimeoutMs = 120000;
             _config = config;
             _time = time;
+            _tags = tags;
 
             Message = null;
 
@@ -338,7 +340,7 @@ namespace Sanakan.Services.Session.Models
                                 var card = user1.GetCard(c.Id);
                                 if (card != null)
                                 {
-                                    await card.ExchangeWithAsync(u1Data, u2Data, db, _time);
+                                    await card.ExchangeWithAsync(u1Data, u2Data, db, _time, _tags);
                                 }
                             }
 
@@ -347,7 +349,7 @@ namespace Sanakan.Services.Session.Models
                                 var card = user2.GetCard(c.Id);
                                 if (card != null)
                                 {
-                                    await card.ExchangeWithAsync(u2Data, u1Data, db, _time);
+                                    await card.ExchangeWithAsync(u2Data, u1Data, db, _time, _tags);
                                 }
                             }
 

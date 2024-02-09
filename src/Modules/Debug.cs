@@ -583,7 +583,7 @@ namespace Sanakan.Modules
 
                         thisCard.Active = false;
                         thisCard.InCage = false;
-                        thisCard.TagList.Clear();
+                        thisCard.Tags.Clear();
                         thisCard.Expedition = CardExpedition.None;
 
                         thisCard.GameDeckId = winnerUser.GameDeck.Id;
@@ -648,7 +648,7 @@ namespace Sanakan.Modules
                     return;
                 }
 
-                var thisCards = db.Cards.AsQueryable().Include(x => x.TagList).AsSingleQuery().Where(x => wids.Contains(x.Id)).ToList();
+                var thisCards = db.Cards.AsQueryable().Include(x => x.Tags).AsSingleQuery().Where(x => wids.Contains(x.Id)).ToList();
                 if (thisCards.Count < 1)
                 {
                     await ReplyAsync("", embed: "Nie odnaleziono kart!".ToEmbedMessage(EMType.Bot).Build());
@@ -662,7 +662,7 @@ namespace Sanakan.Modules
                 {
                     thisCard.Active = false;
                     thisCard.InCage = false;
-                    thisCard.TagList.Clear();
+                    thisCard.Tags.Clear();
                     thisCard.GameDeckId = userId;
                     thisCard.Expedition = CardExpedition.None;
 
@@ -685,7 +685,7 @@ namespace Sanakan.Modules
         {
             using (var db = new Database.DatabaseContext(Config))
             {
-                var thisCards = db.Cards.AsQueryable().Include(x => x.TagList).Include(x => x.ArenaStats).AsSingleQuery().Where(x => wids.Contains(x.Id)).ToList();
+                var thisCards = db.Cards.AsQueryable().Include(x => x.Tags).AsSingleQuery().Where(x => wids.Contains(x.Id)).ToList();
                 if (thisCards.Count < 1)
                 {
                     await ReplyAsync("", embed: "Nie odnaleziono kart!".ToEmbedMessage(EMType.Bot).Build());
@@ -777,7 +777,7 @@ namespace Sanakan.Modules
             using (var db = new Database.DatabaseContext(Config))
             {
                 var bUser = await db.GetUserOrCreateAsync(user.Id);
-                var thisCards = db.Cards.Include(x => x.TagList).Where(x => (x.LastIdOwner == user.Id || (x.FirstIdOwner == user.Id && x.LastIdOwner == 0)) && x.GameDeckId == 1).ToList();
+                var thisCards = db.Cards.Include(x => x.Tags).Where(x => (x.LastIdOwner == user.Id || (x.FirstIdOwner == user.Id && x.LastIdOwner == 0)) && x.GameDeckId == 1).ToList();
                 if (thisCards.Count < 1)
                 {
                     await ReplyAsync("", embed: "Nie odnaleziono kart!".ToEmbedMessage(EMType.Bot).Build());
@@ -791,7 +791,7 @@ namespace Sanakan.Modules
                 {
                     thisCard.Active = false;
                     thisCard.InCage = false;
-                    thisCard.TagList.Clear();
+                    thisCard.Tags.Clear();
                     thisCard.GameDeckId = user.Id;
                 }
 
@@ -871,7 +871,7 @@ namespace Sanakan.Modules
                     foreach (var card in user.GameDeck.Cards)
                     {
                         card.InCage = false;
-                        card.TagList.Clear();
+                        card.Tags.Clear();
                         card.LastIdOwner = id;
                         card.GameDeckId = fakeu.GameDeck.Id;
                     }
@@ -1204,7 +1204,7 @@ namespace Sanakan.Modules
         {
             using (var db = new Database.DatabaseContext(Config))
             {
-                var card = await db.Cards.AsQueryable().Include(x => x.TagList).AsSingleQuery().FirstOrDefaultAsync(x => x.Id == id);
+                var card = await db.Cards.AsQueryable().Include(x => x.Tags).AsSingleQuery().FirstOrDefaultAsync(x => x.Id == id);
                 if (card == null)
                 {
                     await ReplyAsync("", embed: "W bazie nie ma takiej karty!".ToEmbedMessage(EMType.Error).Build());

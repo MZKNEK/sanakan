@@ -9,6 +9,7 @@ using Discord;
 using Sanakan.Database;
 using Sanakan.Database.Models;
 using Sanakan.Services;
+using Sanakan.Services.PocketWaifu;
 using Sanakan.Services.Time;
 
 namespace Sanakan.Extensions
@@ -184,16 +185,6 @@ namespace Sanakan.Extensions
             return cardPower;
         }
 
-        public static bool HasTag(this Card card, string tag)
-        {
-            return card.TagList.Any(x => x.Name.Equals(tag, StringComparison.CurrentCultureIgnoreCase));
-        }
-
-        public static bool HasAnyTag(this Card card, IEnumerable<string> tags)
-        {
-            return card.TagList.Any(x => tags.Any(t => t.Equals(x.Name, StringComparison.CurrentCultureIgnoreCase)));
-        }
-
         public static MarketValue GetThreeStateMarketValue(this Card card)
         {
             if (card.MarketValue < 0.3) return MarketValue.Low;
@@ -201,7 +192,7 @@ namespace Sanakan.Extensions
             return MarketValue.Normal;
         }
 
-        public static string GetStatusIcons(this Card card)
+        public static string GetStatusIcons(this Card card, Services.PocketWaifu.TagHelper tags)
         {
             var icons = new List<string>();
             if (card.Active) icons.Add("☑️");
@@ -211,6 +202,7 @@ namespace Sanakan.Extensions
             if (card.IsBroken()) icons.Add("💔");
             if (card.InCage) icons.Add("🔒");
             if (card.Expedition != CardExpedition.None) icons.Add("✈️");
+            if (card.Curse != CardCurse.None) icons.Add("💀");
             if (!string.IsNullOrEmpty(card.CustomImage)) icons.Add("🖼️");
             if (!string.IsNullOrEmpty(card.CustomBorder)) icons.Add("✂️");
 
@@ -218,26 +210,15 @@ namespace Sanakan.Extensions
             if (value == MarketValue.Low) icons.Add("♻️");
             if (value == MarketValue.High) icons.Add("💰");
 
-            if (card.TagList.Count > 0)
-            {
-                if (card.TagList.Any(x => x.Name.Equals("ulubione", StringComparison.CurrentCultureIgnoreCase)))
-                    icons.Add("💗");
+            if (!card.Tags.IsNullOrEmpty())
+                icons.AddRange(tags.GetAllIcons(card));
 
-                if (card.TagList.Any(x => x.Name.Equals("galeria", StringComparison.CurrentCultureIgnoreCase)))
-                    icons.Add("📌");
-
-                if (card.TagList.Any(x => x.Name.Equals("rezerwacja", StringComparison.CurrentCultureIgnoreCase)))
-                    icons.Add("📝");
-
-                if (card.TagList.Any(x => x.Name.Equals("wymiana", StringComparison.CurrentCultureIgnoreCase)))
-                    icons.Add("🔄");
-            }
             return string.Join(" ", icons);
         }
 
         public static string GetIdWithUrl(this Card card) => card.Id == 0 ? "~~**[0]**~~": $"**[[{card.Id}](https://waifu.sanakan.pl/#/card/{card.Id})]**";
 
-        public static string GetDescSmall(this Card card)
+        public static string GetDescSmall(this Card card, Services.PocketWaifu.TagHelper tags)
         {
             return $"{card.GetIdWithUrl()} *({card.Character}) KC: {card.WhoWantsCount} PWR: {card.CalculateCardPower():F}*\n"
                 + $"{card.GetString(true, true, true, false, true)}\n"
@@ -245,11 +226,11 @@ namespace Sanakan.Extensions
                 + $"{card.Dere}\n"
                 + $"{card.GetAffectionString()}\n"
                 + $"{card.ExpCnt:F}/{card.ExpToUpgrade():F} exp\n\n"
-                + $"{(card.TagList.IsNullOrEmpty() ? "---" : string.Join(" ", card.TagList.Select(x => x.Name)))}\n"
-                + $"{card.GetStatusIcons()}";
+                + $"{(card.Tags.IsNullOrEmpty() ? "---" : string.Join(" ", card.Tags.Select(x => x.Name)))}\n"
+                + $"{card.GetStatusIcons(tags)}";
         }
 
-        public static string GetDesc(this Card card, bool hideScalelInfo)
+        public static string GetDesc(this Card card, bool hideScalelInfo, Services.PocketWaifu.TagHelper tags)
         {
             string scalpelInfo = (!string.IsNullOrEmpty(card.CustomImage) && !hideScalelInfo)
                 ? $"**Ustawiono obrazek:** {card.CustomImageDate.ToShortDateTime()}\n**Animacja:** {card.IsAnimatedImage.GetYesNo()}\n" : "";
@@ -270,8 +251,8 @@ namespace Sanakan.Extensions
                 + $"**Charakter:** {card.Dere}\n"
                 + $"**Utworzona:** {card.CreationDate.ToShortDateTime()}\n{scalpelInfo}"
                 + $"**KC:** {card.WhoWantsCount}\n"
-                + $"**Tagi:** {(card.TagList.IsNullOrEmpty() ? "---" : string.Join(" ", card.TagList.Select(x => x.Name)))}\n"
-                + $"{card.GetStatusIcons()}\n\n";
+                + $"**Tagi:** {(card.Tags.IsNullOrEmpty() ? "---" : string.Join(" ", card.Tags.Select(x => x.Name)))}\n"
+                + $"{card.GetStatusIcons(tags)}\n\n";
         }
 
         public static int GetHealthWithPenalty(this Card card, bool allowZero = false)
@@ -435,7 +416,7 @@ namespace Sanakan.Extensions
 
         public static bool IsUnusable(this Card card) => card.Affection <= -5;
 
-        public static bool ValidExpedition(this Card card, CardExpedition expedition, double karma)
+        public static bool ValidExpedition(this Card card, CardExpedition expedition, double karma, TagHelper helper)
         {
             if (card.Expedition != CardExpedition.None)
                 return false;
@@ -452,7 +433,7 @@ namespace Sanakan.Extensions
             switch (expedition)
             {
                 case CardExpedition.ExtremeItemWithExp:
-                    return !card.FromFigure && !card.HasTag("ulubione");
+                    return !card.FromFigure && !helper.HasTag(card, Services.PocketWaifu.TagType.Favorite);
 
                 case CardExpedition.NormalItemWithExp:
                     return !card.FromFigure;
@@ -463,7 +444,7 @@ namespace Sanakan.Extensions
                     return card.Rarity == Rarity.SSS;
 
                 case CardExpedition.UltimateHardcore:
-                    return card.Rarity == Rarity.SSS && !card.HasTag("ulubione");
+                    return card.Rarity == Rarity.SSS && !helper.HasTag(card, Services.PocketWaifu.TagType.Favorite);
 
                 case CardExpedition.LightExp:
                 case CardExpedition.LightItems:
@@ -1097,10 +1078,10 @@ namespace Sanakan.Extensions
         }
 
         public static async Task ExchangeWithAsync(this Card card, (User user, int count, string tag, string username)
-            source, (User user, int count, string tag, string username) target, DatabaseContext db, ISystemTime time)
+            source, (User user, int count, string tag, string username) target, DatabaseContext db, ISystemTime time, TagHelper helper)
         {
             card.Active = false;
-            card.TagList.Clear();
+            card.Tags.Clear();
             card.Affection -= 1.5;
 
             if (card.ExpCnt > 1)
@@ -1127,7 +1108,10 @@ namespace Sanakan.Extensions
             source.user.GameDeck.RemoveFromWaifu(card);
 
             if (!string.IsNullOrEmpty(target.tag))
-                card.TagList.Add(new CardTag { Name = target.tag });
+            {
+                var tag = await db.GetTagAsync(helper, target.tag, target.user.Id);
+                if (tag != null) card.Tags.Add(tag);
+            }
 
             card.GameDeckId = target.user.GameDeck.Id;
 
@@ -1137,7 +1121,8 @@ namespace Sanakan.Extensions
             db.AddActivityFromNewCard(card, isOnUserWishlist, time, target.user, target.username);
         }
 
-        public static bool IsProtectedFromDiscarding(this Card card) => card.InCage || card.HasTag("ulubione") || card.FromFigure || card.Expedition != CardExpedition.None;
+        public static bool IsProtectedFromDiscarding(this Card card, TagHelper helper)
+            => card.InCage || helper.HasTag(card, Services.PocketWaifu.TagType.Favorite) || card.FromFigure || card.Expedition != CardExpedition.None;
 
         public static bool IsDisallowedToExchange(this Card card) => card is null
             || card.InCage

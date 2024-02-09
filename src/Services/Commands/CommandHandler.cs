@@ -76,6 +76,7 @@ namespace Sanakan.Services.Commands
             _provider = provider;
 
             _cmd.AddTypeReader<SlotMachineSetting>(new TypeReaders.SlotMachineSettingTypeReader());
+            _cmd.AddTypeReader<ModifyTagActionType>(new TypeReaders.ModifyTagActionTypeReader());
             _cmd.AddTypeReader<WishlistObjectType>(new TypeReaders.WishlistObjectTypeReader());
             _cmd.AddTypeReader<ItemCountPair>(new TypeReaders.ItemCountPairTypeReader());
             _cmd.AddTypeReader<CardExpedition>(new TypeReaders.ExpeditionTypeReader());

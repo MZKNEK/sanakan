@@ -136,14 +136,12 @@ namespace Sanakan.Extensions
             var card = new Card
             {
                 CustomImageDate = DateTime.MinValue,
-                ArenaStats = new CardArenaStats(),
                 FirstIdOwner = figure.GameDeckId,
                 Expedition = CardExpedition.None,
                 LastIdOwner = figure.GameDeckId,
                 RestartCnt = figure.RestartCnt,
                 ExpeditionDate = creationTime,
                 PAS = PreAssembledFigure.None,
-                TagList = new List<CardTag>(),
                 Character = figure.Character,
                 CreationDate = creationTime,
                 StarStyle = StarStyle.Full,
@@ -156,6 +154,7 @@ namespace Sanakan.Extensions
                 Health = figure.Health,
                 Curse = CardCurse.None,
                 Attack = figure.Attack,
+                Tags = new List<Tag>(),
                 Title = figure.Title,
                 FigureId = figure.Id,
                 Rarity = Rarity.SSS,

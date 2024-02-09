@@ -34,11 +34,11 @@ namespace Sanakan.Api.Models
         /// <summary>
         /// Tagi jakie ma zawierać karta
         /// </summary>
-        public List<string> IncludeTags { get; set; }
+        public List<TagIdPair> IncludeTags { get; set; }
         /// <summary>
         /// Tagi jakich karta ma nie mieć
         /// </summary>
-        public List<string> ExcludeTags { get; set; }
+        public List<TagIdPair> ExcludeTags { get; set; }
         /// <summary>
         /// W jaki sposów filtrować po tagach
         /// </summary>
@@ -97,9 +97,9 @@ namespace Sanakan.Api.Models
                 case OrderType.NameDes:
                     return query.OrderByDescending(x => x.Name);
                 case OrderType.Picture:
-                    return query.OrderBy(x => (x.CustomImage == null ? (x.Image == null ? 0 : 1) : 2));
+                    return query.OrderBy(x => x.CustomImage == null ? (x.Image == null ? 0 : 1) : (x.IsAnimatedImage ? 3 : 2));
                 case OrderType.PictureDes:
-                    return query.OrderByDescending(x => (x.CustomImage == null ? (x.Image == null ? 0 : 1) : 2));
+                    return query.OrderByDescending(x => x.CustomImage == null ? (x.Image == null ? 0 : 1) : (x.IsAnimatedImage ? 3 : 2));
                 case OrderType.Blocked:
                     return query.OrderBy(x => x.IsTradable ? 1 : 0);
                 case OrderType.BlockedDes:

@@ -36,6 +36,7 @@ namespace Sanakan
         private ISystemTime _time;
         private Profile _profile;
         private IConfig _config;
+        private TagHelper _tags;
         private ILogger _logger;
         private Moderator _mod;
         private Helper _helper;
@@ -49,9 +50,9 @@ namespace Sanakan
         public async Task MainAsync()
         {
             LoadConfig();
+            EnsureDbIsCreated();
             CreateModules();
             AddSigTermHandler();
-            EnsureDbIsCreated();
 
             var tmpCnf = _config.Get();
             await _client.LoginAsync(TokenType.Bot, tmpCnf.BotToken);
@@ -59,7 +60,8 @@ namespace Sanakan
             await _client.StartAsync();
 
             var services = BuildServiceProvider();
-            BotWebHost.RunWebHost(_client, _shindenClient, _waifu, _config, _helper, _executor, _logger, _time);
+            BotWebHost.RunWebHost(_client, _shindenClient, _waifu,
+                _config, _helper, _executor, _logger, _time, _tags);
 
             _executor.Initialize(services);
             _sessions.Initialize(services);
@@ -73,6 +75,7 @@ namespace Sanakan
             using (var db = new Database.DatabaseContext(_config))
             {
                 db.Database.EnsureCreated();
+                _tags = new TagHelper(db);
             }
         }
 
@@ -113,7 +116,7 @@ namespace Sanakan
             _daemon = new Daemonizer(_client, _logger, _config);
             _shinden = new Services.Shinden(_shindenClient, _sessions, _img);
             _waifu = new Waifu(_img, _shindenClient, _events, _logger,
-                 _client, _helper, _time, _shinden);
+                 _client, _helper, _time, _shinden, _tags);
             _supervisor = new Supervisor(_client, _config, _logger, _mod, _time);
             _greeting = new Greeting(_client, _logger, _config, _executor, _time);
             _exp = new ExperienceManager(_client, _executor, _config, _img, _time);
@@ -161,6 +164,7 @@ namespace Sanakan
                 .AddSingleton(_chaos)
                 .AddSingleton(_waifu)
                 .AddSingleton(_spawn)
+                .AddSingleton(_tags)
                 .AddSingleton(_time)
                 .AddSingleton(_mod)
                 .AddSingleton(_exp)
