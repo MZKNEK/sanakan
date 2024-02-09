@@ -2547,12 +2547,13 @@ namespace Sanakan.Modules
                     .Include(x => x.GameDeck).ThenInclude(x => x.Cards).ThenInclude(x => x.Tags).FirstOrDefaultAsync();
 
                 var oldTags = new List<string>();
-                var tags = buser.GameDeck.Cards.Where(x => x.TagList != null).Select(x => x.TagList.Select(c => c.Name));
+                var tags = buser.GameDeck.Cards.Where(x => x.TagList != null).Select(x => x.TagList.Select(c => c.Name)).ToList();
                 foreach(var t in tags) oldTags.AddRange(t);
 
                 oldTags = oldTags.Distinct().Where(x  => !x.Equals("ulubione", StringComparison.CurrentCultureIgnoreCase)
                     && !x.Equals("rezerwacja", StringComparison.CurrentCultureIgnoreCase)
                     && !x.Equals("galeria", StringComparison.CurrentCultureIgnoreCase)
+                    && !x.Equals("kosz", StringComparison.CurrentCultureIgnoreCase)
                     && !x.Equals("wymiana", StringComparison.CurrentCultureIgnoreCase)).ToList();
 
                 if (oldTags.IsNullOrEmpty())
@@ -2587,7 +2588,13 @@ namespace Sanakan.Modules
                 }
 
                 var cards = buser.GameDeck.Cards.Where(x => x.TagList.Any(x => x.Name.Equals(tag, StringComparison.CurrentCultureIgnoreCase))).ToList();
-                var msg = await ReplyAsync("", embed: $"{Context.User.Mention} rozpoczęto przywracanie `{cards.Count}` kart do oznaczenia `{tag}`...".ToEmbedMessage(EMType.Bot).Build());
+                if (cards.IsNullOrEmpty())
+                {
+                    await ReplyAsync("", embed: $"{Context.User.Mention} wystąpił problem z odnalezieniem kart z oznaczeniem `{tag}`.".ToEmbedMessage(EMType.Error).Build());
+                    return;
+                }
+
+                var msg = await ReplyAsync("", embed: $"{Context.User.Mention} rozpoczęto przywracanie `{cards.Count}` kart do oznaczenia `{newtag}`...".ToEmbedMessage(EMType.Bot).Build());
                 foreach (var card in cards)
                 {
                     card.Tags.Add(thisTag);
@@ -2600,7 +2607,7 @@ namespace Sanakan.Modules
 
                 await db.SaveChangesAsync();
 
-                await msg.ModifyAsync(x => x.Embed = $"{Context.User.Mention} przywrócono `{cards.Count}` kart do oznaczenia `{tag}`".ToEmbedMessage(EMType.Success).Build());
+                await msg.ModifyAsync(x => x.Embed = $"{Context.User.Mention} przywrócono `{cards.Count}` kart do oznaczenia `{newtag}`".ToEmbedMessage(EMType.Success).Build());
             }
         }
 
