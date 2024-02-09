@@ -2526,9 +2526,15 @@ namespace Sanakan.Modules
         [Alias("restore tag", "przywroć oznaczenie", "przywroc oznaczenie", "przywróc oznaczenie")]
         [Summary("przywraca stare oznaczenie, nie podanie oznaczenia wypisuje jakie są dostępne")]
         [Remarks("konie"), RequireWaifuCommandChannel]
-        public async Task RestoreOldUserTagAsync([Summary("oznaczenie (nie może zawierać spacji)")] string tag = "")
+        public async Task RestoreOldUserTagAsync([Summary("stare oznaczenie (nie może zawierać spacji)")] string tag = "", [Summary("nowe oznaczenie (nie może zawierać spacji)")] string newtag = "")
         {
             if (tag.Contains(" "))
+            {
+                await ReplyAsync("", embed: $"{Context.User.Mention} oznaczenie nie może zawierać spacji.".ToEmbedMessage(EMType.Error).Build());
+                return;
+            }
+
+            if (newtag.Contains(" "))
             {
                 await ReplyAsync("", embed: $"{Context.User.Mention} oznaczenie nie może zawierać spacji.".ToEmbedMessage(EMType.Error).Build());
                 return;
@@ -2555,13 +2561,19 @@ namespace Sanakan.Modules
                     return;
                 }
 
-                if (string.IsNullOrEmpty(tag))
+                if (string.IsNullOrEmpty(tag) || string.IsNullOrEmpty(newtag))
                 {
                     await ReplyAsync("", embed: $"**Dostępne oznaczenia do przywrócenia**:\n\n{string.Join("\n", oldTags)}".ToEmbedMessage(EMType.Info).WithUser(Context.User).Build());
                     return;
                 }
 
-                var thisTag = buser.GameDeck.Tags.FirstOrDefault(x => x.Name.Equals(tag, StringComparison.CurrentCultureIgnoreCase));
+                if (_tags.IsSimilar(newtag))
+                {
+                    await ReplyAsync("", embed: $"{Context.User.Mention} istnieje bardzo podobne oznaczenie domyślne, użyj go lub wymyśl inne.".ToEmbedMessage(EMType.Error).Build());
+                    return;
+                }
+
+                var thisTag = buser.GameDeck.Tags.FirstOrDefault(x => x.Name.Equals(newtag, StringComparison.CurrentCultureIgnoreCase));
                 if (thisTag is null && buser.GameDeck.Tags.Count >= buser.GameDeck.MaxNumberOfTags)
                 {
                     await ReplyAsync("", embed: $"{Context.User.Mention} nie posiadasz oznaczenia o takiej nazwie oraz miejsca by utworzyć nowe.".ToEmbedMessage(EMType.Error).Build());
@@ -2570,7 +2582,7 @@ namespace Sanakan.Modules
 
                 if (thisTag is null)
                 {
-                    thisTag = new Tag { Name = tag };
+                    thisTag = new Tag { Name = newtag };
                     buser.GameDeck.Tags.Add(thisTag);
                 }
 
