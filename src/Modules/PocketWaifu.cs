@@ -2457,8 +2457,8 @@ namespace Sanakan.Modules
 
         [Command("moje oznaczenia", RunMode = RunMode.Async)]
         [Alias("my tags")]
-        [Summary("wypisuej dostepne oznaczenia")]
-        [Remarks(""), RequireWaifuCommandChannel]
+        [Summary("wypisuje dostepne oznaczenia")]
+        [Remarks(""), RequireAnyCommandChannelLevelOrNitro(60)]
         public async Task ShowUserTagsAsync()
         {
             using (var db = new Database.DatabaseContext(Config))
@@ -2486,6 +2486,102 @@ namespace Sanakan.Modules
                                           + $"**Domyślne oznaczenia**:\n\n"
                                           + $"{string.Join("\n", dtag.Select(x => $"{x.Tag.Icon} **{x.Tag.Name}** `{x.Count}`"))}")
                                           .ToEmbedMessage(EMType.Info).WithUser(Context.User).Build());
+            }
+        }
+
+        [Command("utwórz oznaczenie")]
+        [Alias("create tag", "utworz oznaczenie")]
+        [Summary("tworzy oznaczenie")]
+        [Remarks("konie"), RequireWaifuCommandChannel]
+        public async Task CreateUserTagAsync([Summary("oznaczenie (nie może zawierać spacji)")] string tag)
+        {
+            if (tag.Contains(" "))
+            {
+                await ReplyAsync("", embed: $"{Context.User.Mention} oznaczenie nie może zawierać spacji.".ToEmbedMessage(EMType.Error).Build());
+                return;
+            }
+
+            using (var db = new Database.DatabaseContext(Config))
+            {
+                var buser = await db.GetUserOrCreateSimpleAsync(Context.User.Id);
+                if (buser.GameDeck.MaxNumberOfTags <= buser.GameDeck.Tags.Count)
+                {
+                    await ReplyAsync("", embed: $"{Context.User.Mention} nie możesz utworzyć już więcej oznaczeń, skasuj jakieś lub zwiększ ich limit.".ToEmbedMessage(EMType.Error).Build());
+                    return;
+                }
+
+                if (_tags.IsSimilar(tag))
+                {
+                    await ReplyAsync("", embed: $"{Context.User.Mention} istnieje bardzo podobne oznaczenie domyślne, użyj go lub wymyśl inne.".ToEmbedMessage(EMType.Error).Build());
+                    return;
+                }
+
+                if (buser.GameDeck.Tags.Any(x => x.Name.Equals(tag, StringComparison.CurrentCultureIgnoreCase)))
+                {
+                    await ReplyAsync("", embed: $"{Context.User.Mention} już posiadasz takie oznaczenie.".ToEmbedMessage(EMType.Error).Build());
+                    return;
+                }
+
+                buser.GameDeck.Tags.Add(new Tag { Name = tag });
+                await db.SaveChangesAsync();
+
+                await ReplyAsync("", embed: $"{Context.User.Mention} utworzono nowe oznaczenie: `{tag}`".ToEmbedMessage(EMType.Success).Build());
+            }
+        }
+
+        [Command("modyfikuj oznaczenie")]
+        [Alias("modify tag")]
+        [Summary("zmienia lub kasuje oznaczenie")]
+        [Remarks("zmień konie konina"), RequireWaifuCommandChannel]
+        public async Task ChangeUserTagAsync([Summary("rodzaj akcji (usuń/zmień)")]ModifyTagActionType action, [Summary("oznaczenie (nie może zawierać spacji)")] string oldTag, [Summary("oznaczenie (nie może zawierać spacji, opcjonalne)")] string newTag = "")
+        {
+            if (oldTag.Contains(" "))
+            {
+                await ReplyAsync("", embed: $"{Context.User.Mention} oznaczenie nie może zawierać spacji.".ToEmbedMessage(EMType.Error).Build());
+                return;
+            }
+
+            if (action == ModifyTagActionType.Rename && newTag.Contains(" "))
+            {
+                await ReplyAsync("", embed: $"{Context.User.Mention} oznaczenie nie może zawierać spacji.".ToEmbedMessage(EMType.Error).Build());
+                return;
+            }
+
+            using (var db = new Database.DatabaseContext(Config))
+            {
+                var buser = await db.GetUserOrCreateSimpleAsync(Context.User.Id);
+                var thisTag = buser.GameDeck.Tags.FirstOrDefault(x => x.Name.Equals(oldTag, StringComparison.CurrentCultureIgnoreCase));
+                if (thisTag is null)
+                {
+                    await ReplyAsync("", embed: $"{Context.User.Mention} nie odnaleziono oznaczenia.".ToEmbedMessage(EMType.Error).Build());
+                    return;
+                }
+
+                var response = $"skasowano oznaczenie `{oldTag}`";
+                if (action == ModifyTagActionType.Delete)
+                {
+                    buser.GameDeck.Tags.Remove(thisTag);
+                }
+                else
+                {
+                    if (_tags.IsSimilar(newTag))
+                    {
+                        await ReplyAsync("", embed: $"{Context.User.Mention} istnieje bardzo podobne oznaczenie domyślne, użyj go lub wymyśl inne.".ToEmbedMessage(EMType.Error).Build());
+                        return;
+                    }
+
+                    if (buser.GameDeck.Tags.Any(x => x.Id != thisTag.Id && x.Name.Equals(newTag, StringComparison.CurrentCultureIgnoreCase)))
+                    {
+                        await ReplyAsync("", embed: $"{Context.User.Mention} już posiadasz takie oznaczenie.".ToEmbedMessage(EMType.Error).Build());
+                        return;
+                    }
+
+                    response = $"nazwa została zmieniona z `{oldTag}` na `{newTag}`";
+                    thisTag.Name = newTag;
+                }
+
+                await db.SaveChangesAsync();
+                await ReplyAsync("", embed: $"{Context.User.Mention} {response}".ToEmbedMessage(EMType.Success).Build());
             }
         }
 

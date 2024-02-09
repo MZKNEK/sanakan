@@ -41,6 +41,11 @@ namespace Sanakan.Services.PocketWaifu
         Normal, Small, Profile
     }
 
+    public enum ModifyTagActionType
+    {
+        Rename, Delete
+    }
+
     public class Waifu
     {
         private const int DERE_TAB_SIZE = ((int)Dere.Yato) + 1;

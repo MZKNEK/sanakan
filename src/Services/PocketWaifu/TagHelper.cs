@@ -43,6 +43,9 @@ namespace Sanakan.Services.PocketWaifu
             }
         }
 
+        public bool IsSimilar(string tag) => _baseTags.Any(x => x.Value.Name.Contains(tag, System.StringComparison.CurrentCultureIgnoreCase))
+            || _baseTags.Any(x => tag.Contains(x.Value.Name, System.StringComparison.CurrentCultureIgnoreCase));
+
         public List<string> GetAllIcons(Card card) => _baseTags.Where(x => card.Tags.Any(t => t.Id == x.Value.Id)).Select(x => x.Value.Icon).ToList();
         public ulong GetTagId(string name) => _baseTags.Where(x => x.Value.Name.Equals(name, System.StringComparison.CurrentCultureIgnoreCase)).Select(x => x.Value.Id).FirstOrDefault();
         public bool HasTag(Card card, TagType type) => card.Tags.Any(x => x.Id == _baseTags[type].Id);
