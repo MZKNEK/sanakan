@@ -103,10 +103,14 @@ namespace Sanakan.Database.Models
         public DateTime ExpeditionDate { get; set; }
 
         public virtual ICollection<CardTag> TagList { get; set; }
+        public virtual ICollection<Tag> Tags { get; set; }
 
         public ulong GameDeckId { get; set; }
         [JsonIgnore]
         public virtual GameDeck GameDeck { get; set; }
+
+        [JsonIgnore]
+        public virtual ICollection<TagCardRelation> Relation { get; set; }
 
         public override string ToString()
         {

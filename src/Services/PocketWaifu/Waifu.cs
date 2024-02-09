@@ -217,6 +217,7 @@ namespace Sanakan.Services.PocketWaifu
         private Events _events;
         private Helper _helper;
         private ILogger _logger;
+        private TagHelper _tags;
         private Shinden _shinden;
         private ISystemTime _time;
         private ImageProcessing _img;
@@ -224,10 +225,11 @@ namespace Sanakan.Services.PocketWaifu
         private DiscordSocketClient _client;
 
         public Waifu(ImageProcessing img, ShindenClient client, Events events, ILogger logger,
-            DiscordSocketClient discord, Helper helper, ISystemTime time, Shinden shinden)
+            DiscordSocketClient discord, Helper helper, ISystemTime time, Shinden shinden, TagHelper tags)
         {
             _img = img;
             _time = time;
+            _tags = tags;
             _events = events;
             _logger = logger;
             _helper = helper;
@@ -275,7 +277,7 @@ namespace Sanakan.Services.PocketWaifu
                             if (t.Length < 1)
                                 continue;
 
-                            nList = list.Where(x => x.TagList.Any(c => c.Name.Equals(t, StringComparison.CurrentCultureIgnoreCase))).ToList();
+                            nList = list.Where(x => x.Tags.Any(c => c.Name.Equals(t, StringComparison.CurrentCultureIgnoreCase))).ToList();
                         }
                         return nList;
                     }
@@ -289,7 +291,7 @@ namespace Sanakan.Services.PocketWaifu
                             if (t.Length < 1)
                                 continue;
 
-                            nList = list.Where(x => !x.TagList.Any(c => c.Name.Equals(t, StringComparison.CurrentCultureIgnoreCase))).ToList();
+                            nList = list.Where(x => !x.Tags.Any(c => c.Name.Equals(t, StringComparison.CurrentCultureIgnoreCase))).ToList();
                         }
                         return nList;
                     }
@@ -861,7 +863,6 @@ namespace Sanakan.Services.PocketWaifu
                 CustomImageDate = creationTime,
                 ExpeditionDate = creationTime,
                 PAS = PreAssembledFigure.None,
-                TagList = new List<CardTag>(),
                 CreationDate = creationTime,
                 StarStyle = StarStyle.Full,
                 Source = CardSource.Other,
@@ -869,6 +870,7 @@ namespace Sanakan.Services.PocketWaifu
                 FixedCustomImageCnt = 0,
                 IsAnimatedImage = false,
                 Title = title ?? "????",
+                Tags = new List<Tag>(),
                 Dere = RandomizeDere(),
                 Curse = CardCurse.None,
                 RarityOnStart = rarity,
@@ -1238,15 +1240,15 @@ namespace Sanakan.Services.PocketWaifu
             if (mention)
             {
                 var userId = card.GameDeckId == 1 ? (guild?.CurrentUser?.Id ?? 1) : card.GameDeckId;
-                return $"<@{userId}>: {card.GetIdWithUrl()} **{card.GetCardRealRarity()}** {card.GetStatusIcons()}\n";
+                return $"<@{userId}>: {card.GetIdWithUrl()} **{card.GetCardRealRarity()}** {card.GetStatusIcons(_tags)}\n";
             }
 
             var user = guild?.GetUser(card.GameDeckId) ?? await _client.GetUserAsync(card.GameDeckId);
 
             if (!shindenUrls || card?.GameDeck?.User?.Shinden == 0 || card?.GameDeckId == 1)
-                return $"{(user?.GetUserNickInGuild() ?? "????")}: {card.GetIdWithUrl()} **{card.GetCardRealRarity()}** {card.GetStatusIcons()}\n";
+                return $"{(user?.GetUserNickInGuild() ?? "????")}: {card.GetIdWithUrl()} **{card.GetCardRealRarity()}** {card.GetStatusIcons(_tags)}\n";
 
-            return $"[{(user?.GetUserNickInGuild() ?? "????")}](https://shinden.pl/user/{card.GameDeck.User.Shinden}): {card.GetIdWithUrl()} **{card.GetCardRealRarity()}** {card.GetStatusIcons()}\n";
+            return $"[{(user?.GetUserNickInGuild() ?? "????")}](https://shinden.pl/user/{card.GameDeck.User.Shinden}): {card.GetIdWithUrl()} **{card.GetCardRealRarity()}** {card.GetStatusIcons(_tags)}\n";
         }
 
         private void AppendMessage(List<Embed> embeds, StringBuilder currentContent, string nextPart)
@@ -1567,7 +1569,7 @@ namespace Sanakan.Services.PocketWaifu
                 {
                     Text = $"Należy do: {ownerString}"
                 },
-                Description = $"{card.GetDesc(hideScalpelInfo)}{imgUrls}".TrimToLength(2500)
+                Description = $"{card.GetDesc(hideScalpelInfo, _tags)}{imgUrls}".TrimToLength(2500)
             }.Build();
         }
 
@@ -1686,7 +1688,7 @@ namespace Sanakan.Services.PocketWaifu
             var cards = new List<Card>();
             if (cardsId != null)
             {
-                var cds = await db.Cards.Include(x => x.TagList).Where(x => cardsId.Any(c => c == x.Id))
+                var cds = await db.Cards.Include(x => x.Tags).Where(x => cardsId.Any(c => c == x.Id))
                     .Include(x => x.GameDeck).ThenInclude(x => x.User).AsNoTracking().ToListAsync();
                 cards.AddRange(cds);
             }
@@ -1710,7 +1712,7 @@ namespace Sanakan.Services.PocketWaifu
             if (characters.Count > 0)
             {
                 characters = characters.Distinct().Where(c => !userCards.Any(x => x.Character == c)).ToList();
-                var cads = await db.Cards.Include(x => x.TagList).Where(x => characters.Any(c => c == x.Character))
+                var cads = await db.Cards.Include(x => x.Tags).Where(x => characters.Any(c => c == x.Character))
                     .Include(x => x.GameDeck).ThenInclude(x => x.User).AsNoTracking().ToListAsync();
                 cards.AddRange(cads);
             }
@@ -2086,7 +2088,7 @@ namespace Sanakan.Services.PocketWaifu
             var ignored = new List<Card>();
             foreach (var card in cardsForDiscarding)
             {
-                if (card.IsProtectedFromDiscarding())
+                if (card.IsProtectedFromDiscarding(_tags))
                 {
                     ignored.Add(card);
                     continue;
@@ -2554,7 +2556,10 @@ namespace Sanakan.Services.PocketWaifu
                 cards = cards.Where(x => x.GameDeckId != user.Id);
 
             if (hideFavs)
-                cards = cards.Where(x => !x.HasTag("ulubione"));
+            {
+                var favId = _tags.GetTagId(TagType.Favorite);
+                cards = cards.Where(x => !x.Tags.Any(t => t.Id == favId));
+            }
 
             if (hideBlocked)
                 cards = cards.Where(x => x.IsTradable);

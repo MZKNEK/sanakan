@@ -234,7 +234,7 @@ namespace Sanakan.Api.Models
                 IsOnExpedition = card.Expedition != CardExpedition.None,
                 SmallImageUrl = GetCardMiniInShindenUrl(card),
                 ProfileImageUrl = GetCardProfileInShindenUrl(card),
-                Tags = card.TagList.Select(x => x.Name).ToList()
+                Tags = card.Tags.Select(x => x.Name).ToList()
             };
         }
     }

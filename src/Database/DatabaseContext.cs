@@ -61,6 +61,8 @@ namespace Sanakan.Database
         public DbSet<CommandsAnalytics> CommandsData { get; set; }
         public DbSet<WishlistCount> WishlistCountData { get; set; }
         public DbSet<UserActivity> UserActivities { get; set; }
+        public DbSet<TagCardRelation> TagCardRelations { get; set; }
+        public DbSet<Tag> Tags { get; set; }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
@@ -146,6 +148,15 @@ namespace Sanakan.Database
                     .WithMany(u => u.Figures);
             });
 
+            modelBuilder.Entity<Tag>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.HasIndex(e => e.Name);
+
+                entity.HasOne(e => e.GameDeck)
+                    .WithMany(u => u.Tags);
+            });
+
             modelBuilder.Entity<Card>(entity =>
             {
                 entity.HasKey(e => e.Id);
@@ -154,6 +165,17 @@ namespace Sanakan.Database
 
                 entity.HasOne(e => e.GameDeck)
                     .WithMany(d => d.Cards);
+
+                entity.HasMany(e => e.Tags)
+                    .WithMany(t => t.Cards)
+                    .UsingEntity<TagCardRelation>(
+                        l => l.HasOne<Tag>(e => e.Tag).WithMany(e => e.Relation),
+                        r => r.HasOne<Card>(e => e.Card).WithMany(e => e.Relation));
+            });
+
+            modelBuilder.Entity<TagCardRelation>(entity =>
+            {
+                entity.HasKey("TagId", "CardId");
             });
 
             modelBuilder.Entity<Item>(entity =>

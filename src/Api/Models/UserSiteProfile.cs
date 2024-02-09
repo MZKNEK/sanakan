@@ -30,7 +30,7 @@ namespace Sanakan.Api.Models
         /// <summary>
         /// Lista tagów jakie ma użytkownik na kartach
         /// </summary>
-        public List<string> TagList { get; set; }
+        public List<TagIdPair> TagList { get; set; }
         /// <summary>
         /// warunki wymiany z użytkownikiem
         /// </summary>

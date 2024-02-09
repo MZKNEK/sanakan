@@ -28,13 +28,14 @@ namespace Sanakan.Api
     public static class BotWebHost
     {
         public static void RunWebHost(DiscordSocketClient client, ShindenClient shinden, Waifu waifu, IConfig config, Services.Helper helper,
-            IExecutor executor, Shinden.Logger.ILogger logger, ISystemTime time)
+            IExecutor executor, Shinden.Logger.ILogger logger, ISystemTime time, TagHelper tags)
         {
             new Thread(() =>
             {
                 Thread.CurrentThread.IsBackground = true;
                 CreateWebHostBuilder(config).ConfigureServices(services =>
                 {
+                    services.AddSingleton(tags);
                     services.AddSingleton(time);
                     services.AddSingleton(waifu);
                     services.AddSingleton(logger);

@@ -28,6 +28,7 @@ namespace Sanakan.Api.Controllers
     public class WaifuController : ControllerBase
     {
         private readonly Waifu _waifu;
+        private readonly TagHelper _tags;
         private readonly IConfig _config;
         private readonly ISystemTime _time;
         private readonly IExecutor _executor;
@@ -35,10 +36,11 @@ namespace Sanakan.Api.Controllers
         private readonly IMemoryCache _nameCache;
         private readonly DiscordSocketClient _client;
 
-        public WaifuController(ShindenClient shClient, Waifu waifu, IExecutor executor,
+        public WaifuController(ShindenClient shClient, Waifu waifu, IExecutor executor, TagHelper tags,
             IConfig config, ISystemTime time, IMemoryCache cache, DiscordSocketClient client)
         {
             _time = time;
+            _tags = tags;
             _waifu = waifu;
             _client = client;
             _config = config;
@@ -81,7 +83,7 @@ namespace Sanakan.Api.Controllers
             using (var db = new Database.DatabaseContext(_config))
             {
                 var user = await db.Users.AsQueryable().Where(x => x.Shinden == id)
-                    .Include(x => x.GameDeck).ThenInclude(x => x.Cards).ThenInclude(x => x.TagList).AsNoTracking().AsSplitQuery().FirstOrDefaultAsync();
+                    .Include(x => x.GameDeck).ThenInclude(x => x.Cards).ThenInclude(x => x.Tags).AsNoTracking().AsSplitQuery().FirstOrDefaultAsync();
 
                 if (user == null)
                 {
@@ -139,7 +141,7 @@ namespace Sanakan.Api.Controllers
         {
             using (var db = new Database.DatabaseContext(_config))
             {
-                var query = db.Cards.AsQueryable().AsSplitQuery().Include(x => x.TagList).AsNoTracking();
+                var query = db.Cards.AsQueryable().AsSplitQuery().Include(x => x.Tags).AsNoTracking();
                 if (!string.IsNullOrEmpty(filter.SearchText))
                 {
                     query = query.Where(x => x.Name.Contains(filter.SearchText) || x.Title.Contains(filter.SearchText) || x.Id.ToString().Contains(filter.SearchText));
@@ -147,7 +149,7 @@ namespace Sanakan.Api.Controllers
 
                 query = CardsQueryFilter.Use(filter.OrderBy, query);
 
-                var cards = FilterCardsByTags((await query.FromCacheAsync("api-all-cards")).ToList(), filter);
+                var cards = (await FilterCardsByTags(query, filter).FromCacheAsync("api-all-cards")).ToList();
 
                 return new FilteredCards{TotalCards = cards.Count, Cards = cards.Skip((int)offset).Take((int)count).ToView()};
             }
@@ -181,7 +183,7 @@ namespace Sanakan.Api.Controllers
                     return new FilteredCards{TotalCards = 0, Cards = new List<CardFinalView>()};
                 }
 
-                var query = db.Cards.AsQueryable().AsSplitQuery().Where(x => x.GameDeckId == user.GameDeck.Id).Include(x => x.TagList).AsNoTracking();
+                var query = db.Cards.AsQueryable().AsSplitQuery().Where(x => x.GameDeckId == user.GameDeck.Id).Include(x => x.Tags).AsNoTracking();
                 if (!string.IsNullOrEmpty(filter.SearchText))
                 {
                     query = query.Where(x => x.Name.Contains(filter.SearchText) || x.Title.Contains(filter.SearchText) || x.Id.ToString().Contains(filter.SearchText));
@@ -189,7 +191,7 @@ namespace Sanakan.Api.Controllers
 
                 query = CardsQueryFilter.Use(filter.OrderBy, query);
 
-                var cards = FilterCardsByTags(await query.ToListAsync(), filter);
+                var cards = await FilterCardsByTags(query, filter).ToListAsync();
 
                 return new FilteredCards{TotalCards = cards.Count, Cards = cards.Skip((int)offset).Take((int)count).ToView(id)};
             }
@@ -222,7 +224,7 @@ namespace Sanakan.Api.Controllers
                     return new List<CardFinalView>();
                 }
 
-                var cards = await db.Cards.AsQueryable().AsSplitQuery().Where(x => x.GameDeckId == user.GameDeck.Id).Include(x => x.TagList).Skip((int)offset).Take((int)count).AsNoTracking().ToListAsync();
+                var cards = await db.Cards.AsQueryable().AsSplitQuery().Where(x => x.GameDeckId == user.GameDeck.Id).Include(x => x.Tags).Skip((int)offset).Take((int)count).AsNoTracking().ToListAsync();
                 return cards.ToView(id);
             }
         }
@@ -239,7 +241,7 @@ namespace Sanakan.Api.Controllers
             using (var db = new Database.DatabaseContext(_config))
             {
                 var card = await db.Cards.AsQueryable().Where(x => x.Id == id)
-                    .Include(x => x.TagList).Include(x => x.GameDeck).ThenInclude(x => x.User)
+                    .Include(x => x.Tags).Include(x => x.GameDeck).ThenInclude(x => x.User)
                     .AsNoTracking().FirstOrDefaultAsync();
 
                 if (card == null)
@@ -341,8 +343,8 @@ namespace Sanakan.Api.Controllers
         {
             using (var db = new Database.DatabaseContext(_config))
             {
-                var user = await db.Users.AsQueryable().AsSplitQuery().Where(x => x.Shinden == id)
-                    .Include(x => x.GameDeck).ThenInclude(x => x.Cards).ThenInclude(x => x.TagList).AsNoTracking().FirstOrDefaultAsync();
+                var user = await db.Users.AsQueryable().AsSplitQuery().Where(x => x.Shinden == id).Include(x => x.GameDeck).ThenInclude(x => x.Tags)
+                    .Include(x => x.GameDeck).ThenInclude(x => x.Cards).ThenInclude(x => x.Tags).AsNoTracking().FirstOrDefaultAsync();
 
                 if (user == null)
                 {
@@ -355,10 +357,6 @@ namespace Sanakan.Api.Controllers
                     await "User on blacklist".ToResponse(401).ExecuteResultAsync(ControllerContext);
                     return new UserSiteProfile();
                 }
-
-                var tagList = new List<string>();
-                var tags = user.GameDeck.Cards.Where(x => x.TagList != null).Select(x => x.TagList.Select(c => c.Name));
-                foreach(var tag in tags) tagList.AddRange(tag);
 
                 var cardCount = new Dictionary<string, long>
                 {
@@ -383,12 +381,21 @@ namespace Sanakan.Api.Controllers
                     {"SC", user.ScCnt},
                 };
 
+                var galleryTag = _tags.GetTag(TagType.Gallery);
+                var tags = user.GameDeck.Tags.Select(x => new TagIdPair { Name = x.Name, Id = x.Id }).ToList();
+
+                tags.Add(galleryTag.ToView());
+                tags.Add(_tags.GetTag(TagType.Favorite).ToView());
+                tags.Add(_tags.GetTag(TagType.Exchange).ToView());
+                tags.Add(_tags.GetTag(TagType.Reservation).ToView());
+                tags.Add(_tags.GetTag(TagType.TrashBin).ToView());
+
                 return new UserSiteProfile()
                 {
+                    TagList = tags,
                     Wallet = wallet,
                     CardsCount = cardCount,
                     Karma = user.GameDeck.Karma,
-                    TagList = tagList.Distinct().ToList(),
                     UserTitle = user.GameDeck.GetUserNameStatus(),
                     Waifu = user.GameDeck.GetWaifuCard().ToView(),
                     ForegroundColor = user.GameDeck.ForegroundColor,
@@ -398,7 +405,7 @@ namespace Sanakan.Api.Controllers
                     BackgroundImageUrl = user.GameDeck.BackgroundImageUrl,
                     ForegroundImageUrl = user.GameDeck.ForegroundImageUrl,
                     Expeditions = user.GameDeck.Cards.Where(x => x.Expedition != CardExpedition.None).ToExpeditionView(user.GameDeck.Karma),
-                    Gallery = user.GameDeck.Cards.Where(x => x.HasTag("galeria")).Take(user.GameDeck.CardsInGallery)
+                    Gallery = user.GameDeck.Cards.Where(x => x.Tags.Any(t => t.Id == galleryTag.Id)).Take(user.GameDeck.CardsInGallery)
                         .OrderBy(x => x.Rarity).ThenByDescending(x => x.Quality).ThenBy(x => !x.IsAnimatedImage).ThenBy(x => x.Character).ToView(id)
                 };
             }
@@ -576,7 +583,7 @@ namespace Sanakan.Api.Controllers
         {
             using (var db = new Database.DatabaseContext(_config))
             {
-                return await db.Cards.Include(x => x.TagList).Where(x => x.TagList.Any(c => c.Name.Equals(tag, StringComparison.CurrentCultureIgnoreCase))).AsNoTracking().ToListAsync();
+                return await db.Cards.Include(x => x.Tags).Where(x => x.Tags.Any(c => c.Name.Equals(tag, StringComparison.CurrentCultureIgnoreCase))).AsNoTracking().ToListAsync();
             }
         }
 
@@ -1011,25 +1018,26 @@ namespace Sanakan.Api.Controllers
             }
         }
 
-        private List<Card> FilterCardsByTags(List<Card> cards, CardsQueryFilter filter)
+        private IQueryable<Card> FilterCardsByTags(IQueryable<Card> cards, CardsQueryFilter filter)
         {
-            if (filter.IncludeTags != null && filter.IncludeTags.Count > 0)
+            if (!filter.IncludeTags.IsNullOrEmpty())
             {
                 if (filter.FilterTagsMethod == FilterTagsMethodType.And)
                 {
                     foreach (var iTag in filter.IncludeTags)
-                        cards = cards.Where(x => x.HasTag(iTag)).ToList();
+                        cards = cards.Where(x => x.Tags.Any(t => t.Id == iTag.Id));
                 }
                 else
                 {
-                    cards = cards.Where(x => x.HasAnyTag(filter.IncludeTags)).ToList();
+                    var tagsIds = filter.IncludeTags.Select(x => x.Id);
+                    cards = cards.Where(x => x.Tags.Any(t => tagsIds.Contains(t.Id)));
                 }
             }
 
-            if (filter.ExcludeTags != null)
+            if (!filter.ExcludeTags.IsNullOrEmpty())
             {
                 foreach (var eTag in filter.ExcludeTags)
-                    cards = cards.Where(x => !x.HasTag(eTag)).ToList();
+                    cards = cards.Where(x => !x.Tags.Any(t => t.Id == eTag.Id));
             }
 
             return cards;

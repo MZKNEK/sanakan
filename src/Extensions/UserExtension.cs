@@ -71,6 +71,7 @@ namespace Sanakan.Extensions
                     SeasonalPVPRank = 0,
                     CardsInGallery = 10,
                     MatachMakingRatio = 0,
+                    Tags = new List<Tag>(),
                     ForegroundColor = null,
                     ForegroundPosition = 0,
                     BackgroundPosition = 35,
