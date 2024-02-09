@@ -2191,6 +2191,39 @@ namespace Sanakan.Modules
             }
         }
 
+        [Command("wykup oznaczenie")]
+        [Alias("buy tag")]
+        [Summary("wykupuje dodatkowe dodatkowe oznaczenie (koszt 777 TC)")]
+        [Remarks("1"), RequireWaifuCommandChannel]
+        public async Task IncTagsLimitAsync([Summary("krotność użycia polecenia")] int count)
+        {
+            if (count < 1)
+            {
+                await ReplyAsync("", embed: $"{Context.User.Mention} podano niepoprawną liczbę. Minimum to 1.".ToEmbedMessage(EMType.Error).Build());
+                return;
+            }
+
+            long cost = 777 * count;
+            using (var db = new Database.DatabaseContext(Config))
+            {
+                var bUser = await db.GetUserOrCreateSimpleAsync(Context.User.Id);
+                if (bUser.TcCnt < cost)
+                {
+                    await ReplyAsync("", embed: $"{Context.User.Mention} nie masz wystarczającej liczby TC.".ToEmbedMessage(EMType.Error).Build());
+                    return;
+                }
+
+                bUser.TcCnt -= cost;
+                bUser.GameDeck.MaxNumberOfTags += count;
+
+                await db.SaveChangesAsync();
+
+                QueryCacheManager.ExpireTag(new string[] { $"user-{bUser.Id}", "users" });
+
+                await ReplyAsync("", embed: $"{Context.User.Mention} powiększył się limit twoich oznaczeń do {bUser.GameDeck.MaxNumberOfTags}.".ToEmbedMessage(EMType.Success).Build());
+            }
+        }
+
         [Command("galeria")]
         [Alias("gallery")]
         [Summary("wykupuje dodatkowe 5 pozycji w galerii (koszt 100 TC), podanie 0 jako krotności wypisuje obecny limit")]
@@ -2489,6 +2522,76 @@ namespace Sanakan.Modules
             }
         }
 
+        [Command("przywróć oznaczenie")]
+        [Alias("restore tag", "przywroć oznaczenie", "przywroc oznaczenie", "przywróc oznaczenie")]
+        [Summary("przywraca stare oznaczenie, nie podanie oznaczenia wypisuje jakie są dostępne")]
+        [Remarks("konie"), RequireWaifuCommandChannel]
+        public async Task RestoreOldUserTagAsync([Summary("oznaczenie (nie może zawierać spacji)")] string tag = "")
+        {
+            if (tag.Contains(" "))
+            {
+                await ReplyAsync("", embed: $"{Context.User.Mention} oznaczenie nie może zawierać spacji.".ToEmbedMessage(EMType.Error).Build());
+                return;
+            }
+
+            using (var db = new Database.DatabaseContext(Config))
+            {
+                var buser = await db.Users.AsQueryable().Where(x => x.Id == Context.User.Id).Include(x => x.GameDeck).ThenInclude(x => x.Tags)
+                    .Include(x => x.GameDeck).ThenInclude(x => x.Cards).ThenInclude(x => x.TagList)
+                    .Include(x => x.GameDeck).ThenInclude(x => x.Cards).ThenInclude(x => x.Tags).FirstOrDefaultAsync();
+
+                var oldTags = new List<string>();
+                var tags = buser.GameDeck.Cards.Where(x => x.TagList != null).Select(x => x.TagList.Select(c => c.Name));
+                foreach(var t in tags) oldTags.AddRange(t);
+
+                oldTags = oldTags.Distinct().Where(x  => !x.Equals("ulubione", StringComparison.CurrentCultureIgnoreCase)
+                    && !x.Equals("rezerwacja", StringComparison.CurrentCultureIgnoreCase)
+                    && !x.Equals("galeria", StringComparison.CurrentCultureIgnoreCase)
+                    && !x.Equals("wymiana", StringComparison.CurrentCultureIgnoreCase)).ToList();
+
+                if (oldTags.IsNullOrEmpty())
+                {
+                    await ReplyAsync("", embed: $"Nie odnaleziono starych oznaczeń.".ToEmbedMessage(EMType.Error).Build());
+                    return;
+                }
+
+                if (string.IsNullOrEmpty(tag))
+                {
+                    await ReplyAsync("", embed: $"**Dostępne oznaczenia do przywrócenia**:\n\n{string.Join("\n", oldTags)}".ToEmbedMessage(EMType.Info).WithUser(Context.User).Build());
+                    return;
+                }
+
+                var thisTag = buser.GameDeck.Tags.FirstOrDefault(x => x.Name.Equals(tag, StringComparison.CurrentCultureIgnoreCase));
+                if (thisTag is null && buser.GameDeck.Tags.Count >= buser.GameDeck.MaxNumberOfTags)
+                {
+                    await ReplyAsync("", embed: $"{Context.User.Mention} nie posiadasz oznaczenia o takiej nazwie oraz miejsca by utworzyć nowe.".ToEmbedMessage(EMType.Error).Build());
+                    return;
+                }
+
+                if (thisTag is null)
+                {
+                    thisTag = new Tag { Name = tag };
+                    buser.GameDeck.Tags.Add(thisTag);
+                }
+
+                var cards = buser.GameDeck.Cards.Where(x => x.TagList.Any(x => x.Name.Equals(tag, StringComparison.CurrentCultureIgnoreCase))).ToList();
+                var msg = await ReplyAsync("", embed: $"{Context.User.Mention} rozpoczęto przywracanie `{cards.Count}` kart do oznaczenia `{tag}`...".ToEmbedMessage(EMType.Bot).Build());
+                foreach (var card in cards)
+                {
+                    card.Tags.Add(thisTag);
+
+                    var otg = card.TagList.FirstOrDefault(x => x.Name.Equals(tag, StringComparison.CurrentCultureIgnoreCase));
+                    if (otg != null) card.TagList.Remove(otg);
+                }
+
+                QueryCacheManager.ExpireTag(new string[] { $"user-{Context.User.Id}", "users" });
+
+                await db.SaveChangesAsync();
+
+                await msg.ModifyAsync(x => x.Embed = $"{Context.User.Mention} przywrócono `{cards.Count}` kart do oznaczenia `{tag}`".ToEmbedMessage(EMType.Success).Build());
+            }
+        }
+
         [Command("utwórz oznaczenie")]
         [Alias("create tag", "utworz oznaczenie")]
         [Summary("tworzy oznaczenie")]
@@ -2524,6 +2627,8 @@ namespace Sanakan.Modules
 
                 buser.GameDeck.Tags.Add(new Tag { Name = tag });
                 await db.SaveChangesAsync();
+
+                QueryCacheManager.ExpireTag(new string[] { $"user-{Context.User.Id}", "users" });
 
                 await ReplyAsync("", embed: $"{Context.User.Mention} utworzono nowe oznaczenie: `{tag}`".ToEmbedMessage(EMType.Success).Build());
             }
@@ -2581,6 +2686,9 @@ namespace Sanakan.Modules
                 }
 
                 await db.SaveChangesAsync();
+
+                QueryCacheManager.ExpireTag(new string[] { $"user-{Context.User.Id}", "users" });
+
                 await ReplyAsync("", embed: $"{Context.User.Mention} {response}".ToEmbedMessage(EMType.Success).Build());
             }
         }
@@ -3604,6 +3712,8 @@ namespace Sanakan.Modules
                         activity.WithType(Database.Models.ActivityType.CreatedRaito);
                     }
                 }
+
+                _ = thisCard.CalculateCardPower();
 
                 await db.UserActivities.AddAsync(activity.Build());
 

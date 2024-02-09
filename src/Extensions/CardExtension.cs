@@ -747,6 +747,7 @@ namespace Sanakan.Extensions
             }
 
             card.Unique = false;
+            card.CalculateCardPower();
             card.Name = response.Body.ToString();
             card.Image = response.Body.HasImage ? response.Body.PictureUrl : null;
             if (updateTitle)
