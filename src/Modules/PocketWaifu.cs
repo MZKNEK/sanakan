@@ -2585,6 +2585,7 @@ namespace Sanakan.Modules
                 {
                     thisTag = new Tag { Name = newtag };
                     buser.GameDeck.Tags.Add(thisTag);
+                    await db.SaveChangesAsync();
                 }
 
                 var cards = buser.GameDeck.Cards.Where(x => x.TagList.Any(x => x.Name.Equals(tag, StringComparison.CurrentCultureIgnoreCase))).ToList();
