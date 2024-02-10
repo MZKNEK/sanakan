@@ -2583,13 +2583,7 @@ namespace Sanakan.Modules
                     return;
                 }
 
-                if (_tags.IsSimilar(newtag))
-                {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} istnieje bardzo podobne oznaczenie domyślne, użyj go lub wymyśl inne.".ToEmbedMessage(EMType.Error).Build());
-                    return;
-                }
-
-                var thisTag = buser.GameDeck.Tags.FirstOrDefault(x => x.Name.Equals(newtag, StringComparison.CurrentCultureIgnoreCase));
+                var thisTag = await db.GetTagAsync(_tags, newtag, Context.User.Id);
                 if (thisTag is null && buser.GameDeck.Tags.Count >= buser.GameDeck.MaxNumberOfTags)
                 {
                     await ReplyAsync("", embed: $"{Context.User.Mention} nie posiadasz oznaczenia o takiej nazwie oraz miejsca by utworzyć nowe.".ToEmbedMessage(EMType.Error).Build());
@@ -2598,6 +2592,12 @@ namespace Sanakan.Modules
 
                 if (thisTag is null)
                 {
+                    if (_tags.IsSimilar(newtag))
+                    {
+                        await ReplyAsync("", embed: $"{Context.User.Mention} istnieje bardzo podobne oznaczenie domyślne, użyj go lub wymyśl inne.".ToEmbedMessage(EMType.Error).Build());
+                        return;
+                    }
+
                     thisTag = new Tag { Name = newtag };
                     buser.GameDeck.Tags.Add(thisTag);
                     await db.SaveChangesAsync();
