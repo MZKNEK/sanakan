@@ -2193,7 +2193,7 @@ namespace Sanakan.Modules
 
         [Command("wykup oznaczenie")]
         [Alias("buy tag")]
-        [Summary("wykupuje dodatkowe dodatkowe oznaczenie (koszt 777 TC)")]
+        [Summary("wykupuje dodatkowe dodatkowe oznaczenie (koszt 444 TC)")]
         [Remarks("1"), RequireWaifuCommandChannel]
         public async Task IncTagsLimitAsync([Summary("krotność użycia polecenia")] int count)
         {
@@ -2203,7 +2203,7 @@ namespace Sanakan.Modules
                 return;
             }
 
-            long cost = 777 * count;
+            long cost = 444 * count;
             using (var db = new Database.DatabaseContext(Config))
             {
                 var bUser = await db.GetUserOrCreateSimpleAsync(Context.User.Id);
