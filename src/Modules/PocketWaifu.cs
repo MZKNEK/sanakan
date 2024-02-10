@@ -2558,13 +2558,19 @@ namespace Sanakan.Modules
 
                 if (oldTags.IsNullOrEmpty())
                 {
-                    await ReplyAsync("", embed: $"Nie odnaleziono starych oznaczeń.".ToEmbedMessage(EMType.Error).Build());
+                    await ReplyAsync("", embed: $"{Context.User.Mention} nie odnaleziono starych oznaczeń.".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
                 if (string.IsNullOrEmpty(tag) || string.IsNullOrEmpty(newtag))
                 {
                     await ReplyAsync("", embed: $"**Dostępne oznaczenia do przywrócenia**:\n\n{string.Join("\n", oldTags)}".ToEmbedMessage(EMType.Info).WithUser(Context.User).Build());
+                    return;
+                }
+
+                if (!oldTags.Any(x => x.Equals(tag, StringComparison.CurrentCultureIgnoreCase)))
+                {
+                    await ReplyAsync("", embed: $"{Context.User.Mention} nie odnaleziono starego oznaczenia o nazwie `{tag}`.".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
@@ -2588,10 +2594,10 @@ namespace Sanakan.Modules
                     await db.SaveChangesAsync();
                 }
 
-                var cards = buser.GameDeck.Cards.Where(x => x.TagList.Any(x => x.Name.Equals(tag, StringComparison.CurrentCultureIgnoreCase))).ToList();
+                var cards = buser.GameDeck.Cards.Where(x => !x.Tags.Any(x => x.Id == thisTag.Id) && x.TagList.Any(x => x.Name.Equals(tag, StringComparison.CurrentCultureIgnoreCase))).ToList();
                 if (cards.IsNullOrEmpty())
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} wystąpił problem z odnalezieniem kart z oznaczeniem `{tag}`.".ToEmbedMessage(EMType.Error).Build());
+                    await ReplyAsync("", embed: $"{Context.User.Mention} wystąpił problem z odnalezieniem kart. Wszystkie są już oznaczone `{newtag}` lub nie ma już kart z oznaczeniem `{tag}`.".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
