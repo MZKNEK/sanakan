@@ -215,6 +215,8 @@ namespace Sanakan.Extensions
             return string.Join(" ", icons);
         }
 
+        public static string GetPocketUrl(this Card card) => card.Id == 0 ? "": $"https://waifu.sanakan.pl/#/card/{card.Id}";
+
         public static string GetIdWithUrl(this Card card) => card.Id == 0 ? "~~**[0]**~~": $"**[[{card.Id}](https://waifu.sanakan.pl/#/card/{card.Id})]**";
 
         public static string GetDescSmall(this Card card, Services.PocketWaifu.TagHelper tags)

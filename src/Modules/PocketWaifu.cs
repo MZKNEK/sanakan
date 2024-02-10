@@ -84,6 +84,15 @@ namespace Sanakan.Modules
 
                 session.Enumerable = false;
                 session.ListItems = _waifu.GetListInRightOrder(user.GameDeck.Cards, type, tag);
+                if (!string.IsNullOrEmpty(tag) && (tag.Split('|').LastOrDefault()?.Contains("tldr", StringComparison.CurrentCultureIgnoreCase) ?? false))
+                {
+                    var res = await _helepr.SendAsFileOnDMAsync(Context.User, session.ListItems
+                        .Select(x => $"{x.Id} {x.Name} ({x.Character}) {x.GetPocketUrl()}"));
+
+                    await ReplyAsync("", embed: res.ToEmbedMessage($"{Context.User.Mention} ").Build());
+                    return;
+                }
+
                 session.Embed = new EmbedBuilder
                 {
                     Color = EMType.Info.Color(),

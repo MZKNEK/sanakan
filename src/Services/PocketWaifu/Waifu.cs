@@ -276,7 +276,7 @@ namespace Sanakan.Services.PocketWaifu
                 case HaremType.Tag:
                     {
                         var nList = new List<Card>();
-                        var tagList = tag.Split(" ").ToList();
+                        var tagList = tag.Split("|").First().Split(" ").ToList();
                         foreach (var t in tagList)
                         {
                             if (t.Length < 1)
@@ -290,7 +290,7 @@ namespace Sanakan.Services.PocketWaifu
                 case HaremType.NoTag:
                     {
                         var nList = new List<Card>();
-                        var tagList = tag.Split(" ").ToList();
+                        var tagList = tag.Split("|").First().Split(" ").ToList();
                         foreach (var t in tagList)
                         {
                             if (t.Length < 1)
@@ -1191,14 +1191,14 @@ namespace Sanakan.Services.PocketWaifu
             return url;
         }
 
-        public async Task<List<Embed>> GetWaifuFromCharacterSearchResult(string title, IEnumerable<Card> cards, bool mention, SocketGuild guild = null, bool shindenUrls = false)
+        public async Task<List<Embed>> GetWaifuFromCharacterSearchResult(string title, IEnumerable<Card> cards, bool mention, SocketGuild guild = null, bool shindenUrls = false, bool tldr = false)
         {
             var list = new List<Embed>();
 
             var contentString = new StringBuilder($"{title}\n\n");
             foreach (var card in cards)
             {
-                AppendMessage(list, contentString, await GetCardInfo(card, mention, guild, shindenUrls));
+                AppendMessage(list, contentString, await GetCardInfo(card, mention, guild, shindenUrls, tldr));
             }
 
             list.Add(new EmbedBuilder()
@@ -1210,7 +1210,7 @@ namespace Sanakan.Services.PocketWaifu
             return list;
         }
 
-        public async Task<List<Embed>> GetWaifuFromCharacterTitleSearchResultAsync(IEnumerable<Card> cards, bool mention, SocketGuild guild = null, bool shindenUrls = false)
+        public async Task<List<Embed>> GetWaifuFromCharacterTitleSearchResultAsync(IEnumerable<Card> cards, bool mention, SocketGuild guild = null, bool shindenUrls = false, bool tldr = false)
         {
             var list = new List<Embed>();
             var characters = cards.GroupBy(x => x.Character);
@@ -1220,11 +1220,12 @@ namespace Sanakan.Services.PocketWaifu
             foreach (var cardsG in characters)
             {
                 var fC = cardsG.First();
-                tempContentString.Append($"\n**{fC.GetNameWithUrl()}** ({fC.WhoWantsCount})\n");
+                if (tldr) tempContentString.Append($"\n{fC.Name} ({fC.Character}) {fC.GetCharacterUrl()} ({fC.WhoWantsCount})\n");
+                else tempContentString.Append($"\n**{fC.GetNameWithUrl()}** ({fC.WhoWantsCount})\n");
 
                 foreach (var card in cardsG)
                 {
-                    AppendMessage(list, tempContentString, await GetCardInfo(card, mention, guild, shindenUrls));
+                    AppendMessage(list, tempContentString, await GetCardInfo(card, mention, guild, shindenUrls, tldr));
                 }
 
                 AppendMessage(list, contentString, tempContentString.ToString());
@@ -1240,20 +1241,22 @@ namespace Sanakan.Services.PocketWaifu
             return list;
         }
 
-        private async Task<string> GetCardInfo(Card card, bool mention, SocketGuild guild, bool shindenUrls)
+        private async Task<string> GetCardInfo(Card card, bool mention, SocketGuild guild, bool shindenUrls, bool tldr)
         {
             if (mention)
             {
                 var userId = card.GameDeckId == 1 ? (guild?.CurrentUser?.Id ?? 1) : card.GameDeckId;
+                if (tldr) return $"{userId}: {card.Id} {card.GetCardRealRarity()} {card.GetStatusIcons(_tags)} {card.GetPocketUrl()}\n";
                 return $"<@{userId}>: {card.GetIdWithUrl()} **{card.GetCardRealRarity()}** {card.GetStatusIcons(_tags)}\n";
             }
 
             var user = guild?.GetUser(card.GameDeckId) ?? await _client.GetUserAsync(card.GameDeckId);
+            if (tldr) return $"{user?.GetUserNickInGuild()}: {card.Id} {card.GetCardRealRarity()} {card.GetStatusIcons(_tags)} {card.GetPocketUrl()}\n";
 
             if (!shindenUrls || card?.GameDeck?.User?.Shinden == 0 || card?.GameDeckId == 1)
-                return $"{(user?.GetUserNickInGuild() ?? "????")}: {card.GetIdWithUrl()} **{card.GetCardRealRarity()}** {card.GetStatusIcons(_tags)}\n";
+                return $"{user?.GetUserNickInGuild() ?? "????"}: {card.GetIdWithUrl()} **{card.GetCardRealRarity()}** {card.GetStatusIcons(_tags)}\n";
 
-            return $"[{(user?.GetUserNickInGuild() ?? "????")}](https://shinden.pl/user/{card.GameDeck.User.Shinden}): {card.GetIdWithUrl()} **{card.GetCardRealRarity()}** {card.GetStatusIcons(_tags)}\n";
+            return $"[{user?.GetUserNickInGuild() ?? "????"}](https://shinden.pl/user/{card.GameDeck.User.Shinden}): {card.GetIdWithUrl()} **{card.GetCardRealRarity()}** {card.GetStatusIcons(_tags)}\n";
         }
 
         private void AppendMessage(List<Embed> embeds, StringBuilder currentContent, string nextPart)
@@ -1628,17 +1631,18 @@ namespace Sanakan.Services.PocketWaifu
             }.Build();
         }
 
-        public async Task<IEnumerable<Embed>> GetContentOfWishlistAsync(List<ulong> cardsId, List<ulong> charactersId, List<ulong> titlesId)
+        public async Task<IEnumerable<Embed>> GetContentOfWishlistAsync(List<ulong> cardsId, List<ulong> charactersId, List<ulong> titlesId, bool tldr)
         {
             var contentTable = new List<string>();
-            if (cardsId.Count > 0) contentTable.Add($"**Karty:** {string.Join(", ", cardsId)}");
+            if (cardsId.Count > 0)contentTable.Add($"**Karty:** {string.Join(", ", cardsId)}");
 
             foreach (var character in charactersId)
             {
                 var charInfo = await _shinden.GetCharacterInfoAsync(character);
                 if (charInfo != null)
                 {
-                    contentTable.Add($"**P[{charInfo.Id}]** [{charInfo}]({charInfo.CharacterUrl})");
+                    if (tldr) contentTable.Add($"P[{charInfo.Id}] {charInfo} {charInfo.CharacterUrl}");
+                    else contentTable.Add($"**P[{charInfo.Id}]** [{charInfo}]({charInfo.CharacterUrl})");
                 }
                 else
                 {
@@ -1655,7 +1659,8 @@ namespace Sanakan.Services.PocketWaifu
                     if (titleInfo is IAnimeTitleInfo ai) url = ai.AnimeUrl;
                     else if (titleInfo is IMangaTitleInfo mi) url = mi.MangaUrl;
 
-                    contentTable.Add($"**T[{titleInfo.Id}]** [{titleInfo}]({url})");
+                    if (tldr) contentTable.Add($"T[{titleInfo.Id}] {titleInfo} {url}");
+                    else contentTable.Add($"**T[{titleInfo.Id}]** [{titleInfo}]({url})");
                 }
                 else
                 {
@@ -2551,7 +2556,7 @@ namespace Sanakan.Services.PocketWaifu
             var c = user.GameDeck.GetCardsWishList();
 
             if (showContentOnly)
-                return await _helper.SendEmbedsOnDMAsync(discordUser, await GetContentOfWishlistAsync(c, p, t), tldr);
+                return await _helper.SendEmbedsOnDMAsync(discordUser, await GetContentOfWishlistAsync(c, p, t, tldr), tldr);
 
             var cards = await GetCardsFromWishlistAsync(c, p, t, db, user.GameDeck.Cards);
 
@@ -2572,7 +2577,7 @@ namespace Sanakan.Services.PocketWaifu
             if (cards.IsNullOrEmpty())
                 return ExecutionResult.FromError("nie odnaleziono kart.");
 
-            return await _helper.SendEmbedsOnDMAsync(discordUser, await GetWaifuFromCharacterTitleSearchResultAsync(cards, hideNames, guild, showShindenUrl), tldr);
+            return await _helper.SendEmbedsOnDMAsync(discordUser, await GetWaifuFromCharacterTitleSearchResultAsync(cards, hideNames, guild, showShindenUrl, tldr), tldr);
         }
     }
 }

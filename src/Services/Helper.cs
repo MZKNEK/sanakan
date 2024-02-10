@@ -474,6 +474,23 @@ namespace Sanakan.Services
             }
         }
 
+        public async Task<ExecutionResult> SendAsFileOnDMAsync(IUser user, IEnumerable<string> things)
+        {
+            try
+            {
+                var dm = await user.CreateDMChannelAsync();
+                using (var stream = GenerateStreamFromString(string.Join("\n", things)))
+                {
+                    await dm.SendFileAsync(stream, "tldr.txt");
+                }
+                return ExecutionResult.FromSuccess("poszło na PW!");
+            }
+            catch (Exception ex)
+            {
+                return ExecutionResult.FromError($"coś poszło nie tak:\n\n{ex.Message}".TrimToLength());
+            }
+        }
+
         private Stream GenerateStreamFromString(string str)
         {
             var stream = new MemoryStream();
