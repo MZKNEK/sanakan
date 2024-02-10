@@ -651,6 +651,8 @@ namespace Sanakan.Extensions
 
         public static IEnumerable<Card> GetCards(this User user, ulong[] ids) => user.GameDeck.Cards.Where(x => ids.Any(c => c == x.Id));
 
+        public static IEnumerable<Card> GetCardsByTag(this User user, ulong tagId) => user.GameDeck.Cards.Where(x => x.Tags.Any(c => c.Id == tagId));
+
         public static IEnumerable<Item> GetAllItems(this User user) => user.GameDeck.Items.OrderBy(x => x.Type);
     }
 }

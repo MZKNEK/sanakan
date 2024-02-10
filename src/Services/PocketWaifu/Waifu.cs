@@ -2088,9 +2088,9 @@ namespace Sanakan.Services.PocketWaifu
             }
         }
 
-        public ExecutionResult DestroyOrReleaseCards(User user, ulong[] ids, bool release = false)
+        public ExecutionResult DestroyOrReleaseCards(User user, ulong[] ids, bool release = false, ulong tagId = 0)
         {
-            var cardsForDiscarding = user.GetCards(ids).ToList();
+            var cardsForDiscarding = ids.IsNullOrEmpty() ? user.GetCardsByTag(tagId).ToList() : user.GetCards(ids).ToList();
             if (cardsForDiscarding.IsNullOrEmpty())
                 return ExecutionResult.FromError("nie posiadasz takich kart");
 

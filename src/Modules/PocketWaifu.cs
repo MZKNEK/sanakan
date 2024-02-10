@@ -906,14 +906,14 @@ namespace Sanakan.Modules
 
         [Command("uwolnij")]
         [Alias("release", "puśmje")]
-        [Summary("uwalnia posiadaną kartę")]
+        [Summary("uwalnia posiadaną kartę(nie podanie kart, uwalnia te oznaczone jako kosz)")]
         [Remarks("5412 5413"), RequireWaifuCommandChannel]
         public async Task ReleaseCardAsync([Summary("WIDs")] params ulong[] ids)
         {
             using (var db = new Database.DatabaseContext(Config))
             {
                 var bUser = await db.GetUserOrCreateAsync(Context.User.Id);
-                var res = _waifu.DestroyOrReleaseCards(bUser, ids, true);
+                var res = _waifu.DestroyOrReleaseCards(bUser, ids, true, _tags.GetTagId(Services.PocketWaifu.TagType.TrashBin));
 
                 if (res.IsError())
                 {
@@ -931,14 +931,14 @@ namespace Sanakan.Modules
 
         [Command("zniszcz")]
         [Alias("destroy")]
-        [Summary("niszczy posiadaną kartę")]
+        [Summary("niszczy posiadaną kartę(nie podanie kart, niszczy te oznaczone jako kosz)")]
         [Remarks("5412"), RequireWaifuCommandChannel]
         public async Task DestroyCardAsync([Summary("WIDs")] params ulong[] ids)
         {
             using (var db = new Database.DatabaseContext(Config))
             {
                 var bUser = await db.GetUserOrCreateAsync(Context.User.Id);
-                var res = _waifu.DestroyOrReleaseCards(bUser, ids);
+                var res = _waifu.DestroyOrReleaseCards(bUser, ids, false, _tags.GetTagId(Services.PocketWaifu.TagType.TrashBin));
 
                 if (res.IsError())
                 {
