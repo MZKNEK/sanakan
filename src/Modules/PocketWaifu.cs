@@ -3392,14 +3392,16 @@ namespace Sanakan.Modules
                 _ = thisCard.CalculateCardPower();
 
                 string action = "";
+                var trashTag = _tags.GetTag(Services.PocketWaifu.TagType.TrashBin);
                 if (botUser.GameDeck.EndOfExpeditionAction != ActionAfterExpedition.Nothing
-                    && thisCard.Tags.Any(x => x.Id == _tags.GetTagId(Services.PocketWaifu.TagType.TrashBin))
-                    && !message.Contains("Utrata karty"))
+                    && _tags.HasTag(thisCard, trashTag)
+                    && !message.Contains("Utrata karty")
+                    && !_tags.HasTag(thisCard, Services.PocketWaifu.TagType.Favorite))
                 {
-                    action = $"\n\n🗑️ Wykonano akcje: **{botUser.GameDeck.EndOfExpeditionAction.ToName()}** na karcie powracającej z wyprawy.";
+                    action = $"\n\n{trashTag.Icon} Wykonano akcje: **{botUser.GameDeck.EndOfExpeditionAction.ToName()}** na karcie powracającej z wyprawy.";
                     thisCard.DestroyOrRelease(botUser, botUser.GameDeck.EndOfExpeditionAction == ActionAfterExpedition.Release, 0.18);
-                    botUser.GameDeck.Cards.Remove(thisCard);
                     _waifu.DeleteCardImageIfExist(thisCard);
+                    botUser.GameDeck.Cards.Remove(thisCard);
                 }
 
                 await db.SaveChangesAsync();

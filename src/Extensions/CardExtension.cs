@@ -201,6 +201,7 @@ namespace Sanakan.Extensions
             if (!card.IsTradable) icons.Add("⛔");
             if (card.IsBroken()) icons.Add("💔");
             if (card.InCage) icons.Add("🔒");
+            if (card.Curse != CardCurse.None) icons.Add("💀");
             if (card.Expedition != CardExpedition.None) icons.Add("✈️");
             if (!string.IsNullOrEmpty(card.CustomImage)) icons.Add("🖼️");
             if (!string.IsNullOrEmpty(card.CustomBorder)) icons.Add("✂️");

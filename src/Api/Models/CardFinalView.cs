@@ -146,6 +146,10 @@ namespace Sanakan.Api.Models
         /// </summary>
         public Quality UltimateQuality { get; set; }
         /// <summary>
+        /// Czy na karcie znajduje się klątwa
+        /// </summary>
+        public bool IsCursed { get; set; }
+        /// <summary>
         /// Data utworzenia karty
         /// </summary>
         public DateTime CreatedAt { get; set; }
@@ -230,6 +234,7 @@ namespace Sanakan.Api.Models
                 CardPower = card.CardPower,
                 DiscordId = card.GameDeckId,
                 WhoWantsCount = card.WhoWantsCount,
+                IsCursed = card.Curse != CardCurse.None,
                 Value = card.GetThreeStateMarketValue(),
                 ExpCntForNextLevel = card.ExpToUpgrade(),
                 HasCustomImage = card.CustomImage != null,
