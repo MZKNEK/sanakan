@@ -2233,6 +2233,63 @@ namespace Sanakan.Modules
             }
         }
 
+        [Command("wyprawa na koniec")]
+        [Alias("expedition on end")]
+        [Summary("ustawia co zrobić z kartą oznaczoną jako kosz po zakończonej wyprawie")]
+        [Remarks("zniszcz"), RequireWaifuCommandChannel]
+        public async Task OnEndExpedionAsync([Summary("akcja(nic/zniszcz/uwolnij)")] ActionAfterExpedition action)
+        {
+            using (var db = new Database.DatabaseContext(Config))
+            {
+                var bUser = await db.GetUserOrCreateSimpleAsync(Context.User.Id);
+                if (action == bUser.GameDeck.EndOfExpeditionAction)
+                {
+                    await ReplyAsync("", embed: $"{Context.User.Mention} obecnie jest już ustawiona taka akcja.".ToEmbedMessage(EMType.Error).Build());
+                    return;
+                }
+
+                bUser.GameDeck.EndOfExpeditionAction = action;
+
+                await db.SaveChangesAsync();
+
+                QueryCacheManager.ExpireTag(new string[] { $"user-{bUser.Id}", "users" });
+
+                var actionName = action switch
+                {
+                    ActionAfterExpedition.Destroy => "niszczenie",
+                    ActionAfterExpedition.Release => "uwalnianie",
+                    _ => "nic"
+                };
+
+                await ReplyAsync("", embed: $"{Context.User.Mention} ustawiono akcje: **{actionName}**.".ToEmbedMessage(EMType.Success).Build());
+            }
+        }
+
+        [Command("sortowanie galerii")]
+        [Alias("sort gallery")]
+        [Summary("ustawia sortowanie w galerii, podaje się kolejno WID kart jak mają być wyświetlone odzielone spacją")]
+        [Remarks("23 234 123 1231"), RequireWaifuCommandChannel]
+        public async Task GalleryOrderAsync([Summary("WIDs")][Remainder] string ids)
+        {
+            using (var db = new Database.DatabaseContext(Config))
+            {
+                var bUser = await db.GetUserOrCreateSimpleAsync(Context.User.Id);
+                if (string.IsNullOrEmpty(ids) || !ids.Split(" ").All(x => x.All(c => char.IsDigit(c))))
+                {
+                    await ReplyAsync("", embed: $"{Context.User.Mention} nie wykryto odpowiedniego sortowania.".ToEmbedMessage(EMType.Error).Build());
+                    return;
+                }
+
+                bUser.GameDeck.GalleryOrderedIds = ids;
+
+                await db.SaveChangesAsync();
+
+                QueryCacheManager.ExpireTag(new string[] { $"user-{bUser.Id}", "users" });
+
+                await ReplyAsync("", embed: $"{Context.User.Mention} zapisano nowe sortowanie.".ToEmbedMessage(EMType.Success).Build());
+            }
+        }
+
         [Command("galeria")]
         [Alias("gallery")]
         [Summary("wykupuje dodatkowe 5 pozycji w galerii (koszt 100 TC), podanie 0 jako krotności wypisuje obecny limit")]
@@ -3334,13 +3391,24 @@ namespace Sanakan.Modules
                 var message = _waifu.EndExpedition(botUser, thisCard);
                 _ = thisCard.CalculateCardPower();
 
+                string action = "";
+                if (botUser.GameDeck.EndOfExpeditionAction != ActionAfterExpedition.Nothing
+                    && thisCard.Tags.Any(x => x.Id == _tags.GetTagId(Services.PocketWaifu.TagType.TrashBin))
+                    && !message.Contains("Utrata karty"))
+                {
+                    action = $"\n\n🗑️ Wykonano akcje: **{botUser.GameDeck.EndOfExpeditionAction.ToName()}** na karcie powracającej z wyprawy.";
+                    thisCard.DestroyOrRelease(botUser, botUser.GameDeck.EndOfExpeditionAction == ActionAfterExpedition.Release, 0.18);
+                    botUser.GameDeck.Cards.Remove(thisCard);
+                    _waifu.DeleteCardImageIfExist(thisCard);
+                }
+
                 await db.SaveChangesAsync();
 
                 QueryCacheManager.ExpireTag(new string[] { $"user-{botUser.Id}", "users" });
 
                 _ = Task.Run(async () =>
                 {
-                    await ReplyAsync("", embed: $"Karta {thisCard.GetString(false, false, true)} wróciła z {oldName.GetName("ej")} wyprawy!\n\n{message}".ToEmbedMessage(EMType.Success).WithUser(Context.User).Build());
+                    await ReplyAsync("", embed: $"Karta {thisCard.GetString(false, false, true)} wróciła z {oldName.GetName("ej")} wyprawy!\n\n{message}{action}".ToEmbedMessage(EMType.Success).WithUser(Context.User).Build());
                 });
             }
         }

@@ -154,6 +154,10 @@ namespace Sanakan.Api.Models
         /// </summary>
         public DateTime ScalpelAt { get; set; }
         /// <summary>
+        /// Czy została użyta kamera
+        /// </summary>
+        public bool IsAnimated { get; set; }
+        /// <summary>
         /// Liczba plusów
         /// </summary>
         public int RatePositive { get; set; }
@@ -209,6 +213,7 @@ namespace Sanakan.Api.Models
                 RestartCnt = card.RestartCnt,
                 Rarity = card.Rarity,
                 Dere = card.Dere,
+                IsAnimated = card.IsAnimatedImage,
                 ScalpelAt = card.CustomImageDate,
                 Defence = card.GetDefenceWithBonus(),
                 Attack = card.GetAttackWithBonus(),

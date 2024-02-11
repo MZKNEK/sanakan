@@ -292,6 +292,7 @@ namespace Sanakan.Services.PocketWaifu
         public bool ExecuteEvent(EventType e, User user, Card card, ref string msg)
         {
             var aVal = Services.Fun.GetRandomValue(1, 4);
+            msg += "**Wydarzenie**:";
 
             switch (e)
             {
@@ -310,21 +311,21 @@ namespace Sanakan.Services.PocketWaifu
                     };
 
                     user.GameDeck.BoosterPacks.Add(boosterPack);
-                    msg += "Wydarzenie: Pakiet z kartą.\n";
+                    msg += "Pakiet z kartą.\n";
                 }
                 break;
 
                 case EventType.IncAtk:
                 {
                     card.IncAttackBy(aVal);
-                    msg += $"Wydarzenie: Zwiększenie ataku do {card.GetAttackWithBonus()}.\n";
+                    msg += $"Zwiększenie ataku do {card.GetAttackWithBonus()}.\n";
                 }
                 break;
 
                 case EventType.IncDef:
                 {
                     card.IncDefenceBy(aVal);
-                    msg += $"Wydarzenie: Zwiększenie obrony do {card.GetDefenceWithBonus()}.\n";
+                    msg += $"Zwiększenie obrony do {card.GetDefenceWithBonus()}.\n";
                 }
                 break;
 
@@ -333,47 +334,47 @@ namespace Sanakan.Services.PocketWaifu
                     var addExp = Services.Fun.GetRandomValue(1, 5);
                     card.ExpCnt += addExp;
 
-                    msg += $"Wydarzenie: Dodatkowe punkty doświadczenia. (+{addExp} exp)\n";
+                    msg += $"Dodatkowe punkty doświadczenia. (+{addExp} exp)\n";
                 }
                 break;
 
                 case EventType.MoreItems:
                 {
-                    msg += "Wydarzenie: Dodatkowe przedmioty.\n";
+                    msg += "Dodatkowe przedmioty.\n";
                 }
                 break;
 
                 case EventType.AddReset:
                 {
                     ++card.RestartCnt;
-                    msg += "Wydarzenie: Zwiększenie ilości restartów karty.\n";
+                    msg += "Zwiększenie ilości restartów karty.\n";
                 }
                 break;
 
                 case EventType.ChangeDere:
                 {
-                    msg += "Wydarzenie: Zmiana dere na ";
+                    msg += "Zmiana dere na ";
                 }
                 break;
 
                 case EventType.DecAff:
                 {
                     card.Affection -= aVal;
-                    msg += "Wydarzenie: Zmniejszenie relacji.\n";
+                    msg += "Zmniejszenie relacji.\n";
                 }
                 break;
 
                 case EventType.DecAtk:
                 {
                     card.DecAttackBy(aVal);
-                    msg += $"Wydarzenie: Zmniejszenie ataku do {card.GetAttackWithBonus()}.\n";
+                    msg += $"Zmniejszenie ataku do {card.GetAttackWithBonus()}.\n";
                 }
                 break;
 
                 case EventType.DecDef:
                 {
                     card.DecDefenceBy(aVal);
-                    msg += $"Wydarzenie: Zmniejszenie obrony do {card.GetDefenceWithBonus()}.\n";
+                    msg += $"Zmniejszenie obrony do {card.GetDefenceWithBonus()}.\n";
                 }
                 break;
 
@@ -383,7 +384,7 @@ namespace Sanakan.Services.PocketWaifu
                     var result = Waifu.GetFightWinner(card, enemyCard);
 
                     string resStr = result == FightWinner.Card1 ? "zwycięstwo!" : "przegrana!";
-                    msg += $"Wydarzenie: Walka, wynik: {resStr}\n";
+                    msg += $"Walka, wynik: {resStr}\n";
 
                     return result == FightWinner.Card1;
                 }
@@ -391,7 +392,7 @@ namespace Sanakan.Services.PocketWaifu
                 case EventType.LoseCard:
                 {
                     user.GameDeck.Cards.Remove(card);
-                    msg += "Wydarzenie: Utrata karty.\n";
+                    msg += "Utrata karty.\n";
                 }
                 return false;
 

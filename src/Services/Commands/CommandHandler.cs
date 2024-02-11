@@ -75,6 +75,7 @@ namespace Sanakan.Services.Commands
             _helper = helper;
             _provider = provider;
 
+            _cmd.AddTypeReader<ActionAfterExpedition>(new TypeReaders.ActionAfterExpedtionTypeReader());
             _cmd.AddTypeReader<SlotMachineSetting>(new TypeReaders.SlotMachineSettingTypeReader());
             _cmd.AddTypeReader<ModifyTagActionType>(new TypeReaders.ModifyTagActionTypeReader());
             _cmd.AddTypeReader<WishlistObjectType>(new TypeReaders.WishlistObjectTypeReader());

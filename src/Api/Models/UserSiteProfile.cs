@@ -24,6 +24,10 @@ namespace Sanakan.Api.Models
         /// </summary>
         public List<CardFinalView> Gallery { get; set; }
         /// <summary>
+        /// Posortowanie galerii - kolejność id kart
+        /// </summary>
+        public List<ulong> GalleryOrder { get; set; }
+        /// <summary>
         /// Lista wypraw
         /// </summary>
         public List<ExpeditionCard> Expeditions { get; set; }
@@ -63,5 +67,11 @@ namespace Sanakan.Api.Models
         /// Karma użytkownika
         /// </summary>
         public double Karma { get; set; }
+
+        public static ulong TryParseIds(string s)
+        {
+            ulong.TryParse(s, out var nId);
+            return nId;
+        }
     }
 }

@@ -80,6 +80,7 @@ namespace Sanakan.Extensions
                     MaxNumberOfCards = 1000,
                     Items = new List<Item>(),
                     Cards = new List<Card>(),
+                    GalleryOrderedIds = null,
                     ExchangeConditions = null,
                     BackgroundImageUrl = null,
                     ForegroundImageUrl = null,
@@ -88,6 +89,7 @@ namespace Sanakan.Extensions
                     Wishes = new List<WishlistObject>(),
                     PvPStats = new List<CardPvPStats>(),
                     BoosterPacks = new List<BoosterPack>(),
+                    EndOfExpeditionAction = ActionAfterExpedition.Nothing,
                     PVPSeasonBeginDate = new DateTime(creationTime.Year, creationTime.Month, 1),
                     ExpContainer = new ExpContainer
                     {

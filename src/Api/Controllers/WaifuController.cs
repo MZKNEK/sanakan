@@ -381,6 +381,9 @@ namespace Sanakan.Api.Controllers
                     {"SC", user.ScCnt},
                 };
 
+                var galleryOrder = string.IsNullOrEmpty(user.GameDeck.GalleryOrderedIds) ? new List<ulong>()
+                    : user.GameDeck.GalleryOrderedIds.Split(" ").Select(x => UserSiteProfile.TryParseIds(x)).ToList();
+
                 var galleryTag = _tags.GetTag(TagType.Gallery);
                 var tags = user.GameDeck.Tags.Select(x => new TagIdPair { Name = x.Name, Id = x.Id }).ToList();
 
@@ -396,6 +399,7 @@ namespace Sanakan.Api.Controllers
                     Wallet = wallet,
                     CardsCount = cardCount,
                     Karma = user.GameDeck.Karma,
+                    GalleryOrder = galleryOrder,
                     UserTitle = user.GameDeck.GetUserNameStatus(),
                     Waifu = user.GameDeck.GetWaifuCard().ToView(),
                     ForegroundColor = user.GameDeck.ForegroundColor,

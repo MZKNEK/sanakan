@@ -1032,24 +1032,24 @@ namespace Sanakan.Extensions
             return false;
         }
 
-        public static void DestroyOrRelease(this Card card, User user, bool release)
+        public static void DestroyOrRelease(this Card card, User user, bool release, double crueltyBonus = 0)
         {
             if (release)
             {
-                card.ReleaseCard(user);
+                card.ReleaseCard(user, crueltyBonus);
                 return;
             }
-            card.DestroyCard(user);
+            card.DestroyCard(user, crueltyBonus);
         }
 
-        public static void DestroyCard(this Card card, User user)
+        public static void DestroyCard(this Card card, User user, double crueltyBonus = 0)
         {
             var chLvl = user.GameDeck.ExpContainer.Level;
             user.StoreExpIfPossible((card.ExpCnt > card.GetMaxExpToChest(chLvl))
                 ? card.GetMaxExpToChest(chLvl)
                 : card.ExpCnt);
 
-            user.GameDeck.Karma -= user.GameDeck.CanCreateDemon() ? 0.4 : 0.75;
+            user.GameDeck.Karma -= user.GameDeck.CanCreateDemon() ? (0.4 + crueltyBonus) : (0.75 + crueltyBonus);
             user.Stats.DestroyedCards += 1;
 
             if (card.MarketValue >= 0.05)
@@ -1059,14 +1059,14 @@ namespace Sanakan.Extensions
             }
         }
 
-        public static void ReleaseCard(this Card card, User user)
+        public static void ReleaseCard(this Card card, User user, double crueltyBonus = 0)
         {
             var chLvl = user.GameDeck.ExpContainer.Level;
             user.StoreExpIfPossible(((card.ExpCnt / 2) > card.GetMaxExpToChest(chLvl))
                 ? card.GetMaxExpToChest(chLvl)
                 : (card.ExpCnt / 2));
 
-            user.GameDeck.Karma += user.GameDeck.CanCreateAngel() ? 0.9 : 1.1;
+            user.GameDeck.Karma += user.GameDeck.CanCreateAngel() ? (0.9 - crueltyBonus) : (1.1 - crueltyBonus);
             user.Stats.ReleasedCards += 1;
         }
 

@@ -879,5 +879,12 @@ namespace Sanakan.Extensions
 
             return chances.ToList();
         }
+
+        public static string ToName(this ActionAfterExpedition action) => action switch
+        {
+            ActionAfterExpedition.Destroy => "zniszcz",
+            ActionAfterExpedition.Release => "uwolnij",
+            _ => "nic"
+        };
     }
 }

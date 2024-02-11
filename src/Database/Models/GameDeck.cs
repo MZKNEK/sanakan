@@ -6,6 +6,11 @@ using Newtonsoft.Json;
 
 namespace Sanakan.Database.Models
 {
+    public enum ActionAfterExpedition
+    {
+        Nothing, Destroy, Release
+    }
+
     public class GameDeck
     {
         public ulong Id { get; set; }
@@ -35,6 +40,8 @@ namespace Sanakan.Database.Models
         public int CardsInGallery { get; set; }
         public ulong PremiumWaifu { get; set; }
         public int MaxNumberOfTags { get; set; }
+        public ActionAfterExpedition EndOfExpeditionAction { get; set; }
+        public string GalleryOrderedIds { get; set; }
 
         public virtual ICollection<Card> Cards { get; set; }
         public virtual ICollection<Item> Items { get; set; }
