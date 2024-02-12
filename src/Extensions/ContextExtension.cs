@@ -123,6 +123,7 @@ namespace Sanakan.Extensions
 
         public static async Task<Tag> GetTagAsync(this Database.DatabaseContext context, Services.PocketWaifu.TagHelper helper, string tag, ulong ownerId)
         {
+            if (string.IsNullOrEmpty(tag)) return null;
             var internalTagId = helper.GetTagId(tag);
             return internalTagId != 0 ? await context.Tags.AsQueryable().FirstOrDefaultAsync(x => x.Id == internalTagId)
                 : await context.Tags.AsQueryable().FirstOrDefaultAsync(x => x.Name.Equals(tag, StringComparison.CurrentCultureIgnoreCase) && x.GameDeckId == ownerId);

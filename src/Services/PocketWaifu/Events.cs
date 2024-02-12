@@ -292,7 +292,7 @@ namespace Sanakan.Services.PocketWaifu
         public bool ExecuteEvent(EventType e, User user, Card card, ref string msg)
         {
             var aVal = Services.Fun.GetRandomValue(1, 4);
-            msg += "**Wydarzenie**:";
+            msg += "**Wydarzenie**: ";
 
             switch (e)
             {

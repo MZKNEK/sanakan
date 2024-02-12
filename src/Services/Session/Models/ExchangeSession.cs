@@ -332,15 +332,15 @@ namespace Sanakan.Services.Session.Models
                             var user1 = await db.GetUserOrCreateAsync(P1.User.Id);
                             var user2 = await db.GetUserOrCreateAsync(P2.User.Id);
 
-                            var u1Data = (user1, P1.Cards.Count > 0 ? P1.Cards.Count : 1, P1.Tag, P1.User.GetUserNickInGuild());
-                            var u2Data = (user2, P2.Cards.Count > 0 ? P2.Cards.Count : 1, P2.Tag, P2.User.GetUserNickInGuild());
+                            var u1Data = (user1, P1.Cards.Count > 0 ? P1.Cards.Count : 1, await db.GetTagAsync(_tags, P1.Tag, P1.User.Id), P1.User.GetUserNickInGuild());
+                            var u2Data = (user2, P2.Cards.Count > 0 ? P2.Cards.Count : 1, await db.GetTagAsync(_tags, P2.Tag, P2.User.Id), P2.User.GetUserNickInGuild());
 
                             foreach (var c in P1.Cards)
                             {
                                 var card = user1.GetCard(c.Id);
                                 if (card != null)
                                 {
-                                    await card.ExchangeWithAsync(u1Data, u2Data, db, _time, _tags);
+                                    await card.ExchangeWithAsync(u1Data, u2Data, db, _time);
                                 }
                             }
 
@@ -349,7 +349,7 @@ namespace Sanakan.Services.Session.Models
                                 var card = user2.GetCard(c.Id);
                                 if (card != null)
                                 {
-                                    await card.ExchangeWithAsync(u2Data, u1Data, db, _time, _tags);
+                                    await card.ExchangeWithAsync(u2Data, u1Data, db, _time);
                                 }
                             }
 

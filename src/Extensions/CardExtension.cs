@@ -1080,8 +1080,8 @@ namespace Sanakan.Extensions
             card.MarketValue = Math.Max(Math.Min(card.MarketValue, 10), 0.001);
         }
 
-        public static async Task ExchangeWithAsync(this Card card, (User user, int count, string tag, string username)
-            source, (User user, int count, string tag, string username) target, DatabaseContext db, ISystemTime time, TagHelper helper)
+        public static async Task ExchangeWithAsync(this Card card, (User user, int count, Tag tag, string username)
+            source, (User user, int count, Tag tag, string username) target, DatabaseContext db, ISystemTime time)
         {
             card.Active = false;
             card.Tags.Clear();
@@ -1110,11 +1110,8 @@ namespace Sanakan.Extensions
 
             source.user.GameDeck.RemoveFromWaifu(card);
 
-            if (!string.IsNullOrEmpty(target.tag))
-            {
-                var tag = await db.GetTagAsync(helper, target.tag, target.user.Id);
-                if (tag != null) card.Tags.Add(tag);
-            }
+            if (target.tag != null)
+                card.Tags.Add(target.tag);
 
             card.GameDeckId = target.user.GameDeck.Id;
 
