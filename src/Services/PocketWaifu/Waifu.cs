@@ -1898,11 +1898,16 @@ namespace Sanakan.Services.PocketWaifu
                     card.Dere = RandomizeDere();
                     reward += $"{card.Dere}\n";
                 }
-                if (e == EventType.LoseCard)
+                else if (e == EventType.LoseCard)
                 {
                     user.StoreExpIfPossible(totalExp);
+                    if (Fun.TakeATry(10))
+                    {
+                        user.GameDeck.AddItem(ItemType.GiveTagSlot.ToItem());
+                        reward += $"Mimo wszyystko coś po sobie zostawiła!\n";
+                    }
                 }
-                if (e == EventType.Fight && !allowItems)
+                else if (e == EventType.Fight && !allowItems)
                 {
                     totalExp /= 6;
                 }
@@ -2450,7 +2455,7 @@ namespace Sanakan.Services.PocketWaifu
                     if (!card.HasNoNegativeEffectAfterBloodUsage())
                     {
                         affectionInc = -5 * itemCnt;
-                        karmaChange -= 0.5 * itemCnt;
+                        karmaChange -= 0.8 * itemCnt;
                         embedColor = EMType.Error;
                         str.Append($"Karta się przeraziła!");
                         break;

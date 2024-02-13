@@ -1050,7 +1050,7 @@ namespace Sanakan.Extensions
                 ? card.GetMaxExpToChest(chLvl)
                 : card.ExpCnt);
 
-            user.GameDeck.Karma -= user.GameDeck.CanCreateDemon() ? (0.4 + crueltyBonus) : (0.75 + crueltyBonus);
+            user.GameDeck.Karma -= user.GameDeck.CanCreateDemon() ? (0.58 + crueltyBonus) : (0.88 + crueltyBonus);
             user.Stats.DestroyedCards += 1;
 
             if (card.MarketValue >= 0.05)
@@ -1067,7 +1067,7 @@ namespace Sanakan.Extensions
                 ? card.GetMaxExpToChest(chLvl)
                 : (card.ExpCnt / 2));
 
-            user.GameDeck.Karma += user.GameDeck.CanCreateAngel() ? (0.9 - crueltyBonus) : (1.1 - crueltyBonus);
+            user.GameDeck.Karma += user.GameDeck.CanCreateAngel() ? (0.78 - crueltyBonus) : (1.1 - crueltyBonus);
             user.Stats.ReleasedCards += 1;
         }
 

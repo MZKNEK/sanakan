@@ -344,8 +344,8 @@ namespace Sanakan.Extensions
                 case ItemType.IncreaseUltimateAll: return 1.2;
                 case ItemType.FigureSkeleton: return -0.7;
                 case ItemType.CardFragment: return -0.005;
-                case ItemType.BloodOfYourWaifu: return -0.8;
-                case ItemType.BetterIncreaseUpgradeCnt: return -1;
+                case ItemType.BloodOfYourWaifu: return -0.55;
+                case ItemType.BetterIncreaseUpgradeCnt: return -0.65;
                 case ItemType.GiveTagSlot: return 0.4;
                 case ItemType.RemoveCurse: return 2;
 
