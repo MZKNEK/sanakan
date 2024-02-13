@@ -45,23 +45,10 @@ namespace Sanakan.Services
                 new DomainData("sanakan.pl", true),
                 new DomainData("i.imgur.com", true),
                 new DomainData("cdn.imgchest.com", true),
-                new DomainData("drive.google.com") { Transform = TransformGoogleAsync },
                 new DomainData("www.dropbox.com") { Transform = TransformDropboxAsync },
-                new DomainData("lh3.googleusercontent.com"),
                 new DomainData("dl.dropboxusercontent.com"),
                 new DomainData("onedrive.live.com"),
             };
-        }
-
-        private async Task<string> TransformGoogleAsync(string url)
-        {
-            var newUrl = url.Replace("?usp=sharing", "").Replace("/view", "").Replace("drive.google.com/file/d/", "drive.google.com/uc?id=");
-            var res = await _httpClient.GetAsync(newUrl);
-            if (res.IsSuccessStatusCode && res.Content.Headers.ContentType.MediaType.StartsWith("image"))
-            {
-                return newUrl;
-            }
-            return string.Empty;
         }
 
         private async Task<string> TransformDropboxAsync(string url)

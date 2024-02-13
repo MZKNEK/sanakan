@@ -33,6 +33,7 @@ namespace Sanakan.Modules
         {
             new FixableHosting { Name = "imgur",   Enabled = true, Threshold = new DateTime(2023, 5, 15),  Host = new []{ new DomainData("i.imgur.com") } },
             new FixableHosting { Name = "discord", Enabled = true, Threshold = new DateTime(2023, 11, 13), Host = new []{ new DomainData("cdn.discordapp.com") } },
+            new FixableHosting { Name = "google",  Enabled = true, Threshold = new DateTime(2024, 02, 13), Host = new []{ new DomainData("drive.google.com") } },
         };
 
         private Services.PocketWaifu.Waifu _waifu;
@@ -183,7 +184,7 @@ namespace Sanakan.Modules
 
         [Command("napraw obrazek")]
         [Alias("fix image")]
-        [Summary("naprawia wygasły obrazek karty ustawiony przed imgur: 15.05.2023, discord: 13.11.2023")]
+        [Summary("naprawia wygasły obrazek karty ustawiony przed imgur: 15.05.2023, discord: 13.11.2023, google: 13.02.2024")]
         [Remarks("123123"), RequireWaifuCommandChannel]
         public async Task FixCardCustomImageAsync([Summary("WID")] ulong wid, [Summary("bezpośredni adres do obrazka")] string url)
         {
