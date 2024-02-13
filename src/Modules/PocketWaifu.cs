@@ -2200,39 +2200,6 @@ namespace Sanakan.Modules
             }
         }
 
-        [Command("wykup oznaczenie")]
-        [Alias("buy tag")]
-        [Summary("wykupuje dodatkowe dodatkowe oznaczenie (koszt 444 TC)")]
-        [Remarks("1"), RequireWaifuCommandChannel]
-        public async Task IncTagsLimitAsync([Summary("krotność użycia polecenia")] int count)
-        {
-            if (count < 1)
-            {
-                await ReplyAsync("", embed: $"{Context.User.Mention} podano niepoprawną liczbę. Minimum to 1.".ToEmbedMessage(EMType.Error).Build());
-                return;
-            }
-
-            long cost = 444 * count;
-            using (var db = new Database.DatabaseContext(Config))
-            {
-                var bUser = await db.GetUserOrCreateSimpleAsync(Context.User.Id);
-                if (bUser.TcCnt < cost)
-                {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} nie masz wystarczającej liczby TC.".ToEmbedMessage(EMType.Error).Build());
-                    return;
-                }
-
-                bUser.TcCnt -= cost;
-                bUser.GameDeck.MaxNumberOfTags += count;
-
-                await db.SaveChangesAsync();
-
-                QueryCacheManager.ExpireTag(new string[] { $"user-{bUser.Id}", "users" });
-
-                await ReplyAsync("", embed: $"{Context.User.Mention} powiększył się limit twoich oznaczeń do {bUser.GameDeck.MaxNumberOfTags}.".ToEmbedMessage(EMType.Success).Build());
-            }
-        }
-
         [Command("wyprawa na koniec")]
         [Alias("expedition on end")]
         [Summary("ustawia co zrobić z kartą oznaczoną jako kosz po zakończonej wyprawie")]

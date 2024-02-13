@@ -123,7 +123,8 @@ namespace Sanakan.Services.PocketWaifu
             (ItemType.FigureRightLegPart,       12),
             (ItemType.FigureSkeleton,           8),
             (ItemType.FigureUniversalPart,      6),
-            (ItemType.LotteryTicket,            1),
+            (ItemType.LotteryTicket,            2),
+            (ItemType.CreationItemBase,         1),
         }.ToRealList();
 
         private static IEnumerable<ItemType> _ultimateExpeditionHardcoreItems = new List<(ItemType, int)>
@@ -139,7 +140,7 @@ namespace Sanakan.Services.PocketWaifu
             (ItemType.FigureSkeleton,           9),
             (ItemType.IncreaseUltimateAttack,   5),
             (ItemType.IncreaseUltimateDefence,  5),
-            (ItemType.LotteryTicket,            3),
+            (ItemType.LotteryTicket,            4),
             (ItemType.IncreaseUltimateHealth,   1),
         }.ToRealList();
 
@@ -166,6 +167,7 @@ namespace Sanakan.Services.PocketWaifu
                     (ItemType.IncreaseExpSmall,         8),
                     (ItemType.IncreaseUpgradeCnt,       5),
                     (ItemType.BetterIncreaseUpgradeCnt, 4),
+                    (ItemType.CreationItemBase,         2),
                     (ItemType.BloodOfYourWaifu,         1),
                 }.ToRealList()
             },
@@ -479,6 +481,7 @@ namespace Sanakan.Services.PocketWaifu
                 new ItemWithCost(1299,  ItemType.RandomNormalBoosterPackSS.ToItem()),
                 new ItemWithCost(569,   ItemType.ResetCardValue.ToItem()),
                 new ItemWithCost(9999,  ItemType.SetCustomAnimatedImage.ToItem()),
+                new ItemWithCost(444,   ItemType.GiveTagSlot.ToItem()),
             };
         }
 
@@ -494,6 +497,7 @@ namespace Sanakan.Services.PocketWaifu
                 new ItemWithCost(4699,  ItemType.ChangeCardImage.ToItem()),
                 new ItemWithCost(65999, ItemType.SetCustomImage.ToItem()),
                 new ItemWithCost(19999, ItemType.IncreaseUltimateAll.ToItem()),
+                new ItemWithCost(1469,  ItemType.CreationItemBase.ToItem()),
             };
         }
 
@@ -507,6 +511,7 @@ namespace Sanakan.Services.PocketWaifu
                 new ItemWithCost(1665,  ItemType.SetCustomImage.ToItem()),
                 new ItemWithCost(165,   ItemType.RandomBoosterPackSingleE.ToItem()),
                 new ItemWithCost(1500,  ItemType.BigRandomBoosterPackE.ToItem()),
+                new ItemWithCost(125,   ItemType.CreationItemBase.ToItem()),
             };
         }
 
@@ -2387,8 +2392,8 @@ namespace Sanakan.Services.PocketWaifu
 
                     if (card.Dere == Dere.Yami || card.Dere == Dere.Yato)
                     {
-                        affectionInc = 3.5;
-                        karmaChange -= 0.5;
+                        affectionInc = 3.5 * itemCnt;
+                        karmaChange -= 0.5 * itemCnt;
                         card.AttackBonus += 2 * itemCnt;
                         str.Append($"Zwiększono się siła karty!");
                         break;
@@ -2396,8 +2401,8 @@ namespace Sanakan.Services.PocketWaifu
 
                     if (card.Dere == Dere.Raito)
                     {
-                        affectionInc = -10;
-                        karmaChange -= 1;
+                        affectionInc = -10 * itemCnt;
+                        karmaChange -= 1 * itemCnt;
                         card.Curse = CardCurse.LoweredStats;
                         str.Append($"Karta została spaczona!");
                         break;
@@ -2405,15 +2410,15 @@ namespace Sanakan.Services.PocketWaifu
 
                     if (card.CanGiveBloodOrUpgradeToSSS())
                     {
-                        affectionInc = 1;
-                        karmaChange += 1.5;
+                        affectionInc = 1 * itemCnt;
+                        karmaChange += 1.5 * itemCnt;
                         card.UpgradesCnt += 1 * itemCnt;
                         str.Append($"Zwiększono liczbę ulepszeń do {card.UpgradesCnt}!");
                         break;
                     }
 
-                    affectionInc = -5;
-                    karmaChange -= 0.5;
+                    affectionInc = -5 * itemCnt;
+                    karmaChange -= 0.5 * itemCnt;
                     embedColor = EMType.Error;
                     str.Append($"Karta się przeraziła!");
                     break;
@@ -2427,17 +2432,17 @@ namespace Sanakan.Services.PocketWaifu
 
                     if (card.CanGiveBloodOrUpgradeToSSS())
                     {
-                        karmaChange += 2;
-                        affectionInc = 1.5;
-                        card.UpgradesCnt += 2;
+                        karmaChange += 2 * itemCnt;
+                        affectionInc = 1.5 * itemCnt;
+                        card.UpgradesCnt += 2 * itemCnt;
                         str.Append($"Zwiększono liczbę ulepszeń do {card.UpgradesCnt}!");
                         break;
                     }
 
                     if (!card.HasNoNegativeEffectAfterBloodUsage())
                     {
-                        affectionInc = -5;
-                        karmaChange -= 0.5;
+                        affectionInc = -5 * itemCnt;
+                        karmaChange -= 0.5 * itemCnt;
                         embedColor = EMType.Error;
                         str.Append($"Karta się przeraziła!");
                         break;
@@ -2445,14 +2450,14 @@ namespace Sanakan.Services.PocketWaifu
 
                     if (card.CanGiveRing())
                     {
-                        affectionInc = 1.7;
-                        karmaChange += 0.6;
+                        affectionInc = 1.7 * itemCnt;
+                        karmaChange += 0.6 * itemCnt;
                         str.Append("Bardzo powiększyła się relacja z kartą!");
                         break;
                     }
 
-                    affectionInc = 1.2;
-                    karmaChange += 0.4;
+                    affectionInc = 1.2 * itemCnt;
+                    karmaChange += 0.4 * itemCnt;
                     embedColor = EMType.Warning;
                     str.Append($"Karta się zmartwiła!");
                     break;
@@ -2468,6 +2473,17 @@ namespace Sanakan.Services.PocketWaifu
                         return ExecutionResult.FromError("nie można mieć więcej jak pięć ulepszeń dostępnych na karcie.");
 
                     card.UpgradesCnt += itemCnt;
+                    break;
+
+                case ItemType.GiveTagSlot:
+                    user.GameDeck.MaxNumberOfTags += itemCnt;
+                    break;
+
+                case ItemType.RemoveCurse:
+                    if (card.Curse == CardCurse.None)
+                        return ExecutionResult.FromError("karta nie wie, co ma z tym zrobić!");
+
+                    card.Curse = CardCurse.None;
                     break;
 
                 case ItemType.DereReRoll:

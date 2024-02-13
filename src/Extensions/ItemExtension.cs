@@ -102,6 +102,12 @@ namespace Sanakan.Extensions
                     return $"Zwiększa punkty życia karcie ultimate.";
                 case ItemType.IncreaseUltimateAll:
                     return $"Zwiększa wszystkie parametry karcie ultimate.";
+                case ItemType.GiveTagSlot:
+                    return $"Zwiększa limit własnych oznaczeń.";
+                case ItemType.RemoveCurse:
+                    return $"Zdejmuje klątwę z karty.";
+                case ItemType.CreationItemBase:
+                    return $"Jest wymagany przy tworzeniu dowolnego przedmiotu.";
 
                 default:
                     return "Brak opisu.";
@@ -112,6 +118,8 @@ namespace Sanakan.Extensions
         {
             switch (type)
             {
+                case ItemType.GiveTagSlot:
+                    return "Zwiększył się twój limit tagów!";
                 case ItemType.AffectionRecoveryGreat:
                     return "Bardzo powiększyła się relacja z kartą!";
                 case ItemType.AffectionRecoveryBig:
@@ -151,6 +159,8 @@ namespace Sanakan.Extensions
                     return $"Zwiększono punkty życia karty!";
                 case ItemType.IncreaseUltimateAll:
                     return $"Zwiększono parametry karty!";
+                case ItemType.RemoveCurse:
+                    return $"Karta już nie jest przeklęta!";
 
                 default:
                     return "";
@@ -250,6 +260,12 @@ namespace Sanakan.Extensions
                     return $"Zielona pigułka";
                 case ItemType.IncreaseUltimateAll:
                     return $"Czarna pigułka";
+                case ItemType.RemoveCurse:
+                    return $"Krwawa mary";
+                case ItemType.CreationItemBase:
+                    return $"Rozbita butelka";
+                case ItemType.GiveTagSlot:
+                    return $"Nieśmiertelnik";
 
                 default:
                     return "Brak";
@@ -294,6 +310,9 @@ namespace Sanakan.Extensions
                 case ItemType.IncreaseUltimateHealth: return 0.55;
                 case ItemType.IncreaseUltimateAll: return 2.2;
                 case ItemType.BloodOfYourWaifu: return 1.5;
+                case ItemType.RemoveCurse: return 4;
+                case ItemType.CreationItemBase: return 0.001;
+                case ItemType.GiveTagSlot: return 0.1;
 
                 default: return 0;
             }
@@ -326,6 +345,9 @@ namespace Sanakan.Extensions
                 case ItemType.FigureSkeleton: return -0.7;
                 case ItemType.CardFragment: return -0.005;
                 case ItemType.BloodOfYourWaifu: return -0.8;
+                case ItemType.BetterIncreaseUpgradeCnt: return -1;
+                case ItemType.GiveTagSlot: return 0.4;
+                case ItemType.RemoveCurse: return 2;
 
                 default: return 0;
             }
@@ -337,6 +359,7 @@ namespace Sanakan.Extensions
             {
                 case ItemType.LotteryTicket:
                 case ItemType.CardFragment:
+                case ItemType.CreationItemBase:
                     return false;
 
                 default:
@@ -359,6 +382,7 @@ namespace Sanakan.Extensions
                 case ItemType.FigureRightArmPart:
                 case ItemType.FigureRightLegPart:
                 case ItemType.FigureUniversalPart:
+                case ItemType.GiveTagSlot:
                     return true;
 
                 default:
@@ -383,6 +407,9 @@ namespace Sanakan.Extensions
                 case ItemType.IncreaseUltimateAll:
                 case ItemType.CardFragment:
                 case ItemType.BloodOfYourWaifu:
+                case ItemType.BetterIncreaseUpgradeCnt:
+                case ItemType.RemoveCurse:
+                case ItemType.GiveTagSlot:
                 // special case
                 case ItemType.CardParamsReRoll:
                 case ItemType.DereReRoll:
@@ -489,6 +516,9 @@ namespace Sanakan.Extensions
                 case ItemType.PreAssembledAsuna:
                 case ItemType.FigureSkeleton:
                 case ItemType.CardFragment:
+                case ItemType.RemoveCurse:
+                case ItemType.CreationItemBase:
+                case ItemType.GiveTagSlot:
                     return true;
 
                 default:
@@ -544,6 +574,10 @@ namespace Sanakan.Extensions
                     return 450;
                 case ItemType.SetCustomAnimatedImage:
                     return 3250;
+                case ItemType.RemoveCurse:
+                    return 800;
+                case ItemType.GiveTagSlot:
+                    return 1150;
                 case ItemType.CardFragment:
                     return 0;
 

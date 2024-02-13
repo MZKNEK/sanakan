@@ -16,7 +16,7 @@ namespace Sanakan.Services.PocketWaifu
         // cards
         CardsFromSeason, CardsNormal, CardsBig,
         // items
-        Scalpel, RandomPill, WaifuFood, FigurePart,
+        Scalpel, RandomPill, WaifuFood, FigurePart, Dogtag,
         // other
         ReverseKarma, ExpForChest, TC, CT,
         // helpers
@@ -87,7 +87,8 @@ namespace Sanakan.Services.PocketWaifu
         private static List<LotteryReward> _rewardsPool = new List<(LotteryReward, int)>
         {
             (LotteryReward.ReverseKarma,    1),
-            (LotteryReward.Scalpel,         2),
+            (LotteryReward.Dogtag,          2),
+            (LotteryReward.Scalpel,         4),
             (LotteryReward.TC,              15),
             (LotteryReward.CardsFromSeason, 20),
             (LotteryReward.CT,              25),
@@ -221,6 +222,13 @@ namespace Sanakan.Services.PocketWaifu
                     var pill = Fun.GetOneRandomFrom(_pills).ToItem(cnt);
                     user.GameDeck.AddItem(pill);
                     return $"{pill.Name} x{cnt}!";
+                }
+
+                case LotteryReward.Dogtag:
+                {
+                    var dogtag = ItemType.GiveTagSlot.ToItem();
+                    user.GameDeck.AddItem(dogtag);
+                    return $"{dogtag.Name}!";
                 }
 
                 case LotteryReward.ReverseKarma:
