@@ -367,6 +367,20 @@ namespace Sanakan.Extensions
             }
         }
 
+        public static bool IsFigureNeededToUse(this ItemType type)
+        {
+            switch (type)
+            {
+                case ItemType.GiveTagSlot:
+                    return false;
+
+                default:
+                    return true;
+            }
+        }
+
+        public static bool CanUseWithCard(this ItemType type) => !type.CanUseWithoutCard(false);
+
         public static bool CanUseWithoutCard(this ItemType type, bool toExp)
         {
             switch (type)

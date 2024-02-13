@@ -2176,12 +2176,16 @@ namespace Sanakan.Services.PocketWaifu
                 return ExecutionResult.FromError("nie można użyć przedmiotu bez karty.");
 
             var activeFigure = user.GameDeck.Figures.FirstOrDefault(x => x.IsFocus);
-            if (activeFigure == null)
+            if (activeFigure == null && item.Type.IsFigureNeededToUse())
                 return ExecutionResult.FromError("nie posiadasz aktywnej figurki!");
 
             var str = new StringBuilder().Append($"Użyto _{item.Name}_ {((itemCnt > 1) ? $"x{itemCnt}" : "")}\n\n");
             switch (item.Type)
             {
+                case ItemType.GiveTagSlot:
+                    user.GameDeck.MaxNumberOfTags += itemCnt;
+                    break;
+
                 case ItemType.FigureHeadPart:
                 case ItemType.FigureBodyPart:
                 case ItemType.FigureClothesPart:
@@ -2231,6 +2235,7 @@ namespace Sanakan.Services.PocketWaifu
                     return ExecutionResult.FromError($"tego przedmiotu ({item.Name}) nie powinno tutaj być!");
             }
 
+            str.Append(item.Type.Info());
             item.Count -= itemCnt;
 
             return ExecutionResult.FromSuccess(str.ToString());
@@ -2238,6 +2243,9 @@ namespace Sanakan.Services.PocketWaifu
 
         private async Task<ExecutionResult> UseItemOnCardAsync(Item item, User user, string userName, int itemCnt, ulong wid, string detail)
         {
+             if (!item.Type.CanUseWithCard())
+                return ExecutionResult.FromError("nie można użyć przedmiotu z kartą.");
+
             var card = user.GetCard(wid);
             if (card == null)
                 return ExecutionResult.FromError("nie posiadasz takiej karty!");
@@ -2475,10 +2483,6 @@ namespace Sanakan.Services.PocketWaifu
                     card.UpgradesCnt += itemCnt;
                     break;
 
-                case ItemType.GiveTagSlot:
-                    user.GameDeck.MaxNumberOfTags += itemCnt;
-                    break;
-
                 case ItemType.RemoveCurse:
                     if (card.Curse == CardCurse.None)
                         return ExecutionResult.FromError("karta nie wie, co ma z tym zrobić!");
@@ -2511,7 +2515,7 @@ namespace Sanakan.Services.PocketWaifu
                     return ExecutionResult.FromError("coś poszło nie tak.");
 
                 default:
-                    return ExecutionResult.FromError($"tego przedmiotu (({item.Name})) nie powinno tutaj być!");
+                    return ExecutionResult.FromError($"tego przedmiotu ({item.Name}) nie powinno tutaj być!");
             }
 
             DeleteCardImageIfExist(card);
