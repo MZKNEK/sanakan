@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Discord;
 using Sanakan.Database.Models;
 using Sanakan.Services;
+using Sanakan.Services.PocketWaifu;
 
 namespace Sanakan.Extensions
 {
@@ -374,6 +375,66 @@ namespace Sanakan.Extensions
                     deck.Items.Remove(thisItem);
 
                 return true;
+            }
+            return false;
+        }
+
+        public static bool Pay(this User user, CurrencyCost cost)
+        {
+            switch (cost.Type)
+            {
+                case CurrencyType.TC:
+                {
+                    if (user.TcCnt >= cost.Cost)
+                    {
+                        user.TcCnt -= cost.Cost;
+                        return true;
+                    }
+                    break;
+                }
+
+                case CurrencyType.AC:
+                {
+                    if (user.AcCnt >= cost.Cost)
+                    {
+                        user.AcCnt -= cost.Cost;
+                        return true;
+                    }
+                    break;
+                }
+
+                case CurrencyType.SC:
+                {
+                    if (user.ScCnt >= cost.Cost)
+                    {
+                        user.ScCnt -= cost.Cost;
+                        return true;
+                    }
+                    break;
+                }
+
+                case CurrencyType.PC:
+                {
+                    if (user.GameDeck.PVPCoins >= cost.Cost)
+                    {
+                        user.GameDeck.PVPCoins -= cost.Cost;
+                        return true;
+                    }
+                    break;
+                }
+
+                case CurrencyType.CT:
+                {
+                    if (user.GameDeck.CTCnt >= cost.Cost)
+                    {
+                        user.GameDeck.CTCnt -= cost.Cost;
+                        return true;
+                    }
+                    break;
+                }
+
+                default:
+                    return false;
             }
             return false;
         }

@@ -110,7 +110,7 @@ namespace Sanakan.Extensions
         public static async Task<User> GetUserOrCreateSimpleAsync(this Database.DatabaseContext context, ulong userId)
         {
             var user = await context.Users.AsQueryable().Where(x => x.Id == userId).Include(x => x.Stats).Include(x => x.SMConfig).Include(x => x.TimeStatuses).Include(x => x.GameDeck).ThenInclude(x => x.Wishes)
-                .Include(x => x.GameDeck).ThenInclude(x => x.ExpContainer).Include(x => x.GameDeck).ThenInclude(x => x.Tags).AsSplitQuery().FirstOrDefaultAsync();
+                .Include(x => x.GameDeck).ThenInclude(x => x.ExpContainer).Include(x => x.GameDeck).ThenInclude(x => x.Tags).Include(x => x.GameDeck).ThenInclude(x => x.Items).AsSplitQuery().FirstOrDefaultAsync();
 
             if (user == null)
             {

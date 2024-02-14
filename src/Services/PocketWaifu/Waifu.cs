@@ -75,6 +75,23 @@ namespace Sanakan.Services.PocketWaifu
             { "mega",       Quality.Omega   },
         };
 
+        public static Dictionary<RecipeType, ItemRecipe> _recipes = new Dictionary<RecipeType, ItemRecipe>
+        {
+            { RecipeType.CrystalBall, new ItemRecipe(ItemType.CheckAffection,
+                new List<Item>{ ItemType.CreationItemBase.ToItem(), ItemType.CardParamsReRoll.ToItem(), ItemType.DereReRoll.ToItem() },
+                new List<CurrencyCost> { new CurrencyCost(5, CurrencyType.CT) })
+            },
+            { RecipeType.BloodyMarry, new ItemRecipe(ItemType.RemoveCurse,
+                new List<Item>{ ItemType.CreationItemBase.ToItem(10), ItemType.BetterIncreaseUpgradeCnt.ToItem(5), ItemType.BloodOfYourWaifu.ToItem(5) })
+            },
+            { RecipeType.YourBlood, new ItemRecipe(ItemType.BetterIncreaseUpgradeCnt,
+                new List<Item>{ ItemType.CreationItemBase.ToItem(), ItemType.BloodOfYourWaifu.ToItem(2) })
+            },
+            { RecipeType.WaifuBlood, new ItemRecipe(ItemType.BloodOfYourWaifu,
+                new List<Item>{ ItemType.CreationItemBase.ToItem(), ItemType.BetterIncreaseUpgradeCnt.ToItem(2) })
+            }
+        };
+
         private static readonly AsyncKeyedLocker<ulong> _cardGenLocker = new AsyncKeyedLocker<ulong>(x =>
         {
             x.PoolSize = 100;
@@ -246,6 +263,10 @@ namespace Sanakan.Services.PocketWaifu
         }
 
         static public double GetDereDmgMultiplier(Card atk, Card def) => _dereDmgRelation[(int)def.Dere, (int)atk.Dere];
+
+        public ItemRecipe GetItemRecipe(RecipeType type) => _recipes[type];
+
+        public string GetItemRecipesList() => $"**Przepisy**:\n\n{string.Join("\n", _recipes.Select((x, i) => $"**[{i+1}]** {x.Value.Name}"))}";
 
         public List<Card> GetListInRightOrder(IEnumerable<Card> list, HaremType type, string tag)
         {

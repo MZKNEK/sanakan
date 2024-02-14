@@ -2459,66 +2459,61 @@ namespace Sanakan.Modules
             }
         }
 
-        [Command("wymień na kule")]
-        [Alias("wymien na kule", "crystal")]
-        [Summary("zmienia naszyjnik i bukiet kwiatów na kryształową kulę (koszt 5 CT)")]
-        [Remarks(""), RequireWaifuCommandChannel]
-        public async Task ExchangeToCrystalBallAsync()
+        [Command("wytwórz")]
+        [Alias("craft", "wytworz")]
+        [Summary("towrzy przedmiot z listy przepisów")]
+        [Remarks("2"), RequireWaifuCommandChannel]
+        public async Task CraftItemAsync([Summary("przepis")]RecipeType recipe)
         {
-            int cost = 5;
+            if (recipe == RecipeType.None)
+                return;
+
+            var itemRecipe = _waifu.GetItemRecipe(recipe);
             using (var db = new Database.DatabaseContext(Config))
             {
-                var bUser = await db.GetUserOrCreateAsync(Context.User.Id);
-                var itemList = bUser.GetAllItems();
-
-                var item1 = itemList.FirstOrDefault(x => x.Type == ItemType.CardParamsReRoll);
-                if (item1 == null)
+                var bUser = await db.GetUserOrCreateSimpleAsync(Context.User.Id);
+                foreach (var currency in itemRecipe.RequiredPayments)
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} nie masz wystarczającej liczby {ItemType.CardParamsReRoll.ToItem().Name}.".ToEmbedMessage(EMType.Error).Build());
-                    return;
+                    if (!bUser.Pay(currency))
+                    {
+                        await ReplyAsync("", embed: $"{Context.User.Mention} nie masz wystarczającej liczby **{currency.Type}** by wytowrzyć **{itemRecipe.Name}**.".ToEmbedMessage(EMType.Error).Build());
+                        return;
+                    }
                 }
 
-                var item2 = itemList.FirstOrDefault(x => x.Type == ItemType.DereReRoll);
-                if (item2 == null)
+                foreach (var item in itemRecipe.RequiredItems)
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} nie masz wystarczającej liczby {ItemType.DereReRoll.ToItem().Name}.".ToEmbedMessage(EMType.Error).Build());
-                    return;
+                    if (!bUser.GameDeck.RemoveItem(item))
+                    {
+                        await ReplyAsync("", embed: $"{Context.User.Mention} nie masz wystarczającej liczby **{item.Name}** by wytowrzyć **{itemRecipe.Name}**.".ToEmbedMessage(EMType.Error).Build());
+                        return;
+                    }
                 }
 
-                if (bUser.GameDeck.CTCnt < cost)
-                {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} nie masz wystarczającej liczby CT.".ToEmbedMessage(EMType.Error).Build());
-                    return;
-                }
+                var newItem = itemRecipe.Type.ToItem();
+                bUser.GameDeck.AddItem(newItem);
 
-                if (item1.Count == 1)
-                {
-                    bUser.GameDeck.Items.Remove(item1);
-                }
-                else item1.Count--;
-
-                if (item2.Count == 1)
-                {
-                    bUser.GameDeck.Items.Remove(item2);
-                }
-                else item2.Count--;
-
-                var item3 = itemList.FirstOrDefault(x => x.Type == ItemType.CheckAffection);
-                if (item3 == null)
-                {
-                    item3 = ItemType.CheckAffection.ToItem();
-                    bUser.GameDeck.Items.Add(item3);
-                }
-                else item3.Count++;
-
-                bUser.GameDeck.CTCnt -= cost;
+                await ReplyAsync("", embed: $"{Context.User.Mention} utworzono: **{newItem.Name}**".ToEmbedMessage(EMType.Success).Build());
 
                 await db.SaveChangesAsync();
 
                 QueryCacheManager.ExpireTag(new string[] { $"user-{bUser.Id}", "users" });
-
-                await ReplyAsync("", embed: $"{Context.User.Mention} uzyskał *{item3.Name}*".ToEmbedMessage(EMType.Success).Build());
             }
+        }
+
+        [Command("przepisy", RunMode = RunMode.Async)]
+        [Alias("recipes")]
+        [Summary("wypisuje liste przepisów lub konkretny przepis")]
+        [Remarks("2"), RequireWaifuCommandChannel]
+        public async Task ShoItemRecipesAsync([Summary("przepis (opcjonalne)")]RecipeType recipe = RecipeType.None)
+        {
+            if (recipe == RecipeType.None)
+            {
+                await ReplyAsync("", embed: _waifu.GetItemRecipesList().ToEmbedMessage(EMType.Info).Build());
+                return;
+            }
+
+            await ReplyAsync("", embed: _waifu.GetItemRecipe(recipe).ToString().ToEmbedMessage(EMType.Info).Build());
         }
 
         [Command("moje oznaczenia", RunMode = RunMode.Async)]
