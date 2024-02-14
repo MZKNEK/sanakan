@@ -155,12 +155,21 @@ namespace Sanakan.Services.PocketWaifu
                 case LotteryReward.CardsNormal:
                 case LotteryReward.CardsFromSeason:
                 {
+                    string addInfo = "";
+                    ulong randomTitle = 0;
+                    if (reward == LotteryReward.CardsFromSeason)
+                    {
+                        randomTitle = await GetRandomTitleAsync();
+                        reward = randomTitle == 0 ? LotteryReward.CardsBig : LotteryReward.CardsFromSeason;
+                        addInfo = randomTitle == 0 ? $"\n\nPowinien być sezonowy, ale wpadła 500 od shindena." : "";
+                    }
+
                     var name = reward == LotteryReward.CardsFromSeason ? "Sezonowy"
                         : (reward == LotteryReward.CardsBig ? "Duży" : "Normalny");
 
                     var pack = new BoosterPack
                     {
-                        Title = reward == LotteryReward.CardsFromSeason ? await GetRandomTitleAsync() : 0,
+                        Title = reward == LotteryReward.CardsFromSeason ? randomTitle : 0,
                         CardCnt = reward == LotteryReward.CardsBig ? 20 : 2,
                         RarityExcludedFromPack = new List<RarityExcluded>(),
                         Characters = new List<BoosterPackCharacter>(),
@@ -170,7 +179,7 @@ namespace Sanakan.Services.PocketWaifu
                         MinRarity = Rarity.E,
                     };
                     user.GameDeck.BoosterPacks.Add(pack);
-                    return $"Pakiet kart z loterii ({name})!";
+                    return $"Pakiet kart z loterii ({name}){addInfo}!";
                 }
 
                 case LotteryReward.CT:
