@@ -85,10 +85,12 @@ namespace Sanakan.Services.PocketWaifu
                 new List<Item>{ ItemType.CreationItemBase.ToItem(10), ItemType.BetterIncreaseUpgradeCnt.ToItem(5), ItemType.BloodOfYourWaifu.ToItem(5) })
             },
             { RecipeType.YourBlood, new ItemRecipe(ItemType.BetterIncreaseUpgradeCnt,
-                new List<Item>{ ItemType.CreationItemBase.ToItem(), ItemType.BloodOfYourWaifu.ToItem(2) })
+                new List<Item>{ ItemType.CreationItemBase.ToItem(2), ItemType.BloodOfYourWaifu.ToItem(2) },
+                new List<CurrencyCost> { new CurrencyCost(3, CurrencyType.AC) })
             },
             { RecipeType.WaifuBlood, new ItemRecipe(ItemType.BloodOfYourWaifu,
-                new List<Item>{ ItemType.CreationItemBase.ToItem(), ItemType.BetterIncreaseUpgradeCnt.ToItem(2) })
+                new List<Item>{ ItemType.CreationItemBase.ToItem(), ItemType.BetterIncreaseUpgradeCnt.ToItem(3) },
+                new List<CurrencyCost> { new CurrencyCost(3, CurrencyType.AC) })
             }
         };
 
@@ -183,9 +185,9 @@ namespace Sanakan.Services.PocketWaifu
                     (ItemType.IncreaseExpBig,           12),
                     (ItemType.IncreaseExpSmall,         8),
                     (ItemType.IncreaseUpgradeCnt,       5),
-                    (ItemType.BetterIncreaseUpgradeCnt, 4),
-                    (ItemType.CreationItemBase,         2),
-                    (ItemType.BloodOfYourWaifu,         1),
+                    (ItemType.BetterIncreaseUpgradeCnt, 3),
+                    (ItemType.BloodOfYourWaifu,         2),
+                    (ItemType.CreationItemBase,         1),
                 }.ToRealList()
             },
             {CardExpedition.DarkItems, new List<(ItemType, int)>
@@ -221,6 +223,7 @@ namespace Sanakan.Services.PocketWaifu
                     (ItemType.AffectionRecoveryGreat,   10),
                     (ItemType.CardParamsReRoll,         7),
                     (ItemType.IncreaseUpgradeCnt,       4),
+                    (ItemType.BloodOfYourWaifu,         3),
                     (ItemType.BetterIncreaseUpgradeCnt, 1),
                 }.ToRealList()
             },
