@@ -2446,10 +2446,21 @@ namespace Sanakan.Services.PocketWaifu
 
                     if (card.CanGiveBloodOrUpgradeToSSS())
                     {
-                        affectionInc = 1 * itemCnt;
+                        if (card.Rarity == Rarity.SSS)
+                            return ExecutionResult.FromError("karty **SSS** nie można już ulepszyć!");
+
+                        affectionInc = 1.2 * itemCnt;
                         karmaChange += 1.5 * itemCnt;
-                        card.UpgradesCnt += 1 * itemCnt;
+                        card.UpgradesCnt += 2 * itemCnt;
                         str.Append($"Zwiększono liczbę ulepszeń do {card.UpgradesCnt}!");
+                        break;
+                    }
+
+                    if (card.CanGiveRing())
+                    {
+                        affectionInc = 1 * itemCnt;
+                        karmaChange += 0.3 * itemCnt;
+                        str.Append("Bardzo powiększyła się relacja z kartą!");
                         break;
                     }
 
@@ -2463,11 +2474,29 @@ namespace Sanakan.Services.PocketWaifu
                     if (card.Curse == CardCurse.BloodBlockade)
                         return ExecutionResult.FromError("na tej karcie ciąży klątwa!");
 
-                    if (card.Rarity == Rarity.SSS)
-                        return ExecutionResult.FromError("karty **SSS** nie można już ulepszyć!");
+                    if (card.Dere == Dere.Raito || card.Dere == Dere.Yato)
+                    {
+                        affectionInc = 2.8 * itemCnt;
+                        karmaChange += 0.5 * itemCnt;
+                        card.AttackBonus += 2 * itemCnt;
+                        str.Append($"Zwiększono się siła karty!");
+                        break;
+                    }
+
+                    if (card.Dere == Dere.Yami)
+                    {
+                        affectionInc = -10 * itemCnt;
+                        karmaChange -= 1 * itemCnt;
+                        card.Curse = CardCurse.LoweredStats;
+                        str.Append($"Karta została spaczona!");
+                        break;
+                    }
 
                     if (card.CanGiveBloodOrUpgradeToSSS())
                     {
+                        if (card.Rarity == Rarity.SSS)
+                            return ExecutionResult.FromError("karty **SSS** nie można już ulepszyć!");
+
                         karmaChange += 2 * itemCnt;
                         affectionInc = 1.5 * itemCnt;
                         card.UpgradesCnt += 2 * itemCnt;
