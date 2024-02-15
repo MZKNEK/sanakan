@@ -85,12 +85,12 @@ namespace Sanakan.Services.PocketWaifu
                 new List<Item>{ ItemType.CreationItemBase.ToItem(10), ItemType.BetterIncreaseUpgradeCnt.ToItem(5), ItemType.BloodOfYourWaifu.ToItem(5) })
             },
             { RecipeType.YourBlood, new ItemRecipe(ItemType.BetterIncreaseUpgradeCnt,
-                new List<Item>{ ItemType.CreationItemBase.ToItem(2), ItemType.BloodOfYourWaifu.ToItem(2) },
-                new List<CurrencyCost> { new CurrencyCost(3, CurrencyType.AC) })
+                new List<Item>{ ItemType.CreationItemBase.ToItem(), ItemType.BloodOfYourWaifu.ToItem(2) },
+                new List<CurrencyCost> { new CurrencyCost(2, CurrencyType.AC) })
             },
             { RecipeType.WaifuBlood, new ItemRecipe(ItemType.BloodOfYourWaifu,
-                new List<Item>{ ItemType.CreationItemBase.ToItem(), ItemType.BetterIncreaseUpgradeCnt.ToItem(3) },
-                new List<CurrencyCost> { new CurrencyCost(3, CurrencyType.AC) })
+                new List<Item>{ ItemType.CreationItemBase.ToItem(), ItemType.BetterIncreaseUpgradeCnt.ToItem(2) },
+                new List<CurrencyCost> { new CurrencyCost(2, CurrencyType.AC) })
             }
         };
 
@@ -179,15 +179,15 @@ namespace Sanakan.Services.PocketWaifu
             },
             {CardExpedition.ExtremeItemWithExp, new List<(ItemType, int)>
                 {
-                    (ItemType.AffectionRecoveryNormal,  31),
-                    (ItemType.AffectionRecoveryBig,     28),
+                    (ItemType.AffectionRecoveryBig,     34),
+                    (ItemType.AffectionRecoveryNormal,  27),
                     (ItemType.AffectionRecoveryGreat,   15),
                     (ItemType.IncreaseExpBig,           12),
                     (ItemType.IncreaseExpSmall,         8),
-                    (ItemType.IncreaseUpgradeCnt,       5),
-                    (ItemType.BetterIncreaseUpgradeCnt, 3),
-                    (ItemType.BloodOfYourWaifu,         2),
-                    (ItemType.CreationItemBase,         1),
+                    (ItemType.CreationItemBase,         6),
+                    (ItemType.BetterIncreaseUpgradeCnt, 4),
+                    (ItemType.BloodOfYourWaifu,         4),
+                    (ItemType.IncreaseUpgradeCnt,       2),
                 }.ToRealList()
             },
             {CardExpedition.DarkItems, new List<(ItemType, int)>
@@ -198,7 +198,7 @@ namespace Sanakan.Services.PocketWaifu
                     (ItemType.AffectionRecoveryGreat,   11),
                     (ItemType.IncreaseExpSmall,         10),
                     (ItemType.CardParamsReRoll,         6),
-                    (ItemType.BetterIncreaseUpgradeCnt, 2),
+                    (ItemType.BetterIncreaseUpgradeCnt, 3),
                     (ItemType.IncreaseUpgradeCnt,       1),
                 }.ToRealList()
             },
@@ -212,6 +212,7 @@ namespace Sanakan.Services.PocketWaifu
                     (ItemType.AffectionRecoveryGreat,   8),
                     (ItemType.CardParamsReRoll,         3),
                     (ItemType.IncreaseUpgradeCnt,       1),
+                    (ItemType.CreationItemBase,         1),
                 }.ToRealList()
             },
             {CardExpedition.LightItems, new List<(ItemType, int)>
@@ -236,6 +237,7 @@ namespace Sanakan.Services.PocketWaifu
                     (ItemType.CardParamsReRoll,         6),
                     (ItemType.IncreaseExpBig,           6),
                     (ItemType.IncreaseUpgradeCnt,       1),
+                    (ItemType.CreationItemBase,         1),
                 }.ToRealList()
             },
         };
@@ -521,6 +523,7 @@ namespace Sanakan.Services.PocketWaifu
                 new ItemWithCost(65999, ItemType.SetCustomImage.ToItem()),
                 new ItemWithCost(19999, ItemType.IncreaseUltimateAll.ToItem()),
                 new ItemWithCost(1469,  ItemType.CreationItemBase.ToItem()),
+                new ItemWithCost(16999, ItemType.BloodOfYourWaifu.ToItem()),
             };
         }
 
@@ -2289,6 +2292,7 @@ namespace Sanakan.Services.PocketWaifu
                 case ItemType.CardParamsReRoll:
                 case ItemType.IncreaseUpgradeCnt:
                 case ItemType.BetterIncreaseUpgradeCnt:
+                case ItemType.BloodOfYourWaifu:
                     if (card.FromFigure)
                         return ExecutionResult.FromError("tego przedmiotu nie można użyć na tej karcie.");
                     break;
@@ -2428,9 +2432,13 @@ namespace Sanakan.Services.PocketWaifu
 
                     if (card.Dere == Dere.Yami || card.Dere == Dere.Yato)
                     {
-                        affectionInc = 3.5 * itemCnt;
+                        if (card.AttackBonus >= 1000)
+                            return ExecutionResult.FromError("nie możesz bardziej ulepszyć tej karty!");
+
+                        affectionInc = 3.2 * itemCnt;
                         karmaChange -= 0.5 * itemCnt;
                         card.AttackBonus += 2 * itemCnt;
+                        card.RateNegative += 1;
                         str.Append($"Zwiększono się siła karty!");
                         break;
                     }
@@ -2449,8 +2457,8 @@ namespace Sanakan.Services.PocketWaifu
                         if (card.Rarity == Rarity.SSS)
                             return ExecutionResult.FromError("karty **SSS** nie można już ulepszyć!");
 
-                        affectionInc = 1.2 * itemCnt;
                         karmaChange += 1.5 * itemCnt;
+                        affectionInc = 1.2 * itemCnt;
                         card.UpgradesCnt += 2 * itemCnt;
                         str.Append($"Zwiększono liczbę ulepszeń do {card.UpgradesCnt}!");
                         break;
@@ -2476,9 +2484,13 @@ namespace Sanakan.Services.PocketWaifu
 
                     if (card.Dere == Dere.Raito || card.Dere == Dere.Yato)
                     {
+                        if (card.AttackBonus >= 1000)
+                            return ExecutionResult.FromError("nie możesz bardziej ulepszyć tej karty!");
+
                         affectionInc = 2.8 * itemCnt;
                         karmaChange += 0.5 * itemCnt;
                         card.AttackBonus += 2 * itemCnt;
+                        card.RatePositive += 1;
                         str.Append($"Zwiększono się siła karty!");
                         break;
                     }
@@ -2516,7 +2528,7 @@ namespace Sanakan.Services.PocketWaifu
                     if (card.CanGiveRing())
                     {
                         affectionInc = 1.7 * itemCnt;
-                        karmaChange += 0.6 * itemCnt;
+                        karmaChange += 0.4 * itemCnt;
                         str.Append("Bardzo powiększyła się relacja z kartą!");
                         break;
                     }

@@ -1230,6 +1230,58 @@ namespace Sanakan.Modules
             }
         }
 
+        [Command("setr"), Priority(1)]
+        [Summary("zamienia ustawia restarty na karcie")]
+        [Remarks("54861 100")]
+        public async Task ChangeDereOnCardAsync([Summary("WID")]ulong id, [Summary("liczba restartów")]uint rst)
+        {
+            using (var db = new Database.DatabaseContext(Config))
+            {
+                var card = await db.Cards.AsQueryable().Include(x => x.Tags).AsSingleQuery().FirstOrDefaultAsync(x => x.Id == id);
+                if (card == null)
+                {
+                    await ReplyAsync("", embed: "W bazie nie ma takiej karty!".ToEmbedMessage(EMType.Error).Build());
+                    return;
+                }
+
+                card.RestartCnt = (int)rst;
+
+                await db.SaveChangesAsync();
+
+                _waifu.DeleteCardImageIfExist(card);
+
+                QueryCacheManager.ExpireTag(new string[] { $"user-{card.GameDeckId}", "users" });
+
+                await ReplyAsync("", embed: $"Karta została zmodyfikowana: {card.GetString(false, false, true)}.".ToEmbedMessage(EMType.Success).Build());
+            }
+        }
+
+        [Command("cdere"), Priority(1)]
+        [Summary("zamienia dere na karcie")]
+        [Remarks("54861 Yami")]
+        public async Task ChangeDereOnCardAsync([Summary("WID")]ulong id, [Summary("charakter")]Dere dere)
+        {
+            using (var db = new Database.DatabaseContext(Config))
+            {
+                var card = await db.Cards.AsQueryable().Include(x => x.Tags).AsSingleQuery().FirstOrDefaultAsync(x => x.Id == id);
+                if (card == null)
+                {
+                    await ReplyAsync("", embed: "W bazie nie ma takiej karty!".ToEmbedMessage(EMType.Error).Build());
+                    return;
+                }
+
+                card.Dere = dere;
+
+                await db.SaveChangesAsync();
+
+                _waifu.DeleteCardImageIfExist(card);
+
+                QueryCacheManager.ExpireTag(new string[] { $"user-{card.GameDeckId}", "users" });
+
+                await ReplyAsync("", embed: $"Karta została zmodyfikowana: {card.GetString(false, false, true)}.".ToEmbedMessage(EMType.Success).Build());
+            }
+        }
+
         [Command("sc"), Priority(1)]
         [Summary("dodaje podaną wartość SC użytkownikowi")]
         [Remarks("Sniku 10000")]
