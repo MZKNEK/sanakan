@@ -48,6 +48,9 @@ namespace Sanakan.Services.PocketWaifu
 
     public class Waifu
     {
+        public const double kExpeditionFactor = 2.5;
+        public const double kExpeditionMaxTimeInMinutes = 10080;
+
         private const int DERE_TAB_SIZE = ((int)Dere.Yato) + 1;
         private static CharacterPool<ulong> _charIdAnime = new CharacterPool<ulong>();
         private static CharacterPool<ulong> _charIdManga = new CharacterPool<ulong>();
@@ -1761,22 +1764,23 @@ namespace Sanakan.Services.PocketWaifu
             return cards.Distinct().ToList();
         }
 
-        public Tuple<double, double> GetRealTimeOnExpeditionInMinutes(Card card, double karma)
+        public (double CalcTime, double RealTime) GetRealTimeOnExpeditionInMinutes(Card card, double karma)
         {
-            var maxMinutes = card.CalculateMaxTimeOnExpeditionInMinutes(karma);
-            var realMin = (_time.Now() - card.ExpeditionDate).TotalMinutes;
-            var durationMin = realMin;
+            var maxTimeBasedOnCardParamsInMinutes = card.CalculateMaxTimeOnExpeditionInMinutes(karma);
+            var realTimeInMinutes = (_time.Now() - card.ExpeditionDate).TotalMinutes;
+            var timeToCalculateFrom = realTimeInMinutes;
 
-            if (maxMinutes < durationMin)
-                durationMin = maxMinutes;
+            if (maxTimeBasedOnCardParamsInMinutes < timeToCalculateFrom)
+                timeToCalculateFrom = maxTimeBasedOnCardParamsInMinutes;
 
-            return new Tuple<double, double>(durationMin, realMin);
+            return (timeToCalculateFrom, realTimeInMinutes);
         }
 
         public double GetBaseItemsPerMinuteFromExpedition(CardExpedition expedition, Card card)
         {
-            var cnt = 0d;
+            bool yamiOrRaito = card.Dere == Dere.Yami || card.Dere == Dere.Raito;
 
+            double cnt = 0;
             switch (expedition)
             {
                 case CardExpedition.NormalItemWithExp:
@@ -1789,26 +1793,12 @@ namespace Sanakan.Services.PocketWaifu
 
                 case CardExpedition.LightItemWithExp:
                 case CardExpedition.DarkItemWithExp:
-                    if (card.Dere == Dere.Yami || card.Dere == Dere.Raito)
-                    {
-                        cnt += 5.1;
-                    }
-                    else
-                    {
-                        cnt += 4.2;
-                    }
+                    cnt += yamiOrRaito ? 5.1 : 4.2;
                     break;
 
                 case CardExpedition.DarkItems:
                 case CardExpedition.LightItems:
-                    if (card.Dere == Dere.Yami || card.Dere == Dere.Raito)
-                    {
-                        cnt += 8.9;
-                    }
-                    else
-                    {
-                        cnt += 7.2;
-                    }
+                    cnt += yamiOrRaito ? 8.9 : 7.2;
                     break;
 
                 case CardExpedition.UltimateEasy:
@@ -1831,12 +1821,9 @@ namespace Sanakan.Services.PocketWaifu
             }
 
             cnt *= card.Rarity.ValueModifier();
-            if (card.Dere == Dere.Yato)
-            {
-                cnt *= 1.5;
-            }
+            cnt *= card.Dere == Dere.Yato ? 1.5 : 1;
 
-            return cnt / 60d;
+            return cnt / 60d * kExpeditionFactor;
         }
 
         public double GetBaseExpPerMinuteFromExpedition(CardExpedition expedition, Card card)
@@ -1877,7 +1864,7 @@ namespace Sanakan.Services.PocketWaifu
 
             baseExp *= card.Rarity.ValueModifier();
 
-            return baseExp / 60d;
+            return baseExp / 60d * kExpeditionFactor;
         }
 
         public string EndExpedition(User user, Card card, bool showStats = false)
@@ -1885,20 +1872,20 @@ namespace Sanakan.Services.PocketWaifu
             Dictionary<string, int> items = new Dictionary<string, int>();
 
             var duration = GetRealTimeOnExpeditionInMinutes(card, user.GameDeck.Karma);
-            if (duration.Item1 < 0 || duration.Item2 < 0)
+            if (duration.CalcTime < 0 || duration.RealTime < 0)
             {
                 return "Coś poszło nie tak, wyprawa nie została zakończona.";
             }
 
             var baseExp = GetBaseExpPerMinuteFromExpedition(card.Expedition, card);
             var baseItemsCnt = GetBaseItemsPerMinuteFromExpedition(card.Expedition, card);
-            var multiplier = (duration.Item2 < 60) ? ((duration.Item2 < 30) ? 5d : 3d) : 1d;
+            var multiplier = (duration.RealTime < 60) ? ((duration.RealTime < 30) ? 5d : 3d) : 1d;
 
-            var totalExp = GetProgressiveValueFromExpedition(baseExp, duration.Item1, 15d);
-            var totalItemsCnt = (int)GetProgressiveValueFromExpedition(baseItemsCnt, duration.Item1, 25d);
+            var totalExp = GetProgressiveValueFromExpedition(baseExp, duration.CalcTime, 15d / kExpeditionFactor);
+            var totalItemsCnt = (int)GetProgressiveValueFromExpedition(baseItemsCnt, duration.CalcTime, 25d / kExpeditionFactor);
 
-            var karmaCost = card.GetKarmaCostInExpeditionPerMinute() * duration.Item1;
-            var affectionCost = card.GetCostOfExpeditionPerMinute() * duration.Item1 * multiplier;
+            var karmaCost = card.GetKarmaCostInExpeditionPerMinute() * duration.CalcTime;
+            var affectionCost = card.GetCostOfExpeditionPerMinute() * duration.CalcTime * multiplier;
 
             if (card.Curse == CardCurse.LoweredExperience)
             {
@@ -1907,7 +1894,7 @@ namespace Sanakan.Services.PocketWaifu
 
             var reward = "";
             bool allowItems = true;
-            if (duration.Item2 < 30)
+            if (duration.RealTime < 30)
             {
                 reward = $"Wyprawa? Chyba po bułki do sklepu.\n\n";
                 affectionCost += 3.3;
@@ -1939,18 +1926,18 @@ namespace Sanakan.Services.PocketWaifu
                 }
             }
 
-            if (duration.Item1 <= 3)
+            if (duration.CalcTime <= 3)
             {
                 totalItemsCnt = 0;
                 totalExp /= 2;
             }
 
-            if (duration.Item1 <= 90 && user.GameDeck.CanCreateDemon())
+            if (duration.CalcTime <= (90 / kExpeditionFactor) && user.GameDeck.CanCreateDemon())
             {
                 karmaCost /= 2.5;
             }
 
-            if (duration.Item1 >= 4140 && user.GameDeck.CanCreateAngel())
+            if (duration.CalcTime >= (4140 / kExpeditionFactor) && user.GameDeck.CanCreateAngel())
             {
                 karmaCost *= 2.5;
             }
@@ -1982,7 +1969,7 @@ namespace Sanakan.Services.PocketWaifu
 
             if (showStats)
             {
-                reward += $"\n\nRT: {duration.Item1:F} E: {totalExp:F} AI: {minAff:F} A: {affectionCost:F} K: {karmaCost:F} MI: {totalItemsCnt}";
+                reward += $"\n\nRT: {duration.CalcTime:F} E: {totalExp:F} AI: {minAff:F} A: {affectionCost:F} K: {karmaCost:F} MI: {totalItemsCnt}";
             }
 
             card.Expedition = CardExpedition.None;
@@ -1991,36 +1978,36 @@ namespace Sanakan.Services.PocketWaifu
             return reward;
         }
 
-        private bool CheckEventInExpedition(CardExpedition expedition, Tuple<double, double> duration)
+        private bool CheckEventInExpedition(CardExpedition expedition, (double CalcTime, double RealTime) duration)
         {
             switch (expedition)
             {
                 case CardExpedition.NormalItemWithExp:
-                    return Services.Fun.TakeATry(10);
+                    return Fun.TakeATry(10);
 
                 case CardExpedition.ExtremeItemWithExp:
-                    if (duration.Item1 > 60 || duration.Item2 > 600)
+                    if (duration.CalcTime > (180 / kExpeditionFactor) || duration.RealTime > (720 / kExpeditionFactor))
                         return true;
-                    return !Services.Fun.TakeATry(5);
+                    return !Fun.TakeATry(5);
 
                 case CardExpedition.LightItemWithExp:
                 case CardExpedition.DarkItemWithExp:
-                    return Services.Fun.TakeATry(10);
+                    return Fun.TakeATry(10);
 
                 case CardExpedition.DarkItems:
                 case CardExpedition.LightItems:
                 case CardExpedition.LightExp:
                 case CardExpedition.DarkExp:
-                    return Services.Fun.TakeATry(5);
+                    return Fun.TakeATry(5);
 
                 case CardExpedition.UltimateMedium:
-                    return Services.Fun.TakeATry(6);
+                    return Fun.TakeATry(6);
 
                 case CardExpedition.UltimateHard:
-                    return Services.Fun.TakeATry(2);
+                    return Fun.TakeATry(2);
 
                 case CardExpedition.UltimateHardcore:
-                    return Services.Fun.TakeATry(4);
+                    return Fun.TakeATry(4);
 
                 default:
                 case CardExpedition.UltimateEasy:
@@ -2096,11 +2083,11 @@ namespace Sanakan.Services.PocketWaifu
             switch (expedition)
             {
                 case CardExpedition.NormalItemWithExp:
-                    return !Services.Fun.TakeATry(10);
+                    return !Fun.TakeATry(10);
 
                 case CardExpedition.LightItemWithExp:
                 case CardExpedition.DarkItemWithExp:
-                    return !Services.Fun.TakeATry(15);
+                    return !Fun.TakeATry(15);
 
                 case CardExpedition.DarkItems:
                 case CardExpedition.LightItems:
@@ -2108,10 +2095,10 @@ namespace Sanakan.Services.PocketWaifu
                     return true;
 
                 case CardExpedition.UltimateEasy:
-                    return !Services.Fun.TakeATry(15);
+                    return !Fun.TakeATry(15);
 
                 case CardExpedition.UltimateMedium:
-                    return !Services.Fun.TakeATry(20);
+                    return !Fun.TakeATry(20);
 
                 case CardExpedition.UltimateHard:
                 case CardExpedition.UltimateHardcore:

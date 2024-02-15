@@ -772,6 +772,8 @@ namespace Sanakan.Extensions
 
         public static double GetCostOfExpeditionPerMinuteRaw(this Card card, CardExpedition expedition = CardExpedition.None)
         {
+            double cost = 0;
+
             expedition = (expedition == CardExpedition.None) ? card.Expedition : expedition;
             var mod = card.Quality.ValueModifierReverse();
 
@@ -783,81 +785,84 @@ namespace Sanakan.Extensions
             switch (expedition)
             {
                 case CardExpedition.NormalItemWithExp:
-                    return 0.015;
+                    cost = 0.015;
+                    break;
 
                 case CardExpedition.ExtremeItemWithExp:
-                    return 0.17;
+                    cost = 0.17;
+                    break;
 
                 case CardExpedition.DarkExp:
                 case CardExpedition.LightExp:
                 case CardExpedition.LightItems:
                 case CardExpedition.DarkItems:
-                    return 0.11 * (mod + 0.2);
+                    cost = 0.11 * (mod + 0.2);
+                    break;
 
                 case CardExpedition.DarkItemWithExp:
                 case CardExpedition.LightItemWithExp:
-                    return 0.07;
+                    cost = 0.07;
+                    break;
 
                 case CardExpedition.UltimateEasy:
                 case CardExpedition.UltimateMedium:
-                    return 1 * mod;
+                    cost = 1 * mod;
+                    break;
 
                 case CardExpedition.UltimateHard:
-                    return 2 * mod;
+                    cost = 2 * mod;
+                    break;
 
                 case CardExpedition.UltimateHardcore:
-                    return 0.5 * mod;
+                    cost = 0.5 * mod;
+                    break;
 
                 default:
-                    return 0;
+                    break;
             }
+
+            return cost * Waifu.kExpeditionFactor;
         }
 
         public static double GetKarmaCostInExpeditionPerMinute(this Card card)
         {
+            double cost = 0;
             switch (card.Expedition)
             {
                 case CardExpedition.NormalItemWithExp:
-                    return 0.0009;
+                    cost = 0.0009;
+                    break;
 
                 case CardExpedition.ExtremeItemWithExp:
-                    return 0.028;
+                    cost = 0.028;
+                    break;
 
                 case CardExpedition.DarkItemWithExp:
                 case CardExpedition.DarkItems:
                 case CardExpedition.DarkExp:
-                    if (card.Dere == Dere.Yato)
-                        return 0.0028;
-                    return 0.0018;
+                    cost = card.Dere == Dere.Yato ? 0.0028 : 0.0018;
+                    break;
 
                 case CardExpedition.LightItemWithExp:
                 case CardExpedition.LightExp:
                 case CardExpedition.LightItems:
-                    if (card.Dere == Dere.Yato)
-                        return 0.0012;
-                    return 0.0032;
+                    cost = card.Dere == Dere.Yato ? 0.0012 : 0.0032;
+                    break;
 
                 default:
-                case CardExpedition.UltimateEasy:
-                case CardExpedition.UltimateMedium:
-                case CardExpedition.UltimateHard:
-                case CardExpedition.UltimateHardcore:
-                    return 0;
+                    break;
             }
+
+            return cost * Waifu.kExpeditionFactor;
         }
 
         public static double CalculateMaxTimeOnExpeditionInMinutes(this Card card, double karma, CardExpedition expedition = CardExpedition.None)
         {
             expedition = (expedition == CardExpedition.None) ? card.Expedition : expedition;
             double perMinute = card.GetCostOfExpeditionPerMinute(expedition);
+            double affOffset = karma.IsKarmaNeutral() ? 18d :  6d;
             double param = card.Affection;
             double addOFK = karma / 200;
-            double affOffset = 6d;
-
-            if (karma.IsKarmaNeutral())
-            {
-                affOffset += 12d;
-            }
 
             switch (expedition)
             {
@@ -892,10 +897,12 @@ namespace Sanakan.Extensions
                     return 0;
             }
 
-            if (!card.HasImage()) perMinute *= 2;
+            perMinute *= card.HasImage() ? 1 : 2;
             param += affOffset + addOFK;
             var t = param / perMinute;
-            if (t > 10080) t = 10080;
+
+            if (t > Waifu.kExpeditionMaxTimeInMinutes)
+                t = Waifu.kExpeditionMaxTimeInMinutes;
 
             return (t < 0.1) ? 0.1 : t;
         }

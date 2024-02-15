@@ -211,14 +211,14 @@ namespace Sanakan.Services.PocketWaifu
             _time = time;
         }
 
-        private EventType CheckChanceBasedOnTime(CardExpedition expedition, Tuple<double, double> duration)
+        private EventType CheckChanceBasedOnTime(CardExpedition expedition, (double CalcTime, double RealTime) duration)
         {
             switch (expedition)
             {
                 case CardExpedition.ExtremeItemWithExp:
-                    if (duration.Item1 > 45 || duration.Item2 > 240)
+                    if (duration.CalcTime > 60 || duration.RealTime > 360)
                     {
-                        if (Services.Fun.TakeATry(2))
+                        if (Fun.TakeATry(2))
                             return EventType.LoseCard;
                     }
                     return EventType.None;
@@ -228,7 +228,7 @@ namespace Sanakan.Services.PocketWaifu
             }
         }
 
-        public EventType RandomizeEvent(CardExpedition expedition, Tuple<double, double> duration)
+        public EventType RandomizeEvent(CardExpedition expedition, (double CalcTime, double RealTime) duration)
         {
             var timeBased = CheckChanceBasedOnTime(expedition, duration);
             if (timeBased != EventType.None) return timeBased;
@@ -291,7 +291,7 @@ namespace Sanakan.Services.PocketWaifu
 
         public bool ExecuteEvent(EventType e, User user, Card card, ref string msg)
         {
-            var aVal = Services.Fun.GetRandomValue(1, 4);
+            var aVal = Fun.GetRandomValue(1, 4);
             msg += "**Wydarzenie**: ";
 
             switch (e)
@@ -301,7 +301,7 @@ namespace Sanakan.Services.PocketWaifu
                     var boosterPack = new BoosterPack
                     {
                         RarityExcludedFromPack = new List<RarityExcluded>(),
-                        Title = Services.Fun.GetOneRandomFrom(_titles),
+                        Title = Fun.GetOneRandomFrom(_titles),
                         Characters = new List<BoosterPackCharacter>(),
                         CardSourceFromPack = CardSource.Expedition,
                         Name = "Losowa karta z wyprawy",
@@ -408,7 +408,7 @@ namespace Sanakan.Services.PocketWaifu
             switch (e)
             {
                 case EventType.MoreItems:
-                    return Services.Fun.GetRandomValue(2, 8);
+                    return Fun.GetRandomValue(2, 8);
 
                 default:
                     return 0;
