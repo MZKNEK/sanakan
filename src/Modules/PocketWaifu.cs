@@ -2373,7 +2373,7 @@ namespace Sanakan.Modules
                 return;
             }
 
-            long price = 1515 * count;
+            long price = (long)Math.Ceiling(1515 * Waifu.kExpeditionFactor) * count;
             using (var db = new Database.DatabaseContext(Config))
             {
                 var bUser = await db.GetUserOrCreateAsync(Context.User.Id);
