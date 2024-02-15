@@ -224,7 +224,6 @@ namespace Sanakan.Services.PocketWaifu
                     (ItemType.CardParamsReRoll,         7),
                     (ItemType.IncreaseUpgradeCnt,       4),
                     (ItemType.BloodOfYourWaifu,         3),
-                    (ItemType.BetterIncreaseUpgradeCnt, 1),
                 }.ToRealList()
             },
             {CardExpedition.LightItemWithExp, new List<(ItemType, int)>

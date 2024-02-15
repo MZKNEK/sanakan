@@ -1069,8 +1069,8 @@ namespace Sanakan.Modules
                     }
                 }
 
-                var cardNeeded = bUser.GameDeck.ExpContainer.GetChestUpgradeCostInCards();
-                var bloodNeeded = bUser.GameDeck.ExpContainer.GetChestUpgradeCostInBlood();
+                long cardNeeded = bUser.GameDeck.ExpContainer.GetChestUpgradeCostInCards();
+                long bloodNeeded = bUser.GameDeck.ExpContainer.GetChestUpgradeCostInBlood();
                 if (cardNeeded == -1 || bloodNeeded == -1)
                 {
                     await ReplyAsync("", embed: $"{Context.User.Mention} nie można bardziej ulepszyć skrzyni.".ToEmbedMessage(EMType.Error).Build());
@@ -1083,22 +1083,38 @@ namespace Sanakan.Modules
                     return;
                 }
 
-                var blood = bUser.GameDeck.Items.FirstOrDefault(x => x.Type == ItemType.BetterIncreaseUpgradeCnt);
-                if (blood == null)
+                var bloodYour = bUser.GameDeck.Items.FirstOrDefault(x => x.Type == ItemType.BetterIncreaseUpgradeCnt);
+                var bloodWaifu = bUser.GameDeck.Items.FirstOrDefault(x => x.Type == ItemType.BloodOfYourWaifu);
+                if (bloodYour is null && bloodWaifu is null)
                 {
                     await ReplyAsync("", embed: $"{Context.User.Mention} nie posiadasz kropel krwi.".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
-                if (blood.Count < bloodNeeded)
+                var totalBlood = (bloodYour?.Count ?? 0) + (bloodWaifu?.Count ?? 0);
+                if (totalBlood < bloodNeeded)
                 {
                     await ReplyAsync("", embed: $"{Context.User.Mention} nie posiadasz wystarczającej liczby kropel krwi. ({bloodNeeded})".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
-                blood.Count -= bloodNeeded;
-                if (blood.Count <= 0)
-                    bUser.GameDeck.Items.Remove(blood);
+                var toRemoveYour = ((bloodYour?.Count ?? 0) -  bloodNeeded) >= 0 ? bloodNeeded : (bloodYour?.Count ?? 0);
+                if (toRemoveYour > 0)
+                {
+                    bloodYour.Count -= toRemoveYour;
+                    if (bloodYour.Count <= 0)
+                        bUser.GameDeck.Items.Remove(bloodYour);
+
+                    bloodNeeded -= toRemoveYour;
+                }
+
+                var toRemoveWaifu = ((bloodWaifu?.Count ?? 0) -  bloodNeeded) >= 0 ? bloodNeeded : (bloodWaifu?.Count ?? 0);
+                if (toRemoveWaifu > 0)
+                {
+                    bloodWaifu.Count -= toRemoveWaifu;
+                    if (bloodWaifu.Count <= 0)
+                        bUser.GameDeck.Items.Remove(bloodWaifu);
+                }
 
                 for (int i = 0; i < cardNeeded; i++)
                     bUser.GameDeck.Cards.Remove(cardsToSac[i]);
@@ -1110,7 +1126,8 @@ namespace Sanakan.Modules
 
                 QueryCacheManager.ExpireTag(new string[] { $"user-{bUser.Id}", "users" });
 
-                await ReplyAsync("", embed: $"{Context.User.Mention} otrzymałeś skrzynię doświadczenia.".ToEmbedMessage(EMType.Success).Build());
+                string action = bUser.GameDeck.ExpContainer.Level == ExpContainerLevel.Level1 ? "otrzymałeś" : "ulepszyłeś";
+                await ReplyAsync("", embed: $"{Context.User.Mention} {action} skrzynię doświadczenia.".ToEmbedMessage(EMType.Success).Build());
             }
         }
 
