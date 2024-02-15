@@ -3703,7 +3703,7 @@ namespace Sanakan.Modules
 
         [Command("ofiaruj")]
         [Alias("donate")]
-        [Summary("ofiaruj trzy krople swojej krwi, aby przeistoczyć kartę w anioła lub demona (wymagany odpowiedni poziom karmy)")]
+        [Summary("ofiaruj trzy krople krwi, aby przeistoczyć kartę w anioła lub demona (wymagany odpowiedni poziom karmy)")]
         [Remarks("451"), RequireWaifuCommandChannel]
         public async Task ChangeCardAsync([Summary("WID")] ulong wid)
         {
@@ -3735,22 +3735,6 @@ namespace Sanakan.Modules
                     return;
                 }
 
-                var blood = bUser.GameDeck.Items.FirstOrDefault(x => x.Type == ItemType.BetterIncreaseUpgradeCnt);
-                if (blood == null)
-                {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} o dziwo nie posiadasz kropli swojej krwi.".ToEmbedMessage(EMType.Error).Build());
-                    return;
-                }
-
-                if (blood.Count < 3)
-                {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} o dziwo posiadasz za mało kropli swojej krwi.".ToEmbedMessage(EMType.Error).Build());
-                    return;
-                }
-
-                if (blood.Count > 3) blood.Count -= 3;
-                else bUser.GameDeck.Items.Remove(blood);
-
                 var activity = new Services.UserActivityBuilder(_time)
                     .WithUser(bUser, Context.User).WithCard(thisCard);
 
@@ -3761,6 +3745,22 @@ namespace Sanakan.Modules
                         await ReplyAsync("", embed: $"{Context.User.Mention} ta karta została już przeistoczona wcześniej.".ToEmbedMessage(EMType.Error).Build());
                         return;
                     }
+
+                    var blood = bUser.GameDeck.Items.FirstOrDefault(x => x.Type == ItemType.BloodOfYourWaifu);
+                    if (blood == null)
+                    {
+                        await ReplyAsync("", embed: $"{Context.User.Mention} o dziwo nie posiadasz kropli krwi twojej waifu.".ToEmbedMessage(EMType.Error).Build());
+                        return;
+                    }
+
+                    if (blood.Count < 3)
+                    {
+                        await ReplyAsync("", embed: $"{Context.User.Mention} o dziwo posiadasz za mało kropli krwi twojej waifu.".ToEmbedMessage(EMType.Error).Build());
+                        return;
+                    }
+
+                    if (blood.Count > 3) blood.Count -= 3;
+                    else bUser.GameDeck.Items.Remove(blood);
 
                     if (thisCard.Dere == Dere.Raito)
                     {
@@ -3782,6 +3782,23 @@ namespace Sanakan.Modules
                         await ReplyAsync("", embed: $"{Context.User.Mention} ta karta została już przeistoczona wcześniej.".ToEmbedMessage(EMType.Error).Build());
                         return;
                     }
+
+                    var blood = bUser.GameDeck.Items.FirstOrDefault(x => x.Type == ItemType.BetterIncreaseUpgradeCnt);
+                    if (blood == null)
+                    {
+                        await ReplyAsync("", embed: $"{Context.User.Mention} o dziwo nie posiadasz kropli twojej krwi.".ToEmbedMessage(EMType.Error).Build());
+                        return;
+                    }
+
+                    if (blood.Count < 3)
+                    {
+                        await ReplyAsync("", embed: $"{Context.User.Mention} o dziwo posiadasz za mało kropli twojej krwi.".ToEmbedMessage(EMType.Error).Build());
+                        return;
+                    }
+
+                    if (blood.Count > 3) blood.Count -= 3;
+                    else bUser.GameDeck.Items.Remove(blood);
+
 
                     if (thisCard.Dere == Dere.Yami)
                     {
