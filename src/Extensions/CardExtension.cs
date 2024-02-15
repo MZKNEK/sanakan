@@ -928,7 +928,7 @@ namespace Sanakan.Extensions
 
 			var currParams = card.AttackBonus + card.HealthBonus + card.DefenceBonus;
 			var maxParams = 4900 * (int)card.Quality;
-			if (currParams + by <= maxParams)
+			if (currParams + by >= maxParams)
             {
 				return ExecutionResult.FromError("nie można już bardziej zwiekszyć parametrów na tej karcie.");
 			}
