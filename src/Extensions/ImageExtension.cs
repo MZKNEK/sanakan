@@ -90,7 +90,7 @@ namespace Sanakan.Extensions
         public static void Round(this IImageProcessingContext img, float radius)
         {
             var size = img.GetCurrentSize();
-            var gOptions = new DrawingOptions{ GraphicsOptions = new GraphicsOptions { AlphaCompositionMode = PixelAlphaCompositionMode.DestOut } };
+            var gOptions = new DrawingOptions{ GraphicsOptions = new GraphicsOptions { Antialias = true, AlphaCompositionMode = PixelAlphaCompositionMode.DestOut } };
             img.Fill(gOptions, Color.Black, BuildCorners(size.Width, size.Height, radius));
         }
 

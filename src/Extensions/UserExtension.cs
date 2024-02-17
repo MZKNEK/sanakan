@@ -52,10 +52,12 @@ namespace Sanakan.Extensions
                 CharacterCntFromDate = 0,
                 ShowWaifuInProfile = false,
                 ProfileType = ProfileType.Stats,
+                AvatarBorder = AvatarBorder.None,
                 PoolType = CharacterPoolType.Anime,
                 StatsReplacementProfileUri = "none",
                 TimeStatuses = new List<TimeStatus>(),
-                BackgroundProfileUri = $"./Pictures/defBg.png",
+                ProfileVersion = ProfileVersion.NewBarTop,
+                BackgroundProfileUri = $"./Pictures/np/pbg.png",
                 MeasureDate = new DateTime(creationTime.Year, creationTime.Month, 1),
                 GameDeck = new GameDeck
                 {
@@ -489,6 +491,13 @@ namespace Sanakan.Extensions
 
             return deck.Cards.Where(x => x.Character == deck.Waifu)
                 .OrderBy(x => x.Rarity).ThenByDescending(x => x.Quality).FirstOrDefault();
+        }
+
+
+        public static IEnumerable<Card> GetOrderedGalleryCards(this GameDeck deck, ulong galleryTagId)
+        {
+            return deck.Cards.Where(x => x.Tags.Any(t => t.Id == galleryTagId)).Take(deck.CardsInGallery)
+                .OrderBy(x => x.Rarity).ThenByDescending(x => x.Quality).ThenBy(x => !x.IsAnimatedImage).ThenBy(x => x.Character);
         }
 
         public static bool CanCreateDemon(this GameDeck deck) => deck.Karma <= -2000;

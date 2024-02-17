@@ -336,11 +336,15 @@ namespace Sanakan.Services
             bool isConnected = botUser.Shinden != 0;
             var response = _shClient.User.GetAsync(botUser.Shinden);
 
-            using (var image = await _img.GetUserProfileAsync(isConnected ? (await response).Body : null, botUser, user.GetUserOrDefaultAvatarUrl(true),
-                topPosition, user.GetUserNickInGuild(), user.Roles.OrderByDescending(x => x.Position).FirstOrDefault()?.Color ?? Discord.Color.DarkerGrey))
+            using var image = botUser.ProfileVersion switch
             {
-                return image.ToPngStream();
-            }
+                ProfileVersion.Old => await _img.GetUserProfileAsync(isConnected ? (await response).Body : null, botUser, user.GetUserOrDefaultAvatarUrl(true),
+                topPosition, user.GetUserNickInGuild(), user.Roles.OrderByDescending(x => x.Position).FirstOrDefault()?.Color ?? Discord.Color.DarkerGrey),
+                _ => await _img.GetUserNewProfileAsync(isConnected ? (await response).Body : null, botUser, user.GetUserOrDefaultAvatarUrl(true),
+                topPosition, user.GetUserNickInGuild(), user.Roles.OrderByDescending(x => x.Position).FirstOrDefault()?.Color ?? Discord.Color.DarkerGrey)
+            };
+
+            return image.ToPngStream();
         }
 
         public async Task<SaveResult> SaveProfileImageAsync(string imgUrl, string path, int width = 0, int height = 0, bool streach = false)

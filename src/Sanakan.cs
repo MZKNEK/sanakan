@@ -107,7 +107,8 @@ namespace Sanakan
             _time = new SystemTime();
             _helper = new Helper(_config);
             _events = new Events(_shindenClient, _time);
-            _img = new ImageProcessing(_shindenClient);
+            _img = new ImageProcessing(_shindenClient,
+                _tags.GetTag(Services.PocketWaifu.TagType.Gallery));
             _deleted = new DeletedLog(_client, _config);
             _chaos = new Chaos(_client, _config, _logger);
             _executor = new UserBasedExecutor(_logger);

@@ -10,9 +10,19 @@ namespace Sanakan.Database.Models
         Stats, Img, StatsWithImg, Cards
     }
 
+    public enum ProfileVersion
+    {
+        Old, NewBarTop, NewBarBottom
+    }
+
     public enum CharacterPoolType
     {
         Anime, Manga, All
+    }
+
+    public enum AvatarBorder
+    {
+        None
     }
 
     public class User
@@ -36,6 +46,8 @@ namespace Sanakan.Database.Models
         public bool ShowWaifuInProfile { get; set; }
         public long Warnings { get; set; }
         public CharacterPoolType PoolType { get; set; }
+        public ProfileVersion ProfileVersion { get; set; }
+        public AvatarBorder AvatarBorder { get; set; }
 
         public virtual UserStats Stats { get; set; }
         public virtual GameDeck GameDeck { get; set; }

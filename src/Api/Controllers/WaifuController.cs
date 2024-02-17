@@ -409,8 +409,7 @@ namespace Sanakan.Api.Controllers
                     BackgroundImageUrl = user.GameDeck.BackgroundImageUrl,
                     ForegroundImageUrl = user.GameDeck.ForegroundImageUrl,
                     Expeditions = user.GameDeck.Cards.Where(x => x.Expedition != CardExpedition.None).ToExpeditionView(user.GameDeck.Karma),
-                    Gallery = user.GameDeck.Cards.Where(x => x.Tags.Any(t => t.Id == galleryTag.Id)).Take(user.GameDeck.CardsInGallery)
-                        .OrderBy(x => x.Rarity).ThenByDescending(x => x.Quality).ThenBy(x => !x.IsAnimatedImage).ThenBy(x => x.Character).ToView(id)
+                    Gallery = user.GameDeck.GetOrderedGalleryCards(galleryTag.Id).ToView()
                 };
             }
         }

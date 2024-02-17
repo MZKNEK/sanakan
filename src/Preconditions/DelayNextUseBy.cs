@@ -39,6 +39,10 @@ namespace Sanakan.Preconditions
 
         public async override Task<PreconditionResult> CheckPermissionsAsync(ICommandContext context, CommandInfo command, IServiceProvider services)
         {
+#if DEBUG
+            await Task.CompletedTask;
+            return PreconditionResult.FromSuccess();
+#else
             var user = context.User as SocketGuildUser;
             if (user == null) return PreconditionResult.FromError($"To polecenie działa tylko z poziomu serwera.");
 
@@ -92,6 +96,7 @@ namespace Sanakan.Preconditions
             }
 
             return PreconditionResult.FromSuccess();
+#endif
         }
     }
 }
