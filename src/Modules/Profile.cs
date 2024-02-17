@@ -270,7 +270,7 @@ namespace Sanakan.Modules
             using (var db = new Database.DatabaseContext(Config))
             {
                 var allUsers = await db.GetCachedAllUsersLiteAsync();
-                var botUser = allUsers.FirstOrDefault(x => x.Id == searchId);
+                var botUser = db.Users.AsNoTracking().FirstOrDefault(x => x.Id == usr.Id);
                 if (botUser == null)
                 {
                     await ReplyAsync("", embed: "Ta osoba nie ma profilu bota.".ToEmbedMessage(EMType.Error).Build());

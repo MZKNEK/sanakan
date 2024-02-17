@@ -323,8 +323,7 @@ namespace Sanakan.Services
 
         private Image<Rgba32> GetProfileBar(long topPos, User user)
         {
-            // var barTop = user.ProfileVersion != ProfileVersion.NewBarBottom;
-            var barTop = true;
+            var barTop = user.ProfileVersion != ProfileVersion.NewBarBottom;
 
             var image = new Image<Rgba32>(750, 500, Color.Transparent);
             using var bar = Image.Load(barTop ? "./Pictures/np/tbar.png" : "./Pictures/np/bbar.png");
@@ -439,8 +438,32 @@ namespace Sanakan.Services
                 var cardY = 165;
                 var cardX = 15;
 
-                var gallery = botUser.GameDeck.GetOrderedGalleryCards(_galleryTag.Id).Take(12);
-                foreach (var card in gallery)
+                IEnumerable<Card> cardsToShow = null;
+                if (botUser.Id == 1)
+                {
+                    cardsToShow =  botUser.GameDeck.Cards.OrderBy(x => x.Rarity).Take(12);
+                }
+                else
+                {
+                    if (string.IsNullOrEmpty(botUser.GameDeck.GalleryOrderedIds))
+                    {
+                        cardsToShow = botUser.GameDeck.GetOrderedGalleryCards(_galleryTag.Id).Take(12);
+                    }
+                    else
+                    {
+                        var cards = new List<Card>();
+                        var ids = botUser.GameDeck.GalleryOrderedIds.Split(" ")
+                            .Select(x => Api.Models.UserSiteProfile.TryParseIds(x)).Distinct().Take(12);
+                        foreach (var id in ids)
+                        {
+                            var card = botUser.GameDeck.Cards.FirstOrDefault(x => x.Id == id);
+                            if (card != null) cards.Add(card);
+                        }
+                        cardsToShow = cards;
+                    }
+                }
+
+                foreach (var card in cardsToShow)
                 {
                     using var cardImage = await GetWaifuInProfileCardAsync(card);
                     cardImage.Mutate(x => x.Resize(new ResizeOptions
