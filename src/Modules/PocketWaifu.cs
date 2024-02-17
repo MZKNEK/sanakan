@@ -2479,38 +2479,42 @@ namespace Sanakan.Modules
         [Command("wytwórz")]
         [Alias("craft", "wytworz")]
         [Summary("towrzy przedmiot z listy przepisów")]
-        [Remarks("2"), RequireWaifuCommandChannel]
-        public async Task CraftItemAsync([Summary("przepis")]RecipeType recipe)
+        [Remarks("2 20"), RequireWaifuCommandChannel]
+        public async Task CraftItemAsync([Summary("przepis")]RecipeType recipe, [Summary("ilość")]int count = 1)
         {
-            if (recipe == RecipeType.None)
+            if (recipe == RecipeType.None || count <= 0)
+            {
+                await ReplyAsync("", embed: $"{Context.User.Mention} ????".ToEmbedMessage(EMType.Error).Build());
                 return;
+            }
 
+            string times = count > 1 ? $" x{count}" : "";
             var itemRecipe = _waifu.GetItemRecipe(recipe);
             using (var db = new Database.DatabaseContext(Config))
             {
                 var bUser = await db.GetUserOrCreateSimpleAsync(Context.User.Id);
                 foreach (var currency in itemRecipe.RequiredPayments)
                 {
-                    if (!bUser.Pay(currency))
+                    if (!bUser.Pay(currency, count))
                     {
-                        await ReplyAsync("", embed: $"{Context.User.Mention} nie masz wystarczającej liczby **{currency.Type}** by wytowrzyć **{itemRecipe.Name}**.".ToEmbedMessage(EMType.Error).Build());
+                        await ReplyAsync("", embed: $"{Context.User.Mention} nie masz wystarczającej liczby **{currency.Type}** by wytowrzyć **{itemRecipe.Name}**{times}.".ToEmbedMessage(EMType.Error).Build());
                         return;
                     }
                 }
 
                 foreach (var item in itemRecipe.RequiredItems)
                 {
-                    if (!bUser.GameDeck.RemoveItem(item))
+                    if (!bUser.GameDeck.RemoveItem(item, count))
                     {
-                        await ReplyAsync("", embed: $"{Context.User.Mention} nie masz wystarczającej liczby **{item.Name}** by wytowrzyć **{itemRecipe.Name}**.".ToEmbedMessage(EMType.Error).Build());
+                        await ReplyAsync("", embed: $"{Context.User.Mention} nie masz wystarczającej liczby **{item.Name}** by wytowrzyć **{itemRecipe.Name}**{times}.".ToEmbedMessage(EMType.Error).Build());
                         return;
                     }
                 }
 
-                var newItem = itemRecipe.Type.ToItem();
+                var newItem = itemRecipe.Type.ToItem(count);
                 bUser.GameDeck.AddItem(newItem);
 
-                await ReplyAsync("", embed: $"{Context.User.Mention} utworzono: **{newItem.Name}**".ToEmbedMessage(EMType.Success).Build());
+                await ReplyAsync("", embed: $"{Context.User.Mention} utworzono: **{newItem.Name}**{times}".ToEmbedMessage(EMType.Success).Build());
 
                 await db.SaveChangesAsync();
 

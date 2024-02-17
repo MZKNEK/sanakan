@@ -364,12 +364,16 @@ namespace Sanakan.Extensions
             else thisItem.Count += item.Count;
         }
 
-        public static bool RemoveItem(this GameDeck deck, Item item)
+        public static bool RemoveItem(this GameDeck deck, Item item, int count = 1, bool check = true)
         {
             var thisItem = deck.Items.FirstOrDefault(x => x.Type == item.Type && x.Quality == item.Quality);
             if (thisItem != null)
             {
-                thisItem.Count -= item.Count;
+                var toRemove = item.Count * count;
+                if (thisItem.Count < toRemove && check)
+                    return false;
+
+                thisItem.Count -= toRemove;
 
                 if (thisItem.Count < 1)
                     deck.Items.Remove(thisItem);
@@ -379,15 +383,16 @@ namespace Sanakan.Extensions
             return false;
         }
 
-        public static bool Pay(this User user, CurrencyCost cost)
+        public static bool Pay(this User user, CurrencyCost cost, int count)
         {
+            var toPay = cost.Cost * count;
             switch (cost.Type)
             {
                 case CurrencyType.TC:
                 {
-                    if (user.TcCnt >= cost.Cost)
+                    if (user.TcCnt >= toPay)
                     {
-                        user.TcCnt -= cost.Cost;
+                        user.TcCnt -= toPay;
                         return true;
                     }
                     break;
@@ -395,9 +400,9 @@ namespace Sanakan.Extensions
 
                 case CurrencyType.AC:
                 {
-                    if (user.AcCnt >= cost.Cost)
+                    if (user.AcCnt >= toPay)
                     {
-                        user.AcCnt -= cost.Cost;
+                        user.AcCnt -= toPay;
                         return true;
                     }
                     break;
@@ -405,9 +410,9 @@ namespace Sanakan.Extensions
 
                 case CurrencyType.SC:
                 {
-                    if (user.ScCnt >= cost.Cost)
+                    if (user.ScCnt >= toPay)
                     {
-                        user.ScCnt -= cost.Cost;
+                        user.ScCnt -= toPay;
                         return true;
                     }
                     break;
@@ -417,7 +422,7 @@ namespace Sanakan.Extensions
                 {
                     if (user.GameDeck.PVPCoins >= cost.Cost)
                     {
-                        user.GameDeck.PVPCoins -= cost.Cost;
+                        user.GameDeck.PVPCoins -= toPay;
                         return true;
                     }
                     break;
@@ -425,9 +430,9 @@ namespace Sanakan.Extensions
 
                 case CurrencyType.CT:
                 {
-                    if (user.GameDeck.CTCnt >= cost.Cost)
+                    if (user.GameDeck.CTCnt >= toPay)
                     {
-                        user.GameDeck.CTCnt -= cost.Cost;
+                        user.GameDeck.CTCnt -= toPay;
                         return true;
                     }
                     break;

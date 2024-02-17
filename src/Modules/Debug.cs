@@ -1157,7 +1157,7 @@ namespace Sanakan.Modules
             using (var db = new Database.DatabaseContext(Config))
             {
                 var botuser = await db.GetUserOrCreateAsync(user.Id);
-                if (botuser.GameDeck.RemoveItem(item))
+                if (botuser.GameDeck.RemoveItem(item, 1, false))
                 {
                     await db.SaveChangesAsync();
 

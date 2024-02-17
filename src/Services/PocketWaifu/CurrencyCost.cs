@@ -16,7 +16,7 @@ namespace Sanakan.Services.PocketWaifu
         }
 
         public CurrencyType Type { get; }
-        public int Cost { get; }
+        public long Cost { get; set; }
 
         public override string ToString()
         {
