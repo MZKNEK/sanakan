@@ -22,7 +22,7 @@ namespace Sanakan.Database.Models
 
     public enum AvatarBorder
     {
-        None, PurpleLeaves, Normal, GoldPurple, Crows, Bow
+        None, PurpleLeaves, Dzedai, GoldPurple, Crows, Bow
     }
 
     public class User

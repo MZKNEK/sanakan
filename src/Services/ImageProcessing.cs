@@ -517,17 +517,16 @@ namespace Sanakan.Services
 
             if (hasAvBorder)
             {
-                using var border = Image.Load($"./Pictures/np/{botUser.AvatarBorder}.png");
+                using var border = Image.Load($"./Pictures/np/ab/{botUser.AvatarBorder}.png");
                 var offsetX = botUser.AvatarBorder switch
                 {
                     AvatarBorder.Bow => -5,
-                    AvatarBorder.Normal => 9,
+                    AvatarBorder.Dzedai => -2,
                     _ => 0
                 };
                 var offsetY = botUser.AvatarBorder switch
                 {
                     AvatarBorder.Bow => 4,
-                    AvatarBorder.Normal => 20,
                     _ => 0
                 };
                 profilePic.Mutate(x => x.DrawImage(border, new Point(25 + offsetX, 40 + offsetY), 1));
