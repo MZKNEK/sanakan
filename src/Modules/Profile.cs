@@ -352,7 +352,7 @@ namespace Sanakan.Modules
         [Alias("style")]
         [Summary("zmienia styl profilu (koszt 3000 SC/1000 TC)")]
         [Remarks("1 https://sanakan.pl/i/example_style_1.png sc"), RequireCommandChannel]
-        public async Task ChangeStyleAsync([Summary("typ stylu (statystyki(0), obrazek(1), brzydkie(2), karcianka(3))")]ProfileType type, [Summary("bezpośredni adres do obrazka gdy wybrany styl 1 lub 2 (325 x 272)")]string imgUrl = null, [Summary("waluta (SC/TC)")]SCurrency currency = SCurrency.Sc)
+        public async Task ChangeStyleAsync([Summary("typ stylu (statystyki(0), obrazek(1), brzydkie(2), karcianka(3))")]ProfileType type, [Summary("bezpośredni adres do obrazka gdy wybrany styl 1 lub 2 (325 x 272 dla starego, lub 750 x 340 dla nowego)")]string imgUrl = null, [Summary("waluta (SC/TC)")]SCurrency currency = SCurrency.Sc)
         {
             var scCost = 3000;
             var tcCost = 1000;
@@ -375,7 +375,11 @@ namespace Sanakan.Modules
                 {
                     case ProfileType.Img:
                     case ProfileType.StatsWithImg:
-                        var res = await _profile.SaveProfileImageAsync(imgUrl, $"{Dir.SavedData}/SR{botuser.Id}.png", 325, 272);
+                        var res = botuser.ProfileVersion switch
+                        {
+                            ProfileVersion.Old => await _profile.SaveProfileImageAsync(imgUrl, $"{Dir.SavedData}/SR{botuser.Id}.png", 325, 272),
+                            _ => await _profile.SaveProfileImageAsync(imgUrl, $"{Dir.SavedData}/SR{botuser.Id}.png", 750, 340)
+                        };
                         if (res == SaveResult.Success)
                         {
                             botuser.StatsReplacementProfileUri = $"{Dir.SavedData}/SR{botuser.Id}.png";
@@ -415,7 +419,7 @@ namespace Sanakan.Modules
         [Alias("tlo", "bg", "background")]
         [Summary("zmienia obrazek tła profilu (koszt 5000 SC/2500 TC)")]
         [Remarks("https://sanakan.pl/i/example_profile_bg.png sc"), RequireCommandChannel]
-        public async Task ChangeBackgroundAsync([Summary("bezpośredni adres do obrazka (450 x 145)")]string imgUrl, [Summary("waluta (SC/TC)")]SCurrency currency = SCurrency.Sc)
+        public async Task ChangeBackgroundAsync([Summary("bezpośredni adres do obrazka (450 x 145 dla starego, lub 750 x 160 dla nowego)")]string imgUrl, [Summary("waluta (SC/TC)")]SCurrency currency = SCurrency.Sc)
         {
             var tcCost = 2500;
             var scCost = 5000;
@@ -434,7 +438,12 @@ namespace Sanakan.Modules
                     return;
                 }
 
-                var res = await _profile.SaveProfileImageAsync(imgUrl, $"{Dir.SavedData}/BG{botuser.Id}.png", 450, 145, true);
+                var res = botuser.ProfileVersion switch
+                {
+                    ProfileVersion.Old => await _profile.SaveProfileImageAsync(imgUrl, $"{Dir.SavedData}/BG{botuser.Id}.png", 450, 145, true),
+                    _ => await _profile.SaveProfileImageAsync(imgUrl, $"{Dir.SavedData}/BG{botuser.Id}.png", 750, 160, true)
+                };
+
                 if (res == SaveResult.Success)
                 {
                     botuser.BackgroundProfileUri = $"{Dir.SavedData}/BG{botuser.Id}.png";

@@ -335,6 +335,7 @@ namespace Sanakan.Services
         {
             bool isConnected = botUser.Shinden != 0;
             var response = _shClient.User.GetAsync(botUser.Shinden);
+            topPosition = topPosition > 999 ? 999 : topPosition;
 
             using var image = botUser.ProfileVersion switch
             {
