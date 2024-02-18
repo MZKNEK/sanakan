@@ -1755,7 +1755,7 @@ namespace Sanakan.Services.PocketWaifu
 
             if (characters.Count > 0)
             {
-                characters = characters.Distinct().Where(c => !userCards.Any(x => x.Character == c)).ToList();
+                characters = characters.Distinct().ToList();
                 var cads = await db.Cards.Include(x => x.Tags).Where(x => characters.Any(c => c == x.Character))
                     .Include(x => x.GameDeck).ThenInclude(x => x.User).AsNoTracking().ToListAsync();
                 cards.AddRange(cads);
