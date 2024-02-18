@@ -381,6 +381,7 @@ namespace Sanakan.Services
             }
 
             var nX = 27;
+            var hasAvBorder = botUser.AvatarBorder != AvatarBorder.None;
             using (var userAvatar = Image.Load(await GetImageFromUrlAsync(avatarUrl)))
             {
                 var aX = 47 + 5;
@@ -397,12 +398,15 @@ namespace Sanakan.Services
                 nX += aX + tSize;
 
                 using var avBack = new Image<Rgba32>(tSize, tSize, GetOrCreateColor("#3f3f3f"));
+                if (hasAvBorder) avBack.Mutate(x => x.Round(30));
                 profilePic.Mutate(x => x.DrawImage(avBack, new Point(aX, aY), 1));
 
                 using var rang = new Image<Rgba32>(aSize + gOff, aSize + gOff, GetOrCreateColor(colorRank));
+                if (hasAvBorder) rang.Mutate(x => x.Round(30));
                 profilePic.Mutate(x => x.DrawImage(rang, new Point(aX + gSize, aY + gSize), 1));
 
                 userAvatar.Mutate(x => x.Resize(new Size(aSize, aSize)));
+                if (hasAvBorder) userAvatar.Mutate(x => x.Round(30));
                 profilePic.Mutate(x => x.DrawImage(userAvatar, new Point(aX + bSize, aY + bSize), 1));
             }
 
@@ -436,7 +440,7 @@ namespace Sanakan.Services
             if (botUser.ProfileType == ProfileType.Cards)
             {
                 var cardY = 165;
-                var cardX = 15;
+                var cardX = 19;
 
                 IEnumerable<Card> cardsToShow = null;
                 if (botUser.Id == 1)
@@ -453,13 +457,13 @@ namespace Sanakan.Services
                     {
                         var cards = new List<Card>();
                         var ids = botUser.GameDeck.GalleryOrderedIds.Split(" ")
-                            .Select(x => Api.Models.UserSiteProfile.TryParseIds(x)).Distinct().Take(12);
+                            .Select(x => Api.Models.UserSiteProfile.TryParseIds(x)).Distinct();
                         foreach (var id in ids)
                         {
                             var card = botUser.GameDeck.Cards.FirstOrDefault(x => x.Id == id);
                             if (card != null) cards.Add(card);
                         }
-                        cardsToShow = cards;
+                        cardsToShow = cards.Take(12);
                     }
                 }
 
@@ -472,11 +476,11 @@ namespace Sanakan.Services
                         Size = new Size(0, 150)
                     }));
                     profilePic.Mutate(x => x.DrawImage(cardImage, new Point(cardX, cardY), 1));
-                    cardX += 120;
+                    cardX += 121;
 
                     if (cardX > 730)
                     {
-                        cardX = 15;
+                        cardX = 19;
                         cardY += 155;
                     }
                 }
@@ -509,6 +513,24 @@ namespace Sanakan.Services
                     profilePic.Mutate(x => x.DrawImage(cardBg, new Point(600, 35), 0.32f));
                     profilePic.Mutate(x => x.DrawImage(cardImage, new Point(602, 37), 1));
                 }
+            }
+
+            if (hasAvBorder)
+            {
+                using var border = Image.Load($"./Pictures/np/{botUser.AvatarBorder}.png");
+                var offsetX = botUser.AvatarBorder switch
+                {
+                    AvatarBorder.Bow => -5,
+                    AvatarBorder.Normal => 9,
+                    _ => 0
+                };
+                var offsetY = botUser.AvatarBorder switch
+                {
+                    AvatarBorder.Bow => 4,
+                    AvatarBorder.Normal => 20,
+                    _ => 0
+                };
+                profilePic.Mutate(x => x.DrawImage(border, new Point(25 + offsetX, 40 + offsetY), 1));
             }
 
             using var profileBar = GetProfileBar(topPos, botUser);
