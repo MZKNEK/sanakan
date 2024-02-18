@@ -270,15 +270,16 @@ namespace Sanakan.Modules
             using (var db = new Database.DatabaseContext(Config))
             {
                 var allUsers = await db.GetCachedAllUsersLiteAsync();
-                var botUser = db.Users.AsNoTracking().FirstOrDefault(x => x.Id == usr.Id);
+                var botUser = allUsers.FirstOrDefault(x => x.Id == usr.Id);
                 if (botUser == null)
                 {
                     await ReplyAsync("", embed: "Ta osoba nie ma profilu bota.".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
-                botUser.GameDeck = await db.GetCachedUserGameDeckAsync(searchId);
-                using (var stream = await _profile.GetProfileImageAsync(usr, botUser, allUsers.OrderByDescending(x => x.ExpCnt).ToList().IndexOf(botUser) + 1))
+                var dataUser = db.Users.AsQueryable().Include(x => x.GameDeck).AsNoTracking().FirstOrDefault(x => x.Id == usr.Id);
+                dataUser.GameDeck.Cards = (await db.GetCachedUserGameDeckAsync(searchId)).Cards;
+                using (var stream = await _profile.GetProfileImageAsync(usr, dataUser, allUsers.OrderByDescending(x => x.ExpCnt).ToList().IndexOf(botUser) + 1))
                 {
                     await Context.Channel.SendFileAsync(stream, $"{usr.Id}.png");
                 }
