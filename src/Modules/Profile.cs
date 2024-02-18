@@ -270,14 +270,14 @@ namespace Sanakan.Modules
             using (var db = new Database.DatabaseContext(Config))
             {
                 var allUsers = await db.GetCachedAllUsersLiteAsync();
-                var botUser = allUsers.FirstOrDefault(x => x.Id == usr.Id);
+                var botUser = allUsers.FirstOrDefault(x => x.Id == searchId);
                 if (botUser == null)
                 {
                     await ReplyAsync("", embed: "Ta osoba nie ma profilu bota.".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
-                var dataUser = db.Users.AsQueryable().Include(x => x.GameDeck).AsNoTracking().FirstOrDefault(x => x.Id == usr.Id);
+                var dataUser = db.Users.AsQueryable().Include(x => x.GameDeck).AsNoTracking().FirstOrDefault(x => x.Id == searchId);
                 dataUser.GameDeck.Cards = (await db.GetCachedUserGameDeckAsync(searchId)).Cards;
                 using (var stream = await _profile.GetProfileImageAsync(usr, dataUser, allUsers.OrderByDescending(x => x.ExpCnt).ToList().IndexOf(botUser) + 1))
                 {
