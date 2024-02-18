@@ -52,8 +52,13 @@ namespace Sanakan.Modules
                     return;
                 }
 
-                await ReplyAsync("", embed: ($"**Portfel** {usr.Mention}:\n\n{botuser?.ScCnt} **SC**\n{botuser?.TcCnt} **TC**\n{botuser?.AcCnt} **AC**\n\n"
-                    + $"**PW**:\n{botuser?.GameDeck?.CTCnt} **CT**\n{botuser?.GameDeck?.PVPCoins} **PC**").ToEmbedMessage(EMType.Info).Build());
+                await ReplyAsync("", embed: ($"**Portfel** {usr.Mention}:\n\n"
+                    + $"<:msc:1208499475631312906> {botuser?.ScCnt}\n"
+                    + $"<:mtc:1208499476965236847> {botuser?.TcCnt}\n"
+                    + $"<:mac:1208499478097830069> {botuser?.AcCnt}\n\n"
+                    + $"**PW**:\n"
+                    + $"<:mct:1208499474343665724> {botuser?.GameDeck?.CTCnt}\n"
+                    + $"<:mpc:1208499455242801262> {botuser?.GameDeck?.PVPCoins}").ToEmbedMessage(EMType.Info).Build());
             }
         }
 
@@ -288,7 +293,7 @@ namespace Sanakan.Modules
         [Command("profil", RunMode = RunMode.Async)]
         [Alias("profile")]
         [Summary("wyświetla profil użytkownika")]
-        [Remarks("karna"), DelayNextUseBy(30)]
+        [Remarks("karna"), DelayNextUseBy(15)]
         public async Task ShowUserProfileAsync([Summary("nazwa użytkownika")]SocketGuildUser user = null)
         {
             var usr = user ?? Context.User as SocketGuildUser;
