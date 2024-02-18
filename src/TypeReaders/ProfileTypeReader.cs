@@ -30,8 +30,18 @@ namespace Sanakan.TypeReaders
 
                 case "3":
                 case "cards":
+                case "galeria":
+                case "gallery":
                 case "karcianka":
                     return Task.FromResult(TypeReaderResult.FromSuccess(ProfileType.Cards));
+
+                case "4":
+                case "galeria na obrazku":
+                    return Task.FromResult(TypeReaderResult.FromSuccess(ProfileType.CardsOnImg));
+
+                case "5":
+                case "statystyki na obrazku":
+                    return Task.FromResult(TypeReaderResult.FromSuccess(ProfileType.StatsOnImg));
 
                 default:
                     return Task.FromResult(TypeReaderResult.FromError(CommandError.ParseFailed, "Nie rozpoznano typu nastawy!"));

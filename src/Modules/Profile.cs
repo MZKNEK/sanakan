@@ -262,6 +262,41 @@ namespace Sanakan.Modules
             }
         }
 
+        [Command("widok profilu")]
+        [Alias("profile view")]
+        [Summary("przełącza widoczność elementów na profilu")]
+        [Remarks("1"), RequireAnyCommandChannel]
+        public async Task ToggleProfileViewSettingseAsync([Summary("element (anime(1), manga(2), karty(4))")]StatsSetttings setttings)
+        {
+            if (setttings == StatsSetttings.None)
+            {
+                await ReplyAsync("", embed: $"{Context.User.Mention} ????".ToEmbedMessage(EMType.Error).Build());
+                return;
+            }
+
+            using (var db = new Database.DatabaseContext(Config))
+            {
+                var botuser = await db.GetUserOrCreateSimpleAsync(Context.User.Id);
+
+                botuser.StatsStyleSettings ^= setttings;
+
+                await db.SaveChangesAsync();
+
+                QueryCacheManager.ExpireTag(new string[] { $"user-{botuser.Id}", "users" });
+
+                string result = botuser.StatsStyleSettings.HasFlag(setttings) ? "załączona" : "wyłączona";
+                string what = setttings switch
+                {
+                    StatsSetttings.ShowAnime => "statystyk anime",
+                    StatsSetttings.ShowManga => "statystyk mangi",
+                    StatsSetttings.ShowCards => "statystyk kart",
+                    _ => "??"
+                };
+
+                await ReplyAsync("", embed: $"{Context.User.Mention} widoczność {what} w profilu została {result}.".ToEmbedMessage(EMType.Success).Build());
+            }
+        }
+
         [Command("wersja profilu")]
         [Alias("profile version")]
         [Summary("zmienia wersje profilu użytkownika")]
@@ -384,8 +419,8 @@ namespace Sanakan.Modules
         [Command("styl")]
         [Alias("style")]
         [Summary("zmienia styl profilu (koszt 3000 SC/1000 TC)")]
-        [Remarks("1 https://sanakan.pl/i/example_style_1.png sc"), RequireCommandChannel]
-        public async Task ChangeStyleAsync([Summary("typ stylu (statystyki(0), obrazek(1), brzydkie(2), karcianka(3))")]ProfileType type, [Summary("bezpośredni adres do obrazka gdy wybrany styl 1 lub 2 (325 x 272 dla starego, lub 750 x 340 dla nowego)")]string imgUrl = null, [Summary("waluta (SC/TC)")]SCurrency currency = SCurrency.Sc)
+        [Remarks("1 https://sanakan.pl/i/example_new_style_1.png sc"), RequireCommandChannel]
+        public async Task ChangeStyleAsync([Summary("typ stylu (statystyki(0), obrazek(1), brzydkie(2), galeria(3), galeria na obrazku(4), statystyki na obrazku(5))")]ProfileType type, [Summary("bezpośredni adres do obrazka gdy wybrany styl 1 lub 2 (750x340)")]string imgUrl = null, [Summary("waluta (SC/TC)")]SCurrency currency = SCurrency.Sc)
         {
             var scCost = 3000;
             var tcCost = 1000;
@@ -459,8 +494,8 @@ namespace Sanakan.Modules
         [Command("tło")]
         [Alias("tlo", "bg", "background")]
         [Summary("zmienia obrazek tła profilu (koszt 5000 SC/2500 TC)")]
-        [Remarks("https://sanakan.pl/i/example_profile_bg.png sc"), RequireCommandChannel]
-        public async Task ChangeBackgroundAsync([Summary("bezpośredni adres do obrazka (450 x 145 dla starego, lub 750 x 160 dla nowego)")]string imgUrl, [Summary("waluta (SC/TC)")]SCurrency currency = SCurrency.Sc)
+        [Remarks("https://sanakan.pl/i/example_new_profile_bg.png sc"), RequireCommandChannel]
+        public async Task ChangeBackgroundAsync([Summary("bezpośredni adres do obrazka (750x160)")]string imgUrl, [Summary("waluta (SC/TC)")]SCurrency currency = SCurrency.Sc)
         {
             var tcCost = 2500;
             var scCost = 5000;
