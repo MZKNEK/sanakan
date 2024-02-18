@@ -257,6 +257,34 @@ namespace Sanakan.Modules
             }
         }
 
+        [Command("wersja profilu")]
+        [Alias("profile version")]
+        [Summary("zmienia wersje profilu użytkownika")]
+        [Remarks("1"), RequireAnyCommandChannel]
+        public async Task ChangeProfileVersioneAsync([Summary("wersja (0 - stary, 1 - nowy z paskiem na górze, 2 - nowy z paskiem na dole)")]ProfileVersion version)
+        {
+            using (var db = new Database.DatabaseContext(Config))
+            {
+                var botuser = await db.GetUserOrCreateSimpleAsync(Context.User.Id);
+                var wasOld = botuser.ProfileVersion == ProfileVersion.Old;
+                var isOld = version == ProfileVersion.Old;
+
+                botuser.ProfileVersion = version;
+
+                if (wasOld != isOld)
+                {
+                    botuser.BackgroundProfileUri = isOld ? "./Pictures/defBg.png" : "./Pictures/np/pbg.png";
+                    botuser.StatsReplacementProfileUri = "none";
+                }
+
+                await db.SaveChangesAsync();
+
+                QueryCacheManager.ExpireTag(new string[] { $"user-{botuser.Id}", "users" });
+
+                await ReplyAsync("", embed: $"{Context.User.Mention} zmieniono wersje profilu.".ToEmbedMessage(EMType.Success).Build());
+            }
+        }
+
         [Command("profil", RunMode = RunMode.Async)]
         [Alias("profile")]
         [Summary("wyświetla profil użytkownika")]
