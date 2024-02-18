@@ -406,6 +406,14 @@ namespace Sanakan.Modules
 
                 switch (type)
                 {
+                    case ProfileType.CardsOnImg:
+                    case ProfileType.StatsOnImg:
+                        if (botuser.ProfileVersion == ProfileVersion.Old)
+                        {
+                            await ReplyAsync("", embed: $"{Context.User.Mention} te style nie sa wspierana na starym profilu!".ToEmbedMessage(EMType.Error).Build());
+                            return;
+                        }
+                        goto case ProfileType.StatsWithImg;
                     case ProfileType.Img:
                     case ProfileType.StatsWithImg:
                         var res = botuser.ProfileVersion switch

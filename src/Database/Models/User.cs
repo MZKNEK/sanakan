@@ -7,7 +7,7 @@ namespace Sanakan.Database.Models
 {
     public enum ProfileType
     {
-        Stats, Img, StatsWithImg, Cards
+        Stats, Img, StatsWithImg, Cards, CardsOnImg, StatsOnImg
     }
 
     public enum ProfileVersion
@@ -22,7 +22,17 @@ namespace Sanakan.Database.Models
 
     public enum AvatarBorder
     {
-        None, PurpleLeaves, Dzedai, GoldPurple, Crows, Bow
+        None, PurpleLeaves, Dzedai, Water, GoldPurple, Crows, Bow
+    }
+
+    [Flags]
+    public enum StatsSetttings
+    {
+        None      =  0,
+        ShowAnime =  1,
+        ShowManga =  2,
+        ShowCards =  4,
+        ShowAll   = ShowAnime | ShowManga | ShowCards
     }
 
     public class User
@@ -48,6 +58,7 @@ namespace Sanakan.Database.Models
         public CharacterPoolType PoolType { get; set; }
         public ProfileVersion ProfileVersion { get; set; }
         public AvatarBorder AvatarBorder { get; set; }
+        public StatsSetttings StatsStyleSettings { get; set; }
 
         public virtual UserStats Stats { get; set; }
         public virtual GameDeck GameDeck { get; set; }

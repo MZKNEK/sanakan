@@ -356,6 +356,138 @@ namespace Sanakan.Services
             return image;
         }
 
+        private async Task<Image> GetUserNewProfileStyleAsync(IUserInfo shindenUser, User botUser)
+        {
+            var profileSettings = botUser.StatsStyleSettings == StatsSetttings.None ? StatsSetttings.ShowAll : botUser.StatsStyleSettings;
+            var image = new Image<Rgba32>(750, 340, Color.Transparent);
+            switch (botUser.ProfileType)
+            {
+                case ProfileType.Img:
+                case ProfileType.StatsOnImg:
+                case ProfileType.CardsOnImg:
+                {
+                    if (File.Exists(botUser.StatsReplacementProfileUri))
+                    {
+                        using var usrImg = Image.Load(botUser.StatsReplacementProfileUri);
+                        if (usrImg.Width != 750 || usrImg.Height != 340)
+                            usrImg.Mutate(x => x.Resize(750, 340));
+
+                        image.Mutate(x => x.DrawImage(usrImg, new Point(0, 0), 1));
+                    }
+
+                    if (botUser.ProfileType == ProfileType.StatsOnImg)
+                        goto case ProfileType.Stats;
+
+                    if (botUser.ProfileType == ProfileType.CardsOnImg)
+                        goto case ProfileType.Cards;
+                }
+                break;
+                case ProfileType.Stats:
+                {
+                    var statsY = 24;
+                    var statsX = 15;
+                    var isOnImg = botUser.ProfileType == ProfileType.StatsOnImg;
+
+                    if (shindenUser != null)
+                    {
+                        using var shadow = new Image<Rgba32>(331, 128, GetOrCreateColor("#000000"));
+                        shadow.Mutate(x => x.Round(10));
+
+                        if (shindenUser?.ListStats?.AnimeStatus != null && profileSettings.HasFlag(StatsSetttings.ShowAnime))
+                        {
+                            if (isOnImg)
+                                image.Mutate(x => x.DrawImage(shadow, new Point(statsX - 3, statsY - 3), 0.6f));
+
+                            using var stats = GetRWStats(shindenUser?.ListStats?.AnimeStatus, "./Pictures/statsAnime.png", shindenUser.GetMoreSeriesStats(false));
+                            image.Mutate(x => x.DrawImage(stats, new Point(statsX, statsY), 1));
+                            statsY += 147;
+                        }
+                        if (shindenUser?.ListStats?.MangaStatus != null && profileSettings.HasFlag(StatsSetttings.ShowManga))
+                        {
+                            if (isOnImg)
+                                image.Mutate(x => x.DrawImage(shadow, new Point(statsX - 3, statsY - 3), 0.6f));
+
+                            using var stats = GetRWStats(shindenUser?.ListStats?.MangaStatus, "./Pictures/statsManga.png", shindenUser.GetMoreSeriesStats(true));
+                            image.Mutate(x => x.DrawImage(stats, new Point(statsX, statsY), 1));
+                        }
+                    }
+
+                    statsY = 24;
+                    statsX += 354;
+
+                    if (profileSettings.HasFlag(StatsSetttings.ShowCards))
+                    {
+                        if (isOnImg)
+                        {
+                            using var shadow = new Image<Rgba32>(370, 275, GetOrCreateColor("#000000"));
+                            shadow.Mutate(x => x.Round(10));
+                            image.Mutate(x => x.DrawImage(shadow, new Point(statsX - 3, statsY - 3), 0.6f));
+                        }
+
+                        using var cards = await GetCardsProfileImage(botUser);
+                        image.Mutate(x => x.DrawImage(cards, new Point(statsX, statsY), 1));
+                    }
+
+                    if (botUser.ProfileType == ProfileType.StatsWithImg)
+                        goto case ProfileType.Img;
+                }
+                break;
+                case ProfileType.Cards:
+                {
+                    var cardY = 4;
+                    var cardX = 19;
+
+                    IEnumerable<Card> cardsToShow = null;
+                    if (botUser.Id == 1)
+                    {
+                        cardsToShow =  botUser.GameDeck.Cards.OrderBy(x => x.Rarity).Take(12);
+                    }
+                    else
+                    {
+                        if (string.IsNullOrEmpty(botUser.GameDeck.GalleryOrderedIds))
+                        {
+                            cardsToShow = botUser.GameDeck.GetOrderedGalleryCards(_galleryTag.Id).Take(12);
+                        }
+                        else
+                        {
+                            var cards = new List<Card>();
+                            var ids = botUser.GameDeck.GalleryOrderedIds.Split(" ")
+                                .Select(x => Api.Models.UserSiteProfile.TryParseIds(x)).Distinct();
+                            foreach (var id in ids)
+                            {
+                                var card = botUser.GameDeck.Cards.FirstOrDefault(x => x.Id == id);
+                                if (card != null) cards.Add(card);
+                            }
+                            cardsToShow = cards.Take(12);
+                        }
+                    }
+
+                    foreach (var card in cardsToShow)
+                    {
+                        using var cardImage = await LoadOrGetNewWaifuProfileCardAsync(card);
+                        cardImage.Mutate(x => x.Resize(new ResizeOptions
+                        {
+                            Mode = ResizeMode.Max,
+                            Size = new Size(0, 150)
+                        }));
+                        image.Mutate(x => x.DrawImage(cardImage, new Point(cardX, cardY), 1));
+                        cardX += 121;
+
+                        if (cardX > 730)
+                        {
+                            cardX = 19;
+                            cardY += 155;
+                        }
+                    }
+                }
+                break;
+
+                default:
+                break;
+            }
+            return image;
+        }
+
         public async Task<Image<Rgba32>> GetUserNewProfileAsync(IUserInfo shindenUser, User botUser, string avatarUrl, long topPos, string nickname, Discord.Color color)
         {
             color = color == Discord.Color.Default ? Discord.Color.DarkerGrey : color;
@@ -415,93 +547,15 @@ namespace Sanakan.Services
             profilePic.Mutate(x => x.DrawText(nickname, nickFont, GetOrCreateColor("#a7a7a7"), new Point(nX, nY + (int)((30 - nickFont.Size) / 2))));
             profilePic.Mutate(x => x.DrawText(rangName, rangFont, defFontColor, new Point(nX, nY + 30)));
 
-            if (shindenUser != null && (botUser.ProfileType == ProfileType.Stats || botUser.ProfileType == ProfileType.StatsWithImg))
-            {
-                var statsY = 180;
-                var statsX = 10;
-                if (shindenUser?.ListStats?.AnimeStatus != null)
-                {
-                    using var stats = GetRWStats(shindenUser?.ListStats?.AnimeStatus, "./Pictures/statsAnime.png", shindenUser.GetMoreSeriesStats(false));
-                    profilePic.Mutate(x => x.DrawImage(stats, new Point(statsX, statsY), 1));
-                }
-                if (shindenUser?.ListStats?.MangaStatus != null)
-                {
-                    using var stats = GetRWStats(shindenUser?.ListStats?.MangaStatus, "./Pictures/statsManga.png", shindenUser.GetMoreSeriesStats(true));
-                    profilePic.Mutate(x => x.DrawImage(stats, new Point(statsX, statsY + 142), 1));
-                }
+            using var profileStyle = await GetUserNewProfileStyleAsync(shindenUser, botUser);
+            profilePic.Mutate(x => x.DrawImage(profileStyle, new Point(0, 161), 1));
 
-                if (botUser.ProfileType != ProfileType.StatsWithImg)
-                {
-                    using var cards = await GetCardsProfileImage(botUser);
-                    profilePic.Mutate(x => x.DrawImage(cards, new Point(statsX + 350, statsY), 1));
-                }
-            }
-
-            if (botUser.ProfileType == ProfileType.Cards)
-            {
-                var cardY = 165;
-                var cardX = 19;
-
-                IEnumerable<Card> cardsToShow = null;
-                if (botUser.Id == 1)
-                {
-                    cardsToShow =  botUser.GameDeck.Cards.OrderBy(x => x.Rarity).Take(12);
-                }
-                else
-                {
-                    if (string.IsNullOrEmpty(botUser.GameDeck.GalleryOrderedIds))
-                    {
-                        cardsToShow = botUser.GameDeck.GetOrderedGalleryCards(_galleryTag.Id).Take(12);
-                    }
-                    else
-                    {
-                        var cards = new List<Card>();
-                        var ids = botUser.GameDeck.GalleryOrderedIds.Split(" ")
-                            .Select(x => Api.Models.UserSiteProfile.TryParseIds(x)).Distinct();
-                        foreach (var id in ids)
-                        {
-                            var card = botUser.GameDeck.Cards.FirstOrDefault(x => x.Id == id);
-                            if (card != null) cards.Add(card);
-                        }
-                        cardsToShow = cards.Take(12);
-                    }
-                }
-
-                foreach (var card in cardsToShow)
-                {
-                    using var cardImage = await GetWaifuInProfileCardAsync(card);
-                    cardImage.Mutate(x => x.Resize(new ResizeOptions
-                    {
-                        Mode = ResizeMode.Max,
-                        Size = new Size(0, 150)
-                    }));
-                    profilePic.Mutate(x => x.DrawImage(cardImage, new Point(cardX, cardY), 1));
-                    cardX += 121;
-
-                    if (cardX > 730)
-                    {
-                        cardX = 19;
-                        cardY += 155;
-                    }
-                }
-            }
-
-            if (File.Exists(botUser.StatsReplacementProfileUri) && (botUser.ProfileType == ProfileType.Img || botUser.ProfileType == ProfileType.StatsWithImg))
-            {
-                using var usrImg = Image.Load(botUser.StatsReplacementProfileUri);
-                if (usrImg.Width != 750 || usrImg.Height != 340)
-                    usrImg.Mutate(x => x.Resize(750, 340));
-
-                profilePic.Mutate(x => x.DrawImage(usrImg, new Point(0, 161), 1));
-            }
-
-            if (botUser.GameDeck.Waifu != 0 && botUser.ShowWaifuInProfile &&
-                botUser.ProfileType != ProfileType.Stats && botUser.ProfileType != ProfileType.Cards)
+            if (botUser.GameDeck.Waifu != 0 && botUser.ShowWaifuInProfile)
             {
                 var tChar = botUser.GameDeck.GetWaifuCard();
                 if (tChar != null)
                 {
-                    using var cardImage = await GetWaifuInProfileCardAsync(tChar);
+                    using var cardImage = await LoadOrGetNewWaifuProfileCardAsync(tChar);
                     cardImage.Mutate(x => x.Resize(new ResizeOptions
                     {
                         Mode = ResizeMode.Max,
@@ -510,8 +564,8 @@ namespace Sanakan.Services
                     using var cardBg = new Image<Rgba32>(cardImage.Width + 4, cardImage.Height + 4, GetOrCreateColor("#000000"));
                     cardBg.Mutate(x => x.Round(10));
 
-                    profilePic.Mutate(x => x.DrawImage(cardBg, new Point(600, 35), 0.32f));
-                    profilePic.Mutate(x => x.DrawImage(cardImage, new Point(602, 37), 1));
+                    profilePic.Mutate(x => x.DrawImage(cardBg, new Point(620, 35), 0.32f));
+                    profilePic.Mutate(x => x.DrawImage(cardImage, new Point(622, 37), 1));
                 }
             }
 
@@ -522,11 +576,13 @@ namespace Sanakan.Services
                 {
                     AvatarBorder.Bow => -5,
                     AvatarBorder.Dzedai => -2,
+                    AvatarBorder.Water => 10,
                     _ => 0
                 };
                 var offsetY = botUser.AvatarBorder switch
                 {
                     AvatarBorder.Bow => 4,
+                    AvatarBorder.Water => 18,
                     _ => 0
                 };
                 profilePic.Mutate(x => x.DrawImage(border, new Point(25 + offsetX, 40 + offsetY), 1));
@@ -620,7 +676,7 @@ namespace Sanakan.Services
                 var tChar = botUser.GameDeck.GetWaifuCard();
                 if (tChar != null)
                 {
-                    using (var cardImage = await GetWaifuInProfileCardAsync(tChar))
+                    using (var cardImage = await LoadOrGetNewWaifuProfileCardAsync(tChar))
                     {
                         cardImage.Mutate(x => x.Resize(new ResizeOptions
                         {
@@ -731,7 +787,7 @@ namespace Sanakan.Services
                 var tChar = botUser.GameDeck.GetWaifuCard();
                 if (tChar != null)
                 {
-                    using (var cardImage = await GetWaifuInProfileCardAsync(tChar))
+                    using (var cardImage = await LoadOrGetNewWaifuProfileCardAsync(tChar))
                     {
                         cardImage.Mutate(x => x.Resize(new ResizeOptions
                         {
@@ -1731,6 +1787,16 @@ namespace Sanakan.Services
             }
 
             return image;
+        }
+
+        private async Task<Image> LoadOrGetNewWaifuProfileCardAsync(Card card)
+        {
+            string ext = card.IsAnimatedImage ? "gif" : "webp";
+            string imageLocation = $"{Dir.CardsInProfiles}/{card.Id}.{ext}";
+            if (File.Exists(imageLocation))
+                return await Image.LoadAsync(imageLocation);
+
+            return await GetWaifuInProfileCardAsync(card);
         }
 
         public async Task<Image> GetWaifuInProfileCardAsync(Card card)
