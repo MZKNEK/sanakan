@@ -70,7 +70,7 @@ namespace Sanakan.Extensions
                 .Include(x => x.GameDeck).ThenInclude(x => x.Figures).AsNoTracking().AsSplitQuery().FromCacheAsync(new string[] { $"user-{userId}", "users" })).FirstOrDefault();
         }
 
-        public static async Task<List<User>> GetCachedAllUsersLiteAsync(this Database.DatabaseContext context, ulong ignoreId = 1)
+        public static async Task<List<User>> GetCachedAllUsersLiteAsync(this Database.DatabaseContext context, ulong ignoreId = 0)
         {
             return (await context.Users.AsQueryable().AsNoTracking().AsSplitQuery().Where(x => x.Id != ignoreId).FromCacheAsync(new MemoryCacheEntryOptions{ AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(4) })).ToList();
         }

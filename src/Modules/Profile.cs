@@ -334,20 +334,28 @@ namespace Sanakan.Modules
             var usr = user ?? Context.User as SocketGuildUser;
             if (usr == null) return;
 
-            ulong searchId = usr.Id == Context.Client.CurrentUser.Id ? 1 : usr.Id;
+            var isBot =  usr.Id == Context.Client.CurrentUser.Id;
+            var searchId = isBot ? 1 : usr.Id;
+
             using (var db = new Database.DatabaseContext(Config))
             {
-                var allUsers = await db.GetCachedAllUsersLiteAsync();
-                var botUser = allUsers.FirstOrDefault(x => x.Id == searchId);
-                if (botUser == null)
+                var dataUser = db.Users.AsQueryable().Include(x => x.GameDeck).AsNoTracking().FirstOrDefault(x => x.Id == searchId);
+                if (dataUser is null)
                 {
                     await ReplyAsync("", embed: "Ta osoba nie ma profilu bota.".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
-                var dataUser = db.Users.AsQueryable().Include(x => x.GameDeck).AsNoTracking().FirstOrDefault(x => x.Id == searchId);
+                long rankingPosition = 0;
+                if (!isBot)
+                {
+                    var allUsers = await db.GetCachedAllUsersLiteAsync(1);
+                    var rankingUser = allUsers.FirstOrDefault(x => x.Id == searchId);
+                    rankingPosition = allUsers.OrderByDescending(x => x.ExpCnt).ToList().IndexOf(rankingUser) + 1;
+                }
+
                 dataUser.GameDeck.Cards = (await db.GetCachedUserGameDeckAsync(searchId)).Cards;
-                using (var stream = await _profile.GetProfileImageAsync(usr, dataUser, allUsers.OrderByDescending(x => x.ExpCnt).ToList().IndexOf(botUser) + 1))
+                using (var stream = await _profile.GetProfileImageAsync(usr, dataUser, rankingPosition))
                 {
                     await Context.Channel.SendFileAsync(stream, $"{usr.Id}.png");
                 }

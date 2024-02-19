@@ -526,14 +526,14 @@ namespace Sanakan.Services
                 karmaState = botUser.GameDeck.CanCreateDemon() ? "./Pictures/np/kd.png": karmaState;
                 karmaState = botUser.GameDeck.CanCreateAngel() ? "./Pictures/np/kl.png": karmaState;
                 using var karmaImage = Image.Load(karmaState);
-                image.Mutate(x => x.DrawImage(karmaImage, new Point(322, startY - 12), 1));
+                image.Mutate(x => x.DrawImage(karmaImage, new Point(330, startY - 6), 1));
             }
-
-            var fontCards = GetOrCreateFont(_latoBold, 17);
 
             startY += 36;
             var cGap = 38;
             var jumpY = 24;
+
+            var fontCards = GetOrCreateFont(_latoBold, 17);
             foreach (Rarity rarity in Enum.GetValues(typeof(Rarity)))
             {
                 var cardCount = botUser.GameDeck.Cards.Count(x => x.Rarity == rarity);
