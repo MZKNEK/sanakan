@@ -356,6 +356,38 @@ namespace Sanakan.Services
             return image;
         }
 
+        private IEnumerable<Card> GetOrdertedCardsForGallery(User user, int count)
+        {
+            if (user.Id == 1)
+                return user.GameDeck.Cards.OrderBy(x => x.Rarity).Take(count);
+
+            if (string.IsNullOrEmpty(user.GameDeck.GalleryOrderedIds))
+            {
+                return user.GameDeck.GetOrderedGalleryCards(_galleryTag.Id).Take(count);
+            }
+
+            var ids = user.GameDeck.GalleryOrderedIds.Split(" ")
+                .Select(x => Api.Models.UserSiteProfile.TryParseIds(x)).Distinct();
+
+            var cards = new List<Card>();
+            var cardsInGallery = user.GameDeck.GetOrderedGalleryCards(_galleryTag.Id).ToList();
+            foreach (var id in ids)
+            {
+                if (id == 0)
+                    continue;
+
+                var card = cardsInGallery.FirstOrDefault(x => x.Id == id);
+                if (card != null)
+                {
+                    cards.Add(card);
+                    cardsInGallery.Remove(card);
+                }
+            }
+
+            cards.AddRange(cardsInGallery);
+            return cards.Take(count);
+        }
+
         private async Task<Image> GetUserNewProfileStyleAsync(IUserInfo shindenUser, User botUser)
         {
             var image = new Image<Rgba32>(750, 340, Color.Transparent);
@@ -437,42 +469,7 @@ namespace Sanakan.Services
                     var cardY = 4;
                     var cardX = 19;
 
-                    IEnumerable<Card> cardsToShow = null;
-                    if (botUser.Id == 1)
-                    {
-                        cardsToShow =  botUser.GameDeck.Cards.OrderBy(x => x.Rarity).Take(12);
-                    }
-                    else
-                    {
-                        if (string.IsNullOrEmpty(botUser.GameDeck.GalleryOrderedIds))
-                        {
-                            cardsToShow = botUser.GameDeck.GetOrderedGalleryCards(_galleryTag.Id).Take(12);
-                        }
-                        else
-                        {
-                            var ids = botUser.GameDeck.GalleryOrderedIds.Split(" ")
-                                .Select(x => Api.Models.UserSiteProfile.TryParseIds(x)).Distinct();
-
-                            var cards = new List<Card>();
-                            var cardsInGallery = botUser.GameDeck.GetOrderedGalleryCards(_galleryTag.Id).ToList();
-                            foreach (var id in ids)
-                            {
-                                if (id == 0)
-                                    continue;
-
-                                var card = cardsInGallery.FirstOrDefault(x => x.Id == id);
-                                if (card != null)
-                                {
-                                    cards.Add(card);
-                                    cardsInGallery.Remove(card);
-                                }
-                            }
-
-                            cards.AddRange(cardsInGallery);
-                            cardsToShow = cards.Take(12);
-                        }
-                    }
-
+                    var cardsToShow = GetOrdertedCardsForGallery(botUser, 12);
                     foreach (var card in cardsToShow)
                     {
                         using var cardImage = await LoadOrGetNewWaifuProfileCardAsync(card);
@@ -965,12 +962,11 @@ namespace Sanakan.Services
 
             if (status.Total.HasValue && status.Total > 0)
             {
-                using (var bar = GetStatusBar(status.Total.Value, status.InProgress.Value, status.Completed.Value,
-                     status.Skipped.Value, status.OnHold.Value, status.Dropped.Value, status.InPlan.Value))
-                {
-                    bar.Mutate(x => x.Round(5));
-                    baseImg.Mutate(x => x.DrawImage(bar, new Point(startPointX, startPointY), 1));
-                }
+                using var bar = GetStatusBar(status.Total.Value, status.InProgress.Value, status.Completed.Value,
+                     status.Skipped.Value, status.OnHold.Value, status.Dropped.Value, status.InPlan.Value);
+
+                bar.Mutate(x => x.Round(5));
+                baseImg.Mutate(x => x.DrawImage(bar, new Point(startPointX, startPointY), 1));
             }
 
             startPointY += 21;
@@ -1013,12 +1009,12 @@ namespace Sanakan.Services
             }
 
             ySecondStart += fontSizeAndInterline;
+            gOptions.Origin = new Point(xSecondRow, ySecondStart);
 
             if (listTime.Count > 2)
             {
                 string fs = listTime.First(); listTime.Remove(fs);
                 string sc = listTime.First(); listTime.Remove(sc);
-                gOptions.Origin = new Point(xSecondRow, ySecondStart);
                 baseImg.Mutate(x => x.DrawText(gOptions, $"{fs} {sc}", fontColor));
 
                 ySecondStart += fontSizeAndInterline;
