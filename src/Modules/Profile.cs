@@ -53,12 +53,12 @@ namespace Sanakan.Modules
                 }
 
                 await ReplyAsync("", embed: ($"**Portfel** {usr.Mention}:\n\n"
-                    + $"<:msc:1208499475631312906> {botuser?.ScCnt}\n"
-                    + $"<:mtc:1208499476965236847> {botuser?.TcCnt}\n"
-                    + $"<:mac:1208499478097830069> {botuser?.AcCnt}\n\n"
+                    + $"<:msc:1209243856759947296> {botuser?.ScCnt}\n"
+                    + $"<:mtc:1209243855572967464> {botuser?.TcCnt}\n"
+                    + $"<:mac:1209243865836683284> {botuser?.AcCnt}\n\n"
                     + $"**PW**:\n"
-                    + $"<:mct:1208499474343665724> {botuser?.GameDeck?.CTCnt}\n"
-                    + $"<:mpc:1208499455242801262> {botuser?.GameDeck?.PVPCoins}").ToEmbedMessage(EMType.Info).Build());
+                    + $"<:mct:1209243877685338162> {botuser?.GameDeck?.CTCnt}\n"
+                    + $"<:mpc:1209243854436569089> {botuser?.GameDeck?.PVPCoins}").ToEmbedMessage(EMType.Info).Build());
             }
         }
 
@@ -266,7 +266,7 @@ namespace Sanakan.Modules
         [Alias("profile view")]
         [Summary("przełącza widoczność elementów na profilu")]
         [Remarks("1"), RequireAnyCommandChannel]
-        public async Task ToggleProfileViewSettingseAsync([Summary("element (anime(1), manga(2), karty(4), odwrócenie(8))")]StatsSetttings setttings)
+        public async Task ToggleProfileViewSettingseAsync([Summary("element (anime(1), manga(2), karty(4), odwrócenie(8), mniejsza galeria(16))")]StatsSetttings setttings)
         {
             if (setttings == StatsSetttings.None)
             {
@@ -428,7 +428,7 @@ namespace Sanakan.Modules
         [Alias("style")]
         [Summary("zmienia styl profilu (koszt 3000 SC/1000 TC)")]
         [Remarks("1 https://sanakan.pl/i/example_new_style_1.png sc"), RequireCommandChannel]
-        public async Task ChangeStyleAsync([Summary("typ stylu (statystyki(0), obrazek(1), brzydkie(2), galeria(3), galeria na obrazku(4), statystyki na obrazku(5))")]ProfileType type, [Summary("bezpośredni adres do obrazka gdy wybrany styl 1 lub 2 (750x340)")]string imgUrl = null, [Summary("waluta (SC/TC)")]SCurrency currency = SCurrency.Sc)
+        public async Task ChangeStyleAsync([Summary("typ stylu (statystyki(0), obrazek(1), brzydkie(2), galeria(3), galeria na obrazku(4), statystyki na obrazku(5), mini galeria(6), mini galeria na obrazku(7))")]ProfileType type, [Summary("bezpośredni adres do obrazka gdy wybrany styl 1 lub 2 (750x340)")]string imgUrl = null, [Summary("waluta (SC/TC)")]SCurrency currency = SCurrency.Sc)
         {
             var scCost = 3000;
             var tcCost = 1000;

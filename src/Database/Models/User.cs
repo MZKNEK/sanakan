@@ -7,7 +7,7 @@ namespace Sanakan.Database.Models
 {
     public enum ProfileType
     {
-        Stats, Img, StatsWithImg, Cards, CardsOnImg, StatsOnImg
+        Stats, Img, StatsWithImg, Cards, CardsOnImg, StatsOnImg, MiniGallery, MiniGalleryOnImg
     }
 
     public enum ProfileVersion
@@ -28,12 +28,13 @@ namespace Sanakan.Database.Models
     [Flags]
     public enum StatsSetttings
     {
-        None      = 0,
-        ShowAnime = 1,
-        ShowManga = 2,
-        ShowCards = 4,
-        ShowAll   = ShowAnime | ShowManga | ShowCards,
-        Flip      = 8,
+        None        = 0,
+        ShowAnime   = 1,
+        ShowManga   = 2,
+        ShowCards   = 4,
+        ShowAll     = ShowAnime | ShowManga | ShowCards,
+        Flip        = 8,
+        HalfGallery = 16,
     }
 
     public class User

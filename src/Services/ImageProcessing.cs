@@ -246,15 +246,8 @@ namespace Sanakan.Services
         private Image<Rgba32> GetTopLevelImage(long topPos, User user)
         {
             var image = new Image<Rgba32>(195, 19, Color.Transparent);
-            var top = topPos switch
-            {
-                1 => "./Pictures/np/mtop1.png",
-                2 => "./Pictures/np/mtop2.png",
-                3 => "./Pictures/np/mtop3.png",
-                _ => "./Pictures/np/mtop.png"
-            };
 
-            using var topImage = Image.Load(top);
+            using var topImage = Image.Load("./Pictures/np/mtop.png");
             using var lvlImage = Image.Load("./Pictures/np/mlvl.png");
 
             var font = GetOrCreateFont(_latoRegular, 16);
@@ -396,6 +389,7 @@ namespace Sanakan.Services
                 case ProfileType.Img:
                 case ProfileType.StatsOnImg:
                 case ProfileType.CardsOnImg:
+                case ProfileType.MiniGalleryOnImg:
                 {
                     if (File.Exists(botUser.StatsReplacementProfileUri))
                     {
@@ -406,7 +400,7 @@ namespace Sanakan.Services
                         image.Mutate(x => x.DrawImage(usrImg, new Point(0, 0), 1));
                     }
 
-                    if (botUser.ProfileType == ProfileType.StatsOnImg)
+                    if (botUser.ProfileType == ProfileType.StatsOnImg || botUser.ProfileType == ProfileType.MiniGalleryOnImg)
                         goto case ProfileType.Stats;
 
                     if (botUser.ProfileType == ProfileType.CardsOnImg)
@@ -415,38 +409,74 @@ namespace Sanakan.Services
                 break;
                 case ProfileType.Stats:
                 case ProfileType.StatsWithImg:
+                case ProfileType.MiniGallery:
                 {
-                    var isOnImg = botUser.ProfileType == ProfileType.StatsOnImg;
+                    var isMiniGallery = botUser.ProfileType == ProfileType.MiniGallery || botUser.ProfileType == ProfileType.MiniGalleryOnImg;
+                    var isOnImg = botUser.ProfileType == ProfileType.StatsOnImg || botUser.ProfileType == ProfileType.MiniGalleryOnImg;
                     var flip = botUser.StatsStyleSettings.HasFlag(StatsSetttings.Flip);
-                    var statsX = flip ? 407 : 15;
+                    var statsX = flip ? 407 : 16;
                     var statsY = 24;
 
-                    if (shindenUser != null)
+                    if (isMiniGallery)
                     {
-                        using var shadow = new Image<Rgba32>(331, 128, GetOrCreateColor("#000000"));
-                        shadow.Mutate(x => x.Round(10));
-
-                        if (shindenUser?.ListStats?.AnimeStatus != null && botUser.StatsStyleSettings.HasFlag(StatsSetttings.ShowAnime))
+                        if (isOnImg)
                         {
-                            if (isOnImg)
-                                image.Mutate(x => x.DrawImage(shadow, new Point(statsX - 3, statsY - 3), 0.7f));
-
-                            using var stats = GetRWStats(shindenUser?.ListStats?.AnimeStatus, "./Pictures/statsAnime.png", shindenUser.GetMoreSeriesStats(false));
-                            image.Mutate(x => x.DrawImage(stats, new Point(statsX, statsY), 1));
-                            statsY += 147;
+                            using var shadow = new Image<Rgba32>(331, 275, GetOrCreateColor("#000000"));
+                            shadow.Mutate(x => x.Round(10));
+                            image.Mutate(x => x.DrawImage(shadow, new Point(statsX - 3, statsY - 3), 0.7f));
                         }
-                        if (shindenUser?.ListStats?.MangaStatus != null && botUser.StatsStyleSettings.HasFlag(StatsSetttings.ShowManga))
-                        {
-                            if (isOnImg)
-                                image.Mutate(x => x.DrawImage(shadow, new Point(statsX - 3, statsY - 3), 0.7f));
 
-                            using var stats = GetRWStats(shindenUser?.ListStats?.MangaStatus, "./Pictures/statsManga.png", shindenUser.GetMoreSeriesStats(true));
-                            image.Mutate(x => x.DrawImage(stats, new Point(statsX, statsY), 1));
+                        var isSmall = botUser.StatsStyleSettings.HasFlag(StatsSetttings.HalfGallery);
+                        var startX = statsX + (isSmall ? 6 : 12);
+                        var cardGap = isSmall ? 160 : 104;
+                        var cardSize = isSmall ? 215 : 131;
+                        var cardY = statsY + (isSmall ? 26 : 2);
+                        var cardX = startX;
+
+                        var cardsToShow = GetOrdertedCardsForGallery(botUser, isSmall ? 2 : 6);
+                        foreach (var card in cardsToShow)
+                        {
+                            using var cardImage = await LoadOrGetNewWaifuProfileCardAsync(card);
+                            cardImage.Mutate(x => x.Resize(new ResizeOptions { Mode = ResizeMode.Max, Size = new Size(0, cardSize) }));
+                            image.Mutate(x => x.DrawImage(cardImage, new Point(cardX, cardY), 1));
+                            cardX += cardGap;
+
+                            if (cardX > ((cardGap * 2) + startX))
+                            {
+                                cardX = startX;
+                                cardY += 135;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        if (shindenUser != null)
+                        {
+                            using var shadow = new Image<Rgba32>(331, 128, GetOrCreateColor("#000000"));
+                            shadow.Mutate(x => x.Round(10));
+
+                            if (shindenUser?.ListStats?.AnimeStatus != null && botUser.StatsStyleSettings.HasFlag(StatsSetttings.ShowAnime))
+                            {
+                                if (isOnImg)
+                                    image.Mutate(x => x.DrawImage(shadow, new Point(statsX - 3, statsY - 3), 0.7f));
+
+                                using var stats = GetRWStats(shindenUser?.ListStats?.AnimeStatus, "./Pictures/statsAnime.png", shindenUser.GetMoreSeriesStats(false));
+                                image.Mutate(x => x.DrawImage(stats, new Point(statsX, statsY), 1));
+                                statsY += 147;
+                            }
+                            if (shindenUser?.ListStats?.MangaStatus != null && botUser.StatsStyleSettings.HasFlag(StatsSetttings.ShowManga))
+                            {
+                                if (isOnImg)
+                                    image.Mutate(x => x.DrawImage(shadow, new Point(statsX - 3, statsY - 3), 0.7f));
+
+                                using var stats = GetRWStats(shindenUser?.ListStats?.MangaStatus, "./Pictures/statsManga.png", shindenUser.GetMoreSeriesStats(true));
+                                image.Mutate(x => x.DrawImage(stats, new Point(statsX, statsY), 1));
+                            }
                         }
                     }
 
                     statsY = 24;
-                    statsX += flip ? -391 : 354;
+                    statsX += flip ? -391 : 352;
 
                     if (botUser.StatsStyleSettings.HasFlag(StatsSetttings.ShowCards))
                     {

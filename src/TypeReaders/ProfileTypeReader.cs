@@ -43,6 +43,14 @@ namespace Sanakan.TypeReaders
                 case "statystyki na obrazku":
                     return Task.FromResult(TypeReaderResult.FromSuccess(ProfileType.StatsOnImg));
 
+                case "6":
+                case "mini galeria":
+                    return Task.FromResult(TypeReaderResult.FromSuccess(ProfileType.MiniGallery));
+
+                case "7":
+                case "mini galeria na obrazku":
+                    return Task.FromResult(TypeReaderResult.FromSuccess(ProfileType.MiniGalleryOnImg));
+
                 default:
                     return Task.FromResult(TypeReaderResult.FromError(CommandError.ParseFailed, "Nie rozpoznano typu nastawy!"));
             }
