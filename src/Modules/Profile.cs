@@ -266,9 +266,9 @@ namespace Sanakan.Modules
         [Alias("profile view")]
         [Summary("przełącza widoczność elementów na profilu")]
         [Remarks("1"), RequireAnyCommandChannel]
-        public async Task ToggleProfileViewSettingseAsync([Summary("element (anime(1), manga(2), karty(4), odwrócenie(8), mniejsza galeria(16))")]StatsSetttings setttings)
+        public async Task ToggleProfileViewSettingseAsync([Summary("element (anime(1), manga(2), karty(4), odwrócenie(8), mniejsza galeria(16))")]StatsSettings settings)
         {
-            if (setttings == StatsSetttings.None)
+            if (settings == StatsSettings.None)
             {
                 await ReplyAsync("", embed: $"{Context.User.Mention} ????".ToEmbedMessage(EMType.Error).Build());
                 return;
@@ -278,20 +278,20 @@ namespace Sanakan.Modules
             {
                 var botuser = await db.GetUserOrCreateSimpleAsync(Context.User.Id);
 
-                botuser.StatsStyleSettings ^= setttings;
+                botuser.StatsStyleSettings ^= settings;
 
                 await db.SaveChangesAsync();
 
                 QueryCacheManager.ExpireTag(new string[] { $"user-{botuser.Id}", "users" });
 
-                string result = botuser.StatsStyleSettings.HasFlag(setttings) ? "załączona" : "wyłączona";
-                string what = setttings switch
+                string result = botuser.StatsStyleSettings.HasFlag(settings) ? "załączona" : "wyłączona";
+                string what = settings switch
                 {
-                    StatsSetttings.ShowAnime   => "statystyk anime",
-                    StatsSetttings.ShowManga   => "statystyk mangi",
-                    StatsSetttings.ShowCards   => "statystyk kart",
-                    StatsSetttings.Flip        => "paneli",
-                    StatsSetttings.HalfGallery => "liczby kart",
+                    StatsSettings.ShowAnime   => "statystyk anime",
+                    StatsSettings.ShowManga   => "statystyk mangi",
+                    StatsSettings.ShowCards   => "statystyk kart",
+                    StatsSettings.Flip        => "paneli",
+                    StatsSettings.HalfGallery => "liczby kart",
                     _ => "??"
                 };
 

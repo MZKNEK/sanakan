@@ -1917,7 +1917,7 @@ namespace Sanakan.Services.PocketWaifu
                     if (Fun.TakeATry(10))
                     {
                         user.GameDeck.AddItem(ItemType.GiveTagSlot.ToItem());
-                        reward += $"Mimo wszyystko coś po sobie zostawiła!\n";
+                        reward += $"Mimo wszystko coś po sobie zostawiła!\n";
                     }
                 }
                 else if (e == EventType.Fight && !allowItems)

@@ -26,7 +26,7 @@ namespace Sanakan.Database.Models
     }
 
     [Flags]
-    public enum StatsSetttings
+    public enum StatsSettings
     {
         None        = 0,
         ShowAnime   = 1,
@@ -60,7 +60,8 @@ namespace Sanakan.Database.Models
         public CharacterPoolType PoolType { get; set; }
         public ProfileVersion ProfileVersion { get; set; }
         public AvatarBorder AvatarBorder { get; set; }
-        public StatsSetttings StatsStyleSettings { get; set; }
+        public StatsSettings StatsStyleSettings { get; set; }
+        public string CustomProfileOverlayUrl { get; set; }
 
         public virtual UserStats Stats { get; set; }
         public virtual GameDeck GameDeck { get; set; }
