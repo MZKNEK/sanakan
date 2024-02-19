@@ -384,9 +384,10 @@ namespace Sanakan.Services
                 break;
                 case ProfileType.Stats:
                 {
-                    var statsY = 24;
-                    var statsX = 15;
                     var isOnImg = botUser.ProfileType == ProfileType.StatsOnImg;
+                    var flip = botUser.StatsStyleSettings.HasFlag(StatsSetttings.Flip);
+                    var statsX = flip ? 369 : 15;
+                    var statsY = 24;
 
                     if (shindenUser != null)
                     {
@@ -413,7 +414,7 @@ namespace Sanakan.Services
                     }
 
                     statsY = 24;
-                    statsX += 354;
+                    statsX += flip ? -354 : 354;
 
                     if (profileSettings.HasFlag(StatsSetttings.ShowCards))
                     {
@@ -627,6 +628,7 @@ namespace Sanakan.Services
                     AvatarBorder.Dzedai => 23,
                     AvatarBorder.Water => 35,
                     AvatarBorder.Base => 44,
+                    AvatarBorder.Crows => 23,
                     _ => 25
                 };
                 var posY = botUser.AvatarBorder switch

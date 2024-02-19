@@ -266,7 +266,7 @@ namespace Sanakan.Modules
         [Alias("profile view")]
         [Summary("przełącza widoczność elementów na profilu")]
         [Remarks("1"), RequireAnyCommandChannel]
-        public async Task ToggleProfileViewSettingseAsync([Summary("element (anime(1), manga(2), karty(4))")]StatsSetttings setttings)
+        public async Task ToggleProfileViewSettingseAsync([Summary("element (anime(1), manga(2), karty(4), odwrócenie(8))")]StatsSetttings setttings)
         {
             if (setttings == StatsSetttings.None)
             {

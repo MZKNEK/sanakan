@@ -28,11 +28,12 @@ namespace Sanakan.Database.Models
     [Flags]
     public enum StatsSetttings
     {
-        None      =  0,
-        ShowAnime =  1,
-        ShowManga =  2,
-        ShowCards =  4,
-        ShowAll   = ShowAnime | ShowManga | ShowCards
+        None      = 0,
+        ShowAnime = 1,
+        ShowManga = 2,
+        ShowCards = 4,
+        ShowAll   = ShowAnime | ShowManga | ShowCards,
+        Flip      = 8,
     }
 
     public class User
