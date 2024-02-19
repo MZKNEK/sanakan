@@ -287,9 +287,11 @@ namespace Sanakan.Modules
                 string result = botuser.StatsStyleSettings.HasFlag(setttings) ? "załączona" : "wyłączona";
                 string what = setttings switch
                 {
-                    StatsSetttings.ShowAnime => "statystyk anime",
-                    StatsSetttings.ShowManga => "statystyk mangi",
-                    StatsSetttings.ShowCards => "statystyk kart",
+                    StatsSetttings.ShowAnime   => "statystyk anime",
+                    StatsSetttings.ShowManga   => "statystyk mangi",
+                    StatsSetttings.ShowCards   => "statystyk kart",
+                    StatsSetttings.Flip        => "paneli",
+                    StatsSetttings.HalfGallery => "liczby kart",
                     _ => "??"
                 };
 
@@ -451,11 +453,17 @@ namespace Sanakan.Modules
                 {
                     case ProfileType.CardsOnImg:
                     case ProfileType.StatsOnImg:
+                    case ProfileType.MiniGallery:
+                    case ProfileType.MiniGalleryOnImg:
                         if (botuser.ProfileVersion == ProfileVersion.Old)
                         {
                             await ReplyAsync("", embed: $"{Context.User.Mention} te style nie sa wspierana na starym profilu!".ToEmbedMessage(EMType.Error).Build());
                             return;
                         }
+
+                        if (type == ProfileType.MiniGallery)
+                            goto case ProfileType.Stats;
+
                         goto case ProfileType.StatsWithImg;
                     case ProfileType.Img:
                     case ProfileType.StatsWithImg:
@@ -478,6 +486,7 @@ namespace Sanakan.Modules
                         return;
 
                     default:
+                    case ProfileType.Stats:
                         break;
                 }
 
