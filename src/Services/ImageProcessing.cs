@@ -243,17 +243,6 @@ namespace Sanakan.Services
             }
         }
 
-        private Image<Rgba32> GetCurrencyImage(long currency, string coin)
-        {
-            var image = new Image<Rgba32>(74, 19, Color.Transparent);
-            using var coinImage = Image.Load(coin);
-
-            var font = GetOrCreateFont(_latoRegular, 16);
-            image.Mutate(x => x.DrawImage(coinImage, new Point(0, 0), 1));
-            image.Mutate(x => x.DrawText(ToShortSI(currency), font, GetOrCreateColor("#a7a7a7"), new PointF(coinImage.Width + 3.5f, -2f)));
-            return image;
-        }
-
         private Image<Rgba32> GetTopLevelImage(long topPos, User user)
         {
             var image = new Image<Rgba32>(195, 19, Color.Transparent);
@@ -301,6 +290,17 @@ namespace Sanakan.Services
             var mExp = TextMeasurer.Measure(exp, new TextOptions(fontSmall));
             image.Mutate(x => x.DrawText(exp, fontSmall, GetOrCreateColor("#FFFFFF"), new Point(114 + ((int)(74 - mExp.Width) / 2), expY)));
 
+            return image;
+        }
+
+        private Image<Rgba32> GetCurrencyImage(long currency, string coin)
+        {
+            var image = new Image<Rgba32>(74, 19, Color.Transparent);
+            using var coinImage = Image.Load(coin);
+
+            var font = GetOrCreateFont(_latoRegular, 16);
+            image.Mutate(x => x.DrawImage(coinImage, new Point(0, 0), 1));
+            image.Mutate(x => x.DrawText(ToShortSI(currency), font, GetOrCreateColor("#a7a7a7"), new PointF(coinImage.Width + 3.5f, -2f)));
             return image;
         }
 
@@ -358,7 +358,6 @@ namespace Sanakan.Services
 
         private async Task<Image> GetUserNewProfileStyleAsync(IUserInfo shindenUser, User botUser)
         {
-            var profileSettings = botUser.StatsStyleSettings == StatsSetttings.None ? StatsSetttings.ShowAll : botUser.StatsStyleSettings;
             var image = new Image<Rgba32>(750, 340, Color.Transparent);
             switch (botUser.ProfileType)
             {
@@ -386,7 +385,7 @@ namespace Sanakan.Services
                 {
                     var isOnImg = botUser.ProfileType == ProfileType.StatsOnImg;
                     var flip = botUser.StatsStyleSettings.HasFlag(StatsSetttings.Flip);
-                    var statsX = flip ? 369 : 15;
+                    var statsX = flip ? 407 : 15;
                     var statsY = 24;
 
                     if (shindenUser != null)
@@ -394,7 +393,7 @@ namespace Sanakan.Services
                         using var shadow = new Image<Rgba32>(331, 128, GetOrCreateColor("#000000"));
                         shadow.Mutate(x => x.Round(10));
 
-                        if (shindenUser?.ListStats?.AnimeStatus != null && profileSettings.HasFlag(StatsSetttings.ShowAnime))
+                        if (shindenUser?.ListStats?.AnimeStatus != null && botUser.StatsStyleSettings.HasFlag(StatsSetttings.ShowAnime))
                         {
                             if (isOnImg)
                                 image.Mutate(x => x.DrawImage(shadow, new Point(statsX - 3, statsY - 3), 0.7f));
@@ -403,7 +402,7 @@ namespace Sanakan.Services
                             image.Mutate(x => x.DrawImage(stats, new Point(statsX, statsY), 1));
                             statsY += 147;
                         }
-                        if (shindenUser?.ListStats?.MangaStatus != null && profileSettings.HasFlag(StatsSetttings.ShowManga))
+                        if (shindenUser?.ListStats?.MangaStatus != null && botUser.StatsStyleSettings.HasFlag(StatsSetttings.ShowManga))
                         {
                             if (isOnImg)
                                 image.Mutate(x => x.DrawImage(shadow, new Point(statsX - 3, statsY - 3), 0.7f));
@@ -414,9 +413,9 @@ namespace Sanakan.Services
                     }
 
                     statsY = 24;
-                    statsX += flip ? -354 : 354;
+                    statsX += flip ? -391 : 354;
 
-                    if (profileSettings.HasFlag(StatsSetttings.ShowCards))
+                    if (botUser.StatsStyleSettings.HasFlag(StatsSetttings.ShowCards))
                     {
                         if (isOnImg)
                         {
@@ -451,14 +450,25 @@ namespace Sanakan.Services
                         }
                         else
                         {
-                            var cards = new List<Card>();
                             var ids = botUser.GameDeck.GalleryOrderedIds.Split(" ")
                                 .Select(x => Api.Models.UserSiteProfile.TryParseIds(x)).Distinct();
+
+                            var cards = new List<Card>();
+                            var cardsInGallery = botUser.GameDeck.GetOrderedGalleryCards(_galleryTag.Id).ToList();
                             foreach (var id in ids)
                             {
-                                var card = botUser.GameDeck.Cards.FirstOrDefault(x => x.Id == id);
-                                if (card != null) cards.Add(card);
+                                if (id == 0)
+                                    continue;
+
+                                var card = cardsInGallery.FirstOrDefault(x => x.Id == id);
+                                if (card != null)
+                                {
+                                    cards.Add(card);
+                                    cardsInGallery.Remove(card);
+                                }
                             }
+
+                            cards.AddRange(cardsInGallery);
                             cardsToShow = cards.Take(12);
                         }
                     }

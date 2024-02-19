@@ -57,6 +57,7 @@ namespace Sanakan.Extensions
                 StatsReplacementProfileUri = "none",
                 TimeStatuses = new List<TimeStatus>(),
                 ProfileVersion = ProfileVersion.NewBarTop,
+                StatsStyleSettings = StatsSetttings.ShowAll,
                 BackgroundProfileUri = $"./Pictures/np/pbg.png",
                 MeasureDate = new DateTime(creationTime.Year, creationTime.Month, 1),
                 GameDeck = new GameDeck
