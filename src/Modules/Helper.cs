@@ -61,7 +61,7 @@ namespace Sanakan.Modules
         [Command("pomoc", RunMode = RunMode.Async)]
         [Alias("h", "help")]
         [Summary("wyświetla listę poleceń")]
-        [Remarks("odcinki"), RequireAnyCommandChannel]
+        [Remarks("odcinki"), RequireAnyCommandChannelLevelOrNitro(20)]
         public async Task GiveHelpAsync([Summary("nazwa polecenia")][Remainder] string command = null)
         {
             var gUser = Context.User as SocketGuildUser;

@@ -414,6 +414,7 @@ namespace Sanakan.Services
                 }
                 break;
                 case ProfileType.Stats:
+                case ProfileType.StatsWithImg:
                 {
                     var isOnImg = botUser.ProfileType == ProfileType.StatsOnImg;
                     var flip = botUser.StatsStyleSettings.HasFlag(StatsSetttings.Flip);
