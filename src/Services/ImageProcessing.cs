@@ -255,12 +255,12 @@ namespace Sanakan.Services
             };
 
             using var topImage = Image.Load(top);
-            using var starImage = Image.Load("./Pictures/np/mstar.png");
+            using var lvlImage = Image.Load("./Pictures/np/mlvl.png");
 
             var font = GetOrCreateFont(_latoRegular, 16);
             image.Mutate(x => x.DrawImage(topImage, new Point(0, 0), 1));
             image.Mutate(x => x.DrawText(ToShortSI(topPos), font, GetOrCreateColor("#a7a7a7"), new PointF(19.5f, -2f)));
-            image.Mutate(x => x.DrawImage(starImage, new Point(60, 0), 1));
+            image.Mutate(x => x.DrawImage(lvlImage, new Point(60, 0), 1));
             image.Mutate(x => x.DrawText(ToShortSI(user.Level), font, GetOrCreateColor("#a7a7a7"), new PointF(79.5f, -2f)));
 
             var prevLvlExp = ExperienceManager.CalculateExpForLevel(user.Level);
@@ -514,7 +514,7 @@ namespace Sanakan.Services
             var fontColorDetail = GetOrCreateColor("#7f7f7f");
 
             var oGap = 60;
-            var startY = 22;
+            var startY = 18;
             var startX = 213;
             image.Mutate(x => x.DrawText($"Posiadane", fontDetail, fontColorDetail, new Point(startX, startY - 9)));
             image.Mutate(x => x.DrawText($"Limit", fontDetail, fontColorDetail, new Point(startX + oGap, startY - 9)));
@@ -530,7 +530,7 @@ namespace Sanakan.Services
                 image.Mutate(x => x.DrawImage(karmaImage, new Point(330, startY - 6), 1));
             }
 
-            startY += 36;
+            startY += 29;
             var cGap = 38;
             var jumpY = 24;
 
@@ -545,6 +545,23 @@ namespace Sanakan.Services
                     image.Mutate(x => x.DrawText(cardCount.ToString(), fontCards, fontColor, new Point(startX + cGap, startY)));
                     startY += jumpY;
                 }
+            }
+
+            startY = 246;
+            var sGap = 84;
+
+            var scalpelCount = botUser.GameDeck.Cards.Count(x => !string.IsNullOrEmpty(x.CustomImage));
+            if (scalpelCount > 0)
+            {
+                using var scalpelImg = GetCurrencyImage(scalpelCount, "./Pictures/np/mscal.png");
+                image.Mutate(x => x.DrawImage(scalpelImg, new Point(startX, startY), 1));
+            }
+
+            var scissorsCount = botUser.GameDeck.Cards.Count(x => !string.IsNullOrEmpty(x.CustomBorder));
+            if (scissorsCount > 0)
+            {
+                using var scissorsImg = GetCurrencyImage(scissorsCount, "./Pictures/np/mbor.png");
+                image.Mutate(x => x.DrawImage(scissorsImg, new Point(startX + sGap, startY), 1));
             }
 
             return image;
