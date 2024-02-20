@@ -316,7 +316,7 @@ namespace Sanakan.Services
 
         private Image<Rgba32> GetProfileBar(long topPos, User user)
         {
-            var barTop = user.ProfileVersion != ProfileVersion.NewBarBottom;
+            var barTop = user.ProfileVersion != ProfileVersion.BarOnBottom;
 
             var image = new Image<Rgba32>(750, 500, Color.Transparent);
             using var bar = Image.Load(barTop ? "./Pictures/np/tbar.png" : "./Pictures/np/bbar.png");
@@ -420,32 +420,35 @@ namespace Sanakan.Services
 
                     if (isMiniGallery)
                     {
-                        if (isOnImg)
+                        if (botUser.StatsStyleSettings.HasFlag(StatsSettings.ShowGallery))
                         {
-                            using var shadow = new Image<Rgba32>(331, 275, GetOrCreateColor("#000000"));
-                            shadow.Mutate(x => x.Round(10));
-                            image.Mutate(x => x.DrawImage(shadow, new Point(statsX - 3, statsY - 3), shadowsOpacity));
-                        }
-
-                        var isSmall = botUser.StatsStyleSettings.HasFlag(StatsSettings.HalfGallery);
-                        var startX = statsX + (isSmall ? 6 : 12);
-                        var cardGap = isSmall ? 160 : 104;
-                        var cardSize = isSmall ? 215 : 131;
-                        var cardY = statsY + (isSmall ? 26 : 2);
-                        var cardX = startX;
-
-                        var cardsToShow = GetOrdertedCardsForGallery(botUser, isSmall ? 2 : 6);
-                        foreach (var card in cardsToShow)
-                        {
-                            using var cardImage = await LoadOrGetNewWaifuProfileCardAsync(card);
-                            cardImage.Mutate(x => x.Resize(new ResizeOptions { Mode = ResizeMode.Max, Size = new Size(0, cardSize) }));
-                            image.Mutate(x => x.DrawImage(cardImage, new Point(cardX, cardY), 1));
-                            cardX += cardGap;
-
-                            if (cardX > ((cardGap * 2) + startX))
+                            if (isOnImg)
                             {
-                                cardX = startX;
-                                cardY += 135;
+                                using var shadow = new Image<Rgba32>(331, 275, GetOrCreateColor("#000000"));
+                                shadow.Mutate(x => x.Round(10));
+                                image.Mutate(x => x.DrawImage(shadow, new Point(statsX - 3, statsY - 3), shadowsOpacity));
+                            }
+
+                            var isSmall = botUser.StatsStyleSettings.HasFlag(StatsSettings.HalfGallery);
+                            var startX = statsX + (isSmall ? 6 : 12);
+                            var cardGap = isSmall ? 160 : 104;
+                            var cardSize = isSmall ? 215 : 131;
+                            var cardY = statsY + (isSmall ? 26 : 2);
+                            var cardX = startX;
+
+                            var cardsToShow = GetOrdertedCardsForGallery(botUser, isSmall ? 2 : 6);
+                            foreach (var card in cardsToShow)
+                            {
+                                using var cardImage = await LoadOrGetNewWaifuProfileCardAsync(card);
+                                cardImage.Mutate(x => x.Resize(new ResizeOptions { Mode = ResizeMode.Max, Size = new Size(0, cardSize) }));
+                                image.Mutate(x => x.DrawImage(cardImage, new Point(cardX, cardY), 1));
+                                cardX += cardGap;
+
+                                if (cardX > ((cardGap * 2) + startX))
+                                {
+                                    cardX = startX;
+                                    cardY += 135;
+                                }
                             }
                         }
                     }
@@ -598,7 +601,7 @@ namespace Sanakan.Services
             return image;
         }
 
-        public async Task<Image<Rgba32>> GetUserNewProfileAsync(IUserInfo shindenUser, User botUser, string avatarUrl, long topPos, string nickname, Discord.Color color)
+        public async Task<Image<Rgba32>> GetUserProfileAsync(IUserInfo shindenUser, User botUser, string avatarUrl, long topPos, string nickname, Discord.Color color)
         {
             color = color == Discord.Color.Default ? Discord.Color.DarkerGrey : color;
             string rangName = botUser.Id == 1 ? "Safeguard" : (shindenUser?.Rank ?? "");
@@ -711,273 +714,6 @@ namespace Sanakan.Services
 
             using var profileBar = GetProfileBar(topPos, botUser);
             profilePic.Mutate(x => x.DrawImage(profileBar, new Point(0, 0), 1));
-
-            return profilePic;
-        }
-
-        public async Task<Image<Rgba32>> GetUserProfileAsync(IUserInfo shindenUser, User botUser, string avatarUrl, long topPos, string nickname, Discord.Color color)
-        {
-            if (color == Discord.Color.Default)
-                color = Discord.Color.DarkerGrey;
-
-            string rangName = shindenUser?.Rank ?? "";
-            if (botUser.Id == 1) rangName = "Safeguard";
-            string colorRank = color.RawValue.ToString("X6");
-
-            var nickFont = GetFontSize(_latoBold, 28, nickname, 290);
-            var rangFont = GetOrCreateFont(_latoRegular, 16);
-            var levelFont = GetOrCreateFont(_latoBold, 40);
-
-            var template = Image.Load("./Pictures/profileBody.png");
-            var profilePic = new Image<Rgba32>(template.Width, template.Height);
-
-            if (!File.Exists(botUser.BackgroundProfileUri))
-                botUser.BackgroundProfileUri = "./Pictures/defBg.png";
-
-            using (var userBg = Image.Load(botUser.BackgroundProfileUri))
-            {
-                profilePic.Mutate(x => x.DrawImage(userBg, new Point(0, 0), 1));
-                profilePic.Mutate(x => x.DrawImage(template, new Point(0, 0), 1));
-
-                template.Dispose();
-            }
-
-            using (var originalImage = Image.Load(await GetImageFromUrlAsync(avatarUrl)))
-            {
-                using (var webpAvatarStream = originalImage.ToWebpStream())
-                {
-                    using (var avatar = Image.Load(webpAvatarStream))
-                    {
-                        using (var avBack = new Image<Rgba32>(82, 82))
-                        {
-                            avBack.Mutate(x => x.BackgroundColor(GetOrCreateColor(colorRank)));
-                            avBack.Mutate(x => x.Round(42));
-
-                            profilePic.Mutate(x => x.DrawImage(avBack, new Point(20, 115), 1));
-                        }
-
-                        avatar.Mutate(x => x.Resize(new Size(80, 80)));
-                        avatar.Mutate(x => x.Round(42));
-
-                        profilePic.Mutate(x => x.DrawImage(avatar, new Point(21, 116), 1));
-                    }
-                }
-            }
-
-            var defFontColor = GetOrCreateColor("#7f7f7f");
-            var posColor = GetOrCreateColor("#FFD700");
-
-            if (topPos == 2)
-                posColor = GetOrCreateColor("#c0c0c0");
-            else if (topPos == 3)
-                posColor = GetOrCreateColor("#cd7f32");
-            else if (topPos > 3)
-                posColor = defFontColor;
-
-            profilePic.Mutate(x => x.DrawText(nickname, nickFont, GetOrCreateColor("#a7a7a7"), new Point(132, 147 + (int)((30 - nickFont.Size) / 2))));
-            profilePic.Mutate(x => x.DrawText(rangName, rangFont, defFontColor, new Point(132, 177)));
-
-            var mLevel = TextMeasurer.Measure($"{botUser.Level}", new TextOptions(levelFont));
-            profilePic.Mutate(x => x.DrawText($"{botUser.Level}", levelFont, defFontColor, new Point((int)(125 - mLevel.Width) / 2, 203)));
-
-            var mTopPos = TextMeasurer.Measure($"{topPos}", new TextOptions(levelFont));
-            profilePic.Mutate(x => x.DrawText($"{topPos}", levelFont, posColor, new Point((int)(125 - mTopPos.Width) / 2, 281)));
-
-            var mScOwn = TextMeasurer.Measure($"{botUser.ScCnt}", new TextOptions(rangFont));
-            profilePic.Mutate(x => x.DrawText($"{botUser.ScCnt}", rangFont, defFontColor, new Point((int)(125 - mScOwn.Width) / 2, 362)));
-
-            var mTcOwn = TextMeasurer.Measure($"{botUser.TcCnt}", new TextOptions(rangFont));
-            profilePic.Mutate(x => x.DrawText($"{botUser.TcCnt}", rangFont, defFontColor, new Point((int)(125 - mTcOwn.Width) / 2, 401)));
-
-            var mMsg = TextMeasurer.Measure($"{botUser.MessagesCnt}", new TextOptions(rangFont));
-            profilePic.Mutate(x => x.DrawText($"{botUser.MessagesCnt}", rangFont, defFontColor, new Point((int)(125 - mMsg.Width) / 2, 442)));
-
-            if (botUser.GameDeck.Waifu != 0 && botUser.ShowWaifuInProfile)
-            {
-                var tChar = botUser.GameDeck.GetWaifuCard();
-                if (tChar != null)
-                {
-                    using (var cardImage = await LoadOrGetNewWaifuProfileCardAsync(tChar))
-                    {
-                        cardImage.Mutate(x => x.Resize(new ResizeOptions
-                        {
-                            Mode = ResizeMode.Max,
-                            Size = new Size(105, 0)
-                        }));
-                        profilePic.Mutate(x => x.DrawImage(cardImage, new Point(10, 350), 1));
-                    }
-                }
-            }
-
-            var prevLvlExp = ExperienceManager.CalculateExpForLevel(botUser.Level);
-            var nextLvlExp = ExperienceManager.CalculateExpForLevel(botUser.Level + 1);
-            var expOnLvl = botUser.ExpCnt - prevLvlExp;
-            var lvlExp = nextLvlExp - prevLvlExp;
-
-            if (expOnLvl < 0) expOnLvl = 0;
-            if (lvlExp < 0) lvlExp = expOnLvl + 1;
-
-            int progressBarLength = (int)(305f * ((double)expOnLvl / (double)lvlExp));
-            if (progressBarLength > 0)
-            {
-                using (var progressBar = new Image<Rgba32>(progressBarLength, 19))
-                {
-                    progressBar.Mutate(x => x.BackgroundColor(GetOrCreateColor("#828282")));
-                    profilePic.Mutate(x => x.DrawImage(progressBar, new Point(135, 201), 1));
-                }
-            }
-
-            string expText = $"EXP: {expOnLvl} / {lvlExp}";
-            var mExp = TextMeasurer.Measure(expText, new TextOptions(rangFont));
-            profilePic.Mutate(x => x.DrawText(expText, rangFont, GetOrCreateColor("#ffffff"), new Point(135 + ((int)(305 - mExp.Width) / 2), 201)));
-
-            using (var inside = await GetProfileInside(shindenUser, botUser))
-            {
-                profilePic.Mutate(x => x.DrawImage(inside, new Point(125, 228), 1));
-            }
-
-            return profilePic;
-        }
-
-        private async Task<Image<Rgba32>> GetProfileInside(IUserInfo shindenUser, User botUser)
-        {
-            var image = new Image<Rgba32>(325, 272);
-
-            if (!File.Exists(botUser.StatsReplacementProfileUri))
-            {
-                if ((botUser.ProfileType == ProfileType.Img || botUser.ProfileType == ProfileType.StatsWithImg))
-                    botUser.ProfileType = ProfileType.Stats;
-            }
-
-            switch (botUser.ProfileType)
-            {
-                case ProfileType.Stats:
-                case ProfileType.StatsWithImg:
-                    if (shindenUser != null)
-                    {
-                        if (shindenUser?.ListStats?.AnimeStatus != null)
-                        {
-                            using (var stats = GetRWStats(shindenUser?.ListStats?.AnimeStatus,
-                                "./Pictures/statsAnime.png", shindenUser.GetMoreSeriesStats(false)))
-                            {
-                                image.Mutate(x => x.DrawImage(stats, new Point(0, 2), 1));
-                            }
-                        }
-                        if (shindenUser?.ListStats?.MangaStatus != null)
-                        {
-                            using (var stats = GetRWStats(shindenUser?.ListStats?.MangaStatus,
-                                "./Pictures/statsManga.png", shindenUser.GetMoreSeriesStats(true)))
-                            {
-                                image.Mutate(x => x.DrawImage(stats, new Point(0, 142), 1));
-                            }
-                        }
-
-                        if (botUser.ProfileType == ProfileType.StatsWithImg)
-                            goto case ProfileType.Img;
-                    }
-                    break;
-
-                case ProfileType.Cards:
-                    {
-                        using (var cardsBg = await GetCardsProfileImage(botUser))
-                        {
-                            image.Mutate(x => x.DrawImage(cardsBg, new Point(0, 0), 1));
-                        }
-                    }
-                    break;
-
-                case ProfileType.Img:
-                    {
-                        using (var userBg = Image.Load(botUser.StatsReplacementProfileUri))
-                        {
-                            image.Mutate(x => x.DrawImage(userBg, new Point(0, 0), 1));
-                        }
-                    }
-                    break;
-            }
-
-            return image;
-        }
-
-        private async Task<Image<Rgba32>> GetCardsProfileImage(User botUser)
-        {
-            var profilePic = new Image<Rgba32>(325, 272);
-
-            if (botUser.GameDeck.Waifu != 0)
-            {
-                var tChar = botUser.GameDeck.GetWaifuCard();
-                if (tChar != null)
-                {
-                    using (var cardImage = await LoadOrGetNewWaifuProfileCardAsync(tChar))
-                    {
-                        cardImage.Mutate(x => x.Resize(new ResizeOptions
-                        {
-                            Mode = ResizeMode.Max,
-                            Size = new Size(0, 260)
-                        }));
-                        profilePic.Mutate(x => x.DrawImage(cardImage, new Point(10, 6), 1));
-                    }
-                }
-            }
-
-            var sss = $"{botUser.GameDeck.Cards.Count(x => x.Rarity == Rarity.SSS)}";
-            var ss = $"{botUser.GameDeck.Cards.Count(x => x.Rarity == Rarity.SS)}";
-            var s = $"{botUser.GameDeck.Cards.Count(x => x.Rarity == Rarity.S)}";
-            var a = $"{botUser.GameDeck.Cards.Count(x => x.Rarity == Rarity.A)}";
-            var b = $"{botUser.GameDeck.Cards.Count(x => x.Rarity == Rarity.B)}";
-            var c = $"{botUser.GameDeck.Cards.Count(x => x.Rarity == Rarity.C)}";
-            var d = $"{botUser.GameDeck.Cards.Count(x => x.Rarity == Rarity.D)}";
-            var e = $"{botUser.GameDeck.Cards.Count(x => x.Rarity == Rarity.E)}";
-
-            int jumpY = 18;
-            int row2X = 45;
-            int startY = 9;
-            int startX = 205;
-            var font1 = GetFontSize(_latoBold, 18, $"SUM", 100);
-            var font2 = GetFontSize(_latoLight, 18, "10000", 130);
-
-            profilePic.Mutate(x => x.DrawText("SSS", font1, GetOrCreateColor("#A4A4A4"), new Point(startX, startY)));
-            profilePic.Mutate(x => x.DrawText(sss, font2, GetOrCreateColor("#A4A4A4"), new Point(startX + row2X, startY)));
-            startY += jumpY;
-
-            profilePic.Mutate(x => x.DrawText("SS", font1, GetOrCreateColor("#A4A4A4"), new Point(startX, startY)));
-            profilePic.Mutate(x => x.DrawText(ss, font2, GetOrCreateColor("#A4A4A4"), new Point(startX + row2X, startY)));
-            startY += jumpY;
-
-            profilePic.Mutate(x => x.DrawText("S", font1, GetOrCreateColor("#A4A4A4"), new Point(startX, startY)));
-            profilePic.Mutate(x => x.DrawText(s, font2, GetOrCreateColor("#A4A4A4"), new Point(startX + row2X, startY)));
-            startY += jumpY;
-
-            profilePic.Mutate(x => x.DrawText("A", font1, GetOrCreateColor("#A4A4A4"), new Point(startX, startY)));
-            profilePic.Mutate(x => x.DrawText(a, font2, GetOrCreateColor("#A4A4A4"), new Point(startX + row2X, startY)));
-            startY += jumpY;
-
-            profilePic.Mutate(x => x.DrawText("B", font1, GetOrCreateColor("#A4A4A4"), new Point(startX, startY)));
-            profilePic.Mutate(x => x.DrawText(b, font2, GetOrCreateColor("#A4A4A4"), new Point(startX + row2X, startY)));
-            startY += jumpY;
-
-            profilePic.Mutate(x => x.DrawText("C", font1, GetOrCreateColor("#A4A4A4"), new Point(startX, startY)));
-            profilePic.Mutate(x => x.DrawText(c, font2, GetOrCreateColor("#A4A4A4"), new Point(startX + row2X, startY)));
-            startY += jumpY;
-
-            profilePic.Mutate(x => x.DrawText("D", font1, GetOrCreateColor("#A4A4A4"), new Point(startX, startY)));
-            profilePic.Mutate(x => x.DrawText(d, font2, GetOrCreateColor("#A4A4A4"), new Point(startX + row2X, startY)));
-            startY += jumpY;
-
-            profilePic.Mutate(x => x.DrawText("E", font1, GetOrCreateColor("#A4A4A4"), new Point(startX, startY)));
-            profilePic.Mutate(x => x.DrawText(e, font2, GetOrCreateColor("#A4A4A4"), new Point(startX + row2X, startY)));
-            startY += jumpY;
-
-            profilePic.Mutate(x => x.DrawText("SUM", font1, GetOrCreateColor("#A4A4A4"), new Point(startX, startY)));
-            profilePic.Mutate(x => x.DrawText($"{botUser.GameDeck.Cards.Count}", font2, GetOrCreateColor("#A4A4A4"), new Point(startX + row2X, startY)));
-            startY += jumpY * 4;
-
-            profilePic.Mutate(x => x.DrawText("CT", font1, GetOrCreateColor("#A4A4A4"), new Point(startX, startY)));
-            profilePic.Mutate(x => x.DrawText($"{botUser.GameDeck.CTCnt}", font2, GetOrCreateColor("#A4A4A4"), new Point(startX + row2X, startY)));
-            startY += jumpY;
-
-            profilePic.Mutate(x => x.DrawText("K", font1, GetOrCreateColor("#A4A4A4"), new Point(startX, startY)));
-            profilePic.Mutate(x => x.DrawText(botUser.GameDeck.Karma.ToString("F"), font2, GetOrCreateColor("#A4A4A4"), new Point(startX + 15, startY)));
 
             return profilePic;
         }

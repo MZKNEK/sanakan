@@ -266,7 +266,7 @@ namespace Sanakan.Modules
         [Alias("profile view")]
         [Summary("przełącza widoczność elementów na profilu")]
         [Remarks("1"), RequireAnyCommandChannel]
-        public async Task ToggleProfileViewSettingseAsync([Summary("element (anime(1), manga(2), karty(4), odwrócenie(8), mniejsza galeria(16))")]StatsSettings settings)
+        public async Task ToggleProfileViewSettingseAsync([Summary("element (anime(1), manga(2), karty(4), odwrócenie(8), mniejsza galeria(16), widoczność galerii(32))")]StatsSettings settings)
         {
             if (settings == StatsSettings.None)
             {
@@ -292,6 +292,7 @@ namespace Sanakan.Modules
                     StatsSettings.ShowCards   => "statystyk kart",
                     StatsSettings.Flip        => "paneli",
                     StatsSettings.HalfGallery => "liczby kart",
+                    StatsSettings.ShowGallery => "mini galerii",
                     _ => "??"
                 };
 
@@ -303,21 +304,13 @@ namespace Sanakan.Modules
         [Alias("profile version")]
         [Summary("zmienia wersje profilu użytkownika")]
         [Remarks("1"), RequireAnyCommandChannel]
-        public async Task ChangeProfileVersioneAsync([Summary("wersja (0 - stary, 1 - nowy z paskiem na górze, 2 - nowy z paskiem na dole)")]ProfileVersion version)
+        public async Task ChangeProfileVersioneAsync([Summary("wersja (0 - pasek na dole, 1 - pasek na górze)")]ProfileVersion version)
         {
             using (var db = new Database.DatabaseContext(Config))
             {
                 var botuser = await db.GetUserOrCreateSimpleAsync(Context.User.Id);
-                var wasOld = botuser.ProfileVersion == ProfileVersion.Old;
-                var isOld = version == ProfileVersion.Old;
 
                 botuser.ProfileVersion = version;
-
-                if (wasOld != isOld)
-                {
-                    botuser.BackgroundProfileUri = isOld ? "./Pictures/defBg.png" : "./Pictures/np/pbg.png";
-                    botuser.StatsReplacementProfileUri = "none";
-                }
 
                 await db.SaveChangesAsync();
 
@@ -451,27 +444,12 @@ namespace Sanakan.Modules
 
                 switch (type)
                 {
+                    case ProfileType.Img:
                     case ProfileType.CardsOnImg:
                     case ProfileType.StatsOnImg:
-                    case ProfileType.MiniGallery:
-                    case ProfileType.MiniGalleryOnImg:
-                        if (botuser.ProfileVersion == ProfileVersion.Old)
-                        {
-                            await ReplyAsync("", embed: $"{Context.User.Mention} te style nie sa wspierana na starym profilu!".ToEmbedMessage(EMType.Error).Build());
-                            return;
-                        }
-
-                        if (type == ProfileType.MiniGallery)
-                            goto case ProfileType.Stats;
-
-                        goto case ProfileType.StatsWithImg;
-                    case ProfileType.Img:
                     case ProfileType.StatsWithImg:
-                        var res = botuser.ProfileVersion switch
-                        {
-                            ProfileVersion.Old => await _profile.SaveProfileImageAsync(imgUrl, $"{Dir.SavedData}/SR{botuser.Id}.png", 325, 272),
-                            _ => await _profile.SaveProfileImageAsync(imgUrl, $"{Dir.SavedData}/SR{botuser.Id}.png", 750, 340)
-                        };
+                    case ProfileType.MiniGalleryOnImg:
+                        var res = await _profile.SaveProfileImageAsync(imgUrl, $"{Dir.SavedData}/SR{botuser.Id}.png", 750, 340);
                         if (res == SaveResult.Success)
                         {
                             botuser.StatsReplacementProfileUri = $"{Dir.SavedData}/SR{botuser.Id}.png";
@@ -486,7 +464,6 @@ namespace Sanakan.Modules
                         return;
 
                     default:
-                    case ProfileType.Stats:
                         break;
                 }
 
@@ -498,6 +475,7 @@ namespace Sanakan.Modules
                 {
                     botuser.TcCnt -= tcCost;
                 }
+
                 botuser.ProfileType = type;
 
                 await db.SaveChangesAsync();
@@ -531,12 +509,7 @@ namespace Sanakan.Modules
                     return;
                 }
 
-                var res = botuser.ProfileVersion switch
-                {
-                    ProfileVersion.Old => await _profile.SaveProfileImageAsync(imgUrl, $"{Dir.SavedData}/BG{botuser.Id}.png", 450, 145, true),
-                    _ => await _profile.SaveProfileImageAsync(imgUrl, $"{Dir.SavedData}/BG{botuser.Id}.png", 750, 160, true)
-                };
-
+                var res = await _profile.SaveProfileImageAsync(imgUrl, $"{Dir.SavedData}/BG{botuser.Id}.png", 750, 160, true);
                 if (res == SaveResult.Success)
                 {
                     botuser.BackgroundProfileUri = $"{Dir.SavedData}/BG{botuser.Id}.png";

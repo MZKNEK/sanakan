@@ -10,11 +10,6 @@ namespace Sanakan.Database.Models
         Stats, Img, StatsWithImg, Cards, CardsOnImg, StatsOnImg, MiniGallery, MiniGalleryOnImg
     }
 
-    public enum ProfileVersion
-    {
-        Old, NewBarTop, NewBarBottom
-    }
-
     public enum CharacterPoolType
     {
         Anime, Manga, All
@@ -25,6 +20,11 @@ namespace Sanakan.Database.Models
         None, PurpleLeaves, Dzedai, Base, Water, Crows, Bow
     }
 
+    public enum ProfileVersion
+    {
+        BarOnTop, BarOnBottom
+    }
+
     [Flags]
     public enum StatsSettings
     {
@@ -32,9 +32,10 @@ namespace Sanakan.Database.Models
         ShowAnime   = 1,
         ShowManga   = 2,
         ShowCards   = 4,
-        ShowAll     = ShowAnime | ShowManga | ShowCards,
         Flip        = 8,
         HalfGallery = 16,
+        ShowGallery = 32,
+        ShowAll     = ShowAnime | ShowManga | ShowCards | ShowGallery,
     }
 
     public class User

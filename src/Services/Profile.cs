@@ -337,13 +337,8 @@ namespace Sanakan.Services
             var response = _shClient.User.GetAsync(botUser.Shinden);
             topPosition = topPosition > 999 ? 999 : topPosition;
 
-            using var image = botUser.ProfileVersion switch
-            {
-                ProfileVersion.Old => await _img.GetUserProfileAsync(isConnected ? (await response).Body : null, botUser, user.GetUserOrDefaultAvatarUrl(true),
-                topPosition, user.GetUserNickInGuild(), user.Roles.OrderByDescending(x => x.Position).FirstOrDefault()?.Color ?? Discord.Color.DarkerGrey),
-                _ => await _img.GetUserNewProfileAsync(isConnected ? (await response).Body : null, botUser, user.GetUserOrDefaultAvatarUrl(true),
-                topPosition, user.GetUserNickInGuild(), user.Roles.OrderByDescending(x => x.Position).FirstOrDefault()?.Color ?? Discord.Color.DarkerGrey)
-            };
+            using var image = await _img.GetUserProfileAsync(isConnected ? (await response).Body : null, botUser, user.GetUserOrDefaultAvatarUrl(true),
+                topPosition, user.GetUserNickInGuild(), user.Roles.OrderByDescending(x => x.Position).FirstOrDefault()?.Color ?? Discord.Color.DarkerGrey);
 
             return image.ToPngStream();
         }
