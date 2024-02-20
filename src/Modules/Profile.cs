@@ -13,6 +13,7 @@ using Sanakan.Extensions;
 using Sanakan.Preconditions;
 using Sanakan.Services;
 using Sanakan.Services.Commands;
+using Sanakan.Services.PocketWaifu;
 using Sanakan.Services.Session;
 using Sanakan.Services.Session.Models;
 using Sanakan.Services.Time;
@@ -25,10 +26,12 @@ namespace Sanakan.Modules
     {
         private Services.Profile _profile;
         private SessionManager _session;
+        private ImageProcessing _img;
         private ISystemTime _time;
 
-        public Profile(Services.Profile prof, SessionManager session, ISystemTime time)
+        public Profile(Services.Profile prof, SessionManager session, ISystemTime time, ImageProcessing img)
         {
+            _img = img;
             _time = time;
             _profile = prof;
             _session = session;
@@ -241,85 +244,6 @@ namespace Sanakan.Modules
             await _session.TryAddSession(session);
         }
 
-        [Command("widok waifu")]
-        [Alias("waifu view")]
-        [Summary("przełącza widoczność waifu na pasku bocznym profilu użytkownika")]
-        [Remarks(""), RequireAnyCommandChannel]
-        public async Task ToggleWaifuViewInProfileAsync()
-        {
-            using (var db = new Database.DatabaseContext(Config))
-            {
-                var botuser = await db.GetUserOrCreateSimpleAsync(Context.User.Id);
-                botuser.ShowWaifuInProfile = !botuser.ShowWaifuInProfile;
-
-                string result = botuser.ShowWaifuInProfile ? "załączony" : "wyłączony";
-
-                await db.SaveChangesAsync();
-
-                QueryCacheManager.ExpireTag(new string[] { $"user-{botuser.Id}", "users" });
-
-                await ReplyAsync("", embed: $"Podgląd waifu w profilu {Context.User.Mention} został {result}.".ToEmbedMessage(EMType.Success).Build());
-            }
-        }
-
-        [Command("widok profilu")]
-        [Alias("profile view")]
-        [Summary("przełącza widoczność elementów na profilu")]
-        [Remarks("1"), RequireAnyCommandChannel]
-        public async Task ToggleProfileViewSettingseAsync([Summary("element (anime(1), manga(2), karty(4), odwrócenie(8), mniejsza galeria(16), widoczność galerii(32))")]StatsSettings settings)
-        {
-            if (settings == StatsSettings.None)
-            {
-                await ReplyAsync("", embed: $"{Context.User.Mention} ????".ToEmbedMessage(EMType.Error).Build());
-                return;
-            }
-
-            using (var db = new Database.DatabaseContext(Config))
-            {
-                var botuser = await db.GetUserOrCreateSimpleAsync(Context.User.Id);
-
-                botuser.StatsStyleSettings ^= settings;
-
-                await db.SaveChangesAsync();
-
-                QueryCacheManager.ExpireTag(new string[] { $"user-{botuser.Id}", "users" });
-
-                string result = botuser.StatsStyleSettings.HasFlag(settings) ? "załączona" : "wyłączona";
-                string what = settings switch
-                {
-                    StatsSettings.ShowAnime   => "statystyk anime",
-                    StatsSettings.ShowManga   => "statystyk mangi",
-                    StatsSettings.ShowCards   => "statystyk kart",
-                    StatsSettings.Flip        => "paneli",
-                    StatsSettings.HalfGallery => "liczby kart",
-                    StatsSettings.ShowGallery => "mini galerii",
-                    _ => "??"
-                };
-
-                await ReplyAsync("", embed: $"{Context.User.Mention} widoczność {what} w profilu została {result}.".ToEmbedMessage(EMType.Success).Build());
-            }
-        }
-
-        [Command("wersja profilu")]
-        [Alias("profile version")]
-        [Summary("zmienia wersje profilu użytkownika")]
-        [Remarks("1"), RequireAnyCommandChannel]
-        public async Task ChangeProfileVersioneAsync([Summary("wersja (0 - pasek na dole, 1 - pasek na górze)")]ProfileVersion version)
-        {
-            using (var db = new Database.DatabaseContext(Config))
-            {
-                var botuser = await db.GetUserOrCreateSimpleAsync(Context.User.Id);
-
-                botuser.ProfileVersion = version;
-
-                await db.SaveChangesAsync();
-
-                QueryCacheManager.ExpireTag(new string[] { $"user-{botuser.Id}", "users" });
-
-                await ReplyAsync("", embed: $"{Context.User.Mention} zmieniono wersje profilu.".ToEmbedMessage(EMType.Success).Build());
-            }
-        }
-
         [Command("profil", RunMode = RunMode.Async)]
         [Alias("profile")]
         [Summary("wyświetla profil użytkownika")]
@@ -419,126 +343,144 @@ namespace Sanakan.Modules
             }
         }
 
-        [Command("styl")]
-        [Alias("style")]
-        [Summary("zmienia styl profilu (koszt 3000 SC/1000 TC)")]
-        [Remarks("1 https://sanakan.pl/i/example_new_style_1.png sc"), RequireCommandChannel]
-        public async Task ChangeStyleAsync([Summary("typ stylu (statystyki(0), obrazek(1), brzydkie(2), galeria(3), galeria na obrazku(4), statystyki na obrazku(5), mini galeria(6), mini galeria na obrazku(7))")]ProfileType type, [Summary("bezpośredni adres do obrazka gdy wybrany styl 1 lub 2 (750x340)")]string imgUrl = null, [Summary("waluta (SC/TC)")]SCurrency currency = SCurrency.Sc)
+        [Command("konfiguracja profilu")]
+        [Alias("configure profile", "konprof", "confprof")]
+        [Summary("pozwala ustawić konfigurowac profil użytkownika")]
+        [Remarks("konfiguracja profilu info"), RequireCommandChannel]
+        public async Task ConfigureProfileAsync([Summary("konfiguracja (podanie info wyświetla dodatkowe informacje)")][Remainder]ProfileConfig config)
         {
-            var scCost = 3000;
-            var tcCost = 1000;
+            if (config.Type == ProfileConfigType.ShowInfo)
+            {
+                await ReplyAsync("", embed: config.GetHelp().ToEmbedMessage(EMType.Info).Build());
+                return;
+            }
 
             using (var db = new Database.DatabaseContext(Config))
             {
                 var botuser = await db.GetUserOrCreateSimpleAsync(Context.User.Id);
-                if (botuser.ScCnt < scCost && currency == SCurrency.Sc)
+
+                var toPay = config.ToPay();
+                if (config.NeedPay() && !botuser.Pay(toPay))
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} nie posiadasz wystarczającej liczby SC!".ToEmbedMessage(EMType.Error).Build());
-                    return;
-                }
-                if (botuser.TcCnt < tcCost && currency == SCurrency.Tc)
-                {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} nie posiadasz wystarczającej liczby TC!".ToEmbedMessage(EMType.Error).Build());
+                    await ReplyAsync("", embed: $"{Context.User.Mention} nie masz wystarczającej liczby **{toPay.Type}**, potrzebujesz {toPay.Cost}.".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
-                switch (type)
+                switch (config.Type)
                 {
-                    case ProfileType.Img:
-                    case ProfileType.CardsOnImg:
-                    case ProfileType.StatsOnImg:
-                    case ProfileType.StatsWithImg:
-                    case ProfileType.MiniGalleryOnImg:
-                        var res = await _profile.SaveProfileImageAsync(imgUrl, $"{Dir.SavedData}/SR{botuser.Id}.png", 750, 340);
-                        if (res == SaveResult.Success)
+                    case ProfileConfigType.BackgroundAndStyle:
+                    {
+                        if (!config.StyleNeedUrl())
                         {
-                            botuser.StatsReplacementProfileUri = $"{Dir.SavedData}/SR{botuser.Id}.png";
-                            break;
-                        }
-                        else if (res == SaveResult.BadUrl)
-                        {
-                            await ReplyAsync("", embed: "Nie wykryto obrazka! Upewnij się, że podałeś poprawny adres!".ToEmbedMessage(EMType.Error).Build());
+                            await ReplyAsync("", embed: $"{Context.User.Mention} tym poleceniem możesz ustawić tylko style wymagające obarazka!".ToEmbedMessage(EMType.Error).Build());
                             return;
                         }
-                        await ReplyAsync("", embed: "Coś poszło nie tak, prawdopodobnie nie mam uprawnień do zapisu!".ToEmbedMessage(EMType.Error).Build());
-                        return;
+
+                        var res = await _profile.SaveProfileAndStyleImageAsync(config.Url, $"{Dir.SavedData}/BG{botuser.Id}.png", 750, 160, $"{Dir.SavedData}/SR{botuser.Id}.png", 750, 340);
+                        if (res != SaveResult.Success)
+                        {
+                            await ReplyAsync("", embed: $"{Context.User.Mention} nie wykryto obrazka! Upewnij się, że podałeś poprawny adres!".ToEmbedMessage(EMType.Error).Build());
+                            return;
+                        }
+
+                        botuser.StatsReplacementProfileUri = $"{Dir.SavedData}/SR{botuser.Id}.png";
+                        botuser.BackgroundProfileUri = $"{Dir.SavedData}/BG{botuser.Id}.png";
+                        botuser.ProfileType = config.Style;
+                    }
+                    break;
+
+                    case ProfileConfigType.Background:
+                    {
+                        var res = await _profile.SaveProfileImageAsync(config.Url, $"{Dir.SavedData}/BG{botuser.Id}.png", 750, 160, true);
+                        if (res != SaveResult.Success)
+                        {
+                            await ReplyAsync("", embed: $"{Context.User.Mention} nie wykryto obrazka! Upewnij się, że podałeś poprawny adres!".ToEmbedMessage(EMType.Error).Build());
+                            return;
+                        }
+
+                        botuser.BackgroundProfileUri = $"{Dir.SavedData}/BG{botuser.Id}.png";
+                    }
+                    break;
+
+                    case ProfileConfigType.Style:
+                    {
+                        if (config.StyleNeedUrl())
+                        {
+                            var res = await _profile.SaveProfileImageAsync(config.Url, $"{Dir.SavedData}/SR{botuser.Id}.png", 750, 340);
+                            if (res != SaveResult.Success)
+                            {
+                                await ReplyAsync("", embed: $"{Context.User.Mention} nie wykryto obrazka! Upewnij się, że podałeś poprawny adres!".ToEmbedMessage(EMType.Error).Build());
+                                return;
+                            }
+
+                            botuser.StatsReplacementProfileUri = $"{Dir.SavedData}/SR{botuser.Id}.png";
+                        }
+
+                        botuser.ProfileType = config.Style;
+                    }
+                    break;
+
+                    case ProfileConfigType.Overlay:
+                    {
+                        if (_img.CheckImageUrl(ref config.Url) != ImageUrlCheckResult.Ok)
+                        {
+                            await ReplyAsync("", embed: $"{Context.User.Mention} nie wykryto obrazka! Upewnij się, że podałeś poprawny adres!".ToEmbedMessage(EMType.Error).Build());
+                            return;
+                        }
+
+                        botuser.CustomProfileOverlayUrl = config.Url;
+                    }
+                    break;
+
+                    case ProfileConfigType.AvatarBorder:
+                    {
+                        botuser.AvatarBorder = config.Border;
+                    }
+                    break;
+
+                    case ProfileConfigType.ShadowsOpacity:
+                    {
+                        if (!config.IsConfigurableStyle(botuser.ProfileType))
+                        {
+                            await ReplyAsync("", embed: $"{Context.User.Mention} nie możesz zmienić tej opcji na obecnie ustawionym stylu!".ToEmbedMessage(EMType.Error).Build());
+                            return;
+                        }
+
+                        botuser.ProfileShadowsOpacity = config.PercentToOpacity();
+                    }
+                    break;
+
+                    case ProfileConfigType.Bar:
+                    case ProfileConfigType.MiniFavCard:
+                    case ProfileConfigType.AnimeStats:
+                    case ProfileConfigType.MangaStats:
+                    case ProfileConfigType.CardsStats:
+                    case ProfileConfigType.MiniGallery:
+                    case ProfileConfigType.CardCntInMiniGallery:
+                    case ProfileConfigType.FlipPanels:
+                    {
+                        if (!config.CanUseSettingOnStyle(botuser.ProfileType))
+                        {
+                            await ReplyAsync("", embed: $"{Context.User.Mention} nie możesz zmienić tej opcji na obecnie ustawionym stylu!".ToEmbedMessage(EMType.Error).Build());
+                            return;
+                        }
+
+                        if (config.ToggleCurentValue)
+                        {
+                            botuser.StatsStyleSettings ^= config.Settings;
+                        }
+                    }
+                    break;
 
                     default:
-                        break;
-                }
-
-                if (currency == SCurrency.Sc)
-                {
-                    botuser.ScCnt -= scCost;
-                }
-                else
-                {
-                    botuser.TcCnt -= tcCost;
-                }
-
-                botuser.ProfileType = type;
-
-                await db.SaveChangesAsync();
-
-                QueryCacheManager.ExpireTag(new string[] { $"user-{botuser.Id}", "users" });
-
-                await ReplyAsync("", embed: $"Zmieniono styl profilu użytkownika: {Context.User.Mention}!".ToEmbedMessage(EMType.Success).Build());
-            }
-        }
-
-        [Command("tło")]
-        [Alias("tlo", "bg", "background")]
-        [Summary("zmienia obrazek tła profilu (koszt 5000 SC/2500 TC)")]
-        [Remarks("https://sanakan.pl/i/example_new_profile_bg.png sc"), RequireCommandChannel]
-        public async Task ChangeBackgroundAsync([Summary("bezpośredni adres do obrazka (750x160)")]string imgUrl, [Summary("waluta (SC/TC)")]SCurrency currency = SCurrency.Sc)
-        {
-            var tcCost = 2500;
-            var scCost = 5000;
-
-            using (var db = new Database.DatabaseContext(Config))
-            {
-                var botuser = await db.GetUserOrCreateSimpleAsync(Context.User.Id);
-                if (botuser.ScCnt < scCost && currency == SCurrency.Sc)
-                {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} nie posiadasz wystarczającej liczby SC!".ToEmbedMessage(EMType.Error).Build());
-                    return;
-                }
-                if (botuser.TcCnt < tcCost && currency == SCurrency.Tc)
-                {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} nie posiadasz wystarczającej liczby TC!".ToEmbedMessage(EMType.Error).Build());
-                    return;
-                }
-
-                var res = await _profile.SaveProfileImageAsync(imgUrl, $"{Dir.SavedData}/BG{botuser.Id}.png", 750, 160, true);
-                if (res == SaveResult.Success)
-                {
-                    botuser.BackgroundProfileUri = $"{Dir.SavedData}/BG{botuser.Id}.png";
-                }
-                else if (res == SaveResult.BadUrl)
-                {
-                    await ReplyAsync("", embed: "Nie wykryto obrazka! Upewnij się, że podałeś poprawny adres!".ToEmbedMessage(EMType.Error).Build());
-                    return;
-                }
-                else
-                {
-                    await ReplyAsync("", embed: "Coś poszło nie tak, prawdopodobnie nie mam uprawnień do zapisu!".ToEmbedMessage(EMType.Error).Build());
-                    return;
-                }
-
-                if (currency == SCurrency.Sc)
-                {
-                    botuser.ScCnt -= scCost;
-                }
-                else
-                {
-                    botuser.TcCnt -= tcCost;
+                    break;
                 }
 
                 await db.SaveChangesAsync();
 
                 QueryCacheManager.ExpireTag(new string[] { $"user-{botuser.Id}", "users" });
 
-                await ReplyAsync("", embed: $"Zmieniono tło profilu użytkownika: {Context.User.Mention}!".ToEmbedMessage(EMType.Success).Build());
+                await ReplyAsync("", embed: $"{Context.User.Mention} {config.What()}".ToEmbedMessage(EMType.Success).Build());
             }
         }
 
@@ -595,7 +537,7 @@ namespace Sanakan.Modules
         [Alias("color", "colour")]
         [Summary("zmienia kolor użytkownika (koszt TC/SC na liście)")]
         [Remarks("pink sc"), RequireCommandChannel]
-        public async Task ToggleColorRoleAsync([Summary("kolor z listy (none - lista)")]FColor color = FColor.None, [Summary("waluta (SC/TC)")]SCurrency currency = SCurrency.Tc)
+        public async Task ToggleColorRoleAsync([Summary("kolor z listy (none - lista)")]FColor color = FColor.None, [Summary("waluta (SC/TC)")]CurrencyType currency = CurrencyType.TC)
         {
             var user = Context.User as SocketGuildUser;
             if (user == null) return;
@@ -612,7 +554,7 @@ namespace Sanakan.Modules
             using (var db = new Database.DatabaseContext(Config))
             {
                 var botuser = await db.GetUserOrCreateSimpleAsync(user.Id);
-                var points = currency == SCurrency.Tc ? botuser.TcCnt : botuser.ScCnt;
+                var points = currency == CurrencyType.TC ? botuser.TcCnt : botuser.ScCnt;
                 var gConfig = await db.GetCachedGuildFullConfigAsync(Context.Guild.Id);
                 var hasNitro = gConfig.NitroRole != 0 && ((Context.User as SocketGuildUser)?.Roles?.Any(x => x.Id == gConfig.NitroRole) ?? false);
                 if (!hasNitro && points < color.Price(currency))
@@ -655,7 +597,7 @@ namespace Sanakan.Modules
 
                     if (!hasNitro)
                     {
-                        if (currency == SCurrency.Tc)
+                        if (currency == CurrencyType.TC)
                         {
                             botuser.TcCnt -= color.Price(currency);
                         }

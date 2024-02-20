@@ -50,15 +50,14 @@ namespace Sanakan.Extensions
                 MessagesCntAtDate = 0,
                 IsBlacklisted = false,
                 CharacterCntFromDate = 0,
-                ShowWaifuInProfile = false,
+                ProfileShadowsOpacity = 0.7f,
                 CustomProfileOverlayUrl = null,
                 ProfileType = ProfileType.Stats,
                 AvatarBorder = AvatarBorder.None,
                 PoolType = CharacterPoolType.Anime,
                 StatsReplacementProfileUri = "none",
                 TimeStatuses = new List<TimeStatus>(),
-                StatsStyleSettings = StatsSettings.ShowAll,
-                ProfileVersion = ProfileVersion.BarOnBottom,
+                StatsStyleSettings = ProfileSettings.Default,
                 BackgroundProfileUri = $"./Pictures/np/pbg.png",
                 MeasureDate = new DateTime(creationTime.Year, creationTime.Month, 1),
                 GameDeck = new GameDeck
@@ -387,7 +386,7 @@ namespace Sanakan.Extensions
             return false;
         }
 
-        public static bool Pay(this User user, CurrencyCost cost, int count)
+        public static bool Pay(this User user, CurrencyCost cost, int count = 1)
         {
             var toPay = cost.Cost * count;
             switch (cost.Type)

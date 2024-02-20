@@ -1,17 +1,18 @@
 ﻿#pragma warning disable 1591
 
 using Sanakan.Services;
+using Sanakan.Services.PocketWaifu;
 
 namespace Sanakan.Extensions
 {
     public static class FColorExtension
     {
-        public static int Price(this FColor color, SCurrency currency)
+        public static int Price(this FColor color, CurrencyType currency)
         {
             if (color == FColor.CleanColor)
                 return 0;
 
-            if (currency == SCurrency.Sc)
+            if (currency == CurrencyType.SC)
                 return 39999;
 
             switch (color)

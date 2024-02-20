@@ -20,13 +20,8 @@ namespace Sanakan.Database.Models
         None, PurpleLeaves, Dzedai, Base, Water, Crows, Bow
     }
 
-    public enum ProfileVersion
-    {
-        BarOnTop, BarOnBottom
-    }
-
     [Flags]
-    public enum StatsSettings
+    public enum ProfileSettings
     {
         None        = 0,
         ShowAnime   = 1,
@@ -35,7 +30,9 @@ namespace Sanakan.Database.Models
         Flip        = 8,
         HalfGallery = 16,
         ShowGallery = 32,
-        ShowAll     = ShowAnime | ShowManga | ShowCards | ShowGallery,
+        ShowWaifu   = 64,
+        BarOnTop    = 128,
+        Default     = ShowAnime | ShowManga | ShowCards | ShowGallery,
     }
 
     public class User
@@ -56,13 +53,12 @@ namespace Sanakan.Database.Models
         public DateTime MeasureDate { get; set; }
         public ulong MessagesCntAtDate { get; set; }
         public ulong CharacterCntFromDate { get; set; }
-        public bool ShowWaifuInProfile { get; set; }
         public long Warnings { get; set; }
         public CharacterPoolType PoolType { get; set; }
-        public ProfileVersion ProfileVersion { get; set; }
         public AvatarBorder AvatarBorder { get; set; }
-        public StatsSettings StatsStyleSettings { get; set; }
+        public ProfileSettings StatsStyleSettings { get; set; }
         public string CustomProfileOverlayUrl { get; set; }
+        public float ProfileShadowsOpacity { get; set; }
 
         public virtual UserStats Stats { get; set; }
         public virtual GameDeck GameDeck { get; set; }

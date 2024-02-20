@@ -26,11 +26,6 @@ namespace Sanakan.Services
         Level, ScCnt, TcCnt, Posts, PostsMonthly, PostsMonthlyCharacter, Commands, Cards, CardsPower, Card, Karma, KarmaNegative, Pvp, PvpSeason, PcCnt, AcCnt
     }
 
-    public enum SCurrency
-    {
-        Sc, Tc
-    }
-
     public enum SaveResult
     {
         Error,
@@ -323,7 +318,7 @@ namespace Sanakan.Services
             return view;
         }
 
-        public Stream GetColorList(SCurrency currency)
+        public Stream GetColorList(PocketWaifu.CurrencyType currency)
         {
             using (var image = _img.GetFColorsView(currency))
             {
@@ -341,6 +336,28 @@ namespace Sanakan.Services
                 topPosition, user.GetUserNickInGuild(), user.Roles.OrderByDescending(x => x.Position).FirstOrDefault()?.Color ?? Discord.Color.DarkerGrey);
 
             return image.ToPngStream();
+        }
+
+        public async Task<SaveResult> SaveProfileAndStyleImageAsync(string imgUrl, string pathTop, int widthTop, int heightTop, string pathBot, int widthBot, int heightBot)
+        {
+            if (string.IsNullOrEmpty(imgUrl))
+                return SaveResult.BadUrl;
+
+            if (!_img.IsUrlToImageSimple(imgUrl))
+                return SaveResult.BadUrl;
+
+            try
+            {
+                if (File.Exists(pathTop)) File.Delete(pathTop);
+                if (File.Exists(pathBot)) File.Delete(pathBot);
+                await _img.SplitImageToBackgroundAndStyleAsync(imgUrl, pathTop, new SixLabors.ImageSharp.Size(widthTop, heightTop), pathBot, new SixLabors.ImageSharp.Size(widthBot, heightBot));
+            }
+            catch (Exception)
+            {
+                return SaveResult.Error;
+            }
+
+            return SaveResult.Success;
         }
 
         public async Task<SaveResult> SaveProfileImageAsync(string imgUrl, string path, int width = 0, int height = 0, bool streach = false)

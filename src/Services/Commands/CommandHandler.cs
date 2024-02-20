@@ -79,10 +79,10 @@ namespace Sanakan.Services.Commands
             _cmd.AddTypeReader<SlotMachineSetting>(new TypeReaders.SlotMachineSettingTypeReader());
             _cmd.AddTypeReader<ModifyTagActionType>(new TypeReaders.ModifyTagActionTypeReader());
             _cmd.AddTypeReader<WishlistObjectType>(new TypeReaders.WishlistObjectTypeReader());
+            _cmd.AddTypeReader<ProfileConfig>(new TypeReaders.ProfileConfigTypeReader());
             _cmd.AddTypeReader<ItemCountPair>(new TypeReaders.ItemCountPairTypeReader());
             _cmd.AddTypeReader<CardExpedition>(new TypeReaders.ExpeditionTypeReader());
             _cmd.AddTypeReader<FigurePart>(new TypeReaders.FigurePartTypeReader());
-            _cmd.AddTypeReader<ProfileType>(new TypeReaders.ProfileTypeReader());
             _cmd.AddTypeReader<ConfigType>(new TypeReaders.ConfigTypeReader());
             _cmd.AddTypeReader<CoinSide>(new TypeReaders.CoinSideTypeReader());
             _cmd.AddTypeReader<HaremType>(new TypeReaders.HaremTypeReader());
@@ -160,6 +160,8 @@ namespace Sanakan.Services.Commands
                     break;
 
                 case CommandError.ParseFailed:
+                    await context.Channel.SendMessageAsync("", embed: $"{context.User.Mention} {result.ErrorReason}".ToEmbedMessage(EMType.Error).Build());
+                    break;
                 case CommandError.BadArgCount:
                     var cmd = _cmd.Search(context, argPos);
                     if (cmd.Commands.Count > 0)
@@ -171,7 +173,7 @@ namespace Sanakan.Services.Commands
                 case CommandError.UnmetPrecondition:
                     if (result.ErrorReason.StartsWith("|IMAGE|"))
                     {
-                        var emb = new EmbedBuilder().WithColor(EMType.Error.Color());
+                        var emb = new EmbedBuilder().WithColor(EMType.Error.Color()).WithUser(context.User);
                         var splited = result.ErrorReason.Split("|");
                         if (splited.Length > 3) emb.WithDescription(splited[3]).WithImageUrl(splited[2]);
                         else emb.WithImageUrl(result.ErrorReason.Remove(0, 7));

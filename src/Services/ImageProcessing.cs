@@ -229,6 +229,24 @@ namespace Sanakan.Services
         public async Task SaveImageFromUrlAsync(string url, string path)
             => await SaveImageFromUrlAsync(url, path, Size.Empty);
 
+        public async Task SplitImageToBackgroundAndStyleAsync(string url, string pathTop, Size sizeTop, string pathBot, Size sizeBot)
+        {
+            using var stream = await GetImageFromUrlAsync(url, true);
+            using var image = Image.Load(stream);
+
+            var width = Math.Max(sizeTop.Width, sizeBot.Width);
+            var height = sizeTop.Height + sizeBot.Height;
+
+            if (height > 0 || width > 0)
+                CheckImageSize(image, new Size(width, height), true);
+
+            var topImage = image.Clone(x => x.Crop(sizeTop.Width, sizeTop.Height));
+            var botImage = image.Clone(x => x.Crop(new Rectangle(0, sizeTop.Height, sizeBot.Width, sizeBot.Height)));
+
+            topImage.SaveToPath(pathTop);
+            botImage.SaveToPath(pathBot);
+        }
+
         public async Task SaveImageFromUrlAsync(string url, string path, Size size, bool strech = false)
         {
             using (var stream = await GetImageFromUrlAsync(url, true))
@@ -316,7 +334,7 @@ namespace Sanakan.Services
 
         private Image<Rgba32> GetProfileBar(long topPos, User user)
         {
-            var barTop = user.ProfileVersion != ProfileVersion.BarOnBottom;
+            var barTop = user.StatsStyleSettings.HasFlag(ProfileSettings.BarOnTop);
 
             var image = new Image<Rgba32>(750, 500, Color.Transparent);
             using var bar = Image.Load(barTop ? "./Pictures/np/tbar.png" : "./Pictures/np/bbar.png");
@@ -383,7 +401,7 @@ namespace Sanakan.Services
 
         private async Task<Image> GetUserNewProfileStyleAsync(IUserInfo shindenUser, User botUser)
         {
-            var shadowsOpacity = 0.6f;
+            var shadowsOpacity = botUser.ProfileShadowsOpacity;
             var image = new Image<Rgba32>(750, 340, Color.Transparent);
             switch (botUser.ProfileType)
             {
@@ -414,13 +432,13 @@ namespace Sanakan.Services
                 {
                     var isMiniGallery = botUser.ProfileType == ProfileType.MiniGallery || botUser.ProfileType == ProfileType.MiniGalleryOnImg;
                     var isOnImg = botUser.ProfileType == ProfileType.StatsOnImg || botUser.ProfileType == ProfileType.MiniGalleryOnImg;
-                    var flip = botUser.StatsStyleSettings.HasFlag(StatsSettings.Flip);
+                    var flip = botUser.StatsStyleSettings.HasFlag(ProfileSettings.Flip);
                     var statsX = flip ? 407 : 16;
                     var statsY = 24;
 
                     if (isMiniGallery)
                     {
-                        if (botUser.StatsStyleSettings.HasFlag(StatsSettings.ShowGallery))
+                        if (botUser.StatsStyleSettings.HasFlag(ProfileSettings.ShowGallery))
                         {
                             if (isOnImg)
                             {
@@ -429,7 +447,7 @@ namespace Sanakan.Services
                                 image.Mutate(x => x.DrawImage(shadow, new Point(statsX - 3, statsY - 3), shadowsOpacity));
                             }
 
-                            var isSmall = botUser.StatsStyleSettings.HasFlag(StatsSettings.HalfGallery);
+                            var isSmall = botUser.StatsStyleSettings.HasFlag(ProfileSettings.HalfGallery);
                             var startX = statsX + (isSmall ? 6 : 12);
                             var cardGap = isSmall ? 160 : 104;
                             var cardSize = isSmall ? 215 : 131;
@@ -459,7 +477,7 @@ namespace Sanakan.Services
                             using var shadow = new Image<Rgba32>(331, 128, GetOrCreateColor("#000000"));
                             shadow.Mutate(x => x.Round(10));
 
-                            if (shindenUser?.ListStats?.AnimeStatus != null && botUser.StatsStyleSettings.HasFlag(StatsSettings.ShowAnime))
+                            if (shindenUser?.ListStats?.AnimeStatus != null && botUser.StatsStyleSettings.HasFlag(ProfileSettings.ShowAnime))
                             {
                                 if (isOnImg)
                                     image.Mutate(x => x.DrawImage(shadow, new Point(statsX - 3, statsY - 3), shadowsOpacity));
@@ -468,7 +486,7 @@ namespace Sanakan.Services
                                 image.Mutate(x => x.DrawImage(stats, new Point(statsX, statsY), 1));
                                 statsY += 147;
                             }
-                            if (shindenUser?.ListStats?.MangaStatus != null && botUser.StatsStyleSettings.HasFlag(StatsSettings.ShowManga))
+                            if (shindenUser?.ListStats?.MangaStatus != null && botUser.StatsStyleSettings.HasFlag(ProfileSettings.ShowManga))
                             {
                                 if (isOnImg)
                                     image.Mutate(x => x.DrawImage(shadow, new Point(statsX - 3, statsY - 3), shadowsOpacity));
@@ -482,7 +500,7 @@ namespace Sanakan.Services
                     statsY = 24;
                     statsX += flip ? -391 : 352;
 
-                    if (botUser.StatsStyleSettings.HasFlag(StatsSettings.ShowCards))
+                    if (botUser.StatsStyleSettings.HasFlag(ProfileSettings.ShowCards))
                     {
                         if (isOnImg)
                         {
@@ -625,23 +643,42 @@ namespace Sanakan.Services
                 profilePic.Mutate(x => x.DrawImage(template, new Point(0, 0), 1));
             }
 
+            using var profileStyle = await GetUserNewProfileStyleAsync(shindenUser, botUser);
+            profilePic.Mutate(x => x.DrawImage(profileStyle, new Point(0, 160), 1));
+
             var nX = 27;
+            var aX = 47 + 5;
+            var aY = 68;
+
+            var aSize = 80;
+
+            var bSize = 2;
+            var tSize = aSize + bSize * 2;
+
+            var gSize = 1;
+            var gOff = gSize * 2;
+
+            nX += aX + tSize;
+
+            var nY = 103;
+            var defFontColor = GetOrCreateColor("#7f7f7f");
+            profilePic.Mutate(x => x.DrawText(nickname, nickFont, GetOrCreateColor("#a7a7a7"), new Point(nX, nY + (int)((30 - nickFont.Size) / 2))));
+            profilePic.Mutate(x => x.DrawText(rangName, rangFont, defFontColor, new Point(nX, nY + 30)));
+
+            if (!string.IsNullOrEmpty(botUser.CustomProfileOverlayUrl))
+            {
+                using var overlay = await GetImageFromUrlAsync(botUser.CustomProfileOverlayUrl);
+                using var overlayImg = await Image.LoadAsync(overlay);
+
+                if (overlayImg.Width != 750 || overlayImg.Height != 402)
+                    overlayImg.Mutate(x => x.Resize(750, 402));
+
+                profilePic.Mutate(x => x.DrawImage(overlayImg, new Point(0, 98), 1));
+            }
+
             var hasAvBorder = botUser.AvatarBorder != AvatarBorder.None;
             using (var userAvatar = Image.Load(await GetImageFromUrlAsync(avatarUrl)))
             {
-                var aX = 47 + 5;
-                var aY = 68;
-
-                var aSize = 80;
-
-                var bSize = 2;
-                var tSize = aSize + bSize * 2;
-
-                var gSize = 1;
-                var gOff = gSize * 2;
-
-                nX += aX + tSize;
-
                 using var avBack = new Image<Rgba32>(tSize, tSize, GetOrCreateColor("#3f3f3f"));
                 if (hasAvBorder) avBack.Mutate(x => x.Round(30));
                 profilePic.Mutate(x => x.DrawImage(avBack, new Point(aX, aY), 1));
@@ -655,15 +692,7 @@ namespace Sanakan.Services
                 profilePic.Mutate(x => x.DrawImage(userAvatar, new Point(aX + bSize, aY + bSize), 1));
             }
 
-            var nY = 103;
-            var defFontColor = GetOrCreateColor("#7f7f7f");
-            profilePic.Mutate(x => x.DrawText(nickname, nickFont, GetOrCreateColor("#a7a7a7"), new Point(nX, nY + (int)((30 - nickFont.Size) / 2))));
-            profilePic.Mutate(x => x.DrawText(rangName, rangFont, defFontColor, new Point(nX, nY + 30)));
-
-            using var profileStyle = await GetUserNewProfileStyleAsync(shindenUser, botUser);
-            profilePic.Mutate(x => x.DrawImage(profileStyle, new Point(0, 160), 1));
-
-            if (botUser.GameDeck.Waifu != 0 && botUser.ShowWaifuInProfile)
+            if (botUser.GameDeck.Waifu != 0 && botUser.StatsStyleSettings.HasFlag(ProfileSettings.ShowWaifu))
             {
                 var waifuCard = botUser.GameDeck.GetWaifuCard();
                 if (waifuCard != null)
@@ -676,17 +705,6 @@ namespace Sanakan.Services
                     profilePic.Mutate(x => x.DrawImage(cardBg, new Point(618, 30), 0.32f));
                     profilePic.Mutate(x => x.DrawImage(cardImage, new Point(622, 34), 1));
                 }
-            }
-
-            if (!string.IsNullOrEmpty(botUser.CustomProfileOverlayUrl))
-            {
-                using var overlay = await GetImageFromUrlAsync(botUser.CustomProfileOverlayUrl);
-                using var overlayImg = await Image.LoadAsync(overlay);
-
-                if (overlayImg.Width != 750 || overlayImg.Height != 402)
-                    overlayImg.Mutate(x => x.Resize(750, 402));
-
-                profilePic.Mutate(x => x.DrawImage(overlayImg, new Point(0, 98), 1));
             }
 
             if (hasAvBorder)
@@ -1038,7 +1056,7 @@ namespace Sanakan.Services
             return baseImg;
         }
 
-        public Image<Rgba32> GetFColorsView(SCurrency currency)
+        public Image<Rgba32> GetFColorsView(CurrencyType currency)
         {
             var message = GetOrCreateFont(_latoRegular, 16);
             var firstColumnMaxLength = TextMeasurer.Measure("A", new TextOptions(message));
@@ -1054,7 +1072,7 @@ namespace Sanakan.Services
                 var thisColor = (FColor)val;
                 if (thisColor == FColor.None) continue;
 
-                var name = $"{thisColor} ({thisColor.Price(currency)} {currency.ToString().ToUpper()})";
+                var name = $"{thisColor} ({thisColor.Price(currency)} {currency})";
                 var nLen = TextMeasurer.Measure(name, new TextOptions(message));
 
                 if (i < inFirstColumn + 1)
