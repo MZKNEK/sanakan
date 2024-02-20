@@ -677,18 +677,21 @@ namespace Sanakan.Services
             }
 
             var hasAvBorder = botUser.AvatarBorder != AvatarBorder.None;
-            using (var userAvatar = Image.Load(await GetImageFromUrlAsync(avatarUrl)))
+            using (var avatar = Image.Load(await GetImageFromUrlAsync(avatarUrl)))
             {
+                using var webpAvatarStream = avatar.ToWebpStream();
+                using var userAvatar = Image.Load(webpAvatarStream);
+
                 using var avBack = new Image<Rgba32>(tSize, tSize, GetOrCreateColor("#3f3f3f"));
-                if (hasAvBorder) avBack.Mutate(x => x.Round(30));
+                if (hasAvBorder) avBack.Mutate(x => x.Round(34));
                 profilePic.Mutate(x => x.DrawImage(avBack, new Point(aX, aY), 1));
 
                 using var rang = new Image<Rgba32>(aSize + gOff, aSize + gOff, GetOrCreateColor(colorRank));
-                if (hasAvBorder) rang.Mutate(x => x.Round(30));
+                if (hasAvBorder) rang.Mutate(x => x.Round(34));
                 profilePic.Mutate(x => x.DrawImage(rang, new Point(aX + gSize, aY + gSize), 1));
 
                 userAvatar.Mutate(x => x.Resize(new Size(aSize, aSize)));
-                if (hasAvBorder) userAvatar.Mutate(x => x.Round(30));
+                if (hasAvBorder) userAvatar.Mutate(x => x.Round(34));
                 profilePic.Mutate(x => x.DrawImage(userAvatar, new Point(aX + bSize, aY + bSize), 1));
             }
 

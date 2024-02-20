@@ -64,7 +64,7 @@ namespace Sanakan.Services.PocketWaifu
                 $"{ToPay(ProfileConfigType.Style, CurrencyType.SC)} / {ToPay(ProfileConfigType.Style, CurrencyType.TC)}",
                 $"- statystyki\n- obrazek (wymagany link)\n- obrazek na statystykach (wymagany link)\n- duża galeria\n- duża galeria na obrazku (wymagany link)\n- statystyki na obrazku (wymagany link)\n- galeria z karcianką\n- galeria z karcianką na obrazku (wymagany link)"),
 
-            new OptionInfo("nakładka", "pozwala ustwić obrazek będący prawie nad wszystkim elementami w profilu zaczynający się od czarnego paska z nazwą użytkownika i idący do dołu profilu o wymiarach 750 x 402px",
+            new OptionInfo("nakładka", "pozwala ustwić obrazek będący prawie nad wszystkimi elementami w profilu zaczynający się od czarnego paska z nazwą użytkownika i idący do dołu profilu o wymiarach 750 x 402px",
                 "konfiguracja profilu nakładka https://sanakan.pl/i/example_profile_overlay.png", "`bezpośredni link do obrazka`",
                 $"{ToPay(ProfileConfigType.Overlay, CurrencyType.SC)} / {ToPay(ProfileConfigType.Overlay, CurrencyType.TC)}"),
 
@@ -83,7 +83,7 @@ namespace Sanakan.Services.PocketWaifu
             new OptionInfo("karcianka", "pozwala zmienić widoczność panelu statystyk karcianki, wymaga stylu wyświetlającego statystyki"),
             new OptionInfo("mini galeria", "pozwala zmienić widoczność panelu mini galerii, wymaga stylu wyświetlającego statystyki oraz mini galerię"),
             new OptionInfo("ilość kart mini galerii", "pozwala zmienić liczbe kart w mini galerii między 2 a 6, wymaga stylu wyświetlającego statystyki oraz mini galerie"),
-            new OptionInfo("zamiana paneli", "pozwala zamienić miezy sobą prawy i lewy panel, wymaga stylu wyświetlającego statystyki"),
+            new OptionInfo("zamiana paneli", "pozwala zamienić między sobą prawy i lewy panel, wymaga stylu wyświetlającego statystyki"),
         };
 
         public ProfileConfigType Type;
