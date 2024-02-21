@@ -1743,14 +1743,16 @@ namespace Sanakan.Services.PocketWaifu
 
             if (titlesId != null)
             {
+                var charactersInTitles = new List<ulong>();
                 foreach (var id in titlesId)
                 {
                     var charsFromTitle = await _shinden.GetCharactersFromTitleAsync(id);
                     if (charsFromTitle != null && charsFromTitle.Count > 0)
                     {
-                        characters.AddRange(charsFromTitle.Where(x => x.CharacterId.HasValue).Select(x => x.CharacterId.Value));
+                        charactersInTitles.AddRange(charsFromTitle.Where(x => x.CharacterId.HasValue).Select(x => x.CharacterId.Value));
                     }
                 }
+                characters.AddRange(charactersInTitles.Where(c => !userCards.Any(x => x.Character == c)));
             }
 
             if (characters.Count > 0)
