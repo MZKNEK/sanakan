@@ -71,7 +71,7 @@ namespace Sanakan.Services.PocketWaifu
             new OptionInfo("ramka awatara", "pozwala zmienić wygląd ramki awatara",
                 "konfiguracja profilu ramka awatara domyślny", "`typ`",
                 $"{ToPay(ProfileConfigType.AvatarBorder, CurrencyType.SC)} / {ToPay(ProfileConfigType.AvatarBorder, CurrencyType.TC)}",
-                $"- brak (darmowa)\n- domyślny (darmowa)\n- liście\n- dzidowy\n- woda\n- kruki\n- wstążka"),
+                $"- brak (darmowa)\n- domyślny (darmowa)\n- liście\n- dzidowy\n- woda\n- kruki\n- wstążka\n- metalowa\n- kwiatki\n- czaszka"),
 
             new OptionInfo("przeźroczystość cieni", "pozwala zmienić przeźroczystość czarnych cieni pod panelami profilu na wybranych stylach",
                 "konfiguracja profilu przeźroczystość cieni 30", "`procent`"),

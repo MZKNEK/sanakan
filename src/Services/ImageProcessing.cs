@@ -683,15 +683,15 @@ namespace Sanakan.Services
                 using var userAvatar = Image.Load(webpAvatarStream);
 
                 using var avBack = new Image<Rgba32>(tSize, tSize, GetOrCreateColor("#3f3f3f"));
-                if (hasAvBorder) avBack.Mutate(x => x.Round(34));
+                if (hasAvBorder) avBack.Mutate(x => x.Round(40));
                 profilePic.Mutate(x => x.DrawImage(avBack, new Point(aX, aY), 1));
 
                 using var rang = new Image<Rgba32>(aSize + gOff, aSize + gOff, GetOrCreateColor(colorRank));
-                if (hasAvBorder) rang.Mutate(x => x.Round(34));
+                if (hasAvBorder) rang.Mutate(x => x.Round(40));
                 profilePic.Mutate(x => x.DrawImage(rang, new Point(aX + gSize, aY + gSize), 1));
 
                 userAvatar.Mutate(x => x.Resize(new Size(aSize, aSize)));
-                if (hasAvBorder) userAvatar.Mutate(x => x.Round(34));
+                if (hasAvBorder) userAvatar.Mutate(x => x.Round(40));
                 profilePic.Mutate(x => x.DrawImage(userAvatar, new Point(aX + bSize, aY + bSize), 1));
             }
 
@@ -715,20 +715,27 @@ namespace Sanakan.Services
                 using var border = Image.Load($"./Pictures/np/ab/{botUser.AvatarBorder}.png");
                 var posX = botUser.AvatarBorder switch
                 {
-                    AvatarBorder.Bow => 20,
+                    AvatarBorder.Bow => 26,
                     AvatarBorder.Dzedai => 23,
                     AvatarBorder.Water => 35,
-                    AvatarBorder.Base => 44,
-                    AvatarBorder.Crows => 23,
-                    _ => 25
+                    AvatarBorder.Base => 43,
+                    AvatarBorder.Crows => 25,
+                    AvatarBorder.Metal => 49,
+                    AvatarBorder.RedThinLeaves => 30,
+                    AvatarBorder.Skull => 28,
+                    _ => 24
                 };
                 var posY = botUser.AvatarBorder switch
                 {
-                    AvatarBorder.Bow => 44,
-                    AvatarBorder.Dzedai => 39,
+                    AvatarBorder.Bow => 48,
+                    AvatarBorder.Dzedai => 38,
                     AvatarBorder.Water => 58,
-                    AvatarBorder.Base => 60,
-                    _ => 40
+                    AvatarBorder.Base => 59,
+                    AvatarBorder.Crows => 42,
+                    AvatarBorder.Metal => 65,
+                    AvatarBorder.RedThinLeaves  => 44,
+                    AvatarBorder.Skull => 47,
+                    _ => 39
                 };
                 profilePic.Mutate(x => x.DrawImage(border, new Point(posX, posY), 1));
             }

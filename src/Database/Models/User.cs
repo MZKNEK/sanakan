@@ -17,7 +17,16 @@ namespace Sanakan.Database.Models
 
     public enum AvatarBorder
     {
-        None, PurpleLeaves, Dzedai, Base, Water, Crows, Bow
+        None,
+        PurpleLeaves,
+        Dzedai,
+        Base,
+        Water,
+        Crows,
+        Bow,
+        Metal,
+        RedThinLeaves,
+        Skull
     }
 
     [Flags]
