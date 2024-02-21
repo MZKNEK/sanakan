@@ -335,10 +335,13 @@ namespace Sanakan.Services
         private Image<Rgba32> GetProfileBar(long topPos, User user)
         {
             var barTop = user.StatsStyleSettings.HasFlag(ProfileSettings.BarOnTop);
+            var customBarOpacity = user.StatsStyleSettings.HasFlag(ProfileSettings.BarOpacity);
 
             var image = new Image<Rgba32>(750, 500, Color.Transparent);
-            using var bar = Image.Load(barTop ? "./Pictures/np/tbar.png" : "./Pictures/np/bbar.png");
-            image.Mutate(x => x.DrawImage(bar, new Point(0, 0), 1));
+
+            using var bar = new Image<Rgba32>(700, 40, GetOrCreateColor("#000000"));
+            bar.Mutate(x => x.Round(10));
+            image.Mutate(x => x.DrawImage(bar, new Point(25, barTop ? -16 : 476), customBarOpacity ? user.ProfileShadowsOpacity : 0.75f));
 
             var topBarY = barTop ? 3 : 480;
             using var userLevelImg = GetTopLevelImage(topPos, user);
@@ -679,19 +682,20 @@ namespace Sanakan.Services
             var hasAvBorder = botUser.AvatarBorder != AvatarBorder.None;
             using (var avatar = Image.Load(await GetImageFromUrlAsync(avatarUrl)))
             {
+                var hasRoundAvatar = botUser.StatsStyleSettings.HasFlag(ProfileSettings.RoundAvatar) || hasAvBorder;
                 using var webpAvatarStream = avatar.ToWebpStream();
                 using var userAvatar = Image.Load(webpAvatarStream);
 
                 using var avBack = new Image<Rgba32>(tSize, tSize, GetOrCreateColor("#3f3f3f"));
-                if (hasAvBorder) avBack.Mutate(x => x.Round(40));
+                if (hasRoundAvatar) avBack.Mutate(x => x.Round(hasAvBorder ? 40 : 44));
                 profilePic.Mutate(x => x.DrawImage(avBack, new Point(aX, aY), 1));
 
                 using var rang = new Image<Rgba32>(aSize + gOff, aSize + gOff, GetOrCreateColor(colorRank));
-                if (hasAvBorder) rang.Mutate(x => x.Round(40));
+                if (hasRoundAvatar) rang.Mutate(x => x.Round(hasAvBorder ? 40 : 44));
                 profilePic.Mutate(x => x.DrawImage(rang, new Point(aX + gSize, aY + gSize), 1));
 
                 userAvatar.Mutate(x => x.Resize(new Size(aSize, aSize)));
-                if (hasAvBorder) userAvatar.Mutate(x => x.Round(40));
+                if (hasRoundAvatar) userAvatar.Mutate(x => x.Round(hasAvBorder ? 40 : 44));
                 profilePic.Mutate(x => x.DrawImage(userAvatar, new Point(aX + bSize, aY + bSize), 1));
             }
 

@@ -50,6 +50,8 @@ namespace Sanakan.Database.Models
         ShowWaifu   = 64,
         BarOnTop    = 128,
         BorderColor = 256,
+        RoundAvatar = 512,
+        BarOpacity  = 1024,
         Default     = ShowAnime | ShowManga | ShowCards | ShowGallery | BorderColor,
     }
 

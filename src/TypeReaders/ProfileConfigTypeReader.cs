@@ -56,6 +56,10 @@ namespace Sanakan.TypeReaders
             new NamePair<ProfileConfigType>("flip panels", ProfileConfigType.FlipPanels),
             new NamePair<ProfileConfigType>("ramka na poziom", ProfileConfigType.LevelAvatarBorder),
             new NamePair<ProfileConfigType>("border per level", ProfileConfigType.LevelAvatarBorder),
+            new NamePair<ProfileConfigType>("okrągły awatar", ProfileConfigType.RoundAvatarWithoutBorder),
+            new NamePair<ProfileConfigType>("round avatar", ProfileConfigType.RoundAvatarWithoutBorder),
+            new NamePair<ProfileConfigType>("przeźroczysty pasek", ProfileConfigType.CustomBarOpacity),
+            new NamePair<ProfileConfigType>("transparent bar", ProfileConfigType.CustomBarOpacity),
         };
 
         private static readonly List<NamePair<ProfileType>> _profileStyleTypes = new List<NamePair<ProfileType>>
@@ -126,30 +130,34 @@ namespace Sanakan.TypeReaders
 
         private static bool NeedMoreParams(ProfileConfigType type) => type switch
         {
-            ProfileConfigType.ShowInfo              => false,
-            ProfileConfigType.Bar                   => false,
-            ProfileConfigType.MiniFavCard           => false,
-            ProfileConfigType.AnimeStats            => false,
-            ProfileConfigType.MangaStats            => false,
-            ProfileConfigType.CardsStats            => false,
-            ProfileConfigType.MiniGallery           => false,
-            ProfileConfigType.CardCntInMiniGallery  => false,
-            ProfileConfigType.FlipPanels            => false,
-            ProfileConfigType.LevelAvatarBorder     => false,
+            ProfileConfigType.ShowInfo                 => false,
+            ProfileConfigType.Bar                      => false,
+            ProfileConfigType.MiniFavCard              => false,
+            ProfileConfigType.AnimeStats               => false,
+            ProfileConfigType.MangaStats               => false,
+            ProfileConfigType.CardsStats               => false,
+            ProfileConfigType.MiniGallery              => false,
+            ProfileConfigType.CardCntInMiniGallery     => false,
+            ProfileConfigType.FlipPanels               => false,
+            ProfileConfigType.LevelAvatarBorder        => false,
+            ProfileConfigType.RoundAvatarWithoutBorder => false,
+            ProfileConfigType.CustomBarOpacity         => false,
             _ => true
         };
 
         private static ProfileSettings ProfileConfigTypeToProfileSettings(ProfileConfigType type) => type switch
         {
-            ProfileConfigType.Bar                   => ProfileSettings.BarOnTop,
-            ProfileConfigType.MiniFavCard           => ProfileSettings.ShowWaifu,
-            ProfileConfigType.AnimeStats            => ProfileSettings.ShowAnime,
-            ProfileConfigType.MangaStats            => ProfileSettings.ShowManga,
-            ProfileConfigType.CardsStats            => ProfileSettings.ShowCards,
-            ProfileConfigType.MiniGallery           => ProfileSettings.ShowGallery,
-            ProfileConfigType.CardCntInMiniGallery  => ProfileSettings.HalfGallery,
-            ProfileConfigType.FlipPanels            => ProfileSettings.Flip,
-            ProfileConfigType.LevelAvatarBorder     => ProfileSettings.BorderColor,
+            ProfileConfigType.Bar                      => ProfileSettings.BarOnTop,
+            ProfileConfigType.MiniFavCard              => ProfileSettings.ShowWaifu,
+            ProfileConfigType.AnimeStats               => ProfileSettings.ShowAnime,
+            ProfileConfigType.MangaStats               => ProfileSettings.ShowManga,
+            ProfileConfigType.CardsStats               => ProfileSettings.ShowCards,
+            ProfileConfigType.MiniGallery              => ProfileSettings.ShowGallery,
+            ProfileConfigType.CardCntInMiniGallery     => ProfileSettings.HalfGallery,
+            ProfileConfigType.FlipPanels               => ProfileSettings.Flip,
+            ProfileConfigType.LevelAvatarBorder        => ProfileSettings.BorderColor,
+            ProfileConfigType.RoundAvatarWithoutBorder => ProfileSettings.RoundAvatar,
+            ProfileConfigType.CustomBarOpacity         => ProfileSettings.BarOpacity,
             _ => ProfileSettings.None
         };
 
@@ -246,6 +254,8 @@ namespace Sanakan.TypeReaders
                     case ProfileConfigType.CardCntInMiniGallery:
                     case ProfileConfigType.FlipPanels:
                     case ProfileConfigType.LevelAvatarBorder:
+                    case ProfileConfigType.RoundAvatarWithoutBorder:
+                    case ProfileConfigType.CustomBarOpacity:
                     {
                         config.Settings = ProfileConfigTypeToProfileSettings(config.Type);
                         config.ToggleCurentValue = config.Settings != ProfileSettings.None;

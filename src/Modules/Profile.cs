@@ -459,6 +459,7 @@ namespace Sanakan.Modules
                     case ProfileConfigType.CardCntInMiniGallery:
                     case ProfileConfigType.FlipPanels:
                     case ProfileConfigType.LevelAvatarBorder:
+                    case ProfileConfigType.RoundAvatarWithoutBorder:
                     {
                         if (!config.CanUseSettingOnStyle(botuser.ProfileType))
                         {
