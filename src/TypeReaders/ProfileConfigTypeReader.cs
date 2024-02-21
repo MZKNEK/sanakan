@@ -7,7 +7,6 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Linq;
 using Sanakan.Database.Models;
-using Sanakan.Extensions;
 
 namespace Sanakan.TypeReaders
 {

@@ -54,7 +54,7 @@ namespace Sanakan.Services.PocketWaifu
             new OptionInfo("jestem leniwy", "ustawia tło profilu od razu z wybranym stylem, wymaga podania obrazka - 750 x 500px",
                 "konfiguracja profilu jestem leniwy https://sanakan.pl/i/example_profile_full.png", "`typ` `bezpośredni link do obrazka`",
                 $"{ToPay(ProfileConfigType.BackgroundAndStyle, CurrencyType.SC)} / {ToPay(ProfileConfigType.BackgroundAndStyle, CurrencyType.TC)}",
-                $"- obrazek\n- obrazek na statach\n- duża galeria na obrazku\n- staty na obrazku\n- galeria z karcianką na obrazku"),
+                $"- obrazek\n- obrazek na statach\n- duża galeria na obrazku\n- statystyki na obrazku\n- galeria z karcianką na obrazku"),
 
             new OptionInfo("tło", "pozwala ustwić obrazek w górnej części profilu o wymiarach 750 x 160px",
                 "konfiguracja profilu tło https://sanakan.pl/i/example_new_profile_bg.png", "`bezpośredni link do obrazka`",
