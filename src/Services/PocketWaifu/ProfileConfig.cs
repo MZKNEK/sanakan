@@ -22,7 +22,8 @@ namespace Sanakan.Services.PocketWaifu
         CardsStats,
         MiniGallery,
         CardCntInMiniGallery,
-        FlipPanels
+        FlipPanels,
+        LevelAvatarBorder
     }
 
     public class ProfileConfig
@@ -84,6 +85,7 @@ namespace Sanakan.Services.PocketWaifu
             new OptionInfo("mini galeria", "pozwala zmienić widoczność panelu mini galerii, wymaga stylu wyświetlającego statystyki oraz mini galerię"),
             new OptionInfo("ilość kart mini galerii", "pozwala zmienić liczbe kart w mini galerii między 2 a 6, wymaga stylu wyświetlającego statystyki oraz mini galerie"),
             new OptionInfo("zamiana paneli", "pozwala zamienić między sobą prawy i lewy panel, wymaga stylu wyświetlającego statystyki"),
+            new OptionInfo("ramka na poziom", "pozwala aktywować ramkę awatar zależną od poziomu"),
         };
 
         public ProfileConfigType Type;
@@ -133,6 +135,7 @@ namespace Sanakan.Services.PocketWaifu
             ProfileSettings.None => true,
             ProfileSettings.ShowWaifu => true,
             ProfileSettings.BarOnTop => true,
+            ProfileSettings.BorderColor => true,
             ProfileSettings.HalfGallery => style == ProfileType.MiniGallery || style == ProfileType.MiniGalleryOnImg,
             ProfileSettings.ShowGallery => style == ProfileType.MiniGallery || style == ProfileType.MiniGalleryOnImg,
             ProfileSettings.ShowAnime => IsConfigurableStyle(style) && style != ProfileType.MiniGallery && style != ProfileType.MiniGalleryOnImg,
@@ -180,6 +183,7 @@ namespace Sanakan.Services.PocketWaifu
             ProfileConfigType.MiniGallery => "zmieniona została widoczność panelu mini galerii.",
             ProfileConfigType.Overlay => "zmieniona została nakładka na profil.",
             ProfileConfigType.ShadowsOpacity => "zmieniona została przeźroczystość cieni paneli stylu.",
+            ProfileConfigType.LevelAvatarBorder => "przełączono ustawienia ramek na poziom",
             _ => "????"
         };
     }

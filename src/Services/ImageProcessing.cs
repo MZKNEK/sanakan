@@ -712,54 +712,73 @@ namespace Sanakan.Services
 
             if (hasAvBorder)
             {
-                using var border = Image.Load($"./Pictures/np/ab/{botUser.AvatarBorder}.png");
-                var posX = botUser.AvatarBorder switch
-                {
-                    AvatarBorder.Bow => 26,
-                    AvatarBorder.Dzedai => 23,
-                    AvatarBorder.Water => 35,
-                    AvatarBorder.Base => 43,
-                    AvatarBorder.Crows => 25,
-                    AvatarBorder.Metal => 49,
-                    AvatarBorder.RedThinLeaves => 30,
-                    AvatarBorder.Skull => 28,
-                    AvatarBorder.Fire => 45,
-                    AvatarBorder.Promium => 38,
-                    AvatarBorder.Ice => 44,
-                    AvatarBorder.Gold => 18,
-                    AvatarBorder.Red => 40,
-                    AvatarBorder.Rainbow => 44,
-                    AvatarBorder.Pink => 38,
-                    AvatarBorder.Simple => 36,
-                    _ => 24
-                };
-                var posY = botUser.AvatarBorder switch
-                {
-                    AvatarBorder.Bow => 48,
-                    AvatarBorder.Dzedai => 38,
-                    AvatarBorder.Water => 58,
-                    AvatarBorder.Base => 59,
-                    AvatarBorder.Crows => 42,
-                    AvatarBorder.Metal => 65,
-                    AvatarBorder.RedThinLeaves => 44,
-                    AvatarBorder.Skull => 47,
-                    AvatarBorder.Fire => 60,
-                    AvatarBorder.Promium => 53,
-                    AvatarBorder.Ice => 61,
-                    AvatarBorder.Gold => 33,
-                    AvatarBorder.Red => 58,
-                    AvatarBorder.Rainbow => 60,
-                    AvatarBorder.Pink => 53,
-                    AvatarBorder.Simple => 53,
-                    _ => 39
-                };
-                profilePic.Mutate(x => x.DrawImage(border, new Point(posX, posY), 1));
+                var avBorder = GetProfileAvatarBorder(botUser);
+                using var border = Image.Load(avBorder.img);
+                profilePic.Mutate(x => x.DrawImage(border, avBorder.xy, 1));
             }
 
             using var profileBar = GetProfileBar(topPos, botUser);
             profilePic.Mutate(x => x.DrawImage(profileBar, new Point(0, 0), 1));
 
             return profilePic;
+        }
+
+        private (Point xy, string img) GetProfileAvatarBorder(User user)
+        {
+            var img = $"./Pictures/np/ab/{user.AvatarBorder}.png";
+            if (user.StatsStyleSettings.HasFlag(ProfileSettings.BorderColor))
+            {
+                var lvlImg = GetAvailableLevelBorder($"./Pictures/np/ab/{user.AvatarBorder}Lv/", user.Level);
+                img = string.IsNullOrEmpty(lvlImg) ? img : lvlImg;
+            }
+
+            var pos = user.AvatarBorder switch
+            {
+                AvatarBorder.Bow => new Point(26, 48),
+                AvatarBorder.Dzedai => new Point(23, 38),
+                AvatarBorder.Water => new Point(35, 58),
+                AvatarBorder.Base => new Point(43, 59),
+                AvatarBorder.Crows => new Point(25, 42),
+                AvatarBorder.Metal => new Point(49, 65),
+                AvatarBorder.RedThinLeaves => new Point(30, 44),
+                AvatarBorder.Skull => new Point(28, 47),
+                AvatarBorder.Fire => new Point(45, 60),
+                AvatarBorder.Promium => new Point(38, 53),
+                AvatarBorder.Ice => new Point(44, 61),
+                AvatarBorder.Gold => new Point(18, 33),
+                AvatarBorder.Red => new Point(40, 58),
+                AvatarBorder.Rainbow => new Point(44, 60),
+                AvatarBorder.Pink => new Point(38, 53),
+                AvatarBorder.Simple => new Point(36, 53),
+                _ => new Point(24, 39)
+            };
+
+            return (pos, img);
+        }
+
+        private string GetAvailableLevelBorder(string dir, long userLevel)
+        {
+            if (!Directory.Exists(dir))
+                return string.Empty;
+
+            long selected = 0;
+            foreach(var file in Directory.GetFiles(dir))
+            {
+                if (file.Length <= dir.Length)
+                    continue;
+
+                var filename = file.AsSpan().Slice(dir.Length);
+                var dotIdx = filename.IndexOf('.');
+                if (dotIdx == -1)
+                    continue;
+
+                if (long.TryParse(filename.Slice(0, dotIdx), out var num))
+                {
+                    if (num <= userLevel && num > selected)
+                        selected = num;
+                }
+            }
+            return selected > 0 ? $"{dir}{selected}.png": string.Empty;
         }
 
         private async Task<Image<Rgba32>> GetSiteStatisticUserBadge(string avatarUrl, string name, string color)

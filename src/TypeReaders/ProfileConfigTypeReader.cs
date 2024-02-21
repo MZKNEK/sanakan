@@ -55,6 +55,8 @@ namespace Sanakan.TypeReaders
             new NamePair<ProfileConfigType>("card count in mini gallery", ProfileConfigType.CardCntInMiniGallery),
             new NamePair<ProfileConfigType>("zamiana paneli", ProfileConfigType.FlipPanels),
             new NamePair<ProfileConfigType>("flip panels", ProfileConfigType.FlipPanels),
+            new NamePair<ProfileConfigType>("ramka na poziom", ProfileConfigType.LevelAvatarBorder),
+            new NamePair<ProfileConfigType>("border per level", ProfileConfigType.LevelAvatarBorder),
         };
 
         private static readonly List<NamePair<ProfileType>> _profileStyleTypes = new List<NamePair<ProfileType>>
@@ -134,6 +136,7 @@ namespace Sanakan.TypeReaders
             ProfileConfigType.MiniGallery           => false,
             ProfileConfigType.CardCntInMiniGallery  => false,
             ProfileConfigType.FlipPanels            => false,
+            ProfileConfigType.LevelAvatarBorder     => false,
             _ => true
         };
 
@@ -147,6 +150,7 @@ namespace Sanakan.TypeReaders
             ProfileConfigType.MiniGallery           => ProfileSettings.ShowGallery,
             ProfileConfigType.CardCntInMiniGallery  => ProfileSettings.HalfGallery,
             ProfileConfigType.FlipPanels            => ProfileSettings.Flip,
+            ProfileConfigType.LevelAvatarBorder     => ProfileSettings.BorderColor,
             _ => ProfileSettings.None
         };
 
@@ -242,6 +246,7 @@ namespace Sanakan.TypeReaders
                     case ProfileConfigType.MiniGallery:
                     case ProfileConfigType.CardCntInMiniGallery:
                     case ProfileConfigType.FlipPanels:
+                    case ProfileConfigType.LevelAvatarBorder:
                     {
                         config.Settings = ProfileConfigTypeToProfileSettings(config.Type);
                         config.ToggleCurentValue = config.Settings != ProfileSettings.None;
