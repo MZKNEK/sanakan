@@ -32,6 +32,9 @@ namespace Sanakan.Database.Models
         Ice,
         Gold,
         Red,
+        Rainbow,
+        Pink,
+        Simple,
     }
 
     [Flags]

@@ -107,6 +107,12 @@ namespace Sanakan.TypeReaders
             new NamePair<AvatarBorder>("gold", AvatarBorder.Gold),
             new NamePair<AvatarBorder>("czerwona", AvatarBorder.Red),
             new NamePair<AvatarBorder>("red", AvatarBorder.Red),
+            new NamePair<AvatarBorder>("tęcza", AvatarBorder.Rainbow),
+            new NamePair<AvatarBorder>("rainbow", AvatarBorder.Rainbow),
+            new NamePair<AvatarBorder>("różowa", AvatarBorder.Pink),
+            new NamePair<AvatarBorder>("pink", AvatarBorder.Pink),
+            new NamePair<AvatarBorder>("prosta", AvatarBorder.Simple),
+            new NamePair<AvatarBorder>("simple", AvatarBorder.Simple),
         };
 
         private static CurrencyType ParseCurrency(ReadOnlySpan<char> chars)
