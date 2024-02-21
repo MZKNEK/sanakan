@@ -413,7 +413,7 @@ namespace Sanakan.Services
                 case ProfileType.CardsOnImg:
                 case ProfileType.MiniGalleryOnImg:
                 {
-                    if (File.Exists(botUser.StatsReplacementProfileUri))
+                    if (!string.IsNullOrEmpty(botUser.StatsReplacementProfileUri) && File.Exists(botUser.StatsReplacementProfileUri))
                     {
                         using var usrImg = Image.Load(botUser.StatsReplacementProfileUri);
                         if (usrImg.Width != 750 || usrImg.Height != 340)
@@ -656,7 +656,7 @@ namespace Sanakan.Services
             var aSize = 80;
 
             var bSize = 2;
-            var tSize = aSize + bSize * 2;
+            var tSize = aSize + (bSize * 2);
 
             var gSize = 1;
             var gOff = gSize * 2;
@@ -719,6 +719,17 @@ namespace Sanakan.Services
                 var avBorder = GetProfileAvatarBorder(botUser);
                 using var border = Image.Load(avBorder.img);
                 profilePic.Mutate(x => x.DrawImage(border, avBorder.xy, 1));
+            }
+
+            if (!string.IsNullOrEmpty(botUser.PremiumCustomProfileOverlayUrl))
+            {
+                using var overlay = await GetImageFromUrlAsync(botUser.PremiumCustomProfileOverlayUrl);
+                using var overlayImg = await Image.LoadAsync(overlay);
+
+                if (overlayImg.Width != 750 || overlayImg.Height != 500)
+                    overlayImg.Mutate(x => x.Resize(750, 500));
+
+                profilePic.Mutate(x => x.DrawImage(overlayImg, new Point(0, 0), 1));
             }
 
             using var profileBar = GetProfileBar(topPos, botUser);

@@ -78,6 +78,7 @@ namespace Sanakan.Database.Models
         public AvatarBorder AvatarBorder { get; set; }
         public ProfileSettings StatsStyleSettings { get; set; }
         public string CustomProfileOverlayUrl { get; set; }
+        public string PremiumCustomProfileOverlayUrl { get; set; }
         public float ProfileShadowsOpacity { get; set; }
 
         public virtual UserStats Stats { get; set; }

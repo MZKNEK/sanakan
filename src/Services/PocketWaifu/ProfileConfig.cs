@@ -14,6 +14,7 @@ namespace Sanakan.Services.PocketWaifu
         Overlay,
         AvatarBorder,
         ShadowsOpacity,
+        PremiumOverlay,
 
         Bar,
         MiniFavCard,
@@ -79,6 +80,10 @@ namespace Sanakan.Services.PocketWaifu
             new OptionInfo("przeźroczystość cieni", "pozwala zmienić przeźroczystość czarnych cieni pod panelami profilu na wybranych stylach",
                 "konfiguracja profilu przeźroczystość cieni 30", "`procent`"),
 
+            new OptionInfo("ultra nakładka", "pozwala ustwić obrazek będący nad wszystkimi elementami w profilu poza paskiem o wymiarach 750 x 500px",
+                "konfiguracja profilu ultra nakładka https://sanakan.pl/i/example_profile_ult_overlay.png", "`bezpośredni link do obrazka`",
+                $"{ToPay(ProfileConfigType.PremiumOverlay, CurrencyType.SC)} / {ToPay(ProfileConfigType.PremiumOverlay, CurrencyType.TC)}"),
+
             new OptionInfo("pasek", "pozwala zmienić pozycję paska profilu na górę lub dół"),
             new OptionInfo("mini waifu", "pozwala zmienić widoczność karty ustawionej jako waifu w prawym górnym rogu profilu"),
             new OptionInfo("anime", "pozwala zmienić widoczność panelu statystyk anime, wymaga stylu wyświetlającego statystyki"),
@@ -87,8 +92,8 @@ namespace Sanakan.Services.PocketWaifu
             new OptionInfo("mini galeria", "pozwala zmienić widoczność panelu mini galerii, wymaga stylu wyświetlającego statystyki oraz mini galerię"),
             new OptionInfo("ilość kart mini galerii", "pozwala zmienić liczbe kart w mini galerii między 2 a 6, wymaga stylu wyświetlającego statystyki oraz mini galerie"),
             new OptionInfo("zamiana paneli", "pozwala zamienić między sobą prawy i lewy panel, wymaga stylu wyświetlającego statystyki"),
-            new OptionInfo("ramka na poziom", "pozwala aktywować ramkę awatar zależną od poziomu"),
-            new OptionInfo("okrągły awatar", "pozwala aktywować zaokrąglony awatar gdy nie mamy ustawionej ramki"),
+            new OptionInfo("ramka na poziom", "pozwala aktywować ramkę awatara zależną od poziomu"),
+            new OptionInfo("okrągły awatar", "pozwala aktywować zaokrąglony awatar, gdy nie mamy ustawionej ramki"),
             new OptionInfo("przeźroczysty pasek", "pozwala aktywować ustawiony stopień przeźroczystości paneli dla paska"),
         };
 
@@ -107,6 +112,7 @@ namespace Sanakan.Services.PocketWaifu
             ProfileConfigType.Style => true,
             ProfileConfigType.Overlay => true,
             ProfileConfigType.Background => true,
+            ProfileConfigType.PremiumOverlay => true,
             ProfileConfigType.BackgroundAndStyle => true,
             ProfileConfigType.AvatarBorder => Border != AvatarBorder.None && Border != AvatarBorder.Base,
             _ => false
@@ -117,6 +123,7 @@ namespace Sanakan.Services.PocketWaifu
             ProfileConfigType.Style => new CurrencyCost(currency == CurrencyType.SC ? 3000 : 1000, currency),
             ProfileConfigType.Overlay => new CurrencyCost(currency == CurrencyType.SC ? 4000 : 1800, currency),
             ProfileConfigType.Background => new CurrencyCost(currency == CurrencyType.SC ? 5000 : 2500, currency),
+            ProfileConfigType.PremiumOverlay => new CurrencyCost(currency == CurrencyType.SC ? 120000 : 25000, currency),
             ProfileConfigType.BackgroundAndStyle => new CurrencyCost(currency == CurrencyType.SC ? 10000 : 4000, currency),
             ProfileConfigType.AvatarBorder => new CurrencyCost(currency == CurrencyType.SC ? 25000 : 8000, currency),
             _ => new CurrencyCost(0, currency)
@@ -188,6 +195,7 @@ namespace Sanakan.Services.PocketWaifu
             ProfileConfigType.MiniFavCard => "zmieniona została widoczność karty ustawionej jako waifu w prawym górnym rogu profilu.",
             ProfileConfigType.MiniGallery => "zmieniona została widoczność panelu mini galerii.",
             ProfileConfigType.Overlay => "zmieniona została nakładka na profil.",
+            ProfileConfigType.PremiumOverlay => "zmieniona została ultra nakładka na profil.",
             ProfileConfigType.ShadowsOpacity => "zmieniona została przeźroczystość cieni paneli stylu.",
             ProfileConfigType.LevelAvatarBorder => "przełączono ustawienia ramek na poziom.",
             ProfileConfigType.RoundAvatarWithoutBorder => "przełączono rodzaj awatara bez ramki.",

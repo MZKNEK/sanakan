@@ -40,6 +40,8 @@ namespace Sanakan.TypeReaders
             new NamePair<ProfileConfigType>("avatar border", ProfileConfigType.AvatarBorder),
             new NamePair<ProfileConfigType>("przeźroczystość cieni", ProfileConfigType.ShadowsOpacity),
             new NamePair<ProfileConfigType>("shadows opacity", ProfileConfigType.ShadowsOpacity),
+            new NamePair<ProfileConfigType>("ultra nakładka", ProfileConfigType.PremiumOverlay),
+            new NamePair<ProfileConfigType>("ultra overlay", ProfileConfigType.PremiumOverlay),
 
             new NamePair<ProfileConfigType>("pasek", ProfileConfigType.Bar),
             new NamePair<ProfileConfigType>("bar", ProfileConfigType.Bar),
@@ -195,6 +197,7 @@ namespace Sanakan.TypeReaders
                     }
 
                     case ProfileConfigType.Overlay:
+                    case ProfileConfigType.PremiumOverlay:
                     case ProfileConfigType.Background:
                     {
                         var spaceIdx = strippedInput.IndexOf(' ');
@@ -299,7 +302,6 @@ namespace Sanakan.TypeReaders
                 {
                     config.Currency = ParseCurrency(strippedInput.TrimStart());
                 }
-
             }
             return Task.FromResult(TypeReaderResult.FromSuccess(config));
         }

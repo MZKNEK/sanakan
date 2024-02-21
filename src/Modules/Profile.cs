@@ -421,6 +421,7 @@ namespace Sanakan.Modules
                     break;
 
                     case ProfileConfigType.Overlay:
+                    case ProfileConfigType.PremiumOverlay:
                     {
                         if (_img.CheckImageUrl(ref config.Url) != ImageUrlCheckResult.Ok)
                         {
@@ -428,7 +429,14 @@ namespace Sanakan.Modules
                             return;
                         }
 
-                        botuser.CustomProfileOverlayUrl = config.Url;
+                        if (config.Type == ProfileConfigType.Overlay)
+                        {
+                            botuser.CustomProfileOverlayUrl = config.Url;
+                        }
+                        else
+                        {
+                            botuser.PremiumCustomProfileOverlayUrl = config.Url;
+                        }
                     }
                     break;
 
@@ -460,6 +468,7 @@ namespace Sanakan.Modules
                     case ProfileConfigType.FlipPanels:
                     case ProfileConfigType.LevelAvatarBorder:
                     case ProfileConfigType.RoundAvatarWithoutBorder:
+                    case ProfileConfigType.CustomBarOpacity:
                     {
                         if (!config.CanUseSettingOnStyle(botuser.ProfileType))
                         {
