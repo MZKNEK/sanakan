@@ -723,6 +723,11 @@ namespace Sanakan.Services
                     AvatarBorder.Metal => 49,
                     AvatarBorder.RedThinLeaves => 30,
                     AvatarBorder.Skull => 28,
+                    AvatarBorder.Fire => 45,
+                    AvatarBorder.Promium => 38,
+                    AvatarBorder.Ice => 44,
+                    AvatarBorder.Gold => 18,
+                    AvatarBorder.Red => 40,
                     _ => 24
                 };
                 var posY = botUser.AvatarBorder switch
@@ -733,8 +738,13 @@ namespace Sanakan.Services
                     AvatarBorder.Base => 59,
                     AvatarBorder.Crows => 42,
                     AvatarBorder.Metal => 65,
-                    AvatarBorder.RedThinLeaves  => 44,
+                    AvatarBorder.RedThinLeaves => 44,
                     AvatarBorder.Skull => 47,
+                    AvatarBorder.Fire => 60,
+                    AvatarBorder.Promium => 53,
+                    AvatarBorder.Ice => 61,
+                    AvatarBorder.Gold => 33,
+                    AvatarBorder.Red => 58,
                     _ => 39
                 };
                 profilePic.Mutate(x => x.DrawImage(border, new Point(posX, posY), 1));

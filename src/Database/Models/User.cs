@@ -26,7 +26,12 @@ namespace Sanakan.Database.Models
         Bow,
         Metal,
         RedThinLeaves,
-        Skull
+        Skull,
+        Fire,
+        Promium,
+        Ice,
+        Gold,
+        Red,
     }
 
     [Flags]
