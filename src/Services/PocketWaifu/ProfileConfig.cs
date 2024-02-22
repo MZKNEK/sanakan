@@ -54,47 +54,47 @@ namespace Sanakan.Services.PocketWaifu
 
         private readonly static List<OptionInfo> _help =  new List<OptionInfo>()
         {
-            new OptionInfo("jestem leniwy", "ustawia tło profilu od razu z wybranym stylem, wymaga podania obrazka - 750 x 500px",
+            new OptionInfo("jestem leniwy", "Ustawia tło profilu od razu z wybranym stylem, wymaga podania obrazka - 750 x 500px.",
                 "konfiguracja profilu jestem leniwy https://sanakan.pl/i/example_profile_full.png", "`typ` `bezpośredni link do obrazka`",
                 $"{ToPay(ProfileConfigType.BackgroundAndStyle, CurrencyType.SC)} / {ToPay(ProfileConfigType.BackgroundAndStyle, CurrencyType.TC)}",
-                $"- **[2]** obrazek\n- **[3]** obrazek na statystykach\n- **[5]** duża galeria na obrazku\n- **[6]** statystyki na obrazku\n- **[8]** galeria z karcianką na obrazku"),
+                $"**[2]** obrazek\n**[3]** obrazek na statystykach\n**[5]** duża galeria na obrazku\n**[6]** statystyki na obrazku\n**[8]** galeria z karcianką na obrazku"),
 
-            new OptionInfo("tło", "pozwala ustwić obrazek w górnej części profilu o wymiarach 750 x 160px",
+            new OptionInfo("tło", "Pozwala ustwić obrazek w górnej części profilu o wymiarach 750 x 160px.",
                 "konfiguracja profilu tło https://sanakan.pl/i/example_new_profile_bg.png", "`bezpośredni link do obrazka`",
                 $"{ToPay(ProfileConfigType.Background, CurrencyType.SC)} / {ToPay(ProfileConfigType.Background, CurrencyType.TC)}"),
 
-            new OptionInfo("styl", "pozwala zmienić dolny wygląd profilu oraz ustawić tam obrazek o wymiarach 750 x 340px, gdy styl tego wymaga",
+            new OptionInfo("styl", "Pozwala zmienić dolny wygląd profilu oraz ustawić tam obrazek o wymiarach 750 x 340px, gdy styl tego wymaga.",
                 "konfiguracja profilu styl obrazek https://sanakan.pl/i/example_new_style_1.png", "`typ` `bezpośredni link do obrazka (opcjonalne)`",
                 $"{ToPay(ProfileConfigType.Style, CurrencyType.SC)} / {ToPay(ProfileConfigType.Style, CurrencyType.TC)}",
-                $"- **[1]** statystyki\n- **[2]** obrazek (wymagany link)\n- **[3]** obrazek na statystykach (wymagany link)\n- **[4]** duża galeria\n- **[5]** duża galeria na obrazku (wymagany link)\n- **[6]** statystyki na obrazku (wymagany link)\n- **[7]** galeria z karcianką\n- **[8]** galeria z karcianką na obrazku (wymagany link)"),
+                $"**[1]** statystyki\n**[2]** obrazek *(wymagany link)*\n**[3]** obrazek na statystykach *(wymagany link)*\n**[4]** duża galeria\n**[5]** duża galeria na obrazku *(wymagany link)*\n**[6]** statystyki na obrazku *(wymagany link)*\n**[7]** galeria z karcianką\n**[8]** galeria z karcianką na obrazku *(wymagany link)*"),
 
-            new OptionInfo("nakładka", "pozwala ustwić obrazek będący prawie nad wszystkimi elementami w profilu zaczynający się od czarnego paska z nazwą użytkownika i idący do dołu profilu o wymiarach 750 x 402px",
+            new OptionInfo("nakładka", "Pozwala ustwić obrazek będący prawie nad wszystkimi elementami w profilu zaczynający się od czarnego paska z nazwą użytkownika i idący do dołu profilu o wymiarach 750 x 402px.\n\n*Jeśli nakładka zasłoni nazwę użytkownika, to należy ją umieścić na nakładce w innym miejscu. W przeciwnym razie nakładka zostanie usunięta.*",
                 "konfiguracja profilu nakładka https://sanakan.pl/i/example_profile_overlay.png", "`bezpośredni link do obrazka`",
                 $"{ToPay(ProfileConfigType.Overlay, CurrencyType.SC)} / {ToPay(ProfileConfigType.Overlay, CurrencyType.TC)}"),
 
-            new OptionInfo("ramka awatara", "pozwala zmienić wygląd ramki awatara",
+            new OptionInfo("ramka awatara", "Pozwala zmienić wygląd ramki awatara.",
                 "konfiguracja profilu ramka awatara domyślny", "`typ`",
                 $"{ToPay(ProfileConfigType.AvatarBorder, CurrencyType.SC)} / {ToPay(ProfileConfigType.AvatarBorder, CurrencyType.TC)}",
-                $"- **[1]** brak (darmowa)\n- **[2]** domyślny (darmowa)\n- **[3]** liście\n- **[4]** dzidowy\n- **[5]** woda\n- **[6]** kruki\n- **[7]** wstążka\n- **[8]** metalowa\n- **[9]** kwiatki\n- **[10]** czaszka\n- **[11]** ogień\n- **[12]** lód\n- **[13]** promium\n- **[14]** złota\n- **[15]** czerwona\n- **[16]** tęcza\n- **[17]** różowa\n- **[18]** prosta"),
+                $"**[1]** brak *(darmowa)*\n**[2]** domyślny *(darmowa)*\n**[3]** liście\n**[4]** dzidowy\n**[5]** woda\n**[6]** kruki\n**[7]** wstążka\n**[8]** metalowa\n**[9]** kwiatki\n**[10]** czaszka\n**[11]** ogień\n**[12]** lód\n**[13]** promium\n**[14]** złota\n**[15]** czerwona\n**[16]** tęcza\n**[17]** różowa\n**[18]** prosta"),
 
-            new OptionInfo("przeźroczystość cieni", "pozwala zmienić przeźroczystość czarnych cieni pod panelami profilu na wybranych stylach",
+            new OptionInfo("przeźroczystość cieni", "Pozwala zmienić przeźroczystość czarnych cieni pod panelami profilu na wybranych stylach.",
                 "konfiguracja profilu przeźroczystość cieni 30", "`procent`"),
 
-            new OptionInfo("ultra nakładka", "pozwala ustwić obrazek będący nad wszystkimi elementami w profilu poza paskiem o wymiarach 750 x 500px",
+            new OptionInfo("ultra nakładka", "Pozwala ustwić obrazek będący nad wszystkimi elementami w profilu poza paskiem o wymiarach 750 x 500px.\n\n*Jeśli nakładka zasłoni nazwę użytkownika, to należy ją umieścić na nakładce w innym miejscu. W przeciwnym razie nakładka zostanie usunięta.*",
                 "konfiguracja profilu ultra nakładka https://sanakan.pl/i/example_profile_ult_overlay.png", "`bezpośredni link do obrazka`",
                 $"{ToPay(ProfileConfigType.PremiumOverlay, CurrencyType.SC)} / {ToPay(ProfileConfigType.PremiumOverlay, CurrencyType.TC)}"),
 
-            new OptionInfo("pasek", "pozwala zmienić pozycję paska profilu na górę lub dół"),
-            new OptionInfo("mini waifu", "pozwala zmienić widoczność karty ustawionej jako waifu w prawym górnym rogu profilu"),
-            new OptionInfo("anime", "pozwala zmienić widoczność panelu statystyk anime, wymaga stylu wyświetlającego statystyki"),
-            new OptionInfo("manga", "pozwala zmienić widoczność panelu statystyk mang, wymaga stylu wyświetlającego statystyki"),
-            new OptionInfo("karcianka", "pozwala zmienić widoczność panelu statystyk karcianki, wymaga stylu wyświetlającego statystyki"),
-            new OptionInfo("mini galeria", "pozwala zmienić widoczność panelu mini galerii, wymaga stylu wyświetlającego statystyki oraz mini galerię"),
-            new OptionInfo("ilość kart mini galerii", "pozwala zmienić liczbe kart w mini galerii między 2 a 6, wymaga stylu wyświetlającego statystyki oraz mini galerie"),
-            new OptionInfo("zamiana paneli", "pozwala zamienić między sobą prawy i lewy panel, wymaga stylu wyświetlającego statystyki"),
-            new OptionInfo("ramka na poziom", "pozwala aktywować ramkę awatara zależną od poziomu"),
-            new OptionInfo("okrągły awatar", "pozwala aktywować zaokrąglony awatar, gdy nie mamy ustawionej ramki"),
-            new OptionInfo("przeźroczysty pasek", "pozwala aktywować ustawiony stopień przeźroczystości paneli dla paska"),
+            new OptionInfo("pasek", "Pozwala zmienić pozycję paska profilu na górę lub dół."),
+            new OptionInfo("mini waifu", "Pozwala zmienić widoczność karty ustawionej jako waifu w prawym górnym rogu profilu."),
+            new OptionInfo("anime", "Pozwala zmienić widoczność panelu statystyk anime, wymaga stylu wyświetlającego statystyki."),
+            new OptionInfo("manga", "Pozwala zmienić widoczność panelu statystyk mang, wymaga stylu wyświetlającego statystyki."),
+            new OptionInfo("karcianka", "Pozwala zmienić widoczność panelu statystyk karcianki, wymaga stylu wyświetlającego statystyki."),
+            new OptionInfo("mini galeria", "Pozwala zmienić widoczność panelu mini galerii, wymaga stylu wyświetlającego statystyki oraz mini galerię."),
+            new OptionInfo("ilość kart mini galerii", "Pozwala zmienić liczbe kart w mini galerii między 2 a 6, wymaga stylu wyświetlającego statystyki oraz mini galerie."),
+            new OptionInfo("zamiana paneli", "Pozwala zamienić między sobą prawy i lewy panel wymaga stylu wyświetlającego statystyki."),
+            new OptionInfo("ramka na poziom", "Pozwala aktywować ramkę awatara zależną od poziomu która działa wyłącznie z niektórymi ramkami."),
+            new OptionInfo("okrągły awatar", "Pozwala aktywować zaokrąglony awatar, gdy nie mamy ustawionej ramki."),
+            new OptionInfo("przeźroczysty pasek", "Pozwala aktywować ustawiony stopień przeźroczystości cieni dla paska."),
         };
 
         public ProfileConfigType Type;
@@ -169,13 +169,13 @@ namespace Sanakan.Services.PocketWaifu
             {
                 return $"**Konfiguracja profilu:**\n"
                      + $"*Użyj* `konfiguracja profilu info [nr opcji]` *aby wyświetlić szczegóły.*\n\n"
-                     + $"Opcje:\n{string.Join("\n", _help.Select((x, i) => $"**[{i+1}]** {x.Name}"))}\n\n"
+                     + $"**Opcje:**\n{string.Join("\n", _help.Select((x, i) => $"**[{i+1}]** {x.Name}"))}\n\n"
                      + $"Dodaj na koniec polecenia **TC** by zmienić rodzaj waluty przy płatnych opcjach *(domyślna waluta to SC)*.";
             }
             var cmd =  _help[Value-1];
             var help = new StringBuilder().Append($"**Konfiguracja profilu:**\n\n**{cmd.Name}** {cmd.Params}\n{cmd.Desc}");
             if (!string.IsNullOrEmpty(cmd.Options)) help.Append($"\n\n**Typy:**\n{cmd.Options}");
-            if (!string.IsNullOrEmpty(cmd.Price)) help.Append($"\n\n{cmd.Price}");
+            if (!string.IsNullOrEmpty(cmd.Price)) help.Append($"\n\n**Cena użycia:** {cmd.Price}");
             if (!string.IsNullOrEmpty(cmd.Example)) help.Append($"\n\n*np.* `{cmd.Example}`");
             return help.ToString();
         }
