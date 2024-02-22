@@ -57,7 +57,7 @@ namespace Sanakan.Services.PocketWaifu
             new OptionInfo("jestem leniwy", "ustawia tło profilu od razu z wybranym stylem, wymaga podania obrazka - 750 x 500px",
                 "konfiguracja profilu jestem leniwy https://sanakan.pl/i/example_profile_full.png", "`typ` `bezpośredni link do obrazka`",
                 $"{ToPay(ProfileConfigType.BackgroundAndStyle, CurrencyType.SC)} / {ToPay(ProfileConfigType.BackgroundAndStyle, CurrencyType.TC)}",
-                $"- obrazek\n- obrazek na statach\n- duża galeria na obrazku\n- statystyki na obrazku\n- galeria z karcianką na obrazku"),
+                $"- **[2]** obrazek\n- **[3]** obrazek na statystykach\n- **[5]** duża galeria na obrazku\n- **[6]** statystyki na obrazku\n- **[8]** galeria z karcianką na obrazku"),
 
             new OptionInfo("tło", "pozwala ustwić obrazek w górnej części profilu o wymiarach 750 x 160px",
                 "konfiguracja profilu tło https://sanakan.pl/i/example_new_profile_bg.png", "`bezpośredni link do obrazka`",
@@ -66,7 +66,7 @@ namespace Sanakan.Services.PocketWaifu
             new OptionInfo("styl", "pozwala zmienić dolny wygląd profilu oraz ustawić tam obrazek o wymiarach 750 x 340px, gdy styl tego wymaga",
                 "konfiguracja profilu styl obrazek https://sanakan.pl/i/example_new_style_1.png", "`typ` `bezpośredni link do obrazka (opcjonalne)`",
                 $"{ToPay(ProfileConfigType.Style, CurrencyType.SC)} / {ToPay(ProfileConfigType.Style, CurrencyType.TC)}",
-                $"- statystyki\n- obrazek (wymagany link)\n- obrazek na statystykach (wymagany link)\n- duża galeria\n- duża galeria na obrazku (wymagany link)\n- statystyki na obrazku (wymagany link)\n- galeria z karcianką\n- galeria z karcianką na obrazku (wymagany link)"),
+                $"- **[1]** statystyki\n- **[2]** obrazek (wymagany link)\n- **[3]** obrazek na statystykach (wymagany link)\n- **[4]** duża galeria\n- **[5]** duża galeria na obrazku (wymagany link)\n- **[6]** statystyki na obrazku (wymagany link)\n- **[7]** galeria z karcianką\n- **[8]** galeria z karcianką na obrazku (wymagany link)"),
 
             new OptionInfo("nakładka", "pozwala ustwić obrazek będący prawie nad wszystkimi elementami w profilu zaczynający się od czarnego paska z nazwą użytkownika i idący do dołu profilu o wymiarach 750 x 402px",
                 "konfiguracja profilu nakładka https://sanakan.pl/i/example_profile_overlay.png", "`bezpośredni link do obrazka`",
@@ -75,7 +75,7 @@ namespace Sanakan.Services.PocketWaifu
             new OptionInfo("ramka awatara", "pozwala zmienić wygląd ramki awatara",
                 "konfiguracja profilu ramka awatara domyślny", "`typ`",
                 $"{ToPay(ProfileConfigType.AvatarBorder, CurrencyType.SC)} / {ToPay(ProfileConfigType.AvatarBorder, CurrencyType.TC)}",
-                $"- brak (darmowa)\n- domyślny (darmowa)\n- liście\n- dzidowy\n- woda\n- kruki\n- wstążka\n- metalowa\n- kwiatki\n- czaszka\n- ogień\n- lód\n- promium\n- złota\n- czerwona\n- tęcza\n- różowa\n- prosta"),
+                $"- **[1]** brak (darmowa)\n- **[2]** domyślny (darmowa)\n- **[3]** liście\n- **[4]** dzidowy\n- **[5]** woda\n- **[6]** kruki\n- **[7]** wstążka\n- **[8]** metalowa\n- **[9]** kwiatki\n- **[10]** czaszka\n- **[11]** ogień\n- **[12]** lód\n- **[13]** promium\n- **[14]** złota\n- **[15]** czerwona\n- **[16]** tęcza\n- **[17]** różowa\n- **[18]** prosta"),
 
             new OptionInfo("przeźroczystość cieni", "pozwala zmienić przeźroczystość czarnych cieni pod panelami profilu na wybranych stylach",
                 "konfiguracja profilu przeźroczystość cieni 30", "`procent`"),

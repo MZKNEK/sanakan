@@ -14,13 +14,15 @@ namespace Sanakan.TypeReaders
     {
         private class NamePair<T>
         {
-            public NamePair(string name, T type, bool strict = false)
+            public NamePair(string name, T type, uint index, bool strict = false)
             {
                 Name = name;
                 Type = type;
+                Index = index;
                 StrictMatching = strict;
             }
 
+            public uint Index;
             public bool StrictMatching;
             public string Name;
             public T Type;
@@ -28,98 +30,97 @@ namespace Sanakan.TypeReaders
 
         private static readonly List<NamePair<ProfileConfigType>> _profileConfigTypes = new List<NamePair<ProfileConfigType>>
         {
-            new NamePair<ProfileConfigType>("info", ProfileConfigType.ShowInfo),
-            new NamePair<ProfileConfigType>("jestem leniwy", ProfileConfigType.BackgroundAndStyle),
-            new NamePair<ProfileConfigType>("tło", ProfileConfigType.Background),
-            new NamePair<ProfileConfigType>("background", ProfileConfigType.Background),
-            new NamePair<ProfileConfigType>("style", ProfileConfigType.Style),
-            new NamePair<ProfileConfigType>("styl", ProfileConfigType.Style),
-            new NamePair<ProfileConfigType>("nakładka", ProfileConfigType.Overlay),
-            new NamePair<ProfileConfigType>("overlay", ProfileConfigType.Overlay),
-            new NamePair<ProfileConfigType>("ramka awatara", ProfileConfigType.AvatarBorder),
-            new NamePair<ProfileConfigType>("avatar border", ProfileConfigType.AvatarBorder),
-            new NamePair<ProfileConfigType>("przeźroczystość cieni", ProfileConfigType.ShadowsOpacity),
-            new NamePair<ProfileConfigType>("shadows opacity", ProfileConfigType.ShadowsOpacity),
-            new NamePair<ProfileConfigType>("ultra nakładka", ProfileConfigType.PremiumOverlay),
-            new NamePair<ProfileConfigType>("ultra overlay", ProfileConfigType.PremiumOverlay),
-
-            new NamePair<ProfileConfigType>("pasek", ProfileConfigType.Bar),
-            new NamePair<ProfileConfigType>("bar", ProfileConfigType.Bar),
-            new NamePair<ProfileConfigType>("mini waifu", ProfileConfigType.MiniFavCard),
-            new NamePair<ProfileConfigType>("anime", ProfileConfigType.AnimeStats),
-            new NamePair<ProfileConfigType>("manga", ProfileConfigType.MangaStats),
-            new NamePair<ProfileConfigType>("karcianka", ProfileConfigType.CardsStats),
-            new NamePair<ProfileConfigType>("game stats", ProfileConfigType.CardsStats),
-            new NamePair<ProfileConfigType>("mini galeria", ProfileConfigType.MiniGallery),
-            new NamePair<ProfileConfigType>("mini gallery", ProfileConfigType.MiniGallery),
-            new NamePair<ProfileConfigType>("ilość kart mini galerii", ProfileConfigType.CardCntInMiniGallery),
-            new NamePair<ProfileConfigType>("card count in mini gallery", ProfileConfigType.CardCntInMiniGallery),
-            new NamePair<ProfileConfigType>("zamiana paneli", ProfileConfigType.FlipPanels),
-            new NamePair<ProfileConfigType>("flip panels", ProfileConfigType.FlipPanels),
-            new NamePair<ProfileConfigType>("ramka na poziom", ProfileConfigType.LevelAvatarBorder),
-            new NamePair<ProfileConfigType>("border per level", ProfileConfigType.LevelAvatarBorder),
-            new NamePair<ProfileConfigType>("okrągły awatar", ProfileConfigType.RoundAvatarWithoutBorder),
-            new NamePair<ProfileConfigType>("round avatar", ProfileConfigType.RoundAvatarWithoutBorder),
-            new NamePair<ProfileConfigType>("przeźroczysty pasek", ProfileConfigType.CustomBarOpacity),
-            new NamePair<ProfileConfigType>("transparent bar", ProfileConfigType.CustomBarOpacity),
+            new NamePair<ProfileConfigType>("info", ProfileConfigType.ShowInfo, 0),
+            new NamePair<ProfileConfigType>("jestem leniwy", ProfileConfigType.BackgroundAndStyle, 1),
+            new NamePair<ProfileConfigType>("tło", ProfileConfigType.Background, 2),
+            new NamePair<ProfileConfigType>("background", ProfileConfigType.Background, 2),
+            new NamePair<ProfileConfigType>("style", ProfileConfigType.Style, 3),
+            new NamePair<ProfileConfigType>("styl", ProfileConfigType.Style, 3),
+            new NamePair<ProfileConfigType>("nakładka", ProfileConfigType.Overlay, 4),
+            new NamePair<ProfileConfigType>("overlay", ProfileConfigType.Overlay, 4),
+            new NamePair<ProfileConfigType>("ramka awatara", ProfileConfigType.AvatarBorder, 5),
+            new NamePair<ProfileConfigType>("avatar border", ProfileConfigType.AvatarBorder, 5),
+            new NamePair<ProfileConfigType>("przeźroczystość cieni", ProfileConfigType.ShadowsOpacity, 6),
+            new NamePair<ProfileConfigType>("shadows opacity", ProfileConfigType.ShadowsOpacity, 6),
+            new NamePair<ProfileConfigType>("ultra nakładka", ProfileConfigType.PremiumOverlay, 7),
+            new NamePair<ProfileConfigType>("ultra overlay", ProfileConfigType.PremiumOverlay, 7),
+            new NamePair<ProfileConfigType>("pasek", ProfileConfigType.Bar, 8),
+            new NamePair<ProfileConfigType>("bar", ProfileConfigType.Bar, 8),
+            new NamePair<ProfileConfigType>("mini waifu", ProfileConfigType.MiniFavCard, 9),
+            new NamePair<ProfileConfigType>("anime", ProfileConfigType.AnimeStats, 10),
+            new NamePair<ProfileConfigType>("manga", ProfileConfigType.MangaStats, 11),
+            new NamePair<ProfileConfigType>("karcianka", ProfileConfigType.CardsStats, 12),
+            new NamePair<ProfileConfigType>("game stats", ProfileConfigType.CardsStats, 12),
+            new NamePair<ProfileConfigType>("mini galeria", ProfileConfigType.MiniGallery, 13),
+            new NamePair<ProfileConfigType>("mini gallery", ProfileConfigType.MiniGallery, 13),
+            new NamePair<ProfileConfigType>("ilość kart mini galerii", ProfileConfigType.CardCntInMiniGallery, 14),
+            new NamePair<ProfileConfigType>("card count in mini gallery", ProfileConfigType.CardCntInMiniGallery, 14),
+            new NamePair<ProfileConfigType>("zamiana paneli", ProfileConfigType.FlipPanels, 15),
+            new NamePair<ProfileConfigType>("flip panels", ProfileConfigType.FlipPanels, 15),
+            new NamePair<ProfileConfigType>("ramka na poziom", ProfileConfigType.LevelAvatarBorder, 16),
+            new NamePair<ProfileConfigType>("border per level", ProfileConfigType.LevelAvatarBorder, 16),
+            new NamePair<ProfileConfigType>("okrągły awatar", ProfileConfigType.RoundAvatarWithoutBorder, 17),
+            new NamePair<ProfileConfigType>("round avatar", ProfileConfigType.RoundAvatarWithoutBorder, 17),
+            new NamePair<ProfileConfigType>("przeźroczysty pasek", ProfileConfigType.CustomBarOpacity, 18),
+            new NamePair<ProfileConfigType>("transparent bar", ProfileConfigType.CustomBarOpacity, 18),
         };
 
         private static readonly List<NamePair<ProfileType>> _profileStyleTypes = new List<NamePair<ProfileType>>
         {
-            new NamePair<ProfileType>("stats on image", ProfileType.StatsOnImg),
-            new NamePair<ProfileType>("stats", ProfileType.Stats, true),
-            new NamePair<ProfileType>("statystyki na obrazku", ProfileType.StatsOnImg),
-            new NamePair<ProfileType>("statystyki", ProfileType.Stats, true),
-            new NamePair<ProfileType>("obrazek na statystykach", ProfileType.StatsWithImg),
-            new NamePair<ProfileType>("obrazek", ProfileType.Img, true),
-            new NamePair<ProfileType>("image on stats", ProfileType.StatsWithImg),
-            new NamePair<ProfileType>("image", ProfileType.Img, true),
-            new NamePair<ProfileType>("duża galeria na obrazku", ProfileType.CardsOnImg),
-            new NamePair<ProfileType>("duża galeria", ProfileType.Cards, true),
-            new NamePair<ProfileType>("big gallery on image", ProfileType.CardsOnImg),
-            new NamePair<ProfileType>("big gallery", ProfileType.Cards, true),
-            new NamePair<ProfileType>("galeria z karcianką na obrazku", ProfileType.MiniGalleryOnImg),
-            new NamePair<ProfileType>("galeria z karcianką", ProfileType.MiniGallery, true),
-            new NamePair<ProfileType>("gallery with game stats on image", ProfileType.MiniGalleryOnImg),
-            new NamePair<ProfileType>("gallery with game stats", ProfileType.MiniGallery, true),
+            new NamePair<ProfileType>("stats on image", ProfileType.StatsOnImg, 6),
+            new NamePair<ProfileType>("stats", ProfileType.Stats, 1, true),
+            new NamePair<ProfileType>("statystyki na obrazku", ProfileType.StatsOnImg, 6),
+            new NamePair<ProfileType>("statystyki", ProfileType.Stats, 1, true),
+            new NamePair<ProfileType>("obrazek na statystykach", ProfileType.StatsWithImg, 3),
+            new NamePair<ProfileType>("obrazek", ProfileType.Img, 2, true),
+            new NamePair<ProfileType>("image on stats", ProfileType.StatsWithImg, 3),
+            new NamePair<ProfileType>("image", ProfileType.Img, 2, true),
+            new NamePair<ProfileType>("duża galeria na obrazku", ProfileType.CardsOnImg, 5),
+            new NamePair<ProfileType>("duża galeria", ProfileType.Cards, 4, true),
+            new NamePair<ProfileType>("big gallery on image", ProfileType.CardsOnImg, 5),
+            new NamePair<ProfileType>("big gallery", ProfileType.Cards, 4, true),
+            new NamePair<ProfileType>("galeria z karcianką na obrazku", ProfileType.MiniGalleryOnImg, 8),
+            new NamePair<ProfileType>("galeria z karcianką", ProfileType.MiniGallery, 7, true),
+            new NamePair<ProfileType>("gallery with game stats on image", ProfileType.MiniGalleryOnImg, 8),
+            new NamePair<ProfileType>("gallery with game stats", ProfileType.MiniGallery, 7, true),
         };
 
         private static readonly List<NamePair<AvatarBorder>> _avatarBorderTypes = new List<NamePair<AvatarBorder>>
         {
-            new NamePair<AvatarBorder>("brak", AvatarBorder.None),
-            new NamePair<AvatarBorder>("none", AvatarBorder.None),
-            new NamePair<AvatarBorder>("liście", AvatarBorder.PurpleLeaves),
-            new NamePair<AvatarBorder>("leaves", AvatarBorder.PurpleLeaves),
-            new NamePair<AvatarBorder>("dzidowy", AvatarBorder.Dzedai),
-            new NamePair<AvatarBorder>("domyślny", AvatarBorder.Base),
-            new NamePair<AvatarBorder>("default", AvatarBorder.Base),
-            new NamePair<AvatarBorder>("woda", AvatarBorder.Water),
-            new NamePair<AvatarBorder>("water", AvatarBorder.Water),
-            new NamePair<AvatarBorder>("kruki", AvatarBorder.Crows),
-            new NamePair<AvatarBorder>("crows", AvatarBorder.Crows),
-            new NamePair<AvatarBorder>("wstążka", AvatarBorder.Bow),
-            new NamePair<AvatarBorder>("bow", AvatarBorder.Bow),
-            new NamePair<AvatarBorder>("metalowa", AvatarBorder.Metal),
-            new NamePair<AvatarBorder>("metal", AvatarBorder.Metal),
-            new NamePair<AvatarBorder>("kwiatki", AvatarBorder.RedThinLeaves),
-            new NamePair<AvatarBorder>("flowers", AvatarBorder.RedThinLeaves),
-            new NamePair<AvatarBorder>("czaszka", AvatarBorder.Skull),
-            new NamePair<AvatarBorder>("skull", AvatarBorder.Skull),
-            new NamePair<AvatarBorder>("ogień", AvatarBorder.Fire),
-            new NamePair<AvatarBorder>("fire", AvatarBorder.Fire),
-            new NamePair<AvatarBorder>("lód", AvatarBorder.Ice),
-            new NamePair<AvatarBorder>("ice", AvatarBorder.Ice),
-            new NamePair<AvatarBorder>("promium", AvatarBorder.Promium),
-            new NamePair<AvatarBorder>("złota", AvatarBorder.Gold),
-            new NamePair<AvatarBorder>("gold", AvatarBorder.Gold),
-            new NamePair<AvatarBorder>("czerwona", AvatarBorder.Red),
-            new NamePair<AvatarBorder>("red", AvatarBorder.Red),
-            new NamePair<AvatarBorder>("tęcza", AvatarBorder.Rainbow),
-            new NamePair<AvatarBorder>("rainbow", AvatarBorder.Rainbow),
-            new NamePair<AvatarBorder>("różowa", AvatarBorder.Pink),
-            new NamePair<AvatarBorder>("pink", AvatarBorder.Pink),
-            new NamePair<AvatarBorder>("prosta", AvatarBorder.Simple),
-            new NamePair<AvatarBorder>("simple", AvatarBorder.Simple),
+            new NamePair<AvatarBorder>("brak", AvatarBorder.None, 1),
+            new NamePair<AvatarBorder>("none", AvatarBorder.None, 1),
+            new NamePair<AvatarBorder>("domyślny", AvatarBorder.Base, 2),
+            new NamePair<AvatarBorder>("default", AvatarBorder.Base, 2),
+            new NamePair<AvatarBorder>("liście", AvatarBorder.PurpleLeaves, 3),
+            new NamePair<AvatarBorder>("leaves", AvatarBorder.PurpleLeaves, 3),
+            new NamePair<AvatarBorder>("dzidowy", AvatarBorder.Dzedai, 4),
+            new NamePair<AvatarBorder>("woda", AvatarBorder.Water, 5),
+            new NamePair<AvatarBorder>("water", AvatarBorder.Water, 5),
+            new NamePair<AvatarBorder>("kruki", AvatarBorder.Crows, 6),
+            new NamePair<AvatarBorder>("crows", AvatarBorder.Crows, 6),
+            new NamePair<AvatarBorder>("wstążka", AvatarBorder.Bow, 7),
+            new NamePair<AvatarBorder>("bow", AvatarBorder.Bow, 7),
+            new NamePair<AvatarBorder>("metalowa", AvatarBorder.Metal, 8),
+            new NamePair<AvatarBorder>("metal", AvatarBorder.Metal, 8),
+            new NamePair<AvatarBorder>("kwiatki", AvatarBorder.RedThinLeaves, 9),
+            new NamePair<AvatarBorder>("flowers", AvatarBorder.RedThinLeaves, 9),
+            new NamePair<AvatarBorder>("czaszka", AvatarBorder.Skull, 10),
+            new NamePair<AvatarBorder>("skull", AvatarBorder.Skull, 10),
+            new NamePair<AvatarBorder>("ogień", AvatarBorder.Fire, 11),
+            new NamePair<AvatarBorder>("fire", AvatarBorder.Fire, 11),
+            new NamePair<AvatarBorder>("lód", AvatarBorder.Ice, 12),
+            new NamePair<AvatarBorder>("ice", AvatarBorder.Ice, 12),
+            new NamePair<AvatarBorder>("promium", AvatarBorder.Promium, 13),
+            new NamePair<AvatarBorder>("złota", AvatarBorder.Gold, 14),
+            new NamePair<AvatarBorder>("gold", AvatarBorder.Gold, 14),
+            new NamePair<AvatarBorder>("czerwona", AvatarBorder.Red, 15),
+            new NamePair<AvatarBorder>("red", AvatarBorder.Red, 15),
+            new NamePair<AvatarBorder>("tęcza", AvatarBorder.Rainbow, 16),
+            new NamePair<AvatarBorder>("rainbow", AvatarBorder.Rainbow, 16),
+            new NamePair<AvatarBorder>("różowa", AvatarBorder.Pink, 17),
+            new NamePair<AvatarBorder>("pink", AvatarBorder.Pink, 17),
+            new NamePair<AvatarBorder>("prosta", AvatarBorder.Simple, 18),
+            new NamePair<AvatarBorder>("simple", AvatarBorder.Simple, 18),
         };
 
         private static CurrencyType ParseCurrency(ReadOnlySpan<char> chars)
@@ -163,19 +164,38 @@ namespace Sanakan.TypeReaders
             _ => ProfileSettings.None
         };
 
+        private NamePair<ProfileConfigType> GetSelectedOption(string input, uint index, bool useIndex) => useIndex
+                ? _profileConfigTypes.FirstOrDefault(x => x.Index == index)
+                : _profileConfigTypes.FirstOrDefault(x => input.StartsWith(x.Name, StringComparison.OrdinalIgnoreCase));
+
+        private NamePair<ProfileType> GetSelectedStyle(string input, uint index, bool useIndex) => useIndex
+                ? _profileStyleTypes.FirstOrDefault(x => x.Index == index)
+                : _profileStyleTypes.FirstOrDefault(x => input.StartsWith(x.Name, StringComparison.OrdinalIgnoreCase));
+
+        private NamePair<AvatarBorder> GetSelectedAvatarBorder(string input, uint index, bool useIndex) => useIndex
+                ? _avatarBorderTypes.FirstOrDefault(x => x.Index == index)
+                : _avatarBorderTypes.FirstOrDefault(x => input.StartsWith(x.Name, StringComparison.OrdinalIgnoreCase));
+
         public override Task<TypeReaderResult> ReadAsync(ICommandContext context, string input, IServiceProvider services)
         {
             var config = new ProfileConfig { Currency = CurrencyType.SC, Type = ProfileConfigType.ShowInfo, ToggleCurentValue = false };
             if (!string.IsNullOrEmpty(input))
             {
-                var selectedType = _profileConfigTypes.FirstOrDefault(x => input.StartsWith(x.Name, StringComparison.OrdinalIgnoreCase));
+                var param = input.Split(' ').Where(x => !string.IsNullOrEmpty(x)).ToArray();
+                if (param.Length < 1)
+                    return Task.FromResult(TypeReaderResult.FromError(CommandError.ParseFailed, "Nie podano wymaganych parametrów!"));
+
+                var globalParamIndex = 0;
+                var isIndex = uint.TryParse(param[globalParamIndex], out var mainIndex);
+                var selectedType = GetSelectedOption(input, mainIndex, isIndex);
                 if (selectedType is null)
                 {
                     return Task.FromResult(TypeReaderResult.FromError(CommandError.ParseFailed, "Nie rozpoznano typu konfiguracji!"));
                 }
 
                 config.Type = selectedType.Type;
-                var strippedInput = input.AsSpan().Slice(selectedType.Name.Length);
+                var strippedInput = input.AsSpan().Slice(isIndex ? param[globalParamIndex].Length : selectedType.Name.Length);
+                globalParamIndex += isIndex ? 1 : (selectedType.Name.Count(x => Char.IsSeparator(x)) + 1);
                 if (NeedMoreParams(config.Type))
                 {
                     if (strippedInput.IsEmpty)
@@ -212,16 +232,18 @@ namespace Sanakan.TypeReaders
                     case ProfileConfigType.Style:
                     {
                         input = strippedInput.ToString();
-                        var selectedStyleType = _profileStyleTypes.FirstOrDefault(x => input.StartsWith(x.Name, StringComparison.OrdinalIgnoreCase));
+                        isIndex = uint.TryParse(param[globalParamIndex], out var styleIndex);
+                        var selectedStyleType = GetSelectedStyle(input, styleIndex, isIndex);
                         if (selectedStyleType is null)
                         {
                             return Task.FromResult(TypeReaderResult.FromError(CommandError.ParseFailed, "Nie rozpoznano stylu profilu!"));
                         }
 
                         config.Style = selectedStyleType.Type;
-                        strippedInput = strippedInput.Slice(selectedStyleType.Name.Length);
+                        strippedInput = strippedInput.Slice(isIndex ? param[globalParamIndex].Length : selectedStyleType.Name.Length);
+                        globalParamIndex += isIndex ? 1 : (selectedStyleType.Name.Count(x => Char.IsSeparator(x)) + 1);
 
-                        if (selectedStyleType.StrictMatching)
+                        if (selectedStyleType.StrictMatching && !isIndex)
                         {
                             if (!strippedInput.IsEmpty)
                             {
@@ -283,14 +305,16 @@ namespace Sanakan.TypeReaders
                     case ProfileConfigType.AvatarBorder:
                     {
                         input = strippedInput.ToString();
-                        var selectedAvatarType = _avatarBorderTypes.FirstOrDefault(x => input.StartsWith(x.Name, StringComparison.OrdinalIgnoreCase));
+                        isIndex = uint.TryParse(param[globalParamIndex], out var avatarIndex);
+                        var selectedAvatarType = GetSelectedAvatarBorder(input, avatarIndex, isIndex);
                         if (selectedAvatarType is null)
                         {
                             return Task.FromResult(TypeReaderResult.FromError(CommandError.ParseFailed, "Nie rozpoznano ramki awatara!"));
                         }
 
                         config.Border = selectedAvatarType.Type;
-                        strippedInput = strippedInput.Slice(selectedAvatarType.Name.Length);
+                        strippedInput = strippedInput.Slice(isIndex ? param[globalParamIndex].Length : selectedAvatarType.Name.Length);
+                        globalParamIndex += isIndex ? 1 : (selectedAvatarType.Name.Count(x => Char.IsSeparator(x)) + 1);
                     }
                     break;
 

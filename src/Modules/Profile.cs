@@ -344,7 +344,7 @@ namespace Sanakan.Modules
         }
 
         [Command("konfiguracja profilu")]
-        [Alias("configure profile", "konprof", "confprof")]
+        [Alias("configure profile", "konprof", "conprof", "conp", "konp")]
         [Summary("pozwala ustawić konfigurowac profil użytkownika")]
         [Remarks("konfiguracja profilu info"), RequireCommandChannel]
         public async Task ConfigureProfileAsync([Summary("konfiguracja (podanie info wyświetla dodatkowe informacje)")][Remainder]ProfileConfig config)
