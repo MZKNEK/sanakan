@@ -668,7 +668,7 @@ namespace Sanakan.Services
             profilePic.Mutate(x => x.DrawText(nickname, nickFont, GetOrCreateColor("#a7a7a7"), new Point(nX, nY + (int)((30 - nickFont.Size) / 2))));
             profilePic.Mutate(x => x.DrawText(rangName, rangFont, defFontColor, new Point(nX, nY + 30)));
 
-            if (!string.IsNullOrEmpty(botUser.CustomProfileOverlayUrl))
+            if (botUser.StatsStyleSettings.HasFlag(ProfileSettings.ShowOverlay) && !string.IsNullOrEmpty(botUser.CustomProfileOverlayUrl))
             {
                 using var overlay = await GetImageFromUrlAsync(botUser.CustomProfileOverlayUrl);
                 using var overlayImg = await Image.LoadAsync(overlay);
@@ -716,12 +716,12 @@ namespace Sanakan.Services
 
             if (hasAvBorder)
             {
-                var avBorder = GetProfileAvatarBorder(botUser);
-                using var border = Image.Load(avBorder.img);
-                profilePic.Mutate(x => x.DrawImage(border, avBorder.xy, 1));
+                var (xy, img) = GetProfileAvatarBorder(botUser);
+                using var border = Image.Load(img);
+                profilePic.Mutate(x => x.DrawImage(border, xy, 1));
             }
 
-            if (!string.IsNullOrEmpty(botUser.PremiumCustomProfileOverlayUrl))
+            if (botUser.StatsStyleSettings.HasFlag(ProfileSettings.ShowOverlayPro) && !string.IsNullOrEmpty(botUser.PremiumCustomProfileOverlayUrl))
             {
                 using var overlay = await GetImageFromUrlAsync(botUser.PremiumCustomProfileOverlayUrl);
                 using var overlayImg = await Image.LoadAsync(overlay);

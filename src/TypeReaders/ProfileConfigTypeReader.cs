@@ -63,6 +63,10 @@ namespace Sanakan.TypeReaders
             new NamePair<ProfileConfigType>("round avatar", ProfileConfigType.RoundAvatarWithoutBorder, 17),
             new NamePair<ProfileConfigType>("przeźroczysty pasek", ProfileConfigType.CustomBarOpacity, 18),
             new NamePair<ProfileConfigType>("transparent bar", ProfileConfigType.CustomBarOpacity, 18),
+            new NamePair<ProfileConfigType>("widoczność nakładki", ProfileConfigType.OverlayVisibility, 19),
+            new NamePair<ProfileConfigType>("overlay visibility", ProfileConfigType.OverlayVisibility, 19),
+            new NamePair<ProfileConfigType>("widoczność ultra nakładki", ProfileConfigType.PremiumOverlayVisibility, 20),
+            new NamePair<ProfileConfigType>("ultra overlay visibility", ProfileConfigType.PremiumOverlayVisibility, 20),
         };
 
         private static readonly List<NamePair<ProfileType>> _profileStyleTypes = new List<NamePair<ProfileType>>
@@ -123,12 +127,19 @@ namespace Sanakan.TypeReaders
             new NamePair<AvatarBorder>("simple", AvatarBorder.Simple, 18),
         };
 
-        private static CurrencyType ParseCurrency(ReadOnlySpan<char> chars)
+        private static bool ParseCurrency(ReadOnlySpan<char> chars, out CurrencyType currency)
         {
+            currency = CurrencyType.SC;
             if (chars.Length != 2)
-                return CurrencyType.SC;
+                return false;
 
-            return chars.Equals("TC", StringComparison.OrdinalIgnoreCase) ? CurrencyType.TC : CurrencyType.SC;
+            if (chars.Equals("TC", StringComparison.OrdinalIgnoreCase))
+            {
+                currency = CurrencyType.TC;
+                return true;
+            }
+
+            return chars.Equals("SC", StringComparison.OrdinalIgnoreCase);
         }
 
         private static bool NeedMoreParams(ProfileConfigType type) => type switch
@@ -145,6 +156,8 @@ namespace Sanakan.TypeReaders
             ProfileConfigType.LevelAvatarBorder        => false,
             ProfileConfigType.RoundAvatarWithoutBorder => false,
             ProfileConfigType.CustomBarOpacity         => false,
+            ProfileConfigType.OverlayVisibility        => false,
+            ProfileConfigType.PremiumOverlayVisibility => false,
             _ => true
         };
 
@@ -161,6 +174,8 @@ namespace Sanakan.TypeReaders
             ProfileConfigType.LevelAvatarBorder        => ProfileSettings.BorderColor,
             ProfileConfigType.RoundAvatarWithoutBorder => ProfileSettings.RoundAvatar,
             ProfileConfigType.CustomBarOpacity         => ProfileSettings.BarOpacity,
+            ProfileConfigType.OverlayVisibility        => ProfileSettings.ShowOverlay,
+            ProfileConfigType.PremiumOverlayVisibility => ProfileSettings.ShowOverlayPro,
             _ => ProfileSettings.None
         };
 
@@ -281,6 +296,8 @@ namespace Sanakan.TypeReaders
                     case ProfileConfigType.LevelAvatarBorder:
                     case ProfileConfigType.RoundAvatarWithoutBorder:
                     case ProfileConfigType.CustomBarOpacity:
+                    case ProfileConfigType.OverlayVisibility:
+                    case ProfileConfigType.PremiumOverlayVisibility:
                     {
                         config.Settings = ProfileConfigTypeToProfileSettings(config.Type);
                         config.ToggleCurentValue = config.Settings != ProfileSettings.None;
@@ -324,7 +341,12 @@ namespace Sanakan.TypeReaders
 
                 if (!strippedInput.IsEmpty)
                 {
-                    config.Currency = ParseCurrency(strippedInput.TrimStart());
+                     globalParamIndex += ParseCurrency(strippedInput.TrimStart(), out config.Currency) ? 1 : 0;
+                }
+
+                if (param.Length - globalParamIndex > 0)
+                {
+                    return Task.FromResult(TypeReaderResult.FromError(CommandError.ParseFailed, "Podano za dużo parametrów do wybranej opcji!"));
                 }
             }
             return Task.FromResult(TypeReaderResult.FromSuccess(config));

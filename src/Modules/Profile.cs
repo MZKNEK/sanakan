@@ -469,6 +469,8 @@ namespace Sanakan.Modules
                     case ProfileConfigType.LevelAvatarBorder:
                     case ProfileConfigType.RoundAvatarWithoutBorder:
                     case ProfileConfigType.CustomBarOpacity:
+                    case ProfileConfigType.OverlayVisibility:
+                    case ProfileConfigType.PremiumOverlayVisibility:
                     {
                         if (!config.CanUseSettingOnStyle(botuser.ProfileType))
                         {

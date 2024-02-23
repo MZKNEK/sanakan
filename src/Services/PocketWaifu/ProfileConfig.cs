@@ -26,7 +26,9 @@ namespace Sanakan.Services.PocketWaifu
         FlipPanels,
         LevelAvatarBorder,
         RoundAvatarWithoutBorder,
-        CustomBarOpacity
+        CustomBarOpacity,
+        OverlayVisibility,
+        PremiumOverlayVisibility,
     }
 
     public class ProfileConfig
@@ -95,6 +97,8 @@ namespace Sanakan.Services.PocketWaifu
             new OptionInfo("ramka na poziom", "Pozwala aktywować ramkę awatara zależną od poziomu która działa wyłącznie z niektórymi ramkami."),
             new OptionInfo("okrągły awatar", "Pozwala aktywować zaokrąglony awatar, gdy nie mamy ustawionej ramki."),
             new OptionInfo("przeźroczysty pasek", "Pozwala aktywować ustawiony stopień przeźroczystości cieni dla paska."),
+            new OptionInfo("widoczność nakładki", "Pozwala zmienić widoczność nakładki."),
+            new OptionInfo("widoczność ultra nakładki", "Pozwala zmienić widoczność ultra nakładki."),
         };
 
         public ProfileConfigType Type;
@@ -149,6 +153,8 @@ namespace Sanakan.Services.PocketWaifu
             ProfileSettings.BorderColor => true,
             ProfileSettings.RoundAvatar => true,
             ProfileSettings.BarOpacity => true,
+            ProfileSettings.ShowOverlay => true,
+            ProfileSettings.ShowOverlayPro => true,
             ProfileSettings.HalfGallery => style == ProfileType.MiniGallery || style == ProfileType.MiniGalleryOnImg,
             ProfileSettings.ShowGallery => style == ProfileType.MiniGallery || style == ProfileType.MiniGalleryOnImg,
             ProfileSettings.ShowAnime => IsConfigurableStyle(style) && style != ProfileType.MiniGallery && style != ProfileType.MiniGalleryOnImg,
@@ -200,6 +206,8 @@ namespace Sanakan.Services.PocketWaifu
             ProfileConfigType.LevelAvatarBorder => "przełączono ustawienia ramek na poziom.",
             ProfileConfigType.RoundAvatarWithoutBorder => "przełączono rodzaj awatara bez ramki.",
             ProfileConfigType.CustomBarOpacity => "przełączono przeźroczystość pasków profilu.",
+            ProfileConfigType.OverlayVisibility => "przełączono widoczność nakładki profilu.",
+            ProfileConfigType.PremiumOverlayVisibility => "przełączono widoczność ultra nakładki profilu.",
             _ => "????"
         };
     }

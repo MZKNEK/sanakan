@@ -40,19 +40,23 @@ namespace Sanakan.Database.Models
     [Flags]
     public enum ProfileSettings
     {
-        None        = 0,
-        ShowAnime   = 1,
-        ShowManga   = 2,
-        ShowCards   = 4,
-        Flip        = 8,
-        HalfGallery = 16,
-        ShowGallery = 32,
-        ShowWaifu   = 64,
-        BarOnTop    = 128,
-        BorderColor = 256,
-        RoundAvatar = 512,
-        BarOpacity  = 1024,
-        Default     = ShowAnime | ShowManga | ShowCards | ShowGallery | BorderColor,
+        None            = 0,
+        ShowAnime       = 1,
+        ShowManga       = 2,
+        ShowCards       = 4,
+        Flip            = 8,
+        HalfGallery     = 16,
+        ShowGallery     = 32,
+        ShowWaifu       = 64,
+        BarOnTop        = 128,
+        BorderColor     = 256,
+        RoundAvatar     = 512,
+        BarOpacity      = 1024,
+        ShowOverlay     = 2048,
+        ShowOverlayPro  = 4096,
+
+        Default = ShowAnime | ShowManga | ShowCards | ShowGallery
+            | ShowOverlay | ShowOverlayPro | BorderColor,
     }
 
     public class User
