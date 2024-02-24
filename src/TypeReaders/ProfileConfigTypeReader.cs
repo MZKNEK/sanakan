@@ -240,6 +240,11 @@ namespace Sanakan.TypeReaders
                         strippedInput = spaceIdx == -1 ? Span<char>.Empty : strippedInput.Slice(spaceIdx);
 
                         config.Url = url.Trim().ToString();
+                        if (!Uri.IsWellFormedUriString(config.Url, UriKind.Absolute))
+                        {
+                            return Task.FromResult(TypeReaderResult.FromError(CommandError.ParseFailed, "Nie rozpoznano linku!"));
+                        }
+                        globalParamIndex++;
                     }
                     break;
 
@@ -316,6 +321,7 @@ namespace Sanakan.TypeReaders
                         }
 
                         config.Value = percent;
+                        globalParamIndex++;
                     }
                     break;
 
