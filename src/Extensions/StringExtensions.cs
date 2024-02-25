@@ -8,13 +8,12 @@ using System.Text;
 using System.Text.RegularExpressions;
 using Discord;
 using Microsoft.AspNetCore.Mvc;
-using Sanakan.Services;
 
 namespace Sanakan.Extensions
 {
     public enum ImageUrlCheckResult
     {
-        Ok, NotUrl, WrongExtension, BlacklistedHost, TransformError
+        Ok, UrlTransformed, NotUrl, WrongExtension, BlacklistedHost, TransformError
     }
 
     public static class StringExtension

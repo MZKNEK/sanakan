@@ -63,59 +63,69 @@ namespace Sanakan.Services
             return string.Empty;
         }
 
-        public ImageUrlCheckResult CheckImageUrlSimple(string str, IEnumerable<DomainData> allowedHosts)
-            => CheckImageUrl(ref str, allowedHosts);
-
-        public ImageUrlCheckResult CheckImageUrlSimple(string str)
-            => CheckImageUrl(ref str, _imageServices);
-
-        public ImageUrlCheckResult CheckImageUrl(ref string str)
-            => CheckImageUrl(ref str, _imageServices);
-
-        public ImageUrlCheckResult CheckImageUrl(ref string str, IEnumerable<DomainData> allowedHosts)
+        public bool IsUrlFromHost(string url, IEnumerable<DomainData> hosts)
         {
-            try
-            {
-                var checkExt = false;
-                var url = new Uri(str);
-                if (allowedHosts != null)
-                {
-                    var host = allowedHosts.FirstOrDefault(x => x.Url.Equals(url.Host, StringComparison.CurrentCultureIgnoreCase));
-                    if (host == null)
-                        return ImageUrlCheckResult.BlacklistedHost;
+            if (!Uri.IsWellFormedUriString(url, UriKind.Absolute))
+                return ImageCheckResult.From(ImageUrlCheckResult.NotUrl);
 
-                    if (host.Transform != null)
-                    {
-                        var newStr = host.Transform(str).GetAwaiter().GetResult();
-                        if (string.IsNullOrEmpty(newStr))
-                            return ImageUrlCheckResult.TransformError;
-
-                        str = newStr;
-                        url = new Uri(newStr);
-                    }
-
-                    checkExt = host.CheckExt;
-                }
-
-                if (checkExt)
-                {
-                    var ext = Path.GetExtension(url.AbsoluteUri).Replace(".", "");
-                    if (string.IsNullOrEmpty(ext) || !_extensions.Any(x => x.Equals(ext, StringComparison.CurrentCultureIgnoreCase)))
-                        return ImageUrlCheckResult.WrongExtension;
-                }
-
-                return ImageUrlCheckResult.Ok;
-            }
-            catch (Exception)
-            {
-                return ImageUrlCheckResult.NotUrl;
-            }
+            var uri = new Uri(url);
+            var host = hosts.FirstOrDefault(x => x.Url.Equals(uri.Host, StringComparison.CurrentCultureIgnoreCase));
+            return host != null;
         }
 
-        public bool IsUrlToImageSimple(string url) => CheckImageUrl(ref url, null) == ImageUrlCheckResult.Ok;
+        public Task<ImageCheckResult> CheckImageUrlAsync(string str) => CheckImageUrlAsync(str, _imageServices);
+
+        public async Task<ImageCheckResult> CheckImageUrlAsync(string str, IEnumerable<DomainData> allowedHosts)
+        {
+            if (!Uri.IsWellFormedUriString(str, UriKind.Absolute))
+                return ImageCheckResult.From(ImageUrlCheckResult.NotUrl);
+
+            var url = new Uri(str);
+            var transform = false;
+            if (!allowedHosts.IsNullOrEmpty())
+            {
+                var host = allowedHosts.FirstOrDefault(x => x.Url.Equals(url.Host, StringComparison.CurrentCultureIgnoreCase));
+                if (host == null)
+                    return ImageCheckResult.From(ImageUrlCheckResult.BlacklistedHost);
+
+                if (host.Transform != null)
+                {
+                    var newStr = await host.Transform(str);
+                    if (string.IsNullOrEmpty(newStr))
+                        return ImageCheckResult.From(ImageUrlCheckResult.TransformError);
+
+                    str = newStr;
+                    transform = true;
+                }
+
+                if (host.CheckExt && !IsUrlToImageSimple(str))
+                    return ImageCheckResult.From(ImageUrlCheckResult.WrongExtension);
+            }
+
+            var (isImage, _) = await IsUrlToImageAsync(str);
+            if (!isImage)
+                return ImageCheckResult.From(ImageUrlCheckResult.WrongExtension);
+
+            return ImageCheckResult.From(transform ? ImageUrlCheckResult.UrlTransformed : ImageUrlCheckResult.Ok, str);
+        }
+
+        public bool IsUrlToImageSimple(string url)
+        {
+            if (!Uri.IsWellFormedUriString(url, UriKind.Absolute))
+                return false;
+
+            var ext = Path.GetExtension(url).Replace(".", "");
+            if (string.IsNullOrEmpty(ext) || !_extensions.Any(x => x.Equals(ext, StringComparison.CurrentCultureIgnoreCase)))
+                return false;
+
+            return true;
+        }
 
         public async Task<(bool, string)> IsUrlToImageAsync(string url)
         {
+            if (!Uri.IsWellFormedUriString(url, UriKind.Absolute))
+                return (false, string.Empty);
+
             try
             {
                 var res = await _httpClient.GetAsync(url);
@@ -159,6 +169,18 @@ namespace Sanakan.Services
             }
 
             return null;
+        }
+
+        private async Task<Image> GetImageFromUrlOrLocal(string uri)
+        {
+            if (Dir.IsLocal(uri))
+                return await Image.LoadAsync(uri);
+
+            using var imageStream = await GetImageFromUrlAsync(uri, true);
+            if (imageStream is null)
+                return null;
+
+            return await Image.LoadAsync(imageStream);
         }
 
         private Font GetOrCreateFont(FontFamily family, float size)
@@ -245,6 +267,23 @@ namespace Sanakan.Services
 
             topImage.SaveToPath(pathTop);
             botImage.SaveToPath(pathBot);
+        }
+
+        public async Task<string> SaveCardImageFromUrlAsync(string url, Card card)
+        {
+            var size = card.FromFigure ? new Size(475, 667) : new Size(448, 650);
+            var saveDir = $"{Dir.LocalCardData}/CI{card.Id}.webp";
+            await SaveImageFromUrlAsync(url, saveDir, size);
+            card.CustomImage = saveDir;
+            return saveDir;
+        }
+
+        public async Task<string> SaveCardBorderImageFromUrlAsync(string url, Card card)
+        {
+            var saveDir = $"{Dir.LocalCardData}/CB{card.Id}.webp";
+            await SaveImageFromUrlAsync(url, saveDir, new Size(475, 667));
+            card.CustomBorder = saveDir;
+            return saveDir;
         }
 
         public async Task SaveImageFromUrlAsync(string url, string path, Size size, bool strech = false)
@@ -670,8 +709,7 @@ namespace Sanakan.Services
 
             if (botUser.StatsStyleSettings.HasFlag(ProfileSettings.ShowOverlay) && !string.IsNullOrEmpty(botUser.CustomProfileOverlayUrl))
             {
-                using var overlay = await GetImageFromUrlAsync(botUser.CustomProfileOverlayUrl);
-                using var overlayImg = await Image.LoadAsync(overlay);
+                using var overlayImg = await GetImageFromUrlOrLocal(botUser.CustomProfileOverlayUrl);
 
                 if (overlayImg.Width != 750 || overlayImg.Height != 402)
                     overlayImg.Mutate(x => x.Resize(750, 402));
@@ -723,8 +761,7 @@ namespace Sanakan.Services
 
             if (botUser.StatsStyleSettings.HasFlag(ProfileSettings.ShowOverlayPro) && !string.IsNullOrEmpty(botUser.PremiumCustomProfileOverlayUrl))
             {
-                using var overlay = await GetImageFromUrlAsync(botUser.PremiumCustomProfileOverlayUrl);
-                using var overlayImg = await Image.LoadAsync(overlay);
+                using var overlayImg = await GetImageFromUrlOrLocal(botUser.PremiumCustomProfileOverlayUrl);
 
                 if (overlayImg.Width != 750 || overlayImg.Height != 500)
                     overlayImg.Mutate(x => x.Resize(750, 500));
@@ -1179,13 +1216,14 @@ namespace Sanakan.Services
 
         private async Task<Image> GetCharacterPictureAsync(string characterUrl, bool ultimate)
         {
-            var characterImg = ultimate ? new Image<Rgba32>(475, 667) : Image.Load($"./Pictures/PW/empty.png");
-            using (var stream = await GetImageFromUrlAsync(characterUrl ?? "http://cdn.shinden.eu/cdn1/other/placeholders/title/225x350.jpg", true))
+            var characterImg = ultimate ? new Image<Rgba32>(475, 667) : await Image.LoadAsync($"./Pictures/PW/empty.png");
+            using (var image = await GetImageFromUrlOrLocal(characterUrl ?? "http://cdn.shinden.eu/cdn1/other/placeholders/title/225x350.jpg"))
             {
-                if (stream == null)
+                if (image is null)
                     return characterImg;
 
-                using (var image = Image.Load(stream))
+                int startY = 0;
+                if (characterImg.Width != image.Width)
                 {
                     image.Mutate(x => x.Resize(new ResizeOptions
                     {
@@ -1193,14 +1231,11 @@ namespace Sanakan.Services
                         Size = new Size(characterImg.Width, 0)
                     }));
 
-                    int startY = 0;
                     if (characterImg.Height > image.Height)
                         startY = (characterImg.Height / 2) - (image.Height / 2);
-
-                    characterImg.Mutate(x => x.DrawImage(image, new Point(0, startY), 1));
                 }
+                characterImg.Mutate(x => x.DrawImage(image, new Point(0, startY), 1));
             }
-
             return characterImg;
         }
 
@@ -1261,13 +1296,11 @@ namespace Sanakan.Services
             if (!card.HasCustomBorder())
                 return GenerateBorder(card);
 
-            using (var stream = await GetImageFromUrlAsync(card.CustomBorder))
-            {
-                if (stream == null)
-                    return GenerateBorder(card);
+            using var borderImg = await GetImageFromUrlOrLocal(card.CustomBorder);
+            if (borderImg is null)
+                return GenerateBorder(card);
 
-                return Image.Load(stream);
-            }
+            return borderImg;
         }
 
         private void ApplyAlphaStats(Image<Rgba32> image, Card card)
@@ -1840,19 +1873,22 @@ namespace Sanakan.Services
         private async Task<Image> GetAnimatedWaifuCardAsync(Card card, bool noStatsImage = false)
         {
             var characterImg = card.FromFigure ? new Image<Rgba32>(475, 667) : Image.Load($"./Pictures/PW/empty.png");
-            using (var stream = await GetImageFromUrlAsync(card.GetImage() ?? "http://cdn.shinden.eu/cdn1/other/placeholders/title/225x350.jpg", true))
+            using (var cardImg = await GetImageFromUrlOrLocal(card.GetImage() ?? "http://cdn.shinden.eu/cdn1/other/placeholders/title/225x350.jpg"))
             {
-                using (var image = stream is null ? characterImg : Image.Load(stream))
+                using (var image = cardImg is null ? characterImg : cardImg)
                 {
-                    image.Mutate(x => x.Resize(new ResizeOptions
-                    {
-                        Mode = ResizeMode.Max,
-                        Size = new Size(characterImg.Width, 0)
-                    }));
-
                     int startY = 0;
-                    if (characterImg.Height > image.Height)
-                        startY = (characterImg.Height / 2) - (image.Height / 2);
+                    if (characterImg.Width != image.Width)
+                    {
+                        image.Mutate(x => x.Resize(new ResizeOptions
+                        {
+                            Mode = ResizeMode.Max,
+                            Size = new Size(characterImg.Width, 0)
+                        }));
+
+                        if (characterImg.Height > image.Height)
+                            startY = (characterImg.Height / 2) - (image.Height / 2);
+                    }
 
                     var animation = new Image<Rgba32>(475, 667);
                     var ometa = image.Metadata.GetGifMetadata();

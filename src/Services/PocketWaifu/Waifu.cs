@@ -2381,14 +2381,14 @@ namespace Sanakan.Services.PocketWaifu
 
                 case ItemType.SetCustomAnimatedImage:
                 case ItemType.SetCustomImage:
-                    var imgRes = _img.CheckImageUrl(ref detail);
-                    if (imgRes != ImageUrlCheckResult.Ok)
-                        return ExecutionResult.From(imgRes);
+                    var imgCheck = await _img.CheckImageUrlAsync(detail);
+                    if (imgCheck.IsError())
+                        return ExecutionResult.From(imgCheck);
 
                     if (card.Image == null && !card.FromFigure)
                         return ExecutionResult.FromError("Aby ustawić własny obrazek, karta musi posiadać wcześniej ustawiony główny (na stronie)!");
 
-                    var (isUrlToImage, imageExt) = await _img.IsUrlToImageAsync(detail);
+                    var (isUrlToImage, imageExt) = await _img.IsUrlToImageAsync(imgCheck.Url);
                     if (!isUrlToImage)
                         return ExecutionResult.FromError("Nie został podany bezpośredni adres do obrazka!");
 
@@ -2396,8 +2396,8 @@ namespace Sanakan.Services.PocketWaifu
                         return ExecutionResult.FromError("Format obrazka nie pozwala na przeźroczystość, która jest wymagana do kart ultimate!");
 
                     bool isAnim = item.Type == ItemType.SetCustomAnimatedImage;
+                    _ = await _img.SaveCardImageFromUrlAsync(imgCheck.Url, card);
 
-                    card.CustomImage = detail;
                     card.IsAnimatedImage = isAnim;
                     card.CustomImageDate = _time.Now();
                     consumeItem = isAnim || !card.FromFigure;
@@ -2405,14 +2405,14 @@ namespace Sanakan.Services.PocketWaifu
                     break;
 
                 case ItemType.SetCustomBorder:
-                    var imgRes2 = _img.CheckImageUrl(ref detail);
-                    if (imgRes2 != ImageUrlCheckResult.Ok)
-                        return ExecutionResult.From(imgRes2);
+                    var imgCheck2 = await _img.CheckImageUrlAsync(detail);
+                    if (imgCheck2.IsError())
+                        return ExecutionResult.From(imgCheck2);
 
-                    if (card.Image == null)
+                    if (card.Image is null)
                         return ExecutionResult.FromError("Aby ustawić ramkę, karta musi posiadać wcześniej ustawiony obrazek na stronie!");
 
-                    card.CustomBorder = detail;
+                    _ = await _img.SaveCardBorderImageFromUrlAsync(imgCheck2.Url, card);
                     break;
 
                 case ItemType.BloodOfYourWaifu:

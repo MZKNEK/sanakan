@@ -32,7 +32,8 @@ namespace Sanakan.Modules
         private readonly FixableHosting[] _fixableHostings =
         {
             new FixableHosting { Name = "imgur",   Enabled = true, Threshold = new DateTime(2023, 5, 15),  Host = new []{ new DomainData("i.imgur.com") } },
-            new FixableHosting { Name = "discord", Enabled = true, Threshold = new DateTime(2023, 11, 13), Host = new []{ new DomainData("cdn.discordapp.com") } },
+            new FixableHosting { Name = "discord cdn", Enabled = true, Threshold = new DateTime(2023, 11, 13), Host = new []{ new DomainData("cdn.discordapp.com") } },
+            new FixableHosting { Name = "discord madia", Enabled = true, Threshold = new DateTime(2023, 11, 13), Host = new []{ new DomainData("media.discordapp.net") } },
             new FixableHosting { Name = "google",  Enabled = true, Threshold = new DateTime(2024, 02, 13), Host = new []{ new DomainData("drive.google.com") } },
         };
 
@@ -188,10 +189,10 @@ namespace Sanakan.Modules
         [Remarks("123123"), RequireWaifuCommandChannel]
         public async Task FixCardCustomImageAsync([Summary("WID")] ulong wid, [Summary("bezpośredni adres do obrazka")] string url)
         {
-            var imgRes = _img.CheckImageUrl(ref url);
-            if (imgRes != ImageUrlCheckResult.Ok)
+            var imgCheck = await _img.CheckImageUrlAsync(url);
+            if (imgCheck.IsError())
             {
-                await ReplyAsync("", embed: ExecutionResult.From(imgRes).ToEmbedMessage($"{Context.User.Mention} ").Build());
+                await ReplyAsync("", embed: ExecutionResult.From(imgCheck).ToEmbedMessage($"{Context.User.Mention} ").Build());
                 return;
             }
 
@@ -217,11 +218,11 @@ namespace Sanakan.Modules
                     return;
                 }
 
-                var hostingData = _fixableHostings.FirstOrDefault(x => x.Enabled && _img.CheckImageUrlSimple(thisCard.CustomImage, x.Host) == ImageUrlCheckResult.Ok);
+                var hostingData = _fixableHostings.FirstOrDefault(x => x.Enabled && _img.IsUrlFromHost(thisCard.CustomImage, x.Host));
                 if (hostingData == null)
                 {
                     var hosts = string.Join(' ', _fixableHostings.Where(x => x.Enabled).Select(x => x.Name));
-                    await ReplyAsync("", embed: $"{Context.User.Mention} ta karta nie spełnia wymogów polecenia. Hosting obrazka jest niepoprawny. Dozwolone to: {hosts}".ToEmbedMessage(EMType.Error).Build());
+                    await ReplyAsync("", embed: $"{Context.User.Mention} ta karta nie spełnia wymogów polecenia. Hosting obrazka jest niepoprawny. Dozwolone do naprawy to: {hosts}".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
@@ -243,7 +244,8 @@ namespace Sanakan.Modules
                     return;
                 }
 
-                thisCard.CustomImage = url;
+                _ = await _img.SaveCardImageFromUrlAsync(imgCheck.Url, thisCard);
+
                 thisCard.FixedCustomImageCnt++;
                 thisCard.CustomImageDate = _time.Now();
 

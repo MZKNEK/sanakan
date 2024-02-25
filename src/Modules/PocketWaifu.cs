@@ -12,6 +12,7 @@ using Sanakan.Config;
 using Sanakan.Database.Models;
 using Sanakan.Extensions;
 using Sanakan.Preconditions;
+using Sanakan.Services;
 using Sanakan.Services.Commands;
 using Sanakan.Services.Executor;
 using Sanakan.Services.PocketWaifu;
@@ -2124,14 +2125,15 @@ namespace Sanakan.Modules
                     return;
                 }
 
-                if (_img.CheckImageUrl(ref imgUrl) != ImageUrlCheckResult.Ok)
+                var imageCheck = await _img.CheckImageUrlAsync(imgUrl);
+                if (imageCheck.IsError())
                 {
-                    await ReplyAsync("", embed: "Nie wykryto obrazka! Upewnij się, że podałeś poprawny adres!".ToEmbedMessage(EMType.Error).Build());
+                    await ReplyAsync("", embed: ExecutionResult.From(imageCheck).ToEmbedMessage($"{Context.User.Mention} ").Build());
                     return;
                 }
 
                 botuser.TcCnt -= tcCost;
-                botuser.GameDeck.ForegroundImageUrl = imgUrl;
+                botuser.GameDeck.ForegroundImageUrl = imageCheck.Url;
 
                 await db.SaveChangesAsync();
 
@@ -2156,14 +2158,15 @@ namespace Sanakan.Modules
                     return;
                 }
 
-                if (_img.CheckImageUrl(ref imgUrl) != ImageUrlCheckResult.Ok)
+                var imageCheck = await _img.CheckImageUrlAsync(imgUrl);
+                if (imageCheck.IsError())
                 {
-                    await ReplyAsync("", embed: "Nie wykryto obrazka! Upewnij się, że podałeś poprawny adres!".ToEmbedMessage(EMType.Error).Build());
+                    await ReplyAsync("", embed: ExecutionResult.From(imageCheck).ToEmbedMessage($"{Context.User.Mention} ").Build());
                     return;
                 }
 
                 botuser.TcCnt -= tcCost;
-                botuser.GameDeck.BackgroundImageUrl = imgUrl;
+                botuser.GameDeck.BackgroundImageUrl = imageCheck.Url;
 
                 await db.SaveChangesAsync();
 

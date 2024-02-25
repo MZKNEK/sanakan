@@ -376,29 +376,32 @@ namespace Sanakan.Modules
                             return;
                         }
 
-                        var res = await _profile.SaveProfileAndStyleImageAsync(config.Url, $"{Dir.SavedData}/BG{botuser.Id}.png", 750, 160, $"{Dir.SavedData}/SR{botuser.Id}.png", 750, 340);
+                        var bgUri = $"{Dir.SavedData}/BG{botuser.Id}.webp";
+                        var styleUri = $"{Dir.SavedData}/SR{botuser.Id}.webp";
+                        var res = await _profile.SaveProfileAndStyleImageAsync(config.Url, bgUri, 750, 160, styleUri, 750, 340);
                         if (res != SaveResult.Success)
                         {
                             await ReplyAsync("", embed: $"{Context.User.Mention} nie wykryto obrazka! Upewnij się, że podałeś poprawny adres!".ToEmbedMessage(EMType.Error).Build());
                             return;
                         }
 
-                        botuser.StatsReplacementProfileUri = $"{Dir.SavedData}/SR{botuser.Id}.png";
-                        botuser.BackgroundProfileUri = $"{Dir.SavedData}/BG{botuser.Id}.png";
+                        botuser.StatsReplacementProfileUri = styleUri;
+                        botuser.BackgroundProfileUri = bgUri;
                         botuser.ProfileType = config.Style;
                     }
                     break;
 
                     case ProfileConfigType.Background:
                     {
-                        var res = await _profile.SaveProfileImageAsync(config.Url, $"{Dir.SavedData}/BG{botuser.Id}.png", 750, 160, true);
+                        var bgUri = $"{Dir.SavedData}/BG{botuser.Id}.webp";
+                        var res = await _profile.SaveProfileImageAsync(config.Url, bgUri, 750, 160, true);
                         if (res != SaveResult.Success)
                         {
                             await ReplyAsync("", embed: $"{Context.User.Mention} nie wykryto obrazka! Upewnij się, że podałeś poprawny adres!".ToEmbedMessage(EMType.Error).Build());
                             return;
                         }
 
-                        botuser.BackgroundProfileUri = $"{Dir.SavedData}/BG{botuser.Id}.png";
+                        botuser.BackgroundProfileUri = bgUri;
                     }
                     break;
 
@@ -406,14 +409,15 @@ namespace Sanakan.Modules
                     {
                         if (config.StyleNeedUrl())
                         {
-                            var res = await _profile.SaveProfileImageAsync(config.Url, $"{Dir.SavedData}/SR{botuser.Id}.png", 750, 340);
+                            var styleUri = $"{Dir.SavedData}/SR{botuser.Id}.webp";
+                            var res = await _profile.SaveProfileImageAsync(config.Url, styleUri, 750, 340);
                             if (res != SaveResult.Success)
                             {
                                 await ReplyAsync("", embed: $"{Context.User.Mention} nie wykryto obrazka! Upewnij się, że podałeś poprawny adres!".ToEmbedMessage(EMType.Error).Build());
                                 return;
                             }
 
-                            botuser.StatsReplacementProfileUri = $"{Dir.SavedData}/SR{botuser.Id}.png";
+                            botuser.StatsReplacementProfileUri = styleUri;
                         }
 
                         botuser.ProfileType = config.Style;
@@ -421,22 +425,30 @@ namespace Sanakan.Modules
                     break;
 
                     case ProfileConfigType.Overlay:
-                    case ProfileConfigType.PremiumOverlay:
                     {
-                        if (_img.CheckImageUrl(ref config.Url) != ImageUrlCheckResult.Ok)
+                        var ovUri = $"{Dir.SavedData}/OV{botuser.Id}.webp";
+                        var res = await _profile.SaveProfileImageAsync(config.Url, ovUri, 750, 402);
+                        if (res != SaveResult.Success)
                         {
                             await ReplyAsync("", embed: $"{Context.User.Mention} nie wykryto obrazka! Upewnij się, że podałeś poprawny adres!".ToEmbedMessage(EMType.Error).Build());
                             return;
                         }
 
-                        if (config.Type == ProfileConfigType.Overlay)
+                        botuser.CustomProfileOverlayUrl = ovUri;
+                    }
+                    break;
+
+                    case ProfileConfigType.PremiumOverlay:
+                    {
+                        var uovUri = $"{Dir.SavedData}/UOV{botuser.Id}.webp";
+                        var res = await _profile.SaveProfileImageAsync(config.Url, uovUri, 750, 500);
+                        if (res != SaveResult.Success)
                         {
-                            botuser.CustomProfileOverlayUrl = config.Url;
+                            await ReplyAsync("", embed: $"{Context.User.Mention} nie wykryto obrazka! Upewnij się, że podałeś poprawny adres!".ToEmbedMessage(EMType.Error).Build());
+                            return;
                         }
-                        else
-                        {
-                            botuser.PremiumCustomProfileOverlayUrl = config.Url;
-                        }
+
+                        botuser.PremiumCustomProfileOverlayUrl = uovUri;
                     }
                     break;
 

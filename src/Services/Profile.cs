@@ -343,7 +343,8 @@ namespace Sanakan.Services
             if (string.IsNullOrEmpty(imgUrl))
                 return SaveResult.BadUrl;
 
-            if (!_img.IsUrlToImageSimple(imgUrl))
+            var (isImage, _) = await _img.IsUrlToImageAsync(imgUrl);
+            if (!isImage)
                 return SaveResult.BadUrl;
 
             try
@@ -365,7 +366,8 @@ namespace Sanakan.Services
             if (string.IsNullOrEmpty(imgUrl))
                 return SaveResult.BadUrl;
 
-            if (!_img.IsUrlToImageSimple(imgUrl))
+            var (isImage, _) = await _img.IsUrlToImageAsync(imgUrl);
+            if (!isImage)
                 return SaveResult.BadUrl;
 
             try

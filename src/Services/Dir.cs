@@ -10,10 +10,9 @@ namespace Sanakan.Services
 
         public static void Create()
         {
+            Directory.CreateDirectory(LocalCardData);
             Directory.CreateDirectory(CardsMiniatures);
             Directory.CreateDirectory(CardsInProfiles);
-            Directory.CreateDirectory(SavedData);
-            Directory.CreateDirectory(Profiles);
         }
 
         public static string Cards = $"{BaseOutput}/Cards";
@@ -21,6 +20,8 @@ namespace Sanakan.Services
         public static string CardsInProfiles = $"{Cards}/Profile";
 
         public static string SavedData = $"{BaseOutput}/Saved";
-        public static string Profiles = $"{BaseOutput}/Profile";
+        public static string LocalCardData = $"{SavedData}/Card";
+
+        public static bool IsLocal(string path) => path.StartsWith(BaseOutput);
     }
 }
