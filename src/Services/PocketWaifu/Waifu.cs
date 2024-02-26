@@ -1795,12 +1795,12 @@ namespace Sanakan.Services.PocketWaifu
 
                 case CardExpedition.LightItemWithExp:
                 case CardExpedition.DarkItemWithExp:
-                    cnt += yamiOrRaito ? 5.1 : 4.2;
+                    cnt += yamiOrRaito ? 4.9 : 4.2;
                     break;
 
                 case CardExpedition.DarkItems:
                 case CardExpedition.LightItems:
-                    cnt += yamiOrRaito ? 8.9 : 7.2;
+                    cnt += yamiOrRaito ? 7.9 : 7.2;
                     break;
 
                 case CardExpedition.UltimateEasy:
@@ -1823,7 +1823,7 @@ namespace Sanakan.Services.PocketWaifu
             }
 
             cnt *= card.Rarity.ValueModifier();
-            cnt *= card.Dere == Dere.Yato ? 1.5 : 1;
+            cnt *= card.Dere == Dere.Yato ? 1.3 : 1;
 
             return cnt / 60d * kExpeditionFactor;
         }

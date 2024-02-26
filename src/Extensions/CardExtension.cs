@@ -777,11 +777,6 @@ namespace Sanakan.Extensions
             expedition = (expedition == CardExpedition.None) ? card.Expedition : expedition;
             var mod = card.Quality.ValueModifierReverse();
 
-            if (card.Dere == Dere.Yami || card.Dere == Dere.Raito)
-            {
-                mod *=  0.9;
-            }
-
             switch (expedition)
             {
                 case CardExpedition.NormalItemWithExp:
@@ -916,10 +911,10 @@ namespace Sanakan.Extensions
 
                 case Dere.Yami:
                 case Dere.Raito:
-                    return 1.45;
+                    return 1.22;
 
                 case Dere.Yato:
-                    return 1.85;
+                    return 1.5;
 
                 default:
                     return 1;
@@ -1057,7 +1052,7 @@ namespace Sanakan.Extensions
                 ? card.GetMaxExpToChest(chLvl)
                 : card.ExpCnt);
 
-            user.GameDeck.Karma -= user.GameDeck.CanCreateDemon() ? (0.73 + crueltyBonus) : (0.92 + crueltyBonus);
+            user.GameDeck.Karma -= user.GameDeck.CanCreateDemon() ? (0.55 + crueltyBonus) : (0.82 + crueltyBonus);
             user.Stats.DestroyedCards += 1;
 
             if (card.MarketValue >= 0.05)
@@ -1074,7 +1069,7 @@ namespace Sanakan.Extensions
                 ? card.GetMaxExpToChest(chLvl)
                 : (card.ExpCnt / 2));
 
-            user.GameDeck.Karma += user.GameDeck.CanCreateAngel() ? (0.78 - crueltyBonus) : (1.1 - crueltyBonus);
+            user.GameDeck.Karma += user.GameDeck.CanCreateAngel() ? (0.74 - crueltyBonus) : (1 - crueltyBonus);
             user.Stats.ReleasedCards += 1;
         }
 

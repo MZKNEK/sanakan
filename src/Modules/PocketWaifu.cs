@@ -3385,7 +3385,7 @@ namespace Sanakan.Modules
                     && !_tags.HasTag(thisCard, Services.PocketWaifu.TagType.Favorite))
                 {
                     action = $"\n\n{trashTag.Icon} Wykonano akcje: **{botUser.GameDeck.EndOfExpeditionAction.ToName()}** na karcie powracającej z wyprawy.";
-                    thisCard.DestroyOrRelease(botUser, botUser.GameDeck.EndOfExpeditionAction == ActionAfterExpedition.Release, 0.18);
+                    thisCard.DestroyOrRelease(botUser, botUser.GameDeck.EndOfExpeditionAction == ActionAfterExpedition.Release, 0.14);
                     _waifu.DeleteCardImageIfExist(thisCard);
                     botUser.GameDeck.Cards.Remove(thisCard);
                 }
