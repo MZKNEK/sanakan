@@ -1790,17 +1790,17 @@ namespace Sanakan.Services.PocketWaifu
                     break;
 
                 case CardExpedition.ExtremeItemWithExp:
-                    cnt += 13.6;
+                    cnt += yamiOrRaito ? 15.2 : 13.6;
                     break;
 
                 case CardExpedition.LightItemWithExp:
                 case CardExpedition.DarkItemWithExp:
-                    cnt += yamiOrRaito ? 4.9 : 4.2;
+                    cnt += yamiOrRaito ? 5.2 : 4.3;
                     break;
 
                 case CardExpedition.DarkItems:
                 case CardExpedition.LightItems:
-                    cnt += yamiOrRaito ? 7.9 : 7.2;
+                    cnt += yamiOrRaito ? 7.7 : 7.2;
                     break;
 
                 case CardExpedition.UltimateEasy:
@@ -2329,8 +2329,8 @@ namespace Sanakan.Services.PocketWaifu
                     break;
 
                 case ItemType.CardParamsReRoll:
-                    card.Attack = Waifu.RandomizeAttack(card.Rarity);
-                    card.Defence = Waifu.RandomizeDefence(card.Rarity);
+                    card.Attack = RandomizeAttack(card.Rarity);
+                    card.Defence = RandomizeDefence(card.Rarity);
                     break;
 
                 case ItemType.IncreaseUltimateAttack:

@@ -777,23 +777,23 @@ namespace Sanakan.Extensions
             switch (expedition)
             {
                 case CardExpedition.NormalItemWithExp:
-                    cost = 0.015;
+                    cost = 0.008;
                     break;
 
                 case CardExpedition.ExtremeItemWithExp:
-                    cost = 0.17;
+                    cost = 0.15;
                     break;
 
                 case CardExpedition.DarkExp:
                 case CardExpedition.LightExp:
                 case CardExpedition.LightItems:
                 case CardExpedition.DarkItems:
-                    cost = 0.11 * (mod + 0.2);
+                    cost = 0.062 * mod;
                     break;
 
                 case CardExpedition.DarkItemWithExp:
                 case CardExpedition.LightItemWithExp:
-                    cost = 0.07;
+                    cost = 0.05;
                     break;
 
                 case CardExpedition.UltimateEasy:
@@ -908,10 +908,10 @@ namespace Sanakan.Extensions
 
                 case Dere.Yami:
                 case Dere.Raito:
-                    return 1.22;
+                    return 1.1;
 
                 case Dere.Yato:
-                    return 1.5;
+                    return 1.3;
 
                 default:
                     return 1;
@@ -939,16 +939,23 @@ namespace Sanakan.Extensions
         {
             switch (rarity)
             {
-                case Rarity.SS: return 1.2;
-                case Rarity.S: return 1.1;
-                case Rarity.A: return 1;
-                case Rarity.B: return 0.95;
-                case Rarity.C: return 0.90;
-                case Rarity.D: return 0.80;
-                case Rarity.E: return 0.70;
+                case Rarity.SS:
+                case Rarity.S:
+                    return 1.17;
+
+                case Rarity.A:
+                case Rarity.B:
+                    return 1.14;
+
+                case Rarity.C:
+                case Rarity.D:
+                    return 1.05;
+
+                case Rarity.E:
+                    return 0.85;
 
                 case Rarity.SSS:
-                default: return 1.4;
+                default: return 1.2;
             }
         }
 

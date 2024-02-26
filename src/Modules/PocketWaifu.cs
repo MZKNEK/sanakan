@@ -2376,7 +2376,7 @@ namespace Sanakan.Modules
                 return;
             }
 
-            long price = 2137 * count;
+            long price = 3721 * count;
             using (var db = new Database.DatabaseContext(Config))
             {
                 var bUser = await db.GetUserOrCreateAsync(Context.User.Id);
