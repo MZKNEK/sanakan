@@ -791,9 +791,6 @@ namespace Sanakan.Extensions
                 IsComplete = false,
                 ExpCnt = expToMove,
                 Title = card.Title,
-                Health = card.Health,
-                Attack = card.Attack,
-                Defence = card.Defence,
                 Character = card.Character,
                 BodyQuality = Quality.Broken,
                 RestartCnt = card.RestartCnt,
@@ -807,6 +804,9 @@ namespace Sanakan.Extensions
                 LeftLegQuality = Quality.Broken,
                 RightArmQuality = Quality.Broken,
                 RightLegQuality = Quality.Broken,
+                Health = card.Health + card.HealthBonus,
+                Attack = card.Attack + card.AttackBonus,
+                Defence = card.Defence + card.DefenceBonus,
             };
         }
 

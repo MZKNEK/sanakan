@@ -340,10 +340,7 @@ namespace Sanakan.Extensions
                 maxAttack = 9999;
 
             var newAttack = card.Attack + (card.RestartCnt * 4) + (card.GetTotalCardStarCount() * 20);
-            if (card.FromFigure)
-            {
-                newAttack += card.AttackBonus;
-            }
+            newAttack += card.FromFigure ? card.AttackBonus : card.AttackBonus / 3;
 
             if (card.Curse == CardCurse.LoweredStats)
             {
