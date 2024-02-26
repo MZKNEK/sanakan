@@ -88,12 +88,10 @@ namespace Sanakan.Services.PocketWaifu
                 new List<Item>{ ItemType.CreationItemBase.ToItem(10), ItemType.BetterIncreaseUpgradeCnt.ToItem(5), ItemType.BloodOfYourWaifu.ToItem(5) })
             },
             { RecipeType.YourBlood, new ItemRecipe(ItemType.BetterIncreaseUpgradeCnt,
-                new List<Item>{ ItemType.CreationItemBase.ToItem(), ItemType.BloodOfYourWaifu.ToItem(2) },
-                new List<CurrencyCost> { new CurrencyCost(2, CurrencyType.AC) })
+                new List<Item>{ ItemType.CreationItemBase.ToItem(), ItemType.BloodOfYourWaifu.ToItem(2) })
             },
             { RecipeType.WaifuBlood, new ItemRecipe(ItemType.BloodOfYourWaifu,
-                new List<Item>{ ItemType.CreationItemBase.ToItem(), ItemType.BetterIncreaseUpgradeCnt.ToItem(2) },
-                new List<CurrencyCost> { new CurrencyCost(2, CurrencyType.AC) })
+                new List<Item>{ ItemType.CreationItemBase.ToItem(), ItemType.BetterIncreaseUpgradeCnt.ToItem(2) })
             }
         };
 
@@ -1781,16 +1779,18 @@ namespace Sanakan.Services.PocketWaifu
         public double GetBaseItemsPerMinuteFromExpedition(CardExpedition expedition, Card card)
         {
             bool yamiOrRaito = card.Dere == Dere.Yami || card.Dere == Dere.Raito;
+            bool isYato = card.Dere == Dere.Yato;
+            bool anySpecialDere = yamiOrRaito || isYato;
 
             double cnt = 0;
             switch (expedition)
             {
                 case CardExpedition.NormalItemWithExp:
-                    cnt += 1.7;
+                    cnt += 1.9;
                     break;
 
                 case CardExpedition.ExtremeItemWithExp:
-                    cnt += yamiOrRaito ? 15.2 : 13.6;
+                    cnt += anySpecialDere ? 17.8 : 11.6;
                     break;
 
                 case CardExpedition.LightItemWithExp:
@@ -1805,15 +1805,15 @@ namespace Sanakan.Services.PocketWaifu
 
                 case CardExpedition.UltimateEasy:
                 case CardExpedition.UltimateMedium:
-                    cnt += 1.4;
+                    cnt += anySpecialDere ? 3.2 : 1.4;
                     break;
 
                 case CardExpedition.UltimateHard:
-                    cnt += 2.3;
+                    cnt += anySpecialDere ? 4.8 : 2.3;
                     break;
 
                 case CardExpedition.UltimateHardcore:
-                    cnt += 1.1;
+                    cnt += anySpecialDere ? 2.8 : 1.1;
                     break;
 
                 default:
@@ -1823,7 +1823,7 @@ namespace Sanakan.Services.PocketWaifu
             }
 
             cnt *= card.Rarity.ValueModifier();
-            cnt *= card.Dere == Dere.Yato ? 1.3 : 1;
+            cnt *= isYato ? 1.3 : 1;
 
             return cnt / 60d * kExpeditionFactor;
         }
@@ -1881,7 +1881,7 @@ namespace Sanakan.Services.PocketWaifu
 
             var baseExp = GetBaseExpPerMinuteFromExpedition(card.Expedition, card);
             var baseItemsCnt = GetBaseItemsPerMinuteFromExpedition(card.Expedition, card);
-            var multiplier = (duration.RealTime < 60) ? ((duration.RealTime < 30) ? 5d : 3d) : 1d;
+            var multiplier = (duration.RealTime < 60) ? ((duration.RealTime < 30) ? 3d : 2d) : 1d;
 
             var totalExp = GetProgressiveValueFromExpedition(baseExp, duration.CalcTime, 15d / kExpeditionFactor);
             var totalItemsCnt = (int)GetProgressiveValueFromExpedition(baseItemsCnt, duration.CalcTime, 25d / kExpeditionFactor);
@@ -1896,10 +1896,10 @@ namespace Sanakan.Services.PocketWaifu
 
             var reward = "";
             bool allowItems = true;
-            if (duration.RealTime < 30)
+            if (duration.RealTime < 15)
             {
                 reward = $"Wyprawa? Chyba po bułki do sklepu.\n\n";
-                affectionCost += 3.3;
+                affectionCost += 2.3;
             }
 
             if (CheckEventInExpedition(card.Expedition, duration))
@@ -2006,10 +2006,10 @@ namespace Sanakan.Services.PocketWaifu
                     return Fun.TakeATry(6);
 
                 case CardExpedition.UltimateHard:
-                    return Fun.TakeATry(2);
+                    return Fun.TakeATry(3);
 
                 case CardExpedition.UltimateHardcore:
-                    return Fun.TakeATry(4);
+                    return Fun.TakeATry(2);
 
                 default:
                 case CardExpedition.UltimateEasy:

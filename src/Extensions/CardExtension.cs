@@ -908,10 +908,10 @@ namespace Sanakan.Extensions
 
                 case Dere.Yami:
                 case Dere.Raito:
-                    return 1.1;
+                    return 1.24;
 
                 case Dere.Yato:
-                    return 1.3;
+                    return 1.36;
 
                 default:
                     return 1;
@@ -963,17 +963,30 @@ namespace Sanakan.Extensions
         {
             switch (quality)
             {
-                case Quality.Omega: return 1.95;
-                case Quality.Sigma: return 1.70;
-                case Quality.Lambda: return 1.60;
-                case Quality.Jota: return 1.45;
-                case Quality.Theta: return 1.4;
-                case Quality.Zeta: return 1.35;
-                case Quality.Epsilon: return 1.3;
-                case Quality.Delta: return 1.25;
-                case Quality.Gamma: return 1.2;
-                case Quality.Beta: return 1.15;
-                case Quality.Alpha: return 1.1;
+                case Quality.Omega:
+                    return 1.95;
+
+                case Quality.Sigma:
+                    return 1.70;
+
+                case Quality.Lambda:
+                    return 1.60;
+
+                case Quality.Jota:
+                case Quality.Theta:
+                    return 1.5;
+
+                case Quality.Zeta:
+                case Quality.Epsilon:
+                    return 1.4;
+
+                case Quality.Delta:
+                case Quality.Gamma:
+                    return 1.3;
+
+                case Quality.Beta:
+                case Quality.Alpha:
+                    return 1.2;
 
                 case Quality.Broken:
                 default: return 1;
