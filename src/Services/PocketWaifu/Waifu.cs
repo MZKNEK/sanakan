@@ -2139,8 +2139,12 @@ namespace Sanakan.Services.PocketWaifu
                 return ExecutionResult.FromError("nie masz aż tylu przedmiotów.");
 
             var item = itemList[itemNumber - 1];
-            if (!int.TryParse(detail, out var itemCnt) || itemCnt < 1 || item.Type == ItemType.ChangeCardImage)
+            var parsedCount = int.TryParse(detail, out var itemCnt);
+            if (!parsedCount || itemCnt < 1 || item.Type == ItemType.ChangeCardImage)
                 itemCnt = 1;
+
+            if (parsedCount && item.Type == ItemType.DereReRoll)
+                detail = null;
 
             if (item.Count < itemCnt)
                 return ExecutionResult.FromError("nie posiadasz tylu sztuk tego przedmiotu.");
