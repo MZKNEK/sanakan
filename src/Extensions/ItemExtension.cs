@@ -288,10 +288,10 @@ namespace Sanakan.Extensions
         {
             switch (type)
             {
-                case ItemType.AffectionRecoveryGreat: return 1.6;
-                case ItemType.AffectionRecoveryBig: return 1;
-                case ItemType.AffectionRecoveryNormal: return 0.12;
-                case ItemType.AffectionRecoverySmall: return 0.02;
+                case ItemType.AffectionRecoveryGreat: return 2.2;
+                case ItemType.AffectionRecoveryBig: return 1.5;
+                case ItemType.AffectionRecoveryNormal: return 0.2;
+                case ItemType.AffectionRecoverySmall: return 0.04;
                 case ItemType.BetterIncreaseUpgradeCnt: return 1.7;
                 case ItemType.IncreaseUpgradeCnt: return 0.7;
                 case ItemType.DereReRoll: return 0.1;
@@ -312,7 +312,6 @@ namespace Sanakan.Extensions
                 case ItemType.BloodOfYourWaifu: return 1.5;
                 case ItemType.RemoveCurse: return 4;
                 case ItemType.CreationItemBase: return 0.001;
-                case ItemType.GiveTagSlot: return 0.1;
 
                 default: return 0;
             }

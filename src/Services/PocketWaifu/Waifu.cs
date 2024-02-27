@@ -1879,12 +1879,9 @@ namespace Sanakan.Services.PocketWaifu
                 return "Coś poszło nie tak, wyprawa nie została zakończona.";
             }
 
-            var baseExp = GetBaseExpPerMinuteFromExpedition(card.Expedition, card);
-            var baseItemsCnt = GetBaseItemsPerMinuteFromExpedition(card.Expedition, card);
             var multiplier = (duration.RealTime < 60) ? ((duration.RealTime < 30) ? 3d : 2d) : 1d;
-
-            var totalExp = GetProgressiveValueFromExpedition(baseExp, duration.CalcTime, 15d / kExpeditionFactor);
-            var totalItemsCnt = (int)GetProgressiveValueFromExpedition(baseItemsCnt, duration.CalcTime, 25d / kExpeditionFactor);
+            var totalExp = GetBaseExpPerMinuteFromExpedition(card.Expedition, card) * duration.CalcTime;
+            var totalItemsCnt = (int)(GetBaseItemsPerMinuteFromExpedition(card.Expedition, card) * duration.CalcTime);
 
             var karmaCost = card.GetKarmaCostInExpeditionPerMinute() * duration.CalcTime;
             var affectionCost = card.GetCostOfExpeditionPerMinute() * duration.CalcTime * multiplier;
@@ -2019,29 +2016,6 @@ namespace Sanakan.Services.PocketWaifu
                 case CardExpedition.UltimateEasy:
                     return false;
             }
-        }
-
-        public double GetProgressiveValueFromExpedition(double baseValue, double duration, double div)
-        {
-            if (duration < div) return baseValue * 0.4 * duration;
-
-            var value = 0d;
-            var vB = (int)(duration / div);
-            for (int i = 0; i < vB; i++)
-            {
-                var sBase = baseValue * ((i + 4d) / 10d);
-                if (sBase >= baseValue)
-                {
-                    var rest = vB - i;
-                    value += rest * baseValue * div;
-                    duration -= rest * div;
-                    break;
-                }
-                value += sBase * div;
-                duration -= div;
-            }
-
-            return value + (duration * baseValue);
         }
 
         public List<(ItemType, float)> GetItemChancesFromExpedition(CardExpedition expedition)
@@ -2608,6 +2582,12 @@ namespace Sanakan.Services.PocketWaifu
                 affectionInc = -affectionInc;
                 karmaChange = -karmaChange;
             }
+
+            if (card.Dere == Dere.Kamidere)
+                karmaChange *= 1.2;
+
+            if (card.Dere == Dere.Yandere)
+                karmaChange *= 0.8;
 
             user.GameDeck.Karma += karmaChange;
             card.Affection += affectionInc;
