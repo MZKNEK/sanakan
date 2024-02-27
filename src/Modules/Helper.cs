@@ -183,6 +183,57 @@ namespace Sanakan.Modules
             }
         }
 
+        [Command("napraw ramke")]
+        [Alias("fix border")]
+        [Summary("naprawia wygasły obrazek ramki")]
+        [Remarks("123123"), RequireWaifuCommandChannel]
+        public async Task FixCardCustomBorderImageAsync([Summary("WID")] ulong wid, [Summary("bezpośredni adres do obrazka")] string url)
+        {
+            var imgCheck = await _img.CheckImageUrlAsync(url);
+            if (imgCheck.IsError())
+            {
+                await ReplyAsync("", embed: ExecutionResult.From(imgCheck).ToEmbedMessage($"{Context.User.Mention} ").Build());
+                return;
+            }
+
+            using (var db = new Database.DatabaseContext(Config))
+            {
+                var botuser = await db.GetUserOrCreateAsync(Context.User.Id);
+                var thisCard = botuser.GetCard(wid);
+                if (thisCard == null)
+                {
+                    await ReplyAsync("", embed: $"{Context.User.Mention} nie odnaleziono karty.".ToEmbedMessage(EMType.Error).Build());
+                    return;
+                }
+
+                if (thisCard.CustomBorder == null)
+                {
+                    await ReplyAsync("", embed: $"{Context.User.Mention} ta karta nie ma ustawionego niestandardowego obrazka ramki.".ToEmbedMessage(EMType.Error).Build());
+                    return;
+                }
+
+                if (Dir.IsLocal(thisCard.CustomBorder))
+                {
+                    await ReplyAsync("", embed: $"{Context.User.Mention} ten obrazek jest przechowywany lokalnie.".ToEmbedMessage(EMType.Error).Build());
+                    return;
+                }
+
+                if ((await _helper.GetResponseFromUrl(thisCard.CustomBorder)) == System.Net.HttpStatusCode.OK)
+                {
+                    await ReplyAsync("", embed: $"{Context.User.Mention} obecnie ustawiony adres do niestandardowego obrazka ramki jest poprawny.".ToEmbedMessage(EMType.Error).Build());
+                    return;
+                }
+
+                _ = await _img.SaveCardBorderImageFromUrlAsync(imgCheck.Url, thisCard);
+
+                await db.SaveChangesAsync();
+
+                _waifu.DeleteCardImageIfExist(thisCard);
+
+                await ReplyAsync("", embed: $"{Context.User.Mention} obrazek ramki został poprawiony!".ToEmbedMessage(EMType.Success).Build());
+            }
+        }
+
         [Command("napraw obrazek")]
         [Alias("fix image")]
         [Summary("naprawia wygasły obrazek karty ustawiony przed imgur: 15.05.2023, discord: 13.11.2023, google: 13.02.2024")]
@@ -215,6 +266,12 @@ namespace Sanakan.Modules
                 if (thisCard.CustomImage == null)
                 {
                     await ReplyAsync("", embed: $"{Context.User.Mention} ta karta nie ma ustawionego niestandardowego obrazka.".ToEmbedMessage(EMType.Error).Build());
+                    return;
+                }
+
+                if (Dir.IsLocal(thisCard.CustomImage))
+                {
+                    await ReplyAsync("", embed: $"{Context.User.Mention} ten obrazek jest przechowywany lokalnie.".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 

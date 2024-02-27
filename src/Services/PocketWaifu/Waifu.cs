@@ -1950,6 +1950,7 @@ namespace Sanakan.Services.PocketWaifu
             card.DecAffectionOnExpeditionBy(affectionCost);
 
             double minAff = 0;
+            double karmaItem = 0;
             reward += $"Zdobywa:\n+{totalExp:F} exp ({card.ExpCnt:F})\n";
             for (int i = 0; i < totalItemsCnt && allowItems; i++)
             {
@@ -1959,6 +1960,7 @@ namespace Sanakan.Services.PocketWaifu
                     if (newItem == null) break;
 
                     minAff += newItem.GetBaseAffection();
+                    karmaItem += newItem.Type.GetBaseKarmaChange();
 
                     user.GameDeck.AddItem(newItem);
 
@@ -1973,7 +1975,7 @@ namespace Sanakan.Services.PocketWaifu
 
             if (showStats)
             {
-                reward += $"\n\nRT: {duration.CalcTime:F} E: {totalExp:F} AI: {minAff:F} A: {affectionCost:F} K: {karmaCost:F} MI: {totalItemsCnt}";
+                reward += $"\n\nRT: {duration.CalcTime:F} E: {totalExp:F} AI: {minAff:F} A: {affectionCost:F} K: {karmaCost:F} KI: {karmaItem:F} MI: {totalItemsCnt}";
             }
 
             card.Expedition = CardExpedition.None;

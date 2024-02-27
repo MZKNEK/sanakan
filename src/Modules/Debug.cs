@@ -1418,8 +1418,8 @@ namespace Sanakan.Modules
 
             using (var db = new Database.DatabaseContext(Config))
             {
-                var botUser = await db.GetUserAndDontTrackAsync(Context.User.Id);
-                var thisCard = botUser.GameDeck.Cards.FirstOrDefault(x => x.Id == wid);
+                var thisCard = await db.Cards.AsNoTracking().Include(x => x.Tags).Include(x => x.GameDeck).ThenInclude(x => x.User)
+                    .Include(x => x.GameDeck).ThenInclude(x => x.ExpContainer).Include(x => x.GameDeck).ThenInclude(x => x.Items).FirstOrDefaultAsync(x => x.Id == wid);
                 if (thisCard == null) return;
 
                 if (time > 0)
@@ -1428,7 +1428,7 @@ namespace Sanakan.Modules
                 }
 
                 thisCard.Expedition = expedition;
-                var message = _waifu.EndExpedition(botUser, thisCard, true);
+                var message = _waifu.EndExpedition(thisCard.GameDeck.User, thisCard, true);
 
                 await ReplyAsync("", embed: $"Karta {thisCard.GetString(false, false, true)} wróciła z {expedition.GetName("ej")} wyprawy!\n\n{message}".ToEmbedMessage(EMType.Success).Build());
             }
