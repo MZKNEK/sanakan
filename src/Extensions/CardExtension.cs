@@ -445,14 +445,16 @@ namespace Sanakan.Extensions
                 case CardExpedition.UltimateHardcore:
                     return card.Rarity == Rarity.SSS && !helper.HasTag(card, Services.PocketWaifu.TagType.Favorite);
 
-                case CardExpedition.LightExp:
                 case CardExpedition.LightItems:
+                    return karma > 1000;
+                case CardExpedition.LightExp:
                     return (karma > 1000) && !card.FromFigure;
                 case CardExpedition.LightItemWithExp:
                     return (karma > 400) && !card.FromFigure;
 
-                case CardExpedition.DarkExp:
                 case CardExpedition.DarkItems:
+                    return karma < -1000;
+                case CardExpedition.DarkExp:
                     return (karma < -1000) && !card.FromFigure;
                 case CardExpedition.DarkItemWithExp:
                     return (karma < -400) && !card.FromFigure;

@@ -1944,6 +1944,8 @@ namespace Sanakan.Services.PocketWaifu
                 karmaCost *= 2.5;
             }
 
+            totalExp = card.FromFigure ? 0 : totalExp;
+
             card.ExpCnt += totalExp;
             card.DecAffectionOnExpeditionBy(affectionCost);
 
