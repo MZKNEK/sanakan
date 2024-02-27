@@ -908,6 +908,10 @@ namespace Sanakan.Extensions
                 case Dere.Tsundere:
                     return 0.5;
 
+                case Dere.Kamidere:
+                case Dere.Yandere:
+                    return 0.9;
+
                 case Dere.Yami:
                 case Dere.Raito:
                     return 1.24;

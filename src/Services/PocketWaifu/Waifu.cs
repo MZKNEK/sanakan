@@ -2530,7 +2530,33 @@ namespace Sanakan.Services.PocketWaifu
                     if (card.Curse == CardCurse.DereBlockade)
                         return ExecutionResult.FromError("na tej karcie ciąży klątwa!");
 
-                    card.Dere = Waifu.RandomizeDere();
+                    if (!string.IsNullOrEmpty(detail) && detail.Length > 1)
+                    {
+                        detail = detail[0].ToString().ToUpper() + detail[1..];
+                    }
+
+                    if (itemCnt == 1 && Enum.TryParse<Dere>(detail, out var targetDere))
+                    {
+                        if (targetDere == Dere.Yato || targetDere == Dere.Yami || targetDere == Dere.Raito)
+                            return ExecutionResult.FromError("nie można zmienić charaketru na ten który został wybrany!");
+
+                        int usedItems = 1;
+                        for (; usedItems < item.Count; usedItems++)
+                        {
+                            card.Dere = RandomizeDere();
+                            if (card.Dere == targetDere)
+                                break;
+                        }
+
+                        itemCnt = usedItems;
+                        karmaChange *= itemCnt;
+                        affectionInc *= itemCnt;
+                        str.Append($"Użyto {itemCnt} przedmiotów by osiągnać cel!\n");
+                    }
+                    else
+                    {
+                        card.Dere = RandomizeDere();
+                    }
                     break;
 
                 case ItemType.FigureSkeleton:
