@@ -1296,7 +1296,7 @@ namespace Sanakan.Services
             if (!card.HasCustomBorder())
                 return GenerateBorder(card);
 
-            using var borderImg = await GetImageFromUrlOrLocal(card.CustomBorder);
+            var borderImg = await GetImageFromUrlOrLocal(card.CustomBorder);
             if (borderImg is null)
                 return GenerateBorder(card);
 
