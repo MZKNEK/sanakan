@@ -1228,9 +1228,9 @@ namespace Sanakan.Services.PocketWaifu
             var list = new List<Embed>();
 
             var contentString = new StringBuilder($"{title}\n\n");
-            foreach (var card in cards)
+            foreach (var card in cards.Select(async (x, i) => $"{i+1}: {await GetCardInfo(x, mention, guild, shindenUrls, tldr)}"))
             {
-                AppendMessage(list, contentString, await GetCardInfo(card, mention, guild, shindenUrls, tldr));
+                AppendMessage(list, contentString, await card);
             }
 
             list.Add(new EmbedBuilder()
@@ -1253,11 +1253,11 @@ namespace Sanakan.Services.PocketWaifu
             {
                 var fC = cardsG.First();
                 if (tldr) tempContentString.Append($"\n{fC.Name} ({fC.Character}) {fC.GetCharacterUrl()} ({fC.WhoWantsCount})\n");
-                else tempContentString.Append($"\n**{fC.GetNameWithUrl()}** ({fC.WhoWantsCount})\n");
+                else tempContentString.Append($"\n**{fC.GetNameWithUrl()}** (KC: {fC.WhoWantsCount}) **[{cardsG.Count()}]**\n");
 
-                foreach (var card in cardsG)
+                foreach (var card in cardsG.Select(async (x, i) => $"{i+1}: {await GetCardInfo(x, mention, guild, shindenUrls, tldr)}"))
                 {
-                    AppendMessage(list, tempContentString, await GetCardInfo(card, mention, guild, shindenUrls, tldr));
+                    AppendMessage(list, tempContentString, await card);
                 }
 
                 AppendMessage(list, contentString, tempContentString.ToString());
@@ -1293,7 +1293,7 @@ namespace Sanakan.Services.PocketWaifu
 
         private void AppendMessage(List<Embed> embeds, StringBuilder currentContent, string nextPart)
         {
-            if (currentContent.Length + nextPart.Length > 3600)
+            if (currentContent.Length + nextPart.Length > 3000)
             {
                 embeds.Add(new EmbedBuilder() { Color = EMType.Info.Color(), Description = currentContent.ToString() }.Build());
                 currentContent.Clear();
@@ -1617,28 +1617,23 @@ namespace Sanakan.Services.PocketWaifu
         {
             if (!showNames)
             {
-                return wishlists.Select(x => $"<@{x.Id}>").ToList();
+                return wishlists.Select((x, i) => $"{i+1}: <@{x.Id}>").ToList();
             }
 
             var str = new List<string>();
-            foreach (var deck in wishlists)
+            foreach (var user in wishlists.Select(async (x, i) => $"{i+1}: {await GetUserNameInfoAsync(x, guild)}"))
             {
-                IUser dUser = guild.GetUser(deck.UserId);
-                if (dUser == null)
-                {
-                    dUser = await _client.GetUserAsync(deck.Id);
-                }
-                if (dUser != null)
-                {
-                    if (deck.User.Shinden != 0 && deck.User.Id != 1)
-                    {
-                        str.Add($"[{dUser.GetUserNickInGuild()}](https://shinden.pl/user/{deck.User.Shinden})");
-                        continue;
-                    }
-                    str.Add(dUser.GetUserNickInGuild());
-                }
+                str.Add(await user);
             }
+
             return str;
+        }
+
+        private async Task<string> GetUserNameInfoAsync(GameDeck deck, SocketGuild guild)
+        {
+            return (deck.User.Shinden == 0 && deck.User.Id == 1)
+            ? (guild.GetUser(deck.UserId) ?? _client.GetUser(deck.UserId) ?? await _client.GetUserAsync(deck.UserId)).GetUserNickInGuild()
+            : $"[{(guild.GetUser(deck.UserId) ?? _client.GetUser(deck.UserId) ?? await _client.GetUserAsync(deck.UserId)).GetUserNickInGuild()}](https://shinden.pl/user/{deck.User.Shinden})";
         }
 
         public Embed GetShopView(ItemWithCost[] items, string name = "Sklepik", string currency = "TC")
