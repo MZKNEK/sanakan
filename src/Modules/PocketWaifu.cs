@@ -3060,7 +3060,7 @@ namespace Sanakan.Modules
         [Alias("who")]
         [Summary("pozwala wyszukać użytkowników posiadających kartę danej postaci")]
         [Remarks("51 tak tak"), RequireWaifuCommandChannel]
-        public async Task SearchCharacterCardsAsync([Summary("id postaci na shinden")] ulong id, [Summary("czy zamienić oznaczenia na nicki?")] bool showNames = false, [Summary("czy dodać linki do profili?")] bool showShindenUrl = false)
+        public async Task SearchCharacterCardsAsync([Summary("id postaci na shinden")] ulong id, [Summary("czy zamienić oznaczenia na nicki?")] bool showNames = false, [Summary("czy dodać linki do profili?")] bool showShindenUrl = false, [Summary("czy wyświetlić tylko karty z skalpelem/kamerą?")] bool onlyScalpels = false, [Summary("czy sortować po użytkowniku?")] bool groupByUser = false)
         {
             var charInfo = await _shinden.GetCharacterInfoAsync(id);
             if (charInfo == null)
@@ -3073,7 +3073,13 @@ namespace Sanakan.Modules
             {
                 var cards = await db.Cards.Include(x => x.Tags).Include(x => x.GameDeck).ThenInclude(x => x.User).Where(x => x.Character == id).AsNoTracking().FromCacheAsync(new[] { "users" });
 
-                if (cards.Count() < 1)
+                if (onlyScalpels)
+                    cards = cards.Where(x => !string.IsNullOrEmpty(x.CustomImage));
+
+                if (groupByUser)
+                    cards = cards.OrderBy(x => x.GameDeckId);
+
+                if (cards.IsNullOrEmpty())
                 {
                     await ReplyAsync("", embed: $"Nie odnaleziono kart {charInfo}".ToEmbedMessage(EMType.Error).Build());
                     return;
