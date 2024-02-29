@@ -1967,7 +1967,9 @@ namespace Sanakan.Services.PocketWaifu
 
             if (showStats)
             {
-                reward += $"\n\nRT: {duration.CalcTime:F} E: {totalExp:F} AI: {minAff:F} A: {affectionCost:F} K: {karmaCost:F} KI: {karmaItem:F} MI: {totalItemsCnt}";
+                reward += $"\n\nRT: {duration.CalcTime:F} E: {totalExp:F} AI: {minAff:F} A: {affectionCost:F} K: {karmaCost:F} KI: {karmaItem:F} MI: {totalItemsCnt}"
+                    + $"\n\nALPI:{affectionCost / totalItemsCnt:F} AGPI:{minAff / totalItemsCnt:F} ALPT: {affectionCost / duration.CalcTime:F} AGPT: {minAff / duration.CalcTime:F}"
+                    + $"\nKLPI: {karmaCost / totalItemsCnt:F} KGPI: {karmaItem / totalItemsCnt:F} KLPT: {karmaCost / duration.CalcTime:F} KGPT: {karmaItem / duration.CalcTime:F}";
             }
 
             card.Expedition = CardExpedition.None;
