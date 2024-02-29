@@ -1227,7 +1227,7 @@ namespace Sanakan.Services.PocketWaifu
         {
             var list = new List<Embed>();
 
-            var contentString = new StringBuilder($"{title}\n\n");
+            var contentString = new StringBuilder($"{title} **[{cards.Count()}]**\n\n");
             foreach (var card in cards.Select(async (x, i) => $"{i+1}: {await GetCardInfo(x, mention, guild, shindenUrls, tldr)}"))
             {
                 AppendMessage(list, contentString, await card);

@@ -1411,7 +1411,7 @@ namespace Sanakan.Modules
         [Command("sime"), Priority(1)]
         [Summary("symuluje wyprawę daną kartą")]
         [Remarks("12312 n")]
-        public async Task SimulateExpeditionAsync([Summary("WID")]ulong wid, [Summary("typ wyprawy")]CardExpedition expedition = CardExpedition.None, [Summary("czas w minutach")]int time = -1)
+        public async Task SimulateExpeditionAsync([Summary("WID")]ulong wid, [Summary("typ wyprawy")]CardExpedition expedition = CardExpedition.None, [Summary("karma")]double k = -1, [Summary("relacja")]double a = -1, [Summary("czas w minutach")]int time = -1)
         {
             if (expedition == CardExpedition.None)
                 return;
@@ -1425,6 +1425,16 @@ namespace Sanakan.Modules
                 if (time > 0)
                 {
                     thisCard.ExpeditionDate = _time.Now().AddMinutes(-time);
+                }
+
+                if (k != -1)
+                {
+                    thisCard.GameDeck.Karma = k;
+                }
+
+                if (a != -1)
+                {
+                    thisCard.Affection = a;
                 }
 
                 thisCard.Expedition = expedition;

@@ -171,16 +171,13 @@ namespace Sanakan.Services
             return null;
         }
 
-        private async Task<Image> GetImageFromUrlOrLocal(string uri)
+        private async Task<Image> GetImageFromUrlOrLocalAsync(string uri)
         {
             if (Dir.IsLocal(uri))
-                return await Image.LoadAsync(uri);
+                return File.Exists(uri) ? await Image.LoadAsync(uri) : new Image<Rgba32>(1, 1);
 
             using var imageStream = await GetImageFromUrlAsync(uri, true);
-            if (imageStream is null)
-                return null;
-
-            return await Image.LoadAsync(imageStream);
+            return imageStream is null ? new Image<Rgba32>(1, 1) : await Image.LoadAsync(imageStream);
         }
 
         private Font GetOrCreateFont(FontFamily family, float size)
@@ -454,7 +451,7 @@ namespace Sanakan.Services
                 {
                     if (!string.IsNullOrEmpty(botUser.StatsReplacementProfileUri) && File.Exists(botUser.StatsReplacementProfileUri))
                     {
-                        using var usrImg = Image.Load(botUser.StatsReplacementProfileUri);
+                        using var usrImg = await GetImageFromUrlOrLocalAsync(botUser.StatsReplacementProfileUri);
                         if (usrImg.Width != 750 || usrImg.Height != 340)
                             usrImg.Mutate(x => x.Resize(750, 340));
 
@@ -676,7 +673,7 @@ namespace Sanakan.Services
             if (!File.Exists(botUser.BackgroundProfileUri))
                 botUser.BackgroundProfileUri = "./Pictures/np/pbg.png";
 
-            using (var userBg = Image.Load(botUser.BackgroundProfileUri))
+            using (var userBg = await GetImageFromUrlOrLocalAsync(botUser.BackgroundProfileUri))
             {
                 if (userBg.Width != 750 || userBg.Height != 160)
                     userBg.Mutate(x => x.Resize(750, 160));
@@ -709,7 +706,7 @@ namespace Sanakan.Services
 
             if (botUser.StatsStyleSettings.HasFlag(ProfileSettings.ShowOverlay) && !string.IsNullOrEmpty(botUser.CustomProfileOverlayUrl))
             {
-                using var overlayImg = await GetImageFromUrlOrLocal(botUser.CustomProfileOverlayUrl);
+                using var overlayImg = await GetImageFromUrlOrLocalAsync(botUser.CustomProfileOverlayUrl);
 
                 if (overlayImg.Width != 750 || overlayImg.Height != 402)
                     overlayImg.Mutate(x => x.Resize(750, 402));
@@ -761,7 +758,7 @@ namespace Sanakan.Services
 
             if (botUser.StatsStyleSettings.HasFlag(ProfileSettings.ShowOverlayPro) && !string.IsNullOrEmpty(botUser.PremiumCustomProfileOverlayUrl))
             {
-                using var overlayImg = await GetImageFromUrlOrLocal(botUser.PremiumCustomProfileOverlayUrl);
+                using var overlayImg = await GetImageFromUrlOrLocalAsync(botUser.PremiumCustomProfileOverlayUrl);
 
                 if (overlayImg.Width != 750 || overlayImg.Height != 500)
                     overlayImg.Mutate(x => x.Resize(750, 500));
@@ -1217,7 +1214,7 @@ namespace Sanakan.Services
         private async Task<Image> GetCharacterPictureAsync(string characterUrl, bool ultimate)
         {
             var characterImg = ultimate ? new Image<Rgba32>(475, 667) : await Image.LoadAsync($"./Pictures/PW/empty.png");
-            using (var image = await GetImageFromUrlOrLocal(characterUrl ?? "http://cdn.shinden.eu/cdn1/other/placeholders/title/225x350.jpg"))
+            using (var image = await GetImageFromUrlOrLocalAsync(characterUrl ?? "http://cdn.shinden.eu/cdn1/other/placeholders/title/225x350.jpg"))
             {
                 if (image is null)
                     return characterImg;
@@ -1296,7 +1293,7 @@ namespace Sanakan.Services
             if (!card.HasCustomBorder())
                 return GenerateBorder(card);
 
-            var borderImg = await GetImageFromUrlOrLocal(card.CustomBorder);
+            var borderImg = await GetImageFromUrlOrLocalAsync(card.CustomBorder);
             if (borderImg is null)
                 return GenerateBorder(card);
 
@@ -1873,7 +1870,7 @@ namespace Sanakan.Services
         private async Task<Image> GetAnimatedWaifuCardAsync(Card card, bool noStatsImage = false)
         {
             var characterImg = card.FromFigure ? new Image<Rgba32>(475, 667) : Image.Load($"./Pictures/PW/empty.png");
-            using (var cardImg = await GetImageFromUrlOrLocal(card.GetImage() ?? "http://cdn.shinden.eu/cdn1/other/placeholders/title/225x350.jpg"))
+            using (var cardImg = await GetImageFromUrlOrLocalAsync(card.GetImage() ?? "http://cdn.shinden.eu/cdn1/other/placeholders/title/225x350.jpg"))
             {
                 using (var image = cardImg is null ? characterImg : cardImg)
                 {
