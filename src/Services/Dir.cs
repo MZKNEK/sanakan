@@ -6,6 +6,7 @@ namespace Sanakan.Services
 {
     public static class Dir
     {
+        private const string PicDir = "./Pictures";
         private const string BaseOutput = "../GOut";
 
         public static void Create()
@@ -22,6 +23,7 @@ namespace Sanakan.Services
         public static string SavedData = $"{BaseOutput}/Saved";
         public static string LocalCardData = $"{SavedData}/Card";
 
-        public static bool IsLocal(string path) => path.StartsWith(BaseOutput);
+        public static string GetResource(string path) => $"{PicDir}/{path}";
+        public static bool IsLocal(string path) => path.StartsWith(BaseOutput) || path.StartsWith(PicDir);
     }
 }

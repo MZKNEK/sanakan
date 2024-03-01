@@ -60,7 +60,7 @@ namespace Sanakan.Modules
         {
             try
             {
-                var reader = new JsonFileReader($"./Pictures/Poke/List.json");
+                var reader = new JsonFileReader(Services.Dir.GetResource("Poke/List.json"));
                 var images = reader.Load<List<SafariImage>>();
 
                 var character = (await _shClient.GetCharacterInfoAsync(2)).Body;

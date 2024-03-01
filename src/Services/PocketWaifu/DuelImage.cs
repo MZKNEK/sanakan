@@ -7,8 +7,8 @@ namespace Sanakan.Services.PocketWaifu
 {
     public class DuelImage
     {
-        private string ThisUri(int side) => $"./Pictures/Duel/{Name}{side}.jpg";
-        public static string DefaultUri(int side) => $"./Pictures/PW/duel{side}.jpg";
+        private string ThisUri(int side) => Dir.GetResource($"Duel/{Name}{side}.jpg");
+        public static string DefaultUri(int side) => Dir.GetResource($"PW/duel{side}.jpg");
         public static string DefaultColor() => "#aaaaaa";
 
         public string Uri(int side) => File.Exists(ThisUri(side)) ? ThisUri(side) : DefaultUri(side);

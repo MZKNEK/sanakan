@@ -59,7 +59,7 @@ namespace Sanakan.Extensions
                 PremiumCustomProfileOverlayUrl = null,
                 TimeStatuses = new List<TimeStatus>(),
                 StatsStyleSettings = ProfileSettings.Default,
-                BackgroundProfileUri = $"./Pictures/np/pbg.png",
+                BackgroundProfileUri = Dir.GetResource("np/pbg.png"),
                 MeasureDate = new DateTime(creationTime.Year, creationTime.Month, 1),
                 GameDeck = new GameDeck
                 {

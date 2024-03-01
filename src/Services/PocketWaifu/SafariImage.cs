@@ -17,11 +17,11 @@ namespace Sanakan.Services.PocketWaifu
             switch (type)
             {
                 case Type.Mystery:
-                    return $"./Pictures/Poke/{Index}.jpg";
+                    return Dir.GetResource($"Poke/{Index}.jpg");
 
                 default:
                 case Type.Truth:
-                    return $"./Pictures/Poke/{Index}a.jpg";
+                    return Dir.GetResource($"Poke/{Index}a.jpg");
             }
         }
 
@@ -30,11 +30,11 @@ namespace Sanakan.Services.PocketWaifu
             switch (type)
             {
                 case Type.Mystery:
-                    return $"./Pictures/PW/poke.jpg";
+                    return Dir.GetResource($"PW/poke.jpg");
 
                 default:
                 case Type.Truth:
-                    return $"./Pictures/PW/pokea.jpg";
+                    return Dir.GetResource($"PW/pokea.jpg");
             }
         }
 

@@ -310,8 +310,8 @@ namespace Sanakan.Services
         {
             var image = new Image<Rgba32>(195, 19, Color.Transparent);
 
-            using var topImage = Image.Load("./Pictures/np/mtop.png");
-            using var lvlImage = Image.Load("./Pictures/np/mlvl.png");
+            using var topImage = Image.Load(Dir.GetResource("np/mtop.png"));
+            using var lvlImage = Image.Load(Dir.GetResource("np/mlvl.png"));
 
             var font = GetOrCreateFont(_latoRegular, 16);
             var topp = topPos > 999 ? $">1K" : ToShortSI(topPos);
@@ -395,22 +395,22 @@ namespace Sanakan.Services
 
             var coinX = 227;
             var coinOff = 84;
-            using var msgImg = GetCurrencyImage((long)user.MessagesCnt, "./Pictures/np/mmsg.png");
+            using var msgImg = GetCurrencyImage((long)user.MessagesCnt, Dir.GetResource("np/mmsg.png"));
             image.Mutate(x => x.DrawImage(msgImg, new Point(coinX, topBarY), 1));
             coinX += coinOff;
-            using var scImg = GetCurrencyImage(user.ScCnt, "./Pictures/np/msc.png");
+            using var scImg = GetCurrencyImage(user.ScCnt, Dir.GetResource("np/msc.png"));
             image.Mutate(x => x.DrawImage(scImg, new Point(coinX, topBarY), 1));
             coinX += coinOff;
-            using var tcImg = GetCurrencyImage(user.TcCnt, "./Pictures/np/mtc.png");
+            using var tcImg = GetCurrencyImage(user.TcCnt, Dir.GetResource("np/mtc.png"));
             image.Mutate(x => x.DrawImage(tcImg, new Point(coinX, topBarY), 1));
             coinX += coinOff;
-            using var acImg = GetCurrencyImage(user.AcCnt, "./Pictures/np/mac.png");
+            using var acImg = GetCurrencyImage(user.AcCnt, Dir.GetResource("np/mac.png"));
             image.Mutate(x => x.DrawImage(acImg, new Point(coinX, topBarY), 1));
             coinX += coinOff;
-            using var ctImg = GetCurrencyImage(user.GameDeck.CTCnt, "./Pictures/np/mct.png");
+            using var ctImg = GetCurrencyImage(user.GameDeck.CTCnt, Dir.GetResource("np/mct.png"));
             image.Mutate(x => x.DrawImage(ctImg, new Point(coinX, topBarY), 1));
             coinX += coinOff;
-            using var pcImg = GetCurrencyImage(user.GameDeck.PVPCoins, "./Pictures/np/mpc.png");
+            using var pcImg = GetCurrencyImage(user.GameDeck.PVPCoins, Dir.GetResource("np/mpc.png"));
             image.Mutate(x => x.DrawImage(pcImg, new Point(coinX, topBarY), 1));
 
             return image;
@@ -531,7 +531,7 @@ namespace Sanakan.Services
                                 if (isOnImg)
                                     image.Mutate(x => x.DrawImage(shadow, new Point(statsX - 3, statsY - 3), shadowsOpacity));
 
-                                using var stats = GetRWStats(shindenUser?.ListStats?.AnimeStatus, "./Pictures/statsAnime.png", shindenUser.GetMoreSeriesStats(false));
+                                using var stats = GetRWStats(shindenUser?.ListStats?.AnimeStatus, Dir.GetResource("statsAnime.png"), shindenUser.GetMoreSeriesStats(false));
                                 image.Mutate(x => x.DrawImage(stats, new Point(statsX, statsY), 1));
                                 statsY += 147;
                             }
@@ -540,7 +540,7 @@ namespace Sanakan.Services
                                 if (isOnImg)
                                     image.Mutate(x => x.DrawImage(shadow, new Point(statsX - 3, statsY - 3), shadowsOpacity));
 
-                                using var stats = GetRWStats(shindenUser?.ListStats?.MangaStatus, "./Pictures/statsManga.png", shindenUser.GetMoreSeriesStats(true));
+                                using var stats = GetRWStats(shindenUser?.ListStats?.MangaStatus, Dir.GetResource("statsManga.png"), shindenUser.GetMoreSeriesStats(true));
                                 image.Mutate(x => x.DrawImage(stats, new Point(statsX, statsY), 1));
                             }
                         }
@@ -624,9 +624,9 @@ namespace Sanakan.Services
 
             if (botUser.GameDeck.CanCreateDemon() || botUser.GameDeck.CanCreateAngel() || botUser.GameDeck.IsNeutral())
             {
-                var karmaState = "./Pictures/np/kn.png";
-                karmaState = botUser.GameDeck.CanCreateDemon() ? "./Pictures/np/kd.png": karmaState;
-                karmaState = botUser.GameDeck.CanCreateAngel() ? "./Pictures/np/kl.png": karmaState;
+                var karmaState = Dir.GetResource("np/kn.png");
+                karmaState = botUser.GameDeck.CanCreateDemon() ? Dir.GetResource("np/kd.png") : karmaState;
+                karmaState = botUser.GameDeck.CanCreateAngel() ? Dir.GetResource("np/kl.png") : karmaState;
                 using var karmaImage = Image.Load(karmaState);
                 image.Mutate(x => x.DrawImage(karmaImage, new Point(330, startY - 6), 1));
             }
@@ -641,7 +641,7 @@ namespace Sanakan.Services
                 var cardCount = botUser.GameDeck.Cards.Count(x => x.Rarity == rarity);
                 if (cardCount > 0)
                 {
-                    using var cimg = Image.Load($"./Pictures/np/r{rarity}.png");
+                    using var cimg = Image.Load(Dir.GetResource($"np/r{rarity}.png"));
                     image.Mutate(x => x.DrawImage(cimg, new Point(startX, startY), 1));
                     image.Mutate(x => x.DrawText(cardCount.ToString(), fontCards, fontColor, new Point(startX + cGap, startY)));
                     startY += jumpY;
@@ -654,14 +654,14 @@ namespace Sanakan.Services
             var scalpelCount = botUser.GameDeck.Cards.Count(x => !string.IsNullOrEmpty(x.CustomImage));
             if (scalpelCount > 0)
             {
-                using var scalpelImg = GetCurrencyImage(scalpelCount, "./Pictures/np/mscal.png");
+                using var scalpelImg = GetCurrencyImage(scalpelCount, Dir.GetResource("np/mscal.png"));
                 image.Mutate(x => x.DrawImage(scalpelImg, new Point(startX, startY), 1));
             }
 
             var scissorsCount = botUser.GameDeck.Cards.Count(x => !string.IsNullOrEmpty(x.CustomBorder));
             if (scissorsCount > 0)
             {
-                using var scissorsImg = GetCurrencyImage(scissorsCount, "./Pictures/np/mbor.png");
+                using var scissorsImg = GetCurrencyImage(scissorsCount, Dir.GetResource("np/mbor.png"));
                 image.Mutate(x => x.DrawImage(scissorsImg, new Point(startX + sGap, startY), 1));
             }
 
@@ -677,11 +677,8 @@ namespace Sanakan.Services
             var nickFont = GetFontSize(_latoBold, 28, nickname, 290);
             var rangFont = GetOrCreateFont(_latoRegular, 16);
 
-            using var template = Image.Load("./Pictures/np/pbase.png");
+            using var template = Image.Load(Dir.GetResource("np/pbase.png"));
             var profilePic = new Image<Rgba32>(template.Width, template.Height, GetOrCreateColor("#313338"));
-
-            if (!File.Exists(botUser.BackgroundProfileUri))
-                botUser.BackgroundProfileUri = "./Pictures/np/pbg.png";
 
             using (var userBg = await GetImageFromUrlOrLocalAsync(botUser.BackgroundProfileUri))
             {
@@ -784,10 +781,10 @@ namespace Sanakan.Services
 
         private (Point xy, string img) GetProfileAvatarBorder(User user)
         {
-            var img = $"./Pictures/np/ab/{user.AvatarBorder}.png";
+            var img = Dir.GetResource($"np/ab/{user.AvatarBorder}.png");
             if (user.StatsStyleSettings.HasFlag(ProfileSettings.BorderColor))
             {
-                var lvlImg = GetAvailableLevelBorder($"./Pictures/np/ab/{user.AvatarBorder}Lv/", user.Level);
+                var lvlImg = GetAvailableLevelBorder(Dir.GetResource($"np/ab/{user.AvatarBorder}Lv/"), user.Level);
                 img = string.IsNullOrEmpty(lvlImg) ? img : lvlImg;
             }
 
@@ -1067,7 +1064,7 @@ namespace Sanakan.Services
             var baseImg = new Image<Rgba32>(500, 320);
             baseImg.Mutate(x => x.BackgroundColor(GetOrCreateColor("#313338")));
 
-            using (var template = Image.Load("./Pictures/siteStatsBody.png"))
+            using (var template = Image.Load(Dir.GetResource("siteStatsBody.png")))
             {
                 baseImg.Mutate(x => x.DrawImage(template, new Point(0, 0), 1));
             }
@@ -1081,19 +1078,13 @@ namespace Sanakan.Services
             {
                 if (shindenInfo?.ListStats?.AnimeStatus != null)
                 {
-                    using (var stats = GetRWStats(shindenInfo?.ListStats?.AnimeStatus,
-                        "./Pictures/statsAnime.png", shindenInfo.GetMoreSeriesStats(false)))
-                    {
-                        image.Mutate(x => x.DrawImage(stats, new Point(0, 0), 1));
-                    }
+                    using var stats = GetRWStats(shindenInfo?.ListStats?.AnimeStatus, Dir.GetResource("statsAnime.png"), shindenInfo.GetMoreSeriesStats(false));
+                    image.Mutate(x => x.DrawImage(stats, new Point(0, 0), 1));
                 }
                 if (shindenInfo?.ListStats?.MangaStatus != null)
                 {
-                    using (var stats = GetRWStats(shindenInfo?.ListStats?.MangaStatus,
-                        "./Pictures/statsManga.png", shindenInfo.GetMoreSeriesStats(true)))
-                    {
-                        image.Mutate(x => x.DrawImage(stats, new Point(0, 128), 1));
-                    }
+                    using var stats = GetRWStats(shindenInfo?.ListStats?.MangaStatus, Dir.GetResource("statsManga.png"), shindenInfo.GetMoreSeriesStats(true));
+                    image.Mutate(x => x.DrawImage(stats, new Point(0, 128), 1));
                 }
                 baseImg.Mutate(x => x.DrawImage(image, new Point(5, 65), 1));
             }
@@ -1223,7 +1214,7 @@ namespace Sanakan.Services
 
         private async Task<Image> GetCharacterPictureAsync(string characterUrl, bool ultimate)
         {
-            var characterImg = ultimate ? new Image<Rgba32>(475, 667) : await Image.LoadAsync($"./Pictures/PW/empty.png");
+            var characterImg = ultimate ? new Image<Rgba32>(475, 667) : await Image.LoadAsync(Dir.GetResource("PW/empty.png"));
             using (var image = await GetImageFromUrlOrLocalAsync(characterUrl ?? "http://cdn.shinden.eu/cdn1/other/placeholders/title/225x350.jpg"))
             {
                 if (image is null)
@@ -1265,24 +1256,24 @@ namespace Sanakan.Services
                         totalPower += card.GetDefenceWithBonus();
                         totalPower += card.GetAttackWithBonus();
 
-                        if (totalPower > 5000) return $"./Pictures/PW/CG/{card.Quality}/Border_2.png";
-                        if (totalPower > 2000) return $"./Pictures/PW/CG/{card.Quality}/Border_1.png";
-                        return $"./Pictures/PW/CG/{card.Quality}/Border_0.png";
+                        if (totalPower > 5000) return Dir.GetResource($"PW/CG/{card.Quality}/Border_2.png");
+                        if (totalPower > 2000) return Dir.GetResource($"PW/CG/{card.Quality}/Border_1.png");
+                        return Dir.GetResource($"PW/CG/{card.Quality}/Border_0.png");
                     }
 
-                default: return $"./Pictures/PW/CG/{card.Quality}/Border.png";
+                default: return Dir.GetResource($"PW/CG/{card.Quality}/Border.png");
             }
         }
 
         private Image GenerateBorder(Card card)
         {
-            var borderStr = $"./Pictures/PW/{card.Rarity}.png";
-            var dereStr = $"./Pictures/PW/{card.Dere}.png";
+            var borderStr = Dir.GetResource($"PW/{card.Rarity}.png");
+            var dereStr = Dir.GetResource($"PW/{card.Dere}.png");
 
             if (card.FromFigure)
             {
-                borderStr = $"./Pictures/PW/CG/{card.Quality}/Border.png";
-                dereStr = $"./Pictures/PW/CG/{card.Quality}/Dere/{card.Dere}.png";
+                borderStr = Dir.GetResource($"PW/CG/{card.Quality}/Border.png");
+                dereStr = Dir.GetResource($"PW/CG/{card.Quality}/Dere/{card.Dere}.png");
 
                 if (HasCustomBorderString(card))
                     borderStr = GetCustomBorderString(card);
@@ -1588,9 +1579,9 @@ namespace Sanakan.Services
         {
             switch (card.Quality)
             {
-                case Quality.Jota: return $"./Pictures/PW/CG/{card.Quality}/Stats/{card.Dere}_Stats.png";
-                case Quality.Theta: return $"./Pictures/PW/CG/{card.Quality}/{card.Dere}_Stats.png";
-                default: return $"./Pictures/PW/CG/{card.Quality}/Stats.png";
+                case Quality.Jota: return Dir.GetResource($"PW/CG/{card.Quality}/Stats/{card.Dere}_Stats.png");
+                case Quality.Theta: return Dir.GetResource($"PW/CG/{card.Quality}/{card.Dere}_Stats.png");
+                default: return Dir.GetResource($"PW/CG/{card.Quality}/Stats.png");
             }
         }
 
@@ -1598,8 +1589,8 @@ namespace Sanakan.Services
         {
             switch (card.Quality)
             {
-                case Quality.Jota: return $"./Pictures/PW/CG/{card.Quality}/Border/{card.Dere}_Border.png";
-                default: return  $"./Pictures/PW/CG/{card.Quality}/BorderBack.png";
+                case Quality.Jota: return Dir.GetResource($"PW/CG/{card.Quality}/Border/{card.Dere}_Border.png");
+                default: return Dir.GetResource($"PW/CG/{card.Quality}/BorderBack.png");
             }
         }
 
@@ -1669,17 +1660,17 @@ namespace Sanakan.Services
             int defence = card.GetDefenceWithBonus();
             int attack = card.GetAttackWithBonus();
 
-            using (var shield = Image.Load($"./Pictures/PW/heart.png"))
+            using (var shield = Image.Load(Dir.GetResource("PW/heart.png")))
             {
                 image.Mutate(x => x.DrawImage(shield, new Point(0, 0), 1));
             }
 
-            using (var shield = Image.Load($"./Pictures/PW/shield.png"))
+            using (var shield = Image.Load(Dir.GetResource("PW/shield.png")))
             {
                 image.Mutate(x => x.DrawImage(shield, new Point(0, 0), 1));
             }
 
-            using (var fire = Image.Load($"./Pictures/PW/fire.png"))
+            using (var fire = Image.Load(Dir.GetResource("PW/fire.png")))
             {
                 image.Mutate(x => x.DrawImage(fire, new Point(0, 0), 1));
             }
@@ -1690,7 +1681,7 @@ namespace Sanakan.Services
             var starX = 239 - (18 * starCnt);
             for (int i = 0; i < starCnt; i++)
             {
-                using (var fire = Image.Load($"./Pictures/PW/stars/{starType}_{card.StarStyle}.png"))
+                using (var fire = Image.Load(Dir.GetResource($"PW/stars/{starType}_{card.StarStyle}.png")))
                 {
                     image.Mutate(x => x.DrawImage(fire, new Point(starX, 30), 1));
                 }
@@ -1717,7 +1708,7 @@ namespace Sanakan.Services
 
             if (applyNegativeStats)
             {
-                using (var neg = Image.Load($"./Pictures/PW/neg.png"))
+                using (var neg = Image.Load(Dir.GetResource("PW/neg.png")))
                 {
                     image.Mutate(x => x.DrawImage(neg, new Point(0, 0), 1));
                 }
@@ -1879,7 +1870,7 @@ namespace Sanakan.Services
 
         private async Task<Image> GetAnimatedWaifuCardAsync(Card card, bool noStatsImage = false)
         {
-            var characterImg = card.FromFigure ? new Image<Rgba32>(475, 667) : Image.Load($"./Pictures/PW/empty.png");
+            var characterImg = card.FromFigure ? new Image<Rgba32>(475, 667) : Image.Load(Dir.GetResource("PW/empty.png"));
             using (var cardImg = await GetImageFromUrlOrLocalAsync(card.GetImage() ?? "http://cdn.shinden.eu/cdn1/other/placeholders/title/225x350.jpg"))
             {
                 using (var image = cardImg is null ? characterImg : cardImg)

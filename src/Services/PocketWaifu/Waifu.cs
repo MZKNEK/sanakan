@@ -1521,7 +1521,7 @@ namespace Sanakan.Services.PocketWaifu
         public SafariImage GetRandomSarafiImage()
         {
             SafariImage dImg = null;
-            var reader = new Config.JsonFileReader($"./Pictures/Poke/List.json");
+            var reader = new Config.JsonFileReader(Dir.GetResource("Poke/List.json"));
             try
             {
                 var images = reader.Load<List<SafariImage>>();
