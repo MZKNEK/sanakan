@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Discord;
@@ -749,8 +750,15 @@ namespace Sanakan.Modules
                     return;
                 }
 
-                if (defaultImage && !card.FromFigure)
+                if (defaultImage)
+                {
+                    if (Dir.IsLocal(card.CustomImage))
+                    {
+                        if (File.Exists(card.CustomImage))
+                            File.Delete(card.CustomImage);
+                    }
                     card.CustomImage = null;
+                }
 
                 card.CalculateCardPower();
 
