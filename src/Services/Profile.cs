@@ -330,7 +330,6 @@ namespace Sanakan.Services
         {
             bool isConnected = botUser.Shinden != 0;
             var response = _shClient.User.GetAsync(botUser.Shinden);
-            topPosition = topPosition > 999 ? 999 : topPosition;
 
             using var image = await _img.GetUserProfileAsync(isConnected ? (await response).Body : null, botUser, user.GetUserOrDefaultAvatarUrl(true),
                 topPosition, user.GetUserNickInGuild(), user.Roles.OrderByDescending(x => x.Position).FirstOrDefault()?.Color ?? Discord.Color.DarkerGrey);

@@ -176,8 +176,17 @@ namespace Sanakan.Services
             if (Dir.IsLocal(uri))
                 return File.Exists(uri) ? await Image.LoadAsync(uri) : new Image<Rgba32>(1, 1);
 
-            using var imageStream = await GetImageFromUrlAsync(uri, true);
-            return imageStream is null ? new Image<Rgba32>(1, 1) : await Image.LoadAsync(imageStream);
+            try
+            {
+                using var imageStream = await GetImageFromUrlAsync(uri, true);
+                return (imageStream is null || imageStream == Stream.Null)
+                    ? new Image<Rgba32>(1, 1)
+                    : await Image.LoadAsync(imageStream);
+            }
+            catch (Exception)
+            {
+                return new Image<Rgba32>(1, 1);
+            }
         }
 
         private Font GetOrCreateFont(FontFamily family, float size)
@@ -305,8 +314,9 @@ namespace Sanakan.Services
             using var lvlImage = Image.Load("./Pictures/np/mlvl.png");
 
             var font = GetOrCreateFont(_latoRegular, 16);
+            var topp = topPos > 999 ? $">1K" : ToShortSI(topPos);
             image.Mutate(x => x.DrawImage(topImage, new Point(0, 0), 1));
-            image.Mutate(x => x.DrawText(ToShortSI(topPos), font, GetOrCreateColor("#a7a7a7"), new PointF(19.5f, -2f)));
+            image.Mutate(x => x.DrawText(topp, font, GetOrCreateColor("#a7a7a7"), new PointF(19.5f, -2f)));
             image.Mutate(x => x.DrawImage(lvlImage, new Point(60, 0), 1));
             image.Mutate(x => x.DrawText(ToShortSI(user.Level), font, GetOrCreateColor("#a7a7a7"), new PointF(79.5f, -2f)));
 
