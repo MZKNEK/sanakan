@@ -49,6 +49,7 @@ namespace Sanakan.Services
                 new DomainData("cdn.imgchest.com", true),
                 new DomainData("www.dropbox.com") { Transform = TransformDropboxAsync },
                 new DomainData("dl.dropboxusercontent.com"),
+                new DomainData("cdn.discordapp.com"),
                 new DomainData("onedrive.live.com"),
             };
         }

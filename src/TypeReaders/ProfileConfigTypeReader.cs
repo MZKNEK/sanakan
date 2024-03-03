@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Linq;
 using Sanakan.Database.Models;
+using Microsoft.IdentityModel.Tokens;
 
 namespace Sanakan.TypeReaders
 {
@@ -240,6 +241,15 @@ namespace Sanakan.TypeReaders
                         strippedInput = spaceIdx == -1 ? Span<char>.Empty : strippedInput.Slice(spaceIdx);
 
                         config.Url = url.Trim().ToString();
+                        if (config.Url.Equals("att", StringComparison.OrdinalIgnoreCase))
+                        {
+                            if (context.Message.Attachments.IsNullOrEmpty())
+                            {
+                                return Task.FromResult(TypeReaderResult.FromError(CommandError.ParseFailed, "Nie wykrytko załącznika!"));
+                            }
+                            config.Url = context.Message.Attachments.FirstOrDefault()?.Url ?? "";
+                        }
+
                         if (!Uri.IsWellFormedUriString(config.Url, UriKind.Absolute))
                         {
                             return Task.FromResult(TypeReaderResult.FromError(CommandError.ParseFailed, "Nie rozpoznano linku!"));

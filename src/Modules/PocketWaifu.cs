@@ -435,6 +435,16 @@ namespace Sanakan.Modules
         [Remarks("1 4212 2"), RequireWaifuCommandChannel]
         public async Task UseItemOnCardAsync([Summary("nr przedmiotu")] int itemNumber, [Summary("WID")] ulong wid = 0, [Summary("liczba przedmiotów/link do obrazka/typ gwiazdki")] string detail = "1", [Hidden] bool itemToExp = false)
         {
+            if (detail.Equals("att", StringComparison.CurrentCultureIgnoreCase))
+            {
+                if (Context.Message.Attachments.IsNullOrEmpty())
+                {
+                    await ReplyAsync("", embed: $"{Context.User.Mention} wybrano upload przez załącznik, lecz nie został on wykryty.".ToEmbedMessage(EMType.Error).Build());
+                    return;
+                }
+                detail = Context.Message.Attachments.FirstOrDefault()?.Url ?? "";
+            }
+
             using (var db = new Database.DatabaseContext(Config))
             {
                 var bUser = await db.GetUserOrCreateAsync(Context.User.Id);
