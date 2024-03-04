@@ -3,9 +3,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
 using System.Linq;
-using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using Discord;
@@ -17,6 +15,7 @@ using Sanakan.Config;
 using Sanakan.Database.Models;
 using Sanakan.Extensions;
 using Sanakan.Preconditions;
+using Sanakan.Services;
 using Sanakan.Services.Commands;
 using Sanakan.Services.Executor;
 using Sanakan.Services.PocketWaifu;
@@ -344,11 +343,6 @@ namespace Sanakan.Modules
                 await ReplyAsync("", embed: $"Zaktualizowano {cards.Count} kart.".ToEmbedMessage(EMType.Success).Build());
             }
         }
-
-        [Command("cotakdługo", RunMode = RunMode.Async)]
-        [Summary("wyświetla nazwę obecnego polecenia")]
-        [Remarks("")]
-        public async Task ShowTaskNameAsync() => await ReplyAsync("", embed: $"RN: {_executor.WhatIsRunning()}".ToEmbedMessage(EMType.Bot).Build());
 
         [Command("time", RunMode = RunMode.Async)]
         [Summary("wyświetla czas serwera")]
@@ -706,6 +700,32 @@ namespace Sanakan.Modules
                 QueryCacheManager.ExpireTag(new string[] { "users" });
 
                 await ReplyAsync("", embed: reply.ToEmbedMessage(EMType.Success).Build());
+            }
+        }
+
+        [Command("prst")]
+        [Summary("resetuje profil użytkownika")]
+        [Remarks("Karna")]
+        public async Task ResetUserProfileAsync([Summary("nazwa użytkownika")]SocketGuildUser user)
+        {
+            using (var db = new Database.DatabaseContext(Config))
+            {
+                var bUser = await db.GetUserOrCreateSimpleAsync(user.Id);
+
+                bUser.BackgroundProfileUri = Dir.GetResource("np/pbg.png");
+                bUser.StatsStyleSettings = ProfileSettings.Default;
+                bUser.PremiumCustomProfileOverlayUrl = null;
+                bUser.StatsReplacementProfileUri = null;
+                bUser.AvatarBorder = AvatarBorder.Base;
+                bUser.ProfileType = ProfileType.Stats;
+                bUser.CustomProfileOverlayUrl = null;
+                bUser.ProfileShadowsOpacity = 0.7f;
+
+                await db.SaveChangesAsync();
+
+                QueryCacheManager.ExpireTag(new string[] { $"user-{Context.User.Id}", "users" });
+
+                await ReplyAsync("", embed: $"Zresetowano profil użytkownika: {user.Mention}".ToEmbedMessage(EMType.Success).Build());
             }
         }
 

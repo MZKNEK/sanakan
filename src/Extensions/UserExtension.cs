@@ -53,7 +53,7 @@ namespace Sanakan.Extensions
                 ProfileShadowsOpacity = 0.7f,
                 CustomProfileOverlayUrl = null,
                 ProfileType = ProfileType.Stats,
-                AvatarBorder = AvatarBorder.None,
+                AvatarBorder = AvatarBorder.Base,
                 StatsReplacementProfileUri = null,
                 PoolType = CharacterPoolType.Anime,
                 PremiumCustomProfileOverlayUrl = null,
