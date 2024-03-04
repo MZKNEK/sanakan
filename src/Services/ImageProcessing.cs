@@ -460,7 +460,7 @@ namespace Sanakan.Services
                 case ProfileType.CardsOnImg:
                 case ProfileType.MiniGalleryOnImg:
                 {
-                    if (!string.IsNullOrEmpty(botUser.StatsReplacementProfileUri) && File.Exists(botUser.StatsReplacementProfileUri))
+                    if (!string.IsNullOrEmpty(botUser.StatsReplacementProfileUri))
                     {
                         using var usrImg = await GetImageFromUrlOrLocalAsync(botUser.StatsReplacementProfileUri);
                         if (usrImg.Width != 750 || usrImg.Height != 340)
