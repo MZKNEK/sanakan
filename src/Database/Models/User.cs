@@ -35,6 +35,7 @@ namespace Sanakan.Database.Models
         Rainbow,
         Pink,
         Simple,
+        TurqLeaves
     }
 
     [Flags]
