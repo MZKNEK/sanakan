@@ -415,56 +415,6 @@ namespace Sanakan.Extensions
 
         public static bool IsUnusable(this Card card) => card.Affection <= -5;
 
-        public static bool ValidExpedition(this Card card, CardExpedition expedition, double karma, TagHelper helper)
-        {
-            if (card.Expedition != CardExpedition.None)
-                return false;
-
-            if (card.Curse == CardCurse.ExpeditionBlockade)
-                return false;
-
-            if (card.InCage || !card.CanFightOnPvEGMwK())
-                return false;
-
-            if (card.CalculateMaxTimeOnExpeditionInMinutes(karma, expedition) < 1)
-                return false;
-
-            switch (expedition)
-            {
-                case CardExpedition.ExtremeItemWithExp:
-                    return !card.FromFigure && !helper.HasTag(card, Services.PocketWaifu.TagType.Favorite);
-
-                case CardExpedition.NormalItemWithExp:
-                    return !card.FromFigure;
-
-                case CardExpedition.UltimateEasy:
-                case CardExpedition.UltimateHard:
-                case CardExpedition.UltimateMedium:
-                    return card.Rarity == Rarity.SSS;
-
-                case CardExpedition.UltimateHardcore:
-                    return card.Rarity == Rarity.SSS && !helper.HasTag(card, Services.PocketWaifu.TagType.Favorite);
-
-                case CardExpedition.LightItems:
-                    return karma > 1000;
-                case CardExpedition.LightExp:
-                    return (karma > 1000) && !card.FromFigure;
-                case CardExpedition.LightItemWithExp:
-                    return (karma > 400) && !card.FromFigure;
-
-                case CardExpedition.DarkItems:
-                    return karma < -1000;
-                case CardExpedition.DarkExp:
-                    return (karma < -1000) && !card.FromFigure;
-                case CardExpedition.DarkItemWithExp:
-                    return (karma < -400) && !card.FromFigure;
-
-                default:
-                case CardExpedition.None:
-                    return false;
-            }
-        }
-
         public static string GetAffectionString(this Card card)
         {
             if (card.Affection <= -2000) return "Pogarda (Ω)";
@@ -764,143 +714,6 @@ namespace Sanakan.Extensions
         public static StarStyle Parse(this StarStyle star, string s)
             => star.TryParse(s, out var type) ? type : throw new Exception("Could't parse input!");
 
-        public static double GetCostOfExpeditionPerMinute(this Card card, CardExpedition expedition = CardExpedition.None)
-        {
-            return GetCostOfExpeditionPerMinuteRaw(card, expedition) * card.Rarity.ValueModifierReverse() * card.Dere.ValueModifierReverse();
-        }
-
-        public static double GetCostOfExpeditionPerMinuteRaw(this Card card, CardExpedition expedition = CardExpedition.None)
-        {
-            double cost = 0;
-
-            expedition = (expedition == CardExpedition.None) ? card.Expedition : expedition;
-            var mod = card.Quality.ValueModifierReverse();
-
-            switch (expedition)
-            {
-                case CardExpedition.NormalItemWithExp:
-                    cost = 0.008;
-                    break;
-
-                case CardExpedition.ExtremeItemWithExp:
-                    cost = 0.15;
-                    break;
-
-                case CardExpedition.DarkExp:
-                case CardExpedition.LightExp:
-                case CardExpedition.LightItems:
-                case CardExpedition.DarkItems:
-                    cost = 0.062 * mod;
-                    break;
-
-                case CardExpedition.DarkItemWithExp:
-                case CardExpedition.LightItemWithExp:
-                    cost = 0.05;
-                    break;
-
-                case CardExpedition.UltimateEasy:
-                case CardExpedition.UltimateMedium:
-                    cost = 1 * mod;
-                    break;
-
-                case CardExpedition.UltimateHard:
-                    cost = 2 * mod;
-                    break;
-
-                case CardExpedition.UltimateHardcore:
-                    cost = 0.5 * mod;
-                    break;
-
-                default:
-                    break;
-            }
-
-            return cost * Waifu.kExpeditionFactor;
-        }
-
-        public static double GetKarmaCostInExpeditionPerMinute(this Card card)
-        {
-            double cost = 0;
-            switch (card.Expedition)
-            {
-                case CardExpedition.NormalItemWithExp:
-                    cost = 0.0009;
-                    break;
-
-                case CardExpedition.ExtremeItemWithExp:
-                    cost = 0.028;
-                    break;
-
-                case CardExpedition.DarkItemWithExp:
-                case CardExpedition.DarkItems:
-                case CardExpedition.DarkExp:
-                    cost = card.Dere == Dere.Yato ? 0.0028 : 0.0018;
-                    break;
-
-                case CardExpedition.LightItemWithExp:
-                case CardExpedition.LightExp:
-                case CardExpedition.LightItems:
-                    cost = card.Dere == Dere.Yato ? 0.0012 : 0.0032;
-                    break;
-
-                default:
-                    break;
-            }
-
-            return cost * Waifu.kExpeditionFactor;
-        }
-
-        public static double CalculateMaxTimeOnExpeditionInMinutes(this Card card, double karma, CardExpedition expedition = CardExpedition.None)
-        {
-            expedition = (expedition == CardExpedition.None) ? card.Expedition : expedition;
-            double perMinute = card.GetCostOfExpeditionPerMinute(expedition);
-            double affOffset = karma.IsKarmaNeutral() ? 18d :  6d;
-            double param = card.Affection;
-            double addOFK = karma / 200;
-
-            switch (expedition)
-            {
-                case CardExpedition.NormalItemWithExp:
-                case CardExpedition.ExtremeItemWithExp:
-                    addOFK = karma.IsKarmaNeutral() ? 5 : 0;
-                    break;
-
-                case CardExpedition.LightExp:
-                case CardExpedition.LightItems:
-                case CardExpedition.LightItemWithExp:
-                    if (addOFK > 7) addOFK = 7;
-                    break;
-
-                case CardExpedition.DarkItems:
-                case CardExpedition.DarkExp:
-                case CardExpedition.DarkItemWithExp:
-                    addOFK = -addOFK;
-                    if (addOFK > 12) addOFK = 12;
-                    break;
-
-                case CardExpedition.UltimateEasy:
-                case CardExpedition.UltimateMedium:
-                case CardExpedition.UltimateHard:
-                case CardExpedition.UltimateHardcore:
-                    param *= (int) card.Quality + 2;
-                    affOffset = 0;
-                    addOFK = 0;
-                    break;
-
-                default:
-                    return 0;
-            }
-
-            perMinute *= card.HasImage() ? 1 : 2;
-            param += affOffset + addOFK;
-            var t = param / perMinute;
-
-            if (t > Waifu.kExpeditionMaxTimeInMinutes)
-                t = Waifu.kExpeditionMaxTimeInMinutes;
-
-            return (t < 0.1) ? 0.1 : t;
-        }
-
         public static double ValueModifier(this Dere dere)
         {
             switch (dere)
@@ -1020,13 +833,13 @@ namespace Sanakan.Extensions
         public static Api.Models.CardFinalView ToView(this Card c, ulong shindenId = 0)
             => Api.Models.CardFinalView.ConvertFromRaw(c, shindenId);
 
-        public static Api.Models.ExpeditionCard ToExpeditionView(this Card c, double karma)
-            => Api.Models.ExpeditionCard.ConvertFromRaw(c, karma);
+        public static Api.Models.ExpeditionCard ToExpeditionView(this Card card, User user, Expedition helper)
+            => Api.Models.ExpeditionCard.ConvertFromRaw(user, card, helper);
 
-        public static List<Api.Models.ExpeditionCard> ToExpeditionView(this IEnumerable<Card> clist, double karma)
+        public static List<Api.Models.ExpeditionCard> ToExpeditionView(this IEnumerable<Card> clist, User user, Expedition helper)
         {
             var list = new List<Api.Models.ExpeditionCard>();
-            foreach (var c in clist) list.Add(c.ToExpeditionView(karma));
+            foreach (var c in clist) list.Add(c.ToExpeditionView(user, helper));
             return list;
         }
 

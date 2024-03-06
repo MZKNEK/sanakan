@@ -32,12 +32,13 @@ namespace Sanakan.Api.Controllers
         private readonly IConfig _config;
         private readonly ISystemTime _time;
         private readonly IExecutor _executor;
+        private readonly Expedition _expedition;
         private readonly ShindenClient _shClient;
         private readonly IMemoryCache _nameCache;
         private readonly DiscordSocketClient _client;
 
         public WaifuController(ShindenClient shClient, Waifu waifu, IExecutor executor, TagHelper tags,
-            IConfig config, ISystemTime time, IMemoryCache cache, DiscordSocketClient client)
+            IConfig config, ISystemTime time, IMemoryCache cache, DiscordSocketClient client, Expedition expedition)
         {
             _time = time;
             _tags = tags;
@@ -47,6 +48,7 @@ namespace Sanakan.Api.Controllers
             _nameCache = cache;
             _executor = executor;
             _shClient = shClient;
+            _expedition = expedition;
         }
 
         /// <summary>
@@ -408,7 +410,7 @@ namespace Sanakan.Api.Controllers
                     ExchangeConditions = user.GameDeck.ExchangeConditions,
                     BackgroundImageUrl = user.GameDeck.BackgroundImageUrl,
                     ForegroundImageUrl = user.GameDeck.ForegroundImageUrl,
-                    Expeditions = user.GameDeck.Cards.Where(x => x.Expedition != CardExpedition.None).ToExpeditionView(user.GameDeck.Karma),
+                    Expeditions = user.GameDeck.Cards.Where(x => x.Expedition != CardExpedition.None).ToExpeditionView(user, _expedition),
                     Gallery = user.GameDeck.GetOrderedGalleryCards(galleryTag.Id).ToView()
                 };
             }

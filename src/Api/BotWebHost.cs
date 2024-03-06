@@ -28,7 +28,7 @@ namespace Sanakan.Api
     public static class BotWebHost
     {
         public static void RunWebHost(DiscordSocketClient client, ShindenClient shinden, Waifu waifu, IConfig config, Services.Helper helper,
-            IExecutor executor, Shinden.Logger.ILogger logger, ISystemTime time, TagHelper tags)
+            IExecutor executor, Shinden.Logger.ILogger logger, ISystemTime time, TagHelper tags, Expedition expedition)
         {
             new Thread(() =>
             {
@@ -43,6 +43,7 @@ namespace Sanakan.Api
                     services.AddSingleton(helper);
                     services.AddSingleton(shinden);
                     services.AddSingleton(executor);
+                    services.AddSingleton(expedition);
                 }).Build().Run();
             }).Start();
         }

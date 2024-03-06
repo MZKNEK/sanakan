@@ -1442,7 +1442,7 @@ namespace Sanakan.Modules
                     .Include(x => x.GameDeck).ThenInclude(x => x.ExpContainer).Include(x => x.GameDeck).ThenInclude(x => x.Items).FirstOrDefaultAsync(x => x.Id == wid);
                 if (thisCard == null) return;
 
-                thisCard.ExpeditionDate = _time.Now().AddMinutes(time > 0 ? -time : -Waifu.kExpeditionMaxTimeInMinutes);
+                thisCard.ExpeditionDate = _time.Now().AddMinutes(time > 0 ? -time : -10080);
 
                 if (k != -1)
                 {

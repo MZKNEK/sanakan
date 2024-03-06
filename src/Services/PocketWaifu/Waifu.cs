@@ -48,9 +48,6 @@ namespace Sanakan.Services.PocketWaifu
 
     public class Waifu
     {
-        public const double kExpeditionFactor = 2.5;
-        public const double kExpeditionMaxTimeInMinutes = 10080;
-
         private const int DERE_TAB_SIZE = ((int)Dere.Yato) + 1;
         private static CharacterPool<ulong> _charIdAnime = new CharacterPool<ulong>();
         private static CharacterPool<ulong> _charIdManga = new CharacterPool<ulong>();
@@ -250,10 +247,11 @@ namespace Sanakan.Services.PocketWaifu
         private Shinden _shinden;
         private ISystemTime _time;
         private ImageProcessing _img;
+        private Expedition _expedition;
         private ShindenClient _shClient;
         private DiscordSocketClient _client;
 
-        public Waifu(ImageProcessing img, ShindenClient client, Events events, ILogger logger,
+        public Waifu(ImageProcessing img, ShindenClient client, Events events, ILogger logger, Expedition expedition,
             DiscordSocketClient discord, Helper helper, ISystemTime time, Shinden shinden, TagHelper tags)
         {
             _img = img;
@@ -265,6 +263,7 @@ namespace Sanakan.Services.PocketWaifu
             _client = discord;
             _shinden = shinden;
             _shClient = client;
+            _expedition = expedition;
         }
 
         static public double GetDereDmgMultiplier(Card atk, Card def) => _dereDmgRelation[(int)def.Dere, (int)atk.Dere];
@@ -1759,141 +1758,28 @@ namespace Sanakan.Services.PocketWaifu
             return cards.Distinct().ToList();
         }
 
-        public (double CalcTime, double RealTime) GetRealTimeOnExpeditionInMinutes(Card card, double karma)
-        {
-            var maxTimeBasedOnCardParamsInMinutes = card.CalculateMaxTimeOnExpeditionInMinutes(karma);
-            var realTimeInMinutes = (_time.Now() - card.ExpeditionDate).TotalMinutes;
-            var timeToCalculateFrom = realTimeInMinutes;
-
-            if (maxTimeBasedOnCardParamsInMinutes < timeToCalculateFrom)
-                timeToCalculateFrom = maxTimeBasedOnCardParamsInMinutes;
-
-            return (timeToCalculateFrom, realTimeInMinutes);
-        }
-
-        public double GetBaseItemsPerMinuteFromExpedition(CardExpedition expedition, Card card)
-        {
-            bool yamiOrRaito = card.Dere == Dere.Yami || card.Dere == Dere.Raito;
-            bool isYato = card.Dere == Dere.Yato;
-            bool anySpecialDere = yamiOrRaito || isYato;
-
-            double cnt = 0;
-            switch (expedition)
-            {
-                case CardExpedition.NormalItemWithExp:
-                    cnt += 1.9;
-                    break;
-
-                case CardExpedition.ExtremeItemWithExp:
-                    cnt += anySpecialDere ? 17.8 : 11.6;
-                    break;
-
-                case CardExpedition.LightItemWithExp:
-                case CardExpedition.DarkItemWithExp:
-                    cnt += yamiOrRaito ? 5.2 : 4.3;
-                    break;
-
-                case CardExpedition.DarkItems:
-                case CardExpedition.LightItems:
-                    cnt += yamiOrRaito ? 7.7 : 7.2;
-                    break;
-
-                case CardExpedition.UltimateEasy:
-                case CardExpedition.UltimateMedium:
-                    cnt += anySpecialDere ? 3.2 : 1.4;
-                    break;
-
-                case CardExpedition.UltimateHard:
-                    cnt += anySpecialDere ? 4.8 : 2.3;
-                    break;
-
-                case CardExpedition.UltimateHardcore:
-                    cnt += anySpecialDere ? 2.8 : 1.1;
-                    break;
-
-                default:
-                case CardExpedition.LightExp:
-                case CardExpedition.DarkExp:
-                    return 0;
-            }
-
-            cnt *= card.Rarity.ValueModifier();
-            cnt *= isYato ? 1.3 : 1;
-
-            return cnt / 60d * kExpeditionFactor;
-        }
-
-        public double GetBaseExpPerMinuteFromExpedition(CardExpedition expedition, Card card)
-        {
-            var baseExp = 0d;
-
-            switch (expedition)
-            {
-                case CardExpedition.NormalItemWithExp:
-                    baseExp += 1.6;
-                    break;
-
-                case CardExpedition.ExtremeItemWithExp:
-                    baseExp += 5.8;
-                    break;
-
-                case CardExpedition.LightItemWithExp:
-                case CardExpedition.DarkItemWithExp:
-                    baseExp += 3.1;
-                    break;
-
-                case CardExpedition.LightExp:
-                case CardExpedition.DarkExp:
-                    baseExp += 11.6;
-                    break;
-
-                case CardExpedition.DarkItems:
-                case CardExpedition.LightItems:
-                    return 0.0001;
-
-                default:
-                case CardExpedition.UltimateEasy:
-                case CardExpedition.UltimateMedium:
-                case CardExpedition.UltimateHard:
-                case CardExpedition.UltimateHardcore:
-                    return 0;
-            }
-
-            baseExp *= card.Rarity.ValueModifier();
-
-            return baseExp / 60d * kExpeditionFactor;
-        }
-
         public string EndExpedition(User user, Card card, bool showStats = false)
         {
             Dictionary<string, int> items = new Dictionary<string, int>();
 
-            var duration = GetRealTimeOnExpeditionInMinutes(card, user.GameDeck.Karma);
+            var duration = _expedition.GetLengthOfExpedition(user, card);
             if (duration.CalcTime < 0 || duration.RealTime < 0)
             {
                 return "Coś poszło nie tak, wyprawa nie została zakończona.";
             }
 
+            var totalExp = _expedition.GetExpFromExpedition(duration.CalcTime, card);
+            totalExp /= card.Curse == CardCurse.LoweredExperience ? 5 : 1;
+
+            var totalItemsCnt = _expedition.GetItemsCountFromExpedition(duration.CalcTime, card);
+            var karmaCost = _expedition.GetKarmaCostOfExpedition(duration.CalcTime, card);
+
             var multiplier = (duration.RealTime < 60) ? ((duration.RealTime < 30) ? 3d : 2d) : 1d;
-            var totalExp = GetBaseExpPerMinuteFromExpedition(card.Expedition, card) * duration.CalcTime;
-            var totalItemsCnt = (int)(GetBaseItemsPerMinuteFromExpedition(card.Expedition, card) * duration.CalcTime);
+            var rawAffectionCost = _expedition.GetAffectionCostOfExpedition(duration.CalcTime, card);
+            var affectionCost = rawAffectionCost * multiplier;
 
-            var karmaCost = card.GetKarmaCostInExpeditionPerMinute() * duration.CalcTime;
-            var affectionCost = card.GetCostOfExpeditionPerMinute() * duration.CalcTime * multiplier;
-
-            if (card.Curse == CardCurse.LoweredExperience)
-            {
-                totalExp /= 5;
-            }
-
-            var reward = "";
             bool allowItems = true;
-            if (duration.RealTime < 15)
-            {
-                reward = $"Wyprawa? Chyba po bułki do sklepu.\n\n";
-                affectionCost += 2.3;
-            }
-
+            var reward = multiplier != 1 ? "Wyprawa? Chyba po bułki do sklepu.\n\n" : "";
             if (CheckEventInExpedition(card.Expedition, duration))
             {
                 var e = _events.RandomizeEvent(card.Expedition, duration);
@@ -1926,12 +1812,12 @@ namespace Sanakan.Services.PocketWaifu
                 totalExp /= 2;
             }
 
-            if (duration.CalcTime <= (90 / kExpeditionFactor) && user.GameDeck.CanCreateDemon())
+            if (duration.CalcTime <= 36 && user.GameDeck.CanCreateDemon())
             {
                 karmaCost /= 2.5;
             }
 
-            if (duration.CalcTime >= (4140 / kExpeditionFactor) && user.GameDeck.CanCreateAngel())
+            if (duration.CalcTime >= 1656 && user.GameDeck.CanCreateAngel())
             {
                 karmaCost *= 2.5;
             }
@@ -1986,7 +1872,7 @@ namespace Sanakan.Services.PocketWaifu
                     return Fun.TakeATry(10);
 
                 case CardExpedition.ExtremeItemWithExp:
-                    if (duration.CalcTime > (180 / kExpeditionFactor) || duration.RealTime > (720 / kExpeditionFactor))
+                    if (duration.CalcTime > 72 || duration.RealTime > 228)
                         return true;
                     return !Fun.TakeATry(5);
 

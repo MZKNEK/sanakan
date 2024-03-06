@@ -34,6 +34,7 @@ namespace Sanakan.Modules
         private Services.Shinden _shinden;
         private SessionManager _session;
         private Services.Helper _helepr;
+        private Expedition _expedition;
         private IExecutor _executor;
         private ISystemTime _time;
         private Lottery _lottery;
@@ -44,7 +45,8 @@ namespace Sanakan.Modules
 
         public PocketWaifu(Waifu waifu, Sden.ShindenClient client, ILogger logger, Lottery lottery,
             SessionManager session, IConfig config, IExecutor executor, Services.Helper helper,
-            ISystemTime time, Services.ImageProcessing img, Services.Shinden shinden, TagHelper tags)
+            ISystemTime time, Services.ImageProcessing img, Services.Shinden shinden, TagHelper tags,
+            Expedition expedition)
         {
             _img = img;
             _time = time;
@@ -58,6 +60,7 @@ namespace Sanakan.Modules
             _shclient = client;
             _session = session;
             _executor = executor;
+            _expedition = expedition;
         }
 
         [Command("harem", RunMode = RunMode.Async)]
@@ -3370,7 +3373,7 @@ namespace Sanakan.Modules
                     return;
                 }
 
-                var expStrs = cardsOnExpedition.Select(x => $"{x.GetShortString(true)}:\n Od {x.ExpeditionDate.ToShortDateTime()} na {x.Expedition.GetName("ej")} wyprawie.\nTraci siły po {x.CalculateMaxTimeOnExpeditionInMinutes(botUser.GameDeck.Karma):F} min.");
+                var expStrs = cardsOnExpedition.Select(x => $"{x.GetShortString(true)}:\n Od {x.ExpeditionDate.ToShortDateTime()} na {x.Expedition.GetName("ej")} wyprawie.\nTraci siły po {_expedition.GetMaxPossibleLengthOfExpedition(botUser, x):F} min.");
                 await ReplyAsync("", embed: $"**Wyprawy[**{cardsOnExpedition.Count}/{botUser.GameDeck.LimitOfCardsOnExpedition()}**]** {Context.User.Mention}:\n\n{string.Join("\n\n", expStrs)}".ToEmbedMessage(EMType.Bot).WithUser(Context.User).Build());
             }
         }
@@ -3456,7 +3459,7 @@ namespace Sanakan.Modules
 
                 foreach (var card in cardsSelected)
                 {
-                    if (!card.ValidExpedition(expedition, botUser.GameDeck.Karma, _tags))
+                    if (!_expedition.IsValidToGo(botUser, card, expedition, _tags))
                     {
                         await ReplyAsync("", embed: $"{Context.User.Mention} {card.GetIdWithUrl()} ta karta nie może się udać na tę wyprawę.".ToEmbedMessage(EMType.Error).Build());
                         return;
@@ -3483,7 +3486,7 @@ namespace Sanakan.Modules
                     if (cardsSelected.Count == 1)
                     {
                         var thisCard = cardsSelected.FirstOrDefault();
-                        var max = thisCard.CalculateMaxTimeOnExpeditionInMinutes(botUser.GameDeck.Karma, expedition).ToString("F");
+                        var max = _expedition.GetMaxPossibleLengthOfExpedition(botUser, thisCard, expedition).ToString("F");
                         await ReplyAsync("", embed: $"{thisCard.GetString(false, false, true)} udała się na {expedition.GetName("ą")} wyprawę!\nZmęczy się za {max} min.".ToEmbedMessage(EMType.Success).WithUser(Context.User).Build());
                     }
                     else

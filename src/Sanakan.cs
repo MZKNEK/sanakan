@@ -29,6 +29,7 @@ namespace Sanakan
         private CommandHandler _handler;
         private ExperienceManager _exp;
         private Supervisor _supervisor;
+        private Expedition _expedition;
         private ImageProcessing _img;
         private DeletedLog _deleted;
         private Daemonizer _daemon;
@@ -61,7 +62,7 @@ namespace Sanakan
 
             var services = BuildServiceProvider();
             BotWebHost.RunWebHost(_client, _shindenClient, _waifu,
-                _config, _helper, _executor, _logger, _time, _tags);
+                _config, _helper, _executor, _logger, _time, _tags, _expedition);
 
             _executor.Initialize(services);
             _sessions.Initialize(services);
@@ -106,6 +107,7 @@ namespace Sanakan
 
             _time = new SystemTime();
             _helper = new Helper(_config);
+            _expedition = new Expedition(_time);
             _events = new Events(_shindenClient, _time);
             _img = new ImageProcessing(_shindenClient,
                 _tags.GetTag(Services.PocketWaifu.TagType.Gallery));
@@ -117,7 +119,7 @@ namespace Sanakan
             _daemon = new Daemonizer(_client, _logger, _config);
             _shinden = new Services.Shinden(_shindenClient, _sessions, _img);
             _waifu = new Waifu(_img, _shindenClient, _events, _logger,
-                 _client, _helper, _time, _shinden, _tags);
+                 _expedition, _client, _helper, _time, _shinden, _tags);
             _supervisor = new Supervisor(_client, _config, _logger, _mod, _time);
             _greeting = new Greeting(_client, _logger, _config, _executor, _time);
             _exp = new ExperienceManager(_client, _executor, _config, _img, _time);
@@ -154,6 +156,7 @@ namespace Sanakan
             return new ServiceCollection()
                 .AddSingleton<IExecutor>(_executor)
                 .AddSingleton(_shindenClient)
+                .AddSingleton(_expedition)
                 .AddSingleton(_sessions)
                 .AddSingleton(_profile)
                 .AddSingleton(_shinden)
