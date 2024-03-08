@@ -107,6 +107,7 @@ namespace Sanakan.Services.PocketWaifu
 
         private static Dictionary<ItemDropType, List<ItemType>> _itemsFromDarkExpedition = new Dictionary<ItemDropType, List<ItemType>>
         {
+            {ItemDropType.None, new List<ItemType>()},
             {ItemDropType.Food, new List<(ItemType, int)>
                 {
                     (ItemType.AffectionRecoveryNormal,  5),
@@ -138,6 +139,7 @@ namespace Sanakan.Services.PocketWaifu
 
         private static Dictionary<ItemDropType, List<ItemType>> _itemsFromLightExpedition = new Dictionary<ItemDropType, List<ItemType>>
         {
+            {ItemDropType.None, new List<ItemType>()},
             {ItemDropType.Food, new List<(ItemType, int)>
                 {
                     (ItemType.AffectionRecoveryNormal,  5),
@@ -412,7 +414,21 @@ namespace Sanakan.Services.PocketWaifu
 
         public double GetAffectionCostOfExpedition(double length, Card card)
         {
-            var qualityMod = card.Quality.ValueModifierReverse();
+            var qualityMod = 2d - card.Quality switch
+            {
+                Quality.Omega   => 1.95,
+                Quality.Sigma   => 1.7,
+                Quality.Lambda  => 1.6,
+                Quality.Jota    => 1.55,
+                Quality.Theta   => 1.5,
+                Quality.Zeta    => 1.45,
+                Quality.Epsilon => 1.4,
+                Quality.Delta   => 1.35,
+                Quality.Gamma   => 1.3,
+                Quality.Beta    => 1.2,
+                Quality.Alpha   => 1.1,
+                _ => 1
+            };
 
             var affectionCostPerMinute = card.Expedition switch
             {
@@ -469,7 +485,7 @@ namespace Sanakan.Services.PocketWaifu
                 case CardExpedition.UltimateMedium:
                 case CardExpedition.UltimateHard:
                 case CardExpedition.UltimateHardcore:
-                    fuel *= (int)card.Quality + 1;
+                    fuel *= ((int)card.Quality * 0.7) + 1.4;
                     costOffset = 0;
                     karmaBonus = 0;
                     break;
@@ -491,7 +507,7 @@ namespace Sanakan.Services.PocketWaifu
         {
             var affectionBaseReturn = card.Expedition switch
             {
-                CardExpedition.NormalItemWithExp    => 1.05,
+                CardExpedition.NormalItemWithExp    => 1,
                 CardExpedition.ExtremeItemWithExp   => 0.8,
                 CardExpedition.DarkItems            => 1.1,
                 CardExpedition.LightItems           => 1.1,
@@ -500,9 +516,18 @@ namespace Sanakan.Services.PocketWaifu
                 _ => 0
             };
 
-            affectionBaseReturn *= card.Dere.ValueModifierReverse();
+            var dereMod = card.Dere switch
+            {
+                Dere.Tsundere   => 0.5,
+                Dere.Kamidere   => 0.9,
+                Dere.Yandere    => 0.9,
+                Dere.Yami       => 1.2,
+                Dere.Raito      => 1.2,
+                Dere.Yato       => 1.4,
+                _ => 1
+            };
 
-            return affectionBaseReturn * affectionCost;
+            return affectionBaseReturn * affectionCost * dereMod;
         }
 
         public (double CalcTime, double RealTime) GetLengthOfExpedition(User user, Card card)

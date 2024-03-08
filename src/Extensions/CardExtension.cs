@@ -714,29 +714,6 @@ namespace Sanakan.Extensions
         public static StarStyle Parse(this StarStyle star, string s)
             => star.TryParse(s, out var type) ? type : throw new Exception("Could't parse input!");
 
-        public static double ValueModifier(this Dere dere)
-        {
-            switch (dere)
-            {
-                case Dere.Tsundere:
-                    return 0.5;
-
-                case Dere.Kamidere:
-                case Dere.Yandere:
-                    return 0.9;
-
-                case Dere.Yami:
-                case Dere.Raito:
-                    return 1.2;
-
-                case Dere.Yato:
-                    return 1.4;
-
-                default:
-                    return 1;
-            }
-        }
-
         public static ExecutionResult CanUpgradePower(this Card card, int by = 1)
         {
             if (!card.FromFigure)
@@ -744,58 +721,14 @@ namespace Sanakan.Extensions
                 return ExecutionResult.FromError("ten przedmiot można użyć tylko na karcie ultimate.");
             }
 
-			var currParams = card.AttackBonus + card.HealthBonus + card.DefenceBonus;
-			var maxParams = 4900 * (int)card.Quality;
-			if (currParams + by >= maxParams)
+            var currParams = card.AttackBonus + card.HealthBonus + card.DefenceBonus;
+            var maxParams = 4900 * (int)card.Quality;
+            if (currParams + by >= maxParams)
             {
-				return ExecutionResult.FromError("nie można już bardziej zwiekszyć parametrów na tej karcie.");
-			}
+                return ExecutionResult.FromError("nie można już bardziej zwiekszyć parametrów na tej karcie.");
+            }
 
             return ExecutionResult.FromSuccess("");
-		}
-
-        public static double ValueModifier(this Quality quality)
-        {
-            switch (quality)
-            {
-                case Quality.Omega:
-                    return 1.95;
-
-                case Quality.Sigma:
-                    return 1.70;
-
-                case Quality.Lambda:
-                    return 1.60;
-
-                case Quality.Jota:
-                case Quality.Theta:
-                    return 1.5;
-
-                case Quality.Zeta:
-                case Quality.Epsilon:
-                    return 1.4;
-
-                case Quality.Delta:
-                case Quality.Gamma:
-                    return 1.3;
-
-                case Quality.Beta:
-                case Quality.Alpha:
-                    return 1.2;
-
-                case Quality.Broken:
-                default: return 1;
-            }
-        }
-
-        public static double ValueModifierReverse(this Dere dere)
-        {
-            return 2d - dere.ValueModifier();
-        }
-
-        public static double ValueModifierReverse(this Quality quality)
-        {
-            return 2d - quality.ValueModifier();
         }
 
         public static Api.Models.CardFinalView ToViewUser(this Card c, string name, ulong shinden = 0)
