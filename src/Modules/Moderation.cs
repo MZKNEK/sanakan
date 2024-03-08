@@ -649,6 +649,35 @@ namespace Sanakan.Modules
             }
         }
 
+        [Command("testr")]
+        [Summary("ustawia role testera")]
+        [Remarks("34125343243432"), RequireAdminRole]
+        public async Task SetTesterRoleAsync([Summary("id roli")] SocketRole role)
+        {
+            if (role == null)
+            {
+                await ReplyAsync("", embed: "Nie odnaleziono roli na serwerze.".ToEmbedMessage(EMType.Error).Build());
+                return;
+            }
+
+            using (var db = new Database.DatabaseContext(Config))
+            {
+                var config = await db.GetGuildConfigOrCreateAsync(Context.Guild.Id);
+                if (config.TesterRole == role.Id)
+                {
+                    await ReplyAsync("", embed: $"Rola {role.Mention} już jest ustawiona jako rola testera.".ToEmbedMessage(EMType.Bot).Build());
+                    return;
+                }
+
+                config.TesterRole = role.Id;
+                await db.SaveChangesAsync();
+
+                QueryCacheManager.ExpireTag(new string[] { $"config-{Context.Guild.Id}" });
+
+                await ReplyAsync("", embed: $"Ustawiono {role.Mention} jako rolę testera.".ToEmbedMessage(EMType.Success).Build());
+            }
+        }
+
         [Command("userr")]
         [Summary("ustawia role użytkownika")]
         [Remarks("34125343243432"), RequireAdminRole]

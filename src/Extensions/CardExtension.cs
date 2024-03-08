@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -777,6 +778,12 @@ namespace Sanakan.Extensions
 
         public static void DestroyOrRelease(this Card card, User user, bool release, double crueltyBonus = 0)
         {
+            if (card.CustomImage != null && Dir.IsLocal(card.CustomImage) && File.Exists(card.CustomImage))
+                File.Delete(card.CustomImage);
+
+            if (card.CustomBorder != null && Dir.IsLocal(card.CustomBorder) && File.Exists(card.CustomBorder))
+                File.Delete(card.CustomBorder);
+
             if (release)
             {
                 card.ReleaseCard(user, crueltyBonus);

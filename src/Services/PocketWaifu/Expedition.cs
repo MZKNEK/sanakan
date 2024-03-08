@@ -98,8 +98,8 @@ namespace Sanakan.Services.PocketWaifu
             },
             {ItemDropType.Legendary, new List<(ItemType, int)>
                 {
-                    (ItemType.BetterIncreaseUpgradeCnt, 4),
-                    (ItemType.BloodOfYourWaifu,         4),
+                    (ItemType.BetterIncreaseUpgradeCnt, 9),
+                    (ItemType.BloodOfYourWaifu,         9),
                     (ItemType.CreationItemBase,         1),
                 }.ToRealList()
             },
@@ -173,9 +173,9 @@ namespace Sanakan.Services.PocketWaifu
         {
             {CardExpedition.NormalItemWithExp, new List<(ItemDropType, int)>
                 {
-                    (ItemDropType.Food,       100),
-                    (ItemDropType.Common,     60),
-                    (ItemDropType.Rare,       30),
+                    (ItemDropType.Food,       150),
+                    (ItemDropType.Common,     100),
+                    (ItemDropType.Rare,       60),
                     (ItemDropType.Legendary,  1),
                 }.ToRealList()
             },
@@ -358,12 +358,12 @@ namespace Sanakan.Services.PocketWaifu
         {
             var expPerHour = card.Expedition switch
             {
-                CardExpedition.NormalItemWithExp    => 4,
-                CardExpedition.ExtremeItemWithExp   => 6.5,
-                CardExpedition.LightItemWithExp     => 3.5,
-                CardExpedition.DarkItemWithExp      => 3.5,
-                CardExpedition.LightExp             => 25,
-                CardExpedition.DarkExp              => 25,
+                CardExpedition.NormalItemWithExp    => 2,
+                CardExpedition.ExtremeItemWithExp   => 4.5,
+                CardExpedition.LightItemWithExp     => 2.5,
+                CardExpedition.DarkItemWithExp      => 2.5,
+                CardExpedition.LightExp             => 16,
+                CardExpedition.DarkExp              => 16,
                 _ => 0
             };
 

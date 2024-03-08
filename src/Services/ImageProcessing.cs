@@ -317,9 +317,9 @@ namespace Sanakan.Services
             var font = GetOrCreateFont(_latoRegular, 16);
             var topp = topPos > 999 ? $">1K" : ToShortSI(topPos);
             image.Mutate(x => x.DrawImage(topImage, new Point(0, 0), 1));
-            image.Mutate(x => x.DrawText(topp, font, GetOrCreateColor("#a7a7a7"), new PointF(19.5f, -2f)));
+            image.Mutate(x => x.DrawText(topp, font, GetOrCreateColor("#a7a7a7"), new PointF(19.5f, 0)));
             image.Mutate(x => x.DrawImage(lvlImage, new Point(60, 0), 1));
-            image.Mutate(x => x.DrawText(ToShortSI(user.Level), font, GetOrCreateColor("#a7a7a7"), new PointF(79.5f, -2f)));
+            image.Mutate(x => x.DrawText(ToShortSI(user.Level), font, GetOrCreateColor("#a7a7a7"), new PointF(79.5f, 0)));
 
             var prevLvlExp = ExperienceManager.CalculateExpForLevel(user.Level);
             var nextLvlExp = ExperienceManager.CalculateExpForLevel(user.Level + 1);
@@ -342,7 +342,7 @@ namespace Sanakan.Services
                 image.Mutate(x => x.DrawImage(progressBar, new Point(115, 2), 1));
             }
 
-            var expY = 2;
+            var expY = 3;
             var fontSmall = GetOrCreateFont(_latoBold, 10);
             string exp = $"{expOnLvl} / {lvlExp}";
             var mExp = TextMeasurer.MeasureSize(exp, new TextOptions(fontSmall));
@@ -358,7 +358,7 @@ namespace Sanakan.Services
 
             var font = GetOrCreateFont(_latoRegular, 16);
             image.Mutate(x => x.DrawImage(coinImage, new Point(0, 0), 1));
-            image.Mutate(x => x.DrawText(ToShortSI(currency), font, GetOrCreateColor("#a7a7a7"), new PointF(coinImage.Width + 3.5f, -2f)));
+            image.Mutate(x => x.DrawText(ToShortSI(currency), font, GetOrCreateColor("#a7a7a7"), new PointF(coinImage.Width + 3.5f, 0)));
             return image;
         }
 
@@ -632,7 +632,7 @@ namespace Sanakan.Services
                 image.Mutate(x => x.DrawImage(karmaImage, new Point(330, startY - 6), 1));
             }
 
-            startY += 29;
+            startY += 31;
             var cGap = 38;
             var jumpY = 24;
 
@@ -885,10 +885,10 @@ namespace Sanakan.Services
                 baseImg.Mutate(x => x.DrawImage(bar, new Point(startPointX, startPointY), 1));
             }
 
-            startPointY += 21;
+            startPointY += 23;
             startPointX += 110;
             int ySecondStart = startPointY;
-            int fontSizeAndInterline = 10 + 6;
+            int fontSizeAndInterline = 16;
             var font = GetOrCreateFont(_latoBold, 13);
             int xSecondRow = startPointX + 200;
             var fontColor = GetOrCreateColor("#a7a7a7");
@@ -900,8 +900,11 @@ namespace Sanakan.Services
                 startPointY += fontSizeAndInterline;
             }
 
-            var gOptions = new RichTextOptions(font) { HorizontalAlignment = HorizontalAlignment.Right };
-            gOptions.Origin = new Point(xSecondRow, ySecondStart);
+            var gOptions = new RichTextOptions(font)
+            {
+                HorizontalAlignment = HorizontalAlignment.Right,
+                Origin = new Point(xSecondRow, ySecondStart)
+            };
 
             baseImg.Mutate(x => x.DrawText(gOptions, $"{more?.Score?.Rating.Value:0.0}", fontColor));
             ySecondStart += fontSizeAndInterline;

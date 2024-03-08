@@ -2322,7 +2322,7 @@ namespace Sanakan.Modules
         [Command("loteria")]
         [Alias("lottery", "dej")]
         [Summary("wybierasz się na loterię i liczysz że coś fajnego Ci z niej wypadnie (wymagana przepustka)")]
-        [Remarks(""), RequireAnyCommandChannelLevelOrNitro(60)]
+        [Remarks(""), RequireAnyCommandChannelLevelOrNitro(200)]
         public async Task GoToLotteryAsync()
         {
             using (var db = new Database.DatabaseContext(Config))
