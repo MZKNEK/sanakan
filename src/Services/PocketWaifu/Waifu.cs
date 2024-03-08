@@ -1635,6 +1635,7 @@ namespace Sanakan.Services.PocketWaifu
 
             double minAff = 0;
             double karmaItem = 0;
+            int missingItems = 0;
             reward += $"Zdobywa:\n+{totalExp:F} exp ({card.ExpCnt:F})\n";
 
             if (allowItems && totalItemsCnt > 0)
@@ -1653,6 +1654,8 @@ namespace Sanakan.Services.PocketWaifu
 
                     if (totalItemsCnt > 0)
                         totalItemsCnt--;
+                    else
+                        missingItems++;
 
                     if (!items.ContainsKey(newItem.Name))
                         items.Add(newItem.Name, 0);
@@ -1684,9 +1687,7 @@ namespace Sanakan.Services.PocketWaifu
 
             if (showStats)
             {
-                reward += $"\n\nRT: {duration.CalcTime:F} E: {totalExp:F} AI: {minAff:F} A: {affectionCost:F} K: {karmaCost:F} KI: {karmaItem:F} MI: {totalItemsCnt}"
-                    + $"\n\nALPI:{affectionCost / totalItemsCnt:F} AGPI:{minAff / totalItemsCnt:F} ALPT: {affectionCost / duration.CalcTime:F} AGPT: {minAff / duration.CalcTime:F}"
-                    + $"\nKLPI: {karmaCost / totalItemsCnt:F} KGPI: {karmaItem / totalItemsCnt:F} KLPT: {karmaCost / duration.CalcTime:F} KGPT: {karmaItem / duration.CalcTime:F}";
+                reward += $"\n\nRT: {duration.CalcTime:F} E: {totalExp:F} AI: {minAff:F} A: {affectionCost:F} K: {karmaCost:F} KI: {karmaItem:F} MI: {totalItemsCnt} LI: {missingItems}";
             }
 
             card.ExpCnt += totalExp;

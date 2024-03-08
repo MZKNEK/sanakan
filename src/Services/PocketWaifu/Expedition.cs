@@ -357,9 +357,9 @@ namespace Sanakan.Services.PocketWaifu
             var expPerHour = card.Expedition switch
             {
                 CardExpedition.NormalItemWithExp    => 4,
-                CardExpedition.ExtremeItemWithExp   => 8.5,
-                CardExpedition.LightItemWithExp     => 5.5,
-                CardExpedition.DarkItemWithExp      => 5.5,
+                CardExpedition.ExtremeItemWithExp   => 6.5,
+                CardExpedition.LightItemWithExp     => 3.5,
+                CardExpedition.DarkItemWithExp      => 3.5,
                 CardExpedition.LightExp             => 25,
                 CardExpedition.DarkExp              => 25,
                 _ => 0
@@ -420,8 +420,8 @@ namespace Sanakan.Services.PocketWaifu
                 CardExpedition.ExtremeItemWithExp   => 0.375,
                 CardExpedition.LightExp             => 0.155,
                 CardExpedition.DarkExp              => 0.155,
-                CardExpedition.DarkItems            => 0.155 * qualityMod,
-                CardExpedition.LightItems           => 0.155 * qualityMod,
+                CardExpedition.DarkItems            => 0.132 * qualityMod,
+                CardExpedition.LightItems           => 0.132 * qualityMod,
                 CardExpedition.LightItemWithExp     => 0.125,
                 CardExpedition.DarkItemWithExp      => 0.125,
                 CardExpedition.UltimateEasy         => 2.5,
@@ -431,7 +431,16 @@ namespace Sanakan.Services.PocketWaifu
                 _ => 0
             };
 
-            return affectionCostPerMinute * length;
+            var rarityMod = card.Rarity switch
+            {
+                Rarity.SSS => 0.85,
+                Rarity.SS  => 0.95,
+                Rarity.D   => 1.05,
+                Rarity.E   => 1.1,
+                _ => 1
+            };
+
+            return affectionCostPerMinute * length * rarityMod;
         }
 
         public double GetMaxPossibleLengthOfExpedition(User user, Card card, CardExpedition expedition = CardExpedition.None)
