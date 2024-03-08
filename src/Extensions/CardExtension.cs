@@ -727,10 +727,10 @@ namespace Sanakan.Extensions
 
                 case Dere.Yami:
                 case Dere.Raito:
-                    return 1.24;
+                    return 1.2;
 
                 case Dere.Yato:
-                    return 1.36;
+                    return 1.4;
 
                 default:
                     return 1;
@@ -753,30 +753,6 @@ namespace Sanakan.Extensions
 
             return ExecutionResult.FromSuccess("");
 		}
-
-        public static double ValueModifier(this Rarity rarity)
-        {
-            switch (rarity)
-            {
-                case Rarity.SS:
-                case Rarity.S:
-                    return 1.17;
-
-                case Rarity.A:
-                case Rarity.B:
-                    return 1.14;
-
-                case Rarity.C:
-                case Rarity.D:
-                    return 1.05;
-
-                case Rarity.E:
-                    return 0.85;
-
-                case Rarity.SSS:
-                default: return 1.2;
-            }
-        }
 
         public static double ValueModifier(this Quality quality)
         {
@@ -815,11 +791,6 @@ namespace Sanakan.Extensions
         public static double ValueModifierReverse(this Dere dere)
         {
             return 2d - dere.ValueModifier();
-        }
-
-        public static double ValueModifierReverse(this Rarity rarity)
-        {
-            return 2d - rarity.ValueModifier();
         }
 
         public static double ValueModifierReverse(this Quality quality)

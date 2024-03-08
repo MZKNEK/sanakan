@@ -129,117 +129,6 @@ namespace Sanakan.Services.PocketWaifu
             { 0.5,      0.5,      0.5,      0.5,     0.5,     0.5,     0.5,      0.5,    1,    0.5,   1     }, //Yato
         };
 
-        private static IEnumerable<ItemType> _ultimateExpeditionItems = new List<(ItemType, int)>
-        {
-            (ItemType.FigureBodyPart,           12),
-            (ItemType.FigureClothesPart,        12),
-            (ItemType.FigureHeadPart,           12),
-            (ItemType.FigureLeftArmPart,        12),
-            (ItemType.FigureLeftLegPart,        12),
-            (ItemType.FigureRightArmPart,       12),
-            (ItemType.FigureRightLegPart,       12),
-            (ItemType.FigureSkeleton,           8),
-            (ItemType.FigureUniversalPart,      6),
-            (ItemType.LotteryTicket,            2),
-            (ItemType.CreationItemBase,         1),
-        }.ToRealList();
-
-        private static IEnumerable<ItemType> _ultimateExpeditionHardcoreItems = new List<(ItemType, int)>
-        {
-            (ItemType.FigureBodyPart,           12),
-            (ItemType.FigureClothesPart,        12),
-            (ItemType.FigureHeadPart,           12),
-            (ItemType.FigureLeftArmPart,        12),
-            (ItemType.FigureLeftLegPart,        12),
-            (ItemType.FigureRightArmPart,       12),
-            (ItemType.FigureRightLegPart,       12),
-            (ItemType.FigureUniversalPart,      9),
-            (ItemType.FigureSkeleton,           9),
-            (ItemType.IncreaseUltimateAttack,   5),
-            (ItemType.IncreaseUltimateDefence,  5),
-            (ItemType.LotteryTicket,            4),
-            (ItemType.IncreaseUltimateHealth,   1),
-        }.ToRealList();
-
-        private static Dictionary<CardExpedition, IEnumerable<ItemType>> _itemChancesOnExpedition = new Dictionary<CardExpedition, IEnumerable<ItemType>>
-        {
-            {CardExpedition.NormalItemWithExp, new List<(ItemType, int)>
-                {
-                    (ItemType.AffectionRecoverySmall,   55),
-                    (ItemType.AffectionRecoveryNormal,  37),
-                    (ItemType.DereReRoll,               10),
-                    (ItemType.CardParamsReRoll,         10),
-                    (ItemType.AffectionRecoveryBig,     10),
-                    (ItemType.AffectionRecoveryGreat,   4),
-                    (ItemType.IncreaseExpSmall,         3),
-                    (ItemType.IncreaseUpgradeCnt,       1),
-                }.ToRealList()
-            },
-            {CardExpedition.ExtremeItemWithExp, new List<(ItemType, int)>
-                {
-                    (ItemType.AffectionRecoveryBig,     34),
-                    (ItemType.AffectionRecoveryNormal,  27),
-                    (ItemType.AffectionRecoveryGreat,   15),
-                    (ItemType.IncreaseExpBig,           12),
-                    (ItemType.IncreaseExpSmall,         8),
-                    (ItemType.CreationItemBase,         6),
-                    (ItemType.BetterIncreaseUpgradeCnt, 4),
-                    (ItemType.BloodOfYourWaifu,         4),
-                    (ItemType.IncreaseUpgradeCnt,       2),
-                }.ToRealList()
-            },
-            {CardExpedition.DarkItems, new List<(ItemType, int)>
-                {
-                    (ItemType.AffectionRecoveryNormal,  52),
-                    (ItemType.AffectionRecoverySmall,   26),
-                    (ItemType.AffectionRecoveryBig,     22),
-                    (ItemType.AffectionRecoveryGreat,   11),
-                    (ItemType.IncreaseExpSmall,         10),
-                    (ItemType.CardParamsReRoll,         6),
-                    (ItemType.BetterIncreaseUpgradeCnt, 3),
-                    (ItemType.IncreaseUpgradeCnt,       1),
-                }.ToRealList()
-            },
-            {CardExpedition.DarkItemWithExp, new List<(ItemType, int)>
-                {
-                    (ItemType.AffectionRecoveryNormal,  47),
-                    (ItemType.AffectionRecoverySmall,   32),
-                    (ItemType.AffectionRecoveryBig,     17),
-                    (ItemType.DereReRoll,               13),
-                    (ItemType.IncreaseExpBig,           11),
-                    (ItemType.AffectionRecoveryGreat,   8),
-                    (ItemType.CardParamsReRoll,         3),
-                    (ItemType.IncreaseUpgradeCnt,       1),
-                    (ItemType.CreationItemBase,         1),
-                }.ToRealList()
-            },
-            {CardExpedition.LightItems, new List<(ItemType, int)>
-                {
-                    (ItemType.AffectionRecoveryNormal,  50),
-                    (ItemType.AffectionRecoverySmall,   38),
-                    (ItemType.IncreaseExpSmall,         18),
-                    (ItemType.AffectionRecoveryBig,     14),
-                    (ItemType.AffectionRecoveryGreat,   10),
-                    (ItemType.CardParamsReRoll,         7),
-                    (ItemType.IncreaseUpgradeCnt,       4),
-                    (ItemType.BloodOfYourWaifu,         3),
-                }.ToRealList()
-            },
-            {CardExpedition.LightItemWithExp, new List<(ItemType, int)>
-                {
-                    (ItemType.AffectionRecoveryNormal,  49),
-                    (ItemType.AffectionRecoverySmall,   34),
-                    (ItemType.AffectionRecoveryBig,     14),
-                    (ItemType.DereReRoll,               13),
-                    (ItemType.AffectionRecoveryGreat,   7),
-                    (ItemType.CardParamsReRoll,         6),
-                    (ItemType.IncreaseExpBig,           6),
-                    (ItemType.IncreaseUpgradeCnt,       1),
-                    (ItemType.CreationItemBase,         1),
-                }.ToRealList()
-            },
-        };
-
         private Events _events;
         private Helper _helper;
         private ILogger _logger;
@@ -407,80 +296,6 @@ namespace Sanakan.Services.PocketWaifu
             if (num < 230) return ItemType.DereReRoll;
             if (num < 480) return ItemType.AffectionRecoveryNormal;
             return ItemType.AffectionRecoverySmall;
-        }
-
-        public Quality RandomizeItemQualityFromMarket()
-        {
-            var num = Fun.GetRandomValue(10000);
-            if (num < 5) return Quality.Sigma;
-            if (num < 20) return Quality.Lambda;
-            if (num < 60) return Quality.Zeta;
-            if (num < 200) return Quality.Delta;
-            if (num < 500) return Quality.Gamma;
-            if (num < 1000) return Quality.Beta;
-            if (num < 2000) return Quality.Alpha;
-            return Quality.Broken;
-        }
-
-        private Quality RandomizeItemQualityFromExpeditionDefault(int num)
-        {
-            if (num < 5) return Quality.Omega;
-            if (num < 50) return Quality.Sigma;
-            if (num < 200) return Quality.Lambda;
-            if (num < 600) return Quality.Zeta;
-            if (num < 2000) return Quality.Delta;
-            if (num < 5000) return Quality.Gamma;
-            if (num < 10000) return Quality.Beta;
-            if (num < 20000) return Quality.Alpha;
-            return Quality.Broken;
-        }
-
-        public Quality RandomizeItemQualityFromExpedition(CardExpedition type)
-        {
-            var num = Fun.GetRandomValue(100000);
-            switch (type)
-            {
-                case CardExpedition.UltimateEasy:
-                    if (num < 3000) return Quality.Delta;
-                    if (num < 25000) return Quality.Gamma;
-                    if (num < 45000) return Quality.Beta;
-                    return Quality.Alpha;
-
-                case CardExpedition.UltimateMedium:
-                    if (num < 1000) return Quality.Zeta;
-                    if (num < 2000) return Quality.Epsilon;
-                    if (num < 5000) return Quality.Delta;
-                    if (num < 35000) return Quality.Gamma;
-                    if (num < 55000) return Quality.Beta;
-                    return Quality.Alpha;
-
-                case CardExpedition.UltimateHard:
-                    if (num < 50) return Quality.Lambda;
-                    if (num < 200) return Quality.Jota;
-                    if (num < 600) return Quality.Theta;
-                    if (num < 1500) return Quality.Zeta;
-                    if (num < 5000) return Quality.Epsilon;
-                    if (num < 12000) return Quality.Delta;
-                    if (num < 25000) return Quality.Gamma;
-                    if (num < 45000) return Quality.Beta;
-                    return Quality.Alpha;
-
-                case CardExpedition.UltimateHardcore:
-                    if (num < 15) return Quality.Omega;
-                    if (num < 50) return Quality.Sigma;
-                    if (num < 150) return Quality.Lambda;
-                    if (num < 1500) return Quality.Jota;
-                    if (num < 5000) return Quality.Theta;
-                    if (num < 10000) return Quality.Zeta;
-                    if (num < 20000) return Quality.Epsilon;
-                    if (num < 30000) return Quality.Delta;
-                    if (num < 50000) return Quality.Gamma;
-                    if (num < 80000) return Quality.Beta;
-                    return Quality.Alpha;
-
-                default:
-                    return RandomizeItemQualityFromExpeditionDefault(num);
-            }
         }
 
         public ItemWithCost[] GetItemsWithCost()
@@ -1768,18 +1583,13 @@ namespace Sanakan.Services.PocketWaifu
                 return "Coś poszło nie tak, wyprawa nie została zakończona.";
             }
 
-            var totalExp = _expedition.GetExpFromExpedition(duration.CalcTime, card);
-            totalExp /= card.Curse == CardCurse.LoweredExperience ? 5 : 1;
-
-            var totalItemsCnt = _expedition.GetItemsCountFromExpedition(duration.CalcTime, card);
-            var karmaCost = _expedition.GetKarmaCostOfExpedition(duration.CalcTime, card);
-
-            var multiplier = (duration.RealTime < 60) ? ((duration.RealTime < 30) ? 3d : 2d) : 1d;
-            var rawAffectionCost = _expedition.GetAffectionCostOfExpedition(duration.CalcTime, card);
-            var affectionCost = rawAffectionCost * multiplier;
-
+            var totalExp = 0d;
+            var totalItemsCnt = 0;
             bool allowItems = true;
+            bool losedFight = false;
+            var multiplier = (duration.RealTime < 60) ? ((duration.RealTime < 30) ? 3d : 2d) : 1d;
             var reward = multiplier != 1 ? "Wyprawa? Chyba po bułki do sklepu.\n\n" : "";
+
             if (CheckEventInExpedition(card.Expedition, duration))
             {
                 var e = _events.RandomizeEvent(card.Expedition, duration);
@@ -1802,40 +1612,61 @@ namespace Sanakan.Services.PocketWaifu
                 }
                 else if (e == EventType.Fight && !allowItems)
                 {
-                    totalExp /= 6;
+                    losedFight = true;
                 }
             }
 
-            if (duration.CalcTime <= 3)
+            totalExp += _expedition.GetExpFromExpedition(duration.CalcTime, card);
+            totalExp /= card.Curse == CardCurse.LoweredExperience ? 5 : 1;
+            totalExp /= losedFight ? 6 : 1;
+            totalExp = card.FromFigure ? 0 : totalExp;
+
+            totalItemsCnt += _expedition.GetItemsCountFromExpedition(duration.CalcTime, card);
+            var karmaCost = _expedition.GetKarmaCostOfExpedition(duration.CalcTime, card);
+
+            var rawAffectionCost = _expedition.GetAffectionCostOfExpedition(duration.CalcTime, card);
+            var affectionCost = rawAffectionCost * multiplier;
+
+            if (duration.CalcTime <= 5)
             {
                 totalItemsCnt = 0;
                 totalExp /= 2;
             }
 
-            if (duration.CalcTime <= 36 && user.GameDeck.CanCreateDemon())
-            {
-                karmaCost /= 2.5;
-            }
-
-            if (duration.CalcTime >= 1656 && user.GameDeck.CanCreateAngel())
-            {
-                karmaCost *= 2.5;
-            }
-
-            totalExp = card.FromFigure ? 0 : totalExp;
-
-            card.ExpCnt += totalExp;
-            card.DecAffectionOnExpeditionBy(affectionCost);
-
             double minAff = 0;
             double karmaItem = 0;
             reward += $"Zdobywa:\n+{totalExp:F} exp ({card.ExpCnt:F})\n";
-            for (int i = 0; i < totalItemsCnt && allowItems; i++)
+
+            if (allowItems && totalItemsCnt > 0)
             {
-                if (CheckChanceForItemInExpedition(i, totalItemsCnt, card.Expedition))
+                var affectionToReturn = _expedition.GetGuaranteedAffection(card, rawAffectionCost);
+                while (affectionToReturn > 0)
                 {
-                    var newItem = RandomizeItemForExpedition(card.Expedition);
-                    if (newItem == null) break;
+                    var newItem = _expedition.RandomizeItemFor(card.Expedition, Expedition.ItemDropType.Food);
+                    karmaItem += newItem.Type.GetBaseKarmaChange();
+                    var itemAff = newItem.GetBaseAffection();
+
+                    minAff += itemAff;
+                    affectionToReturn -= itemAff;
+
+                    user.GameDeck.AddItem(newItem);
+
+                    if (totalItemsCnt > 0)
+                        totalItemsCnt--;
+
+                    if (!items.ContainsKey(newItem.Name))
+                        items.Add(newItem.Name, 0);
+
+                    ++items[newItem.Name];
+                }
+
+                for (int i = 0; i < totalItemsCnt; i++)
+                {
+                    var dropType = _expedition.RandomizeItemDropTypeFor(card.Expedition);
+                    if (dropType == Expedition.ItemDropType.None)
+                        continue;
+
+                    var newItem = _expedition.RandomizeItemFor(card.Expedition, dropType);
 
                     minAff += newItem.GetBaseAffection();
                     karmaItem += newItem.Type.GetBaseKarmaChange();
@@ -1858,6 +1689,8 @@ namespace Sanakan.Services.PocketWaifu
                     + $"\nKLPI: {karmaCost / totalItemsCnt:F} KGPI: {karmaItem / totalItemsCnt:F} KLPT: {karmaCost / duration.CalcTime:F} KGPT: {karmaItem / duration.CalcTime:F}";
             }
 
+            card.ExpCnt += totalExp;
+            card.DecAffectionOnExpeditionBy(affectionCost);
             card.Expedition = CardExpedition.None;
             user.GameDeck.Karma -= karmaCost;
 
@@ -1901,77 +1734,9 @@ namespace Sanakan.Services.PocketWaifu
             }
         }
 
-        public List<(ItemType, float)> GetItemChancesFromExpedition(CardExpedition expedition)
+        public List<string> GetItemChancesFromExpedition(CardExpedition expedition)
         {
-            switch (expedition)
-            {
-                case CardExpedition.UltimateEasy:
-                case CardExpedition.UltimateMedium:
-                case CardExpedition.UltimateHard:
-                    return _ultimateExpeditionItems.GetChances();
-
-                case CardExpedition.UltimateHardcore:
-                    return _ultimateExpeditionHardcoreItems.GetChances();
-
-                default:
-                    return _itemChancesOnExpedition[expedition].GetChances();
-            }
-        }
-
-        private Item RandomizeItemForExpedition(CardExpedition expedition)
-        {
-            var quality = Quality.Broken;
-            if (expedition.HasDifferentQualitiesOnExpedition())
-            {
-                quality = RandomizeItemQualityFromExpedition(expedition);
-            }
-
-            switch (expedition)
-            {
-                case CardExpedition.UltimateEasy:
-                case CardExpedition.UltimateMedium:
-                case CardExpedition.UltimateHard:
-                    return Fun.GetOneRandomFrom(_ultimateExpeditionItems).ToItem(1, quality);
-
-                case CardExpedition.UltimateHardcore:
-                    return Fun.GetOneRandomFrom(_ultimateExpeditionHardcoreItems).ToItem(1, quality);
-
-                default:
-                    return Fun.GetOneRandomFrom(_itemChancesOnExpedition[expedition]).ToItem(1, quality);
-            }
-        }
-
-        private bool CheckChanceForItemInExpedition(int currItem, int maxItem, CardExpedition expedition)
-        {
-            switch (expedition)
-            {
-                case CardExpedition.NormalItemWithExp:
-                    return !Fun.TakeATry(10);
-
-                case CardExpedition.LightItemWithExp:
-                case CardExpedition.DarkItemWithExp:
-                    return !Fun.TakeATry(15);
-
-                case CardExpedition.DarkItems:
-                case CardExpedition.LightItems:
-                case CardExpedition.ExtremeItemWithExp:
-                    return true;
-
-                case CardExpedition.UltimateEasy:
-                    return !Fun.TakeATry(15);
-
-                case CardExpedition.UltimateMedium:
-                    return !Fun.TakeATry(20);
-
-                case CardExpedition.UltimateHard:
-                case CardExpedition.UltimateHardcore:
-                    return true;
-
-                default:
-                case CardExpedition.LightExp:
-                case CardExpedition.DarkExp:
-                    return false;
-            }
+            return _expedition.GetChancesFromExpedition(expedition);
         }
 
         public ExecutionResult DestroyOrReleaseCards(User user, ulong[] ids, bool release = false, ulong tagId = 0)

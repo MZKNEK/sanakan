@@ -480,7 +480,6 @@ namespace Sanakan.Extensions
                 case CardExpedition.UltimateMedium:
                 case CardExpedition.UltimateHard:
                 case CardExpedition.UltimateHardcore:
-                case CardExpedition.ExtremeItemWithExp:
                     return true;
 
                 default:

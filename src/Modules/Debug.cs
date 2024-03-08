@@ -78,15 +78,12 @@ namespace Sanakan.Modules
         [Remarks("h")]
         public async Task ShowItemChancesFromExpeditionAsync([Summary("typ wyprawy")]CardExpedition e)
         {
-            var chances = _waifu.GetItemChancesFromExpedition(e).OrderByDescending(x => x.Item2);
             var msg = new EmbedBuilder
             {
                 Color = EMType.Bot.Color(),
                 Title = $"Szanse z {e.GetName("ej")} wyprawy",
+                Description = string.Join("\n", _waifu.GetItemChancesFromExpedition(e))
             };
-
-            foreach (var item in chances)
-                msg.Description += $"**{item.Item2:F}%** - {item.Item1.Name()}\n";
 
             await ReplyAsync("", embed: msg.Build());
         }
