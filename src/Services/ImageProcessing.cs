@@ -618,8 +618,8 @@ namespace Sanakan.Services
             var oGap = 60;
             var startY = 18;
             var startX = 213;
-            image.Mutate(x => x.DrawText($"Posiadane", fontDetail, fontColorDetail, new Point(startX, startY - 9)));
-            image.Mutate(x => x.DrawText($"Limit", fontDetail, fontColorDetail, new Point(startX + oGap, startY - 9)));
+            image.Mutate(x => x.DrawText($"Posiadane", fontDetail, fontColorDetail, new Point(startX, startY - 10)));
+            image.Mutate(x => x.DrawText($"Limit", fontDetail, fontColorDetail, new Point(startX + oGap, startY - 10)));
             image.Mutate(x => x.DrawText($"{botUser.GameDeck.Cards.Count}", font, fontColor, new Point(startX, startY)));
             image.Mutate(x => x.DrawText($"{botUser.GameDeck.MaxNumberOfCards}", font, fontColor, new Point(startX + oGap, startY)));
 
@@ -632,7 +632,7 @@ namespace Sanakan.Services
                 image.Mutate(x => x.DrawImage(karmaImage, new Point(330, startY - 6), 1));
             }
 
-            startY += 31;
+            startY += 29;
             var cGap = 38;
             var jumpY = 24;
 
@@ -644,7 +644,7 @@ namespace Sanakan.Services
                 {
                     using var cimg = Image.Load(Dir.GetResource($"np/r{rarity}.png"));
                     image.Mutate(x => x.DrawImage(cimg, new Point(startX, startY), 1));
-                    image.Mutate(x => x.DrawText(cardCount.ToString(), fontCards, fontColor, new Point(startX + cGap, startY)));
+                    image.Mutate(x => x.DrawText(cardCount.ToString(), fontCards, fontColor, new Point(startX + cGap, startY + 1)));
                     startY += jumpY;
                 }
             }
@@ -1387,17 +1387,20 @@ namespace Sanakan.Services
             int atk = card.GetAttackWithBonus();
 
             var drOps = new DrawingOptions() { Transform = Matrix3x2.CreateRotation(-0.46f) };
-            var hpOps = new RichTextOptions(hpFont) { HorizontalAlignment = HorizontalAlignment.Center, Origin = new Point(114, 627) };
+            var hpOps = new RichTextOptions(hpFont) { HorizontalAlignment = HorizontalAlignment.Center, Origin = new Point(114, 630) };
 
             var brush = Brushes.Solid(GetOrCreateColor("#356231"));
             var pen = Pens.Solid(GetOrCreateColor("#0000"), 0.1f);
 
             image.Mutate(x => x.DrawText(drOps, hpOps, $"{hp}", brush, pen));
 
-            var ops = new RichTextOptions(adFont) { HorizontalAlignment = HorizontalAlignment.Center };
-            ops.Origin = new Point(92, 594);
+            var ops = new RichTextOptions(adFont)
+            {
+                HorizontalAlignment = HorizontalAlignment.Center,
+                Origin = new Point(92, 597)
+            };
             image.Mutate(x => x.DrawText(ops, $"{atk}", GetOrCreateColor("#78261a")));
-            ops.Origin = new Point(382, 594);
+            ops.Origin = new Point(382, 597);
             image.Mutate(x => x.DrawText(ops, $"{def}", GetOrCreateColor("#00527f")));
         }
 
@@ -1515,7 +1518,7 @@ namespace Sanakan.Services
                 hpImg.Mutate(x => x.DrawText($"{hp}", aphFont, GetOrCreateColor("#6bedc8"), new Point(1)));
                 hpImg.Mutate(x => x.Rotate(-19));
 
-                image.Mutate(x => x.DrawImage(hpImg, new Point(57, 549), 1));
+                image.Mutate(x => x.DrawImage(hpImg, new Point(57, 552), 1));
             }
 
             using (var atkImg = new Image<Rgba32>(120, 40))
@@ -1523,10 +1526,10 @@ namespace Sanakan.Services
                 atkImg.Mutate(x => x.DrawText($"{atk}", aphFont, GetOrCreateColor("#fda9fd"), new Point(1)));
                 atkImg.Mutate(x => x.Rotate(34));
 
-                image.Mutate(x => x.DrawImage(atkImg, new Point(80, 479), 1));
+                image.Mutate(x => x.DrawImage(atkImg, new Point(80, 482), 1));
             }
 
-            image.Mutate(x => x.DrawText($"{def}", aphFont, GetOrCreateColor("#49deff"), new Point(326, 570)));
+            image.Mutate(x => x.DrawText($"{def}", aphFont, GetOrCreateColor("#49deff"), new Point(326, 573)));
         }
 
         private String GetThetaStatColorString(Card card)
