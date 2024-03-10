@@ -55,7 +55,8 @@ namespace Sanakan.Database.Models
         SetCustomAnimatedImage,
         GiveTagSlot,
         RemoveCurse,
-        CreationItemBase
+        CreationItemBase,
+        NotAnItem
     }
 
     public class Item

@@ -359,6 +359,7 @@ namespace Sanakan.Extensions
                 case ItemType.LotteryTicket:
                 case ItemType.CardFragment:
                 case ItemType.CreationItemBase:
+                case ItemType.NotAnItem:
                     return false;
 
                 default:

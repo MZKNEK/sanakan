@@ -1666,6 +1666,8 @@ namespace Sanakan.Services.PocketWaifu
                         continue;
 
                     var newItem = _expedition.RandomizeItemFor(card.Expedition, dropType);
+                    if (newItem.Type == ItemType.NotAnItem)
+                        continue;
 
                     minAff += newItem.GetBaseAffection();
                     karmaItem += newItem.Type.GetBaseKarmaChange();
