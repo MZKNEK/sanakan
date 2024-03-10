@@ -1629,6 +1629,8 @@ namespace Sanakan.Services.PocketWaifu
                 totalExp /= 2;
             }
 
+            card.ExpCnt += totalExp;
+
             double minAff = 0;
             double karmaItem = 0;
             int missingItems = 0;
@@ -1688,7 +1690,6 @@ namespace Sanakan.Services.PocketWaifu
                 reward += $"\n\nRT: {duration.CalcTime:F} E: {totalExp:F} AI: {minAff:F} A: {affectionCost:F} K: {karmaCost:F} KI: {karmaItem:F} MI: {totalItemsCnt} LI: {missingItems}";
             }
 
-            card.ExpCnt += totalExp;
             card.DecAffectionOnExpeditionBy(affectionCost);
             card.Expedition = CardExpedition.None;
             user.GameDeck.Karma -= karmaCost;

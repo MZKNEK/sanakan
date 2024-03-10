@@ -1241,30 +1241,28 @@ namespace Sanakan.Services
             return characterImg;
         }
 
-        private bool HasCustomBorderString(Card card)
+        private bool HasDereString(Card card) => card.Quality switch
         {
-            switch (card.Quality)
-            {
-                case Quality.Gamma: return true;
-                default: return false;
-            }
-        }
+            Quality.Beta => false,
+            _ => true,
+        };
 
         private string GetCustomBorderString(Card card)
         {
             switch (card.Quality)
             {
                 case Quality.Gamma:
-                    {
-                        var totalPower = card.GetHealthWithPenalty();
-                        totalPower += card.GetDefenceWithBonus();
-                        totalPower += card.GetAttackWithBonus();
+                {
+                    var totalPower = card.GetHealthWithPenalty();
+                    totalPower += card.GetDefenceWithBonus();
+                    totalPower += card.GetAttackWithBonus();
 
-                        if (totalPower > 5000) return Dir.GetResource($"PW/CG/{card.Quality}/Border_2.png");
-                        if (totalPower > 2000) return Dir.GetResource($"PW/CG/{card.Quality}/Border_1.png");
-                        return Dir.GetResource($"PW/CG/{card.Quality}/Border_0.png");
-                    }
+                    if (totalPower > 5000) return Dir.GetResource($"PW/CG/{card.Quality}/Border_2.png");
+                    if (totalPower > 2000) return Dir.GetResource($"PW/CG/{card.Quality}/Border_1.png");
+                    return Dir.GetResource($"PW/CG/{card.Quality}/Border_0.png");
+                }
 
+                case Quality.Beta: return Dir.GetResource($"PW/CG/{card.Quality}/Border/{card.Dere}.png");
                 default: return Dir.GetResource($"PW/CG/{card.Quality}/Border.png");
             }
         }
@@ -1276,17 +1274,14 @@ namespace Sanakan.Services
 
             if (card.FromFigure)
             {
-                borderStr = Dir.GetResource($"PW/CG/{card.Quality}/Border.png");
+                borderStr = GetCustomBorderString(card);
                 dereStr = Dir.GetResource($"PW/CG/{card.Quality}/Dere/{card.Dere}.png");
-
-                if (HasCustomBorderString(card))
-                    borderStr = GetCustomBorderString(card);
             }
 
             var img = Image.Load(borderStr);
-
-            using (var dere = Image.Load(dereStr))
+            if (HasDereString(card))
             {
+                using var dere = Image.Load(dereStr);
                 img.Mutate(x => x.DrawImage(dere, new Point(0, 0), 1));
             }
 
@@ -1328,36 +1323,15 @@ namespace Sanakan.Services
 
         private void ApplyBetaStats(Image<Rgba32> image, Card card)
         {
-            var adFont = GetOrCreateFont(_latoBold, 36);
-            var hpFont = GetOrCreateFont(_latoBold, 29);
+            var font = GetOrCreateFont(_latoBold, 29);
 
             int hp = card.GetHealthWithPenalty();
             int def = card.GetDefenceWithBonus();
             int atk = card.GetAttackWithBonus();
 
-            using (var hpImg = new Image<Rgba32>(120, 40))
-            {
-                hpImg.Mutate(x => x.DrawText($"{hp}", hpFont, GetOrCreateColor("#006633"), new Point(1)));
-                hpImg.Mutate(x => x.Rotate(18));
-
-                image.Mutate(x => x.DrawImage(hpImg, new Point(342, 332), 1));
-            }
-
-            using (var defImg = new Image<Rgba32>(120, 40))
-            {
-                defImg.Mutate(x => x.DrawText($"{def}", adFont, GetOrCreateColor("#1154b8"), new Point(1)));
-                defImg.Mutate(x => x.Rotate(19));
-
-                image.Mutate(x => x.DrawImage(defImg, new Point(28, 169), 1));
-            }
-
-            using (var atkImg = new Image<Rgba32>(120, 40))
-            {
-                atkImg.Mutate(x => x.DrawText($"{atk}", adFont, GetOrCreateColor("#7d0e0e"), new Point(1)));
-                atkImg.Mutate(x => x.Rotate(-16));
-
-                image.Mutate(x => x.DrawImage(atkImg, new Point(50, 496), 1));
-            }
+            image.Mutate(x => x.DrawText($"{hp}", font, GetOrCreateColor("#000000"), new Point(273, 476)));
+            image.Mutate(x => x.DrawText($"{atk}", font, GetOrCreateColor("#000000"), new Point(269, 520)));
+            image.Mutate(x => x.DrawText($"{def}", font, GetOrCreateColor("#000000"), new Point(264, 564)));
         }
 
         private void ApplyGammaStats(Image<Rgba32> image, Card card)
@@ -1368,8 +1342,11 @@ namespace Sanakan.Services
             int def = card.GetDefenceWithBonus();
             int atk = card.GetAttackWithBonus();
 
-            var ops = new RichTextOptions(aphFont) { HorizontalAlignment = HorizontalAlignment.Center };
-            ops.Origin = new Point(145, 587);
+            var ops = new RichTextOptions(aphFont)
+            {
+                HorizontalAlignment = HorizontalAlignment.Center,
+                Origin = new Point(145, 587)
+            };
             image.Mutate(x => x.DrawText(ops, $"{atk}", GetOrCreateColor("#c9282c")));
             ops.Origin = new Point(185, 559);
             image.Mutate(x => x.DrawText(ops, $"{def}", GetOrCreateColor("#1d64d5")));
@@ -1586,6 +1563,7 @@ namespace Sanakan.Services
         {
             switch (card.Quality)
             {
+                case Quality.Beta: return Dir.GetResource($"PW/CG/{card.Quality}/Stats/{card.Dere}.png");
                 case Quality.Jota: return Dir.GetResource($"PW/CG/{card.Quality}/Stats/{card.Dere}_Stats.png");
                 case Quality.Theta: return Dir.GetResource($"PW/CG/{card.Quality}/{card.Dere}_Stats.png");
                 default: return Dir.GetResource($"PW/CG/{card.Quality}/Stats.png");
@@ -1606,10 +1584,8 @@ namespace Sanakan.Services
             var statsStr = GetStatsString(card);
             if (File.Exists(statsStr))
             {
-                using (var stats = Image.Load(statsStr))
-                {
-                    image.Mutate(x => x.DrawImage(stats, new Point(0, 0), 1));
-                }
+                using var stats = Image.Load(statsStr);
+                image.Mutate(x => x.DrawImage(stats, new Point(0, 0), 1));
             }
 
             switch (card.Quality)
@@ -1729,10 +1705,8 @@ namespace Sanakan.Services
 
             if (isFromFigureOriginalBorder && File.Exists(backBorderStr))
             {
-                using (var back = Image.Load(backBorderStr))
-                {
-                    image.Mutate(x => x.DrawImage(back, new Point(0, 0), 1));
-                }
+                using var back = Image.Load(backBorderStr);
+                image.Mutate(x => x.DrawImage(back, new Point(0, 0), 1));
             }
         }
 
