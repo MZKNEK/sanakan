@@ -1621,8 +1621,8 @@ namespace Sanakan.Services.PocketWaifu
             totalExp /= losedFight ? 6 : 1;
             totalExp = card.FromFigure ? 0 : totalExp;
 
-            totalItemsCnt += _expedition.GetItemsCountFromExpedition(duration.CalcTime, card);
-            var karmaCost = _expedition.GetKarmaCostOfExpedition(duration.CalcTime, card);
+            totalItemsCnt += _expedition.GetItemsCountFromExpedition(duration.CalcTime, card, user);
+            var karmaCost = _expedition.GetKarmaCostOfExpedition(duration.CalcTime, card, user);
 
             var rawAffectionCost = _expedition.GetAffectionCostOfExpedition(duration.CalcTime, card);
             var affectionCost = rawAffectionCost * multiplier;
@@ -1640,7 +1640,7 @@ namespace Sanakan.Services.PocketWaifu
 
             if (allowItems && totalItemsCnt > 0)
             {
-                var affectionToReturn = _expedition.GetGuaranteedAffection(card, rawAffectionCost);
+                var affectionToReturn = _expedition.GetGuaranteedAffection(user, card, rawAffectionCost);
                 while (affectionToReturn > 0)
                 {
                     var newItem = _expedition.RandomizeItemFor(card.Expedition, Expedition.ItemDropType.Food);

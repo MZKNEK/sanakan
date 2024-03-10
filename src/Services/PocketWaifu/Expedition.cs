@@ -98,8 +98,37 @@ namespace Sanakan.Services.PocketWaifu
             },
             {ItemDropType.Legendary, new List<(ItemType, int)>
                 {
-                    (ItemType.BetterIncreaseUpgradeCnt, 9),
-                    (ItemType.BloodOfYourWaifu,         9),
+                    (ItemType.BetterIncreaseUpgradeCnt, 7),
+                    (ItemType.BloodOfYourWaifu,         7),
+                    (ItemType.CreationItemBase,         1),
+                }.ToRealList()
+            },
+        };
+
+        private static Dictionary<ItemDropType, List<ItemType>> _itemsFromDarkExpeditionAndExp = new Dictionary<ItemDropType, List<ItemType>>
+        {
+            {ItemDropType.None, new List<ItemType>()},
+            {ItemDropType.Food, new List<(ItemType, int)>
+                {
+                    (ItemType.AffectionRecoveryNormal,  5),
+                    (ItemType.AffectionRecoverySmall,   3),
+                    (ItemType.AffectionRecoveryBig,     2),
+                    (ItemType.AffectionRecoveryGreat,   1),
+                }.ToRealList()
+            },
+            {ItemDropType.Common, new List<(ItemType, int)>
+                {
+                    (ItemType.DereReRoll,               4),
+                    (ItemType.CardParamsReRoll,         2),
+                }.ToRealList()
+            },
+            {ItemDropType.Rare, new List<(ItemType, int)>
+                {
+                    (ItemType.IncreaseUpgradeCnt,       1),
+                }.ToRealList()
+            },
+            {ItemDropType.Legendary, new List<(ItemType, int)>
+                {
                     (ItemType.CreationItemBase,         1),
                 }.ToRealList()
             },
@@ -110,8 +139,7 @@ namespace Sanakan.Services.PocketWaifu
             {ItemDropType.None, new List<ItemType>()},
             {ItemDropType.Food, new List<(ItemType, int)>
                 {
-                    (ItemType.AffectionRecoveryNormal,  5),
-                    (ItemType.AffectionRecoverySmall,   3),
+                    (ItemType.AffectionRecoveryNormal,  6),
                     (ItemType.AffectionRecoveryBig,     2),
                     (ItemType.AffectionRecoveryGreat,   1),
                 }.ToRealList()
@@ -119,8 +147,6 @@ namespace Sanakan.Services.PocketWaifu
             {ItemDropType.Common, new List<(ItemType, int)>
                 {
                     (ItemType.IncreaseExpSmall,         5),
-                    (ItemType.DereReRoll,               3),
-                    (ItemType.CardParamsReRoll,         2),
                     (ItemType.IncreaseExpBig,           1),
                 }.ToRealList()
             },
@@ -131,13 +157,12 @@ namespace Sanakan.Services.PocketWaifu
             },
             {ItemDropType.Legendary, new List<(ItemType, int)>
                 {
-                    (ItemType.BetterIncreaseUpgradeCnt, 20),
-                    (ItemType.CreationItemBase,         1),
+                    (ItemType.BetterIncreaseUpgradeCnt, 1),
                 }.ToRealList()
             },
         };
 
-        private static Dictionary<ItemDropType, List<ItemType>> _itemsFromLightExpedition = new Dictionary<ItemDropType, List<ItemType>>
+        private static Dictionary<ItemDropType, List<ItemType>> _itemsFromLightExpeditionAndExp = new Dictionary<ItemDropType, List<ItemType>>
         {
             {ItemDropType.None, new List<ItemType>()},
             {ItemDropType.Food, new List<(ItemType, int)>
@@ -150,9 +175,35 @@ namespace Sanakan.Services.PocketWaifu
             },
             {ItemDropType.Common, new List<(ItemType, int)>
                 {
-                    (ItemType.IncreaseExpSmall,         5),
-                    (ItemType.DereReRoll,               3),
+                    (ItemType.DereReRoll,               4),
                     (ItemType.CardParamsReRoll,         2),
+                }.ToRealList()
+            },
+            {ItemDropType.Rare, new List<(ItemType, int)>
+                {
+                    (ItemType.IncreaseUpgradeCnt,       1),
+                }.ToRealList()
+            },
+            {ItemDropType.Legendary, new List<(ItemType, int)>
+                {
+                    (ItemType.CreationItemBase,         1),
+                }.ToRealList()
+            },
+        };
+
+        private static Dictionary<ItemDropType, List<ItemType>> _itemsFromLightExpedition = new Dictionary<ItemDropType, List<ItemType>>
+        {
+            {ItemDropType.None, new List<ItemType>()},
+            {ItemDropType.Food, new List<(ItemType, int)>
+                {
+                    (ItemType.AffectionRecoveryNormal,  6),
+                    (ItemType.AffectionRecoveryBig,     2),
+                    (ItemType.AffectionRecoveryGreat,   1),
+                }.ToRealList()
+            },
+            {ItemDropType.Common, new List<(ItemType, int)>
+                {
+                    (ItemType.IncreaseExpSmall,         5),
                     (ItemType.IncreaseExpBig,           1),
                 }.ToRealList()
             },
@@ -163,8 +214,7 @@ namespace Sanakan.Services.PocketWaifu
             },
             {ItemDropType.Legendary, new List<(ItemType, int)>
                 {
-                    (ItemType.BloodOfYourWaifu,         20),
-                    (ItemType.CreationItemBase,         1),
+                    (ItemType.BloodOfYourWaifu,         1),
                 }.ToRealList()
             },
         };
@@ -181,18 +231,18 @@ namespace Sanakan.Services.PocketWaifu
             },
             {CardExpedition.ExtremeItemWithExp, new List<(ItemDropType, int)>
                 {
-                    (ItemDropType.Common,     40),
-                    (ItemDropType.Rare,       25),
+                    (ItemDropType.Common,     46),
+                    (ItemDropType.Rare,       22),
                     (ItemDropType.Food,       20),
                     (ItemDropType.Legendary,  15),
                 }.ToRealList()
             },
             {CardExpedition.DarkItems, new List<(ItemDropType, int)>
                 {
-                    (ItemDropType.Common,     40),
+                    (ItemDropType.Common,     41),
                     (ItemDropType.Food,       30),
-                    (ItemDropType.Rare,       25),
-                    (ItemDropType.Legendary,  5),
+                    (ItemDropType.Rare,       20),
+                    (ItemDropType.Legendary,  9),
                 }.ToRealList()
             },
             {CardExpedition.DarkItemWithExp, new List<(ItemDropType, int)>
@@ -206,10 +256,10 @@ namespace Sanakan.Services.PocketWaifu
             },
             {CardExpedition.LightItems, new List<(ItemDropType, int)>
                 {
-                    (ItemDropType.Common,     40),
+                    (ItemDropType.Common,     41),
                     (ItemDropType.Food,       30),
-                    (ItemDropType.Rare,       25),
-                    (ItemDropType.Legendary,  5),
+                    (ItemDropType.Rare,       20),
+                    (ItemDropType.Legendary,  9),
                 }.ToRealList()
             },
             {CardExpedition.LightItemWithExp, new List<(ItemDropType, int)>
@@ -247,9 +297,9 @@ namespace Sanakan.Services.PocketWaifu
             {
                 CardExpedition.NormalItemWithExp    =>  _itemsFromNormalExpedition,
                 CardExpedition.ExtremeItemWithExp   =>  _itemsFromExtremeExpedition,
-                CardExpedition.DarkItemWithExp      =>  _itemsFromDarkExpedition,
+                CardExpedition.DarkItemWithExp      =>  _itemsFromDarkExpeditionAndExp,
                 CardExpedition.DarkItems            =>  _itemsFromDarkExpedition,
-                CardExpedition.LightItemWithExp     =>  _itemsFromLightExpedition,
+                CardExpedition.LightItemWithExp     =>  _itemsFromLightExpeditionAndExp,
                 CardExpedition.LightItems           =>  _itemsFromLightExpedition,
                 _ => null
             };
@@ -370,13 +420,13 @@ namespace Sanakan.Services.PocketWaifu
             return expPerHour / 60 * length;
         }
 
-        public int GetItemsCountFromExpedition(double length, Card card)
+        public int GetItemsCountFromExpedition(double length, Card card, User user)
         {
             bool yamiOrRaito = card.Dere == Dere.Yami || card.Dere == Dere.Raito;
 
             var itemsPerHour = card.Expedition switch
             {
-                CardExpedition.NormalItemWithExp    => 5,
+                CardExpedition.NormalItemWithExp    => user.GameDeck.IsNeutral() ? 7.5 : 5,
                 CardExpedition.ExtremeItemWithExp   => yamiOrRaito ? 44 : 22.5,
                 CardExpedition.LightItemWithExp     => yamiOrRaito ? 10 : 8,
                 CardExpedition.DarkItemWithExp      => yamiOrRaito ? 10 : 8,
@@ -394,11 +444,11 @@ namespace Sanakan.Services.PocketWaifu
             return (int) (itemsPerHour / 60 * length);
         }
 
-        public double GetKarmaCostOfExpedition(double length, Card card)
+        public double GetKarmaCostOfExpedition(double length, Card card, User user)
         {
             var karmaCostPerMinute = card.Expedition switch
             {
-                CardExpedition.NormalItemWithExp    => 0.00225,
+                CardExpedition.NormalItemWithExp    => user.GameDeck.IsGood() ? 0.01 : 0.00225,
                 CardExpedition.ExtremeItemWithExp   => 0.07,
                 CardExpedition.LightItemWithExp     => card.Dere == Dere.Yato ? 0.003 : 0.008,
                 CardExpedition.LightItems           => card.Dere == Dere.Yato ? 0.003 : 0.008,
@@ -414,19 +464,19 @@ namespace Sanakan.Services.PocketWaifu
 
         public double GetAffectionCostOfExpedition(double length, Card card)
         {
-            var qualityMod = 2d - card.Quality switch
+            var qualityModInNormal = card.Quality switch
             {
-                Quality.Omega   => 1.95,
-                Quality.Sigma   => 1.7,
-                Quality.Lambda  => 1.6,
-                Quality.Jota    => 1.55,
-                Quality.Theta   => 1.5,
-                Quality.Zeta    => 1.45,
-                Quality.Epsilon => 1.4,
-                Quality.Delta   => 1.35,
-                Quality.Gamma   => 1.3,
-                Quality.Beta    => 1.2,
-                Quality.Alpha   => 1.1,
+                Quality.Omega   => 0.51,
+                Quality.Sigma   => 0.55,
+                Quality.Lambda  => 0.59,
+                Quality.Jota    => 0.64,
+                Quality.Theta   => 0.68,
+                Quality.Zeta    => 0.71,
+                Quality.Epsilon => 0.75,
+                Quality.Delta   => 0.78,
+                Quality.Gamma   => 0.82,
+                Quality.Beta    => 0.88,
+                Quality.Alpha   => 0.93,
                 _ => 1
             };
 
@@ -436,8 +486,8 @@ namespace Sanakan.Services.PocketWaifu
                 CardExpedition.ExtremeItemWithExp   => 0.375,
                 CardExpedition.LightExp             => 0.155,
                 CardExpedition.DarkExp              => 0.155,
-                CardExpedition.DarkItems            => 0.132 * qualityMod,
-                CardExpedition.LightItems           => 0.132 * qualityMod,
+                CardExpedition.DarkItems            => 0.132 * qualityModInNormal,
+                CardExpedition.LightItems           => 0.132 * qualityModInNormal,
                 CardExpedition.LightItemWithExp     => 0.125,
                 CardExpedition.DarkItemWithExp      => 0.125,
                 CardExpedition.UltimateEasy         => 2.5,
@@ -449,8 +499,8 @@ namespace Sanakan.Services.PocketWaifu
 
             var rarityMod = card.Rarity switch
             {
-                Rarity.SSS => 0.85,
-                Rarity.SS  => 0.95,
+                Rarity.SSS => 0.88,
+                Rarity.SS  => 0.97,
                 Rarity.D   => 1.05,
                 Rarity.E   => 1.1,
                 _ => 1
@@ -462,8 +512,8 @@ namespace Sanakan.Services.PocketWaifu
         public double GetMaxPossibleLengthOfExpedition(User user, Card card, CardExpedition expedition = CardExpedition.None)
         {
             expedition = expedition == CardExpedition.None ? card.Expedition : expedition;
-            var costOffset = user.GameDeck.Karma.IsKarmaNeutral() ? 23d : 6d;
             var costPerMinute = GetAffectionCostOfExpedition(1, card);
+            var costOffset = user.GameDeck.IsNeutral() ? 23d : 6d;
             var karmaBonus = user.GameDeck.Karma / 200d;
             var fuel = card.Affection;
 
@@ -503,7 +553,7 @@ namespace Sanakan.Services.PocketWaifu
             return time;
         }
 
-        public double GetGuaranteedAffection(Card card, double affectionCost)
+        public double GetGuaranteedAffection(User user, Card card, double affectionCost)
         {
             var affectionBaseReturn = card.Expedition switch
             {
@@ -521,9 +571,9 @@ namespace Sanakan.Services.PocketWaifu
                 Dere.Tsundere   => 0.5,
                 Dere.Kamidere   => 0.9,
                 Dere.Yandere    => 0.9,
-                Dere.Yami       => 1.2,
-                Dere.Raito      => 1.2,
-                Dere.Yato       => 1.4,
+                Dere.Yami       => user.GameDeck.CanCreateDemon() ? 1.2 : 1.1,
+                Dere.Raito      => user.GameDeck.CanCreateAngel() ? 1.2 : 1.1,
+                Dere.Yato       => user.GameDeck.IsNeutral() ? 1.4 : 1.3,
                 _ => 1
             };
 
