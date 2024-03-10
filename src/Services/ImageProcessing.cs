@@ -1329,9 +1329,16 @@ namespace Sanakan.Services
             int def = card.GetDefenceWithBonus();
             int atk = card.GetAttackWithBonus();
 
-            image.Mutate(x => x.DrawText($"{hp}", font, GetOrCreateColor("#000000"), new Point(273, 476)));
-            image.Mutate(x => x.DrawText($"{atk}", font, GetOrCreateColor("#000000"), new Point(269, 520)));
-            image.Mutate(x => x.DrawText($"{def}", font, GetOrCreateColor("#000000"), new Point(264, 564)));
+            var ops = new RichTextOptions(font)
+            {
+                HorizontalAlignment = HorizontalAlignment.Center,
+                Origin = new Point(320, 476)
+            };
+            image.Mutate(x => x.DrawText(ops, $"{def}", GetOrCreateColor("#000000")));
+            ops.Origin = new Point(320, 520);
+            image.Mutate(x => x.DrawText(ops, $"{atk}", GetOrCreateColor("#000000")));
+            ops.Origin = new Point(320, 563);
+            image.Mutate(x => x.DrawText(ops, $"{hp}", GetOrCreateColor("#000000")));
         }
 
         private void ApplyGammaStats(Image<Rgba32> image, Card card)
