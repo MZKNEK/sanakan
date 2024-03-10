@@ -49,6 +49,7 @@ namespace Sanakan.Services.PocketWaifu
 
         private static Dictionary<ItemDropType, List<ItemType>> _itemsFromNormalExpedition = new Dictionary<ItemDropType, List<ItemType>>
         {
+            {ItemDropType.None, new List<ItemType>()},
             {ItemDropType.Food, new List<(ItemType, int)>
                 {
                     (ItemType.AffectionRecoverySmall,   15),
@@ -78,6 +79,7 @@ namespace Sanakan.Services.PocketWaifu
 
         private static Dictionary<ItemDropType, List<ItemType>> _itemsFromExtremeExpedition = new Dictionary<ItemDropType, List<ItemType>>
         {
+            {ItemDropType.None, new List<ItemType>()},
             {ItemDropType.Food, new List<(ItemType, int)>
                 {
                     (ItemType.AffectionRecoveryNormal,  7),
@@ -324,9 +326,9 @@ namespace Sanakan.Services.PocketWaifu
 
                 CardExpedition.NormalItemWithExp    =>  Fun.GetOneRandomFrom(_itemsFromNormalExpedition[dropType]),
                 CardExpedition.ExtremeItemWithExp   =>  Fun.GetOneRandomFrom(_itemsFromExtremeExpedition[dropType]),
-                CardExpedition.DarkItemWithExp      =>  Fun.GetOneRandomFrom(_itemsFromDarkExpedition[dropType]),
+                CardExpedition.DarkItemWithExp      =>  Fun.GetOneRandomFrom(_itemsFromDarkExpeditionAndExp[dropType]),
                 CardExpedition.DarkItems            =>  Fun.GetOneRandomFrom(_itemsFromDarkExpedition[dropType]),
-                CardExpedition.LightItemWithExp     =>  Fun.GetOneRandomFrom(_itemsFromLightExpedition[dropType]),
+                CardExpedition.LightItemWithExp     =>  Fun.GetOneRandomFrom(_itemsFromLightExpeditionAndExp[dropType]),
                 CardExpedition.LightItems           =>  Fun.GetOneRandomFrom(_itemsFromLightExpedition[dropType]),
 
                 _ => ItemType.AffectionRecoverySmall
