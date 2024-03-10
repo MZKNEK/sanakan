@@ -1600,7 +1600,7 @@ namespace Sanakan.Services.PocketWaifu
                 else if (e == EventType.LoseCard)
                 {
                     user.StoreExpIfPossible(totalExp);
-                    if (Fun.TakeATry(10))
+                    if (Fun.TakeATry(10d))
                     {
                         user.GameDeck.AddItem(ItemType.GiveTagSlot.ToItem());
                         reward += $"Mimo wszystko coś po sobie zostawiła!\n";
@@ -1699,31 +1699,31 @@ namespace Sanakan.Services.PocketWaifu
             switch (expedition)
             {
                 case CardExpedition.NormalItemWithExp:
-                    return Fun.TakeATry(10);
+                    return Fun.TakeATry(10d);
 
                 case CardExpedition.ExtremeItemWithExp:
                     if (duration.CalcTime > 72 || duration.RealTime > 228)
                         return true;
-                    return !Fun.TakeATry(5);
+                    return Fun.TakeATry(80d);
 
                 case CardExpedition.LightItemWithExp:
                 case CardExpedition.DarkItemWithExp:
-                    return Fun.TakeATry(10);
+                    return Fun.TakeATry(10d);
 
                 case CardExpedition.DarkItems:
                 case CardExpedition.LightItems:
                 case CardExpedition.LightExp:
                 case CardExpedition.DarkExp:
-                    return Fun.TakeATry(5);
+                    return Fun.TakeATry(20d);
 
                 case CardExpedition.UltimateMedium:
-                    return Fun.TakeATry(6);
+                    return Fun.TakeATry(15d);
 
                 case CardExpedition.UltimateHard:
-                    return Fun.TakeATry(3);
+                    return Fun.TakeATry(35d);
 
                 case CardExpedition.UltimateHardcore:
-                    return Fun.TakeATry(2);
+                    return Fun.TakeATry(50d);
 
                 default:
                 case CardExpedition.UltimateEasy:

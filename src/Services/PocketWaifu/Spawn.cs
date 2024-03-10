@@ -115,7 +115,7 @@ namespace Sanakan.Services.PocketWaifu
                 });
             }
 
-            int chance = noExp ? 285 : 85;
+            var chance = noExp ? 0.3d : 1.5d;
             if (daily > 0 && ServerCounter[spawnChannel.GuildId] >= daily) return;
             if (!_config.Get().SafariEnabled) return;
             if (!Fun.TakeATry(chance)) return;

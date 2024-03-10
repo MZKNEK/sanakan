@@ -218,7 +218,7 @@ namespace Sanakan.Services.PocketWaifu
                 case CardExpedition.ExtremeItemWithExp:
                     if (duration.CalcTime > 60 || duration.RealTime > 360)
                     {
-                        if (Fun.TakeATry(4))
+                        if (Fun.TakeATry(25d))
                             return EventType.LoseCard;
                     }
                     return EventType.None;

@@ -113,7 +113,7 @@ namespace Sanakan.Services
                 prefix = string.IsNullOrEmpty(gConfig.Prefix) ? prefix : gConfig.Prefix;
             }
 
-            if (_isEnabled && Fun.TakeATry(10) && !message.Content.IsCommand(prefix))
+            if (_isEnabled && Fun.TakeATry(10d) && !message.Content.IsCommand(prefix))
             {
                 var emote = Fun.GetOneRandomFrom(_emtoes);
                 _ = Task.Run(async () =>

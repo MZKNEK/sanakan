@@ -1377,12 +1377,12 @@ namespace Sanakan.Modules
                     reward += $"+{item.Name}\n";
                 }
 
-                if (Services.Fun.TakeATry(3))
+                if (Services.Fun.TakeATry(30d))
                 {
                     botuser.GameDeck.CTCnt += 1;
                     reward += "\nUps, twoja waifu się potknęła a Ty się jeszcze z tego cieszysz. (+1CT)\n";
 
-                    if (Services.Fun.TakeATry(5))
+                    if (Services.Fun.TakeATry(20d))
                     {
                         var bitem = ItemType.BloodOfYourWaifu.ToItem();
                         botuser.GameDeck.AddItem(bitem);

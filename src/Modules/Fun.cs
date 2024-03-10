@@ -92,7 +92,7 @@ namespace Sanakan.Modules
 
             using (var db = new Database.DatabaseContext(Config))
             {
-                long howMuch = Services.Fun.TakeATry(2) ? Services.Fun.GetRandomValue(1, 5000) : _spawn.HowMuchToPacket(usr.Id);
+                long howMuch = Services.Fun.TakeATry(50d) ? Services.Fun.GetRandomValue(1, 5000) : _spawn.HowMuchToPacket(usr.Id);
                 await ReplyAsync("", embed: $"{usr.Mention} potrzebuje **{howMuch}** znaków do następnego pakietu*(teoretycznie)*."
                     .ToEmbedMessage(EMType.Info).Build());
             }
