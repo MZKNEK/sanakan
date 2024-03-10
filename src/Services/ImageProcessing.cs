@@ -1557,12 +1557,17 @@ namespace Sanakan.Services
 
             var thetaColor = GetThetaStatColorString(card);
 
-            var ops = new RichTextOptions(aphFont) { KerningMode = KerningMode.Auto, Dpi = 80, HorizontalAlignment = HorizontalAlignment.Right };
-            ops.Origin = new Point(410, 515);
+            var ops = new RichTextOptions(aphFont)
+            {
+                KerningMode = KerningMode.Auto,
+                Dpi = 80,
+                HorizontalAlignment = HorizontalAlignment.Right,
+                Origin = new Point(410, 511)
+            };
             image.Mutate(x => x.DrawText(ops, $"{atk}", GetOrCreateColor(thetaColor)));
-            ops.Origin = new Point(410, 552);
+            ops.Origin = new Point(410, 548);
             image.Mutate(x => x.DrawText(ops, $"{def}", GetOrCreateColor(thetaColor)));
-            ops.Origin = new Point(410, 589);
+            ops.Origin = new Point(410, 585);
             image.Mutate(x => x.DrawText(ops, $"{hp}", GetOrCreateColor(thetaColor)));
         }
 
