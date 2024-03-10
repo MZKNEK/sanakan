@@ -1062,20 +1062,16 @@ namespace Sanakan.Services.PocketWaifu
             var characters = cards.GroupBy(x => x.Character);
 
             var contentString = new StringBuilder();
-            var tempContentString = new StringBuilder();
             foreach (var cardsG in characters)
             {
                 var fC = cardsG.First();
-                if (tldr) tempContentString.Append($"\n{fC.Name} ({fC.Character}) {fC.GetCharacterUrl()} ({fC.WhoWantsCount})\n");
-                else tempContentString.Append($"\n**{fC.GetNameWithUrl()}** (KC: {fC.WhoWantsCount}) **[{cardsG.Count()}]**\n");
+                if (tldr) AppendMessage(list, contentString, $"\n{fC.Name} ({fC.Character}) {fC.GetCharacterUrl()} ({fC.WhoWantsCount})\n");
+                else AppendMessage(list, contentString, $"\n**{fC.GetNameWithUrl()}** (KC: {fC.WhoWantsCount}) **[{cardsG.Count()}]**\n");
 
                 foreach (var card in cardsG.Select(async (x, i) => $"{i+1}: {await GetCardInfo(x, mention, guild, shindenUrls, tldr)}"))
                 {
-                    AppendMessage(list, tempContentString, await card);
+                    AppendMessage(list, contentString, await card);
                 }
-
-                AppendMessage(list, contentString, tempContentString.ToString());
-                tempContentString.Clear();
             }
 
             list.Add(new EmbedBuilder()

@@ -453,10 +453,8 @@ namespace Sanakan.Services
                 var dm = await user.CreateDMChannelAsync();
                 if (tldr || embeds.Count() >= 30)
                 {
-                    using (var stream = GenerateStreamFromString(string.Join("\n", embeds.Select(x => x.Description))))
-                    {
-                        await dm.SendFileAsync(stream, "tldr.txt");
-                    }
+                    using var stream = GenerateStreamFromString(string.Join("\n", embeds.Select(x => x.Description)));
+                    await dm.SendFileAsync(stream, "tldr.txt");
                 }
                 else
                 {
