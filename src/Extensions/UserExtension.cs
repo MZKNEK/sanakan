@@ -510,9 +510,9 @@ namespace Sanakan.Extensions
 
         public static bool IsBlackMarketDisabled(this GameDeck deck) => deck.Karma > -400;
 
-        public static bool IsEvil(this GameDeck deck) => deck.Karma <= -100;
+        public static bool IsEvil(this GameDeck deck) => deck.Karma <= -200;
 
-        public static bool IsGood(this GameDeck deck) => deck.Karma >= 100;
+        public static bool IsGood(this GameDeck deck) => deck.Karma >= 200;
 
         public static bool IsNeutral(this GameDeck deck) => deck.Karma > -100 && deck.Karma < 100;
 
