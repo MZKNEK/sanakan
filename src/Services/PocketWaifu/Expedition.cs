@@ -503,6 +503,10 @@ namespace Sanakan.Services.PocketWaifu
 
             switch (expedition)
             {
+                case CardExpedition.NormalItemWithExp:
+                    karmaBonus = -Math.Abs(karmaBonus);
+                    break;
+
                 case CardExpedition.LightExp:
                 case CardExpedition.LightItems:
                 case CardExpedition.LightItemWithExp:
