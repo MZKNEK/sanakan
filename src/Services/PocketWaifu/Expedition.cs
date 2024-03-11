@@ -434,7 +434,14 @@ namespace Sanakan.Services.PocketWaifu
                 _ => 0
             };
 
-            return karmaCostPerMinute * length;
+            var dereMod = card.Dere switch
+            {
+                Dere.Kamidere => 0.8,
+                Dere.Yandere  => 1.2,
+                _ => 1
+            };
+
+            return karmaCostPerMinute * length * dereMod;
         }
 
         public double GetAffectionCostOfExpedition(double length, Card card)

@@ -3316,7 +3316,7 @@ namespace Sanakan.Modules
                         it.Count = thisItem.Count;
                     }
 
-                    totalKarma += it.Count * thisItem.Type.GetBaseKarmaChange() * 0.25;
+                    totalKarma += it.Count * thisItem.Type.GetBaseKarmaChange() * 0.2;
                     scrapes += it.Count * thisItem.Type.CValue();
                     thisItem.Count -= it.Count;
 
