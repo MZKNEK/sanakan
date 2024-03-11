@@ -1244,6 +1244,7 @@ namespace Sanakan.Services
         private bool HasDereString(Card card) => card.Quality switch
         {
             Quality.Beta => false,
+            Quality.Gamma => false,
             _ => true,
         };
 
@@ -1251,17 +1252,7 @@ namespace Sanakan.Services
         {
             switch (card.Quality)
             {
-                case Quality.Gamma:
-                {
-                    var totalPower = card.GetHealthWithPenalty();
-                    totalPower += card.GetDefenceWithBonus();
-                    totalPower += card.GetAttackWithBonus();
-
-                    if (totalPower > 5000) return Dir.GetResource($"PW/CG/{card.Quality}/Border_2.png");
-                    if (totalPower > 2000) return Dir.GetResource($"PW/CG/{card.Quality}/Border_1.png");
-                    return Dir.GetResource($"PW/CG/{card.Quality}/Border_0.png");
-                }
-
+                case Quality.Gamma: return Dir.GetResource($"PW/CG/{card.Quality}/Border/{card.Dere}.png");
                 case Quality.Beta: return Dir.GetResource($"PW/CG/{card.Quality}/Border/{card.Dere}.png");
                 default: return Dir.GetResource($"PW/CG/{card.Quality}/Border.png");
             }
@@ -1343,7 +1334,7 @@ namespace Sanakan.Services
 
         private void ApplyGammaStats(Image<Rgba32> image, Card card)
         {
-            var aphFont = GetOrCreateFont(_latoBold, 26);
+            var aphFont = GetOrCreateFont(_digital, 26);
 
             int hp = card.GetHealthWithPenalty();
             int def = card.GetDefenceWithBonus();
@@ -1352,13 +1343,30 @@ namespace Sanakan.Services
             var ops = new RichTextOptions(aphFont)
             {
                 HorizontalAlignment = HorizontalAlignment.Center,
-                Origin = new Point(145, 587)
+                KerningMode = KerningMode.Auto,
+                Origin = new Point(60, 1),
+                Dpi = 80,
             };
-            image.Mutate(x => x.DrawText(ops, $"{atk}", GetOrCreateColor("#c9282c")));
-            ops.Origin = new Point(185, 559);
-            image.Mutate(x => x.DrawText(ops, $"{def}", GetOrCreateColor("#1d64d5")));
-            ops.Origin = new Point(345, 587);
+
+            using (var atkImg = new Image<Rgba32>(120, 40))
+            {
+                atkImg.Mutate(x => x.DrawText(ops, $"{atk}", GetOrCreateColor("#c9282c")));
+                atkImg.Mutate(x => x.Rotate(22));
+
+                image.Mutate(x => x.DrawImage(atkImg, new Point(40, 514), 1));
+            }
+
+            ops.Origin = new Point(238, 563);
             image.Mutate(x => x.DrawText(ops, $"{hp}", GetOrCreateColor("#318b19")));
+
+            using (var defImg = new Image<Rgba32>(120, 40))
+            {
+                ops.Origin = new Point(60, 1);
+                defImg.Mutate(x => x.DrawText(ops, $"{def}", GetOrCreateColor("#00527f")));
+                defImg.Mutate(x => x.Rotate(-22));
+
+                image.Mutate(x => x.DrawImage(defImg, new Point(311, 513), 1));
+            }
         }
 
         private void ApplyDeltaStats(Image<Rgba32> image, Card card)
@@ -1419,8 +1427,12 @@ namespace Sanakan.Services
             int def = card.GetDefenceWithBonus();
             int atk = card.GetAttackWithBonus();
 
-            var ops = new RichTextOptions(aphFont) { HorizontalAlignment = HorizontalAlignment.Center, Dpi = 80 };
-            ops.Origin = new Point(370, 532);
+            var ops = new RichTextOptions(aphFont)
+            {
+                HorizontalAlignment = HorizontalAlignment.Center,
+                Dpi = 80,
+                Origin = new Point(370, 532)
+            };
             image.Mutate(x => x.DrawText(ops, atk.ToString("D4"), GetOrCreateColor("#da4e00")));
             ops.Origin = new Point(370, 559);
             image.Mutate(x => x.DrawText(ops, def.ToString("D4"), GetOrCreateColor("#00a4ff")));
@@ -1576,6 +1588,7 @@ namespace Sanakan.Services
             switch (card.Quality)
             {
                 case Quality.Beta: return Dir.GetResource($"PW/CG/{card.Quality}/Stats/{card.Dere}.png");
+                case Quality.Gamma: return Dir.GetResource($"PW/CG/{card.Quality}/Stats/{card.Dere}.png");
                 case Quality.Jota: return Dir.GetResource($"PW/CG/{card.Quality}/Stats/{card.Dere}_Stats.png");
                 case Quality.Theta: return Dir.GetResource($"PW/CG/{card.Quality}/{card.Dere}_Stats.png");
                 default: return Dir.GetResource($"PW/CG/{card.Quality}/Stats.png");
