@@ -1245,6 +1245,8 @@ namespace Sanakan.Services
         {
             Quality.Beta => false,
             Quality.Gamma => false,
+            Quality.Epsilon => false,
+            Quality.Theta => false,
             _ => true,
         };
 
@@ -1252,9 +1254,14 @@ namespace Sanakan.Services
         {
             switch (card.Quality)
             {
-                case Quality.Gamma: return Dir.GetResource($"PW/CG/{card.Quality}/Border/{card.Dere}.png");
-                case Quality.Beta: return Dir.GetResource($"PW/CG/{card.Quality}/Border/{card.Dere}.png");
-                default: return Dir.GetResource($"PW/CG/{card.Quality}/Border.png");
+                case Quality.Epsilon:
+                case Quality.Gamma:
+                case Quality.Beta:
+                case Quality.Theta:
+                    return Dir.GetResource($"PW/CG/{card.Quality}/Border/{card.Dere}.png");
+
+                default:
+                    return Dir.GetResource($"PW/CG/{card.Quality}/Border.png");
             }
         }
 
@@ -1398,25 +1405,38 @@ namespace Sanakan.Services
 
         private void ApplyEpsilonStats(Image<Rgba32> image, Card card)
         {
-            var aphFont = GetOrCreateFont(_latoBold, 28);
+            var aphFont = GetOrCreateFont(_latoBold, 22);
 
             int hp = card.GetHealthWithPenalty();
             int def = card.GetDefenceWithBonus();
             int atk = card.GetAttackWithBonus();
-            var ops = new RichTextOptions(aphFont) { KerningMode = KerningMode.Auto, Dpi = 80 };
-            using (var defImg = new Image<Rgba32>(120, 40))
-            {
-                ops.Origin = new Point(1);
-                defImg.Mutate(x => x.DrawText(ops, $"{hp}", GetOrCreateColor("#40ff40")));
-                defImg.Mutate(x => x.Rotate(-4));
 
-                image.Mutate(x => x.DrawImage(defImg, new Point(59, 352), 1));
+            var ops = new RichTextOptions(aphFont)
+            {
+                HorizontalAlignment = HorizontalAlignment.Center,
+                KerningMode = KerningMode.Auto,
+                Origin = new Point(60, 1),
+            };
+
+            using (var atkImg = new Image<Rgba32>(120, 40))
+            {
+                atkImg.Mutate(x => x.DrawText(ops, $"{atk}", GetOrCreateColor("#c9282c")));
+                atkImg.Mutate(x => x.Rotate(28));
+
+                image.Mutate(x => x.DrawImage(atkImg, new Point(52, 554), 1));
             }
 
-            ops.Origin = new Point(70, 428);
-            image.Mutate(x => x.DrawText(ops, $"{atk}", GetOrCreateColor("#da4e00")));
-            ops.Origin = new Point(54, 481);
-            image.Mutate(x => x.DrawText(ops, $"{def}", GetOrCreateColor("#00a4ff")));
+            ops.Origin = new Point(238, 592);
+            image.Mutate(x => x.DrawText(ops, $"{hp}", GetOrCreateColor("#318b19")));
+
+            using (var defImg = new Image<Rgba32>(120, 40))
+            {
+                ops.Origin = new Point(60, 1);
+                defImg.Mutate(x => x.DrawText(ops, $"{def}", GetOrCreateColor("#00527f")));
+                defImg.Mutate(x => x.Rotate(-26));
+
+                image.Mutate(x => x.DrawImage(defImg, new Point(300, 554), 1));
+            }
         }
 
         private void ApplyZetaStats(Image<Rgba32> image, Card card)
@@ -1486,7 +1506,7 @@ namespace Sanakan.Services
                 atkImg.Mutate(x => x.DrawText($"{atk}", aphFont, GetOrCreateColor(jotaColor), new Point(1)));
                 atkImg.Mutate(x => x.Rotate(-10));
 
-                image.Mutate(x => x.DrawImage(atkImg, new Point(106, 540), 1));
+                image.Mutate(x => x.DrawImage(atkImg, new Point(106, 545), 1));
             }
 
             using (var defImg = new Image<Rgba32>(120, 40))
@@ -1494,10 +1514,10 @@ namespace Sanakan.Services
                 defImg.Mutate(x => x.DrawText($"{def}", aphFont, GetOrCreateColor(jotaColor), new Point(1)));
                 defImg.Mutate(x => x.Rotate(10));
 
-                image.Mutate(x => x.DrawImage(defImg, new Point(310, 552), 1));
+                image.Mutate(x => x.DrawImage(defImg, new Point(310, 557), 1));
             }
 
-            var ops = new RichTextOptions(aphFont) { HorizontalAlignment = HorizontalAlignment.Center, Origin = new Point(238, 580) };
+            var ops = new RichTextOptions(aphFont) { HorizontalAlignment = HorizontalAlignment.Center, Origin = new Point(238, 585) };
             image.Mutate(x => x.DrawText(ops, $"{hp}", GetOrCreateColor(jotaColor)));
         }
 
@@ -1587,11 +1607,14 @@ namespace Sanakan.Services
         {
             switch (card.Quality)
             {
-                case Quality.Beta: return Dir.GetResource($"PW/CG/{card.Quality}/Stats/{card.Dere}.png");
-                case Quality.Gamma: return Dir.GetResource($"PW/CG/{card.Quality}/Stats/{card.Dere}.png");
-                case Quality.Jota: return Dir.GetResource($"PW/CG/{card.Quality}/Stats/{card.Dere}_Stats.png");
-                case Quality.Theta: return Dir.GetResource($"PW/CG/{card.Quality}/{card.Dere}_Stats.png");
-                default: return Dir.GetResource($"PW/CG/{card.Quality}/Stats.png");
+                case Quality.Beta:
+                case Quality.Gamma:
+                case Quality.Jota:
+                case Quality.Theta:
+                    return Dir.GetResource($"PW/CG/{card.Quality}/Stats/{card.Dere}.png");
+
+                default:
+                    return Dir.GetResource($"PW/CG/{card.Quality}/Stats.png");
             }
         }
 
@@ -1599,7 +1622,7 @@ namespace Sanakan.Services
         {
             switch (card.Quality)
             {
-                case Quality.Jota: return Dir.GetResource($"PW/CG/{card.Quality}/Border/{card.Dere}_Border.png");
+                case Quality.Jota: return Dir.GetResource($"PW/CG/{card.Quality}/Border/{card.Dere}.png");
                 default: return Dir.GetResource($"PW/CG/{card.Quality}/BorderBack.png");
             }
         }
