@@ -2015,7 +2015,7 @@ namespace Sanakan.Services.PocketWaifu
                     if (imgCheck.IsError())
                         return ExecutionResult.From(imgCheck);
 
-                    if (card.Image == null && !card.FromFigure)
+                    if (card.Image is null && !card.FromFigure && !card.Unique)
                         return ExecutionResult.FromError("Aby ustawić własny obrazek, karta musi posiadać wcześniej ustawiony główny (na stronie)!");
 
                     var (isUrlToImage, imageExt) = await _img.IsUrlToImageAsync(imgCheck.Url);

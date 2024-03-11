@@ -532,7 +532,7 @@ namespace Sanakan.Services.PocketWaifu
                     break;
             }
 
-            costPerMinute *= card.HasImage() ? 1 : 2;
+            costPerMinute *= card.HasImage() ? 1 : 4;
             fuel += costOffset + karmaBonus;
             var time = fuel / costPerMinute;
 
