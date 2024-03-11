@@ -507,6 +507,10 @@ namespace Sanakan.Services.PocketWaifu
                     karmaBonus = -Math.Abs(karmaBonus);
                     break;
 
+                case CardExpedition.ExtremeItemWithExp:
+                    karmaBonus = 0;
+                    break;
+
                 case CardExpedition.LightExp:
                 case CardExpedition.LightItems:
                 case CardExpedition.LightItemWithExp:

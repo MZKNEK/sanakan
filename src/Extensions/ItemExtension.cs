@@ -879,7 +879,7 @@ namespace Sanakan.Extensions
             {
                 index++;
 
-                if (filterDisabled || item.Name.Contains(filter, StringComparison.CurrentCultureIgnoreCase))
+                if (filterDisabled || item.Name.Contains(filter, StringComparison.InvariantCultureIgnoreCase))
                     items.Add($"**[{index}]** {item.Name} x{item.Count}");
             }
 
