@@ -1579,12 +1579,22 @@ namespace Sanakan.Services.PocketWaifu
                 return "Coś poszło nie tak, wyprawa nie została zakończona.";
             }
 
-            var totalExp = 0d;
-            var totalItemsCnt = 0;
             bool allowItems = true;
-            bool losedFight = false;
             var multiplier = (duration.RealTime < 60) ? ((duration.RealTime < 30) ? 3d : 2d) : 1d;
             var reward = multiplier != 1 ? "Wyprawa? Chyba po bułki do sklepu.\n\n" : "";
+
+            var totalExp = _expedition.GetExpFromExpedition(duration.CalcTime, card);
+            totalExp /= card.Curse == CardCurse.LoweredExperience ? 5 : 1;
+            totalExp = card.FromFigure ? 0 : totalExp;
+
+            var totalItemsCnt = _expedition.GetItemsCountFromExpedition(duration.CalcTime, card, user);
+            var karmaCost = _expedition.GetKarmaCostOfExpedition(duration.CalcTime, card, user);
+
+            if (duration.CalcTime <= 5)
+            {
+                totalItemsCnt = 0;
+                totalExp /= 2;
+            }
 
             if (CheckEventInExpedition(card.Expedition, duration))
             {
@@ -1600,7 +1610,7 @@ namespace Sanakan.Services.PocketWaifu
                 else if (e == EventType.LoseCard)
                 {
                     user.StoreExpIfPossible(totalExp);
-                    if (Fun.TakeATry(10d))
+                    if (Fun.TakeATry(6d))
                     {
                         user.GameDeck.AddItem(ItemType.GiveTagSlot.ToItem());
                         reward += $"Mimo wszystko coś po sobie zostawiła!\n";
@@ -1608,26 +1618,12 @@ namespace Sanakan.Services.PocketWaifu
                 }
                 else if (e == EventType.Fight && !allowItems)
                 {
-                    losedFight = true;
+                    totalExp /= 6;
                 }
             }
 
-            totalExp += _expedition.GetExpFromExpedition(duration.CalcTime, card);
-            totalExp /= card.Curse == CardCurse.LoweredExperience ? 5 : 1;
-            totalExp /= losedFight ? 6 : 1;
-            totalExp = card.FromFigure ? 0 : totalExp;
-
-            totalItemsCnt += _expedition.GetItemsCountFromExpedition(duration.CalcTime, card, user);
-            var karmaCost = _expedition.GetKarmaCostOfExpedition(duration.CalcTime, card, user);
-
             var rawAffectionCost = _expedition.GetAffectionCostOfExpedition(duration.CalcTime, card);
             var affectionCost = rawAffectionCost * multiplier;
-
-            if (duration.CalcTime <= 5)
-            {
-                totalItemsCnt = 0;
-                totalExp /= 2;
-            }
 
             card.ExpCnt += totalExp;
 
