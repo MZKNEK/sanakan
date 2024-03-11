@@ -455,14 +455,14 @@ namespace Sanakan.Services.PocketWaifu
                 _ => 1
             };
 
-            var dereMod = card.Dere switch
+            var dereUltMod = card.Dere switch
             {
                 Dere.Yami   => 0.75,
                 Dere.Raito  => 0.75,
                 Dere.Yato   => 0.65,
                 _ => 1
             };
-            dereMod = qualityMod < 1 ? 0.6 : dereMod;
+            dereUltMod = qualityMod < 1 ? 0.6 : dereUltMod;
 
             var affectionCostPerMinute = card.Expedition switch
             {
@@ -474,10 +474,10 @@ namespace Sanakan.Services.PocketWaifu
                 CardExpedition.LightItems           => 0.132 * qualityMod,
                 CardExpedition.LightItemWithExp     => 0.125,
                 CardExpedition.DarkItemWithExp      => 0.125,
-                CardExpedition.UltimateEasy         => 2 * dereMod * qualityMod,
-                CardExpedition.UltimateMedium       => 2 * dereMod * qualityMod,
-                CardExpedition.UltimateHard         => 4 * dereMod * qualityMod,
-                CardExpedition.UltimateHardcore     => 1 * dereMod * qualityMod,
+                CardExpedition.UltimateEasy         => 2 * dereUltMod * qualityMod,
+                CardExpedition.UltimateMedium       => 2 * dereUltMod * qualityMod,
+                CardExpedition.UltimateHard         => 4 * dereUltMod * qualityMod,
+                CardExpedition.UltimateHardcore     => 1 * dereUltMod * qualityMod,
                 _ => 0
             };
 
@@ -490,7 +490,15 @@ namespace Sanakan.Services.PocketWaifu
                 _ => 1
             };
 
-            return affectionCostPerMinute * length * rarityMod;
+            var dereMod = card.Dere switch
+            {
+                Dere.Tsundere => 2,
+                Dere.Kamidere => 1.1,
+                Dere.Yandere  => 1.1,
+                _ => 1
+            };
+
+            return affectionCostPerMinute * length * rarityMod * dereMod;
         }
 
         public double GetMaxPossibleLengthOfExpedition(User user, Card card, CardExpedition expedition = CardExpedition.None)
@@ -563,9 +571,10 @@ namespace Sanakan.Services.PocketWaifu
                 Dere.Tsundere   => 0.5,
                 Dere.Kamidere   => 0.9,
                 Dere.Yandere    => 0.9,
-                Dere.Yami       => user.GameDeck.CanCreateDemon() ? 1.2 : 1.1,
-                Dere.Raito      => user.GameDeck.CanCreateAngel() ? 1.2 : 1.1,
-                Dere.Yato       => user.GameDeck.IsNeutral() ? 1.4 : 1.3,
+                Dere.Bodere     => 0.85,
+                Dere.Yami       => user.GameDeck.CanCreateDemon()  ? 1.2 : 1.1,
+                Dere.Raito      => user.GameDeck.CanCreateAngel()  ? 1.2 : 1.1,
+                Dere.Yato       => user.GameDeck.IsNeutral()       ? 1.4 : 1.3,
                 _ => 1
             };
 
