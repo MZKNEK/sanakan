@@ -43,6 +43,10 @@ namespace Sanakan.Api.Models
         /// W jaki sposów filtrować po tagach
         /// </summary>
         public FilterTagsMethodType FilterTagsMethod { get; set; }
+        /// <summary>
+        /// Lista id kart
+        /// </summary>
+        public List<ulong> CardIds { get; set; }
 
         public static IQueryable<Card> Use(OrderType type, IQueryable<Card> query)
         {

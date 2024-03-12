@@ -146,12 +146,40 @@ namespace Sanakan.Api.Controllers
                 var query = db.Cards.AsQueryable().AsSplitQuery().Include(x => x.Tags).AsNoTracking();
                 if (!string.IsNullOrEmpty(filter.SearchText))
                 {
-                    query = query.Where(x => x.Name.Contains(filter.SearchText) || x.Title.Contains(filter.SearchText) || x.Id.ToString().Contains(filter.SearchText));
+                    query = query.Where(x => x.Name.Contains(filter.SearchText) || x.Title.Contains(filter.SearchText) || filter.SearchText.Contains(x.Id.ToString()));
                 }
 
                 query = CardsQueryFilter.Use(filter.OrderBy, query);
+                query = FilterCardsByIds(query, filter);
 
                 var cards = (await FilterCardsByTags(query, filter).FromCacheAsync("api-all-cards")).ToList();
+
+                return new FilteredCards{TotalCards = cards.Count, Cards = cards.Skip((int)offset).Take((int)count).ToView()};
+            }
+        }
+
+        /// <summary>
+        /// Pobiera x kart z przefiltowanej listy unikatowych kart
+        /// </summary>
+        /// <param name="offset">przesunięcie</param>
+        /// <param name="count">liczba kart</param>
+        /// <param name="filter">filtry listy</param>
+        /// <returns>lista kart</returns>
+        [HttpPost("user/unique/cards/{offset}/{count}")]
+        public async Task<FilteredCards> GetUniqueCardsWithOffsetAndFilterAsync(uint offset, uint count, [FromBody]CardsQueryFilter filter)
+        {
+            using (var db = new Database.DatabaseContext(_config))
+            {
+                var query = db.Cards.AsQueryable().AsSplitQuery().Where(x => x.Unique).Include(x => x.GameDeck).ThenInclude(x => x.User).Include(x => x.Tags).AsNoTracking();
+                if (!string.IsNullOrEmpty(filter.SearchText))
+                {
+                    query = query.Where(x => x.Name.Contains(filter.SearchText) || x.Title.Contains(filter.SearchText) || filter.SearchText.Contains(x.Id.ToString()));
+                }
+
+                query = CardsQueryFilter.Use(filter.OrderBy, query);
+                query = FilterCardsByIds(query, filter);
+
+                var cards = await FilterCardsByTags(query, filter).ToListAsync();
 
                 return new FilteredCards{TotalCards = cards.Count, Cards = cards.Skip((int)offset).Take((int)count).ToView()};
             }
@@ -188,10 +216,11 @@ namespace Sanakan.Api.Controllers
                 var query = db.Cards.AsQueryable().AsSplitQuery().Where(x => x.GameDeckId == user.GameDeck.Id).Include(x => x.Tags).AsNoTracking();
                 if (!string.IsNullOrEmpty(filter.SearchText))
                 {
-                    query = query.Where(x => x.Name.Contains(filter.SearchText) || x.Title.Contains(filter.SearchText) || x.Id.ToString().Contains(filter.SearchText));
+                    query = query.Where(x => x.Name.Contains(filter.SearchText) || x.Title.Contains(filter.SearchText) || filter.SearchText.Contains(x.Id.ToString()));
                 }
 
                 query = CardsQueryFilter.Use(filter.OrderBy, query);
+                query = FilterCardsByIds(query, filter);
 
                 var cards = await FilterCardsByTags(query, filter).ToListAsync();
 
@@ -1043,6 +1072,16 @@ namespace Sanakan.Api.Controllers
             {
                 foreach (var eTag in filter.ExcludeTags)
                     cards = cards.Where(x => !x.Tags.Any(t => t.Id == eTag.Id));
+            }
+
+            return cards;
+        }
+
+        private IQueryable<Card> FilterCardsByIds(IQueryable<Card> cards, CardsQueryFilter filter)
+        {
+            if (!filter.CardIds.IsNullOrEmpty())
+            {
+                cards = cards.Where(x => filter.CardIds.Contains(x.Id));
             }
 
             return cards;
