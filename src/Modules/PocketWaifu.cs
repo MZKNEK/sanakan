@@ -3917,6 +3917,8 @@ namespace Sanakan.Modules
                 var dCnt = bUser.GameDeck.Cards.Count(x => x.Rarity == Rarity.D);
                 var eCnt = bUser.GameDeck.Cards.Count(x => x.Rarity == Rarity.E);
 
+                var resetCnt = bUser.GameDeck.Cards.Sum(x => x.RestartCnt);
+
                 var aPvp = bUser.GameDeck?.PvPStats?.Count(x => x.Type == FightType.NewVersus);
                 var wPvp = bUser.GameDeck?.PvPStats?.Count(x => x.Result == FightResult.Win && x.Type == FightType.NewVersus);
 
@@ -3937,6 +3939,7 @@ namespace Sanakan.Modules
                     Description = $"*{bUser.GameDeck.GetUserNameStatus()}*\n\n"
                                 + $"**Skrzynia({(int)bUser.GameDeck.ExpContainer.Level})**: {bUser.GameDeck.ExpContainer.ExpCount:F}\n"
                                 + $"**Uwolnione**: {bUser.Stats.ReleasedCards}\n**Zniszczone**: {bUser.Stats.DestroyedCards}\n**Poświęcone**: {bUser.Stats.SacraficeCards}\n**Ulepszone**: {bUser.Stats.UpgaredCards}\n**Wyzwolone**: {bUser.Stats.UnleashedCards}\n\n"
+                                + $"**Restartów na kartach:**: {resetCnt}\n\n"
                                 + $"**CT**: {bUser.GameDeck.CTCnt}\n**Karma**: {bUser.GameDeck.Karma:F}\n\n**Posiadane karty**: {bUser.GameDeck.Cards.Count}\n"
                                 + $"{sssString}**SS**: {ssCnt} **S**: {sCnt} **A**: {aCnt} **B**: {bCnt} **C**: {cCnt} **D**: {dCnt} **E**:{eCnt}\n\n"
                                 + $"**PVP** Rozegrane: {aPvp} Wygrane: {wPvp}\n**GR**: {globalString}\n**SR**: {seasonString}"
