@@ -39,6 +39,7 @@ namespace Sanakan.Database.Models
 
         public long LotteryTicketsUsed { get; set; }
         public long ReversedKarmaCnt { get; set; }
+        public long CreatedCardsFromItems { get; set; }
 
         public ulong UserId { get; set; }
         [JsonIgnore]

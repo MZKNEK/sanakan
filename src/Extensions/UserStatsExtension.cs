@@ -26,7 +26,13 @@ namespace Sanakan.Extensions
                 + $"**-Pudeł**: {stats.Misd}\n\n"
                 + $"**Pakiety otwarte**:\n"
                 + $"**-Aktywność**: {stats.OpenedBoosterPacksActivity}\n"
-                + $"**-Inne**: {stats.OpenedBoosterPacks}";
+                + $"**-Inne**: {stats.OpenedBoosterPacks}\n\n"
+                + $"**Ulepszenia do SSS**: {stats.UpgradedToSSS}\n"
+                + $"**Ustawienie Yato**: {stats.YatoUpgrades}\n"
+                + $"**Ustawienie Raito**: {stats.RaitoUpgrades}\n"
+                + $"**Ustawienie Yami**: {stats.YamiUpgrades}\n\n"
+                + $"**Użyte bilety**: {stats.LotteryTicketsUsed}\n"
+                + $"**Odwrocona karma**: {stats.ReversedKarmaCnt}";
         }
     }
 }

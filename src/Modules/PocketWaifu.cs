@@ -2425,6 +2425,7 @@ namespace Sanakan.Modules
                     card.Source = CardSource.Tinkering;
 
                     totalCards.Add(card);
+                    bUser.Stats.CreatedCardsFromItems++;
 
                     bool isOnUserWishlist = await bUser.GameDeck.RemoveCharacterFromWishListAsync(card.Character, db);
                     if (isOnUserWishlist)
@@ -3291,7 +3292,6 @@ namespace Sanakan.Modules
                 }
 
                 long scrapes = 0;
-                double totalKarma = 0;
                 var errors = new List<string>();
                 var userItems = buser.GetAllItems().ToArray();
                 foreach (var it in items)
@@ -3316,15 +3316,12 @@ namespace Sanakan.Modules
                         it.Count = thisItem.Count;
                     }
 
-                    totalKarma += it.Count * thisItem.Type.GetBaseKarmaChange() * 0.2;
                     scrapes += it.Count * thisItem.Type.CValue();
                     thisItem.Count -= it.Count;
 
                     if (thisItem.Count < 1)
                         buser.GameDeck.Items.Remove(thisItem);
                 }
-
-                buser.GameDeck.Karma -= totalKarma;
 
                 var tItem = buser.GameDeck.Items.FirstOrDefault(x => x.Type == ItemType.CardFragment);
                 if (tItem == null)
