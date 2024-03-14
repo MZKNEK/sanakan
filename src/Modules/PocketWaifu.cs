@@ -3396,8 +3396,12 @@ namespace Sanakan.Modules
                     && !message.Contains("Utrata karty")
                     && !_tags.HasTag(thisCard, Services.PocketWaifu.TagType.Favorite))
                 {
-                    action = $"\n\n{trashTag.Icon} Wykonano akcje: **{botUser.GameDeck.EndOfExpeditionAction.ToName()}** na karcie powracającej z wyprawy.";
-                    thisCard.DestroyOrRelease(botUser, botUser.GameDeck.EndOfExpeditionAction == ActionAfterExpedition.Release, 0.14);
+                    var receivedCt = thisCard.DestroyOrRelease(botUser, botUser.GameDeck.EndOfExpeditionAction == ActionAfterExpedition.Release, 0.14);
+                    var addMsg = receivedCt && botUser.GameDeck.EndOfExpeditionAction == ActionAfterExpedition.Release;
+
+                    action = addMsg ? $"\n\n{trashTag.Icon} Wykonano akcje: **{botUser.GameDeck.EndOfExpeditionAction.ToName()}** na karcie powracającej z wyprawy.\nWieść o twoim okrucieństwie się rozeszła."
+                        : $"\n\n{trashTag.Icon} Wykonano akcje: **{botUser.GameDeck.EndOfExpeditionAction.ToName()}** na karcie powracającej z wyprawy.";
+
                     _waifu.DeleteCardImageIfExist(thisCard);
                     botUser.GameDeck.Cards.Remove(thisCard);
                 }
@@ -3939,7 +3943,7 @@ namespace Sanakan.Modules
                     Description = $"*{bUser.GameDeck.GetUserNameStatus()}*\n\n"
                                 + $"**Skrzynia({(int)bUser.GameDeck.ExpContainer.Level})**: {bUser.GameDeck.ExpContainer.ExpCount:F}\n"
                                 + $"**Uwolnione**: {bUser.Stats.ReleasedCards}\n**Zniszczone**: {bUser.Stats.DestroyedCards}\n**Poświęcone**: {bUser.Stats.SacraficeCards}\n**Ulepszone**: {bUser.Stats.UpgaredCards}\n**Wyzwolone**: {bUser.Stats.UnleashedCards}\n\n"
-                                + $"**Restartów na kartach:**: {resetCnt}\n\n"
+                                + $"**Restartów na kartach**: {resetCnt}\n\n"
                                 + $"**CT**: {bUser.GameDeck.CTCnt}\n**Karma**: {bUser.GameDeck.Karma:F}\n\n**Posiadane karty**: {bUser.GameDeck.Cards.Count}\n"
                                 + $"{sssString}**SS**: {ssCnt} **S**: {sCnt} **A**: {aCnt} **B**: {bCnt} **C**: {cCnt} **D**: {dCnt} **E**:{eCnt}\n\n"
                                 + $"**PVP** Rozegrane: {aPvp} Wygrane: {wPvp}\n**GR**: {globalString}\n**SR**: {seasonString}"

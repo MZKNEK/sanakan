@@ -776,7 +776,7 @@ namespace Sanakan.Extensions
             return false;
         }
 
-        public static void DestroyOrRelease(this Card card, User user, bool release, double crueltyBonus = 0)
+        public static bool DestroyOrRelease(this Card card, User user, bool release, double crueltyBonus = 0)
         {
             if (card.CustomImage != null && Dir.IsLocal(card.CustomImage) && File.Exists(card.CustomImage))
                 File.Delete(card.CustomImage);
@@ -786,13 +786,12 @@ namespace Sanakan.Extensions
 
             if (release)
             {
-                card.ReleaseCard(user, crueltyBonus);
-                return;
+                return card.ReleaseCard(user, crueltyBonus);
             }
-            card.DestroyCard(user, crueltyBonus);
+            return card.DestroyCard(user, crueltyBonus);
         }
 
-        public static void DestroyCard(this Card card, User user, double crueltyBonus = 0)
+        public static bool DestroyCard(this Card card, User user, double crueltyBonus = 0)
         {
             var chLvl = user.GameDeck.ExpContainer.Level;
             user.StoreExpIfPossible((card.ExpCnt > card.GetMaxExpToChest(chLvl))
@@ -806,10 +805,12 @@ namespace Sanakan.Extensions
             {
                 var max = card.GetValue();
                 user.GameDeck.CTCnt += Math.Max(Math.Min(max, (int)(max * card.MarketValue)), 1);
+                return true;
             }
+            return false;
         }
 
-        public static void ReleaseCard(this Card card, User user, double crueltyBonus = 0)
+        public static bool ReleaseCard(this Card card, User user, double crueltyBonus = 0)
         {
             var chLvl = user.GameDeck.ExpContainer.Level;
             user.StoreExpIfPossible(((card.ExpCnt / 2) > card.GetMaxExpToChest(chLvl))
@@ -818,6 +819,14 @@ namespace Sanakan.Extensions
 
             user.GameDeck.Karma += user.GameDeck.CanCreateAngel() ? (0.74 - crueltyBonus) : (1 - crueltyBonus);
             user.Stats.ReleasedCards += 1;
+
+            if (card.MarketValue >= 0.05 && crueltyBonus > 0 && Fun.TakeATry(50d))
+            {
+                var max = card.GetValue();
+                user.GameDeck.CTCnt += Math.Max(Math.Min(max, (int)(max * card.MarketValue)), 1);
+                return true;
+            }
+            return false;
         }
 
         public static void CalculateMarketValue(this Card card, double sourceCnt, double targetCnt)
