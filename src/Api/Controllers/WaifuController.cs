@@ -146,7 +146,7 @@ namespace Sanakan.Api.Controllers
                 var query = db.Cards.AsQueryable().AsSplitQuery().Include(x => x.Tags).AsNoTracking();
                 if (!string.IsNullOrEmpty(filter.SearchText))
                 {
-                    query = query.Where(x => x.Name.Contains(filter.SearchText) || x.Title.Contains(filter.SearchText) || filter.SearchText.Contains(x.Id.ToString()));
+                    query = query.Where(x => x.Name.Contains(filter.SearchText) || x.Title.Contains(filter.SearchText));
                 }
 
                 query = CardsQueryFilter.Use(filter.OrderBy, query);
@@ -165,7 +165,7 @@ namespace Sanakan.Api.Controllers
         /// <param name="count">liczba kart</param>
         /// <param name="filter">filtry listy</param>
         /// <returns>lista kart</returns>
-        [HttpPost("user/unique/cards/{offset}/{count}")]
+        [HttpPost("unique/cards/{offset}/{count}")]
         public async Task<FilteredCards> GetUniqueCardsWithOffsetAndFilterAsync(uint offset, uint count, [FromBody]CardsQueryFilter filter)
         {
             using (var db = new Database.DatabaseContext(_config))
@@ -173,7 +173,7 @@ namespace Sanakan.Api.Controllers
                 var query = db.Cards.AsQueryable().AsSplitQuery().Where(x => x.Unique).Include(x => x.GameDeck).ThenInclude(x => x.User).Include(x => x.Tags).AsNoTracking();
                 if (!string.IsNullOrEmpty(filter.SearchText))
                 {
-                    query = query.Where(x => x.Name.Contains(filter.SearchText) || x.Title.Contains(filter.SearchText) || filter.SearchText.Contains(x.Id.ToString()));
+                    query = query.Where(x => x.Name.Contains(filter.SearchText) || x.Title.Contains(filter.SearchText));
                 }
 
                 query = CardsQueryFilter.Use(filter.OrderBy, query);
@@ -216,7 +216,7 @@ namespace Sanakan.Api.Controllers
                 var query = db.Cards.AsQueryable().AsSplitQuery().Where(x => x.GameDeckId == user.GameDeck.Id).Include(x => x.Tags).AsNoTracking();
                 if (!string.IsNullOrEmpty(filter.SearchText))
                 {
-                    query = query.Where(x => x.Name.Contains(filter.SearchText) || x.Title.Contains(filter.SearchText) || filter.SearchText.Contains(x.Id.ToString()));
+                    query = query.Where(x => x.Name.Contains(filter.SearchText) || x.Title.Contains(filter.SearchText));
                 }
 
                 query = CardsQueryFilter.Use(filter.OrderBy, query);
