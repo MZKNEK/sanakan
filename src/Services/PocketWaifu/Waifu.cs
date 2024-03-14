@@ -322,6 +322,7 @@ namespace Sanakan.Services.PocketWaifu
                 new ItemWithCost(569,   ItemType.ResetCardValue.ToItem()),
                 new ItemWithCost(9999,  ItemType.SetCustomAnimatedImage.ToItem()),
                 new ItemWithCost(444,   ItemType.GiveTagSlot.ToItem()),
+                new ItemWithCost(99999, ItemType.NotAnItem.ToItem()),
             };
         }
 
@@ -783,6 +784,18 @@ namespace Sanakan.Services.PocketWaifu
                 character.HasImage ? character.PictureUrl : string.Empty, rarity, _time.Now());
 
             card.Character = character.Id;
+
+            if (user != null)
+                card.FirstIdOwner = user.Id;
+
+            return card;
+        }
+
+        public Card GenerateNewCard(IUser user, string characterName, string titleName, ulong charId)
+        {
+            var card = GenerateNewCard(characterName, titleName, string.Empty, RandomizeRarity(), _time.Now());
+
+            card.Character = charId;
 
             if (user != null)
                 card.FirstIdOwner = user.Id;

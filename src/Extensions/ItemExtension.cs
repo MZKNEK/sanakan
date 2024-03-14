@@ -108,6 +108,8 @@ namespace Sanakan.Extensions
                     return $"Zdejmuje klątwę z karty.";
                 case ItemType.CreationItemBase:
                     return $"Jest wymagany przy tworzeniu dowolnego przedmiotu.";
+                case ItemType.NotAnItem:
+                    return $"Pozwala wytworzyć kartę postaci spoza bazy shindena.";
 
                 default:
                     return "Brak opisu.";
@@ -266,6 +268,8 @@ namespace Sanakan.Extensions
                     return $"Rozbita butelka";
                 case ItemType.GiveTagSlot:
                     return $"Nieśmiertelnik";
+                case ItemType.NotAnItem:
+                    return $"Magiczna rózga";
 
                 default:
                     return "Brak";
@@ -532,6 +536,7 @@ namespace Sanakan.Extensions
                 case ItemType.RemoveCurse:
                 case ItemType.CreationItemBase:
                 case ItemType.GiveTagSlot:
+                case ItemType.NotAnItem:
                     return true;
 
                 default:
@@ -591,6 +596,8 @@ namespace Sanakan.Extensions
                     return 800;
                 case ItemType.GiveTagSlot:
                     return 1150;
+                case ItemType.CreationItemBase:
+                    return 222;
                 case ItemType.CardFragment:
                     return 0;
 

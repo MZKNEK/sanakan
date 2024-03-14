@@ -1159,6 +1159,28 @@ namespace Sanakan.Modules
             }
         }
 
+        [Command("gfcard"), Priority(1), RequireDev]
+        [Summary("generuje kartę nieistneijącej postaci i daje ją użytkownikowi")]
+        [Remarks("Sniku")]
+        public async Task GenerateFakeCardAsync([Summary("nazwa użytkownika")]SocketGuildUser user, [Summary("nazwa")]string name, [Summary("tytuł")]string title)
+        {
+            using (var db = new Database.DatabaseContext(Config))
+            {
+                var botuser = await db.GetUserOrCreateAsync(user.Id);
+
+                var card = _waifu.GenerateNewCard(user, name, title, 50453);
+                card.Source = CardSource.GodIntervention;
+
+                botuser.GameDeck.Cards.Add(card);
+
+                await db.SaveChangesAsync();
+
+                QueryCacheManager.ExpireTag(new string[] { $"user-{botuser.Id}", "users" });
+
+                await ReplyAsync("", embed: $"{user.Mention} otrzymał {card.GetString(false, false, true)}.".ToEmbedMessage(EMType.Success).Build());
+            }
+        }
+
         [Command("ctou"), Priority(1), RequireDev]
         [Summary("zamienia kartę na ultimate")]
         [Remarks("54861 Zeta 100 100 1000")]
