@@ -1170,6 +1170,7 @@ namespace Sanakan.Modules
 
                 var card = _waifu.GenerateNewCard(user, name, title, 50453);
                 card.Source = CardSource.GodIntervention;
+                card.Unique = true;
 
                 botuser.GameDeck.Cards.Add(card);
 
