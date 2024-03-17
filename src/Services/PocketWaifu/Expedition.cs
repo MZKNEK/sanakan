@@ -95,8 +95,8 @@ namespace Sanakan.Services.PocketWaifu
             },
             {ItemDropType.Rare, new List<(ItemType, int)>
                 {
-                    (ItemType.IncreaseUpgradeCnt,       6),
-                    (ItemType.NotAnItem,                4),
+                    (ItemType.IncreaseUpgradeCnt,       4),
+                    (ItemType.NotAnItem,                6),
                 }.ToRealList()
             },
             {ItemDropType.Legendary, new List<(ItemType, int)>
@@ -208,14 +208,12 @@ namespace Sanakan.Services.PocketWaifu
                 {
                     (ItemDropType.Common,     46),
                     (ItemDropType.Rare,       20),
-                    (ItemDropType.Food,       20),
                     (ItemDropType.Legendary,  17),
                 }.ToRealList()
             },
             {CardExpedition.DarkItems, new List<(ItemDropType, int)>
                 {
                     (ItemDropType.Common,     41),
-                    (ItemDropType.Food,       34),
                     (ItemDropType.Rare,       14),
                     (ItemDropType.Legendary,  11),
                 }.ToRealList()
@@ -225,14 +223,12 @@ namespace Sanakan.Services.PocketWaifu
                     (ItemDropType.None,       10),
                     (ItemDropType.Common,     46),
                     (ItemDropType.Rare,       28),
-                    (ItemDropType.Food,       15),
                     (ItemDropType.Legendary,  1),
                 }.ToRealList()
             },
             {CardExpedition.LightItems, new List<(ItemDropType, int)>
                 {
                     (ItemDropType.Common,     41),
-                    (ItemDropType.Food,       34),
                     (ItemDropType.Rare,       14),
                     (ItemDropType.Legendary,  11),
                 }.ToRealList()
@@ -242,7 +238,6 @@ namespace Sanakan.Services.PocketWaifu
                     (ItemDropType.None,       10),
                     (ItemDropType.Common,     46),
                     (ItemDropType.Rare,       28),
-                    (ItemDropType.Food,       15),
                     (ItemDropType.Legendary,  1),
                 }.ToRealList()
             },
@@ -384,7 +379,7 @@ namespace Sanakan.Services.PocketWaifu
             var expPerHour = card.Expedition switch
             {
                 CardExpedition.NormalItemWithExp    => 2,
-                CardExpedition.ExtremeItemWithExp   => 4.5,
+                CardExpedition.ExtremeItemWithExp   => 2.2,
                 CardExpedition.LightItemWithExp     => 2.5,
                 CardExpedition.DarkItemWithExp      => 2.5,
                 CardExpedition.LightExp             => 16,
@@ -414,7 +409,7 @@ namespace Sanakan.Services.PocketWaifu
                 _ => 0
             };
 
-            itemsPerHour *= card.Dere == Dere.Yato ? 1.3 : 1;
+            itemsPerHour *= card.Dere == Dere.Yato ? 1.2 : 1;
 
             return (int) (itemsPerHour / 60 * length);
         }
@@ -424,7 +419,7 @@ namespace Sanakan.Services.PocketWaifu
             var karmaCostPerMinute = card.Expedition switch
             {
                 CardExpedition.NormalItemWithExp    => user.GameDeck.IsGood() ? 0.025 : 0.00225,
-                CardExpedition.ExtremeItemWithExp   => 0.07,
+                CardExpedition.ExtremeItemWithExp   => 0.055,
                 CardExpedition.LightItemWithExp     => card.Dere == Dere.Yato ? 0.003 : 0.008,
                 CardExpedition.LightItems           => card.Dere == Dere.Yato ? 0.003 : 0.008,
                 CardExpedition.LightExp             => card.Dere == Dere.Yato ? 0.003 : 0.008,
@@ -565,11 +560,11 @@ namespace Sanakan.Services.PocketWaifu
             var affectionBaseReturn = card.Expedition switch
             {
                 CardExpedition.NormalItemWithExp    => user.GameDeck.IsNeutral() ? 1 : 0.7,
-                CardExpedition.ExtremeItemWithExp   => 0.8,
-                CardExpedition.DarkItems            => 1.1,
-                CardExpedition.LightItems           => 1.1,
-                CardExpedition.LightItemWithExp     => 0.6,
-                CardExpedition.DarkItemWithExp      => 0.6,
+                CardExpedition.ExtremeItemWithExp   => 1.18,
+                CardExpedition.DarkItems            => 1.12,
+                CardExpedition.LightItems           => 1.12,
+                CardExpedition.LightItemWithExp     => 0.65,
+                CardExpedition.DarkItemWithExp      => 0.65,
                 _ => 0
             };
 
@@ -578,10 +573,10 @@ namespace Sanakan.Services.PocketWaifu
                 Dere.Tsundere   => 0.5,
                 Dere.Kamidere   => 0.9,
                 Dere.Yandere    => 0.9,
-                Dere.Bodere     => 0.85,
+                Dere.Bodere     => 0.75,
                 Dere.Yami       => user.GameDeck.CanCreateDemon()  ? 1.2 : 1.1,
                 Dere.Raito      => user.GameDeck.CanCreateAngel()  ? 1.2 : 1.1,
-                Dere.Yato       => user.GameDeck.IsNeutral()       ? 1.4 : 1.3,
+                Dere.Yato       => user.GameDeck.IsNeutral()       ? 1.3 : 1.2,
                 _ => 1
             };
 

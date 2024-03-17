@@ -77,18 +77,21 @@ namespace Sanakan.Services.PocketWaifu
 
         public static Dictionary<RecipeType, ItemRecipe> _recipes = new Dictionary<RecipeType, ItemRecipe>
         {
-            { RecipeType.CrystalBall, new ItemRecipe(ItemType.CheckAffection,
+            { RecipeType.CrystalBall, new ItemRecipe(ItemType.CheckAffection.ToItem(),
                 new List<Item>{ ItemType.CreationItemBase.ToItem(), ItemType.CardParamsReRoll.ToItem(), ItemType.DereReRoll.ToItem() },
                 new List<CurrencyCost> { new CurrencyCost(5, CurrencyType.CT) })
             },
-            { RecipeType.BloodyMarry, new ItemRecipe(ItemType.RemoveCurse,
+            { RecipeType.BloodyMarry, new ItemRecipe(ItemType.RemoveCurse.ToItem(),
                 new List<Item>{ ItemType.CreationItemBase.ToItem(10), ItemType.BetterIncreaseUpgradeCnt.ToItem(5), ItemType.BloodOfYourWaifu.ToItem(5) })
             },
-            { RecipeType.YourBlood, new ItemRecipe(ItemType.BetterIncreaseUpgradeCnt,
+            { RecipeType.YourBlood, new ItemRecipe(ItemType.BetterIncreaseUpgradeCnt.ToItem(),
                 new List<Item>{ ItemType.CreationItemBase.ToItem(), ItemType.BloodOfYourWaifu.ToItem(2) })
             },
-            { RecipeType.WaifuBlood, new ItemRecipe(ItemType.BloodOfYourWaifu,
+            { RecipeType.WaifuBlood, new ItemRecipe(ItemType.BloodOfYourWaifu.ToItem(),
                 new List<Item>{ ItemType.CreationItemBase.ToItem(), ItemType.BetterIncreaseUpgradeCnt.ToItem(2) })
+            },
+            { RecipeType.DereChange, new ItemRecipe(ItemType.DereReRoll.ToItem(5),
+                new List<Item>{ ItemType.CreationItemBase.ToItem(), ItemType.CardParamsReRoll.ToItem(5) })
             }
         };
 

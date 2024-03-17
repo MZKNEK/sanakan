@@ -296,27 +296,6 @@ namespace Sanakan.Extensions
                 case ItemType.AffectionRecoveryBig: return 1.5;
                 case ItemType.AffectionRecoveryNormal: return 0.2;
                 case ItemType.AffectionRecoverySmall: return 0.04;
-                case ItemType.BetterIncreaseUpgradeCnt: return 1.7;
-                case ItemType.IncreaseUpgradeCnt: return 0.7;
-                case ItemType.DereReRoll: return 0.1;
-                case ItemType.CardParamsReRoll: return 0.2;
-                case ItemType.CheckAffection: return 0.2;
-                case ItemType.SetCustomImage: return 0.5;
-                case ItemType.SetCustomAnimatedImage: return 5;
-                case ItemType.IncreaseExpSmall: return 0.15;
-                case ItemType.IncreaseExpBig: return 0.25;
-                case ItemType.ChangeStarType: return 0.3;
-                case ItemType.SetCustomBorder: return 0.4;
-                case ItemType.ChangeCardImage: return 0.1;
-                case ItemType.ResetCardValue: return 0.1;
-                case ItemType.IncreaseUltimateAttack: return 0.35;
-                case ItemType.IncreaseUltimateDefence: return 0.35;
-                case ItemType.IncreaseUltimateHealth: return 0.55;
-                case ItemType.IncreaseUltimateAll: return 2.2;
-                case ItemType.BloodOfYourWaifu: return 1.5;
-                case ItemType.RemoveCurse: return 4;
-                case ItemType.CreationItemBase: return 0.001;
-
                 default: return 0;
             }
         }
@@ -555,9 +534,9 @@ namespace Sanakan.Extensions
                 case ItemType.AffectionRecoveryNormal:
                     return 15;
                 case ItemType.BetterIncreaseUpgradeCnt:
-                    return 500;
+                    return 450;
                 case ItemType.IncreaseUpgradeCnt:
-                    return 200;
+                    return 111;
                 case ItemType.DereReRoll:
                     return 10;
                 case ItemType.CardParamsReRoll:

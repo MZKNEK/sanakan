@@ -2501,7 +2501,7 @@ namespace Sanakan.Modules
                 return;
             }
 
-            string times = count > 1 ? $" x{count}" : "";
+            string times = count > 1 ? $" ({count})" : "";
             var itemRecipe = _waifu.GetItemRecipe(recipe);
             using (var db = new Database.DatabaseContext(Config))
             {
@@ -2524,10 +2524,10 @@ namespace Sanakan.Modules
                     }
                 }
 
-                var newItem = itemRecipe.Type.ToItem(count);
+                var newItem = itemRecipe.Item.Type.ToItem(itemRecipe.Item.Count * count);
                 bUser.GameDeck.AddItem(newItem);
 
-                await ReplyAsync("", embed: $"{Context.User.Mention} utworzono: **{newItem.Name}**{times}".ToEmbedMessage(EMType.Success).Build());
+                await ReplyAsync("", embed: $"{Context.User.Mention} utworzono: **{itemRecipe.Name}**{times}".ToEmbedMessage(EMType.Success).Build());
 
                 await db.SaveChangesAsync();
 

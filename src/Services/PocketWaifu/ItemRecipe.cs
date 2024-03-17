@@ -9,26 +9,26 @@ namespace Sanakan.Services.PocketWaifu
 {
     public enum RecipeType
     {
-        None, CrystalBall, BloodyMarry, YourBlood, WaifuBlood
+        None, CrystalBall, BloodyMarry, YourBlood, WaifuBlood, DereChange
     }
 
     public class ItemRecipe
     {
-        public ItemRecipe(ItemType type, List<Item> items, List<CurrencyCost> pay = null) :
-            this(type, type.Name(), items, pay)
+        public ItemRecipe(Item item, List<Item> items, List<CurrencyCost> pay = null) :
+            this(item, $"{item.Type.Name()} x{item.Count}", items, pay)
         {
         }
 
-        public ItemRecipe(ItemType type, string name, List<Item> items, List<CurrencyCost> pay = null)
+        public ItemRecipe(Item item, string name, List<Item> items, List<CurrencyCost> pay = null)
         {
             Name = name;
-            Type = type;
+            Item = item;
             RequiredItems = items;
             RequiredPayments = pay ?? new List<CurrencyCost>();
         }
 
         public string Name { get; }
-        public ItemType Type { get; }
+        public Item Item { get; }
         public List<Item> RequiredItems { get; }
         public List<CurrencyCost> RequiredPayments { get; }
 
