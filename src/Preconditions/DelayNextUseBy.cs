@@ -61,6 +61,20 @@ namespace Sanakan.Preconditions
                         if (user.Roles.Any(x => x.Id == role.Id))
                             return PreconditionResult.FromSuccess();
                     }
+
+                    var srole = context.Guild.GetRole(gConfig.SemiAdminRole);
+                    if (srole != null)
+                    {
+                        if (user.Roles.Any(x => x.Id == srole.Id))
+                            return PreconditionResult.FromSuccess();
+                    }
+
+                    var trole = context.Guild.GetRole(gConfig.TesterRole);
+                    if (trole != null)
+                    {
+                        if (user.Roles.Any(x => x.Id == trole.Id))
+                            return PreconditionResult.FromSuccess();
+                    }
                 }
             }
 
