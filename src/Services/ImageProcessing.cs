@@ -710,7 +710,7 @@ namespace Sanakan.Services
             var nY = 103;
             var defFontColor = GetOrCreateColor("#7f7f7f");
             profilePic.Mutate(x => x.DrawText(nickname, nickFont, GetOrCreateColor("#a7a7a7"), new Point(nX, nY + (int)((30 - nickFont.Size) / 2))));
-            profilePic.Mutate(x => x.DrawText(rangName, rangFont, defFontColor, new Point(nX, nY + 30)));
+            profilePic.Mutate(x => x.DrawText(rangName, rangFont, defFontColor, new Point(nX, nY + 32)));
 
             if (botUser.StatsStyleSettings.HasFlag(ProfileSettings.ShowOverlay) && !string.IsNullOrEmpty(botUser.CustomProfileOverlayUrl))
             {
@@ -1125,10 +1125,10 @@ namespace Sanakan.Services
             var baseImg = new Image<Rgba32>((int)estimatedLength, 100);
 
             baseImg.Mutate(x => x.BackgroundColor(GetOrCreateColor("#313338")));
-            baseImg.Mutate(x => x.DrawText(msgText1, textFont, Color.Gray, new Point(98 + (int)lvlLength.Width, 75)));
-            baseImg.Mutate(x => x.DrawText(name, nickNameFont, GetOrCreateColor(nickNameColor), new Point(98, 5)));
-            baseImg.Mutate(x => x.DrawText(msgText2, textFont, Color.Gray, new Point(98, 30)));
-            baseImg.Mutate(x => x.DrawText($"{ulvl}", lvlFont, Color.Gray, new Point(96, 55)));
+            baseImg.Mutate(x => x.DrawText(msgText1, textFont, Color.Gray, new Point(98 + (int)lvlLength.Width, 77)));
+            baseImg.Mutate(x => x.DrawText(name, nickNameFont, GetOrCreateColor(nickNameColor), new Point(98, 7)));
+            baseImg.Mutate(x => x.DrawText(msgText2, textFont, Color.Gray, new Point(98, 31)));
+            baseImg.Mutate(x => x.DrawText($"{ulvl}", lvlFont, Color.Gray, new Point(96, 59)));
 
             using (var colorRec = new Image<Rgba32>(82, 82))
             {
