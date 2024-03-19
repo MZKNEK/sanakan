@@ -88,6 +88,21 @@ namespace Sanakan.Modules
             await ReplyAsync("", embed: msg.Build());
         }
 
+        [Command("eechances", RunMode = RunMode.Async), RequireDevOrTester]
+        [Summary("wypisuje szanse na wydarzenia")]
+        [Remarks("h")]
+        public async Task ShowEventChancesFromExpeditionAsync([Summary("typ wyprawy")]CardExpedition e)
+        {
+            var msg = new EmbedBuilder
+            {
+                Color = EMType.Bot.Color(),
+                Title = $"Szanse z {e.GetName("ej")} wyprawy",
+                Description = _waifu.GetEventChancesFromExpedition(e)
+            };
+
+            await ReplyAsync("", embed: msg.Build());
+        }
+
         [Command("lchances", RunMode = RunMode.Async), RequireDevOrTester]
         [Summary("wypisuje szanse z loterii")]
         [Remarks("scalpel")]

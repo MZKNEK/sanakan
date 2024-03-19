@@ -1595,33 +1595,25 @@ namespace Sanakan.Services.PocketWaifu
                 return "Coś poszło nie tak, wyprawa nie została zakończona.";
             }
 
-            bool allowItems = true;
             var multiplier = (duration.RealTime < 60) ? ((duration.RealTime < 30) ? 3d : 2d) : 1d;
             var reward = multiplier != 1 ? "Wyprawa? Chyba po bułki do sklepu.\n\n" : "";
 
-            var totalExp = _expedition.GetExpFromExpedition(duration.CalcTime, card);
-            totalExp /= card.Curse == CardCurse.LoweredExperience ? 5 : 1;
-            totalExp = card.FromFigure ? 0 : totalExp;
-
-            var totalItemsCnt = _expedition.GetItemsCountFromExpedition(duration.CalcTime, card, user);
-            var karmaCost = _expedition.GetKarmaCostOfExpedition(duration.CalcTime, card, user);
-
-            if (duration.CalcTime <= 5)
-            {
-                totalItemsCnt = 0;
-                totalExp /= 2;
-            }
-
+            var totalExp = 0d;
+            var karmaCost = 0d;
+            var expItemMod = 1d;
+            var totalItemsCnt = 0;
+            var allowItems = true;
             if (CheckEventInExpedition(card.Expedition, duration))
             {
                 var e = _events.RandomizeEvent(card.Expedition, duration);
                 allowItems = _events.ExecuteEvent(e, user, card, ref reward);
-
                 totalItemsCnt += _events.GetMoreItems(e);
+
                 if (e == EventType.ChangeDere)
                 {
                     card.Dere = RandomizeDere();
                     reward += $"{card.Dere}\n";
+                    duration = _expedition.GetLengthOfExpedition(user, card);
                 }
                 else if (e == EventType.LoseCard)
                 {
@@ -1634,8 +1626,26 @@ namespace Sanakan.Services.PocketWaifu
                 }
                 else if (e == EventType.Fight && !allowItems)
                 {
-                    totalExp /= 6;
+                    expItemMod = 0.5;
+                    allowItems = true;
                 }
+            }
+
+            totalExp += _expedition.GetExpFromExpedition(duration.CalcTime, card);
+            totalExp /= card.Curse == CardCurse.LoweredExperience ? 5 : 1;
+            totalExp *= expItemMod;
+
+            totalExp = card.FromFigure ? 0 : totalExp;
+
+            totalItemsCnt += _expedition.GetItemsCountFromExpedition(duration.CalcTime, card, user);
+            if (expItemMod != 1) totalItemsCnt = (int) (totalItemsCnt * expItemMod);
+
+            karmaCost = _expedition.GetKarmaCostOfExpedition(duration.CalcTime, card, user);
+
+            if (duration.CalcTime <= 5)
+            {
+                totalItemsCnt = 0;
+                totalExp /= 2;
             }
 
             var rawAffectionCost = _expedition.GetAffectionCostOfExpedition(duration.CalcTime, card);
@@ -1643,9 +1653,9 @@ namespace Sanakan.Services.PocketWaifu
 
             card.ExpCnt += totalExp;
 
-            double minAff = 0;
-            double karmaItem = 0;
-            int missingItems = 0;
+            var minAff = 0d;
+            var karmaItem = 0d;
+            var missingItems = 0;
             reward += $"Zdobywa:\n+{totalExp:F} exp ({card.ExpCnt:F})\n";
 
             if (allowItems && totalItemsCnt > 0)
@@ -1749,6 +1759,11 @@ namespace Sanakan.Services.PocketWaifu
         public List<string> GetItemChancesFromExpedition(CardExpedition expedition)
         {
             return _expedition.GetChancesFromExpedition(expedition);
+        }
+
+        public string GetEventChancesFromExpedition(CardExpedition expedition)
+        {
+            return _events.GetChancesFromExpedition(expedition);
         }
 
         public ExecutionResult DestroyOrReleaseCards(User user, ulong[] ids, bool release = false, ulong tagId = 0)

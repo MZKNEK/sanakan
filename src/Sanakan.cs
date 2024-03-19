@@ -106,9 +106,9 @@ namespace Sanakan
                 LogLevel.Error, tmpCnf.Shinden.BaseUri, TimeSpan.FromSeconds(5));
 
             _time = new SystemTime();
+            _events = new Events(_time);
             _helper = new Helper(_config);
             _expedition = new Expedition(_time);
-            _events = new Events(_shindenClient, _time);
             _img = new ImageProcessing(_shindenClient,
                 _tags.GetTag(Services.PocketWaifu.TagType.Gallery));
             _deleted = new DeletedLog(_client, _config);
