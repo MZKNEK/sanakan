@@ -120,20 +120,16 @@ namespace Sanakan.Services.PocketWaifu
             },
             {ItemDropType.Common, new List<(ItemType, int)>
                 {
-                    (ItemType.DereReRoll,               6),
-                    (ItemType.CardParamsReRoll,         2),
+                    (ItemType.DereReRoll,               4),
+                    (ItemType.CardParamsReRoll,         4),
                     (ItemType.IncreaseExpBig,           2),
                 }.ToRealList()
             },
-            {ItemDropType.Rare, new List<(ItemType, int)>
-                {
-                    (ItemType.IncreaseUpgradeCnt,       55),
-                    (ItemType.NotAnItem,                45),
-                }.ToRealList()
-            },
+            {ItemDropType.Rare, new List<ItemType>()},
             {ItemDropType.Legendary, new List<(ItemType, int)>
                 {
-                    (ItemType.CreationItemBase,         1),
+                    (ItemType.IncreaseUpgradeCnt,       8),
+                    (ItemType.CreationItemBase,         2),
                 }.ToRealList()
             },
         };
@@ -213,32 +209,30 @@ namespace Sanakan.Services.PocketWaifu
             },
             {CardExpedition.DarkItems, new List<(ItemDropType, int)>
                 {
-                    (ItemDropType.Common,     41),
-                    (ItemDropType.Rare,       14),
-                    (ItemDropType.Legendary,  11),
+                    (ItemDropType.Common,     63),
+                    (ItemDropType.Rare,       24),
+                    (ItemDropType.Legendary,  13),
                 }.ToRealList()
             },
             {CardExpedition.DarkItemWithExp, new List<(ItemDropType, int)>
                 {
                     (ItemDropType.None,       10),
-                    (ItemDropType.Common,     46),
-                    (ItemDropType.Rare,       28),
-                    (ItemDropType.Legendary,  1),
+                    (ItemDropType.Common,     84),
+                    (ItemDropType.Legendary,  6),
                 }.ToRealList()
             },
             {CardExpedition.LightItems, new List<(ItemDropType, int)>
                 {
-                    (ItemDropType.Common,     41),
-                    (ItemDropType.Rare,       14),
-                    (ItemDropType.Legendary,  11),
+                    (ItemDropType.Common,     63),
+                    (ItemDropType.Rare,       24),
+                    (ItemDropType.Legendary,  13),
                 }.ToRealList()
             },
             {CardExpedition.LightItemWithExp, new List<(ItemDropType, int)>
                 {
                     (ItemDropType.None,       10),
-                    (ItemDropType.Common,     46),
-                    (ItemDropType.Rare,       28),
-                    (ItemDropType.Legendary,  1),
+                    (ItemDropType.Common,     84),
+                    (ItemDropType.Legendary,  6),
                 }.ToRealList()
             },
         };

@@ -1996,11 +1996,11 @@ namespace Sanakan.Modules
 
         [Command("wyzwól")]
         [Alias("unleash", "wyzwol")]
-        [Summary("zmienia kartę niewymienialną na wymienialną (300/150 CT lub 2000 CT w przypadku ultimate)")]
+        [Summary("zmienia kartę niewymienialną na wymienialną (200/150 CT lub 2000 CT w przypadku ultimate)")]
         [Remarks("8651"), RequireWaifuCommandChannel]
         public async Task UnleashCardAsync([Summary("WID")] ulong wid)
         {
-            int cost = 300;
+            int cost = 200;
             using (var db = new Database.DatabaseContext(Config))
             {
                 var bUser = await db.GetUserOrCreateAsync(Context.User.Id);
@@ -2024,7 +2024,7 @@ namespace Sanakan.Modules
                     return;
                 }
 
-                if (bUser.GameDeck.CanCreateAngel()) cost /= 2;
+                if (bUser.GameDeck.CanCreateAngel() || bUser.GameDeck.CanCreateDemon()) cost = 150;
                 if (thisCard.FromFigure) cost = 2000;
 
                 if (bUser.GameDeck.CTCnt < cost)
@@ -2385,7 +2385,7 @@ namespace Sanakan.Modules
                 return;
             }
 
-            long price = 3721 * count;
+            long price = 3271 * count;
             using (var db = new Database.DatabaseContext(Config))
             {
                 var bUser = await db.GetUserOrCreateAsync(Context.User.Id);
@@ -2420,9 +2420,10 @@ namespace Sanakan.Modules
                         return;
                     }
 
-                    var card = _waifu.GenerateNewCard(Context.User, character, Rarity.E);
+                    var card = _waifu.GenerateNewCard(Context.User, character);
                     card.Affection += bUser.GameDeck.AffectionFromKarma();
                     card.Source = CardSource.Tinkering;
+                    card.IsTradable = false;
 
                     totalCards.Add(card);
                     bUser.Stats.CreatedCardsFromItems++;
@@ -3604,7 +3605,7 @@ namespace Sanakan.Modules
                 _ = Task.Run(async () =>
                 {
                     string wStr = fight.Winner == null ? "Remis!" : $"Zwycięża {fight.Winner.User.Mention}!";
-                    await ReplyAsync("", embed: $"⚔️ **Pojedynek**:\n{Context.User.Mention} vs. {euser.Mention}\n\n{deathLog.TrimToLength()}\n{wStr}\n{info}".ToEmbedMessage(EMType.Bot).Build());
+                    await ReplyAsync("", embed: $"⚔️ **Pojedynek**:\n{Context.User.Mention} vs. {euser.Mention}\n\n{deathLog.TrimToLength(2500)}\n{wStr}\n{info}".ToEmbedMessage(EMType.Bot).Build());
                 });
             }
         }

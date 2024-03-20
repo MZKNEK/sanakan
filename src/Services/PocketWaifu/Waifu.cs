@@ -92,6 +92,9 @@ namespace Sanakan.Services.PocketWaifu
             },
             { RecipeType.DereChange, new ItemRecipe(ItemType.DereReRoll.ToItem(5),
                 new List<Item>{ ItemType.CreationItemBase.ToItem(), ItemType.CardParamsReRoll.ToItem(5) })
+            },
+            { RecipeType.StatsChange, new ItemRecipe(ItemType.CardParamsReRoll.ToItem(5),
+                new List<Item>{ ItemType.CreationItemBase.ToItem(), ItemType.DereReRoll.ToItem(5) })
             }
         };
 

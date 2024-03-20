@@ -534,7 +534,7 @@ namespace Sanakan.Extensions
                 case ItemType.AffectionRecoveryNormal:
                     return 15;
                 case ItemType.BetterIncreaseUpgradeCnt:
-                    return 450;
+                    return 400;
                 case ItemType.IncreaseUpgradeCnt:
                     return 111;
                 case ItemType.DereReRoll:
@@ -568,7 +568,7 @@ namespace Sanakan.Extensions
                 case ItemType.IncreaseUltimateAll:
                     return 800;
                 case ItemType.BloodOfYourWaifu:
-                    return 450;
+                    return 400;
                 case ItemType.SetCustomAnimatedImage:
                     return 3250;
                 case ItemType.RemoveCurse:
