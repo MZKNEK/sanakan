@@ -17,6 +17,7 @@ using SixLabors.ImageSharp.Drawing.Processing;
 using SixLabors.ImageSharp.PixelFormats;
 using SixLabors.ImageSharp.Processing;
 using System.Numerics;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace Sanakan.Services
 {
@@ -1300,23 +1301,59 @@ namespace Sanakan.Services
 
         private void ApplyAlphaStats(Image<Rgba32> image, Card card)
         {
-            var adFont = GetOrCreateFont(_latoBold, 36);
-            var hpFont = GetOrCreateFont(_latoBold, 32);
+            using var blurredImage = image.Clone();
+            blurredImage.Mutate(x => x.GaussianBlur(2f));
 
+            var polyhp = new SixLabors.ImageSharp.Drawing.Polygon(new PointF[]{
+                    new PointF(158, 39),
+                    new PointF(317, 39),
+                    new PointF(293, 81),
+                    new PointF(182, 81),
+            });
+
+            var polyatk = new SixLabors.ImageSharp.Drawing.Polygon(new PointF[]{
+                    new PointF(43, 521),
+                    new PointF(149, 573),
+                    new PointF(149, 622),
+                    new PointF(43, 570),
+            });
+
+            var polydef = new SixLabors.ImageSharp.Drawing.Polygon(new PointF[]{
+                    new PointF(325, 573),
+                    new PointF(431, 521),
+                    new PointF(432, 571),
+                    new PointF(325, 623),
+            });
+
+            image.Mutate(x => x.Clip(polyhp, x => x.DrawImage(blurredImage, 1)));
+            image.Mutate(x => x.Clip(polyatk, x => x.DrawImage(blurredImage, 1)));
+            image.Mutate(x => x.Clip(polydef, x => x.DrawImage(blurredImage, 1)));
+
+            using var statsImg = Image.Load(Dir.GetResource("PW/CG/Alpha/hStats.png"));
+            image.Mutate(x => x.DrawImage(statsImg, 1));
+
+            var font = GetOrCreateFont(_latoBold, 22);
             int hp = card.GetHealthWithPenalty();
             int def = card.GetDefenceWithBonus();
             int atk = card.GetAttackWithBonus();
 
-            using (var hpImg = new Image<Rgba32>(120, 40))
-            {
-                hpImg.Mutate(x => x.DrawText($"{hp}", hpFont, GetOrCreateColor("#356231"), new Point(1)));
-                hpImg.Mutate(x => x.Rotate(-18));
+            image.Mutate(x => x.DrawText($"{hp}", font, GetOrCreateColor("#ffffff"), new Point(220, 48)));
 
-                image.Mutate(x => x.DrawImage(hpImg, new Point(320, 522), 1));
+            using (var defImg = new Image<Rgba32>(120, 40))
+            {
+                defImg.Mutate(x => x.DrawText($"{def}", font, GetOrCreateColor("#ffffff"), new Point(1)));
+                defImg.Mutate(x => x.Rotate(-25));
+
+                image.Mutate(x => x.DrawImage(defImg, new Point(360, 516), 1));
             }
 
-            image.Mutate(x => x.DrawText($"{atk}", adFont, GetOrCreateColor("#522b4d"), new Point(43, 597)));
-            image.Mutate(x => x.DrawText($"{def}", adFont, GetOrCreateColor("#00527f"), new Point(337, 597)));
+            using (var atkImg = new Image<Rgba32>(120, 40))
+            {
+                atkImg.Mutate(x => x.DrawText($"{atk}", font, GetOrCreateColor("#ffffff"), new Point(1)));
+                atkImg.Mutate(x => x.Rotate(25));
+
+                image.Mutate(x => x.DrawImage(atkImg, new Point(68, 553), 1));
+            }
         }
 
         private void ApplyBetaStats(Image<Rgba32> image, Card card)
