@@ -16,38 +16,66 @@ namespace Sanakan.Services.PocketWaifu
             None, Food, Common, Rare, Legendary
         }
 
-        private static List<ItemType> _ultimateExpeditionItems = new List<(ItemType, int)>
+        private static readonly Dictionary<ItemDropType, List<ItemType>> _ultimateExpeditionItems = new Dictionary<ItemDropType, List<ItemType>>
         {
-            (ItemType.FigureBodyPart,           12),
-            (ItemType.FigureClothesPart,        12),
-            (ItemType.FigureHeadPart,           12),
-            (ItemType.FigureLeftArmPart,        12),
-            (ItemType.FigureLeftLegPart,        12),
-            (ItemType.FigureRightArmPart,       12),
-            (ItemType.FigureRightLegPart,       12),
-            (ItemType.FigureSkeleton,           8),
-            (ItemType.FigureUniversalPart,      6),
-            (ItemType.LotteryTicket,            2),
-        }.ToRealList();
+            {ItemDropType.None, new List<ItemType>()},
+            {ItemDropType.Food, new List<ItemType>()},
+            {ItemDropType.Common, new List<(ItemType, int)>
+                {
+                    (ItemType.FigureBodyPart,          1),
+                    (ItemType.FigureClothesPart,       1),
+                    (ItemType.FigureHeadPart,          1),
+                    (ItemType.FigureLeftArmPart,       1),
+                    (ItemType.FigureLeftLegPart,       1),
+                    (ItemType.FigureRightArmPart,      1),
+                    (ItemType.FigureRightLegPart,      1),
+                }.ToRealList()
+            },
+            {ItemDropType.Rare, new List<(ItemType, int)>
+                {
+                    (ItemType.FigureSkeleton,          2),
+                    (ItemType.FigureUniversalPart,     1),
+                }.ToRealList()
+            },
+            {ItemDropType.Legendary, new List<(ItemType, int)>
+                {
+                    (ItemType.LotteryTicket,            1),
+                }.ToRealList()
+            },
+        };
 
-        private static List<ItemType> _ultimateExpeditionHardcoreItems = new List<(ItemType, int)>
+        private static readonly Dictionary<ItemDropType, List<ItemType>> _ultimateExpeditionHardcoreItems = new Dictionary<ItemDropType, List<ItemType>>
         {
-            (ItemType.FigureBodyPart,           12),
-            (ItemType.FigureClothesPart,        12),
-            (ItemType.FigureHeadPart,           12),
-            (ItemType.FigureLeftArmPart,        12),
-            (ItemType.FigureLeftLegPart,        12),
-            (ItemType.FigureRightArmPart,       12),
-            (ItemType.FigureRightLegPart,       12),
-            (ItemType.FigureUniversalPart,      9),
-            (ItemType.FigureSkeleton,           9),
-            (ItemType.IncreaseUltimateAttack,   5),
-            (ItemType.IncreaseUltimateDefence,  5),
-            (ItemType.LotteryTicket,            4),
-            (ItemType.IncreaseUltimateHealth,   1),
-        }.ToRealList();
+            {ItemDropType.None, new List<ItemType>()},
+            {ItemDropType.Food, new List<ItemType>()},
+            {ItemDropType.Common, new List<(ItemType, int)>
+                {
+                    (ItemType.FigureBodyPart,          1),
+                    (ItemType.FigureClothesPart,       1),
+                    (ItemType.FigureHeadPart,          1),
+                    (ItemType.FigureLeftArmPart,       1),
+                    (ItemType.FigureLeftLegPart,       1),
+                    (ItemType.FigureRightArmPart,      1),
+                    (ItemType.FigureRightLegPart,      1),
+                }.ToRealList()
+            },
+            {ItemDropType.Rare, new List<(ItemType, int)>
+                {
+                    (ItemType.FigureSkeleton,          4),
+                    (ItemType.FigureUniversalPart,     3),
+                }.ToRealList()
+            },
+            {ItemDropType.Legendary, new List<(ItemType, int)>
+                {
+                    (ItemType.LotteryTicket,           2),
+                    (ItemType.IncreaseUltimateAttack,  4),
+                    (ItemType.IncreaseUltimateDefence, 3),
+                    (ItemType.IncreaseUltimateHealth,  1),
+                }.ToRealList()
+            },
+        };
 
-        private static Dictionary<ItemDropType, List<ItemType>> _itemsFromNormalExpedition = new Dictionary<ItemDropType, List<ItemType>>
+        private static readonly Dictionary<ItemDropType, List<ItemType>> _itemsFromNormalExpedition = new Dictionary<ItemDropType, List<ItemType>>
         {
             {ItemDropType.None, new List<ItemType>()},
             {ItemDropType.Food, new List<(ItemType, int)>
@@ -77,7 +105,7 @@ namespace Sanakan.Services.PocketWaifu
             },
         };
 
-        private static Dictionary<ItemDropType, List<ItemType>> _itemsFromExtremeExpedition = new Dictionary<ItemDropType, List<ItemType>>
+        private static readonly Dictionary<ItemDropType, List<ItemType>> _itemsFromExtremeExpedition = new Dictionary<ItemDropType, List<ItemType>>
         {
             {ItemDropType.None, new List<ItemType>()},
             {ItemDropType.Food, new List<(ItemType, int)>
@@ -108,7 +136,7 @@ namespace Sanakan.Services.PocketWaifu
             },
         };
 
-        private static Dictionary<ItemDropType, List<ItemType>> _itemsFromDarkAndLightExpeditionAndExp = new Dictionary<ItemDropType, List<ItemType>>
+        private static readonly Dictionary<ItemDropType, List<ItemType>> _itemsFromDarkAndLightExpeditionAndExp = new Dictionary<ItemDropType, List<ItemType>>
         {
             {ItemDropType.None, new List<ItemType>()},
             {ItemDropType.Food, new List<(ItemType, int)>
@@ -134,7 +162,7 @@ namespace Sanakan.Services.PocketWaifu
             },
         };
 
-        private static Dictionary<ItemDropType, List<ItemType>> _itemsFromDarkExpedition = new Dictionary<ItemDropType, List<ItemType>>
+        private static readonly Dictionary<ItemDropType, List<ItemType>> _itemsFromDarkExpedition = new Dictionary<ItemDropType, List<ItemType>>
         {
             {ItemDropType.None, new List<ItemType>()},
             {ItemDropType.Food, new List<(ItemType, int)>
@@ -162,7 +190,7 @@ namespace Sanakan.Services.PocketWaifu
             },
         };
 
-        private static Dictionary<ItemDropType, List<ItemType>> _itemsFromLightExpedition = new Dictionary<ItemDropType, List<ItemType>>
+        private static readonly Dictionary<ItemDropType, List<ItemType>> _itemsFromLightExpedition = new Dictionary<ItemDropType, List<ItemType>>
         {
             {ItemDropType.None, new List<ItemType>()},
             {ItemDropType.Food, new List<(ItemType, int)>
@@ -190,7 +218,7 @@ namespace Sanakan.Services.PocketWaifu
             },
         };
 
-        private static Dictionary<CardExpedition, List<ItemDropType>> _itemChanceOfItemTypeOnExpedition = new Dictionary<CardExpedition, List<ItemDropType>>
+        private static readonly Dictionary<CardExpedition, List<ItemDropType>> _itemChanceOfItemTypeOnExpedition = new Dictionary<CardExpedition, List<ItemDropType>>
         {
             {CardExpedition.NormalItemWithExp, new List<(ItemDropType, int)>
                 {
@@ -235,6 +263,90 @@ namespace Sanakan.Services.PocketWaifu
                     (ItemDropType.Legendary,  6),
                 }.ToRealList()
             },
+            {CardExpedition.UltimateEasy, new List<(ItemDropType, int)>
+                {
+                    (ItemDropType.Common,     80),
+                    (ItemDropType.Rare,       15),
+                    (ItemDropType.Legendary,  5),
+                }.ToRealList()
+            },
+            {CardExpedition.UltimateMedium, new List<(ItemDropType, int)>
+                {
+                    (ItemDropType.Common,     75),
+                    (ItemDropType.Rare,       20),
+                    (ItemDropType.Legendary,  5),
+                }.ToRealList()
+            },
+            {CardExpedition.UltimateHard, new List<(ItemDropType, int)>
+                {
+                    (ItemDropType.Common,     70),
+                    (ItemDropType.Rare,       22),
+                    (ItemDropType.Legendary,  8),
+                }.ToRealList()
+            },
+            {CardExpedition.UltimateHardcore, new List<(ItemDropType, int)>
+                {
+                    (ItemDropType.Common,     65),
+                    (ItemDropType.Rare,       22),
+                    (ItemDropType.Legendary,  13),
+                }.ToRealList()
+            }
+        };
+
+        private static readonly Dictionary<CardExpedition, List<Quality>> _qualityOnExpedition = new Dictionary<CardExpedition, List<Quality>>
+        {
+            {CardExpedition.NormalItemWithExp,  new List<Quality> { Quality.Broken }},
+            {CardExpedition.ExtremeItemWithExp, new List<Quality> { Quality.Broken }},
+            {CardExpedition.DarkItems,          new List<Quality> { Quality.Broken }},
+            {CardExpedition.DarkItemWithExp,    new List<Quality> { Quality.Broken }},
+            {CardExpedition.LightItems,         new List<Quality> { Quality.Broken }},
+            {CardExpedition.LightItemWithExp,   new List<Quality> { Quality.Broken }},
+            {CardExpedition.UltimateEasy, new List<(Quality, int)>
+                {
+                    (Quality.Alpha,    50),
+                    (Quality.Beta,     25),
+                    (Quality.Gamma,    22),
+                    (Quality.Delta,    3),
+                }.ToRealList()
+            },
+            {CardExpedition.UltimateMedium, new List<(Quality, int)>
+                {
+                    (Quality.Alpha,    45),
+                    (Quality.Beta,     30),
+                    (Quality.Gamma,    20),
+                    (Quality.Delta,    5),
+                    (Quality.Epsilon,  1),
+                    (Quality.Zeta,     1),
+                }.ToRealList()
+            },
+            {CardExpedition.UltimateHard, new List<(Quality, int)>
+                {
+                    (Quality.Alpha,    550),
+                    (Quality.Beta,     200),
+                    (Quality.Gamma,    130),
+                    (Quality.Delta,    60),
+                    (Quality.Epsilon,  40),
+                    (Quality.Zeta,     10),
+                    (Quality.Theta,    6),
+                    (Quality.Jota,     3),
+                    (Quality.Lambda,   1),
+                }.ToRealList()
+            },
+            {CardExpedition.UltimateHardcore, new List<(Quality, int)>
+                {
+                    (Quality.Alpha,    2000),
+                    (Quality.Beta,     3000),
+                    (Quality.Gamma,    2000),
+                    (Quality.Delta,    1000),
+                    (Quality.Epsilon,  1000),
+                    (Quality.Zeta,     500),
+                    (Quality.Theta,    350),
+                    (Quality.Jota,     130),
+                    (Quality.Lambda,   15),
+                    (Quality.Sigma,    4),
+                    (Quality.Omega,    1),
+                }.ToRealList()
+            }
         };
 
         private readonly ISystemTime _time;
@@ -246,33 +358,32 @@ namespace Sanakan.Services.PocketWaifu
 
         public List<string> GetChancesFromExpedition(CardExpedition expedition)
         {
-            if (expedition.HasDifferentQualitiesOnExpedition())
-            {
-                var chances = expedition switch
-                {
-                    CardExpedition.UltimateHardcore =>  _ultimateExpeditionHardcoreItems.GetChances(),
-                    _ => _ultimateExpeditionItems.GetChances()
-                };
-                return chances.OrderByDescending(x => x.Item2).Select(x => $"{x.Item1} - {x.Item2:F}%").ToList();
-            }
-
             var itemDropTypeChances = _itemChanceOfItemTypeOnExpedition[expedition].GetChances();
             var drop = expedition switch
             {
-                CardExpedition.NormalItemWithExp    =>  _itemsFromNormalExpedition,
-                CardExpedition.ExtremeItemWithExp   =>  _itemsFromExtremeExpedition,
-                CardExpedition.DarkItemWithExp      =>  _itemsFromDarkAndLightExpeditionAndExp,
-                CardExpedition.DarkItems            =>  _itemsFromDarkExpedition,
-                CardExpedition.LightItemWithExp     =>  _itemsFromDarkAndLightExpeditionAndExp,
-                CardExpedition.LightItems           =>  _itemsFromLightExpedition,
-                _ => null
+                CardExpedition.UltimateHardcore     => _ultimateExpeditionHardcoreItems,
+                CardExpedition.UltimateEasy         => _ultimateExpeditionItems,
+                CardExpedition.UltimateMedium       => _ultimateExpeditionItems,
+                CardExpedition.UltimateHard         => _ultimateExpeditionItems,
+                CardExpedition.NormalItemWithExp    => _itemsFromNormalExpedition,
+                CardExpedition.ExtremeItemWithExp   => _itemsFromExtremeExpedition,
+                CardExpedition.DarkItemWithExp      => _itemsFromDarkAndLightExpeditionAndExp,
+                CardExpedition.DarkItems            => _itemsFromDarkExpedition,
+                CardExpedition.LightItemWithExp     => _itemsFromDarkAndLightExpeditionAndExp,
+                CardExpedition.LightItems           => _itemsFromLightExpedition,
+                _ => new Dictionary<ItemDropType, List<ItemType>>()
             };
 
             var output = new List<string>();
-            if (drop == null) return output;
+            if (expedition.HasDifferentQualitiesOnExpedition())
+            {
+                output.Add($"**Quality**:\n{string.Join("\n", _qualityOnExpedition[expedition].GetChances().OrderByDescending(x => x.Item2).Select(x => $"{x.Item1} - {x.Item2:F}%"))}\n");
+            }
 
             foreach (var type in itemDropTypeChances.OrderByDescending(x => x.Item2))
+            {
                 output.Add($"**{type.Item1} ({type.Item2:F}%)**:\n{string.Join("\n", drop[type.Item1].GetChances().OrderByDescending(x => x.Item2).Select(x => $"{x.Item1} - {x.Item2:F}%"))}\n");
+            }
 
             return output;
         }
@@ -281,17 +392,16 @@ namespace Sanakan.Services.PocketWaifu
         {
             var itemType = expedition switch
             {
-                CardExpedition.UltimateHardcore => Fun.GetOneRandomFrom(_ultimateExpeditionHardcoreItems),
-                CardExpedition.UltimateEasy     => Fun.GetOneRandomFrom(_ultimateExpeditionItems),
-                CardExpedition.UltimateMedium   => Fun.GetOneRandomFrom(_ultimateExpeditionItems),
-                CardExpedition.UltimateHard     => Fun.GetOneRandomFrom(_ultimateExpeditionItems),
-
-                CardExpedition.NormalItemWithExp    =>  Fun.GetOneRandomFrom(_itemsFromNormalExpedition[dropType]),
-                CardExpedition.ExtremeItemWithExp   =>  Fun.GetOneRandomFrom(_itemsFromExtremeExpedition[dropType]),
-                CardExpedition.DarkItemWithExp      =>  Fun.GetOneRandomFrom(_itemsFromDarkAndLightExpeditionAndExp[dropType]),
-                CardExpedition.DarkItems            =>  Fun.GetOneRandomFrom(_itemsFromDarkExpedition[dropType]),
-                CardExpedition.LightItemWithExp     =>  Fun.GetOneRandomFrom(_itemsFromDarkAndLightExpeditionAndExp[dropType]),
-                CardExpedition.LightItems           =>  Fun.GetOneRandomFrom(_itemsFromLightExpedition[dropType]),
+                CardExpedition.UltimateHardcore     => Fun.GetOneRandomFrom(_ultimateExpeditionHardcoreItems[dropType]),
+                CardExpedition.UltimateEasy         => Fun.GetOneRandomFrom(_ultimateExpeditionItems[dropType]),
+                CardExpedition.UltimateMedium       => Fun.GetOneRandomFrom(_ultimateExpeditionItems[dropType]),
+                CardExpedition.UltimateHard         => Fun.GetOneRandomFrom(_ultimateExpeditionItems[dropType]),
+                CardExpedition.NormalItemWithExp    => Fun.GetOneRandomFrom(_itemsFromNormalExpedition[dropType]),
+                CardExpedition.ExtremeItemWithExp   => Fun.GetOneRandomFrom(_itemsFromExtremeExpedition[dropType]),
+                CardExpedition.DarkItemWithExp      => Fun.GetOneRandomFrom(_itemsFromDarkAndLightExpeditionAndExp[dropType]),
+                CardExpedition.DarkItems            => Fun.GetOneRandomFrom(_itemsFromDarkExpedition[dropType]),
+                CardExpedition.LightItemWithExp     => Fun.GetOneRandomFrom(_itemsFromDarkAndLightExpeditionAndExp[dropType]),
+                CardExpedition.LightItems           => Fun.GetOneRandomFrom(_itemsFromLightExpedition[dropType]),
 
                 _ => ItemType.AffectionRecoverySmall
             };
@@ -304,69 +414,15 @@ namespace Sanakan.Services.PocketWaifu
             return itemType.ToItem();
         }
 
-        public ItemDropType RandomizeItemDropTypeFor(CardExpedition expedition)
+        public ItemDropType RandomizeItemDropTypeFor(CardExpedition expedition) => expedition switch
         {
-            return expedition switch
-            {
-                CardExpedition.UltimateHardcore => ItemDropType.Common,
-                CardExpedition.UltimateEasy     => ItemDropType.Common,
-                CardExpedition.UltimateMedium   => ItemDropType.Common,
-                CardExpedition.UltimateHard     => ItemDropType.Common,
-
-                CardExpedition.DarkExp          => ItemDropType.None,
-                CardExpedition.LightExp         => ItemDropType.None,
-
-                _ => Fun.GetOneRandomFrom(_itemChanceOfItemTypeOnExpedition[expedition])
-            };
-        }
+            CardExpedition.DarkExp  => ItemDropType.None,
+            CardExpedition.LightExp => ItemDropType.None,
+            _ => Fun.GetOneRandomFrom(_itemChanceOfItemTypeOnExpedition[expedition])
+        };
 
         private Quality RandomizeItemQualityFromExpedition(CardExpedition type)
-        {
-            var num = Fun.GetRandomValue(100000);
-            switch (type)
-            {
-                case CardExpedition.UltimateEasy:
-                    if (num < 3000) return Quality.Delta;
-                    if (num < 25000) return Quality.Gamma;
-                    if (num < 45000) return Quality.Beta;
-                    return Quality.Alpha;
-
-                case CardExpedition.UltimateMedium:
-                    if (num < 1000) return Quality.Zeta;
-                    if (num < 2000) return Quality.Epsilon;
-                    if (num < 5000) return Quality.Delta;
-                    if (num < 35000) return Quality.Gamma;
-                    if (num < 55000) return Quality.Beta;
-                    return Quality.Alpha;
-
-                case CardExpedition.UltimateHard:
-                    if (num < 50) return Quality.Lambda;
-                    if (num < 200) return Quality.Jota;
-                    if (num < 600) return Quality.Theta;
-                    if (num < 1500) return Quality.Zeta;
-                    if (num < 5000) return Quality.Epsilon;
-                    if (num < 12000) return Quality.Delta;
-                    if (num < 25000) return Quality.Gamma;
-                    if (num < 45000) return Quality.Beta;
-                    return Quality.Alpha;
-
-                case CardExpedition.UltimateHardcore:
-                    if (num < 15) return Quality.Omega;
-                    if (num < 50) return Quality.Sigma;
-                    if (num < 150) return Quality.Lambda;
-                    if (num < 1500) return Quality.Jota;
-                    if (num < 5000) return Quality.Theta;
-                    if (num < 10000) return Quality.Zeta;
-                    if (num < 20000) return Quality.Epsilon;
-                    if (num < 30000) return Quality.Delta;
-                    if (num < 50000) return Quality.Gamma;
-                    if (num < 80000) return Quality.Beta;
-                    return Quality.Alpha;
-
-                default:
-                    return Quality.Broken;
-            }
-        }
+            => Fun.GetOneRandomFrom(_qualityOnExpedition[type]);
 
         public double GetExpFromExpedition(double length, Card card)
         {
@@ -624,14 +680,14 @@ namespace Sanakan.Services.PocketWaifu
                 case CardExpedition.LightExp:
                     return (user.GameDeck.Karma > 1000) && !card.FromFigure;
                 case CardExpedition.LightItemWithExp:
-                    return (user.GameDeck.Karma > 400) && !card.FromFigure;
+                    return user.GameDeck.Karma > 400;
 
                 case CardExpedition.DarkItems:
                     return user.GameDeck.Karma < -1000;
                 case CardExpedition.DarkExp:
                     return (user.GameDeck.Karma < -1000) && !card.FromFigure;
                 case CardExpedition.DarkItemWithExp:
-                    return (user.GameDeck.Karma < -400) && !card.FromFigure;
+                    return user.GameDeck.Karma < -400;
 
                 default:
                 case CardExpedition.None:
