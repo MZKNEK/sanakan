@@ -1606,6 +1606,7 @@ namespace Sanakan.Services.PocketWaifu
             var expItemMod = 1d;
             var totalItemsCnt = 0;
             var allowItems = true;
+
             if (CheckEventInExpedition(card.Expedition, duration))
             {
                 var e = _events.RandomizeEvent(card.Expedition, duration);
@@ -1726,6 +1727,9 @@ namespace Sanakan.Services.PocketWaifu
 
         private bool CheckEventInExpedition(CardExpedition expedition, (double CalcTime, double RealTime) duration)
         {
+            if (duration.CalcTime <= 3)
+                return false;
+
             switch (expedition)
             {
                 case CardExpedition.NormalItemWithExp:
@@ -2096,11 +2100,13 @@ namespace Sanakan.Services.PocketWaifu
 
                     if (card.Dere == Dere.Raito)
                     {
-                        if (card.Curse != CardCurse.LoweredStats)
-                            karmaChange = -0.5 * itemCnt;
+                        if (card.Curse == CardCurse.None)
+                        {
+                            karmaChange = -1.2;
+                            card.Curse = CardCurse.LoweredStats;
+                        }
 
                         affectionInc = -10 * itemCnt;
-                        card.Curse = CardCurse.LoweredStats;
                         str.Append($"Karta została spaczona!");
                         break;
                     }
@@ -2150,11 +2156,13 @@ namespace Sanakan.Services.PocketWaifu
 
                     if (card.Dere == Dere.Yami)
                     {
-                        if (card.Curse != CardCurse.LoweredStats)
-                            karmaChange = 0.5 * itemCnt;
+                        if (card.Curse == CardCurse.None)
+                        {
+                            karmaChange = 1.2;
+                            card.Curse = CardCurse.LoweredStats;
+                        }
 
                         affectionInc = -10 * itemCnt;
-                        card.Curse = CardCurse.LoweredStats;
                         str.Append($"Karta została spaczona!");
                         break;
                     }

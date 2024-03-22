@@ -654,7 +654,7 @@ namespace Sanakan.Services.PocketWaifu
             if (card.InCage || !card.CanFightOnPvEGMwK())
                 return false;
 
-            if (GetMaxPossibleLengthOfExpedition(user, card, expedition) < 1)
+            if (GetMaxPossibleLengthOfExpedition(user, card, expedition) <= 2)
                 return false;
 
             switch (expedition)

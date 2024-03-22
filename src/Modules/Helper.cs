@@ -165,7 +165,7 @@ namespace Sanakan.Modules
 
         [Command("info", RunMode = RunMode.Async)]
         [Summary("wyświetla informacje o bocie")]
-        [Remarks(""), RequireCommandChannel]
+        [Remarks("")]
         public async Task GiveBotInfoAsync()
         {
             using (var proc = System.Diagnostics.Process.GetCurrentProcess())
