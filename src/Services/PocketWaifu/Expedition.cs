@@ -442,24 +442,22 @@ namespace Sanakan.Services.PocketWaifu
 
         public int GetItemsCountFromExpedition(double length, Card card, User user)
         {
-            bool yamiOrRaito = card.Dere == Dere.Yami || card.Dere == Dere.Raito;
+            bool specialDere = card.Dere == Dere.Yami || card.Dere == Dere.Raito || card.Dere == Dere.Yato;
 
             var itemsPerHour = card.Expedition switch
             {
                 CardExpedition.NormalItemWithExp    => user.GameDeck.IsNeutral() ? 7.5 : 5,
-                CardExpedition.ExtremeItemWithExp   => yamiOrRaito ? 44 : 22.5,
-                CardExpedition.LightItemWithExp     => yamiOrRaito ? 10 : 8,
-                CardExpedition.DarkItemWithExp      => yamiOrRaito ? 10 : 8,
-                CardExpedition.LightItems           => yamiOrRaito ? 20 : 16,
-                CardExpedition.DarkItems            => yamiOrRaito ? 20 : 16,
-                CardExpedition.UltimateEasy         => yamiOrRaito ? 8 : 4,
-                CardExpedition.UltimateMedium       => yamiOrRaito ? 8 : 4,
-                CardExpedition.UltimateHard         => yamiOrRaito ? 12 : 6,
-                CardExpedition.UltimateHardcore     => yamiOrRaito ? 4 : 2,
+                CardExpedition.ExtremeItemWithExp   => specialDere ? 44 : 22.5,
+                CardExpedition.LightItemWithExp     => specialDere ? 10 : 8,
+                CardExpedition.DarkItemWithExp      => specialDere ? 10 : 8,
+                CardExpedition.LightItems           => specialDere ? 20 : 16,
+                CardExpedition.DarkItems            => specialDere ? 20 : 16,
+                CardExpedition.UltimateEasy         => specialDere ? 8 : 4,
+                CardExpedition.UltimateMedium       => specialDere ? 8 : 4,
+                CardExpedition.UltimateHard         => specialDere ? 12 : 6,
+                CardExpedition.UltimateHardcore     => specialDere ? 4 : 2,
                 _ => 0
             };
-
-            itemsPerHour *= card.Dere == Dere.Yato ? 1.2 : 1;
 
             return (int) (itemsPerHour / 60 * length);
         }
@@ -470,12 +468,12 @@ namespace Sanakan.Services.PocketWaifu
             {
                 CardExpedition.NormalItemWithExp    => user.GameDeck.IsGood() ? 0.025 : 0.00225,
                 CardExpedition.ExtremeItemWithExp   => 0.055,
-                CardExpedition.LightItemWithExp     => card.Dere == Dere.Yato ? 0.003 : 0.008,
-                CardExpedition.LightItems           => card.Dere == Dere.Yato ? 0.003 : 0.008,
-                CardExpedition.LightExp             => card.Dere == Dere.Yato ? 0.003 : 0.008,
-                CardExpedition.DarkItemWithExp      => card.Dere == Dere.Yato ? 0.007 : 0.0045,
-                CardExpedition.DarkItems            => card.Dere == Dere.Yato ? 0.007 : 0.0045,
-                CardExpedition.DarkExp              => card.Dere == Dere.Yato ? 0.007 : 0.0045,
+                CardExpedition.LightItemWithExp     => 0.008,
+                CardExpedition.LightItems           => 0.008,
+                CardExpedition.LightExp             => 0.008,
+                CardExpedition.DarkItemWithExp      => 0.0045,
+                CardExpedition.DarkItems            => 0.0045,
+                CardExpedition.DarkExp              => 0.0045,
                 _ => 0
             };
 
@@ -511,7 +509,7 @@ namespace Sanakan.Services.PocketWaifu
             {
                 Dere.Yami   => 0.75,
                 Dere.Raito  => 0.75,
-                Dere.Yato   => 0.65,
+                Dere.Yato   => 0.70,
                 _ => 1
             };
             dereUltMod = qualityMod < 1 ? 0.6 : dereUltMod;

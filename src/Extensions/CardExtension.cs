@@ -408,8 +408,6 @@ namespace Sanakan.Extensions
 
         public static bool CanGiveRing(this Card card) => card.Affection >= 5;
 
-        public static bool HasNoNegativeEffectAfterBloodUsage(this Card card) => card.Affection >= 4;
-
         public static bool CanGiveBloodOrUpgradeToSSS(this Card card) => card.Affection >= 50;
 
         public static bool IsBroken(this Card card) => card.Affection <= -50;

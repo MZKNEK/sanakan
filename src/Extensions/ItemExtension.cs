@@ -323,13 +323,13 @@ namespace Sanakan.Extensions
                 case ItemType.IncreaseUltimateAttack: return 0.4;
                 case ItemType.IncreaseUltimateDefence: return 0.4;
                 case ItemType.IncreaseUltimateHealth: return 0.6;
-                case ItemType.IncreaseUltimateAll: return 1.2;
+                case ItemType.IncreaseUltimateAll: return 0.8;
                 case ItemType.FigureSkeleton: return -0.7;
                 case ItemType.CardFragment: return -0.005;
-                case ItemType.BloodOfYourWaifu: return -0.55;
-                case ItemType.BetterIncreaseUpgradeCnt: return -0.65;
+                case ItemType.BloodOfYourWaifu: return 0.1;
+                case ItemType.BetterIncreaseUpgradeCnt: return 0.1;
                 case ItemType.GiveTagSlot: return 0.4;
-                case ItemType.RemoveCurse: return 2;
+                case ItemType.RemoveCurse: return 1;
 
                 default: return 0;
             }

@@ -1645,14 +1645,16 @@ namespace Sanakan.Services.PocketWaifu
 
             karmaCost = _expedition.GetKarmaCostOfExpedition(duration.CalcTime, card, user);
 
-            if (duration.CalcTime <= 5)
-            {
-                totalItemsCnt = 0;
-                totalExp /= 2;
-            }
-
             var rawAffectionCost = _expedition.GetAffectionCostOfExpedition(duration.CalcTime, card);
             var affectionCost = rawAffectionCost * multiplier;
+
+            if (duration.CalcTime <= 5)
+            {
+                affectionCost += 5;
+                totalItemsCnt = 0;
+                karmaCost = 0;
+                totalExp = 0;
+            }
 
             card.ExpCnt += totalExp;
 
@@ -2084,8 +2086,8 @@ namespace Sanakan.Services.PocketWaifu
                         if (card.AttackBonus >= 1000)
                             return ExecutionResult.FromError("nie możesz bardziej ulepszyć tej karty!");
 
-                        affectionInc = 3.2 * itemCnt;
-                        karmaChange -= 0.5 * itemCnt;
+                        affectionInc = 1.2 * itemCnt;
+                        karmaChange = 0.1 * itemCnt;
                         card.AttackBonus += 2 * itemCnt;
                         card.RateNegative += 1;
                         str.Append($"Zwiększyła się siła karty!");
@@ -2094,8 +2096,10 @@ namespace Sanakan.Services.PocketWaifu
 
                     if (card.Dere == Dere.Raito)
                     {
+                        if (card.Curse != CardCurse.LoweredStats)
+                            karmaChange = -0.5 * itemCnt;
+
                         affectionInc = -10 * itemCnt;
-                        karmaChange -= 1 * itemCnt;
                         card.Curse = CardCurse.LoweredStats;
                         str.Append($"Karta została spaczona!");
                         break;
@@ -2106,8 +2110,8 @@ namespace Sanakan.Services.PocketWaifu
                         if (card.Rarity == Rarity.SSS)
                             return ExecutionResult.FromError("karty **SSS** nie można już ulepszyć!");
 
-                        karmaChange += 1.5 * itemCnt;
-                        affectionInc = 1.2 * itemCnt;
+                        karmaChange = 0.2 * itemCnt;
+                        affectionInc = 0.8 * itemCnt;
                         card.UpgradesCnt += 2 * itemCnt;
                         str.Append($"Zwiększono liczbę ulepszeń do {card.UpgradesCnt}!");
                         break;
@@ -2115,14 +2119,14 @@ namespace Sanakan.Services.PocketWaifu
 
                     if (card.CanGiveRing())
                     {
-                        affectionInc = 1 * itemCnt;
-                        karmaChange += 0.3 * itemCnt;
+                        affectionInc = 0.6 * itemCnt;
+                        karmaChange = 0.1 * itemCnt;
                         str.Append("Bardzo powiększyła się relacja z kartą!");
                         break;
                     }
 
                     affectionInc = -5 * itemCnt;
-                    karmaChange -= 0.5 * itemCnt;
+                    karmaChange = -0.01 * itemCnt;
                     embedColor = EMType.Error;
                     str.Append($"Karta się przeraziła!");
                     break;
@@ -2136,8 +2140,8 @@ namespace Sanakan.Services.PocketWaifu
                         if (card.AttackBonus >= 1000)
                             return ExecutionResult.FromError("nie możesz bardziej ulepszyć tej karty!");
 
-                        affectionInc = 2.8 * itemCnt;
-                        karmaChange += 0.5 * itemCnt;
+                        affectionInc = 1.2 * itemCnt;
+                        karmaChange = 0.1 * itemCnt;
                         card.AttackBonus += 2 * itemCnt;
                         card.RatePositive += 1;
                         str.Append($"Zwiększyła się siła karty!");
@@ -2146,8 +2150,10 @@ namespace Sanakan.Services.PocketWaifu
 
                     if (card.Dere == Dere.Yami)
                     {
+                        if (card.Curse != CardCurse.LoweredStats)
+                            karmaChange = 0.5 * itemCnt;
+
                         affectionInc = -10 * itemCnt;
-                        karmaChange -= 1 * itemCnt;
                         card.Curse = CardCurse.LoweredStats;
                         str.Append($"Karta została spaczona!");
                         break;
@@ -2158,34 +2164,25 @@ namespace Sanakan.Services.PocketWaifu
                         if (card.Rarity == Rarity.SSS)
                             return ExecutionResult.FromError("karty **SSS** nie można już ulepszyć!");
 
-                        karmaChange += 2 * itemCnt;
-                        affectionInc = 1.5 * itemCnt;
+                        karmaChange = 0.2 * itemCnt;
+                        affectionInc = 0.8 * itemCnt;
                         card.UpgradesCnt += 2 * itemCnt;
                         str.Append($"Zwiększono liczbę ulepszeń do {card.UpgradesCnt}!");
                         break;
                     }
 
-                    if (!card.HasNoNegativeEffectAfterBloodUsage())
-                    {
-                        affectionInc = -5 * itemCnt;
-                        karmaChange -= 0.8 * itemCnt;
-                        embedColor = EMType.Error;
-                        str.Append($"Karta się przeraziła!");
-                        break;
-                    }
-
                     if (card.CanGiveRing())
                     {
-                        affectionInc = 1.7 * itemCnt;
-                        karmaChange += 0.4 * itemCnt;
+                        affectionInc = 0.6 * itemCnt;
+                        karmaChange = 0.1 * itemCnt;
                         str.Append("Bardzo powiększyła się relacja z kartą!");
                         break;
                     }
 
-                    affectionInc = 1.2 * itemCnt;
-                    karmaChange += 0.4 * itemCnt;
-                    embedColor = EMType.Warning;
-                    str.Append($"Karta się zmartwiła!");
+                    affectionInc = -5 * itemCnt;
+                    karmaChange = -0.01 * itemCnt;
+                    embedColor = EMType.Error;
+                    str.Append($"Karta się przeraziła!");
                     break;
 
                 case ItemType.IncreaseUpgradeCnt:
