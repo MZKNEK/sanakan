@@ -60,13 +60,13 @@ namespace Sanakan.Services.PocketWaifu
 
         private static List<EventType> _dakrAndLightItems = new List<(EventType, int)>
         {
-            (EventType.IncAtk,     12),
+            (EventType.IncAtk,     10),
             (EventType.IncDef,     10),
             (EventType.Fight,      22),
-            (EventType.ChangeDere, 10),
+            (EventType.ChangeDere, 15),
             (EventType.DecAtk,     12),
-            (EventType.DecDef,     14),
-            (EventType.DecAff,     20),
+            (EventType.DecDef,     12),
+            (EventType.DecAff,     19),
         }.ToRealList();
 
         private static List<EventType> _dakrAndLightExp = new List<(EventType, int)>
@@ -116,7 +116,7 @@ namespace Sanakan.Services.PocketWaifu
                 case CardExpedition.ExtremeItemWithExp:
                     if (duration.CalcTime > 60 || duration.RealTime > 360)
                     {
-                        if (Fun.TakeATry(25d))
+                        if (Fun.TakeATry(30d))
                             return EventType.LoseCard;
                     }
                     return EventType.None;

@@ -3727,7 +3727,7 @@ namespace Sanakan.Modules
 
         [Command("ofiaruj")]
         [Alias("donate")]
-        [Summary("ofiaruj trzy krople krwi, aby przeistoczyć kartę w anioła lub demona (wymagany odpowiedni poziom karmy)")]
+        [Summary("ofiaruj 3 krople krwii, aby przeistoczyć kartę w anioła lub demona lub 12 aby zamienić je w boga (wymagany odpowiedni poziom karmy)")]
         [Remarks("451"), RequireWaifuCommandChannel]
         public async Task ChangeCardAsync([Summary("WID")] ulong wid)
         {
@@ -3759,7 +3759,8 @@ namespace Sanakan.Modules
                     return;
                 }
 
-                var activity = new Services.UserActivityBuilder(_time)
+                var bloodCost = (thisCard.Dere == Dere.Yami || thisCard.Dere == Dere.Raito) ? 12 : 3;
+                var activity = new UserActivityBuilder(_time)
                     .WithUser(bUser, Context.User).WithCard(thisCard);
 
                 if (bUser.GameDeck.CanCreateDemon())
@@ -3777,13 +3778,13 @@ namespace Sanakan.Modules
                         return;
                     }
 
-                    if (blood.Count < 3)
+                    if (blood.Count < bloodCost)
                     {
                         await ReplyAsync("", embed: $"{Context.User.Mention} o dziwo posiadasz za mało kropli krwi twojej waifu.".ToEmbedMessage(EMType.Error).Build());
                         return;
                     }
 
-                    if (blood.Count > 3) blood.Count -= 3;
+                    if (blood.Count > bloodCost) blood.Count -= bloodCost;
                     else bUser.GameDeck.Items.Remove(blood);
 
                     if (thisCard.Dere == Dere.Raito)
@@ -3814,13 +3815,13 @@ namespace Sanakan.Modules
                         return;
                     }
 
-                    if (blood.Count < 3)
+                    if (blood.Count < bloodCost)
                     {
                         await ReplyAsync("", embed: $"{Context.User.Mention} o dziwo posiadasz za mało kropli twojej krwi.".ToEmbedMessage(EMType.Error).Build());
                         return;
                     }
 
-                    if (blood.Count > 3) blood.Count -= 3;
+                    if (blood.Count > bloodCost) blood.Count -= bloodCost;
                     else bUser.GameDeck.Items.Remove(blood);
 
 

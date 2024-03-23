@@ -1601,6 +1601,7 @@ namespace Sanakan.Services.PocketWaifu
             var multiplier = (duration.RealTime < 60) ? ((duration.RealTime < 30) ? 3d : 2d) : 1d;
             var reward = multiplier != 1 ? "Wyprawa? Chyba po bułki do sklepu.\n\n" : "";
 
+            var karmaMod = 1d;
             var totalExp = 0d;
             var karmaCost = 0d;
             var expItemMod = 1d;
@@ -1621,6 +1622,7 @@ namespace Sanakan.Services.PocketWaifu
                 }
                 else if (e == EventType.LoseCard)
                 {
+                    karmaMod = 0.5;
                     user.StoreExpIfPossible(totalExp);
                     if (Fun.TakeATry(6d))
                     {
@@ -1644,7 +1646,7 @@ namespace Sanakan.Services.PocketWaifu
             totalItemsCnt += _expedition.GetItemsCountFromExpedition(duration.CalcTime, card, user);
             if (expItemMod != 1) totalItemsCnt = (int) (totalItemsCnt * expItemMod);
 
-            karmaCost = _expedition.GetKarmaCostOfExpedition(duration.CalcTime, card, user);
+            karmaCost = _expedition.GetKarmaCostOfExpedition(duration.CalcTime, card, user) * karmaMod;
 
             var rawAffectionCost = _expedition.GetAffectionCostOfExpedition(duration.CalcTime, card);
             var affectionCost = rawAffectionCost * multiplier;

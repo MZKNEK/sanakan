@@ -123,15 +123,16 @@ namespace Sanakan.Services.PocketWaifu
             },
             {ItemDropType.Rare, new List<(ItemType, int)>
                 {
-                    (ItemType.IncreaseUpgradeCnt,       4),
-                    (ItemType.NotAnItem,                6),
+                    (ItemType.IncreaseUpgradeCnt,       35),
+                    (ItemType.NotAnItem,                65),
                 }.ToRealList()
             },
             {ItemDropType.Legendary, new List<(ItemType, int)>
                 {
-                    (ItemType.BetterIncreaseUpgradeCnt, 5),
-                    (ItemType.BloodOfYourWaifu,         5),
-                    (ItemType.CreationItemBase,         1),
+                    (ItemType.BetterIncreaseUpgradeCnt, 39),
+                    (ItemType.BloodOfYourWaifu,         39),
+                    (ItemType.NotAnItem,                14),
+                    (ItemType.CreationItemBase,         8),
                 }.ToRealList()
             },
         };
@@ -467,7 +468,7 @@ namespace Sanakan.Services.PocketWaifu
             var karmaCostPerMinute = card.Expedition switch
             {
                 CardExpedition.NormalItemWithExp    => user.GameDeck.IsGood() ? 0.025 : 0.00225,
-                CardExpedition.ExtremeItemWithExp   => 0.055,
+                CardExpedition.ExtremeItemWithExp   => 0.0385,
                 CardExpedition.LightItemWithExp     => 0.008,
                 CardExpedition.LightItems           => 0.008,
                 CardExpedition.LightExp             => 0.008,

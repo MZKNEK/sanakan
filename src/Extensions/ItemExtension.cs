@@ -315,8 +315,8 @@ namespace Sanakan.Extensions
                 case ItemType.SetCustomImage: return 0.001;
                 case ItemType.SetCustomAnimatedImage: return 0.001;
                 case ItemType.SetCustomBorder: return 0.001;
-                case ItemType.IncreaseUpgradeCnt: return 1;
-                case ItemType.ResetCardValue: return 0.5;
+                case ItemType.IncreaseUpgradeCnt: return 0.55;
+                case ItemType.ResetCardValue: return 0.4;
                 case ItemType.DereReRoll: return 0.02;
                 case ItemType.CardParamsReRoll: return 0.03;
                 case ItemType.CheckAffection: return -0.01;
