@@ -3510,10 +3510,10 @@ namespace Sanakan.Modules
                     return;
                 }
 
-                var pvpDailyMax = duser.TimeStatuses.FirstOrDefault(x => x.Type == Database.Models.StatusType.Pvp);
+                var pvpDailyMax = duser.TimeStatuses.FirstOrDefault(x => x.Type == StatusType.Pvp);
                 if (pvpDailyMax == null)
                 {
-                    pvpDailyMax = Database.Models.StatusType.Pvp.NewTimeStatus();
+                    pvpDailyMax = StatusType.Pvp.NewTimeStatus();
                     duser.TimeStatuses.Add(pvpDailyMax);
                 }
 
@@ -3591,10 +3591,10 @@ namespace Sanakan.Modules
                     Result = res
                 });
 
-                var mission = duser.TimeStatuses.FirstOrDefault(x => x.Type == Database.Models.StatusType.DPvp);
+                var mission = duser.TimeStatuses.FirstOrDefault(x => x.Type == StatusType.DPvp);
                 if (mission == null)
                 {
-                    mission = Database.Models.StatusType.DPvp.NewTimeStatus();
+                    mission = StatusType.DPvp.NewTimeStatus();
                     duser.TimeStatuses.Add(mission);
                 }
                 mission.Count(_time.Now());
@@ -3605,7 +3605,7 @@ namespace Sanakan.Modules
                 _ = Task.Run(async () =>
                 {
                     string wStr = fight.Winner == null ? "Remis!" : $"Zwycięża {fight.Winner.User.Mention}!";
-                    await ReplyAsync("", embed: $"⚔️ **Pojedynek**:\n{Context.User.Mention} vs. {euser.Mention}\n\n{deathLog.TrimToLength(2500)}\n{wStr}\n{info}".ToEmbedMessage(EMType.Bot).Build());
+                    await ReplyAsync("", embed: $"⚔️ **Pojedynek**:\n{Context.User.Mention} vs. {euser.Mention}\n\n{deathLog.TrimToLength(2000)}\n{wStr}\n{info}".ToEmbedMessage(EMType.Bot).Build());
                 });
             }
         }
