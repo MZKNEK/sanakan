@@ -802,7 +802,7 @@ namespace Sanakan.Modules
         [Alias("upgrade")]
         [Summary("ulepsza kartę na lepszą jakość")]
         [Remarks("5412"), RequireWaifuCommandChannel]
-        public async Task UpgradeCardAsync([Summary("WID")] ulong id)
+        public async Task UpgradeCardAsync([Summary("WID karty do ulepszenia")] ulong id, [Summary("WID karty do poświęcenia")] ulong cardToSac = 0)
         {
             using (var db = new Database.DatabaseContext(Config))
             {
@@ -859,32 +859,61 @@ namespace Sanakan.Modules
                         return;
                     }
 
-                    var fig = bUser.GameDeck.Figures.FirstOrDefault(x => x.IsFocus);
-                    if (fig == null)
+                    if (cardToSac == 0)
                     {
-                        await ReplyAsync("", embed: $"{Context.User.Mention} nie posiadasz aktywnej figurki.".ToEmbedMessage(EMType.Error).Build());
-                        return;
+                        var fig = bUser.GameDeck.Figures.FirstOrDefault(x => x.IsFocus);
+                        if (fig == null)
+                        {
+                            await ReplyAsync("", embed: $"{Context.User.Mention} nie posiadasz aktywnej figurki.".ToEmbedMessage(EMType.Error).Build());
+                            return;
+                        }
+
+                        if (fig.IsComplete)
+                        {
+                            await ReplyAsync("", embed: $"{Context.User.Mention} z tej figurki powstała już karta.".ToEmbedMessage(EMType.Error).Build());
+                            return;
+                        }
+
+                        if (!fig.CanCreateUltimateCard())
+                        {
+                            await ReplyAsync("", embed: $"{Context.User.Mention} twoja figurka nie posiada wszystkich elementów.".ToEmbedMessage(EMType.Error).Build());
+                            return;
+                        }
+
+                        if (card.Quality != fig.GetAvgQuality())
+                        {
+                            await ReplyAsync("", embed: $"{Context.User.Mention} ta figurka nie ma takiej samej jakości jak karta którą chcesz ulepszyć.".ToEmbedMessage(EMType.Error).Build());
+                            return;
+                        }
+
+                        bUser.GameDeck.Figures.Remove(fig);
+                    }
+                    else
+                    {
+                        var cardSac = bUser.GameDeck.Cards.FirstOrDefault(x => x.Id == cardToSac);
+                        if (cardSac == null)
+                        {
+                            await ReplyAsync("", embed: $"{Context.User.Mention} nie posiadasz takiej karty.".ToEmbedMessage(EMType.Error).Build());
+                            return;
+                        }
+
+                        if (card.Quality != cardSac.Quality)
+                        {
+                            await ReplyAsync("", embed: $"{Context.User.Mention} ta karta nie ma takiej samej jakości jak karta którą chcesz ulepszyć.".ToEmbedMessage(EMType.Error).Build());
+                            return;
+                        }
+
+                        var figure = bUser.GameDeck.Figures.FirstOrDefault(x => x.CreatedCardId == cardToSac);
+                        if (figure == null)
+                        {
+                            await ReplyAsync("", embed: $"{Context.User.Mention} nie posiadasz figurki tej karty.".ToEmbedMessage(EMType.Error).Build());
+                            return;
+                        }
+
+                        bUser.GameDeck.Cards.Remove(cardSac);
+                        bUser.GameDeck.Figures.Remove(figure);
                     }
 
-                    if (fig.IsComplete)
-                    {
-                        await ReplyAsync("", embed: $"{Context.User.Mention} z tej figurki powstała już karta.".ToEmbedMessage(EMType.Error).Build());
-                        return;
-                    }
-
-                    if (!fig.CanCreateUltimateCard())
-                    {
-                        await ReplyAsync("", embed: $"{Context.User.Mention} twoja figurka nie posiada wszystkich elementów.".ToEmbedMessage(EMType.Error).Build());
-                        return;
-                    }
-
-                    if (card.Quality != fig.GetAvgQuality())
-                    {
-                        await ReplyAsync("", embed: $"{Context.User.Mention} ta figurka nie ma takiej samej jakości jak karta którą chcesz ulepszyć.".ToEmbedMessage(EMType.Error).Build());
-                        return;
-                    }
-
-                    bUser.GameDeck.Figures.Remove(fig);
                     card.Quality = card.Quality.Next();
                 }
                 else
@@ -3727,7 +3756,7 @@ namespace Sanakan.Modules
 
         [Command("ofiaruj")]
         [Alias("donate")]
-        [Summary("ofiaruj 3 krople krwii, aby przeistoczyć kartę w anioła lub demona lub 12 aby zamienić je w boga (wymagany odpowiedni poziom karmy)")]
+        [Summary("ofiaruj 3 krople krwi, aby przeistoczyć kartę w anioła lub demona lub 12 aby zamienić je w boga (wymagany odpowiedni poziom karmy)")]
         [Remarks("451"), RequireWaifuCommandChannel]
         public async Task ChangeCardAsync([Summary("WID")] ulong wid)
         {
