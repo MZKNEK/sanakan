@@ -1602,11 +1602,9 @@ namespace Sanakan.Services.PocketWaifu
             var reward = multiplier != 1 ? "Wyprawa? Chyba po bułki do sklepu.\n\n" : "";
 
             var karmaMod = 1d;
-            var totalExp = 0d;
-            var karmaCost = 0d;
-            var expItemMod = 1d;
-            var totalItemsCnt = 0;
             var allowItems = true;
+            var totalExp = _expedition.GetExpFromExpedition(duration.CalcTime, card);
+            var totalItemsCnt = _expedition.GetItemsCountFromExpedition(duration.CalcTime, card, user);
 
             if (CheckEventInExpedition(card.Expedition, duration))
             {
@@ -1618,7 +1616,10 @@ namespace Sanakan.Services.PocketWaifu
                 {
                     card.Dere = RandomizeDere();
                     reward += $"{card.Dere}\n";
+
                     duration = _expedition.GetLengthOfExpedition(user, card);
+                    totalExp = _expedition.GetExpFromExpedition(duration.CalcTime, card);
+                    totalItemsCnt = _expedition.GetItemsCountFromExpedition(duration.CalcTime, card, user);
                 }
                 else if (e == EventType.LoseCard)
                 {
@@ -1632,22 +1633,13 @@ namespace Sanakan.Services.PocketWaifu
                 }
                 else if (e == EventType.Fight && !allowItems)
                 {
-                    expItemMod = 0.5;
                     allowItems = true;
+                    totalItemsCnt /= 2;
+                    totalExp /= 2;
                 }
             }
 
-            totalExp += _expedition.GetExpFromExpedition(duration.CalcTime, card);
-            totalExp /= card.Curse == CardCurse.LoweredExperience ? 5 : 1;
-            totalExp *= expItemMod;
-
-            totalExp = card.FromFigure ? 0 : totalExp;
-
-            totalItemsCnt += _expedition.GetItemsCountFromExpedition(duration.CalcTime, card, user);
-            if (expItemMod != 1) totalItemsCnt = (int) (totalItemsCnt * expItemMod);
-
-            karmaCost = _expedition.GetKarmaCostOfExpedition(duration.CalcTime, card, user) * karmaMod;
-
+            var karmaCost = _expedition.GetKarmaCostOfExpedition(duration.CalcTime, card, user) * karmaMod;
             var rawAffectionCost = _expedition.GetAffectionCostOfExpedition(duration.CalcTime, card);
             var affectionCost = rawAffectionCost * multiplier;
 

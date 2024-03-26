@@ -427,6 +427,9 @@ namespace Sanakan.Services.PocketWaifu
 
         public double GetExpFromExpedition(double length, Card card)
         {
+            if (card.FromFigure)
+                return 0;
+
             var expPerHour = card.Expedition switch
             {
                 CardExpedition.NormalItemWithExp    => 2,
@@ -438,7 +441,9 @@ namespace Sanakan.Services.PocketWaifu
                 _ => 0
             };
 
-            return expPerHour / 60 * length;
+            var curseMod = card.Curse == CardCurse.LoweredExperience ? 0.2 : 1;
+
+            return expPerHour / 60 * length * curseMod;
         }
 
         public int GetItemsCountFromExpedition(double length, Card card, User user)
