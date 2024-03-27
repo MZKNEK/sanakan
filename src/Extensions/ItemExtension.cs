@@ -304,33 +304,11 @@ namespace Sanakan.Extensions
         {
             switch (type)
             {
-                case ItemType.AffectionRecoveryGreat: return 0.3;
-                case ItemType.AffectionRecoveryBig: return 0.1;
-                case ItemType.AffectionRecoveryNormal: return 0.01;
+                case ItemType.AffectionRecoveryGreat: return 0.24;
+                case ItemType.AffectionRecoveryBig: return 0.08;
+                case ItemType.AffectionRecoveryNormal: return 0.008;
                 case ItemType.AffectionRecoverySmall: return 0.001;
-                case ItemType.IncreaseExpSmall: return 0.1;
-                case ItemType.IncreaseExpBig: return 0.3;
-                case ItemType.ChangeStarType: return 0.001;
-                case ItemType.ChangeCardImage: return 0.001;
-                case ItemType.SetCustomImage: return 0.001;
-                case ItemType.SetCustomAnimatedImage: return 0.001;
-                case ItemType.SetCustomBorder: return 0.001;
-                case ItemType.IncreaseUpgradeCnt: return 0.55;
-                case ItemType.ResetCardValue: return 0.4;
-                case ItemType.DereReRoll: return 0.02;
-                case ItemType.CardParamsReRoll: return 0.03;
-                case ItemType.CheckAffection: return -0.01;
-                case ItemType.IncreaseUltimateAttack: return 0.4;
-                case ItemType.IncreaseUltimateDefence: return 0.4;
-                case ItemType.IncreaseUltimateHealth: return 0.6;
-                case ItemType.IncreaseUltimateAll: return 0.8;
-                case ItemType.FigureSkeleton: return -0.7;
-                case ItemType.CardFragment: return -0.005;
-                case ItemType.BloodOfYourWaifu: return 0.1;
-                case ItemType.BetterIncreaseUpgradeCnt: return 0.1;
-                case ItemType.GiveTagSlot: return 0.4;
                 case ItemType.RemoveCurse: return 1;
-
                 default: return 0;
             }
         }

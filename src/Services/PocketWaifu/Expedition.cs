@@ -485,8 +485,8 @@ namespace Sanakan.Services.PocketWaifu
 
             var dereMod = card.Dere switch
             {
-                Dere.Kamidere => 0.8,
-                Dere.Yandere  => 1.2,
+                Dere.Kamidere => 0.7,
+                Dere.Yandere  => 1.3,
                 _ => 1
             };
 

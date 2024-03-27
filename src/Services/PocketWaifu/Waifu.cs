@@ -2279,7 +2279,7 @@ namespace Sanakan.Services.PocketWaifu
             }
 
             if (card.Dere == Dere.Tsundere)
-                affectionInc *= 1.2;
+                affectionInc *= 1.25;
 
             if (consumeItem)
                 item.Count -= itemCnt;
@@ -2291,10 +2291,10 @@ namespace Sanakan.Services.PocketWaifu
             }
 
             if (card.Dere == Dere.Kamidere)
-                karmaChange *= 1.2;
+                karmaChange *= 1.6;
 
             if (card.Dere == Dere.Yandere)
-                karmaChange *= 0.8;
+                karmaChange *= 0.4;
 
             user.GameDeck.Karma += karmaChange;
             card.Affection += affectionInc;
