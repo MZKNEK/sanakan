@@ -3,12 +3,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Sanakan.Database.Models;
-using Sanakan.Services;
-using Sanakan.Services.PocketWaifu;
-using Shinden;
 
 namespace Sanakan.Extensions
 {
@@ -288,30 +283,24 @@ namespace Sanakan.Extensions
             return aff;
         }
 
-        public static double GetBaseAffection(this ItemType type)
+        public static double GetBaseAffection(this ItemType type) => type switch
         {
-            switch (type)
-            {
-                case ItemType.AffectionRecoveryGreat: return 2.2;
-                case ItemType.AffectionRecoveryBig: return 1.5;
-                case ItemType.AffectionRecoveryNormal: return 0.2;
-                case ItemType.AffectionRecoverySmall: return 0.04;
-                default: return 0;
-            }
-        }
+            ItemType.AffectionRecoveryGreat  => 2.2,
+            ItemType.AffectionRecoveryBig    => 1.5,
+            ItemType.AffectionRecoveryNormal => 0.2,
+            ItemType.AffectionRecoverySmall  => 0.04,
+            _ => 0
+        };
 
-        public static double GetBaseKarmaChange(this ItemType type)
+        public static double GetBaseKarmaChange(this ItemType type) => type switch
         {
-            switch (type)
-            {
-                case ItemType.AffectionRecoveryGreat: return 0.24;
-                case ItemType.AffectionRecoveryBig: return 0.08;
-                case ItemType.AffectionRecoveryNormal: return 0.008;
-                case ItemType.AffectionRecoverySmall: return 0.001;
-                case ItemType.RemoveCurse: return 1;
-                default: return 0;
-            }
-        }
+            ItemType.AffectionRecoveryGreat  => 0.24,
+            ItemType.AffectionRecoveryBig    => 0.08,
+            ItemType.AffectionRecoveryNormal => 0.008,
+            ItemType.AffectionRecoverySmall  => 0.001,
+            ItemType.RemoveCurse             => 1,
+            _ => 0
+        };
 
         public static bool CanBeUsedWithNormalUseCommand(this ItemType type)
         {
@@ -501,67 +490,37 @@ namespace Sanakan.Extensions
             }
         }
 
-        public static long CValue(this ItemType type)
+        public static long CValue(this ItemType type) => type switch
         {
-            switch (type)
-            {
-                case ItemType.AffectionRecoveryGreat:
-                    return 180;
-                case ItemType.AffectionRecoveryBig:
-                    return 140;
-                case ItemType.AffectionRecoveryNormal:
-                    return 15;
-                case ItemType.BetterIncreaseUpgradeCnt:
-                    return 400;
-                case ItemType.IncreaseUpgradeCnt:
-                    return 111;
-                case ItemType.DereReRoll:
-                    return 10;
-                case ItemType.CardParamsReRoll:
-                    return 15;
-                case ItemType.CheckAffection:
-                    return 15;
-                case ItemType.SetCustomImage:
-                    return 300;
-                case ItemType.IncreaseExpSmall:
-                    return 100;
-                case ItemType.IncreaseExpBig:
-                    return 400;
-                case ItemType.ChangeStarType:
-                    return 50;
-                case ItemType.SetCustomBorder:
-                    return 80;
-                case ItemType.ChangeCardImage:
-                    return 10;
-                case ItemType.ResetCardValue:
-                    return 5;
-                case ItemType.LotteryTicket:
-                    return 200;
-                case ItemType.IncreaseUltimateAttack:
-                    return 80;
-                case ItemType.IncreaseUltimateDefence:
-                    return 70;
-                case ItemType.IncreaseUltimateHealth:
-                    return 100;
-                case ItemType.IncreaseUltimateAll:
-                    return 800;
-                case ItemType.BloodOfYourWaifu:
-                    return 400;
-                case ItemType.SetCustomAnimatedImage:
-                    return 3250;
-                case ItemType.RemoveCurse:
-                    return 800;
-                case ItemType.GiveTagSlot:
-                    return 1150;
-                case ItemType.CreationItemBase:
-                    return 222;
-                case ItemType.CardFragment:
-                    return 0;
-
-                default:
-                    return 1;
-            }
-        }
+            ItemType.AffectionRecoveryGreat   => 64,
+            ItemType.AffectionRecoveryBig     => 42,
+            ItemType.AffectionRecoveryNormal  => 16,
+            ItemType.AffectionRecoverySmall   => 3,
+            ItemType.BetterIncreaseUpgradeCnt => 401,
+            ItemType.BloodOfYourWaifu         => 401,
+            ItemType.IncreaseUpgradeCnt       => 111,
+            ItemType.DereReRoll               => 32,
+            ItemType.CardParamsReRoll         => 32,
+            ItemType.CheckAffection           => 52,
+            ItemType.IncreaseExpSmall         => 82,
+            ItemType.IncreaseExpBig           => 321,
+            ItemType.ChangeStarType           => 51,
+            ItemType.SetCustomBorder          => 81,
+            ItemType.ChangeCardImage          => 11,
+            ItemType.ResetCardValue           => 8,
+            ItemType.LotteryTicket            => 205,
+            ItemType.IncreaseUltimateAttack   => 61,
+            ItemType.IncreaseUltimateDefence  => 61,
+            ItemType.IncreaseUltimateHealth   => 71,
+            ItemType.IncreaseUltimateAll      => 205,
+            ItemType.SetCustomImage           => 666,
+            ItemType.SetCustomAnimatedImage   => 3251,
+            ItemType.RemoveCurse              => 802,
+            ItemType.GiveTagSlot              => 1151,
+            ItemType.CreationItemBase         => 222,
+            ItemType.CardFragment             => 0,
+            _ => 1
+        };
 
         public static bool IsBoosterPack(this ItemType type)
         {
