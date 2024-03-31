@@ -63,6 +63,22 @@ namespace Sanakan.Services
             Emote.Parse("<:ban:507286044970844170>"),
             Emote.Parse("<:angesip:754112752725000192>"),
             Emote.Parse("<:PaimonShock:772826030666547201>"),
+            Emote.Parse("<:zaba_bez_przyszlosci:1223748762317488238>"),
+            Emote.Parse("<:zaba_z_mlotkiem:1223749211091370146>"),
+            Emote.Parse("<:zaba_z_majtasami:1223748787323801702>"),
+            Emote.Parse("<a:zaba_z_kawa:1223748194802995280>"),
+            Emote.Parse("<:uwu_dark:1223750752007229461>"),
+            Emote.Parse("<:uwo:1223753254395969749>"),
+            Emote.Parse("<:zaba_smiejaca_sie_do_rozpuku:1223748772975087626>"),
+            Emote.Parse("<:oddawaj_blue:1223758221215404132>"),
+            Emote.Parse("<:jak_to_za_darmo:1223758704399220786>"),
+            Emote.Parse("<:zaba_z_wyzszym_celem:1223748801768980623>"),
+            Emote.Parse("<:ho_na_solo:1223758218392502474>"),
+            Emote.Parse("<:zaba_z_sercem:1223748795045511259>"),
+            Emote.Parse("<:zaba_z_tenczosercem:1223748797570482257>"),
+            Emote.Parse("<a:zaba_z_parasolem:1223748186007539752>"),
+            Emote.Parse("<:zaba_z_lupa:1223748784505229433>"),
+            Emote.Parse("<:fochorina:1223756070896406660>"),
         }.Shuffle().ToList();
 
         private DiscordSocketClient _client;
@@ -113,7 +129,7 @@ namespace Sanakan.Services
                 prefix = string.IsNullOrEmpty(gConfig.Prefix) ? prefix : gConfig.Prefix;
             }
 
-            if (_isEnabled && Fun.TakeATry(10d) && !message.Content.IsCommand(prefix))
+            if ((_isEnabled || Fun.IsAF()) && Fun.TakeATry(10d) && !message.Content.IsCommand(prefix))
             {
                 var emote = Fun.GetOneRandomFrom(_emtoes);
                 _ = Task.Run(async () =>

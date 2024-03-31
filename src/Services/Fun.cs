@@ -39,8 +39,6 @@ namespace Sanakan.Services
 
     public class Fun
     {
-        private static Random _rand = new Random();
-
         private static List<string> _botReactions = new List<string>()
         {
             "https://sanakan.pl/i/gif/mute_1.gif",
@@ -56,6 +54,8 @@ namespace Sanakan.Services
             "https://sanakan.pl/i/gif/mute_11.gif",
             "https://sanakan.pl/i/gif/mute_12.gif"
         };
+
+        public static bool IsAF() => DateTime.Now.Month == 4 && DateTime.Now.Day == 1;
 
         public static int GetRandomValue(int max) => GetRandomValue(0, max);
 

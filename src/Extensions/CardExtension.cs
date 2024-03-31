@@ -223,7 +223,8 @@ namespace Sanakan.Extensions
 
         public static string GetDescSmall(this Card card, Services.PocketWaifu.TagHelper tags)
         {
-            return $"{card.GetIdWithUrl()} *({card.Character}) KC: {card.WhoWantsCount} PWR: {card.CalculateCardPower():F}*\n"
+            var kcs = Fun.IsAF() ? Fun.GetRandomValue(0, 123) : card.WhoWantsCount;
+            return $"{card.GetIdWithUrl()} *({card.Character}) KC: {kcs} PWR: {card.CalculateCardPower():F}*\n"
                 + $"{card.GetString(true, true, true, false, true)}\n"
                 + $"_{card.Title}_\n\n"
                 + $"{card.Dere}\n"
@@ -235,6 +236,7 @@ namespace Sanakan.Extensions
 
         public static string GetDesc(this Card card, bool hideScalelInfo, Services.PocketWaifu.TagHelper tags)
         {
+            var kcs = Fun.IsAF() ? Fun.GetRandomValue(0, 123) : card.WhoWantsCount;
             string scalpelInfo = (!string.IsNullOrEmpty(card.CustomImage) && !hideScalelInfo)
                 ? $"**Ustawiono obrazek:** {card.CustomImageDate.ToShortDateTime()}\n**Animacja:** {card.IsAnimatedImage.GetYesNo()}\n" : "";
 
@@ -253,7 +255,7 @@ namespace Sanakan.Extensions
                 + $"**Moc:** {card.CalculateCardPower():F}\n"
                 + $"**Charakter:** {card.Dere}\n"
                 + $"**Utworzona:** {card.CreationDate.ToShortDateTime()}\n{scalpelInfo}"
-                + $"**KC:** {card.WhoWantsCount}\n"
+                + $"**KC:** {kcs}\n"
                 + $"**Tagi:** {(card.Tags.IsNullOrEmpty() ? "---" : string.Join(" ", card.Tags.Select(x => x.Name)))}\n"
                 + $"{card.GetStatusIcons(tags)}\n\n";
         }
@@ -755,6 +757,9 @@ namespace Sanakan.Extensions
 
         public static string ToHeartWishlist(this Card card, bool isOnUserWishlist = false)
         {
+            if (Fun.IsAF() && Fun.TakeATry(75d))
+                return $"💗 ({Fun.GetRandomValue(1, 73)}) ";
+
             if (isOnUserWishlist) return "💚 ";
             if (card.WhoWantsCount < 1) return "🤍 ";
             return $"💗 ({card.WhoWantsCount}) ";

@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Sanakan.Database.Models;
 using Sanakan.Extensions;
+using Sanakan.Services;
 
 namespace Sanakan.Api.Models
 {
@@ -202,7 +203,7 @@ namespace Sanakan.Api.Models
         public static CardFinalView ConvertFromRaw(Card card, ulong shindenId = 0)
         {
             if (card == null) return null;
-
+            var kcs = Fun.IsAF() ? Fun.GetRandomValue(0, 69) : card.WhoWantsCount;
             return new CardFinalView
             {
                 Id = card.Id,
@@ -233,7 +234,7 @@ namespace Sanakan.Api.Models
                 CreatedAt = card.CreationDate,
                 CardPower = card.CardPower,
                 DiscordId = card.GameDeckId,
-                WhoWantsCount = card.WhoWantsCount,
+                WhoWantsCount = kcs,
                 IsCursed = card.Curse != CardCurse.None,
                 Value = card.GetThreeStateMarketValue(),
                 ExpCntForNextLevel = card.ExpToUpgrade(),

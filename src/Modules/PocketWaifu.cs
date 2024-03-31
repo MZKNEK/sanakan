@@ -571,7 +571,7 @@ namespace Sanakan.Modules
                 var mission = bUser.TimeStatuses.FirstOrDefault(x => x.Type == Database.Models.StatusType.DPacket);
                 if (mission == null)
                 {
-                    mission = Database.Models.StatusType.DPacket.NewTimeStatus();
+                    mission = StatusType.DPacket.NewTimeStatus();
                     bUser.TimeStatuses.Add(mission);
                 }
 
