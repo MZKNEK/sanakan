@@ -276,10 +276,10 @@ namespace Sanakan.Services
             botImage.SaveToPath(pathBot);
         }
 
-        public async Task<string> SaveCardImageFromUrlAsync(string url, Card card)
+        public async Task<string> SaveCardImageFromUrlAsync(string url, Card card, bool animated = false)
         {
             var size = card.FromFigure ? new Size(475, 667) : new Size(448, 650);
-            var saveDir = $"{Dir.LocalCardData}/CI{card.Id}.webp";
+            var saveDir = $"{Dir.LocalCardData}/CI{card.Id}.{(animated ? "gif" : "webp")}";
             await SaveImageFromUrlAsync(url, saveDir, size);
             card.CustomImage = saveDir;
             return saveDir;

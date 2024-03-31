@@ -2056,7 +2056,7 @@ namespace Sanakan.Services.PocketWaifu
                         return ExecutionResult.FromError("Format obrazka nie pozwala na przeźroczystość, która jest wymagana do kart ultimate!");
 
                     bool isAnim = item.Type == ItemType.SetCustomAnimatedImage;
-                    _ = await _img.SaveCardImageFromUrlAsync(imgCheck.Url, card);
+                    _ = await _img.SaveCardImageFromUrlAsync(imgCheck.Url, card, isAnim);
 
                     card.IsAnimatedImage = isAnim;
                     card.CustomImageDate = _time.Now();
