@@ -549,8 +549,11 @@ namespace Sanakan.Extensions
             var en = deck.Wishes.FirstOrDefault(x => x.Type == WishlistObjectType.Character && x.ObjectId == id);
             if (en != null)
             {
-                db.CreateOrChangeWishlistCountBy(en.ObjectId, en.ObjectName, -1);
-                deck.Wishes.Remove(en);
+                if (en.Entry == WishlistEntryType.Normal)
+                {
+                    db.CreateOrChangeWishlistCountBy(en.ObjectId, en.ObjectName, -1);
+                    deck.Wishes.Remove(en);
+                }
                 return true;
             }
             return false;
@@ -561,8 +564,11 @@ namespace Sanakan.Extensions
             var en = deck.Wishes.FirstOrDefault(x => x.Type == WishlistObjectType.Character && x.ObjectId == id);
             if (en != null)
             {
-                await db.WishlistCountData.CreateOrChangeWishlistCountByAsync(en.ObjectId, en.ObjectName, -1);
-                deck.Wishes.Remove(en);
+                if (en.Entry == WishlistEntryType.Normal)
+                {
+                    await db.WishlistCountData.CreateOrChangeWishlistCountByAsync(en.ObjectId, en.ObjectName, -1);
+                    deck.Wishes.Remove(en);
+                }
                 return true;
             }
             return false;

@@ -1247,7 +1247,7 @@ namespace Sanakan.Modules
                 var mission = botuser.TimeStatuses.FirstOrDefault(x => x.Type == Database.Models.StatusType.WCardPlus);
                 if (mission == null)
                 {
-                    mission = Database.Models.StatusType.WCardPlus.NewTimeStatus();
+                    mission = StatusType.WCardPlus.NewTimeStatus();
                     botuser.TimeStatuses.Add(mission);
                 }
                 mission.Count(_time.Now());
@@ -1717,8 +1717,8 @@ namespace Sanakan.Modules
         [Command("żdodaj")]
         [Alias("wadd", "zdodaj")]
         [Summary("dodaje kartę/tytuł/postać do listy życzeń")]
-        [Remarks("karta 4212"), RequireWaifuCommandChannel]
-        public async Task AddToWishlistAsync([Summary("typ (p - postać, t - tytuł)")] WishlistObjectType type, [Summary("ID/WID")] ulong id)
+        [Remarks("karta 4212 tak"), RequireWaifuCommandChannel]
+        public async Task AddToWishlistAsync([Summary("typ (p - postać, t - tytuł)")] WishlistObjectType type, [Summary("ID/WID")] ulong id, [Summary("czy wpis ma zostać na liście po otrzymaniu karty?")]bool isStatic = false)
         {
             using (var db = new Database.DatabaseContext(Config))
             {
@@ -1732,6 +1732,7 @@ namespace Sanakan.Modules
 
                 var obj = new WishlistObject
                 {
+                    Entry = isStatic ? WishlistEntryType.Persistent : WishlistEntryType.Normal,
                     ObjectId = id,
                     Type = type
                 };
@@ -3240,6 +3241,7 @@ namespace Sanakan.Modules
             }
 
             var session = new ExchangeSession(user1, user2, _config, _time, _tags);
+            await Task.Delay(Services.Fun.GetRandomValue(30, 230));
             if (_session.SessionExist(session))
             {
                 await ReplyAsync("", embed: $"{user1.Mention} Ty lub twój partner znajdujecie się obecnie w trakcie wymiany.".ToEmbedMessage(EMType.Error).Build());

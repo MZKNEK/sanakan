@@ -9,11 +9,17 @@ namespace Sanakan.Database.Models
         Card, Title, Character
     }
 
+    public enum WishlistEntryType
+    {
+        Normal, Persistent
+    }
+
     public class WishlistObject
     {
         public ulong Id { get; set; }
         public ulong ObjectId { get; set; }
         public string ObjectName { get; set; }
+        public WishlistEntryType Entry { get; set; }
         public WishlistObjectType Type { get; set; }
 
         public ulong GameDeckId { get; set; }
