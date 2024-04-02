@@ -2584,7 +2584,7 @@ namespace Sanakan.Modules
         [Command("moje oznaczenia", RunMode = RunMode.Async)]
         [Alias("my tags")]
         [Summary("wypisuje dostepne oznaczenia")]
-        [Remarks(""), RequireAnyCommandChannelLevelOrNitro(60)]
+        [Remarks(""), RequireAnyCommandChannelOrLevel(60)]
         public async Task ShowUserTagsAsync()
         {
             using (var db = new Database.DatabaseContext(Config))
@@ -3884,7 +3884,7 @@ namespace Sanakan.Modules
         [Command("karcianka-", RunMode = RunMode.Async)]
         [Alias("cpf-")]
         [Summary("wyświetla uproszczony profil PocketWaifu")]
-        [Remarks("Karna"), RequireAnyCommandChannelLevelOrNitro(40)]
+        [Remarks("Karna"), RequireAnyCommandChannelOrLevel(60)]
         public async Task ShowSimpleProfileAsync([Summary("nazwa użytkownika")] SocketGuildUser usr = null)
         {
             var user = (usr ?? Context.User) as SocketGuildUser;

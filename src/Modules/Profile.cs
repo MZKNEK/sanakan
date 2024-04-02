@@ -170,7 +170,7 @@ namespace Sanakan.Modules
         }
 
         [Command("statystyki", RunMode = RunMode.Async)]
-        [Alias("stats")]
+        [Alias("stats"), RequireAnyCommandChannel]
         [Summary("wyświetla statystyki użytkownika")]
         [Remarks("karna")]
         public async Task ShowStatsAsync([Summary("nazwa użytkownika")]SocketUser user = null)
