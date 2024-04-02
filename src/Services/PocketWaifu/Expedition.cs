@@ -39,6 +39,7 @@ namespace Sanakan.Services.PocketWaifu
             },
             {ItemDropType.Legendary, new List<(ItemType, int)>
                 {
+                    (ItemType.NotAnItem,                9),
                     (ItemType.LotteryTicket,            1),
                 }.ToRealList()
             },
