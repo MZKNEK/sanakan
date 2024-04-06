@@ -360,13 +360,32 @@ namespace Sanakan.Services.PocketWaifu
             if (_config.Get().BlacklistedGuilds.Any(x => x == user.Guild.Id))
                 return;
 
+            var noExp = true;
+            ulong parentId = 0;
+            switch (message.Channel.GetChannelType())
+            {
+                case ChannelType.Text:
+                case ChannelType.PrivateThread:
+                case ChannelType.PublicThread:
+                    noExp = false;
+                    if (message.Channel is SocketThreadChannel stc)
+                        parentId = stc.CategoryId ?? 0;
+                    break;
+
+                default:
+                    break;
+            }
+
             using (var db = new Database.DatabaseContext(_config))
             {
                 var config = await db.GetCachedGuildFullConfigAsync(user.Guild.Id);
                 if (config == null) return;
 
-                var noExp = config.ChannelsWithoutExp.Any(x => x.Channel == msg.Channel.Id);
-                if (!noExp && user.Roles.Any(x => x.Id == config.UserRole)) HandleUser(msg);
+                if (!noExp)
+                {
+                    noExp = config.ChannelsWithoutExp.Any(x => x.Channel == msg.Channel.Id || x.Channel == parentId);
+                    if (!noExp && user.Roles.Any(x => x.Id == config.UserRole)) HandleUser(msg);
+                }
 
                 var sch = user.Guild.GetTextChannel(config.WaifuConfig.SpawnChannel);
                 var tch = user.Guild.GetTextChannel(config.WaifuConfig.TrashSpawnChannel);
