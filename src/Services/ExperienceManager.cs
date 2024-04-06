@@ -4,10 +4,10 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Discord;
 using Discord.WebSocket;
 using Microsoft.EntityFrameworkCore;
 using Sanakan.Config;
-using Sanakan.Database.Models;
 using Sanakan.Extensions;
 using Sanakan.Services.Executor;
 using Sanakan.Services.Time;
@@ -76,8 +76,24 @@ namespace Sanakan.Services
             if (_config.Get().BlacklistedGuilds.Any(x => x == user.Guild.Id))
                 return;
 
+            ulong parentId = 0;
             bool countMsg = true;
-            bool calculateExp = true;
+            bool calculateExp = false;
+
+            switch (message.Channel.GetChannelType())
+            {
+                case ChannelType.Text:
+                case ChannelType.PrivateThread:
+                case ChannelType.PublicThread:
+                    calculateExp = true;
+                    if (message.Channel is SocketThreadChannel stc)
+                        parentId = stc.CategoryId ?? 0;
+                break;
+
+                default:
+                break;
+            }
+
             using (var db = new Database.DatabaseContext(_config))
             {
                 var config = await db.GetCachedGuildFullConfigAsync(user.Guild.Id);
@@ -90,16 +106,19 @@ namespace Sanakan.Services
                             return;
                     }
 
-                    if (config.ChannelsWithoutExp != null)
+                    if (calculateExp && config.ChannelsWithoutExp != null)
                     {
-                        if (config.ChannelsWithoutExp.Any(x => x.Channel == message.Channel.Id))
+                        if (config.ChannelsWithoutExp.Any(x => x.Channel == message.Channel.Id || x.Channel == parentId))
                             calculateExp = false;
                     }
 
-                    if (config.IgnoredChannels != null)
+                    if (countMsg && config.IgnoredChannels != null)
                     {
-                        if (config.IgnoredChannels.Any(x => x.Channel == message.Channel.Id))
+                        if (config.IgnoredChannels.Any(x => x.Channel == message.Channel.Id || x.Channel == parentId))
+                        {
+                            calculateExp = false;
                             countMsg = false;
+                        }
                     }
                 }
 
@@ -273,7 +292,7 @@ namespace Sanakan.Services
                     {
                         usr.Level = newLevel;
                         await db.UserActivities.AddAsync(new UserActivityBuilder(_time)
-                            .WithUser(usr, user).WithType(ActivityType.LevelUp, (ulong)newLevel).Build());
+                            .WithUser(usr, user).WithType(Database.Models.ActivityType.LevelUp, (ulong)newLevel).Build());
                         _ = Task.Run(async () => { await NotifyAboutLevelAsync(user, channel, newLevel); });
                     }
 
