@@ -319,13 +319,13 @@ namespace Sanakan.Services.PocketWaifu
                 new ItemWithCost(659,   ItemType.SetCustomBorder.ToItem()),
                 new ItemWithCost(149,   ItemType.ChangeStarType.ToItem()),
                 new ItemWithCost(104,   ItemType.RandomBoosterPackSingleE.ToItem()),
-                new ItemWithCost(985,   ItemType.BigRandomBoosterPackE.ToItem()),
-                new ItemWithCost(1199,  ItemType.RandomTitleBoosterPackSingleE.ToItem()),
-                new ItemWithCost(199,   ItemType.RandomNormalBoosterPackB.ToItem()),
-                new ItemWithCost(499,   ItemType.RandomNormalBoosterPackA.ToItem()),
-                new ItemWithCost(899,   ItemType.RandomNormalBoosterPackS.ToItem()),
-                new ItemWithCost(1299,  ItemType.RandomNormalBoosterPackSS.ToItem()),
-                new ItemWithCost(569,   ItemType.ResetCardValue.ToItem()),
+                new ItemWithCost(989,   ItemType.BigRandomBoosterPackE.ToItem()),
+                new ItemWithCost(1409,  ItemType.RandomTitleBoosterPackSingleE.ToItem()),
+                new ItemWithCost(159,   ItemType.RandomNormalBoosterPackB.ToItem()),
+                new ItemWithCost(199,   ItemType.RandomNormalBoosterPackA.ToItem()),
+                new ItemWithCost(249,   ItemType.RandomNormalBoosterPackS.ToItem()),
+                new ItemWithCost(399,   ItemType.RandomNormalBoosterPackSS.ToItem()),
+                new ItemWithCost(369,   ItemType.ResetCardValue.ToItem()),
                 new ItemWithCost(9999,  ItemType.SetCustomAnimatedImage.ToItem()),
                 new ItemWithCost(444,   ItemType.GiveTagSlot.ToItem()),
                 new ItemWithCost(99999, ItemType.NotAnItem.ToItem()),
@@ -346,6 +346,7 @@ namespace Sanakan.Services.PocketWaifu
                 new ItemWithCost(19999, ItemType.IncreaseUltimateAll.ToItem()),
                 new ItemWithCost(1469,  ItemType.CreationItemBase.ToItem()),
                 new ItemWithCost(16999, ItemType.BloodOfYourWaifu.ToItem()),
+                new ItemWithCost(2599,  ItemType.ChangeStarType.ToItem()),
             };
         }
 
@@ -360,6 +361,7 @@ namespace Sanakan.Services.PocketWaifu
                 new ItemWithCost(165,   ItemType.RandomBoosterPackSingleE.ToItem()),
                 new ItemWithCost(1500,  ItemType.BigRandomBoosterPackE.ToItem()),
                 new ItemWithCost(125,   ItemType.CreationItemBase.ToItem()),
+                new ItemWithCost(921,   ItemType.SetCustomBorder.ToItem()),
             };
         }
 
@@ -533,9 +535,10 @@ namespace Sanakan.Services.PocketWaifu
                 return $"{discordUser.Mention} liczbę poproszę, a nie jakieś bohomazy.".ToEmbedMessage(EMType.Error).Build();
             }
 
+            bool isWrongType = false;
             ulong boosterPackTitleId = 0;
             string boosterPackTitleName = "";
-            const int minCharactersInPack = 12;
+            const int minCharactersInPack = 8;
             switch (thisItem.Item.Type)
             {
                 case ItemType.RandomTitleBoosterPackSingleE:
@@ -544,6 +547,19 @@ namespace Sanakan.Services.PocketWaifu
                     if (titleInfo == null)
                     {
                         return $"{discordUser.Mention} nie odnaleziono tytułu o podanym id.".ToEmbedMessage(EMType.Error).Build();
+                    }
+                    if (titleInfo is IAnimeTitleInfo ati)
+                    {
+                        isWrongType = ati.Type switch
+                        {
+                            AnimeType.NotSpecified  => true,
+                            AnimeType.Music         => true,
+                            _ => false
+                        };
+                    }
+                    if (isWrongType)
+                    {
+                        return $"{discordUser.Mention} tytuł posiada niepoprawny typ.".ToEmbedMessage(EMType.Error).Build();
                     }
                     var charsInTitle = await _shinden.GetCharactersFromTitleAsync(titleInfo.Id);
                     if (charsInTitle == null || charsInTitle.Count < 1)
