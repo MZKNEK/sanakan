@@ -548,6 +548,10 @@ namespace Sanakan.Services.PocketWaifu
                     {
                         return $"{discordUser.Mention} nie odnaleziono tytułu o podanym id.".ToEmbedMessage(EMType.Error).Build();
                     }
+                    if (titleInfo.TagCategories.Any(x => x.Tags.Any(x => x.Name.Equals("Reklama", StringComparison.InvariantCultureIgnoreCase))))
+                    {
+                        return $"{discordUser.Mention} tytuł jest reklamą.".ToEmbedMessage(EMType.Error).Build();
+                    }
                     if (titleInfo is IAnimeTitleInfo ati)
                     {
                         isWrongType = ati.Type switch
