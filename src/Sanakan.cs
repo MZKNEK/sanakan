@@ -103,7 +103,7 @@ namespace Sanakan
             var tmpCnf = _config.Get();
             _shindenClient = new ShindenClient(new Auth(tmpCnf.Shinden.Token,
                 tmpCnf.Shinden.UserAgent, tmpCnf.Shinden.Marmolade), _logger,
-                LogLevel.Error, tmpCnf.Shinden.BaseUri, TimeSpan.FromSeconds(5));
+                LogLevel.Information, tmpCnf.Shinden.BaseUri, TimeSpan.FromSeconds(3));
 
             _time = new SystemTime();
             _events = new Events(_time);

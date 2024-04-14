@@ -91,7 +91,10 @@ namespace Sanakan.Extensions
             }
         }
 
-        public static bool CanCreateUltimateCard(this Figure figure)
+        public static bool CanCreateUltimateCard(this Figure figure) =>
+            figure.AllPartsInstalled() && figure.ExpCnt >= CardExtension.ExpToUpgrade(Rarity.SSS, true, figure.SkeletonQuality);
+
+        public static bool AllPartsInstalled(this Figure figure)
         {
             bool canCreate = true;
             canCreate &= figure.SkeletonQuality != Quality.Broken;
@@ -102,7 +105,6 @@ namespace Sanakan.Extensions
             canCreate &= figure.LeftLegQuality  != Quality.Broken;
             canCreate &= figure.RightLegQuality != Quality.Broken;
             canCreate &= figure.ClothesQuality  != Quality.Broken;
-            canCreate &= figure.ExpCnt >= CardExtension.ExpToUpgrade(Rarity.SSS, true, figure.SkeletonQuality);
             return canCreate;
         }
 
@@ -285,13 +287,13 @@ namespace Sanakan.Extensions
 
         public static string GetDesc(this Figure fig)
         {
+            var selectedPart = $"**Aktywna część:**\n{fig.FocusedPart.ToName()} *{fig.PartExp:F} pk*\n\n";
             var name =  $"[{fig.Name}]({Shinden.API.Url.GetCharacterURL(fig.Character)})";
             var desc = fig.IsComplete
                 ? $"**Ukończona**: {fig.CompletionDate.ToShortDateTime()}\n"
                 + $"**WID**: {fig.CreatedCardId}"
                 : $"*{fig.ExpCnt:F} / {CardExtension.ExpToUpgrade(Rarity.SSS, true, fig.SkeletonQuality)} exp*\n\n"
-                + $"**Aktywna część:**\n"
-                + $"{fig.FocusedPart.ToName()} *{fig.PartExp:F} pk*\n\n"
+                + $"{(fig.AllPartsInstalled() ? "" : selectedPart)}"
                 + $"**Części:**\n"
                 + $"*Głowa*: {fig.HeadQuality.ToName("brak")}\n"
                 + $"*Tułów*: {fig.BodyQuality.ToName("brak")}\n"

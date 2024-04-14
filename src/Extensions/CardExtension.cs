@@ -262,36 +262,15 @@ namespace Sanakan.Extensions
 
         public static int GetHealthWithPenalty(this Card card, bool allowZero = false)
         {
-            var maxHealth = 999;
-            if (card.FromFigure)
-                maxHealth = 99999;
-
             var percent = card.Affection * 5d / 100d;
-            var bonusFromFood = (int)(card.Health * percent);
-            if (bonusFromFood > 2000)
-                bonusFromFood = 2000;
+            var maxHealth = card.FromFigure ? 99999 : 999;
+            var bonusFromFood = Math.Min((int)(card.Health * percent), 2000);
 
             var newHealth = card.Health + bonusFromFood;
-            if (card.FromFigure)
-            {
-                newHealth += card.HealthBonus;
-            }
+            newHealth += card.FromFigure ? card.HealthBonus : 0;
 
-            if (newHealth > maxHealth)
-                newHealth = maxHealth;
-
-            if (allowZero)
-            {
-                if (newHealth < 0)
-                    newHealth = 0;
-            }
-            else
-            {
-                if (newHealth < 10)
-                    newHealth = 10;
-            }
-
-            return newHealth;
+            newHealth = Math.Min(newHealth, maxHealth);
+            return allowZero ? Math.Max(newHealth, 0) : Math.Max(newHealth, 10);
         }
 
         public static int GetCardStarType(this Card card)
@@ -304,9 +283,7 @@ namespace Sanakan.Extensions
                 var ths = card.RestartCnt - (maxRestartsPerType + ((type - 1) * maxRestartsPerType));
                 if (ths < card.GetRestartCntPerStar()) --type;
             }
-
-            if (type > max) type = max;
-            return type;
+            return Math.Min(type, max);
         }
 
         public static int GetMaxCardsRestartsOnStarType(this Card card)
@@ -318,19 +295,17 @@ namespace Sanakan.Extensions
         {
             var max = card.GetMaxStarsPerType();
             var starCnt = (card.RestartCnt - card.GetMaxCardsRestartsOnStarType()) / card.GetRestartCntPerStar();
-            if (starCnt > max) starCnt = max;
-            return starCnt;
+            return Math.Min(starCnt, max);
         }
 
         public static int GetTotalCardStarCount(this Card card)
         {
             var max = card.GetMaxStarsPerType() * card.MaxStarType();
             var stars = card.RestartCnt / card.GetRestartCntPerStar();
-            if (stars > max) stars = max;
-            return stars;
+            return Math.Min(stars, max);
         }
 
-        public static int MaxStarType(this Card _) => 9;
+        public static int MaxStarType(this Card _) => 10;
 
         public static int GetRestartCntPerStar(this Card _) => 2;
 
@@ -338,10 +313,7 @@ namespace Sanakan.Extensions
 
         public static int GetAttackWithBonus(this Card card)
         {
-            var maxAttack = 999;
-            if (card.FromFigure)
-                maxAttack = 9999;
-
+            var maxAttack = card.FromFigure ? 9999 : 999;
             var newAttack = card.Attack + (card.RestartCnt * 4) + (card.GetTotalCardStarCount() * 20);
             newAttack += card.FromFigure ? card.AttackBonus : card.AttackBonus / 3;
 
@@ -350,33 +322,21 @@ namespace Sanakan.Extensions
                 newAttack -= newAttack * 5 / 10;
             }
 
-            if (newAttack > maxAttack)
-                newAttack = maxAttack;
-
-            return newAttack;
+            return Math.Min(newAttack, maxAttack);
         }
 
         public static int GetDefenceWithBonus(this Card card)
         {
-            var maxDefence = 99;
-            if (card.FromFigure)
-                maxDefence = 9999;
-
+            var maxDefence = card.FromFigure ? 9999 : 99;
             var newDefence = card.Defence + (card.RestartCnt * 2) + (card.GetTotalCardStarCount() * 5);
-            if (card.FromFigure)
-            {
-                newDefence += card.DefenceBonus;
-            }
+            newDefence += card.FromFigure ? card.DefenceBonus : 0;
 
             if (card.Curse == CardCurse.LoweredStats)
             {
                 newDefence -= newDefence * 5 / 10;
             }
 
-            if (newDefence > maxDefence)
-                newDefence = maxDefence;
-
-            return newDefence;
+            return Math.Min(newDefence, maxDefence);
         }
 
         public static string GetString(this CardSource source)
