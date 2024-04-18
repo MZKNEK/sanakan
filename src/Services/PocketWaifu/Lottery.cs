@@ -71,8 +71,8 @@ namespace Sanakan.Services.PocketWaifu
         {
             (ItemType.IncreaseUltimateAttack,    25),
             (ItemType.IncreaseUltimateDefence,   15),
-            (ItemType.IncreaseUltimateAll,       5),
-            (ItemType.IncreaseUltimateHealth,    2),
+            (ItemType.IncreaseUltimateHealth,    7),
+            (ItemType.IncreaseUltimateAll,       3),
         }.ToRealList();
 
         private static List<ItemType> _food = new List<(ItemType, int)>

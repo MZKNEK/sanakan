@@ -3424,6 +3424,7 @@ namespace Sanakan.Modules
                 string action = "";
                 var trashTag = _tags.GetTag(Services.PocketWaifu.TagType.TrashBin);
                 if (botUser.GameDeck.EndOfExpeditionAction != ActionAfterExpedition.Nothing
+                    && thisCard.Curse == CardCurse.None
                     && _tags.HasTag(thisCard, trashTag)
                     && !message.Contains("Utrata karty")
                     && !_tags.HasTag(thisCard, Services.PocketWaifu.TagType.Favorite))

@@ -16,6 +16,17 @@ namespace Sanakan.Services.PocketWaifu
             None, Food, Common, Rare, Legendary
         }
 
+        private static readonly List<CardCurse> _curseChances = new List<(CardCurse, int)>
+        {
+            (CardCurse.BloodBlockade,       1),
+            (CardCurse.DereBlockade,        1),
+            (CardCurse.ExpeditionBlockade,  1),
+            (CardCurse.FoodBlockade,        1),
+            (CardCurse.InvertedItems,       1),
+            (CardCurse.LoweredExperience,   1),
+            (CardCurse.LoweredStats,        1),
+        }.ToRealList();
+
         private static readonly Dictionary<ItemDropType, List<ItemType>> _ultimateExpeditionItems = new Dictionary<ItemDropType, List<ItemType>>
         {
             {ItemDropType.None, new List<ItemType>()},
@@ -39,7 +50,7 @@ namespace Sanakan.Services.PocketWaifu
             },
             {ItemDropType.Legendary, new List<(ItemType, int)>
                 {
-                    (ItemType.NotAnItem,                9),
+                    (ItemType.NotAnItem,                13),
                     (ItemType.LotteryTicket,            1),
                 }.ToRealList()
             },
@@ -132,8 +143,8 @@ namespace Sanakan.Services.PocketWaifu
                 {
                     (ItemType.BetterIncreaseUpgradeCnt, 39),
                     (ItemType.BloodOfYourWaifu,         39),
-                    (ItemType.NotAnItem,                14),
-                    (ItemType.CreationItemBase,         8),
+                    (ItemType.CreationItemBase,         12),
+                    (ItemType.NotAnItem,                10),
                 }.ToRealList()
             },
         };
@@ -267,16 +278,16 @@ namespace Sanakan.Services.PocketWaifu
             },
             {CardExpedition.UltimateEasy, new List<(ItemDropType, int)>
                 {
-                    (ItemDropType.Common,     80),
-                    (ItemDropType.Rare,       15),
-                    (ItemDropType.Legendary,  5),
+                    (ItemDropType.Common,     82),
+                    (ItemDropType.Rare,       16),
+                    (ItemDropType.Legendary,  2),
                 }.ToRealList()
             },
             {CardExpedition.UltimateMedium, new List<(ItemDropType, int)>
                 {
-                    (ItemDropType.Common,     75),
-                    (ItemDropType.Rare,       20),
-                    (ItemDropType.Legendary,  5),
+                    (ItemDropType.Common,     76),
+                    (ItemDropType.Rare,       21),
+                    (ItemDropType.Legendary,  3),
                 }.ToRealList()
             },
             {CardExpedition.UltimateHard, new List<(ItemDropType, int)>
@@ -356,6 +367,23 @@ namespace Sanakan.Services.PocketWaifu
         public Expedition(ISystemTime time)
         {
             _time = time;
+        }
+
+        public CardCurse GetPotentialCurse(CardExpedition expedition)
+        {
+            var checkCurse = expedition switch
+            {
+                CardExpedition.ExtremeItemWithExp   => Fun.TakeATry(5d),
+                CardExpedition.UltimateMedium       => Fun.TakeATry(15d),
+                CardExpedition.UltimateHard         => Fun.TakeATry(25d),
+                CardExpedition.UltimateHardcore     => Fun.TakeATry(35d),
+                _ => false
+            };
+
+            if (checkCurse)
+                return Fun.GetOneRandomFrom(_curseChances);
+
+            return CardCurse.None;
         }
 
         public List<string> GetChancesFromExpedition(CardExpedition expedition)
@@ -461,7 +489,7 @@ namespace Sanakan.Services.PocketWaifu
                 CardExpedition.DarkItems            => specialDere ? 20 : 16,
                 CardExpedition.UltimateEasy         => specialDere ? 8 : 4,
                 CardExpedition.UltimateMedium       => specialDere ? 8 : 4,
-                CardExpedition.UltimateHard         => specialDere ? 12 : 6,
+                CardExpedition.UltimateHard         => specialDere ? 9 : 5,
                 CardExpedition.UltimateHardcore     => specialDere ? 4 : 2,
                 _ => 0
             };

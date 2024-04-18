@@ -96,10 +96,10 @@ namespace Sanakan.Services.PocketWaifu
 
         private static List<EventType> _ultimateHardcore = new List<(EventType, int)>
         {
-            (EventType.DecAtk,     2),
-            (EventType.DecDef,     2),
-            (EventType.DecAff,     5),
-            (EventType.LoseCard,   1),
+            (EventType.DecAtk,     3),
+            (EventType.DecDef,     3),
+            (EventType.DecAff,     6),
+            (EventType.LoseCard,   2),
         }.ToRealList();
 
         private ISystemTime _time;

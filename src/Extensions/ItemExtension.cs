@@ -103,6 +103,8 @@ namespace Sanakan.Extensions
                     return $"Zdejmuje klątwę z karty.";
                 case ItemType.CreationItemBase:
                     return $"Jest wymagany przy tworzeniu dowolnego przedmiotu.";
+                case ItemType.CheckCurse:
+                    return $"Pozwala sprawdzić jaka klątwa ciąży na karcie.";
                 case ItemType.NotAnItem:
                     return $"Pozwala wytworzyć kartę postaci spoza bazy shindena.";
 
@@ -147,7 +149,9 @@ namespace Sanakan.Extensions
                 case ItemType.CardParamsReRoll:
                     return $"Nowa moc karty to: 🔥{card.GetAttackWithBonus()} 🛡{card.GetDefenceWithBonus()}!";
                 case ItemType.CheckAffection:
-                    return $"Relacja wynosi: `{card.Affection:F}`";
+                    return $"Relacja wynosi: `{card.Curse.ToName()}`";
+                case ItemType.CheckCurse:
+                    return $"Klątwa: `{card.Affection:F}`";
                 case ItemType.IncreaseUltimateAttack:
                     return $"Zwiększono atak karty!";
                 case ItemType.IncreaseUltimateDefence:
@@ -261,6 +265,8 @@ namespace Sanakan.Extensions
                     return $"Krwawa mary";
                 case ItemType.CreationItemBase:
                     return $"Rozbita butelka";
+                case ItemType.CheckCurse:
+                    return $"Lupa";
                 case ItemType.GiveTagSlot:
                     return $"Nieśmiertelnik";
                 case ItemType.NotAnItem:
@@ -372,7 +378,6 @@ namespace Sanakan.Extensions
                 case ItemType.CardFragment:
                 case ItemType.BloodOfYourWaifu:
                 case ItemType.BetterIncreaseUpgradeCnt:
-                case ItemType.RemoveCurse:
                 case ItemType.GiveTagSlot:
                 // special case
                 case ItemType.CardParamsReRoll:
@@ -389,8 +394,7 @@ namespace Sanakan.Extensions
                 case ItemType.FigureRightLegPart:
                 case ItemType.FigureClothesPart:
                 case ItemType.FigureSkeleton:
-                    if (toExp) return true;
-                    return false;
+                    return toExp;
 
                 default:
                     return false;
@@ -481,6 +485,7 @@ namespace Sanakan.Extensions
                 case ItemType.CardFragment:
                 case ItemType.RemoveCurse:
                 case ItemType.CreationItemBase:
+                case ItemType.CheckCurse:
                 case ItemType.GiveTagSlot:
                 case ItemType.NotAnItem:
                     return true;
@@ -518,6 +523,7 @@ namespace Sanakan.Extensions
             ItemType.RemoveCurse              => 802,
             ItemType.GiveTagSlot              => 1151,
             ItemType.CreationItemBase         => 222,
+            ItemType.CheckCurse               => 82,
             ItemType.CardFragment             => 0,
             _ => 1
         };

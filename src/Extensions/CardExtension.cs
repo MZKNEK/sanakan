@@ -56,6 +56,18 @@ namespace Sanakan.Extensions
             return string.Join(inNewLine ? "\n" : " ", param);
         }
 
+        public static string ToName(this CardCurse curse) => curse switch
+        {
+            CardCurse.BloodBlockade      => "blokada używania krwii",
+            CardCurse.DereBlockade       => "blokada zmiany dere",
+            CardCurse.ExpeditionBlockade => "blokada wypraw",
+            CardCurse.InvertedItems      => "odwrócenie działania przedmiotów",
+            CardCurse.LoweredExperience  => "obniżenie zdobywanego doświadczenia",
+            CardCurse.LoweredStats       => "obniżone statystyki",
+            CardCurse.FoodBlockade       => "blokada używania przedmiotów zwiększających relacje",
+            _ => "brak"
+        };
+
         public static string GetNameWithUrl(this Card card) => $"[{card.Name}]({card.GetCharacterUrl()})";
 
         public static string GetCharacterUrl(this Card card) => Shinden.API.Url.GetCharacterURL(card.Character);
@@ -848,9 +860,10 @@ namespace Sanakan.Extensions
         public static bool IsDisallowedToExchange(this Card card) => card is null
             || card.InCage
             || !card.IsTradable
-            || card.Dere == Database.Models.Dere.Yato
-            || card.Expedition != Database.Models.CardExpedition.None
-            || (card.FromFigure && card.PAS != Database.Models.PreAssembledFigure.None)
+            || card.Dere == Dere.Yato
+            || card.Curse != CardCurse.None
+            || card.Expedition != CardExpedition.None
+            || (card.FromFigure && card.PAS != PreAssembledFigure.None)
             || card.IsBroken();
     }
 }

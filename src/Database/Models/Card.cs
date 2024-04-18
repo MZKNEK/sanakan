@@ -42,7 +42,7 @@ namespace Sanakan.Database.Models
 
     public enum CardCurse
     {
-        None, LoweredStats, DereBlockade, BloodBlockade, InvertedItems, ExpeditionBlockade, LoweredExperience
+        None, LoweredStats, DereBlockade, BloodBlockade, InvertedItems, ExpeditionBlockade, LoweredExperience, FoodBlockade
     }
 
     public enum CardExpedition

@@ -9,7 +9,7 @@ namespace Sanakan.Services.PocketWaifu
 {
     public enum RecipeType
     {
-        None, CrystalBall, BloodyMarry, YourBlood, WaifuBlood, DereChange, StatsChange
+        None, CrystalBall, BloodyMarry, YourBlood, WaifuBlood, DereChange, StatsChange, CheckCurse
     }
 
     public class ItemRecipe

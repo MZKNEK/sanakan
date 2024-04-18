@@ -95,6 +95,9 @@ namespace Sanakan.Services.PocketWaifu
             },
             { RecipeType.StatsChange, new ItemRecipe(ItemType.CardParamsReRoll.ToItem(5),
                 new List<Item>{ ItemType.CreationItemBase.ToItem(), ItemType.DereReRoll.ToItem(5) })
+            },
+            { RecipeType.CheckCurse, new ItemRecipe(ItemType.CheckCurse.ToItem(),
+                new List<Item>{ ItemType.CreationItemBase.ToItem(), ItemType.CheckAffection.ToItem() })
             }
         };
 
@@ -1634,12 +1637,19 @@ namespace Sanakan.Services.PocketWaifu
 
                 if (e == EventType.ChangeDere)
                 {
-                    card.Dere = RandomizeDere();
-                    reward += $"{card.Dere}\n";
+                    if (card.Curse != CardCurse.DereBlockade)
+                    {
+                        reward += $"Zmiana zablokowana przez klątwe.\n";
+                    }
+                    else
+                    {
+                        card.Dere = RandomizeDere();
+                        reward += $"{card.Dere}\n";
 
-                    duration = _expedition.GetLengthOfExpedition(user, card);
-                    totalExp = _expedition.GetExpFromExpedition(duration.CalcTime, card);
-                    totalItemsCnt = _expedition.GetItemsCountFromExpedition(duration.CalcTime, card, user);
+                        duration = _expedition.GetLengthOfExpedition(user, card);
+                        totalExp = _expedition.GetExpFromExpedition(duration.CalcTime, card);
+                        totalItemsCnt = _expedition.GetItemsCountFromExpedition(duration.CalcTime, card, user);
+                    }
                 }
                 else if (e == EventType.LoseCard)
                 {
@@ -1723,6 +1733,13 @@ namespace Sanakan.Services.PocketWaifu
 
                     ++items[newItem.Name];
                 }
+            }
+
+            if (card.Curse == CardCurse.None)
+            {
+                card.Curse = _expedition.GetPotentialCurse(card.Expedition);
+                if (card.Curse != CardCurse.None)
+                    reward += $"Karta została spaczona!\n";
             }
 
             reward += string.Join("\n", items.Select(x => $"+{x.Key} x{x.Value}"));
@@ -1985,6 +2002,7 @@ namespace Sanakan.Services.PocketWaifu
             var textRelation = card.GetAffectionString();
             double karmaChange = item.Type.GetBaseKarmaChange() * itemCnt;
             double affectionInc = item.Type.GetBaseAffection() * itemCnt;
+            var expMod = card.Curse == CardCurse.LoweredExperience ? 0.2 : 1;
             var str = new StringBuilder().Append($"Użyto _{item.Name}_ {((itemCnt > 1) ? $"x{itemCnt}" : "")}{(" na " + card.GetString(false, false, true))}\n\n");
 
             switch (item.Type)
@@ -1993,15 +2011,24 @@ namespace Sanakan.Services.PocketWaifu
                 case ItemType.AffectionRecoveryGreat:
                 case ItemType.AffectionRecoveryNormal:
                 case ItemType.AffectionRecoverySmall:
+                    if (card.Curse == CardCurse.FoodBlockade)
+                        return ExecutionResult.FromError("karta nie wie, co ma z tym zrobić!");
+                    break;
+
                 case ItemType.CheckAffection:
                     break;
 
+                case ItemType.CheckCurse:
+                    if (card.Curse == CardCurse.None)
+                        return ExecutionResult.FromError("karta nie wie, co ma z tym zrobić!");
+                    break;
+
                 case ItemType.IncreaseExpBig:
-                    card.ExpCnt += 5d * itemCnt;
+                    card.ExpCnt += 5d * itemCnt * expMod;
                     break;
 
                 case ItemType.IncreaseExpSmall:
-                    card.ExpCnt += 1.5 * itemCnt;
+                    card.ExpCnt += 1.5 * itemCnt * expMod;
                     break;
 
                 case ItemType.ResetCardValue:
@@ -2026,9 +2053,9 @@ namespace Sanakan.Services.PocketWaifu
                     break;
 
                 case ItemType.IncreaseUltimateAll:
-                    card.AttackBonus += itemCnt * 5;
-                    card.HealthBonus += itemCnt * 5;
-                    card.DefenceBonus += itemCnt * 5;
+                    card.AttackBonus += itemCnt * 4;
+                    card.HealthBonus += itemCnt * 4;
+                    card.DefenceBonus += itemCnt * 4;
                     break;
 
                 case ItemType.ChangeStarType:

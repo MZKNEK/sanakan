@@ -56,7 +56,8 @@ namespace Sanakan.Database.Models
         GiveTagSlot,
         RemoveCurse,
         CreationItemBase,
-        NotAnItem
+        NotAnItem,
+        CheckCurse
     }
 
     public class Item
