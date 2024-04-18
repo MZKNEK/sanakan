@@ -149,9 +149,9 @@ namespace Sanakan.Extensions
                 case ItemType.CardParamsReRoll:
                     return $"Nowa moc karty to: 🔥{card.GetAttackWithBonus()} 🛡{card.GetDefenceWithBonus()}!";
                 case ItemType.CheckAffection:
-                    return $"Relacja wynosi: `{card.Curse.ToName()}`";
+                    return $"Relacja wynosi: `{card.Affection:F}`";
                 case ItemType.CheckCurse:
-                    return $"Klątwa: `{card.Affection:F}`";
+                    return $"Klątwa: `{card.Curse.ToName()}`";
                 case ItemType.IncreaseUltimateAttack:
                     return $"Zwiększono atak karty!";
                 case ItemType.IncreaseUltimateDefence:
