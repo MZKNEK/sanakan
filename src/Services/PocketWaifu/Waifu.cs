@@ -1683,6 +1683,13 @@ namespace Sanakan.Services.PocketWaifu
 
             card.ExpCnt += totalExp;
 
+            if (card.Curse == CardCurse.None)
+            {
+                card.Curse = _expedition.GetPotentialCurse(card.Expedition);
+                if (card.Curse != CardCurse.None)
+                    reward += $"**Karta została spaczona!**\n\n";
+            }
+
             var minAff = 0d;
             var karmaItem = 0d;
             var missingItems = 0;
@@ -1733,13 +1740,6 @@ namespace Sanakan.Services.PocketWaifu
 
                     ++items[newItem.Name];
                 }
-            }
-
-            if (card.Curse == CardCurse.None)
-            {
-                card.Curse = _expedition.GetPotentialCurse(card.Expedition);
-                if (card.Curse != CardCurse.None)
-                    reward += $"Karta została spaczona!\n";
             }
 
             reward += string.Join("\n", items.Select(x => $"+{x.Key} x{x.Value}"));
