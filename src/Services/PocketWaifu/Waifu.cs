@@ -1637,9 +1637,9 @@ namespace Sanakan.Services.PocketWaifu
 
                 if (e == EventType.ChangeDere)
                 {
-                    if (card.Curse != CardCurse.DereBlockade)
+                    if (card.Curse == CardCurse.DereBlockade)
                     {
-                        reward += $"Zmiana zablokowana przez klątwe.\n";
+                        reward += $"zmiana zablokowana przez klątwe.\n";
                     }
                     else
                     {
