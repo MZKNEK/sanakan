@@ -31,7 +31,7 @@ namespace Sanakan.Extensions
             }
         }
 
-        public static double ToValue(this Quality q) => 2.1 + ((int) q * 2.2);
+        public static double ToValue(this Quality q) => 0.73 + ((int) q * 1.47);
 
         public static string ToName(this FigurePart p)
         {

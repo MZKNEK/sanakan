@@ -3487,6 +3487,16 @@ namespace Sanakan.Modules
                         return;
                     }
 
+                    if (card.Fatigue > 0)
+                    {
+                        var breakFromExpedition = (_time.Now() - card.ExpeditionEndDate).TotalMinutes;
+                        if (breakFromExpedition > 1)
+                        {
+                            var toRecover = Math.Min(0.173 * breakFromExpedition, 1000);
+                            card.Fatigue = Math.Max(card.Fatigue - toRecover, 0);
+                        }
+                    }
+
                     card.Expedition = expedition;
                     card.ExpeditionDate = _time.Now();
                 }

@@ -571,8 +571,8 @@ namespace Sanakan.Extensions
             {
                 case CardExpedition.UltimateEasy:
                 {
-                    if (card.Affection < 0)
-                        card.Affection = 0;
+                    if (card.Affection < -10)
+                        card.Affection = -10;
                 }
                 break;
 

@@ -1681,6 +1681,19 @@ namespace Sanakan.Services.PocketWaifu
                 totalExp = 0;
             }
 
+            if (card.Fatigue >= 850)
+            {
+                totalItemsCnt -= (int)(totalItemsCnt * 0.3);
+                affectionCost *= 1.2;
+                totalExp *= 0.6;
+            }
+            else if (card.Fatigue >= 600)
+            {
+                totalItemsCnt -= (int)(totalItemsCnt * 0.1);
+                affectionCost *= 1.1;
+                totalExp *= 0.9;
+            }
+
             card.ExpCnt += totalExp;
 
             if (card.Curse == CardCurse.None)
@@ -1744,14 +1757,18 @@ namespace Sanakan.Services.PocketWaifu
 
             reward += string.Join("\n", items.Select(x => $"+{x.Key} x{x.Value}"));
 
+            var fatigue = _expedition.GetFatigueFromExpedition(duration.CalcTime, card);
+
             if (showStats)
             {
-                reward += $"\n\nRT: {duration.CalcTime:F} E: {totalExp:F} AI: {minAff:F} A: {affectionCost:F} K: {karmaCost:F} KI: {karmaItem:F} MI: {totalItemsCnt} LI: {missingItems}";
+                reward += $"\n\nRT: {duration.CalcTime:F} E: {totalExp:F} AI: {minAff:F} A: {affectionCost:F} K: {karmaCost:F} KI: {karmaItem:F} MI: {totalItemsCnt} LI: {missingItems} F: {fatigue:F}";
             }
 
             card.DecAffectionOnExpeditionBy(affectionCost);
             card.Expedition = CardExpedition.None;
+            card.ExpeditionEndDate = _time.Now();
             user.GameDeck.Karma -= karmaCost;
+            card.Fatigue += fatigue;
 
             return reward;
         }

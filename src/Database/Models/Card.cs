@@ -102,6 +102,9 @@ namespace Sanakan.Database.Models
         public CardExpedition Expedition { get; set; }
         public DateTime ExpeditionDate { get; set; }
 
+        public DateTime ExpeditionEndDate { get; set; }
+        public double Fatigue { get; set; }
+
         public virtual ICollection<CardTag> TagList { get; set; }
         public virtual ICollection<Tag> Tags { get; set; }
 

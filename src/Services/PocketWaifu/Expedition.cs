@@ -475,6 +475,28 @@ namespace Sanakan.Services.PocketWaifu
             return expPerHour / 60 * length * curseMod;
         }
 
+        public double GetFatigueFromExpedition(double length, Card card)
+        {
+            var perMinute = card.Expedition switch
+            {
+                CardExpedition.NormalItemWithExp    => 0.034,
+                CardExpedition.ExtremeItemWithExp   => 0.099,
+                CardExpedition.UltimateEasy         => 0.076,
+                CardExpedition.UltimateMedium       => 0.080,
+                CardExpedition.UltimateHard         => 0.090,
+                CardExpedition.UltimateHardcore     => 0.124,
+                _ => 0.049
+            };
+
+            var dereMod = card.Dere switch
+            {
+                Dere.Dandere => 0.7,
+                _ => 1
+            };
+
+            return perMinute * length * dereMod;
+        }
+
         public int GetItemsCountFromExpedition(double length, Card card, User user)
         {
             bool specialDere = card.Dere == Dere.Yami || card.Dere == Dere.Raito || card.Dere == Dere.Yato;
@@ -578,6 +600,7 @@ namespace Sanakan.Services.PocketWaifu
             var dereMod = card.Dere switch
             {
                 Dere.Tsundere => 2,
+                Dere.Dandere  => 1.15,
                 Dere.Kamidere => 1.1,
                 Dere.Yandere  => 1.1,
                 _ => 1
@@ -680,6 +703,9 @@ namespace Sanakan.Services.PocketWaifu
 
         public bool IsValidToGo(User user, Card card, CardExpedition expedition, TagHelper helper)
         {
+            if (card.Fatigue >= 1000)
+                return false;
+
             if (card.Expedition != CardExpedition.None)
                 return false;
 
