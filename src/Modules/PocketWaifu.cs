@@ -370,7 +370,7 @@ namespace Sanakan.Modules
                 SocketUser user = Context.Guild.GetUser(card.GameDeck.UserId);
                 if (user == null) user = Context.Client.GetUser(card.GameDeck.UserId);
 
-                await ReplyAsync("", embed: card.GetDescSmall(_tags).TrimToLength().ToEmbedMessage(EMType.Info).WithAuthor(new EmbedAuthorBuilder().WithUser(user)).Build());
+                await ReplyAsync("", embed: card.GetDescSmall(_tags, _time).TrimToLength().ToEmbedMessage(EMType.Info).WithAuthor(new EmbedAuthorBuilder().WithUser(user)).Build());
             }
         }
 

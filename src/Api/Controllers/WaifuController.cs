@@ -154,7 +154,7 @@ namespace Sanakan.Api.Controllers
 
                 var cards = (await FilterCardsByTags(query, filter).FromCacheAsync("api-all-cards")).ToList();
 
-                return new FilteredCards{TotalCards = cards.Count, Cards = cards.Skip((int)offset).Take((int)count).ToView()};
+                return new FilteredCards{TotalCards = cards.Count, Cards = cards.Skip((int)offset).Take((int)count).ToView(0, _time)};
             }
         }
 
@@ -181,7 +181,7 @@ namespace Sanakan.Api.Controllers
 
                 var cards = await FilterCardsByTags(query, filter).ToListAsync();
 
-                return new FilteredCards{TotalCards = cards.Count, Cards = cards.Skip((int)offset).Take((int)count).ToView()};
+                return new FilteredCards{TotalCards = cards.Count, Cards = cards.Skip((int)offset).Take((int)count).ToView(0, _time)};
             }
         }
 
@@ -224,7 +224,7 @@ namespace Sanakan.Api.Controllers
 
                 var cards = await FilterCardsByTags(query, filter).ToListAsync();
 
-                return new FilteredCards{TotalCards = cards.Count, Cards = cards.Skip((int)offset).Take((int)count).ToView(id)};
+                return new FilteredCards{TotalCards = cards.Count, Cards = cards.Skip((int)offset).Take((int)count).ToView(id, _time)};
             }
         }
 
@@ -256,7 +256,7 @@ namespace Sanakan.Api.Controllers
                 }
 
                 var cards = await db.Cards.AsQueryable().AsSplitQuery().Where(x => x.GameDeckId == user.GameDeck.Id).Include(x => x.Tags).Skip((int)offset).Take((int)count).AsNoTracking().ToListAsync();
-                return cards.ToView(id);
+                return cards.ToView(id, _time);
             }
         }
 
@@ -285,12 +285,12 @@ namespace Sanakan.Api.Controllers
                 {
                     if (_nameCache.TryGetValue(card.GameDeck.User.Shinden, out string username))
                     {
-                        return card.ToViewUser(username);
+                        return card.ToViewUser(username, 0, _time);
                     }
 
                     if (card.GameDeck.User.Shinden == 1)
                     {
-                        return card.ToViewUser(_client.CurrentUser.GetUserNickInGuild());
+                        return card.ToViewUser(_client.CurrentUser.GetUserNickInGuild(), 0, _time);
                     }
 
                     var res = await _shClient.User.GetAsync(card.GameDeck.User.Shinden);
@@ -299,10 +299,10 @@ namespace Sanakan.Api.Controllers
                         _nameCache.Set(card.GameDeck.User.Shinden, res.Body.Name, new MemoryCacheEntryOptions()
                             .SetAbsoluteExpiration(TimeSpan.FromHours(12)));
 
-                        return card.ToViewUser(res.Body.Name);
+                        return card.ToViewUser(res.Body.Name, 0, _time);
                     }
                 }
-                return card.ToView();
+                return card.ToView(0, _time);
             }
         }
 
@@ -432,7 +432,7 @@ namespace Sanakan.Api.Controllers
                     Karma = user.GameDeck.Karma,
                     GalleryOrder = galleryOrder,
                     UserTitle = user.GameDeck.GetUserNameStatus(),
-                    Waifu = user.GameDeck.GetWaifuCard().ToView(),
+                    Waifu = user.GameDeck.GetWaifuCard().ToView(0, _time),
                     ForegroundColor = user.GameDeck.ForegroundColor,
                     ForegroundPosition = user.GameDeck.ForegroundPosition,
                     BackgroundPosition = user.GameDeck.BackgroundPosition,
@@ -440,7 +440,7 @@ namespace Sanakan.Api.Controllers
                     BackgroundImageUrl = user.GameDeck.BackgroundImageUrl,
                     ForegroundImageUrl = user.GameDeck.ForegroundImageUrl,
                     Expeditions = user.GameDeck.Cards.Where(x => x.Expedition != CardExpedition.None).ToExpeditionView(user, _expedition),
-                    Gallery = user.GameDeck.GetOrderedGalleryCards(galleryTag.Id).ToView()
+                    Gallery = user.GameDeck.GetOrderedGalleryCards(galleryTag.Id).ToView(0, _time)
                 };
             }
         }

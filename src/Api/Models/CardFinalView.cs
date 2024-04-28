@@ -6,6 +6,7 @@ using System.Linq;
 using Sanakan.Database.Models;
 using Sanakan.Extensions;
 using Sanakan.Services;
+using Sanakan.Services.Time;
 
 namespace Sanakan.Api.Models
 {
@@ -78,6 +79,10 @@ namespace Sanakan.Api.Models
         /// Poziom relacji na karcie
         /// </summary>
         public string Affection { get; set; }
+        /// <summary>
+        /// Poziom zmęczenia na karcie
+        /// </summary>
+        public string Fatigue { get; set; }
         /// <summary>
         /// Liczba dostępnych ulepszeń
         /// </summary>
@@ -179,9 +184,9 @@ namespace Sanakan.Api.Models
         /// </summary>
         public int WhoWantsCount { get; set; }
 
-        public static CardFinalView ConvertFromRawWithUserInfo(Card card, string username, ulong shindenId = 0)
+        public static CardFinalView ConvertFromRawWithUserInfo(Card card, string username, ulong shindenId = 0, ISystemTime time = null)
         {
-            var finalCard = ConvertFromRaw(card);
+            var finalCard = ConvertFromRaw(card, 0, time);
             if (finalCard == null) return null;
 
             if (finalCard.ShindenId == 0)
@@ -200,7 +205,7 @@ namespace Sanakan.Api.Models
         public static string GetCardProfileInShindenUrl(Card card)
             => $"https://cdn2.shinden.eu/profile/{card.Id}.{(card.IsAnimatedImage ? "gif" : "webp")}";
 
-        public static CardFinalView ConvertFromRaw(Card card, ulong shindenId = 0)
+        public static CardFinalView ConvertFromRaw(Card card, ulong shindenId = 0, ISystemTime time = null)
         {
             if (card == null) return null;
             var kcs = Fun.IsAF() ? Fun.GetRandomValue(0, 69) : card.WhoWantsCount;
@@ -213,6 +218,7 @@ namespace Sanakan.Api.Models
                 IsUnique = card.Unique,
                 IsUltimate = card.FromFigure,
                 ExpCnt = card.ExpCnt,
+                Fatigue = card.GetFatigueString(time),
                 Affection = card.GetAffectionString(),
                 UpgradesCnt = card.UpgradesCnt,
                 RestartCnt = card.RestartCnt,

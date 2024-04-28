@@ -233,7 +233,7 @@ namespace Sanakan.Extensions
 
         public static string GetIdWithUrl(this Card card) => card.Id == 0 ? "~~**[0]**~~": $"**[[{card.Id}](https://waifu.sanakan.pl/#/card/{card.Id})]**";
 
-        public static string GetDescSmall(this Card card, Services.PocketWaifu.TagHelper tags)
+        public static string GetDescSmall(this Card card, Services.PocketWaifu.TagHelper tags, ISystemTime time)
         {
             var kcs = Fun.IsAF() ? Fun.GetRandomValue(0, 123) : card.WhoWantsCount;
             return $"{card.GetIdWithUrl()} *({card.Character}) KC: {kcs} PWR: {card.CalculateCardPower():F}*\n"
@@ -241,12 +241,13 @@ namespace Sanakan.Extensions
                 + $"_{card.Title}_\n\n"
                 + $"{card.Dere}\n"
                 + $"{card.GetAffectionString()}\n"
+                + $"{card.GetFatigueString(time)}\n"
                 + $"{card.ExpCnt:F}/{card.ExpToUpgrade():F} exp\n\n"
                 + $"{(card.Tags.IsNullOrEmpty() ? "---" : string.Join(" ", card.Tags.Select(x => x.Name)))}\n"
                 + $"{card.GetStatusIcons(tags)}";
         }
 
-        public static string GetDesc(this Card card, bool hideScalelInfo, Services.PocketWaifu.TagHelper tags)
+        public static string GetDesc(this Card card, bool hideScalelInfo, Services.PocketWaifu.TagHelper tags, ISystemTime time)
         {
             var kcs = Fun.IsAF() ? Fun.GetRandomValue(0, 123) : card.WhoWantsCount;
             string scalpelInfo = (!string.IsNullOrEmpty(card.CustomImage) && !hideScalelInfo)
@@ -256,6 +257,7 @@ namespace Sanakan.Extensions
                 + $"*{card.Title ?? "????"}*\n\n"
                 + $"*{card.GetCardParams(true, false, true)}*\n\n"
                 + $"**Relacja:** {card.GetAffectionString()}\n"
+                + $"**Zmęczenie:** {card.GetFatigueString(time)}\n"
                 + $"**Doświadczenie:** {card.ExpCnt:F}/{card.ExpToUpgrade():F}\n"
                 + $"**Dostępne ulepszenia:** {card.UpgradesCnt}\n\n"
                 + $"**W klatce:** {card.InCage.GetYesNo()}\n"
@@ -413,6 +415,27 @@ namespace Sanakan.Extensions
             if (card.Affection >= 2) return "Fascynacja";
             if (card.Affection >= 1) return "Zaciekawienie";
             return "Obojętność";
+        }
+
+        public static string GetFatigueString(this Card card, ISystemTime time)
+        {
+            var fatigue = card.Fatigue;
+            if (time != null && fatigue > 0)
+            {
+                var breakFromExpedition = (time.Now() - card.ExpeditionEndDate).TotalMinutes;
+                if (breakFromExpedition > 1)
+                {
+                    var toRecover = Math.Min(0.173 * breakFromExpedition, 1000);
+                    fatigue = Math.Max(fatigue - toRecover, 0);
+                }
+            }
+
+            if (fatigue >= 1500) return "Stan agonalny";
+            if (fatigue >= 1000) return "Przepracowanie";
+            if (fatigue >= 800) return "Wysokie";
+            if (fatigue >= 600) return "Średnie";
+            if (fatigue >= 400) return "Lekkie";
+            return "Brak";
         }
 
         public static string GetName(this CardExpedition expedition, string end = "a")
@@ -704,11 +727,11 @@ namespace Sanakan.Extensions
             return ExecutionResult.FromSuccess("");
         }
 
-        public static Api.Models.CardFinalView ToViewUser(this Card c, string name, ulong shinden = 0)
-            => Api.Models.CardFinalView.ConvertFromRawWithUserInfo(c, name, shinden);
+        public static Api.Models.CardFinalView ToViewUser(this Card c, string name, ulong shinden = 0, ISystemTime time = null)
+            => Api.Models.CardFinalView.ConvertFromRawWithUserInfo(c, name, shinden, time);
 
-        public static Api.Models.CardFinalView ToView(this Card c, ulong shindenId = 0)
-            => Api.Models.CardFinalView.ConvertFromRaw(c, shindenId);
+        public static Api.Models.CardFinalView ToView(this Card c, ulong shindenId = 0, ISystemTime time = null)
+            => Api.Models.CardFinalView.ConvertFromRaw(c, shindenId, time);
 
         public static Api.Models.ExpeditionCard ToExpeditionView(this Card card, User user, Expedition helper)
             => Api.Models.ExpeditionCard.ConvertFromRaw(user, card, helper);
@@ -720,10 +743,10 @@ namespace Sanakan.Extensions
             return list;
         }
 
-        public static List<Api.Models.CardFinalView> ToView(this IEnumerable<Card> clist, ulong shindenId = 0)
+        public static List<Api.Models.CardFinalView> ToView(this IEnumerable<Card> clist, ulong shindenId = 0, ISystemTime time = null)
         {
             var list = new List<Api.Models.CardFinalView>();
-            foreach (var c in clist) list.Add(c.ToView(shindenId));
+            foreach (var c in clist) list.Add(c.ToView(shindenId, time));
             return list;
         }
 

@@ -1463,7 +1463,7 @@ namespace Sanakan.Services.PocketWaifu
                 {
                     Text = $"Należy do: {ownerString}"
                 },
-                Description = $"{card.GetDesc(hideScalpelInfo, _tags)}{imgUrls}".TrimToLength(2500)
+                Description = $"{card.GetDesc(hideScalpelInfo, _tags, _time)}{imgUrls}".TrimToLength(2500)
             }.Build();
         }
 
@@ -1689,7 +1689,7 @@ namespace Sanakan.Services.PocketWaifu
                 affectionCost *= 1.2;
                 totalExp *= 0.6;
             }
-            else if (card.Fatigue >= 600)
+            else if (card.Fatigue >= 550)
             {
                 totalItemsCnt -= (int)(totalItemsCnt * 0.1);
                 affectionCost *= 1.1;
