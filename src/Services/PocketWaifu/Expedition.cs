@@ -16,6 +16,11 @@ namespace Sanakan.Services.PocketWaifu
             None, Food, Common, Rare, Legendary
         }
 
+        public enum BlockadeReason
+        {
+            None, Fatigue, Expedition, Curse, Cage, Affection, Tag, Karma, Rarity, Other, Ultimate
+        }
+
         private static readonly List<CardCurse> _curseChances = new List<(CardCurse, int)>
         {
             (CardCurse.BloodBlockade,       1),
@@ -701,56 +706,121 @@ namespace Sanakan.Services.PocketWaifu
             return (timeToCalculateFrom, realTimeInMinutes);
         }
 
-        public bool IsValidToGo(User user, Card card, CardExpedition expedition, TagHelper helper)
+        public BlockadeReason IsValidToGo(User user, Card card, CardExpedition expedition, TagHelper helper)
         {
             if (card.Fatigue >= 1000)
-                return false;
+                return BlockadeReason.Fatigue;
 
             if (card.Expedition != CardExpedition.None)
-                return false;
+                return BlockadeReason.Expedition;
 
             if (card.Curse == CardCurse.ExpeditionBlockade)
-                return false;
+                return BlockadeReason.Curse;
 
-            if (card.InCage || !card.CanFightOnPvEGMwK())
-                return false;
+            if (card.InCage)
+                return BlockadeReason.Cage;
 
-            if (GetMaxPossibleLengthOfExpedition(user, card, expedition) <= 2)
-                return false;
+            if (GetMaxPossibleLengthOfExpedition(user, card, expedition) <= 2 || !card.CanFightOnPvEGMwK())
+                return BlockadeReason.Affection;
 
             switch (expedition)
             {
                 case CardExpedition.ExtremeItemWithExp:
-                    return !card.FromFigure && !helper.HasTag(card, TagType.Favorite);
+                {
+                    if (helper.HasTag(card, TagType.Favorite))
+                        return BlockadeReason.Tag;
+
+                    if (card.FromFigure)
+                        return BlockadeReason.Ultimate;
+
+                    return BlockadeReason.None;
+                }
 
                 case CardExpedition.NormalItemWithExp:
-                    return !card.FromFigure;
+                {
+                    if (card.FromFigure)
+                        return BlockadeReason.Ultimate;
+
+                    return BlockadeReason.None;
+                }
 
                 case CardExpedition.UltimateEasy:
                 case CardExpedition.UltimateHard:
                 case CardExpedition.UltimateMedium:
-                    return card.Rarity == Rarity.SSS;
+                {
+                    if (card.Rarity != Rarity.SSS)
+                        return BlockadeReason.Rarity;
+
+                    return BlockadeReason.None;
+                }
 
                 case CardExpedition.UltimateHardcore:
-                    return card.Rarity == Rarity.SSS && !helper.HasTag(card, TagType.Favorite);
+                {
+                    if (helper.HasTag(card, TagType.Favorite))
+                        return BlockadeReason.Tag;
+
+                    if (card.Rarity != Rarity.SSS)
+                        return BlockadeReason.Rarity;
+
+                    return BlockadeReason.None;
+                }
 
                 case CardExpedition.LightItems:
-                    return user.GameDeck.Karma > 1000;
+                {
+                    if (user.GameDeck.Karma < 1000)
+                        return BlockadeReason.Karma;
+
+                    return BlockadeReason.None;
+                }
+
                 case CardExpedition.LightExp:
-                    return (user.GameDeck.Karma > 1000) && !card.FromFigure;
+                {
+                    if (user.GameDeck.Karma < 1000)
+                        return BlockadeReason.Karma;
+
+                    if (card.FromFigure)
+                        return BlockadeReason.Ultimate;
+
+                    return BlockadeReason.None;
+                }
+
                 case CardExpedition.LightItemWithExp:
-                    return user.GameDeck.Karma > 400;
+                {
+                    if (user.GameDeck.Karma < 400)
+                        return BlockadeReason.Karma;
+
+                    return BlockadeReason.None;
+                }
 
                 case CardExpedition.DarkItems:
-                    return user.GameDeck.Karma < -1000;
+                {
+                    if (user.GameDeck.Karma > -1000)
+                        return BlockadeReason.Karma;
+
+                    return BlockadeReason.None;
+                }
                 case CardExpedition.DarkExp:
-                    return (user.GameDeck.Karma < -1000) && !card.FromFigure;
+                {
+                    if (user.GameDeck.Karma > -1000)
+                        return BlockadeReason.Karma;
+
+                    if (card.FromFigure)
+                        return BlockadeReason.Ultimate;
+
+                    return BlockadeReason.None;
+                }
+
                 case CardExpedition.DarkItemWithExp:
-                    return user.GameDeck.Karma < -400;
+                {
+                    if (user.GameDeck.Karma > -400)
+                        return BlockadeReason.Karma;
+
+                    return BlockadeReason.None;
+                }
 
                 default:
                 case CardExpedition.None:
-                    return false;
+                    return BlockadeReason.Other;
             }
         }
     }

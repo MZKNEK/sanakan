@@ -3481,12 +3481,6 @@ namespace Sanakan.Modules
 
                 foreach (var card in cardsSelected)
                 {
-                    if (!_expedition.IsValidToGo(botUser, card, expedition, _tags))
-                    {
-                        await ReplyAsync("", embed: $"{Context.User.Mention} {card.GetIdWithUrl()} ta karta nie może się udać na tę wyprawę.".ToEmbedMessage(EMType.Error).Build());
-                        return;
-                    }
-
                     if (card.Fatigue > 0)
                     {
                         var breakFromExpedition = (_time.Now() - card.ExpeditionEndDate).TotalMinutes;
@@ -3495,6 +3489,27 @@ namespace Sanakan.Modules
                             var toRecover = Math.Min(0.173 * breakFromExpedition, 1000);
                             card.Fatigue = Math.Max(card.Fatigue - toRecover, 0);
                         }
+                    }
+
+                    var expeditionBlockadeType = _expedition.IsValidToGo(botUser, card, expedition, _tags);
+                    if (expeditionBlockadeType != Expedition.BlockadeReason.None)
+                    {
+                        var reason = expeditionBlockadeType switch
+                        {
+                            Expedition.BlockadeReason.Fatigue       => "Karta jest zbyt zmęczona.",
+                            Expedition.BlockadeReason.Expedition    => "Karta jest na wyprawie.",
+                            Expedition.BlockadeReason.Curse         => "Karta posiada klątwę.",
+                            Expedition.BlockadeReason.Cage          => "Karta znajduje się w klatce.",
+                            Expedition.BlockadeReason.Affection     => "Karta ma zbyt niską relacje.",
+                            Expedition.BlockadeReason.Tag           => "Karta ma oznaczenie blokujące wyprawę.",
+                            Expedition.BlockadeReason.Rarity        => "Karta ma zbyt niską jakość.",
+                            Expedition.BlockadeReason.Ultimate      => "Karta nie może być kartą ultimate.",
+                            Expedition.BlockadeReason.Karma         => "Nie spełniasz wymogów karmy na wyprawę.",
+                            _ => "????"
+                        };
+
+                        await ReplyAsync("", embed: $"{Context.User.Mention} {card.GetIdWithUrl()} ta karta nie może się udać na tę wyprawę.\n{reason}".ToEmbedMessage(EMType.Error).Build());
+                        return;
                     }
 
                     card.Expedition = expedition;
