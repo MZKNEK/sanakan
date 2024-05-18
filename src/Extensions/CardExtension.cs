@@ -289,7 +289,7 @@ namespace Sanakan.Extensions
 
         public static int GetCardStarType(this Card card)
         {
-            var max = card.MaxStarType();
+            var max = card.MaxStarType() - 1;
             var maxRestartsPerType = card.GetMaxStarsPerType() * card.GetRestartCntPerStar();
             var type = (card.RestartCnt - 1) / maxRestartsPerType;
             if (type > 0)
