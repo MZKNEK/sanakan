@@ -484,13 +484,13 @@ namespace Sanakan.Services.PocketWaifu
         {
             var perMinute = card.Expedition switch
             {
-                CardExpedition.NormalItemWithExp    => 0.034,
-                CardExpedition.ExtremeItemWithExp   => 0.099,
-                CardExpedition.UltimateEasy         => 0.076,
-                CardExpedition.UltimateMedium       => 0.080,
-                CardExpedition.UltimateHard         => 0.090,
-                CardExpedition.UltimateHardcore     => 0.124,
-                _ => 0.049
+                CardExpedition.NormalItemWithExp    => 0.035,
+                CardExpedition.ExtremeItemWithExp   => 0.101,
+                CardExpedition.UltimateEasy         => 0.077,
+                CardExpedition.UltimateMedium       => 0.082,
+                CardExpedition.UltimateHard         => 0.092,
+                CardExpedition.UltimateHardcore     => 0.128,
+                _ => 0.052
             };
 
             var dereMod = card.Dere switch
@@ -536,7 +536,7 @@ namespace Sanakan.Services.PocketWaifu
                 CardExpedition.DarkItemWithExp      => 0.0045,
                 CardExpedition.DarkItems            => 0.0045,
                 CardExpedition.DarkExp              => 0.0045,
-                _ => 0
+                _ => 0.0621
             };
 
             var dereMod = card.Dere switch
