@@ -804,6 +804,12 @@ namespace Sanakan.Modules
         [Remarks("5412"), RequireWaifuCommandChannel]
         public async Task UpgradeCardAsync([Summary("WID karty do ulepszenia")] ulong id, [Summary("WID karty do poświęcenia")] ulong cardToSac = 0)
         {
+            if (_session.SessionExist(Context.User, typeof(ExchangeSession)))
+            {
+                await ReplyAsync("", embed: $"{Context.User.Mention} znajdujesz się obecnie w trakcie wymiany.".ToEmbedMessage(EMType.Error).Build());
+                return;
+            }
+
             using (var db = new Database.DatabaseContext(Config))
             {
                 var bUser = await db.GetUserOrCreateAsync(Context.User.Id);
@@ -3401,6 +3407,12 @@ namespace Sanakan.Modules
         [Remarks("11321"), RequireWaifuFightChannel]
         public async Task EndCardExpeditionAsync([Summary("WID")] ulong wid)
         {
+            if (_session.SessionExist(Context.User, typeof(ExchangeSession)))
+            {
+                await ReplyAsync("", embed: $"{Context.User.Mention} znajdujesz się obecnie w trakcie wymiany.".ToEmbedMessage(EMType.Error).Build());
+                return;
+            }
+
             using (var db = new Database.DatabaseContext(Config))
             {
                 var botUser = await db.GetUserOrCreateAsync(Context.User.Id);
@@ -3459,6 +3471,12 @@ namespace Sanakan.Modules
             if (expedition == CardExpedition.None)
             {
                 await ReplyAsync("", embed: $"{Context.User.Mention} nie podałeś poprawnej nazwy wyprawy.".ToEmbedMessage(EMType.Error).Build());
+                return;
+            }
+
+            if (_session.SessionExist(Context.User, typeof(ExchangeSession)))
+            {
+                await ReplyAsync("", embed: $"{Context.User.Mention} znajdujesz się obecnie w trakcie wymiany.".ToEmbedMessage(EMType.Error).Build());
                 return;
             }
 
@@ -3788,6 +3806,12 @@ namespace Sanakan.Modules
         [Remarks("451"), RequireWaifuCommandChannel]
         public async Task ChangeCardAsync([Summary("WID")] ulong wid)
         {
+            if (_session.SessionExist(Context.User, typeof(ExchangeSession)))
+            {
+                await ReplyAsync("", embed: $"{Context.User.Mention} znajdujesz się obecnie w trakcie wymiany.".ToEmbedMessage(EMType.Error).Build());
+                return;
+            }
+
             using (var db = new Database.DatabaseContext(Config))
             {
                 var bUser = await db.GetUserOrCreateAsync(Context.User.Id);

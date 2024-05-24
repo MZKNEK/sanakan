@@ -839,6 +839,15 @@ namespace Sanakan.Extensions
         public static async Task ExchangeWithAsync(this Card card, (User user, int count, Tag tag, string username)
             source, (User user, int count, Tag tag, string username) target, DatabaseContext db, ISystemTime time)
         {
+            if (card.IsDisallowedToExchange())
+                return;
+
+            if (card.Dere == Dere.Yami && target.user.GameDeck.IsGood())
+                return;
+
+            if (card.Dere == Dere.Raito && target.user.GameDeck.IsEvil())
+                return;
+
             card.Active = false;
             card.Tags.Clear();
             card.Affection -= 1.5;

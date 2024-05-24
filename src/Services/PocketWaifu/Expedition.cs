@@ -536,7 +536,7 @@ namespace Sanakan.Services.PocketWaifu
                 CardExpedition.DarkItemWithExp      => 0.0045,
                 CardExpedition.DarkItems            => 0.0045,
                 CardExpedition.DarkExp              => 0.0045,
-                _ => 0.0621
+                _ => 0.0175
             };
 
             var dereMod = card.Dere switch
