@@ -2398,9 +2398,9 @@ namespace Sanakan.Modules
 
         [Command("druciarstwo")]
         [Alias("tinkering")]
-        [Summary("towrzy karty z ich fragmentów(maks 20)")]
+        [Summary("towrzy karty z ich fragmentów(maks 20")]
         [Remarks("5"), RequireWaifuCommandChannel]
-        public async Task MakeCardsFromFragmentsAsync([Summary("ilość kart do utworzenia")] uint count = 1, [Summary("czy zniszczyć karty nie będące na liście życzeń i nie posiadające danej kc?")] uint destroyCards = 0,
+        public async Task MakeCardsFromFragmentsAsync([Summary("ilość kart do utworzenia(4200 fragmentów na kartę)")] uint count = 1, [Summary("czy zniszczyć karty nie będące na liście życzeń i nie posiadające danej kc?")] uint destroyCards = 0,
             [Summary("czy zamienić niszczenie na uwalnianie?")] bool changeToRelease = false, [Summary("oznacz niezniszczone karty")] string tag = "", [Summary("oznacz karty z wishlisty")] string tagWishlist = "")
         {
             if (count < 1)
@@ -2421,7 +2421,7 @@ namespace Sanakan.Modules
                 return;
             }
 
-            long price = 3271 * count;
+            long price = 4200 * count;
             using (var db = new Database.DatabaseContext(Config))
             {
                 var bUser = await db.GetUserOrCreateAsync(Context.User.Id);

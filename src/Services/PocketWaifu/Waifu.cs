@@ -2357,10 +2357,10 @@ namespace Sanakan.Services.PocketWaifu
             }
 
             if (card.Dere == Dere.Kamidere)
-                karmaChange *= 1.6;
+                karmaChange *= 1.3;
 
             if (card.Dere == Dere.Yandere)
-                karmaChange *= 0.4;
+                karmaChange *= 0.6;
 
             user.GameDeck.Karma += karmaChange;
             card.Affection += affectionInc;
