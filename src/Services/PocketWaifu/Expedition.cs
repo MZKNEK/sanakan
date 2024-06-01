@@ -539,7 +539,7 @@ namespace Sanakan.Services.PocketWaifu
                 CardExpedition.UltimateEasy         => 0.061,
                 CardExpedition.UltimateMedium       => 0.072,
                 CardExpedition.UltimateHard         => 0.141,
-                CardExpedition.UltimateHardcore     => 0.448,
+                CardExpedition.UltimateHardcore     => 0.044,
                 _ => 0
             };
 
