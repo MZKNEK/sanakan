@@ -539,7 +539,7 @@ namespace Sanakan.Services.PocketWaifu
                 CardExpedition.UltimateEasy         => 0.061,
                 CardExpedition.UltimateMedium       => 0.072,
                 CardExpedition.UltimateHard         => 0.141,
-                CardExpedition.UltimateHardcore     => 0.044,
+                CardExpedition.UltimateHardcore     => 0.0448,
                 _ => 0
             };
 
@@ -593,7 +593,7 @@ namespace Sanakan.Services.PocketWaifu
                 CardExpedition.UltimateEasy         => 2 * dereUltMod * qualityMod,
                 CardExpedition.UltimateMedium       => 2 * dereUltMod * qualityMod,
                 CardExpedition.UltimateHard         => 4 * dereUltMod * qualityMod,
-                CardExpedition.UltimateHardcore     => 1.3 * dereUltMod * qualityMod,
+                CardExpedition.UltimateHardcore     => 1.7 * dereUltMod * qualityMod,
                 _ => 0
             };
 
