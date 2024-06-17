@@ -2444,7 +2444,7 @@ namespace Sanakan.Modules
                 }
 
                 long price = 0;
-                var startIndex = dt.IValue;
+                var startIndex = dt.IValue / 2;
                 for (int i = 0; i < count; i++)
                 {
                     var check = dt.IValue - startIndex;
