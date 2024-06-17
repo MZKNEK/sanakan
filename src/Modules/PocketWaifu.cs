@@ -2440,11 +2440,11 @@ namespace Sanakan.Modules
                 long basePrice = 1337;
                 if (dt.IValue > 1)
                 {
-                    basePrice *= dt.IValue / 2;
+                    basePrice *= (dt.IValue / 2) + 1;
                 }
 
                 long price = 0;
-                var startIndex = dt.IValue / 2;
+                var startIndex = (dt.IValue / 2) + 1;
                 for (int i = 0; i < count; i++)
                 {
                     var check = dt.IValue - startIndex;
