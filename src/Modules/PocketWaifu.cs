@@ -2458,6 +2458,12 @@ namespace Sanakan.Modules
                     dt.IValue++;
                 }
 
+                if (price <= 0)
+                {
+                    await ReplyAsync("", embed: $"{Context.User.Mention} cena dziwnie wyliczona.".ToEmbedMessage(EMType.Error).Build());
+                    return;
+                }
+
                 var fragments = bUser.GameDeck.Items.FirstOrDefault(x => x.Type == ItemType.CardFragment);
                 if (fragments == null || fragments.Count < price)
                 {
