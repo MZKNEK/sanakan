@@ -2400,7 +2400,7 @@ namespace Sanakan.Modules
         [Alias("tinkering")]
         [Summary("towrzy karty z ich fragmentów(maks 20")]
         [Remarks("5"), RequireWaifuCommandChannel]
-        public async Task MakeCardsFromFragmentsAsync([Summary("ilość kart do utworzenia(4200 fragmentów na kartę)")] uint count = 1, [Summary("czy zniszczyć karty nie będące na liście życzeń i nie posiadające danej kc?")] uint destroyCards = 0,
+        public async Task MakeCardsFromFragmentsAsync([Summary("ilość kart do utworzenia(1337 fragmentów na kartę, co dwie karty podwaja się cena w danym dniu)")] uint count = 1, [Summary("czy zniszczyć karty nie będące na liście życzeń i nie posiadające danej kc?")] uint destroyCards = 0,
             [Summary("czy zamienić niszczenie na uwalnianie?")] bool changeToRelease = false, [Summary("oznacz niezniszczone karty")] string tag = "", [Summary("oznacz karty z wishlisty")] string tagWishlist = "")
         {
             if (count < 1)
@@ -2421,14 +2421,47 @@ namespace Sanakan.Modules
                 return;
             }
 
-            long price = 4200 * count;
             using (var db = new Database.DatabaseContext(Config))
             {
                 var bUser = await db.GetUserOrCreateAsync(Context.User.Id);
+                var dt = bUser.TimeStatuses.FirstOrDefault(x => x.Type == StatusType.Tinkering);
+                if (dt == null)
+                {
+                    dt = StatusType.Tinkering.NewTimeStatus();
+                    bUser.TimeStatuses.Add(dt);
+                }
+
+                if (!dt.IsActive(_time.Now()))
+                {
+                    dt.EndsAt = _time.Now().AddDays(1).Date;
+                    dt.IValue = 0;
+                }
+
+                long basePrice = 1337;
+                if (dt.IValue > 0)
+                {
+                    basePrice *= dt.IValue / 2;
+                }
+
+                long price = 0;
+                var startIndex = dt.IValue;
+                for (int i = 0; i < count; i++)
+                {
+                    var check = dt.IValue - startIndex;
+                    if (check > 0 && check % 2 == 0)
+                    {
+                        startIndex = dt.IValue;
+                        basePrice *= 2;
+                    }
+
+                    price += basePrice;
+                    dt.IValue++;
+                }
+
                 var fragments = bUser.GameDeck.Items.FirstOrDefault(x => x.Type == ItemType.CardFragment);
                 if (fragments == null || fragments.Count < price)
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} niestety nie ma wystarczającej liczby fragmentów.".ToEmbedMessage(EMType.Error).Build());
+                    await ReplyAsync("", embed: $"{Context.User.Mention} niestety nie ma wystarczającej liczby fragmentów({price}).".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
