@@ -2438,7 +2438,7 @@ namespace Sanakan.Modules
                 }
 
                 long basePrice = 1337;
-                if (dt.IValue > 0)
+                if (dt.IValue > 1)
                 {
                     basePrice *= dt.IValue / 2;
                 }
