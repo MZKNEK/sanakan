@@ -24,6 +24,6 @@ namespace Sanakan.Services
         public static string LocalCardData = $"{SavedData}/Card";
 
         public static string GetResource(string path) => $"{PicDir}/{path}";
-        public static bool IsLocal(string path) => path.StartsWith(BaseOutput) || path.StartsWith(PicDir);
+        public static bool IsLocal(string path) => !string.IsNullOrEmpty(path) && (path.StartsWith(BaseOutput) || path.StartsWith(PicDir));
     }
 }
