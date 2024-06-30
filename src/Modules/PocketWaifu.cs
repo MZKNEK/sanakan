@@ -2437,27 +2437,15 @@ namespace Sanakan.Modules
                     dt.IValue = 0;
                 }
 
-                long basePrice = 1337;
-                if (dt.IValue > 1)
-                {
-                    basePrice *= (dt.IValue / 2) + 1;
-                }
+                var basePrice = 1337;
+                var startCount = (int)dt.IValue;
+                var cardsCount = (int)count;
 
-                long price = 0;
-                var startIndex = (dt.IValue / 2) + 1;
-                for (int i = 0; i < count; i++)
-                {
-                    var check = dt.IValue - startIndex;
-                    if (check > 0 && check % 2 == 0)
-                    {
-                        startIndex = dt.IValue;
-                        basePrice *= 2;
-                    }
+                var newPrice = Enumerable.Range(startCount, cardsCount)
+                                    .Select(i => basePrice * Math.Pow(2, i / 2))
+                                    .Sum();
 
-                    price += basePrice;
-                    dt.IValue++;
-                }
-
+                long price = (long)Math.Floor(newPrice);
                 if (price <= 0)
                 {
                     await ReplyAsync("", embed: $"{Context.User.Mention} cena dziwnie wyliczona.".ToEmbedMessage(EMType.Error).Build());
