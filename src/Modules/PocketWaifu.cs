@@ -2445,6 +2445,7 @@ namespace Sanakan.Modules
                                     .Select(i => basePrice * Math.Pow(2, i / 2))
                                     .Sum();
 
+                dt.IValue += count;
                 long price = (long)Math.Floor(newPrice);
                 if (price <= 0)
                 {
