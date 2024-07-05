@@ -388,8 +388,12 @@ namespace Sanakan.Modules
 
             for (uint i = 0; i < repeat; i++)
             {
-                await GiveawayCardsAsync(id, count, duration, i, repeat);
-                await Task.Delay(TimeSpan.FromSeconds(10));
+                try
+                {
+                    await GiveawayCardsAsync(id, count, duration, i, repeat);
+                    await Task.Delay(TimeSpan.FromSeconds(10));
+                }
+                catch (Exception) {}
 
                 if (source.Token.IsCancellationRequested)
                 {
