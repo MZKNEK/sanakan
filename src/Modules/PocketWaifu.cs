@@ -3862,6 +3862,12 @@ namespace Sanakan.Modules
                     return;
                 }
 
+                if (thisCard.Expedition != CardExpedition.None)
+                {
+                    await ReplyAsync("", embed: $"{Context.User.Mention} ta karta znajduje się na wyprawie.".ToEmbedMessage(EMType.Error).Build());
+                    return;
+                }
+
                 if (!thisCard.CanGiveBloodOrUpgradeToSSS())
                 {
                     await ReplyAsync("", embed: $"{Context.User.Mention} ta karta ma zbyt niską relacje".ToEmbedMessage(EMType.Error).Build());
