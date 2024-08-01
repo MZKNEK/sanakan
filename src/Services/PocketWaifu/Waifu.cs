@@ -1801,13 +1801,13 @@ namespace Sanakan.Services.PocketWaifu
                     return Fun.TakeATry(20d);
 
                 case CardExpedition.UltimateMedium:
-                    return Fun.TakeATry(15d);
+                    return Fun.TakeATry(25d);
 
                 case CardExpedition.UltimateHard:
-                    return Fun.TakeATry(35d);
+                    return Fun.TakeATry(40d);
 
                 case CardExpedition.UltimateHardcore:
-                    return Fun.TakeATry(50d);
+                    return Fun.TakeATry(65d);
 
                 default:
                 case CardExpedition.UltimateEasy:
