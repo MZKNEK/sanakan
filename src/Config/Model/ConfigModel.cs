@@ -13,6 +13,7 @@ namespace Sanakan.Config.Model
         public bool SafariEnabled { get; set; }
         public string ConnectionString { get; set; }
         public long CharPerPacket { get; set; }
+        public long PacksPerDay { get; set; }
         public ConfigShinden Shinden { get; set; }
         public ConfigExp Exp { get; set; }
         public List<ulong> Dev { get; set; }

@@ -1019,6 +1019,18 @@ namespace Sanakan.Modules
             await ReplyAsync("", embed: $"Ustawiono URI na `{uri}`".ToEmbedMessage(EMType.Success).Build());
         }
 
+        [Command("ppd"), Priority(1), RequireDev]
+        [Summary("ustawia liczbę pakietów na dzień")]
+        [Remarks("true")]
+        public async Task SetPacksPerDayAsync([Summary("liczba pakietów")]long count, [Summary("true/false - czy zapisać?")]bool save = false)
+        {
+            var config = Config.Get();
+            config.PacksPerDay = count;
+            if (save) Config.Save();
+
+            await ReplyAsync("", embed: $"Ustawiono liczbę pakietów `{count}`. `Zapisano: {save.GetYesNo()}`".ToEmbedMessage(EMType.Success).Build());
+        }
+
         [Command("chpp"), Priority(1), RequireDev]
         [Summary("ustawia liczbę znaków na pakiet")]
         [Remarks("true")]

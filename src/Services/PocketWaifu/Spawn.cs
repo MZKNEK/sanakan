@@ -312,7 +312,10 @@ namespace Sanakan.Services.PocketWaifu
                         pCnt.IValue = 0;
                     }
 
-                    if (++pCnt.IValue > 3) return;
+                    var pLimit = _config.Get().PacksPerDay;
+                    if (pLimit < 1) pLimit = 3;
+
+                    if (++pCnt.IValue > pLimit) return;
 
                     botUser.GameDeck.BoosterPacks.Add(new BoosterPack
                     {
