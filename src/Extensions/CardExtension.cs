@@ -417,19 +417,37 @@ namespace Sanakan.Extensions
             return "Obojętność";
         }
 
-        public static string GetFatigueString(this Card card, ISystemTime time)
+        public static bool IsBlockadeFromFatigue(this Card card) => card.Fatigue >= Waifu.FatigueThirdPhase;
+
+        public static bool RecoverFatigue(this Card card, ISystemTime time)
         {
-            var fatigue = card.Fatigue;
-            if (time != null && fatigue > 0)
+            var newFatigue = card.GetCurrentFatigue(time);
+            if (time != null && newFatigue != card.Fatigue)
+            {
+                card.ExpeditionEndDate = time.Now();
+                card.Fatigue = newFatigue;
+                return true;
+            }
+            return false;
+        }
+
+        public static double GetCurrentFatigue(this Card card, ISystemTime time)
+        {
+            if (time != null && card.Fatigue > 0)
             {
                 var breakFromExpedition = (time.Now() - card.ExpeditionEndDate).TotalMinutes;
                 if (breakFromExpedition > 1)
                 {
-                    var toRecover = Math.Min(0.173 * breakFromExpedition, 1000);
-                    fatigue = Math.Max(fatigue - toRecover, 0);
+                    var toRecover = Math.Min(Waifu.FatigueRecoveryRate * breakFromExpedition, Waifu.FatigueThirdPhase);
+                    return Math.Max(card.Fatigue - toRecover, 0);
                 }
             }
+            return card.Fatigue;
+        }
 
+        public static string GetFatigueString(this Card card, ISystemTime time)
+        {
+            var fatigue = card.GetCurrentFatigue(time);
             if (fatigue >= 1500) return "Stan agonalny";
             if (fatigue >= 1000) return "Przepracowanie";
             if (fatigue >= 800) return "Wysokie";
@@ -839,6 +857,7 @@ namespace Sanakan.Extensions
         public static async Task ExchangeWithAsync(this Card card, (User user, int count, Tag tag, string username)
             source, (User user, int count, Tag tag, string username) target, DatabaseContext db, ISystemTime time)
         {
+            _ = card.RecoverFatigue(time);
             if (card.IsDisallowedToExchange())
                 return;
 
@@ -850,7 +869,9 @@ namespace Sanakan.Extensions
 
             card.Active = false;
             card.Tags.Clear();
-            card.Affection -= 1.5;
+            card.Affection = card.Affection > 0 ? -5 : (card.Affection - 1.5);
+            card.ExpeditionEndDate = time.Now();
+            card.Fatigue += 600;
 
             if (card.ExpCnt > 1)
                 card.ExpCnt *= 0.3;
@@ -886,8 +907,12 @@ namespace Sanakan.Extensions
             db.AddActivityFromNewCard(card, isOnUserWishlist, time, target.user, target.username);
         }
 
-        public static bool IsProtectedFromDiscarding(this Card card, TagHelper helper)
-            => card.InCage || helper.HasTag(card, Services.PocketWaifu.TagType.Favorite) || card.FromFigure || card.Expedition != CardExpedition.None;
+        public static bool IsProtectedFromDiscarding(this Card card, TagHelper helper) => card is null
+            || card.InCage
+            || helper.HasTag(card, Services.PocketWaifu.TagType.Favorite)
+            || card.FromFigure
+            || card.IsBlockadeFromFatigue()
+            || card.Expedition != CardExpedition.None;
 
         public static bool IsDisallowedToExchange(this Card card) => card is null
             || card.InCage
@@ -896,6 +921,7 @@ namespace Sanakan.Extensions
             || card.Curse != CardCurse.None
             || card.Expedition != CardExpedition.None
             || (card.FromFigure && card.PAS != PreAssembledFigure.None)
+            || card.IsBlockadeFromFatigue()
             || card.IsBroken();
     }
 }

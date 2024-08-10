@@ -169,6 +169,8 @@ namespace Sanakan.Services.Session.Models
             foreach (var id in wid)
             {
                 var card = player.Dbuser.GetCard(id);
+                _ = card.RecoverFatigue(_time);
+
                 if (card.IsDisallowedToExchange())
                 {
                     error = true;

@@ -1119,6 +1119,7 @@ namespace Sanakan.Modules
                         return;
                     }
 
+                    _ = card.RecoverFatigue(_time);
                     if (card.IsProtectedFromDiscarding(_tags))
                     {
                         await ReplyAsync("", embed: $"{Context.User.Mention} tej karty z jakiegoś powodu nie można zniszczyć.".ToEmbedMessage(EMType.Error).Build());
@@ -1575,6 +1576,7 @@ namespace Sanakan.Modules
                 var broken = new List<Card>();
                 foreach (var card in cardsToSac)
                 {
+                    _ = card.RecoverFatigue(_time);
                     if (card.IsProtectedFromDiscarding(_tags))
                     {
                         broken.Add(card);
@@ -3527,16 +3529,7 @@ namespace Sanakan.Modules
 
                 foreach (var card in cardsSelected)
                 {
-                    if (card.Fatigue > 0)
-                    {
-                        var breakFromExpedition = (_time.Now() - card.ExpeditionEndDate).TotalMinutes;
-                        if (breakFromExpedition > 1)
-                        {
-                            var toRecover = Math.Min(0.173 * breakFromExpedition, 1000);
-                            card.Fatigue = Math.Max(card.Fatigue - toRecover, 0);
-                        }
-                    }
-
+                    _ = card.RecoverFatigue(_time);
                     var expeditionBlockadeType = _expedition.IsValidToGo(botUser, card, expedition, _tags);
                     if (expeditionBlockadeType != Expedition.BlockadeReason.None)
                     {

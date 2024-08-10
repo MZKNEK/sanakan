@@ -48,6 +48,11 @@ namespace Sanakan.Services.PocketWaifu
 
     public class Waifu
     {
+        public const int FatigueFirstPhase = 550;
+        public const int FatigueSecondPhase = 850;
+        public const int FatigueThirdPhase = 1000;
+        public const double FatigueRecoveryRate = 0.173;
+
         private const int DERE_TAB_SIZE = ((int)Dere.Yato) + 1;
         private static CharacterPool<ulong> _charIdAnime = new CharacterPool<ulong>();
         private static CharacterPool<ulong> _charIdManga = new CharacterPool<ulong>();
@@ -1683,13 +1688,13 @@ namespace Sanakan.Services.PocketWaifu
                 totalExp = 0;
             }
 
-            if (card.Fatigue >= 850)
+            if (card.Fatigue >= FatigueSecondPhase)
             {
                 totalItemsCnt -= (int)(totalItemsCnt * 0.3);
                 affectionCost *= 1.2;
                 totalExp *= 0.6;
             }
-            else if (card.Fatigue >= 550)
+            else if (card.Fatigue >= FatigueFirstPhase)
             {
                 totalItemsCnt -= (int)(totalItemsCnt * 0.1);
                 affectionCost *= 1.1;
@@ -1759,7 +1764,7 @@ namespace Sanakan.Services.PocketWaifu
 
             reward += string.Join("\n", items.Select(x => $"+{x.Key} x{x.Value}"));
 
-            var fatigue = _expedition.GetFatigueFromExpedition(duration.CalcTime, card);
+            var fatigue = _expedition.GetFatigueFromExpedition(duration.RealTime, card);
 
             if (showStats)
             {
@@ -1835,6 +1840,7 @@ namespace Sanakan.Services.PocketWaifu
             var ignored = new List<Card>();
             foreach (var card in cardsForDiscarding)
             {
+                _ = card.RecoverFatigue(_time);
                 if (card.IsProtectedFromDiscarding(_tags))
                 {
                     ignored.Add(card);

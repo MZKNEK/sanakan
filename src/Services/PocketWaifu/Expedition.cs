@@ -712,7 +712,7 @@ namespace Sanakan.Services.PocketWaifu
 
         public BlockadeReason IsValidToGo(User user, Card card, CardExpedition expedition, TagHelper helper)
         {
-            if (card.Fatigue >= 1000)
+            if (card.IsBlockadeFromFatigue())
                 return BlockadeReason.Fatigue;
 
             if (card.Expedition != CardExpedition.None)
