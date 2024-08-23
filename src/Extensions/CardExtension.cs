@@ -871,7 +871,7 @@ namespace Sanakan.Extensions
             card.Tags.Clear();
             card.Affection = card.Affection > 0 ? -5 : (card.Affection - 1.5);
             card.ExpeditionEndDate = time.Now();
-            card.Fatigue += 600;
+            card.Fatigue += 321;
 
             if (card.ExpCnt > 1)
                 card.ExpCnt *= 0.3;
