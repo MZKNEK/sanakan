@@ -57,8 +57,7 @@ namespace Sanakan.Modules
 
                 if (daily.IsActive(_time.Now()))
                 {
-                    var timeTo = (int)daily.RemainingMinutes(_time.Now());
-                    await ReplyAsync("", embed: $"{Context.User.Mention} następne drobne możesz otrzymać dopiero za {timeTo / 60}h {timeTo % 60}m!".ToEmbedMessage(EMType.Error).Build());
+                    await ReplyAsync("", embed: $"{Context.User.Mention} następne drobne możesz otrzymać dopiero {daily.EndsAt.ToRemTime()}!".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
@@ -170,8 +169,7 @@ namespace Sanakan.Modules
 
                 if (hourly.IsActive(_time.Now()))
                 {
-                    var timeTo = (int)hourly.RemainingSeconds(_time.Now());
-                    await ReplyAsync("", embed: $"{Context.User.Mention} następne zaskórniaki możesz otrzymać dopiero za {timeTo / 60}m {timeTo % 60}s!".ToEmbedMessage(EMType.Error).Build());
+                    await ReplyAsync("", embed: $"{Context.User.Mention} następne zaskórniaki możesz otrzymać dopiero {hourly.EndsAt.ToRemTime()}!".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 

@@ -1240,8 +1240,7 @@ namespace Sanakan.Modules
 
                 if (ns.IsActive(_time.Now()))
                 {
-                    var timeTo = (int)ns.RemainingMinutes(_time.Now());
-                    await ReplyAsync("", embed: $"{Context.User.Mention} możesz otrzymać następną darmową kartę dopiero za {timeTo / 60}h {timeTo % 60}m!".ToEmbedMessage(EMType.Error).Build());
+                    await ReplyAsync("", embed: $"{Context.User.Mention} możesz otrzymać następną darmową kartę dopiero {ns.EndsAt.ToRemTime()}!".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
@@ -1364,8 +1363,7 @@ namespace Sanakan.Modules
 
                 if (market.IsActive(_time.Now()))
                 {
-                    var timeTo = (int)market.RemainingMinutes(_time.Now());
-                    await ReplyAsync("", embed: $"{Context.User.Mention} możesz udać się ponownie na rynek za {timeTo / 60}h {timeTo % 60}m!".ToEmbedMessage(EMType.Error).Build());
+                    await ReplyAsync("", embed: $"{Context.User.Mention} możesz udać się ponownie na rynek {market.EndsAt.ToRemTime()}!".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
@@ -1478,8 +1476,7 @@ namespace Sanakan.Modules
 
                 if (market.IsActive(_time.Now()))
                 {
-                    var timeTo = (int)market.RemainingMinutes(_time.Now());
-                    await ReplyAsync("", embed: $"{Context.User.Mention} możesz udać się ponownie na czarny rynek za {timeTo / 60}h {timeTo % 60}m!".ToEmbedMessage(EMType.Error).Build());
+                    await ReplyAsync("", embed: $"{Context.User.Mention} możesz udać się ponownie na czarny rynek {market.EndsAt.ToRemTime()}!".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 

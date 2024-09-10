@@ -510,7 +510,7 @@ namespace Sanakan.Modules
                 }
             }
 
-            var sendMsg = $"Loteria kart. Zareaguj {emote}, aby wziąć udział.\n\nKoniec za: {time.ToRemTime()}".ToEmbedMessage(EMType.Bot);
+            var sendMsg = $"Loteria kart. Zareaguj {emote}, aby wziąć udział.\n\nKoniec {time.ToRemTime()}".ToEmbedMessage(EMType.Bot);
             if (progress > -1) sendMsg.Footer = (new EmbedFooterBuilder()).WithText($"{progress+1}/{howMuch}");
             var msg = await ReplyAsync(mention, embed: sendMsg.Build());
             await msg.AddReactionAsync(emote);
