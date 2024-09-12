@@ -3219,8 +3219,8 @@ namespace Sanakan.Modules
         [Command("jakie", RunMode = RunMode.Async)]
         [Alias("which")]
         [Summary("pozwala wyszukać użytkowników posiadających karty z danego tytułu")]
-        [Remarks("1 tak"), RequireWaifuCommandChannel]
-        public async Task SearchCharacterCardsFromTitleAsync([Summary("id serii na shinden")] ulong id, [Summary("czy zamienić oznaczenia na nicki?")] bool showNames = false)
+        [Remarks("1 tak nie"), RequireWaifuCommandChannel]
+        public async Task SearchCharacterCardsFromTitleAsync([Summary("id serii na shinden")] ulong id, [Summary("czy zamienić oznaczenia na nicki?")] bool showNames = false, [Summary("ukryć posiadane?")] bool hiddeOwned = false)
         {
             var response = await _shclient.Title.GetCharactersAsync(id);
             if (!response.IsSuccessStatusCode())
@@ -3238,8 +3238,23 @@ namespace Sanakan.Modules
 
             using (var db = new Database.DatabaseContext(Config))
             {
-                var cards = await db.Cards.AsQueryable().Include(x => x.Tags).Include(x => x.GameDeck).AsSplitQuery().Where(x => characterIds.Contains(x.Character)).AsNoTracking().FromCacheAsync(new[] { "users" });
+                if (hiddeOwned)
+                {
+                    var user = await db.GetCachedFullUserAsync(Context.User.Id);
+                    if (user is null)
+                    {
+                        await ReplyAsync("", embed: $"Nie udało sie pobrać danych użytkownika.".ToEmbedMessage(EMType.Error).Build());
+                        return;
+                    }
 
+                    if (!user.GameDeck.Cards.IsNullOrEmpty())
+                    {
+                        var userOwnedCharacters = user.GameDeck.Cards.Select(x => x.Character).Distinct().ToList();
+                        characterIds.RemoveAll(x => userOwnedCharacters.Any(c => c == x));
+                    }
+                }
+
+                var cards = await db.Cards.AsQueryable().Include(x => x.Tags).Include(x => x.GameDeck).AsSplitQuery().Where(x => characterIds.Contains(x.Character)).AsNoTracking().FromCacheAsync(new[] { "users" });
                 if (cards.Count() < 1)
                 {
                     await ReplyAsync("", embed: $"Nie odnaleziono kart.".ToEmbedMessage(EMType.Error).Build());
@@ -3423,7 +3438,7 @@ namespace Sanakan.Modules
                     return;
                 }
 
-                var expStrs = cardsOnExpedition.Select(x => $"{x.GetShortString(true)}:\n Od {x.ExpeditionDate.ToShortDateTime()} na {x.Expedition.GetName("ej")} wyprawie.\nTraci siły po {_expedition.GetMaxPossibleLengthOfExpedition(botUser, x):F} min.");
+                var expStrs = cardsOnExpedition.Select(x => $"{x.GetShortString(true)}:\n Od {x.ExpeditionDate.ToShortDateTime()} na {x.Expedition.GetName("ej")} wyprawie.\nTraci siły {x.ExpeditionDate.AddMinutes(_expedition.GetMaxPossibleLengthOfExpedition(botUser, x)).ToRemTime()}.");
                 await ReplyAsync("", embed: $"**Wyprawy[**{cardsOnExpedition.Count}/{botUser.GameDeck.LimitOfCardsOnExpedition()}**]** {Context.User.Mention}:\n\n{string.Join("\n\n", expStrs)}".ToEmbedMessage(EMType.Bot).WithUser(Context.User).Build());
             }
         }
