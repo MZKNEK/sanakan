@@ -255,6 +255,20 @@ namespace Sanakan.Services.PocketWaifu
                             card.Dere = Dere.Yami;
                         }
                     }
+                    foreach (var figure in user.GameDeck.Figures.Where(x => x.Dere == Dere.Yami || x.Dere == Dere.Raito))
+                    {
+                        if (figure.IsComplete)
+                            continue;
+
+                        if (figure.Dere == Dere.Yami)
+                        {
+                            figure.Dere = Dere.Raito;
+                        }
+                        else if (figure.Dere == Dere.Raito)
+                        {
+                            figure.Dere = Dere.Yami;
+                        }
+                    }
                     return "odwrócenie karmy!";
                 }
 
