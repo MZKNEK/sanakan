@@ -964,7 +964,7 @@ namespace Sanakan.Services
                 if (arrValues[i] != 0)
                 {
                     arrProcent[i] = arrValues[i] / all;
-                    arrLength[i] = (int)((length * arrProcent[i]) + 0.5);
+                    arrLength[i] = (int) Math.Max(1, length * arrProcent[i] + 0.5);
                     fixedLength += arrLength[i];
                 }
             }
@@ -980,12 +980,10 @@ namespace Sanakan.Services
             {
                 if (arrValues[i] != 0)
                 {
-                    using (var thisBar = new Image<Rgba32>(arrLength[i] < 1 ? 1 : arrLength[i], 17))
-                    {
-                        thisBar.Mutate(x => x.BackgroundColor(GetOrCreateColor(colors[i])));
-                        bar.Mutate(x => x.DrawImage(thisBar, new Point(offset, 0), 1));
-                        offset += arrLength[i];
-                    }
+                    using var thisBar = new Image<Rgba32>(arrLength[i] < 1 ? 1 : arrLength[i], 17);
+                    thisBar.Mutate(x => x.BackgroundColor(GetOrCreateColor(colors[i])));
+                    bar.Mutate(x => x.DrawImage(thisBar, new Point(offset, 0), 1));
+                    offset += arrLength[i];
                 }
             }
 
