@@ -169,8 +169,13 @@ namespace Sanakan.Services.Session.Models
             foreach (var id in wid)
             {
                 var card = player.Dbuser.GetCard(id);
-                _ = card.RecoverFatigue(_time);
+                if (card is null)
+                {
+                    error = true;
+                    continue;
+                }
 
+                _ = card.RecoverFatigue(_time);
                 if (card.IsDisallowedToExchange())
                 {
                     error = true;
@@ -217,7 +222,7 @@ namespace Sanakan.Services.Session.Models
         private async Task HandleDeleteAsync(PlayerInfo player, ulong wid, IUserMessage message)
         {
             var card = player.Cards.FirstOrDefault(x => x.Id == wid);
-            if (card == null)
+            if (card is null)
             {
                 await message.AddReactionAsync(ErrEmote);
                 return;
