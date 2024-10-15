@@ -1101,7 +1101,7 @@ namespace Sanakan.Modules
             var raport = _waifu.CleanCards((int)dayCount);
 
             using var stream = new MemoryStream();
-            using var writer = new StreamWriter(stream);
+            using var writer = new StreamWriter(stream, leaveOpen: true);
             writer.Write(string.Join("\n", raport));
             writer.Flush();
             stream.Position = 0;

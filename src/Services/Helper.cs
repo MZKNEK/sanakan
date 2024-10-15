@@ -492,7 +492,7 @@ namespace Sanakan.Services
         private Stream GenerateStreamFromString(string str)
         {
             var stream = new MemoryStream();
-            using var writer = new StreamWriter(stream);
+            using var writer = new StreamWriter(stream, leaveOpen: true);
             writer.Write(str);
             writer.Flush();
             stream.Position = 0;
