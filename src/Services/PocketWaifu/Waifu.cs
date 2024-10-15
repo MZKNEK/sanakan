@@ -19,6 +19,7 @@ using Shinden.Logger;
 using Shinden.Models;
 using Z.EntityFramework.Plus;
 using System.Threading;
+using Sanakan.Config;
 
 namespace Sanakan.Services.PocketWaifu
 {
@@ -148,6 +149,7 @@ namespace Sanakan.Services.PocketWaifu
         private Events _events;
         private Helper _helper;
         private ILogger _logger;
+        private IConfig _config;
         private TagHelper _tags;
         private Shinden _shinden;
         private ISystemTime _time;
@@ -157,11 +159,12 @@ namespace Sanakan.Services.PocketWaifu
         private DiscordSocketClient _client;
 
         public Waifu(ImageProcessing img, ShindenClient client, Events events, ILogger logger, Expedition expedition,
-            DiscordSocketClient discord, Helper helper, ISystemTime time, Shinden shinden, TagHelper tags)
+            DiscordSocketClient discord, Helper helper, ISystemTime time, Shinden shinden, TagHelper tags, IConfig config)
         {
             _img = img;
             _time = time;
             _tags = tags;
+            _config = config;
             _events = events;
             _logger = logger;
             _helper = helper;
@@ -174,35 +177,9 @@ namespace Sanakan.Services.PocketWaifu
             {
                 try
                 {
-                    foreach (var filePath in Directory.GetFiles(Dir.Cards))
+                    if (_config.Get().AutoCleanCards)
                     {
-                        try
-                        {
-                            var isInvalidPath = Path.GetExtension(filePath) switch
-                            {
-                                ".png"  => false,
-                                ".PNG"  => false,
-                                ".webp" => false,
-                                ".WEBP" => false,
-                                ".gif"  => false,
-                                ".GIF"  => false,
-                                _       => true
-                            };
-
-                            if (isInvalidPath)
-                                continue;
-
-                            var createdAt = File.GetCreationTime(filePath);
-                            if (createdAt < _time.Now().AddDays(-5))
-                            {
-                                var fileName = Path.GetFileName(filePath);
-
-                                File.Delete(filePath);
-                                File.Delete($"{Dir.CardsMiniatures}/{fileName}");
-                                File.Delete($"{Dir.CardsInProfiles}/{fileName}");
-                            }
-                        }
-                        catch (Exception) {}
+                        _ = CleanCards(5);
                     }
                 }
                 catch (Exception ex)
@@ -220,6 +197,47 @@ namespace Sanakan.Services.PocketWaifu
         public ItemRecipe GetItemRecipe(RecipeType type) => _recipes[type];
 
         public string GetItemRecipesList() => $"**Przepisy**:\n\n{string.Join("\n", _recipes.Select((x, i) => $"**[{i+1}]** {x.Value.Name}"))}";
+
+        public List<string> CleanCards(int cardsOldInDays)
+        {
+            var deletedImages = new List<string>();
+            var dateToCheck = _time.Now().AddDays(-cardsOldInDays);
+            foreach (var filePath in Directory.GetFiles(Dir.Cards))
+            {
+                try
+                {
+                    var isInvalidPath = Path.GetExtension(filePath) switch
+                    {
+                        ".png" => false,
+                        ".PNG" => false,
+                        ".webp" => false,
+                        ".WEBP" => false,
+                        _ => true
+                    };
+
+                    if (isInvalidPath)
+                        continue;
+
+                    var createdAt = File.GetCreationTime(filePath);
+                    if (createdAt < dateToCheck)
+                    {
+                        var fileName = Path.GetFileName(filePath);
+                        var miniFilePath = $"{Dir.CardsMiniatures}/{fileName}";
+                        var profileFilePath = $"{Dir.CardsInProfiles}/{fileName}";
+
+                        File.Delete(filePath);
+                        deletedImages.Add(filePath);
+                        File.Delete(miniFilePath);
+                        deletedImages.Add(miniFilePath);
+                        File.Delete(profileFilePath);
+                        deletedImages.Add(profileFilePath);
+
+                    }
+                }
+                catch (Exception) { }
+            }
+            return deletedImages;
+        }
 
         public List<Card> GetListInRightOrder(IEnumerable<Card> list, HaremType type, string tag)
         {

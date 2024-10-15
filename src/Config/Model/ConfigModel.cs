@@ -11,6 +11,7 @@ namespace Sanakan.Config.Model
         public bool Supervision { get; set; }
         public bool Demonization { get; set; }
         public bool SafariEnabled { get; set; }
+        public bool AutoCleanCards { get; set; }
         public string ConnectionString { get; set; }
         public long CharPerPacket { get; set; }
         public long PacksPerDay { get; set; }

@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -1077,6 +1078,35 @@ namespace Sanakan.Modules
             if (save) Config.Save();
 
             await ReplyAsync("", embed: $"Safari: `{config.SafariEnabled.GetYesNo()}` `Zapisano: {save.GetYesNo()}`".ToEmbedMessage(EMType.Success).Build());
+        }
+
+        [Command("tautoclean"), Priority(1), RequireDev]
+        [Summary("wyłącza/włącza czyszczenie obrazków")]
+        [Remarks("")]
+        public async Task ToggleCardsCleanAsync()
+        {
+            var config = Config.Get();
+            config.AutoCleanCards = !config.AutoCleanCards;
+            Config.Save();
+
+            await ReplyAsync("", embed: $"AutoClean: `{config.AutoCleanCards.GetYesNo()}`".ToEmbedMessage(EMType.Success).Build());
+        }
+
+        [Command("force clean", RunMode = RunMode.Async), Priority(1), RequireDev]
+        [Summary("wymusza czyszczenie obrazków kart")]
+        [Remarks("30")]
+        public async Task ForceCardsCleanAsync([Summary("jak stare obrazki wyczyścić (dni)")]uint dayCount)
+        {
+            await ReplyAsync("", embed: $"Rozpoczęto czyszczenie!".ToEmbedMessage(EMType.Success).Build());
+            var raport = _waifu.CleanCards((int)dayCount);
+
+            using var stream = new MemoryStream();
+            using var writer = new StreamWriter(stream);
+            writer.Write(string.Join("\n", raport));
+            writer.Flush();
+            stream.Position = 0;
+
+            await Context.Channel.SendFileAsync(stream, "tldr.txt");
         }
 
         [Command("lvlbadge", RunMode = RunMode.Async), RequireDevOrTester]
