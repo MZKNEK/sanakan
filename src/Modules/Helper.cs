@@ -31,7 +31,7 @@ namespace Sanakan.Modules
 
         private readonly FixableHosting[] _fixableHostings =
         {
-            new FixableHosting { Name = "imgur",   Enabled = true, Threshold = new DateTime(2023, 5, 15),  Host = new []{ new DomainData("i.imgur.com") } },
+            new FixableHosting { Name = "imgur",   Enabled = true, Threshold = new DateTime(2024, 10, 15),  Host = new []{ new DomainData("i.imgur.com") } },
             new FixableHosting { Name = "discord cdn", Enabled = true, Threshold = new DateTime(2023, 11, 13), Host = new []{ new DomainData("cdn.discordapp.com") } },
             new FixableHosting { Name = "discord madia", Enabled = true, Threshold = new DateTime(2023, 11, 13), Host = new []{ new DomainData("media.discordapp.net") } },
             new FixableHosting { Name = "google",  Enabled = true, Threshold = new DateTime(2024, 02, 13), Host = new []{ new DomainData("drive.google.com") } },
@@ -236,7 +236,7 @@ namespace Sanakan.Modules
 
         [Command("napraw obrazek")]
         [Alias("fix image")]
-        [Summary("naprawia wygasły obrazek karty ustawiony przed imgur: 15.05.2023, discord: 13.11.2023, google: 13.02.2024")]
+        [Summary("naprawia wygasły obrazek karty")]
         [Remarks("123123"), RequireWaifuCommandChannel]
         public async Task FixCardCustomImageAsync([Summary("WID")] ulong wid, [Summary("bezpośredni adres do obrazka")] string url)
         {
@@ -289,9 +289,9 @@ namespace Sanakan.Modules
                     return;
                 }
 
-                if (thisCard.FixedCustomImageCnt > 1)
+                if (thisCard.FixedCustomImageCnt > 2)
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} na tej karcie już dwa razy został naprawiony niestandardowy obrazek.".ToEmbedMessage(EMType.Error).Build());
+                    await ReplyAsync("", embed: $"{Context.User.Mention} na tej karcie już trzy razy został naprawiony niestandardowy obrazek.".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 

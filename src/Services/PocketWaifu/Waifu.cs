@@ -18,6 +18,7 @@ using Shinden;
 using Shinden.Logger;
 using Shinden.Models;
 using Z.EntityFramework.Plus;
+using System.Threading;
 
 namespace Sanakan.Services.PocketWaifu
 {
@@ -143,6 +144,7 @@ namespace Sanakan.Services.PocketWaifu
             { 0.5,      0.5,      0.5,      0.5,     0.5,     0.5,     0.5,      0.5,    1,    0.5,   1     }, //Yato
         };
 
+        private Timer _timer;
         private Events _events;
         private Helper _helper;
         private ILogger _logger;
@@ -167,6 +169,50 @@ namespace Sanakan.Services.PocketWaifu
             _shinden = shinden;
             _shClient = client;
             _expedition = expedition;
+
+            _timer = new Timer(_ =>
+            {
+                try
+                {
+                    foreach (var filePath in Directory.GetFiles(Dir.Cards))
+                    {
+                        try
+                        {
+                            var isInvalidPath = Path.GetExtension(filePath) switch
+                            {
+                                ".png"  => false,
+                                ".PNG"  => false,
+                                ".webp" => false,
+                                ".WEBP" => false,
+                                ".gif"  => false,
+                                ".GIF"  => false,
+                                _       => true
+                            };
+
+                            if (isInvalidPath)
+                                continue;
+
+                            var createdAt = File.GetCreationTime(filePath);
+                            if (createdAt < _time.Now().AddDays(-5))
+                            {
+                                var fileName = Path.GetFileName(filePath);
+
+                                File.Delete(filePath);
+                                File.Delete($"{Dir.CardsMiniatures}/{fileName}");
+                                File.Delete($"{Dir.CardsInProfiles}/{fileName}");
+                            }
+                        }
+                        catch (Exception) {}
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.Log($"in waifu - clean cards: {ex}");
+                }
+            },
+            null,
+            TimeSpan.FromDays(1),
+            TimeSpan.FromDays(5));
         }
 
         static public double GetDereDmgMultiplier(Card atk, Card def) => _dereDmgRelation[(int)def.Dere, (int)atk.Dere];
