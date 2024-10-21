@@ -192,7 +192,17 @@ namespace Sanakan.Extensions
 
         public static int ConstructionPointsToInstall(this Figure figure, Item part)
         {
-            return (80 * (int) part.Quality) + (20 * (int) figure.SkeletonQuality);
+            var pointsFromSkeleton = 35 * (int) figure.SkeletonQuality;
+            var basePointsFromPartQuality = part.Quality switch
+            {
+                Quality.Alpha   => 80,
+                Quality.Beta    => 120,
+                Quality.Gamma   => 160,
+                Quality.Delta   => 220,
+                Quality.Epsilon => 260,
+                _ => 300
+            };
+            return (basePointsFromPartQuality * (int) part.Quality) + pointsFromSkeleton;
         }
 
         public static Quality GetQualityOfFocusedPart(this Figure figure)

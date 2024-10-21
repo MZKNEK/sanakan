@@ -839,7 +839,7 @@ namespace Sanakan.Modules
                     return;
                 }
 
-                if (card.ExpCnt < card.ExpToUpgrade() && card.Quality == Quality.Broken)
+                if (card.ExpCnt < card.ExpToUpgrade())
                 {
                     await ReplyAsync("", embed: $"{Context.User.Mention} ta karta ma niewystarczającą ilość punktów doświadczenia. Wymagane {card.ExpToUpgrade():F}.".ToEmbedMessage(EMType.Bot).Build());
                     return;

@@ -2380,9 +2380,6 @@ namespace Sanakan.Services.PocketWaifu
                     if (card.Rarity != Rarity.SSS)
                         return ExecutionResult.FromError("karta musi być rangi **SSS**.");
 
-                    if (user.GameDeck.Figures.Any(x => x.Character == card.Character))
-                        return ExecutionResult.FromError("już posiadasz figurkę tej postaci.");
-
                     var figure = item.ToFigure(card, _time.Now());
                     if (figure != null)
                     {
