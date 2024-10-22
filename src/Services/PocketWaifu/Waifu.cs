@@ -1696,6 +1696,7 @@ namespace Sanakan.Services.PocketWaifu
             var reward = multiplier != 1 ? "Wyprawa? Chyba po bułki do sklepu.\n\n" : "";
 
             var karmaMod = 1d;
+            var bonusFatigue = 0d;
             var allowItems = true;
             var totalExp = _expedition.GetExpFromExpedition(duration.CalcTime, card);
             var totalItemsCnt = _expedition.GetItemsCountFromExpedition(duration.CalcTime, card, user);
@@ -1746,7 +1747,8 @@ namespace Sanakan.Services.PocketWaifu
 
             if (duration.CalcTime <= 5)
             {
-                affectionCost += 5;
+                bonusFatigue += 400;
+                affectionCost += 50;
                 totalItemsCnt = 0;
                 karmaCost = 0;
                 totalExp = 0;
@@ -1767,7 +1769,7 @@ namespace Sanakan.Services.PocketWaifu
 
             card.ExpCnt += totalExp;
 
-            if (card.Curse == CardCurse.None)
+            if (card.Curse == CardCurse.None && duration.RealTime > 45)
             {
                 card.Curse = _expedition.GetPotentialCurse(card.Expedition);
                 if (card.Curse != CardCurse.None)
@@ -1839,7 +1841,7 @@ namespace Sanakan.Services.PocketWaifu
             card.Expedition = CardExpedition.None;
             card.ExpeditionEndDate = _time.Now();
             user.GameDeck.Karma -= karmaCost;
-            card.Fatigue += fatigue;
+            card.Fatigue += fatigue + bonusFatigue;
 
             return reward;
         }
