@@ -911,6 +911,7 @@ namespace Sanakan.Extensions
             || card.InCage
             || helper.HasTag(card, Services.PocketWaifu.TagType.Favorite)
             || card.FromFigure
+            || card.Curse != CardCurse.None
             || card.IsBlockadeFromFatigue()
             || card.Expedition != CardExpedition.None;
 

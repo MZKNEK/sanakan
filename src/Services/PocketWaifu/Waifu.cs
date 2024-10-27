@@ -2064,8 +2064,6 @@ namespace Sanakan.Services.PocketWaifu
             switch (item.Type)
             {
                 case ItemType.FigureSkeleton:
-                case ItemType.IncreaseExpBig:
-                case ItemType.IncreaseExpSmall:
                 case ItemType.CardParamsReRoll:
                 case ItemType.IncreaseUpgradeCnt:
                 case ItemType.BetterIncreaseUpgradeCnt:
@@ -2093,7 +2091,7 @@ namespace Sanakan.Services.PocketWaifu
             var textRelation = card.GetAffectionString();
             double karmaChange = item.Type.GetBaseKarmaChange() * itemCnt;
             double affectionInc = item.Type.GetBaseAffection() * itemCnt;
-            var expMod = card.Curse == CardCurse.LoweredExperience ? 0.2 : 1;
+            var expMod = card.Curse == CardCurse.LoweredExperience ? 0.2 : (card.FromFigure ? 0.3 : 1);
             var str = new StringBuilder().Append($"Użyto _{item.Name}_ {((itemCnt > 1) ? $"x{itemCnt}" : "")}{(" na " + card.GetString(false, false, true))}\n\n");
 
             switch (item.Type)
