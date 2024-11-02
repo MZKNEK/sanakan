@@ -1046,12 +1046,6 @@ namespace Sanakan.Modules
                         await ReplyAsync("", embed: $"{Context.User.Mention} nie posiadasz takiej karty.".ToEmbedMessage(EMType.Error).Build());
                         return;
                     }
-
-                    if (card.FromFigure)
-                    {
-                        await ReplyAsync("", embed: $"{Context.User.Mention} na tą kartę nie można przenieść doświadczenia.".ToEmbedMessage(EMType.Error).Build());
-                        return;
-                    }
                 }
 
                 var maxExpInOneTime = bUser.GameDeck.ExpContainer.GetMaxExpTransferToCard();
@@ -1076,7 +1070,7 @@ namespace Sanakan.Modules
 
                 if (focusedFigure == null)
                 {
-                    card.ExpCnt += exp;
+                    card.ExpCnt += exp * (card.FromFigure ? 0.5 : 1);
                 }
                 else
                 {
