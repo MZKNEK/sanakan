@@ -35,11 +35,11 @@ namespace Sanakan.Extensions
         };
 
         public static string GetString(this Card card, bool withoutId = false, bool withUpgrades = false,
-            bool nameAsUrl = false, bool allowZero = false, bool showBaseHp = false) => new StringBuilder()
+            bool nameAsUrl = false, bool allowZero = false, bool showBaseHp = false, bool hideStats = false) => new StringBuilder()
                     .Append(withoutId ? "" : $"{card.GetIdWithUrl()} ")
                     .Append(nameAsUrl ? card.GetNameWithUrl() : card.Name)
                     .Append($" **{card.GetCardRealRarity()}** ")
-                    .Append(card.GetCardParams(showBaseHp, allowZero))
+                    .Append(hideStats ? "" : (card.GetCardParams(showBaseHp, allowZero)))
                     .Append((withUpgrades && !card.FromFigure) ? $"_(U:{card.UpgradesCnt})_" : "")
                     .ToString();
 
