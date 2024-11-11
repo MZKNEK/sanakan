@@ -296,7 +296,7 @@ namespace Sanakan.Extensions
             string dateValue = status.EndsAt.ToShortDateTime();
             if (status.HasEnded(currentTime)) dateValue = "nieaktywne";
 
-            return $"{status.Type.Name()} do `{dateValue}`";
+            return $"{status.Type.Name()} do {dateValue}";
         }
 
         public static TimeStatus Sub(this TimeStatus status, TimeSpan span)

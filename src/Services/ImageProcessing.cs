@@ -1355,22 +1355,35 @@ namespace Sanakan.Services
 
         private void ApplyBetaStats(Image<Rgba32> image, Card card)
         {
-            var font = GetOrCreateFont(_latoBold, 29);
+            var font = GetOrCreateFont(_latoBold, 22);
 
             int hp = card.GetHealthWithPenalty();
             int def = card.GetDefenceWithBonus();
             int atk = card.GetAttackWithBonus();
 
-            var ops = new RichTextOptions(font)
+            using (var hpImg = new Image<Rgba32>(120, 40))
             {
-                HorizontalAlignment = HorizontalAlignment.Center,
-                Origin = new Point(320, 476)
-            };
-            image.Mutate(x => x.DrawText(ops, $"{def}", GetOrCreateColor("#000000")));
-            ops.Origin = new Point(320, 520);
-            image.Mutate(x => x.DrawText(ops, $"{atk}", GetOrCreateColor("#000000")));
-            ops.Origin = new Point(320, 563);
-            image.Mutate(x => x.DrawText(ops, $"{hp}", GetOrCreateColor("#000000")));
+                hpImg.Mutate(x => x.DrawText($"{hp}", font, GetOrCreateColor("#ffffff"), new Point(1)));
+                hpImg.Mutate(x => x.Rotate(-13));
+
+                image.Mutate(x => x.DrawImage(hpImg, new Point(30, 419), 1));
+            }
+
+            using (var atkImg = new Image<Rgba32>(120, 40))
+            {
+                atkImg.Mutate(x => x.DrawText($"{atk}", font, GetOrCreateColor("#ffffff"), new Point(1)));
+                atkImg.Mutate(x => x.Rotate(14));
+
+                image.Mutate(x => x.DrawImage(atkImg, new Point(374, 430), 1));
+            }
+
+            using (var defImg = new Image<Rgba32>(120, 40))
+            {
+                defImg.Mutate(x => x.DrawText($"{def}", font, GetOrCreateColor("#ffffff"), new Point(1)));
+                defImg.Mutate(x => x.Rotate(14));
+
+                image.Mutate(x => x.DrawImage(defImg, new Point(358, 502), 1));
+            }
         }
 
         private void ApplyGammaStats(Image<Rgba32> image, Card card)
@@ -1639,9 +1652,14 @@ namespace Sanakan.Services
 
         private string GetStatsString(Card card)
         {
+            bool isSpecialDere = card.Dere == Dere.Yami || card.Dere == Dere.Yato || card.Dere == Dere.Raito;
             switch (card.Quality)
             {
                 case Quality.Beta:
+                    return isSpecialDere
+                        ? Dir.GetResource($"PW/CG/{card.Quality}/Stats/{card.Dere}.png")
+                        : Dir.GetResource($"PW/CG/{card.Quality}/Stats.png");
+
                 case Quality.Gamma:
                 case Quality.Jota:
                 case Quality.Theta:
