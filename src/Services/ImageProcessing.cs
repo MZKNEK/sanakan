@@ -1467,19 +1467,19 @@ namespace Sanakan.Services
 
             using (var atkImg = new Image<Rgba32>(120, 40))
             {
-                atkImg.Mutate(x => x.DrawText(ops, $"{atk}", GetOrCreateColor("#c9282c")));
+                atkImg.Mutate(x => x.DrawText(ops, $"{atk}", GetOrCreateColor("#ffffff")));
                 atkImg.Mutate(x => x.Rotate(28));
 
                 image.Mutate(x => x.DrawImage(atkImg, new Point(52, 554), 1));
             }
 
             ops.Origin = new Point(238, 592);
-            image.Mutate(x => x.DrawText(ops, $"{hp}", GetOrCreateColor("#318b19")));
+            image.Mutate(x => x.DrawText(ops, $"{hp}", GetOrCreateColor("#ffffff")));
 
             using (var defImg = new Image<Rgba32>(120, 40))
             {
                 ops.Origin = new Point(60, 1);
-                defImg.Mutate(x => x.DrawText(ops, $"{def}", GetOrCreateColor("#00527f")));
+                defImg.Mutate(x => x.DrawText(ops, $"{def}", GetOrCreateColor("#ffffff")));
                 defImg.Mutate(x => x.Rotate(-26));
 
                 image.Mutate(x => x.DrawImage(defImg, new Point(300, 554), 1));
@@ -1656,6 +1656,7 @@ namespace Sanakan.Services
             switch (card.Quality)
             {
                 case Quality.Beta:
+                case Quality.Epsilon:
                     return isSpecialDere
                         ? Dir.GetResource($"PW/CG/{card.Quality}/Stats/{card.Dere}.png")
                         : Dir.GetResource($"PW/CG/{card.Quality}/Stats.png");
