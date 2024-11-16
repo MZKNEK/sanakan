@@ -3210,6 +3210,54 @@ namespace Sanakan.Modules
             }
         }
 
+        [Command("czego brak", RunMode = RunMode.Async)]
+        [Alias("widh")]
+        [Summary("pozwala wyszukać postaci z tytułu których się nie posiada")]
+        [Remarks("1"), RequireWaifuCommandChannel]
+        public async Task SearchCharacterFromTitleAsync([Summary("id serii na shinden")] ulong id, [Summary("ukryj postacie z listy życzeń")] bool hideWishlist = false)
+        {
+            var response = await _shclient.Title.GetCharactersAsync(id);
+            if (!response.IsSuccessStatusCode())
+            {
+                await ReplyAsync("", embed: $"Nie odnaleziono postaci z serii na shindenie!".ToEmbedMessage(EMType.Error).Build());
+                return;
+            }
+
+            var characterIds = response.Body.Select(x => x.CharacterId).Distinct().ToList();
+            if (characterIds.Count < 1)
+            {
+                await ReplyAsync("", embed: $"Nie odnaleziono postaci!".ToEmbedMessage(EMType.Error).Build());
+                return;
+            }
+
+            using (var db = new Database.DatabaseContext(Config))
+            {
+                var user = await db.GetCachedFullUserAsync(Context.User.Id);
+                if (user is null)
+                {
+                    await ReplyAsync("", embed: $"Nie udało sie pobrać danych użytkownika.".ToEmbedMessage(EMType.Error).Build());
+                    return;
+                }
+
+                if (hideWishlist && !user.GameDeck.Wishes.IsNullOrEmpty())
+                {
+                    var charsFromWl = user.GameDeck.Wishes.Where(x => x.Type == WishlistObjectType.Character).Select(x => x.ObjectId).Distinct().ToList();
+                    characterIds.RemoveAll(x => charsFromWl.Any(c => c == x));
+                }
+
+                if (!user.GameDeck.Cards.IsNullOrEmpty())
+                {
+                    var userOwnedCharacters = user.GameDeck.Cards.Select(x => x.Character).Distinct().ToList();
+                    characterIds.RemoveAll(x => userOwnedCharacters.Any(c => c == x));
+                }
+
+                var characters = response.Body.Where(x => characterIds.Any(c => c == x.CharacterId)).Select(x => $"{x.CharacterFirstName} {x.CharacterLastName}: {x.CharacterId}");
+                var embeds = _helepr.BuildEmbedsFormTextRows(characters);
+                var res = await _helepr.SendEmbedsOnDMAsync(Context.User, embeds);
+                await ReplyAsync("", embed: res.ToEmbedMessage($"{Context.User.Mention} ").Build());
+            }
+        }
+
         [Command("jakie", RunMode = RunMode.Async)]
         [Alias("which")]
         [Summary("pozwala wyszukać użytkowników posiadających karty z danego tytułu")]

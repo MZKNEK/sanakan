@@ -1214,15 +1214,8 @@ namespace Sanakan.Services.PocketWaifu
             return $"[{user?.GetUserNickInGuild() ?? "????"}](https://shinden.pl/user/{card.GameDeck.User.Shinden}): {card.GetIdWithUrl()} **{card.GetCardRealRarity()}** {card.GetStatusIcons(_tags)}\n";
         }
 
-        private void AppendMessage(List<Embed> embeds, StringBuilder currentContent, string nextPart)
-        {
-            if (currentContent.Length + nextPart.Length > 3000)
-            {
-                embeds.Add(new EmbedBuilder() { Color = EMType.Info.Color(), Description = currentContent.ToString() }.Build());
-                currentContent.Clear();
-            }
-            currentContent.Append(nextPart);
-        }
+        private void AppendMessage(List<Embed> embeds, StringBuilder currentContent, string nextPart) =>
+            _helper.AppendMessage(embeds, currentContent, nextPart);
 
         public Embed GetBoosterPackList(SocketUser user, List<BoosterPack> packs)
         {

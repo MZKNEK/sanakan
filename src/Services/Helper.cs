@@ -443,6 +443,34 @@ namespace Sanakan.Services
             }.Build();
         }
 
+        public void AppendMessage(List<Embed> embeds, StringBuilder currentContent, string nextPart)
+        {
+            if (currentContent.Length + nextPart.Length > 3000)
+            {
+                embeds.Add(new EmbedBuilder() { Color = EMType.Info.Color(), Description = currentContent.ToString() }.Build());
+                currentContent.Clear();
+            }
+            currentContent.Append(nextPart);
+        }
+
+        public List<Embed> BuildEmbedsFormTextRows(IEnumerable<string> rows)
+        {
+            var list = new List<Embed>();
+            var contentString = new StringBuilder();
+            foreach (var row in rows)
+            {
+                AppendMessage(list, contentString, $"{row}\n");
+            }
+
+            list.Add(new EmbedBuilder()
+            {
+                Color = EMType.Info.Color(),
+                Description = contentString.ToString()
+            }.Build());
+
+            return list;
+        }
+
         public async Task<ExecutionResult> SendEmbedsOnDMAsync(IUser user, IEnumerable<Embed> embeds, bool tldr = false)
             => await SendEmbedsOnDMAsync(user, embeds, TimeSpan.FromSeconds(2), tldr);
 
