@@ -3251,7 +3251,7 @@ namespace Sanakan.Modules
                     characterIds.RemoveAll(x => userOwnedCharacters.Any(c => c == x));
                 }
 
-                var characters = response.Body.Where(x => characterIds.Any(c => c == x.CharacterId)).Select(x => $"{x.CharacterFirstName} {x.CharacterLastName}: {x.CharacterId}");
+                var characters = response.Body.Where(x => characterIds.Any(c => c == x.CharacterId)).Select(x => $"{x.CharacterFirstName} {x.CharacterLastName}: {x.CharacterId}").Distinct().ToList();
                 var embeds = _helepr.BuildEmbedsFormTextRows(characters);
                 var res = await _helepr.SendEmbedsOnDMAsync(Context.User, embeds);
                 await ReplyAsync("", embed: res.ToEmbedMessage($"{Context.User.Mention} ").Build());
