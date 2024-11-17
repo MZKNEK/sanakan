@@ -3100,6 +3100,12 @@ namespace Sanakan.Modules
                     return;
                 }
 
+                if (thisCard.Expedition != CardExpedition.None)
+                {
+                    await ReplyAsync("", embed: $"{Context.User.Mention} ta karta znajduje się na wyprawie.".ToEmbedMessage(EMType.Error).Build());
+                    return;
+                }
+
                 var tac = active.FirstOrDefault(x => x.Id == thisCard.Id);
                 if (tac == null)
                 {
