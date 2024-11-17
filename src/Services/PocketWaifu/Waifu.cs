@@ -602,11 +602,38 @@ namespace Sanakan.Services.PocketWaifu
                 return GetItemShopInfo(thisItem);
             }
 
+            bool multipleParams = false;
             int itemCount = 0;
-            if (!int.TryParse(specialCmd, out itemCount))
+            int titleId = 0;
+
+            if (specialCmd.Contains(":"))
             {
-                return $"{discordUser.Mention} liczbę poproszę, a nie jakieś bohomazy.".ToEmbedMessage(EMType.Error).Build();
+                multipleParams = true;
+                var moreNumbers = specialCmd.Split(":");
+                if (moreNumbers.Length > 1)
+                {
+                    if (!int.TryParse(moreNumbers[1], out itemCount))
+                    {
+                        return $"{discordUser.Mention} liczbę poproszę, a nie jakieś bohomazy.".ToEmbedMessage(EMType.Error).Build();
+                    }
+
+                    if (!int.TryParse(moreNumbers[0], out titleId))
+                    {
+                        return $"{discordUser.Mention} liczbę poproszę, a nie jakieś bohomazy.".ToEmbedMessage(EMType.Error).Build();
+                    }
+                }
             }
+            else
+            {
+                if (!int.TryParse(specialCmd, out itemCount))
+                {
+                    return $"{discordUser.Mention} liczbę poproszę, a nie jakieś bohomazy.".ToEmbedMessage(EMType.Error).Build();
+                }
+                titleId = itemCount;
+            }
+
+            if (itemCount < 1)
+                itemCount = 1;
 
             bool isWrongType = false;
             ulong boosterPackTitleId = 0;
@@ -615,8 +642,15 @@ namespace Sanakan.Services.PocketWaifu
             switch (thisItem.Item.Type)
             {
                 case ItemType.RandomTitleBoosterPackSingleE:
-                    if (itemCount < 0) itemCount = 0;
-                    var titleInfo = await _shinden.GetInfoFromTitleAsync((ulong)itemCount);
+                    if (titleId < 1)
+                    {
+                        return $"{discordUser.Mention} niepoprawne id serii.".ToEmbedMessage(EMType.Error).Build();
+                    }
+
+                    if (!multipleParams)
+                        itemCount = 1;
+
+                    var titleInfo = await _shinden.GetInfoFromTitleAsync((ulong)titleId);
                     if (titleInfo == null)
                     {
                         return $"{discordUser.Mention} nie odnaleziono tytułu o podanym id.".ToEmbedMessage(EMType.Error).Build();
@@ -649,7 +683,6 @@ namespace Sanakan.Services.PocketWaifu
                     }
                     boosterPackTitleName = $" ({titleInfo.Title})";
                     boosterPackTitleId = titleInfo.Id;
-                    itemCount = 1;
                     break;
 
                 case ItemType.PreAssembledAsuna:
@@ -659,11 +692,9 @@ namespace Sanakan.Services.PocketWaifu
                     {
                         return $"{discordUser.Mention} można kupić tylko jeden taki przedmiot.".ToEmbedMessage(EMType.Error).Build();
                     }
-                    if (itemCount < 1) itemCount = 1;
                     break;
 
                 default:
-                    if (itemCount < 1) itemCount = 1;
                     break;
             }
 
