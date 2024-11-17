@@ -408,17 +408,18 @@ namespace Sanakan.Services.PocketWaifu
         {
             return new ItemWithCost[]
             {
-                new ItemWithCost(169,   ItemType.AffectionRecoveryNormal.ToItem()),
-                new ItemWithCost(1699,  ItemType.IncreaseExpBig.ToItem()),
+                new ItemWithCost(69,    ItemType.AffectionRecoveryNormal.ToItem()),
+                new ItemWithCost(699,   ItemType.IncreaseExpBig.ToItem()),
                 new ItemWithCost(1699,  ItemType.CheckAffection.ToItem()),
                 new ItemWithCost(9999,  ItemType.IncreaseUpgradeCnt.ToItem()),
-                new ItemWithCost(16999, ItemType.BetterIncreaseUpgradeCnt.ToItem()),
-                new ItemWithCost(4699,  ItemType.ChangeCardImage.ToItem()),
-                new ItemWithCost(65999, ItemType.SetCustomImage.ToItem()),
-                new ItemWithCost(19999, ItemType.IncreaseUltimateAll.ToItem()),
+                new ItemWithCost(11999, ItemType.BetterIncreaseUpgradeCnt.ToItem()),
+                new ItemWithCost(1699,  ItemType.ChangeCardImage.ToItem()),
+                new ItemWithCost(32999, ItemType.SetCustomImage.ToItem()),
+                new ItemWithCost(11999, ItemType.IncreaseUltimateAll.ToItem()),
                 new ItemWithCost(1469,  ItemType.CreationItemBase.ToItem()),
                 new ItemWithCost(16999, ItemType.BloodOfYourWaifu.ToItem()),
-                new ItemWithCost(2599,  ItemType.ChangeStarType.ToItem()),
+                new ItemWithCost(1599,  ItemType.ChangeStarType.ToItem()),
+                new ItemWithCost(11999, ItemType.RandomBoosterPackSingleE.ToItem()),
             };
         }
 

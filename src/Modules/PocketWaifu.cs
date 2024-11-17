@@ -3113,6 +3113,7 @@ namespace Sanakan.Modules
                 }
 
                 bUser.GameDeck.DeckPower = active.Sum(x => x.CalculateCardPower());
+                bUser.GameDeck.CardsInDeck = active.Count;
 
                 await db.SaveChangesAsync();
 
@@ -3249,6 +3250,12 @@ namespace Sanakan.Modules
                 {
                     var userOwnedCharacters = user.GameDeck.Cards.Select(x => x.Character).Distinct().ToList();
                     characterIds.RemoveAll(x => userOwnedCharacters.Any(c => c == x));
+                }
+
+                if (characterIds.IsNullOrEmpty())
+                {
+                    await ReplyAsync("", embed: $"Wygląda na to że masz już wszystko.".ToEmbedMessage(EMType.Error).Build());
+                    return;
                 }
 
                 var characters = response.Body.Where(x => characterIds.Any(c => c == x.CharacterId)).Select(x => $"{x.CharacterFirstName} {x.CharacterLastName}: {x.CharacterId}").Distinct().ToList();
@@ -3655,7 +3662,14 @@ namespace Sanakan.Modules
                 var canFight = duser.GameDeck.CanFightPvP();
                 if (canFight != DeckPowerStatus.Ok)
                 {
-                    var err = (canFight == DeckPowerStatus.TooLow) ? "słabą" : "silną";
+                    var err = canFight switch
+                    {
+                        DeckPowerStatus.TooLow => "słabą",
+                        DeckPowerStatus.TooHigh => "silną",
+                        DeckPowerStatus.TooManyCards => "dużą",
+                        _ => "małą"
+                    };
+
                     await ReplyAsync("", embed: $"{Context.User.Mention} masz zbyt {err} talie ({duser.GameDeck.GetDeckPower():F}).".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }

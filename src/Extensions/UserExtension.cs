@@ -13,12 +13,13 @@ namespace Sanakan.Extensions
 {
     public enum DeckPowerStatus
     {
-        Ok, TooLow, TooHigh
+        Ok, TooLow, TooHigh, TooManyCards, NotEnoughtCards
     }
 
     public static class UserExtension
     {
-        public const double MAX_DECK_POWER = 800;
+        public const int MAX_CARDS_IN_DECK = 8;
+        public const double MAX_DECK_POWER = 2500;
         public const double MIN_DECK_POWER = 200;
 
         public static bool SendAnyMsgInMonth(this User u)
@@ -258,6 +259,9 @@ namespace Sanakan.Extensions
 
         public static DeckPowerStatus CanFightPvP(this GameDeck deck)
         {
+            if (deck.CardsInDeck > MAX_CARDS_IN_DECK) return DeckPowerStatus.TooManyCards;
+            if (deck.CardsInDeck < 1) return DeckPowerStatus.NotEnoughtCards;
+
             deck.DeckPower = deck.CalculateDeckPower();
             if (deck.DeckPower > deck.GetMaxDeckPower()) return DeckPowerStatus.TooHigh;
             if (deck.DeckPower < deck.GetMinDeckPower()) return DeckPowerStatus.TooLow;

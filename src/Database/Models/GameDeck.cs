@@ -22,6 +22,7 @@ namespace Sanakan.Database.Models
 
         public long PVPCoins { get; set; }
         public double DeckPower { get; set; }
+        public long CardsInDeck { get; set; }
         public long PVPWinStreak { get; set; }
         public long GlobalPVPRank { get; set; }
         public long SeasonalPVPRank { get; set; }
