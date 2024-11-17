@@ -104,7 +104,7 @@ namespace Sanakan.Extensions
 
         public static async Task<List<GameDeck>> GetCachedPlayersForPVP(this Database.DatabaseContext context, ulong ignore = 1)
         {
-            return (await context.GameDecks.AsQueryable().Where(x => x.DeckPower > UserExtension.MIN_DECK_POWER && x.DeckPower < UserExtension.MAX_DECK_POWER && x.UserId != ignore && x.CardsInDeck <= UserExtension.MAX_CARDS_IN_DECK).AsNoTracking().AsSplitQuery().FromCacheAsync(new MemoryCacheEntryOptions{ AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(2) })).ToList();
+            return (await context.GameDecks.AsQueryable().Where(x => x.DeckPower > UserExtension.MIN_DECK_POWER && x.DeckPower < UserExtension.MAX_DECK_POWER && x.UserId != ignore && x.CardsInDeck <= UserExtension.MAX_CARDS_IN_DECK && x.CardsInDeck > 0).AsNoTracking().AsSplitQuery().FromCacheAsync(new MemoryCacheEntryOptions{ AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(2) })).ToList();
         }
 
         public static async Task<User> GetUserOrCreateSimpleAsync(this Database.DatabaseContext context, ulong userId)

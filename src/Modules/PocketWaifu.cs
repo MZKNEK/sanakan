@@ -3724,10 +3724,13 @@ namespace Sanakan.Modules
                 var randEnemy = Services.Fun.GetOneRandomFrom(pvpPlayersInRange).UserId;
                 var denemy = await db.GetUserOrCreateAsync(randEnemy);
                 var euser = Context.Client.GetUser(denemy.Id);
-                while (euser == null)
+
+                var activeCards = denemy.GameDeck.Cards.Count(x => x.Active);
+                while (euser == null || activeCards < 1)
                 {
                     randEnemy = Services.Fun.GetOneRandomFrom(pvpPlayersInRange).UserId;
                     denemy = await db.GetUserOrCreateAsync(randEnemy);
+                    activeCards = denemy.GameDeck.Cards.Count(x => x.Active);
                     euser = Context.Client.GetUser(denemy.Id);
                 }
 
