@@ -31,6 +31,12 @@ namespace Sanakan.Extensions
             }
         }
 
+        public static string GetStatus(this Figure f)
+        {
+            if (f.IsComplete) return "🎖️";
+            return "➖";
+        }
+
         public static double ToValue(this Quality q) => 0.73 + ((int) q * 1.47);
 
         public static string ToName(this FigurePart p)
@@ -297,7 +303,7 @@ namespace Sanakan.Extensions
         {
             if (deck.Figures.Count < 1) return "Nie posiadasz figurek.";
 
-            return string.Join("\n", deck.Figures.Select(x => $"**[{x.Id}]** *{x.SkeletonQuality.ToName("??")}* [{x.Name}]({Shinden.API.Url.GetCharacterURL(x.Character)}) {x.IsActive()}"));
+            return string.Join("\n", deck.Figures.Select(x => $"{x.GetStatus()} **[{x.Id}]** *{x.SkeletonQuality.ToName("??")}* [{x.Name}]({Shinden.API.Url.GetCharacterURL(x.Character)}) {x.IsActive()}"));
         }
 
         public static string GetDesc(this Figure fig)
@@ -306,7 +312,7 @@ namespace Sanakan.Extensions
             var name =  $"[{fig.Name}]({Shinden.API.Url.GetCharacterURL(fig.Character)})";
             var desc = fig.IsComplete
                 ? $"**Ukończona**: {fig.CompletionDate.ToShortDateTime()}\n"
-                + $"**WID**: {fig.CreatedCardId}"
+                + $"**WID**: [{fig.CreatedCardId}](https://waifu.sanakan.pl/#/card/{fig.CreatedCardId})"
                 : $"*{fig.ExpCnt:F} / {CardExtension.ExpToUpgrade(Rarity.SSS, true, fig.SkeletonQuality)} exp*\n\n"
                 + $"{(fig.AllPartsInstalled() ? "" : selectedPart)}"
                 + $"**Części:**\n"

@@ -7,7 +7,7 @@
     <Copyright>Sniku</Copyright>
     <Product>Sanakan</Product>
     <Authors>Sniku</Authors>
-    <Version>1.4.5.67</Version>
+    <Version>1.4.5.68</Version>
     <RootNamespace>Sanakan</RootNamespace>
     <StartupObject>Sanakan.Sanakan</StartupObject>
   </PropertyGroup>

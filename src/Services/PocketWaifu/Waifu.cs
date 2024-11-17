@@ -417,7 +417,7 @@ namespace Sanakan.Services.PocketWaifu
                 new ItemWithCost(32999, ItemType.SetCustomImage.ToItem()),
                 new ItemWithCost(11999, ItemType.IncreaseUltimateAll.ToItem()),
                 new ItemWithCost(1469,  ItemType.CreationItemBase.ToItem()),
-                new ItemWithCost(16999, ItemType.BloodOfYourWaifu.ToItem()),
+                new ItemWithCost(11999, ItemType.BloodOfYourWaifu.ToItem()),
                 new ItemWithCost(1599,  ItemType.ChangeStarType.ToItem()),
                 new ItemWithCost(11999, ItemType.RandomBoosterPackSingleE.ToItem()),
             };
