@@ -778,7 +778,7 @@ namespace Sanakan.Services.PocketWaifu
             if (!enemy.HasImage()) def2 -= def2 * 20 / 100;
 
             var realAtk1 = atk1 - def2;
-            if (!target.FromFigure || !enemy.FromFigure)
+            if (!target.FromFigure && !enemy.FromFigure)
             {
                 if (def2 > 99) def2 = 99;
                 realAtk1 = atk1 * (100 - def2) / 100;

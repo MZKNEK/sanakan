@@ -3605,6 +3605,7 @@ namespace Sanakan.Modules
                             Expedition.BlockadeReason.Rarity        => "Karta ma zbyt niską jakość.",
                             Expedition.BlockadeReason.Ultimate      => "Karta nie może być kartą ultimate.",
                             Expedition.BlockadeReason.Karma         => "Nie spełniasz wymogów karmy na wyprawę.",
+                            Expedition.BlockadeReason.Active        => "Karta znajduje się w taili.",
                             _ => "????"
                         };
 

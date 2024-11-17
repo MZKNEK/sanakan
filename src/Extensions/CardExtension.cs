@@ -908,6 +908,7 @@ namespace Sanakan.Extensions
         }
 
         public static bool IsProtectedFromDiscarding(this Card card, TagHelper helper) => card is null
+            || card.Active
             || card.InCage
             || helper.HasTag(card, Services.PocketWaifu.TagType.Favorite)
             || card.FromFigure
@@ -916,6 +917,7 @@ namespace Sanakan.Extensions
             || card.Expedition != CardExpedition.None;
 
         public static bool IsDisallowedToExchange(this Card card) => card is null
+            || card.Active
             || card.InCage
             || !card.IsTradable
             || card.Dere == Dere.Yato

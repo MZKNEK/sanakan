@@ -18,7 +18,7 @@ namespace Sanakan.Services.PocketWaifu
 
         public enum BlockadeReason
         {
-            None, Fatigue, Expedition, Curse, Cage, Affection, Tag, Karma, Rarity, Other, Ultimate
+            None, Fatigue, Expedition, Curse, Cage, Affection, Tag, Karma, Rarity, Other, Ultimate, Active
         }
 
         private static readonly List<CardCurse> _curseChances = new List<(CardCurse, int)>
@@ -712,6 +712,9 @@ namespace Sanakan.Services.PocketWaifu
 
         public BlockadeReason IsValidToGo(User user, Card card, CardExpedition expedition, TagHelper helper)
         {
+            if (card.Active)
+                return BlockadeReason.Active;
+
             if (card.IsBlockadeFromFatigue())
                 return BlockadeReason.Fatigue;
 
