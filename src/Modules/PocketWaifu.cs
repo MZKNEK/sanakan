@@ -74,7 +74,7 @@ namespace Sanakan.Modules
 
             if (type == HaremType.Tag && tag == null)
             {
-                await ReplyAsync("", embed: $"{Context.User.Mention} musisz sprecyzować nazwę oznaczenia!".ToEmbedMessage(EMType.Error).Build());
+                await SafeReplyAsync("", embed: $"{Context.User.Mention} musisz sprecyzować nazwę oznaczenia!".ToEmbedMessage(EMType.Error).Build());
                 return;
             }
 
@@ -83,7 +83,7 @@ namespace Sanakan.Modules
                 var user = await db.GetCachedFullUserAsync(Context.User.Id);
                 if (user?.GameDeck?.Cards?.Count() < 1)
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} nie masz żadnych kart.".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} nie masz żadnych kart.".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
@@ -94,7 +94,7 @@ namespace Sanakan.Modules
                     var res = await _helepr.SendAsFileOnDMAsync(Context.User, session.ListItems
                         .Select(x => $"{x.Id} {x.Name} ({x.Character}) {x.GetPocketUrl()}"));
 
-                    await ReplyAsync("", embed: res.ToEmbedMessage($"{Context.User.Mention} ").Build());
+                    await SafeReplyAsync("", embed: res.ToEmbedMessage($"{Context.User.Mention} ").Build());
                     return;
                 }
 
@@ -113,11 +113,11 @@ namespace Sanakan.Modules
                     session.Message = msg;
                     await _session.TryAddSession(session);
 
-                    await ReplyAsync("", embed: $"{Context.User.Mention} lista poszła na PW!".ToEmbedMessage(EMType.Success).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} lista poszła na PW!".ToEmbedMessage(EMType.Success).Build());
                 }
                 catch (Exception)
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} nie można wysłać do Ciebie PW!".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} nie można wysłać do Ciebie PW!".ToEmbedMessage(EMType.Error).Build());
                 }
             }
         }
@@ -135,7 +135,7 @@ namespace Sanakan.Modules
 
                 if (itemList.IsNullOrEmpty())
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} nie masz żadnych przemiotów.".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} nie masz żadnych przemiotów.".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
@@ -149,23 +149,23 @@ namespace Sanakan.Modules
                     var pages = _waifu.GetItemList(Context.User, itemList, filter);
                     if (pages.Count < 1)
                     {
-                        await ReplyAsync("", embed: $"{Context.User.Mention} nie odnaleniono przedmiotów zawierających **{filter}** w nazwie.".ToEmbedMessage(EMType.Error).Build());
+                        await SafeReplyAsync("", embed: $"{Context.User.Mention} nie odnaleniono przedmiotów zawierających **{filter}** w nazwie.".ToEmbedMessage(EMType.Error).Build());
                         return;
                     }
 
                     if (pages.Count == 1)
                     {
-                        await ReplyAsync("", embed: pages.FirstOrDefault());
+                        await SafeReplyAsync("", embed: pages.FirstOrDefault());
                         return;
                     }
 
                     var res = await _helepr.SendEmbedsOnDMAsync(Context.User, pages);
-                    await ReplyAsync("", embed: res.ToEmbedMessage($"{Context.User.Mention} ").Build());
+                    await SafeReplyAsync("", embed: res.ToEmbedMessage($"{Context.User.Mention} ").Build());
                 }
 
                 if (bUser.GameDeck.Items.Count < numberOfItem)
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} nie masz aż tylu przedmiotów.".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} nie masz aż tylu przedmiotów.".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
@@ -177,7 +177,7 @@ namespace Sanakan.Modules
                     Description = $"**{item.Name}**\n_{item.Type.Desc()}_\n\nLiczba: **{item.Count}**".TrimToLength()
                 };
 
-                await ReplyAsync("", embed: embed.Build());
+                await SafeReplyAsync("", embed: embed.Build());
             }
         }
 
@@ -192,7 +192,7 @@ namespace Sanakan.Modules
                 var card = db.Cards.Include(x => x.GameDeck).AsNoTracking().FirstOrDefault(x => x.Id == wid);
                 if (card == null)
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} taka karta nie istnieje.".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} taka karta nie istnieje.".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
@@ -201,7 +201,7 @@ namespace Sanakan.Modules
 
                 var gConfig = await db.GetCachedGuildFullConfigAsync(Context.Guild.Id);
                 var trashChannel = Context.Guild.GetTextChannel(gConfig.WaifuConfig.TrashCommandsChannel);
-                await ReplyAsync("", embed: await _waifu.BuildCardImageAsync(card, trashChannel, user, showStats));
+                await SafeReplyAsync("", embed: await _waifu.BuildCardImageAsync(card, trashChannel, user, showStats));
             }
         }
 
@@ -220,19 +220,19 @@ namespace Sanakan.Modules
                     var fig = deck.Figures.FirstOrDefault(x => x.Id == id);
                     if (fig == null)
                     {
-                        await ReplyAsync("", embed: $"{Context.User.Mention} taka figurka nie istnieje.".ToEmbedMessage(EMType.Error).Build());
+                        await SafeReplyAsync("", embed: $"{Context.User.Mention} taka figurka nie istnieje.".ToEmbedMessage(EMType.Error).Build());
                         return;
                     }
                     if (fig.IsComplete)
                     {
-                        await ReplyAsync("", embed: $"{Context.User.Mention} nie można aktywować skończonej figurki.".ToEmbedMessage(EMType.Error).Build());
+                        await SafeReplyAsync("", embed: $"{Context.User.Mention} nie można aktywować skończonej figurki.".ToEmbedMessage(EMType.Error).Build());
                         return;
                     }
                     if (oldFig != null)
                     {
                         if (fig.Id == oldFig.Id)
                         {
-                            await ReplyAsync("", embed: $"{Context.User.Mention} ta figurką już jest wybrana.".ToEmbedMessage(EMType.Error).Build());
+                            await SafeReplyAsync("", embed: $"{Context.User.Mention} ta figurką już jest wybrana.".ToEmbedMessage(EMType.Error).Build());
                             return;
                         }
 
@@ -243,11 +243,11 @@ namespace Sanakan.Modules
 
                     await db.SaveChangesAsync();
 
-                    await ReplyAsync("", embed: $"{Context.User.Mention} ustawiono figurkę {fig.Id} jako aktywną.".ToEmbedMessage(EMType.Success).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} ustawiono figurkę {fig.Id} jako aktywną.".ToEmbedMessage(EMType.Success).Build());
                 }
                 else
                 {
-                    await ReplyAsync("", embed: deck.GetFiguresList().TrimToLength().ToEmbedMessage(EMType.Info).WithAuthor(new EmbedAuthorBuilder().WithUser(Context.User)).Build());
+                    await SafeReplyAsync("", embed: deck.GetFiguresList().TrimToLength().ToEmbedMessage(EMType.Info).WithAuthor(new EmbedAuthorBuilder().WithUser(Context.User)).Build());
                 }
             }
         }
@@ -264,17 +264,17 @@ namespace Sanakan.Modules
                 var fig = deck.Figures.FirstOrDefault(x => x.IsFocus);
                 if (fig == null)
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} żadna figurka nie jest aktywna.".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} żadna figurka nie jest aktywna.".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
                 if (part == FigurePart.None || part == FigurePart.All || fig.FocusedPart == part)
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} podano niepoprawną część figurki.".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} podano niepoprawną część figurki.".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
                 if (fig.GetQualityOfPart(part) != Quality.Broken)
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} dana część została już zainstalowana do figurki i nie można zbierać na nią doświadczenia.".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} dana część została już zainstalowana do figurki i nie można zbierać na nią doświadczenia.".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
@@ -283,7 +283,7 @@ namespace Sanakan.Modules
 
                 await db.SaveChangesAsync();
 
-                await ReplyAsync("", embed: $"Wybrana część to: {part.ToName()}".ToEmbedMessage(EMType.Info).WithAuthor(new EmbedAuthorBuilder().WithUser(Context.User)).Build());
+                await SafeReplyAsync("", embed: $"Wybrana część to: {part.ToName()}".ToEmbedMessage(EMType.Info).WithAuthor(new EmbedAuthorBuilder().WithUser(Context.User)).Build());
             }
         }
 
@@ -299,12 +299,12 @@ namespace Sanakan.Modules
                 var fig = deck.Figures.FirstOrDefault(x => x.IsFocus);
                 if (fig == null)
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} żadna figurka nie jest aktywna.".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} żadna figurka nie jest aktywna.".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
                 if (!fig.CanCreateUltimateCard())
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} nie można utowrzyć karty ultimate, brakuje części lub doświadczenia.".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} nie można utowrzyć karty ultimate, brakuje części lub doświadczenia.".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
@@ -328,7 +328,7 @@ namespace Sanakan.Modules
 
                 await db.SaveChangesAsync();
 
-                await ReplyAsync("", embed: $"Utworzono nową kartę ultimate: {card.GetString(false, false, true)}".ToEmbedMessage(EMType.Success).WithAuthor(new EmbedAuthorBuilder().WithUser(Context.User)).Build());
+                await SafeReplyAsync("", embed: $"Utworzono nową kartę ultimate: {card.GetString(false, false, true)}".ToEmbedMessage(EMType.Success).WithAuthor(new EmbedAuthorBuilder().WithUser(Context.User)).Build());
             }
         }
 
@@ -343,11 +343,11 @@ namespace Sanakan.Modules
                 var fig = db.Figures.AsQueryable().AsNoTracking().FirstOrDefault(x => x.Id == id || (id == 0 && x.IsFocus && x.GameDeckId == Context.User.Id));
                 if (fig == null)
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} taka figurka nie istnieje.".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} taka figurka nie istnieje.".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
-                await ReplyAsync("", embed: fig.GetDesc().TrimToLength().ToEmbedMessage(EMType.Info)
+                await SafeReplyAsync("", embed: fig.GetDesc().TrimToLength().ToEmbedMessage(EMType.Info)
                     .WithUser(Context.Guild.GetUser(fig.GameDeckId)).Build());
             }
         }
@@ -363,14 +363,14 @@ namespace Sanakan.Modules
                 var card = db.Cards.Include(x => x.GameDeck).Include(x => x.Tags).AsNoTracking().FirstOrDefault(x => x.Id == wid);
                 if (card == null)
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} taka karta nie istnieje.".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} taka karta nie istnieje.".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
                 SocketUser user = Context.Guild.GetUser(card.GameDeck.UserId);
                 if (user == null) user = Context.Client.GetUser(card.GameDeck.UserId);
 
-                await ReplyAsync("", embed: card.GetDescSmall(_tags, _time).TrimToLength().ToEmbedMessage(EMType.Info).WithAuthor(new EmbedAuthorBuilder().WithUser(user)).Build());
+                await SafeReplyAsync("", embed: card.GetDescSmall(_tags, _time).TrimToLength().ToEmbedMessage(EMType.Info).WithAuthor(new EmbedAuthorBuilder().WithUser(user)).Build());
             }
         }
 
@@ -385,7 +385,7 @@ namespace Sanakan.Modules
                 var card = db.Cards.Include(x => x.GameDeck).Include(x => x.Tags).AsNoTracking().FirstOrDefault(x => x.Id == wid);
                 if (card == null)
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} taka karta nie istnieje.".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} taka karta nie istnieje.".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
@@ -394,7 +394,7 @@ namespace Sanakan.Modules
 
                 var gConfig = await db.GetCachedGuildFullConfigAsync(Context.Guild.Id);
                 var trashChannel = Context.Guild.GetTextChannel(gConfig.WaifuConfig.TrashCommandsChannel);
-                await ReplyAsync("", embed: await _waifu.BuildCardViewAsync(card, trashChannel, user));
+                await SafeReplyAsync("", embed: await _waifu.BuildCardViewAsync(card, trashChannel, user));
             }
         }
 
@@ -404,7 +404,7 @@ namespace Sanakan.Modules
         [Remarks("1 info/4"), RequireWaifuCommandChannel]
         public async Task BuyItemPvPAsync([Summary("nr przedmiotu")] int itemNumber = 0, [Summary("informacje/liczba przedmiotów do zakupu")] string info = "0")
         {
-            await ReplyAsync("", embed: await _waifu.ExecuteShopAsync(ShopType.Pvp, Config, Context.User, itemNumber, info));
+            await SafeReplyAsync("", embed: await _waifu.ExecuteShopAsync(ShopType.Pvp, Config, Context.User, itemNumber, info));
         }
 
         [Command("kiosk")]
@@ -413,7 +413,7 @@ namespace Sanakan.Modules
         [Remarks("1 info/4"), RequireWaifuCommandChannel]
         public async Task BuyItemActivityAsync([Summary("nr przedmiotu")] int itemNumber = 0, [Summary("informacje/liczba przedmiotów do zakupu")] string info = "0")
         {
-            await ReplyAsync("", embed: await _waifu.ExecuteShopAsync(ShopType.Activity, Config, Context.User, itemNumber, info));
+            await SafeReplyAsync("", embed: await _waifu.ExecuteShopAsync(ShopType.Activity, Config, Context.User, itemNumber, info));
         }
 
         [Command("sklepik")]
@@ -422,7 +422,7 @@ namespace Sanakan.Modules
         [Remarks("1 info/4"), RequireWaifuCommandChannel, RequireLevel(10)]
         public async Task BuyItemAsync([Summary("nr przedmiotu")] int itemNumber = 0, [Summary("informacje/id tytułu/liczba przedmiotów do zakupu")] string info = "0")
         {
-            await ReplyAsync("", embed: await _waifu.ExecuteShopAsync(ShopType.Normal, Config, Context.User, itemNumber, info));
+            await SafeReplyAsync("", embed: await _waifu.ExecuteShopAsync(ShopType.Normal, Config, Context.User, itemNumber, info));
         }
 
         [Command("użyjbk")]
@@ -442,7 +442,7 @@ namespace Sanakan.Modules
             {
                 if (Context.Message.Attachments.IsNullOrEmpty())
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} wybrano upload przez załącznik, lecz nie został on wykryty.".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} wybrano upload przez załącznik, lecz nie został on wykryty.".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
                 detail = Context.Message.Attachments.FirstOrDefault()?.Url ?? "";
@@ -455,7 +455,7 @@ namespace Sanakan.Modules
 
                 if (res.IsError())
                 {
-                    await ReplyAsync("", embed: res.ToEmbedMessage($"{Context.User.Mention} ").Build());
+                    await SafeReplyAsync("", embed: res.ToEmbedMessage($"{Context.User.Mention} ").Build());
                     return;
                 }
                 else if (res.IsActivity())
@@ -463,7 +463,7 @@ namespace Sanakan.Modules
                     await db.UserActivities.AddAsync(res.Activity.AddMisc($"u:{Context.User.GetUserNickInGuild()}").Build());
                 }
 
-                await ReplyAsync("", embed: res.ToEmbedMessage().WithUser(Context.User).Build());
+                await SafeReplyAsync("", embed: res.ToEmbedMessage().WithUser(Context.User).Build());
 
                 await db.SaveChangesAsync();
 
@@ -482,7 +482,7 @@ namespace Sanakan.Modules
                 var bUser = await db.GetUserOrCreateAsync(Context.User.Id);
                 if (bUser.PoolType != CharacterPoolType.Anime)
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} twoja pula postaci została już wcześniej rozszerzona.".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} twoja pula postaci została już wcześniej rozszerzona.".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
@@ -490,7 +490,7 @@ namespace Sanakan.Modules
 
                 await db.SaveChangesAsync();
 
-                await ReplyAsync("", embed: $"{Context.User.Mention} twoja pula postaci została rozszerzona.".ToEmbedMessage(EMType.Success).Build());
+                await SafeReplyAsync("", embed: $"{Context.User.Mention} twoja pula postaci została rozszerzona.".ToEmbedMessage(EMType.Success).Build());
 
                 QueryCacheManager.ExpireTag(new string[] { $"user-{bUser.Id}", "users" });
             }
@@ -514,13 +514,13 @@ namespace Sanakan.Modules
         {
             if (!string.IsNullOrEmpty(tag) && tag.Contains(" "))
             {
-                await ReplyAsync("", embed: $"{Context.User.Mention} oznaczenie nie może zawierać spacji.".ToEmbedMessage(EMType.Error).Build());
+                await SafeReplyAsync("", embed: $"{Context.User.Mention} oznaczenie nie może zawierać spacji.".ToEmbedMessage(EMType.Error).Build());
                 return;
             }
 
             if (!string.IsNullOrEmpty(tagWishlist) && tagWishlist.Contains(" "))
             {
-                await ReplyAsync("", embed: $"{Context.User.Mention} oznaczenie nie może zawierać spacji.".ToEmbedMessage(EMType.Error).Build());
+                await SafeReplyAsync("", embed: $"{Context.User.Mention} oznaczenie nie może zawierać spacji.".ToEmbedMessage(EMType.Error).Build());
                 return;
             }
 
@@ -531,25 +531,25 @@ namespace Sanakan.Modules
 
                 if (bUser.GameDeck.BoosterPacks.Count < 1)
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} nie masz żadnych pakietów.".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} nie masz żadnych pakietów.".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
                 if (numberOfPack == 0)
                 {
-                    await ReplyAsync("", embed: _waifu.GetBoosterPackList(Context.User, bUser.GameDeck.BoosterPacks.ToList()));
+                    await SafeReplyAsync("", embed: _waifu.GetBoosterPackList(Context.User, bUser.GameDeck.BoosterPacks.ToList()));
                     return;
                 }
 
                 if (bUser.GameDeck.BoosterPacks.Count < numberOfPack || numberOfPack <= 0)
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} nie masz aż tylu pakietów.".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} nie masz aż tylu pakietów.".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
                 if (bUser.GameDeck.BoosterPacks.Count < (count + numberOfPack - 1) || count < 1)
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} nie masz tylu pakietów.".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} nie masz tylu pakietów.".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
@@ -558,13 +558,13 @@ namespace Sanakan.Modules
 
                 if (cardsCount > 20)
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} suma kart z otwieranych pakietów nie może być większa niż dwadzieścia.".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} suma kart z otwieranych pakietów nie może być większa niż dwadzieścia.".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
                 if (bUser.GameDeck.Cards.Count + cardsCount > bUser.GameDeck.MaxNumberOfCards)
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} nie masz już miejsca na kolejną kartę!".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} nie masz już miejsca na kolejną kartę!".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
@@ -582,7 +582,7 @@ namespace Sanakan.Modules
                     var cards = await _waifu.OpenBoosterPackAsync(Context.User, pack, bUser.PoolType);
                     if (cards.Count < pack.CardCnt)
                     {
-                        await ReplyAsync("", embed: $"{Context.User.Mention} nie udało się otworzyć pakietu. Brak połączania z Shindenem!".ToEmbedMessage(EMType.Error).Build());
+                        await SafeReplyAsync("", embed: $"{Context.User.Mention} nie udało się otworzyć pakietu. Brak połączania z Shindenem!".ToEmbedMessage(EMType.Error).Build());
                         return;
                     }
 
@@ -673,7 +673,7 @@ namespace Sanakan.Modules
                 }
 
                 await db.Database.CloseConnectionAsync();
-                await ReplyAsync("", embed: $"{Context.User.Mention} z {packString} wypadło:\n\n{openString.TrimToLength()}".ToEmbedMessage(EMType.Success).Build());
+                await SafeReplyAsync("", embed: $"{Context.User.Mention} z {packString} wypadło:\n\n{openString.TrimToLength()}".ToEmbedMessage(EMType.Success).Build());
             }
         }
 
@@ -690,31 +690,31 @@ namespace Sanakan.Modules
 
                 if (card == null)
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} nie posiadasz takiej karty.".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} nie posiadasz takiej karty.".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
                 if (card.Rarity != Rarity.SSS)
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} ta karta nie ma najwyższego poziomu.".ToEmbedMessage(EMType.Bot).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} ta karta nie ma najwyższego poziomu.".ToEmbedMessage(EMType.Bot).Build());
                     return;
                 }
 
                 if (card.FromFigure)
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} tej karty nie można restartować.".ToEmbedMessage(EMType.Bot).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} tej karty nie można restartować.".ToEmbedMessage(EMType.Bot).Build());
                     return;
                 }
 
                 if (card.Expedition != CardExpedition.None)
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} ta karta jest na wyprawie!".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} ta karta jest na wyprawie!".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
                 if (card.IsUnusable())
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} ta karta ma zbyt niską relację, aby dało się ją zrestartować.".ToEmbedMessage(EMType.Bot).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} ta karta ma zbyt niską relację, aby dało się ją zrestartować.".ToEmbedMessage(EMType.Bot).Build());
                     return;
                 }
 
@@ -742,7 +742,7 @@ namespace Sanakan.Modules
 
                 QueryCacheManager.ExpireTag(new string[] { $"user-{bUser.Id}", "users" });
 
-                await ReplyAsync("", embed: $"{Context.User.Mention} zrestartował kartę do: {card.GetString(false, false, true)}.".ToEmbedMessage(EMType.Success).Build());
+                await SafeReplyAsync("", embed: $"{Context.User.Mention} zrestartował kartę do: {card.GetString(false, false, true)}.".ToEmbedMessage(EMType.Success).Build());
             }
         }
 
@@ -759,7 +759,7 @@ namespace Sanakan.Modules
 
                 if (card == null)
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} nie posiadasz takiej karty.".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} nie posiadasz takiej karty.".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
@@ -788,12 +788,12 @@ namespace Sanakan.Modules
 
                     await db.SaveChangesAsync();
 
-                    await ReplyAsync("", embed: $"{Context.User.Mention} zaktualizował kartę: {card.GetString(false, false, true)}.".ToEmbedMessage(EMType.Success).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} zaktualizował kartę: {card.GetString(false, false, true)}.".ToEmbedMessage(EMType.Success).Build());
                 }
                 catch (Exception ex)
                 {
                     await db.SaveChangesAsync();
-                    await ReplyAsync("", embed: $"{Context.User.Mention}: {ex.Message}".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention}: {ex.Message}".ToEmbedMessage(EMType.Error).Build());
                 }
             }
         }
@@ -806,7 +806,7 @@ namespace Sanakan.Modules
         {
             if (_session.SessionExist(Context.User, typeof(ExchangeSession)))
             {
-                await ReplyAsync("", embed: $"{Context.User.Mention} znajdujesz się obecnie w trakcie wymiany.".ToEmbedMessage(EMType.Error).Build());
+                await SafeReplyAsync("", embed: $"{Context.User.Mention} znajdujesz się obecnie w trakcie wymiany.".ToEmbedMessage(EMType.Error).Build());
                 return;
             }
 
@@ -817,43 +817,43 @@ namespace Sanakan.Modules
 
                 if (card == null)
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} nie posiadasz takiej karty.".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} nie posiadasz takiej karty.".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
                 if (card.Rarity == Rarity.SSS && card.Quality == Quality.Broken)
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} ta karta ma już najwyższy poziom.".ToEmbedMessage(EMType.Bot).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} ta karta ma już najwyższy poziom.".ToEmbedMessage(EMType.Bot).Build());
                     return;
                 }
 
                 if (card.Expedition != CardExpedition.None)
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} ta karta jest na wyprawie!".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} ta karta jest na wyprawie!".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
                 if (card.UpgradesCnt < 1 && card.Quality == Quality.Broken)
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} ta karta nie ma już dostępnych ulepszeń.".ToEmbedMessage(EMType.Bot).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} ta karta nie ma już dostępnych ulepszeń.".ToEmbedMessage(EMType.Bot).Build());
                     return;
                 }
 
                 if (card.ExpCnt < card.ExpToUpgrade())
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} ta karta ma niewystarczającą ilość punktów doświadczenia. Wymagane {card.ExpToUpgrade():F}.".ToEmbedMessage(EMType.Bot).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} ta karta ma niewystarczającą ilość punktów doświadczenia. Wymagane {card.ExpToUpgrade():F}.".ToEmbedMessage(EMType.Bot).Build());
                     return;
                 }
 
                 if (card.UpgradesCnt < 5 && card.Rarity == Rarity.SS)
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} ta karta ma zbyt małą ilość ulepszeń.".ToEmbedMessage(EMType.Bot).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} ta karta ma zbyt małą ilość ulepszeń.".ToEmbedMessage(EMType.Bot).Build());
                     return;
                 }
 
                 if (!card.CanGiveBloodOrUpgradeToSSS() && card.Rarity == Rarity.SS)
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} ta karta ma zbyt małą relację, aby ją ulepszyć.".ToEmbedMessage(EMType.Bot).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} ta karta ma zbyt małą relację, aby ją ulepszyć.".ToEmbedMessage(EMType.Bot).Build());
                     return;
                 }
 
@@ -861,7 +861,7 @@ namespace Sanakan.Modules
                 {
                     if (card.Quality == Quality.Omega)
                     {
-                        await ReplyAsync("", embed: $"{Context.User.Mention} tej karty nie można już ulepszyć.".ToEmbedMessage(EMType.Error).Build());
+                        await SafeReplyAsync("", embed: $"{Context.User.Mention} tej karty nie można już ulepszyć.".ToEmbedMessage(EMType.Error).Build());
                         return;
                     }
 
@@ -870,25 +870,25 @@ namespace Sanakan.Modules
                         var fig = bUser.GameDeck.Figures.FirstOrDefault(x => x.IsFocus);
                         if (fig == null)
                         {
-                            await ReplyAsync("", embed: $"{Context.User.Mention} nie posiadasz aktywnej figurki.".ToEmbedMessage(EMType.Error).Build());
+                            await SafeReplyAsync("", embed: $"{Context.User.Mention} nie posiadasz aktywnej figurki.".ToEmbedMessage(EMType.Error).Build());
                             return;
                         }
 
                         if (fig.IsComplete)
                         {
-                            await ReplyAsync("", embed: $"{Context.User.Mention} z tej figurki powstała już karta.".ToEmbedMessage(EMType.Error).Build());
+                            await SafeReplyAsync("", embed: $"{Context.User.Mention} z tej figurki powstała już karta.".ToEmbedMessage(EMType.Error).Build());
                             return;
                         }
 
                         if (!fig.CanCreateUltimateCard())
                         {
-                            await ReplyAsync("", embed: $"{Context.User.Mention} twoja figurka nie posiada wszystkich elementów.".ToEmbedMessage(EMType.Error).Build());
+                            await SafeReplyAsync("", embed: $"{Context.User.Mention} twoja figurka nie posiada wszystkich elementów.".ToEmbedMessage(EMType.Error).Build());
                             return;
                         }
 
                         if (card.Quality != fig.GetAvgQuality())
                         {
-                            await ReplyAsync("", embed: $"{Context.User.Mention} ta figurka nie ma takiej samej jakości jak karta którą chcesz ulepszyć.".ToEmbedMessage(EMType.Error).Build());
+                            await SafeReplyAsync("", embed: $"{Context.User.Mention} ta figurka nie ma takiej samej jakości jak karta którą chcesz ulepszyć.".ToEmbedMessage(EMType.Error).Build());
                             return;
                         }
 
@@ -899,20 +899,20 @@ namespace Sanakan.Modules
                         var cardSac = bUser.GameDeck.Cards.FirstOrDefault(x => x.Id == cardToSac);
                         if (cardSac == null)
                         {
-                            await ReplyAsync("", embed: $"{Context.User.Mention} nie posiadasz takiej karty.".ToEmbedMessage(EMType.Error).Build());
+                            await SafeReplyAsync("", embed: $"{Context.User.Mention} nie posiadasz takiej karty.".ToEmbedMessage(EMType.Error).Build());
                             return;
                         }
 
                         if (card.Quality != cardSac.Quality)
                         {
-                            await ReplyAsync("", embed: $"{Context.User.Mention} ta karta nie ma takiej samej jakości jak karta którą chcesz ulepszyć.".ToEmbedMessage(EMType.Error).Build());
+                            await SafeReplyAsync("", embed: $"{Context.User.Mention} ta karta nie ma takiej samej jakości jak karta którą chcesz ulepszyć.".ToEmbedMessage(EMType.Error).Build());
                             return;
                         }
 
                         var figure = bUser.GameDeck.Figures.FirstOrDefault(x => x.CreatedCardId == cardToSac);
                         if (figure == null)
                         {
-                            await ReplyAsync("", embed: $"{Context.User.Mention} nie posiadasz figurki tej karty.".ToEmbedMessage(EMType.Error).Build());
+                            await SafeReplyAsync("", embed: $"{Context.User.Mention} nie posiadasz figurki tej karty.".ToEmbedMessage(EMType.Error).Build());
                             return;
                         }
 
@@ -957,7 +957,7 @@ namespace Sanakan.Modules
 
                 QueryCacheManager.ExpireTag(new string[] { $"user-{bUser.Id}", "users" });
 
-                await ReplyAsync("", embed: $"{Context.User.Mention} ulepszył kartę do: {card.GetString(false, false, true)}.".ToEmbedMessage(EMType.Success).Build());
+                await SafeReplyAsync("", embed: $"{Context.User.Mention} ulepszył kartę do: {card.GetString(false, false, true)}.".ToEmbedMessage(EMType.Success).Build());
             }
         }
 
@@ -974,7 +974,7 @@ namespace Sanakan.Modules
 
                 if (res.IsError())
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} {res.Message}".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} {res.Message}".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
@@ -982,7 +982,7 @@ namespace Sanakan.Modules
 
                 QueryCacheManager.ExpireTag(new string[] { $"user-{bUser.Id}", "users" });
 
-                await ReplyAsync("", embed: $"{Context.User.Mention} {res.Message}".ToEmbedMessage(EMType.Success).Build());
+                await SafeReplyAsync("", embed: $"{Context.User.Mention} {res.Message}".ToEmbedMessage(EMType.Success).Build());
             }
         }
 
@@ -999,7 +999,7 @@ namespace Sanakan.Modules
 
                 if (res.IsError())
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} {res.Message}".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} {res.Message}".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
@@ -1007,7 +1007,7 @@ namespace Sanakan.Modules
 
                 QueryCacheManager.ExpireTag(new string[] { $"user-{bUser.Id}", "users" });
 
-                await ReplyAsync("", embed: $"{Context.User.Mention} {res.Message}".ToEmbedMessage(EMType.Success).Build());
+                await SafeReplyAsync("", embed: $"{Context.User.Mention} {res.Message}".ToEmbedMessage(EMType.Success).Build());
             }
         }
 
@@ -1022,7 +1022,7 @@ namespace Sanakan.Modules
                 var bUser = await db.GetUserOrCreateAsync(Context.User.Id);
                 if (bUser.GameDeck.ExpContainer.Level == ExpContainerLevel.Disabled)
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} nie posiadasz jeszcze skrzyni doświadczenia.".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} nie posiadasz jeszcze skrzyni doświadczenia.".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
@@ -1032,7 +1032,7 @@ namespace Sanakan.Modules
                     focusedFigure = bUser.GameDeck.Figures.FirstOrDefault(x => x.IsFocus);
                     if (focusedFigure == null)
                     {
-                        await ReplyAsync("", embed: $"{Context.User.Mention} nie posiadasz aktywnej figurki.".ToEmbedMessage(EMType.Error).Build());
+                        await SafeReplyAsync("", embed: $"{Context.User.Mention} nie posiadasz aktywnej figurki.".ToEmbedMessage(EMType.Error).Build());
                         return;
                     }
                 }
@@ -1043,7 +1043,7 @@ namespace Sanakan.Modules
                     card = bUser.GameDeck.Cards.FirstOrDefault(x => x.Id == id);
                     if (card == null)
                     {
-                        await ReplyAsync("", embed: $"{Context.User.Mention} nie posiadasz takiej karty.".ToEmbedMessage(EMType.Error).Build());
+                        await SafeReplyAsync("", embed: $"{Context.User.Mention} nie posiadasz takiej karty.".ToEmbedMessage(EMType.Error).Build());
                         return;
                     }
                 }
@@ -1051,20 +1051,20 @@ namespace Sanakan.Modules
                 var maxExpInOneTime = bUser.GameDeck.ExpContainer.GetMaxExpTransferToCard();
                 if (maxExpInOneTime != -1 && exp > maxExpInOneTime)
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} na tym poziomie możesz jednorazowo przelać tylko {maxExpInOneTime} doświadczenia.".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} na tym poziomie możesz jednorazowo przelać tylko {maxExpInOneTime} doświadczenia.".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
                 if (bUser.GameDeck.ExpContainer.ExpCount < exp)
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} nie posiadasz wystarczającej ilości doświadczenia.".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} nie posiadasz wystarczającej ilości doświadczenia.".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
                 var cost = bUser.GameDeck.ExpContainer.GetTransferCTCost();
                 if (bUser.GameDeck.CTCnt < cost)
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} nie masz wystarczającej liczby CT. ({cost})".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} nie masz wystarczającej liczby CT. ({cost})".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
@@ -1084,7 +1084,7 @@ namespace Sanakan.Modules
 
                 QueryCacheManager.ExpireTag(new string[] { $"user-{bUser.Id}", "users" });
 
-                await ReplyAsync("", embed: $"{Context.User.Mention} przeniesiono doświadczenie na kartę lub figurkę.".ToEmbedMessage(EMType.Success).Build());
+                await SafeReplyAsync("", embed: $"{Context.User.Mention} przeniesiono doświadczenie na kartę lub figurkę.".ToEmbedMessage(EMType.Success).Build());
             }
         }
 
@@ -1101,7 +1101,7 @@ namespace Sanakan.Modules
 
                 if (cardsToSac.Count < 1)
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} nie posiadasz takich kart.".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} nie posiadasz takich kart.".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
@@ -1109,14 +1109,14 @@ namespace Sanakan.Modules
                 {
                     if (card.Rarity != Rarity.SSS)
                     {
-                        await ReplyAsync("", embed: $"{Context.User.Mention} ta karta nie jest kartą SSS.".ToEmbedMessage(EMType.Error).Build());
+                        await SafeReplyAsync("", embed: $"{Context.User.Mention} ta karta nie jest kartą SSS.".ToEmbedMessage(EMType.Error).Build());
                         return;
                     }
 
                     _ = card.RecoverFatigue(_time);
                     if (card.IsProtectedFromDiscarding(_tags))
                     {
-                        await ReplyAsync("", embed: $"{Context.User.Mention} tej karty z jakiegoś powodu nie można zniszczyć.".ToEmbedMessage(EMType.Error).Build());
+                        await SafeReplyAsync("", embed: $"{Context.User.Mention} tej karty z jakiegoś powodu nie można zniszczyć.".ToEmbedMessage(EMType.Error).Build());
                         return;
                     }
                 }
@@ -1125,13 +1125,13 @@ namespace Sanakan.Modules
                 long bloodNeeded = bUser.GameDeck.ExpContainer.GetChestUpgradeCostInBlood();
                 if (cardNeeded == -1 || bloodNeeded == -1)
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} nie można bardziej ulepszyć skrzyni.".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} nie można bardziej ulepszyć skrzyni.".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
                 if (cardsToSac.Count < cardNeeded)
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} podałeś za mało kart SSS. ({cardNeeded})".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} podałeś za mało kart SSS. ({cardNeeded})".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
@@ -1139,14 +1139,14 @@ namespace Sanakan.Modules
                 var bloodWaifu = bUser.GameDeck.Items.FirstOrDefault(x => x.Type == ItemType.BloodOfYourWaifu);
                 if (bloodYour is null && bloodWaifu is null)
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} nie posiadasz kropel krwi.".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} nie posiadasz kropel krwi.".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
                 var totalBlood = (bloodYour?.Count ?? 0) + (bloodWaifu?.Count ?? 0);
                 if (totalBlood < bloodNeeded)
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} nie posiadasz wystarczającej liczby kropel krwi. ({bloodNeeded})".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} nie posiadasz wystarczającej liczby kropel krwi. ({bloodNeeded})".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
@@ -1179,7 +1179,7 @@ namespace Sanakan.Modules
                 QueryCacheManager.ExpireTag(new string[] { $"user-{bUser.Id}", "users" });
 
                 string action = bUser.GameDeck.ExpContainer.Level == ExpContainerLevel.Level1 ? "otrzymałeś" : "ulepszyłeś";
-                await ReplyAsync("", embed: $"{Context.User.Mention} {action} skrzynię doświadczenia.".ToEmbedMessage(EMType.Success).Build());
+                await SafeReplyAsync("", embed: $"{Context.User.Mention} {action} skrzynię doświadczenia.".ToEmbedMessage(EMType.Success).Build());
             }
         }
 
@@ -1200,13 +1200,13 @@ namespace Sanakan.Modules
         {
             if (!string.IsNullOrEmpty(tag) && tag.Contains(" "))
             {
-                await ReplyAsync("", embed: $"{Context.User.Mention} oznaczenie nie może zawierać spacji.".ToEmbedMessage(EMType.Error).Build());
+                await SafeReplyAsync("", embed: $"{Context.User.Mention} oznaczenie nie może zawierać spacji.".ToEmbedMessage(EMType.Error).Build());
                 return;
             }
 
             if (!string.IsNullOrEmpty(tagWishlist) && tagWishlist.Contains(" "))
             {
-                await ReplyAsync("", embed: $"{Context.User.Mention} oznaczenie nie może zawierać spacji.".ToEmbedMessage(EMType.Error).Build());
+                await SafeReplyAsync("", embed: $"{Context.User.Mention} oznaczenie nie może zawierać spacji.".ToEmbedMessage(EMType.Error).Build());
                 return;
             }
 
@@ -1234,13 +1234,13 @@ namespace Sanakan.Modules
 
                 if (ns.IsActive(_time.Now()))
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} możesz otrzymać następną darmową kartę dopiero {ns.EndsAt.ToRemTime()}!".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} możesz otrzymać następną darmową kartę dopiero {ns.EndsAt.ToRemTime()}!".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
                 if (botuser.GameDeck.Cards.Count + 1 > botuser.GameDeck.MaxNumberOfCards)
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} nie masz już miejsca na kolejną kartę!".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} nie masz już miejsca na kolejną kartę!".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
@@ -1257,7 +1257,7 @@ namespace Sanakan.Modules
                 var character = await _waifu.GetRandomCharacterAsync(botuser.PoolType);
                 if (character == null)
                 {
-                    await ReplyAsync("", embed: "Brak połączania z Shindenem!".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: "Brak połączania z Shindenem!".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
@@ -1304,7 +1304,7 @@ namespace Sanakan.Modules
 
                 QueryCacheManager.ExpireTag(new string[] { $"user-{botuser.Id}", "users" });
 
-                await ReplyAsync("", embed: $"{Context.User.Mention} otrzymałeś {wishStr}{card.GetString(false, false, true)}".ToEmbedMessage(EMType.Success).Build());
+                await SafeReplyAsync("", embed: $"{Context.User.Mention} otrzymałeś {wishStr}{card.GetString(false, false, true)}".ToEmbedMessage(EMType.Success).Build());
             }
         }
 
@@ -1319,32 +1319,32 @@ namespace Sanakan.Modules
                 var botuser = await db.GetUserOrCreateAsync(Context.User.Id);
                 if (botuser.GameDeck.IsMarketDisabled())
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} wszyscy na twój widok się rozbiegli, nic dziś nie zdziałasz.".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} wszyscy na twój widok się rozbiegli, nic dziś nie zdziałasz.".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
                 var card = botuser.GameDeck.Cards.FirstOrDefault(x => x.Id == wid);
                 if (card == null)
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} nie posiadasz takiej karty.".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} nie posiadasz takiej karty.".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
                 if (card.FromFigure)
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} z tą kartą nie można iść na rynek.".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} z tą kartą nie można iść na rynek.".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
                 if (card.Expedition != CardExpedition.None)
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} ta karta jest na wyprawie!".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} ta karta jest na wyprawie!".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
                 if (card.IsUnusable())
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} ktoś kto Cię nienawidzi, nie pomoże Ci w niczym.".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} ktoś kto Cię nienawidzi, nie pomoże Ci w niczym.".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
@@ -1357,7 +1357,7 @@ namespace Sanakan.Modules
 
                 if (market.IsActive(_time.Now()))
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} możesz udać się ponownie na rynek {market.EndsAt.ToRemTime()}!".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} możesz udać się ponownie na rynek {market.EndsAt.ToRemTime()}!".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
@@ -1423,7 +1423,7 @@ namespace Sanakan.Modules
 
                 QueryCacheManager.ExpireTag(new string[] { $"user-{botuser.Id}", "users" });
 
-                await ReplyAsync("", embed: $"{Context.User.Mention} udało Ci się zdobyć:\n\n{reward}".ToEmbedMessage(EMType.Success).Build());
+                await SafeReplyAsync("", embed: $"{Context.User.Mention} udało Ci się zdobyć:\n\n{reward}".ToEmbedMessage(EMType.Success).Build());
             }
         }
 
@@ -1438,26 +1438,26 @@ namespace Sanakan.Modules
                 var botuser = await db.GetUserOrCreateAsync(Context.User.Id);
                 if (botuser.GameDeck.IsBlackMarketDisabled())
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} halo koleżko, to nie miejsce dla Ciebie!".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} halo koleżko, to nie miejsce dla Ciebie!".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
                 var card = botuser.GameDeck.Cards.FirstOrDefault(x => x.Id == wid);
                 if (card == null)
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} nie posiadasz takiej karty.".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} nie posiadasz takiej karty.".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
                 if (card.FromFigure)
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} z tą kartą nie można iść na czarny rynek.".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} z tą kartą nie można iść na czarny rynek.".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
                 if (card.Expedition != CardExpedition.None)
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} ta karta jest na wyprawie!".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} ta karta jest na wyprawie!".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
@@ -1470,7 +1470,7 @@ namespace Sanakan.Modules
 
                 if (market.IsActive(_time.Now()))
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} możesz udać się ponownie na czarny rynek {market.EndsAt.ToRemTime()}!".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} możesz udać się ponownie na czarny rynek {market.EndsAt.ToRemTime()}!".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
@@ -1522,7 +1522,7 @@ namespace Sanakan.Modules
 
                 QueryCacheManager.ExpireTag(new string[] { $"user-{botuser.Id}", "users" });
 
-                await ReplyAsync("", embed: $"{Context.User.Mention} udało Ci się zdobyć:\n\n{reward}".ToEmbedMessage(EMType.Success).Build());
+                await SafeReplyAsync("", embed: $"{Context.User.Mention} udało Ci się zdobyć:\n\n{reward}".ToEmbedMessage(EMType.Success).Build());
             }
         }
 
@@ -1534,7 +1534,7 @@ namespace Sanakan.Modules
         {
             if (idsToSac.Any(x => x == idToUp))
             {
-                await ReplyAsync("", embed: $"{Context.User.Mention} podałeś ten sam WID do ulepszenia i zniszczenia.".ToEmbedMessage(EMType.Error).Build());
+                await SafeReplyAsync("", embed: $"{Context.User.Mention} podałeś ten sam WID do ulepszenia i zniszczenia.".ToEmbedMessage(EMType.Error).Build());
                 return;
             }
 
@@ -1547,19 +1547,19 @@ namespace Sanakan.Modules
 
                 if (cardsToSac.Count < 1 || cardToUp == null)
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} nie posiadasz takiej karty.".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} nie posiadasz takiej karty.".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
                 if (cardToUp.InCage)
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} ta karta znajduje się w klatce.".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} ta karta znajduje się w klatce.".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
                 if (cardToUp.Expedition != CardExpedition.None)
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} ta karta jest na wyprawie!".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} ta karta jest na wyprawie!".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
@@ -1594,12 +1594,12 @@ namespace Sanakan.Modules
 
                 if (cardsToSac.Count > broken.Count)
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} ulepszył kartę: {cardToUp.GetString(false, false, true)} o {totalExp:F} exp.".ToEmbedMessage(EMType.Success).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} ulepszył kartę: {cardToUp.GetString(false, false, true)} o {totalExp:F} exp.".ToEmbedMessage(EMType.Success).Build());
                 }
 
                 if (broken.Count > 0)
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} nie udało się poświęcić {broken.Count} kart.".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} nie udało się poświęcić {broken.Count} kart.".ToEmbedMessage(EMType.Error).Build());
                 }
             }
         }
@@ -1621,7 +1621,7 @@ namespace Sanakan.Modules
                 var cntIn = cardsInCage.Count();
                 if (cntIn < 1)
                 {
-                    await ReplyAsync("", embed: $"{user.Mention} nie posiadasz kart w klatce.".ToEmbedMessage(EMType.Info).Build());
+                    await SafeReplyAsync("", embed: $"{user.Mention} nie posiadasz kart w klatce.".ToEmbedMessage(EMType.Info).Build());
                     return;
                 }
 
@@ -1653,7 +1653,7 @@ namespace Sanakan.Modules
                     var thisCard = cardsInCage.FirstOrDefault(x => x.Id == wid);
                     if (thisCard == null)
                     {
-                        await ReplyAsync("", embed: $"{user.Mention} taka karta nie znajduje się w twojej klatce.".ToEmbedMessage(EMType.Error).Build());
+                        await SafeReplyAsync("", embed: $"{user.Mention} taka karta nie znajduje się w twojej klatce.".ToEmbedMessage(EMType.Error).Build());
                         return;
                     }
 
@@ -1679,7 +1679,7 @@ namespace Sanakan.Modules
 
                 QueryCacheManager.ExpireTag(new string[] { $"user-{bUser.Id}", "users" });
 
-                await ReplyAsync("", embed: $"{user.Mention} wyciągnął {cntIn} kart z klatki.".ToEmbedMessage(EMType.Success).Build());
+                await SafeReplyAsync("", embed: $"{user.Mention} wyciągnął {cntIn} kart z klatki.".ToEmbedMessage(EMType.Success).Build());
             }
         }
 
@@ -1695,7 +1695,7 @@ namespace Sanakan.Modules
                 var objs = bUser.GameDeck.Wishes.Where(x => x.Type == type && ids.Any(c => c == x.ObjectId)).ToList();
                 if (objs.Count < 1)
                 {
-                    await ReplyAsync("", embed: "Nie posiadasz takich pozycji na liście życzeń!".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: "Nie posiadasz takich pozycji na liście życzeń!".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
@@ -1709,7 +1709,7 @@ namespace Sanakan.Modules
 
                 QueryCacheManager.ExpireTag(new string[] { $"user-{bUser.Id}", "users" });
 
-                await ReplyAsync("", embed: $"{Context.User.Mention} usunął pozycję z listy życzeń.".ToEmbedMessage(EMType.Success).Build());
+                await SafeReplyAsync("", embed: $"{Context.User.Mention} usunął pozycję z listy życzeń.".ToEmbedMessage(EMType.Success).Build());
             }
         }
 
@@ -1725,7 +1725,7 @@ namespace Sanakan.Modules
                 var bUser = await db.GetUserOrCreateSimpleAsync(Context.User.Id);
                 if (bUser.GameDeck.Wishes.Any(x => x.Type == type && x.ObjectId == id))
                 {
-                    await ReplyAsync("", embed: "Już posiadasz taki wpis w liście życzeń!".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: "Już posiadasz taki wpis w liście życzeń!".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
@@ -1739,14 +1739,14 @@ namespace Sanakan.Modules
                 switch (type)
                 {
                     case WishlistObjectType.Card:
-                        await ReplyAsync("", embed: $"{Context.User.Mention} dodawanie kart do listy życzeń nie jest już wspierane!".ToEmbedMessage(EMType.Error).Build());
+                        await SafeReplyAsync("", embed: $"{Context.User.Mention} dodawanie kart do listy życzeń nie jest już wspierane!".ToEmbedMessage(EMType.Error).Build());
                         return;
 
                     case WishlistObjectType.Title:
                         var res1 = await _shclient.Title.GetInfoAsync(id);
                         if (!res1.IsSuccessStatusCode())
                         {
-                            await ReplyAsync("", embed: $"Nie odnaleziono serii!".ToEmbedMessage(EMType.Error).Build());
+                            await SafeReplyAsync("", embed: $"Nie odnaleziono serii!".ToEmbedMessage(EMType.Error).Build());
                             return;
                         }
                         response = res1.Body.Title;
@@ -1762,7 +1762,7 @@ namespace Sanakan.Modules
                         var charInfo = await _shinden.GetCharacterInfoAsync(id);
                         if (charInfo == null)
                         {
-                            await ReplyAsync("", embed: $"Nie odnaleziono postaci!".ToEmbedMessage(EMType.Error).Build());
+                            await SafeReplyAsync("", embed: $"Nie odnaleziono postaci!".ToEmbedMessage(EMType.Error).Build());
                             return;
                         }
                         response = charInfo.ToString();
@@ -1782,7 +1782,7 @@ namespace Sanakan.Modules
 
                 QueryCacheManager.ExpireTag(new string[] { $"user-{bUser.Id}", "users" });
 
-                await ReplyAsync("", embed: $"{Context.User.Mention} dodał do listy życzeń: {response}".ToEmbedMessage(EMType.Success).Build());
+                await SafeReplyAsync("", embed: $"{Context.User.Mention} dodał do listy życzeń: {response}".ToEmbedMessage(EMType.Success).Build());
             }
         }
 
@@ -1802,7 +1802,7 @@ namespace Sanakan.Modules
                 QueryCacheManager.ExpireTag(new string[] { $"user-{bUser.Id}", "users" });
 
                 string response = (!view) ? $"ukrył" : $"udostępnił";
-                await ReplyAsync("", embed: $"{Context.User.Mention} {response} swoją listę życzeń!".ToEmbedMessage(EMType.Success).Build());
+                await SafeReplyAsync("", embed: $"{Context.User.Mention} {response} swoją listę życzeń!".ToEmbedMessage(EMType.Success).Build());
             }
         }
 
@@ -1820,7 +1820,7 @@ namespace Sanakan.Modules
                 var bUser = await db.GetCachedFullUserAsync(user.Id);
                 var res = await _waifu.CheckWishlistAndSendToDMAsync(db, Context.User, bUser, showContentOnly: true, tldr: tldr);
 
-                await ReplyAsync("", embed: res.ToEmbedMessage($"{Context.User.Mention} ").Build());
+                await SafeReplyAsync("", embed: res.ToEmbedMessage($"{Context.User.Mention} ").Build());
             }
         }
 
@@ -1845,7 +1845,7 @@ namespace Sanakan.Modules
                 var res = await _waifu.CheckWishlistAndSendToDMAsync(db, Context.User, bUser, !showFavs,
                     !showBlocked, !showNames, showShindenUrl, Context.Guild, false, 0, ignoreTitles, tldr);
 
-                await ReplyAsync("", embed: res.ToEmbedMessage($"{Context.User.Mention} ").Build());
+                await SafeReplyAsync("", embed: res.ToEmbedMessage($"{Context.User.Mention} ").Build());
             }
         }
 
@@ -1867,7 +1867,7 @@ namespace Sanakan.Modules
 
             if (user.Id == userf.Id)
             {
-                await ReplyAsync("", embed: $"{Context.User.Mention} podałeś dwa razy tego samego użytkownika.".ToEmbedMessage(EMType.Error).Build());
+                await SafeReplyAsync("", embed: $"{Context.User.Mention} podałeś dwa razy tego samego użytkownika.".ToEmbedMessage(EMType.Error).Build());
                 return;
             }
 
@@ -1878,7 +1878,7 @@ namespace Sanakan.Modules
                 var res = await _waifu.CheckWishlistAndSendToDMAsync(db, Context.User, bUser, !showFavs,
                     !showBlocked, !showNames, showShindenUrl, Context.Guild, false, searchId, ignoreTitles, tldr);
 
-                await ReplyAsync("", embed: res.ToEmbedMessage($"{Context.User.Mention} ").Build());
+                await SafeReplyAsync("", embed: res.ToEmbedMessage($"{Context.User.Mention} ").Build());
             }
         }
 
@@ -1893,14 +1893,14 @@ namespace Sanakan.Modules
                 var thisCards = await db.Cards.AsNoTracking().Include(x => x.Tags).FirstOrDefaultAsync(x => x.Id == wid);
                 if (thisCards == null)
                 {
-                    await ReplyAsync("", embed: $"Nie odnaleziono karty.".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"Nie odnaleziono karty.".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
                 var wishlists =  await db.GameDecks.AsQueryable().AsNoTracking().Where(x => !x.WishlistIsPrivate).Include(x => x.Wishes).Include(x => x.User).Where(x => x.Wishes.Any(c => c.Type == WishlistObjectType.Character && c.ObjectId == thisCards.Character)).ToListAsync();
                 if (wishlists.Count < 1)
                 {
-                    await ReplyAsync("", embed: $"Nikt nie chce tej karty.".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"Nikt nie chce tej karty.".ToEmbedMessage(EMType.Error).Build());
                 }
                 else
                 {
@@ -1918,16 +1918,16 @@ namespace Sanakan.Modules
                                 await dm.SendMessageAsync("", embed: mes.ToEmbedMessage(EMType.Info).Build());
                                 await Task.Delay(TimeSpan.FromSeconds(2));
                             }
-                            await ReplyAsync("", embed: $"{Context.User.Mention} lista poszła na PW!".ToEmbedMessage(EMType.Success).Build());
+                            await SafeReplyAsync("", embed: $"{Context.User.Mention} lista poszła na PW!".ToEmbedMessage(EMType.Success).Build());
                         }
                         catch (Exception)
                         {
-                            await ReplyAsync("", embed: $"{Context.User.Mention} nie można wysłać do Ciebie PW!".ToEmbedMessage(EMType.Error).Build());
+                            await SafeReplyAsync("", embed: $"{Context.User.Mention} nie można wysłać do Ciebie PW!".ToEmbedMessage(EMType.Error).Build());
                         }
                     }
                     else
                     {
-                        await ReplyAsync("", embed: $"**{thisCards.GetNameWithUrl()} chcą ({usersStr.Count}):**\n\n {string.Join('\n', usersStr)}".TrimToLength().ToEmbedMessage(EMType.Info).Build());
+                        await SafeReplyAsync("", embed: $"**{thisCards.GetNameWithUrl()} chcą ({usersStr.Count}):**\n\n {string.Join('\n', usersStr)}".TrimToLength().ToEmbedMessage(EMType.Info).Build());
                     }
                 }
 
@@ -1967,7 +1967,7 @@ namespace Sanakan.Modules
                 var card = await db.Cards.AsQueryable().Where(x => x.GameDeckId == Context.User.Id).FirstOrDefaultAsync(x => x.Id == id);
                 if (card == null)
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} nie posiadasz takiej karty.".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} nie posiadasz takiej karty.".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
@@ -1983,7 +1983,7 @@ namespace Sanakan.Modules
                     if (force) nTitle = response.Body.Relations.FirstOrDefault(x => x.Title.Equals(title))?.Title ?? "";
                     if (string.IsNullOrEmpty(nTitle))
                     {
-                        await ReplyAsync("", embed: $"{Context.User.Mention} nie odnaleziono takiego tytułu w powiązaniach postaci.".ToEmbedMessage(EMType.Error).Build());
+                        await SafeReplyAsync("", embed: $"{Context.User.Mention} nie odnaleziono takiego tytułu w powiązaniach postaci.".ToEmbedMessage(EMType.Error).Build());
                         return;
                     }
                     title = nTitle;
@@ -1992,7 +1992,7 @@ namespace Sanakan.Modules
                 card.Title = title;
                 await db.SaveChangesAsync();
 
-                await ReplyAsync("", embed: $"{Context.User.Mention} ustawiono tytuł na: {title}.".ToEmbedMessage(EMType.Success).Build());
+                await SafeReplyAsync("", embed: $"{Context.User.Mention} ustawiono tytuł na: {title}.".ToEmbedMessage(EMType.Success).Build());
             }
         }
 
@@ -2005,7 +2005,7 @@ namespace Sanakan.Modules
             var response = await _shclient.Title.GetInfoAsync(id);
             if (!response.IsSuccessStatusCode())
             {
-                await ReplyAsync("", embed: $"Nie odnaleziono tytułu!".ToEmbedMessage(EMType.Error).Build());
+                await SafeReplyAsync("", embed: $"Nie odnaleziono tytułu!".ToEmbedMessage(EMType.Error).Build());
                 return;
             }
 
@@ -2014,12 +2014,12 @@ namespace Sanakan.Modules
                 var wishlists = db.GameDecks.Include(x => x.Wishes).Include(x => x.User).Where(x => !x.WishlistIsPrivate && x.Wishes.Any(c => c.Type == WishlistObjectType.Title && c.ObjectId == id)).ToList();
                 if (wishlists.Count < 1)
                 {
-                    await ReplyAsync("", embed: $"Nikt nie ma tego tytułu wpisanego na listę życzeń.".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"Nikt nie ma tego tytułu wpisanego na listę życzeń.".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
                 var usersStr = await _waifu.GetWhoWantsCardsStringAsync(wishlists, showNames, Context.Guild);
-                await ReplyAsync("", embed: $"**Karty z {response.Body.Title} chcą:**\n\n {string.Join('\n', usersStr)}".TrimToLength().ToEmbedMessage(EMType.Info).Build());
+                await SafeReplyAsync("", embed: $"**Karty z {response.Body.Title} chcą:**\n\n {string.Join('\n', usersStr)}".TrimToLength().ToEmbedMessage(EMType.Info).Build());
             }
         }
 
@@ -2037,19 +2037,19 @@ namespace Sanakan.Modules
 
                 if (thisCard == null)
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} nie odnaleziono karty.".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} nie odnaleziono karty.".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
                 if (thisCard.IsTradable)
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} ta karta jest wymienialna.".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} ta karta jest wymienialna.".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
                 if (thisCard.Expedition != CardExpedition.None)
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} ta karta jest na wyprawie!".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} ta karta jest na wyprawie!".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
@@ -2058,7 +2058,7 @@ namespace Sanakan.Modules
 
                 if (bUser.GameDeck.CTCnt < cost)
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} nie masz wystarczającej liczby CT.".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} nie masz wystarczającej liczby CT.".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
@@ -2071,7 +2071,7 @@ namespace Sanakan.Modules
 
                 QueryCacheManager.ExpireTag(new string[] { $"user-{bUser.Id}", "users" });
 
-                await ReplyAsync("", embed: $"{Context.User.Mention} wyzwolił kartę {thisCard.GetString(false, false, true)}".ToEmbedMessage(EMType.Success).Build());
+                await SafeReplyAsync("", embed: $"{Context.User.Mention} wyzwolił kartę {thisCard.GetString(false, false, true)}".ToEmbedMessage(EMType.Success).Build());
             }
         }
 
@@ -2086,20 +2086,20 @@ namespace Sanakan.Modules
                 var bUser = await db.GetUserOrCreateSimpleAsync(Context.User.Id);
                 if (count < 1)
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} obecny limit to: {bUser.GameDeck.MaxNumberOfCards}".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} obecny limit to: {bUser.GameDeck.MaxNumberOfCards}".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
                 if (count > 20)
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} jednorazowo można zwiększyć limit tylko o 2000.".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} jednorazowo można zwiększyć limit tylko o 2000.".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
                 long cost = bUser.GameDeck.CalculatePriceOfIncMaxCardCount(count);
                 if (bUser.TcCnt < cost)
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} nie masz wystarczającej liczby TC, aby zwiększyć limit o {100 * count} potrzebujesz {cost} TC.".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} nie masz wystarczającej liczby TC, aby zwiększyć limit o {100 * count} potrzebujesz {cost} TC.".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
@@ -2110,7 +2110,7 @@ namespace Sanakan.Modules
 
                 QueryCacheManager.ExpireTag(new string[] { $"user-{bUser.Id}", "users" });
 
-                await ReplyAsync("", embed: $"{Context.User.Mention} powiększył swój limit kart do {bUser.GameDeck.MaxNumberOfCards}.".ToEmbedMessage(EMType.Success).Build());
+                await SafeReplyAsync("", embed: $"{Context.User.Mention} powiększył swój limit kart do {bUser.GameDeck.MaxNumberOfCards}.".ToEmbedMessage(EMType.Success).Build());
             }
         }
 
@@ -2127,13 +2127,13 @@ namespace Sanakan.Modules
                 var botuser = await db.GetUserOrCreateSimpleAsync(Context.User.Id);
                 if (botuser.TcCnt < tcCost)
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} nie posiadasz wystarczającej liczby TC!".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} nie posiadasz wystarczającej liczby TC!".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
                 if (!color.IsAColorInHEX())
                 {
-                    await ReplyAsync("", embed: "Nie wykryto koloru! Upewnij się, że podałeś poprawny kod HEX!".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: "Nie wykryto koloru! Upewnij się, że podałeś poprawny kod HEX!".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
@@ -2142,7 +2142,7 @@ namespace Sanakan.Modules
 
                 await db.SaveChangesAsync();
 
-                await ReplyAsync("", embed: $"Zmieniono kolor na stronie waifu użytkownika: {Context.User.Mention}!".ToEmbedMessage(EMType.Success).Build());
+                await SafeReplyAsync("", embed: $"Zmieniono kolor na stronie waifu użytkownika: {Context.User.Mention}!".ToEmbedMessage(EMType.Success).Build());
             }
         }
 
@@ -2159,14 +2159,14 @@ namespace Sanakan.Modules
                 var botuser = await db.GetUserOrCreateSimpleAsync(Context.User.Id);
                 if (botuser.TcCnt < tcCost)
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} nie posiadasz wystarczającej liczby TC!".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} nie posiadasz wystarczającej liczby TC!".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
                 var imageCheck = await _img.CheckImageUrlAsync(imgUrl);
                 if (imageCheck.IsError())
                 {
-                    await ReplyAsync("", embed: ExecutionResult.From(imageCheck).ToEmbedMessage($"{Context.User.Mention} ").Build());
+                    await SafeReplyAsync("", embed: ExecutionResult.From(imageCheck).ToEmbedMessage($"{Context.User.Mention} ").Build());
                     return;
                 }
 
@@ -2175,7 +2175,7 @@ namespace Sanakan.Modules
 
                 await db.SaveChangesAsync();
 
-                await ReplyAsync("", embed: $"Zmieniono szczegół na stronie waifu użytkownika: {Context.User.Mention}!".ToEmbedMessage(EMType.Success).Build());
+                await SafeReplyAsync("", embed: $"Zmieniono szczegół na stronie waifu użytkownika: {Context.User.Mention}!".ToEmbedMessage(EMType.Success).Build());
             }
         }
 
@@ -2192,14 +2192,14 @@ namespace Sanakan.Modules
                 var botuser = await db.GetUserOrCreateSimpleAsync(Context.User.Id);
                 if (botuser.TcCnt < tcCost)
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} nie posiadasz wystarczającej liczby TC!".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} nie posiadasz wystarczającej liczby TC!".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
                 var imageCheck = await _img.CheckImageUrlAsync(imgUrl);
                 if (imageCheck.IsError())
                 {
-                    await ReplyAsync("", embed: ExecutionResult.From(imageCheck).ToEmbedMessage($"{Context.User.Mention} ").Build());
+                    await SafeReplyAsync("", embed: ExecutionResult.From(imageCheck).ToEmbedMessage($"{Context.User.Mention} ").Build());
                     return;
                 }
 
@@ -2208,7 +2208,7 @@ namespace Sanakan.Modules
 
                 await db.SaveChangesAsync();
 
-                await ReplyAsync("", embed: $"Zmieniono tło na stronie waifu użytkownika: {Context.User.Mention}!".ToEmbedMessage(EMType.Success).Build());
+                await SafeReplyAsync("", embed: $"Zmieniono tło na stronie waifu użytkownika: {Context.User.Mention}!".ToEmbedMessage(EMType.Success).Build());
             }
         }
 
@@ -2223,7 +2223,7 @@ namespace Sanakan.Modules
                 var botuser = await db.GetUserOrCreateSimpleAsync(Context.User.Id);
                 if (position > 100)
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} podano niepoprawną wartość!".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} podano niepoprawną wartość!".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
@@ -2231,7 +2231,7 @@ namespace Sanakan.Modules
 
                 await db.SaveChangesAsync();
 
-                await ReplyAsync("", embed: $"Zmieniono pozycję tła na stronie waifu użytkownika: {Context.User.Mention}!".ToEmbedMessage(EMType.Success).Build());
+                await SafeReplyAsync("", embed: $"Zmieniono pozycję tła na stronie waifu użytkownika: {Context.User.Mention}!".ToEmbedMessage(EMType.Success).Build());
             }
         }
 
@@ -2246,7 +2246,7 @@ namespace Sanakan.Modules
                 var botuser = await db.GetUserOrCreateSimpleAsync(Context.User.Id);
                 if (position > 100)
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} podano niepoprawną wartość!".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} podano niepoprawną wartość!".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
@@ -2254,7 +2254,7 @@ namespace Sanakan.Modules
 
                 await db.SaveChangesAsync();
 
-                await ReplyAsync("", embed: $"Zmieniono pozycję szczegółu na stronie waifu użytkownika: {Context.User.Mention}!".ToEmbedMessage(EMType.Success).Build());
+                await SafeReplyAsync("", embed: $"Zmieniono pozycję szczegółu na stronie waifu użytkownika: {Context.User.Mention}!".ToEmbedMessage(EMType.Success).Build());
             }
         }
 
@@ -2269,7 +2269,7 @@ namespace Sanakan.Modules
                 var bUser = await db.GetUserOrCreateSimpleAsync(Context.User.Id);
                 if (action == bUser.GameDeck.EndOfExpeditionAction)
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} obecnie jest już ustawiona taka akcja.".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} obecnie jest już ustawiona taka akcja.".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
@@ -2286,7 +2286,7 @@ namespace Sanakan.Modules
                     _ => "nic"
                 };
 
-                await ReplyAsync("", embed: $"{Context.User.Mention} ustawiono akcje: **{actionName}**.".ToEmbedMessage(EMType.Success).Build());
+                await SafeReplyAsync("", embed: $"{Context.User.Mention} ustawiono akcje: **{actionName}**.".ToEmbedMessage(EMType.Success).Build());
             }
         }
 
@@ -2301,7 +2301,7 @@ namespace Sanakan.Modules
                 var bUser = await db.GetUserOrCreateSimpleAsync(Context.User.Id);
                 if (string.IsNullOrEmpty(ids) || !ids.Split(" ").All(x => x.All(c => char.IsDigit(c))))
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} nie wykryto odpowiedniego sortowania.".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} nie wykryto odpowiedniego sortowania.".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
@@ -2311,7 +2311,7 @@ namespace Sanakan.Modules
 
                 QueryCacheManager.ExpireTag(new string[] { $"user-{bUser.Id}", "users" });
 
-                await ReplyAsync("", embed: $"{Context.User.Mention} zapisano nowe sortowanie.".ToEmbedMessage(EMType.Success).Build());
+                await SafeReplyAsync("", embed: $"{Context.User.Mention} zapisano nowe sortowanie.".ToEmbedMessage(EMType.Success).Build());
             }
         }
 
@@ -2327,13 +2327,13 @@ namespace Sanakan.Modules
                 var bUser = await db.GetUserOrCreateSimpleAsync(Context.User.Id);
                 if (count < 1)
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} obecny limit to: {bUser.GameDeck.CardsInGallery}.".ToEmbedMessage(EMType.Info).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} obecny limit to: {bUser.GameDeck.CardsInGallery}.".ToEmbedMessage(EMType.Info).Build());
                     return;
                 }
 
                 if (bUser.TcCnt < cost)
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} nie masz wystarczającej liczby TC.".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} nie masz wystarczającej liczby TC.".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
@@ -2344,7 +2344,7 @@ namespace Sanakan.Modules
 
                 QueryCacheManager.ExpireTag(new string[] { $"user-{bUser.Id}", "users" });
 
-                await ReplyAsync("", embed: $"{Context.User.Mention} powiększył swój limit kart w galerii do {bUser.GameDeck.CardsInGallery}.".ToEmbedMessage(EMType.Success).Build());
+                await SafeReplyAsync("", embed: $"{Context.User.Mention} powiększył swój limit kart w galerii do {bUser.GameDeck.CardsInGallery}.".ToEmbedMessage(EMType.Success).Build());
             }
         }
 
@@ -2360,7 +2360,7 @@ namespace Sanakan.Modules
                 var ticket = bUser.GameDeck.Items.FirstOrDefault(x => x.Type == ItemType.LotteryTicket);
                 if (ticket == null)
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} niestety nie masz przepustki.".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} niestety nie masz przepustki.".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
@@ -2377,7 +2377,7 @@ namespace Sanakan.Modules
 
                 QueryCacheManager.ExpireTag(new string[] { $"user-{bUser.Id}", "users" });
 
-                await ReplyAsync("", embed: $"{Context.User.Mention} wygrał na loterii: **{rewardInfo}**".ToEmbedMessage(EMType.Success).Build());
+                await SafeReplyAsync("", embed: $"{Context.User.Mention} wygrał na loterii: **{rewardInfo}**".ToEmbedMessage(EMType.Success).Build());
             }
         }
 
@@ -2404,13 +2404,13 @@ namespace Sanakan.Modules
 
             if (!string.IsNullOrEmpty(tag) && tag.Contains(" "))
             {
-                await ReplyAsync("", embed: $"{Context.User.Mention} oznaczenie nie może zawierać spacji.".ToEmbedMessage(EMType.Error).Build());
+                await SafeReplyAsync("", embed: $"{Context.User.Mention} oznaczenie nie może zawierać spacji.".ToEmbedMessage(EMType.Error).Build());
                 return;
             }
 
             if (!string.IsNullOrEmpty(tagWishlist) && tagWishlist.Contains(" "))
             {
-                await ReplyAsync("", embed: $"{Context.User.Mention} oznaczenie nie może zawierać spacji.".ToEmbedMessage(EMType.Error).Build());
+                await SafeReplyAsync("", embed: $"{Context.User.Mention} oznaczenie nie może zawierać spacji.".ToEmbedMessage(EMType.Error).Build());
                 return;
             }
 
@@ -2442,20 +2442,20 @@ namespace Sanakan.Modules
                 long price = (long)Math.Floor(newPrice);
                 if (price <= 0)
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} cena dziwnie wyliczona.".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} cena dziwnie wyliczona.".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
                 var fragments = bUser.GameDeck.Items.FirstOrDefault(x => x.Type == ItemType.CardFragment);
                 if (fragments == null || fragments.Count < price)
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} niestety nie ma wystarczającej liczby fragmentów({price}).".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} niestety nie ma wystarczającej liczby fragmentów({price}).".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
                 if (bUser.GameDeck.Cards.Count + count > bUser.GameDeck.MaxNumberOfCards)
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} nie masz miejsca na tyle kart!".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} nie masz miejsca na tyle kart!".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
@@ -2473,7 +2473,7 @@ namespace Sanakan.Modules
                     var character = await _waifu.GetRandomCharacterAsync(bUser.PoolType);
                     if (character == null)
                     {
-                        await ReplyAsync("", embed: "Brak połączania z Shindenem!".ToEmbedMessage(EMType.Error).Build());
+                        await SafeReplyAsync("", embed: "Brak połączania z Shindenem!".ToEmbedMessage(EMType.Error).Build());
                         return;
                     }
 
@@ -2543,7 +2543,7 @@ namespace Sanakan.Modules
                     await db.SaveChangesAsync();
                 }
 
-                await ReplyAsync("", embed: $"{Context.User.Mention} utworzone karty to:\n\n {openString}".ToEmbedMessage(EMType.Success).Build());
+                await SafeReplyAsync("", embed: $"{Context.User.Mention} utworzone karty to:\n\n {openString}".ToEmbedMessage(EMType.Success).Build());
             }
         }
 
@@ -2555,7 +2555,7 @@ namespace Sanakan.Modules
         {
             if (recipe == RecipeType.None || count <= 0)
             {
-                await ReplyAsync("", embed: $"{Context.User.Mention} ????".ToEmbedMessage(EMType.Error).Build());
+                await SafeReplyAsync("", embed: $"{Context.User.Mention} ????".ToEmbedMessage(EMType.Error).Build());
                 return;
             }
 
@@ -2568,7 +2568,7 @@ namespace Sanakan.Modules
                 {
                     if (!bUser.Pay(currency, count))
                     {
-                        await ReplyAsync("", embed: $"{Context.User.Mention} nie masz wystarczającej liczby **{currency.Type}** by wytowrzyć **{itemRecipe.Name}**{times}.".ToEmbedMessage(EMType.Error).Build());
+                        await SafeReplyAsync("", embed: $"{Context.User.Mention} nie masz wystarczającej liczby **{currency.Type}** by wytowrzyć **{itemRecipe.Name}**{times}.".ToEmbedMessage(EMType.Error).Build());
                         return;
                     }
                 }
@@ -2577,7 +2577,7 @@ namespace Sanakan.Modules
                 {
                     if (!bUser.GameDeck.RemoveItem(item, count))
                     {
-                        await ReplyAsync("", embed: $"{Context.User.Mention} nie masz wystarczającej liczby **{item.Name}** by wytowrzyć **{itemRecipe.Name}**{times}.".ToEmbedMessage(EMType.Error).Build());
+                        await SafeReplyAsync("", embed: $"{Context.User.Mention} nie masz wystarczającej liczby **{item.Name}** by wytowrzyć **{itemRecipe.Name}**{times}.".ToEmbedMessage(EMType.Error).Build());
                         return;
                     }
                 }
@@ -2585,7 +2585,7 @@ namespace Sanakan.Modules
                 var newItem = itemRecipe.Item.Type.ToItem(itemRecipe.Item.Count * count);
                 bUser.GameDeck.AddItem(newItem);
 
-                await ReplyAsync("", embed: $"{Context.User.Mention} utworzono: **{itemRecipe.Name}**{times}".ToEmbedMessage(EMType.Success).Build());
+                await SafeReplyAsync("", embed: $"{Context.User.Mention} utworzono: **{itemRecipe.Name}**{times}".ToEmbedMessage(EMType.Success).Build());
 
                 await db.SaveChangesAsync();
 
@@ -2601,11 +2601,11 @@ namespace Sanakan.Modules
         {
             if (recipe == RecipeType.None)
             {
-                await ReplyAsync("", embed: _waifu.GetItemRecipesList().ToEmbedMessage(EMType.Info).Build());
+                await SafeReplyAsync("", embed: _waifu.GetItemRecipesList().ToEmbedMessage(EMType.Info).Build());
                 return;
             }
 
-            await ReplyAsync("", embed: _waifu.GetItemRecipe(recipe).ToString().ToEmbedMessage(EMType.Info).Build());
+            await SafeReplyAsync("", embed: _waifu.GetItemRecipe(recipe).ToString().ToEmbedMessage(EMType.Info).Build());
         }
 
         [Command("moje oznaczenia", RunMode = RunMode.Async)]
@@ -2634,7 +2634,7 @@ namespace Sanakan.Modules
                 var tras = _tags.GetTag(Services.PocketWaifu.TagType.TrashBin);
                 dtag.Add((tras, await db.Cards.AsQueryable().AsNoTracking().CountAsync(x => x.GameDeckId == buser.Id &&  x.Tags.Any(x => x.Id == tras.Id))));
 
-                await ReplyAsync("", embed: ($"**Własne oznaczenia**: `{tags.Count}/{buser.GameDeck.MaxNumberOfTags}`\n\n"
+                await SafeReplyAsync("", embed: ($"**Własne oznaczenia**: `{tags.Count}/{buser.GameDeck.MaxNumberOfTags}`\n\n"
                                           + $"{string.Join("\n", tags.Select(x => $"**{x.Tag.Name}** `{x.Count}`"))}\n\n"
                                           + $"**Domyślne oznaczenia**:\n\n"
                                           + $"{string.Join("\n", dtag.Select(x => $"{x.Tag.Icon} **{x.Tag.Name}** `{x.Count}`"))}")
@@ -2650,13 +2650,13 @@ namespace Sanakan.Modules
         {
             if (tag.Contains(" "))
             {
-                await ReplyAsync("", embed: $"{Context.User.Mention} oznaczenie nie może zawierać spacji.".ToEmbedMessage(EMType.Error).Build());
+                await SafeReplyAsync("", embed: $"{Context.User.Mention} oznaczenie nie może zawierać spacji.".ToEmbedMessage(EMType.Error).Build());
                 return;
             }
 
             if (newtag.Contains(" "))
             {
-                await ReplyAsync("", embed: $"{Context.User.Mention} oznaczenie nie może zawierać spacji.".ToEmbedMessage(EMType.Error).Build());
+                await SafeReplyAsync("", embed: $"{Context.User.Mention} oznaczenie nie może zawierać spacji.".ToEmbedMessage(EMType.Error).Build());
                 return;
             }
 
@@ -2678,26 +2678,26 @@ namespace Sanakan.Modules
 
                 if (oldTags.IsNullOrEmpty())
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} nie odnaleziono starych oznaczeń.".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} nie odnaleziono starych oznaczeń.".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
                 if (string.IsNullOrEmpty(tag) || string.IsNullOrEmpty(newtag))
                 {
-                    await ReplyAsync("", embed: $"**Dostępne oznaczenia do przywrócenia**:\n\n{string.Join("\n", oldTags)}".ToEmbedMessage(EMType.Info).WithUser(Context.User).Build());
+                    await SafeReplyAsync("", embed: $"**Dostępne oznaczenia do przywrócenia**:\n\n{string.Join("\n", oldTags)}".ToEmbedMessage(EMType.Info).WithUser(Context.User).Build());
                     return;
                 }
 
                 if (!oldTags.Any(x => x.Equals(tag, StringComparison.CurrentCultureIgnoreCase)))
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} nie odnaleziono starego oznaczenia o nazwie `{tag}`.".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} nie odnaleziono starego oznaczenia o nazwie `{tag}`.".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
                 var thisTag = await db.GetTagAsync(_tags, newtag, Context.User.Id);
                 if (thisTag is null && buser.GameDeck.Tags.Count >= buser.GameDeck.MaxNumberOfTags)
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} nie posiadasz oznaczenia o takiej nazwie oraz miejsca by utworzyć nowe.".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} nie posiadasz oznaczenia o takiej nazwie oraz miejsca by utworzyć nowe.".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
@@ -2705,7 +2705,7 @@ namespace Sanakan.Modules
                 {
                     if (_tags.IsSimilar(newtag))
                     {
-                        await ReplyAsync("", embed: $"{Context.User.Mention} istnieje bardzo podobne oznaczenie domyślne, użyj go lub wymyśl inne.".ToEmbedMessage(EMType.Error).Build());
+                        await SafeReplyAsync("", embed: $"{Context.User.Mention} istnieje bardzo podobne oznaczenie domyślne, użyj go lub wymyśl inne.".ToEmbedMessage(EMType.Error).Build());
                         return;
                     }
 
@@ -2717,11 +2717,11 @@ namespace Sanakan.Modules
                 var cards = buser.GameDeck.Cards.Where(x => !x.Tags.Any(x => x.Id == thisTag.Id) && x.TagList.Any(x => x.Name.Equals(tag, StringComparison.CurrentCultureIgnoreCase))).ToList();
                 if (cards.IsNullOrEmpty())
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} wystąpił problem z odnalezieniem kart. Wszystkie są już oznaczone `{newtag}` lub nie ma już kart z oznaczeniem `{tag}`.".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} wystąpił problem z odnalezieniem kart. Wszystkie są już oznaczone `{newtag}` lub nie ma już kart z oznaczeniem `{tag}`.".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
-                var msg = await ReplyAsync("", embed: $"{Context.User.Mention} rozpoczęto przywracanie `{cards.Count}` kart do oznaczenia `{newtag}`...".ToEmbedMessage(EMType.Bot).Build());
+                var msg = await SafeReplyAsync("", embed: $"{Context.User.Mention} rozpoczęto przywracanie `{cards.Count}` kart do oznaczenia `{newtag}`...".ToEmbedMessage(EMType.Bot).Build());
                 foreach (var card in cards)
                 {
                     card.Tags.Add(thisTag);
@@ -2746,7 +2746,7 @@ namespace Sanakan.Modules
         {
             if (tag.Contains(" "))
             {
-                await ReplyAsync("", embed: $"{Context.User.Mention} oznaczenie nie może zawierać spacji.".ToEmbedMessage(EMType.Error).Build());
+                await SafeReplyAsync("", embed: $"{Context.User.Mention} oznaczenie nie może zawierać spacji.".ToEmbedMessage(EMType.Error).Build());
                 return;
             }
 
@@ -2755,19 +2755,19 @@ namespace Sanakan.Modules
                 var buser = await db.GetUserOrCreateSimpleAsync(Context.User.Id);
                 if (buser.GameDeck.MaxNumberOfTags <= buser.GameDeck.Tags.Count)
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} nie możesz utworzyć już więcej oznaczeń, skasuj jakieś lub zwiększ ich limit.".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} nie możesz utworzyć już więcej oznaczeń, skasuj jakieś lub zwiększ ich limit.".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
                 if (_tags.IsSimilar(tag))
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} istnieje bardzo podobne oznaczenie domyślne, użyj go lub wymyśl inne.".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} istnieje bardzo podobne oznaczenie domyślne, użyj go lub wymyśl inne.".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
                 if (buser.GameDeck.Tags.Any(x => x.Name.Equals(tag, StringComparison.CurrentCultureIgnoreCase)))
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} już posiadasz takie oznaczenie.".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} już posiadasz takie oznaczenie.".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
@@ -2776,7 +2776,7 @@ namespace Sanakan.Modules
 
                 QueryCacheManager.ExpireTag(new string[] { $"user-{Context.User.Id}", "users" });
 
-                await ReplyAsync("", embed: $"{Context.User.Mention} utworzono nowe oznaczenie: `{tag}`".ToEmbedMessage(EMType.Success).Build());
+                await SafeReplyAsync("", embed: $"{Context.User.Mention} utworzono nowe oznaczenie: `{tag}`".ToEmbedMessage(EMType.Success).Build());
             }
         }
 
@@ -2788,13 +2788,13 @@ namespace Sanakan.Modules
         {
             if (oldTag.Contains(" "))
             {
-                await ReplyAsync("", embed: $"{Context.User.Mention} oznaczenie nie może zawierać spacji.".ToEmbedMessage(EMType.Error).Build());
+                await SafeReplyAsync("", embed: $"{Context.User.Mention} oznaczenie nie może zawierać spacji.".ToEmbedMessage(EMType.Error).Build());
                 return;
             }
 
             if (action == ModifyTagActionType.Rename && newTag.Contains(" "))
             {
-                await ReplyAsync("", embed: $"{Context.User.Mention} oznaczenie nie może zawierać spacji.".ToEmbedMessage(EMType.Error).Build());
+                await SafeReplyAsync("", embed: $"{Context.User.Mention} oznaczenie nie może zawierać spacji.".ToEmbedMessage(EMType.Error).Build());
                 return;
             }
 
@@ -2804,7 +2804,7 @@ namespace Sanakan.Modules
                 var thisTag = buser.GameDeck.Tags.FirstOrDefault(x => x.Name.Equals(oldTag, StringComparison.CurrentCultureIgnoreCase));
                 if (thisTag is null)
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} nie odnaleziono oznaczenia.".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} nie odnaleziono oznaczenia.".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
@@ -2817,13 +2817,13 @@ namespace Sanakan.Modules
                 {
                     if (_tags.IsSimilar(newTag))
                     {
-                        await ReplyAsync("", embed: $"{Context.User.Mention} istnieje bardzo podobne oznaczenie domyślne, użyj go lub wymyśl inne.".ToEmbedMessage(EMType.Error).Build());
+                        await SafeReplyAsync("", embed: $"{Context.User.Mention} istnieje bardzo podobne oznaczenie domyślne, użyj go lub wymyśl inne.".ToEmbedMessage(EMType.Error).Build());
                         return;
                     }
 
                     if (buser.GameDeck.Tags.Any(x => x.Id != thisTag.Id && x.Name.Equals(newTag, StringComparison.CurrentCultureIgnoreCase)))
                     {
-                        await ReplyAsync("", embed: $"{Context.User.Mention} już posiadasz takie oznaczenie.".ToEmbedMessage(EMType.Error).Build());
+                        await SafeReplyAsync("", embed: $"{Context.User.Mention} już posiadasz takie oznaczenie.".ToEmbedMessage(EMType.Error).Build());
                         return;
                     }
 
@@ -2835,7 +2835,7 @@ namespace Sanakan.Modules
 
                 QueryCacheManager.ExpireTag(new string[] { $"user-{Context.User.Id}", "users" });
 
-                await ReplyAsync("", embed: $"{Context.User.Mention} {response}".ToEmbedMessage(EMType.Success).Build());
+                await SafeReplyAsync("", embed: $"{Context.User.Mention} {response}".ToEmbedMessage(EMType.Success).Build());
             }
         }
 
@@ -2847,7 +2847,7 @@ namespace Sanakan.Modules
         {
             if (tag.Contains(" "))
             {
-                await ReplyAsync("", embed: $"{Context.User.Mention} oznaczenie nie może zawierać spacji.".ToEmbedMessage(EMType.Error).Build());
+                await SafeReplyAsync("", embed: $"{Context.User.Mention} oznaczenie nie może zawierać spacji.".ToEmbedMessage(EMType.Error).Build());
                 return;
             }
 
@@ -2856,7 +2856,7 @@ namespace Sanakan.Modules
                 var thisTag = await db.GetTagAsync(_tags, tag, Context.User.Id);
                 if (thisTag is null)
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} nie odnaleziono oznaczenia `{tag}`".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} nie odnaleziono oznaczenia `{tag}`".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
@@ -2865,7 +2865,7 @@ namespace Sanakan.Modules
 
                 if (cardsSelected.IsNullOrEmpty())
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} nie odnaleziono nieoznaczonych kart.".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} nie odnaleziono nieoznaczonych kart.".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
@@ -2876,7 +2876,7 @@ namespace Sanakan.Modules
 
                 QueryCacheManager.ExpireTag(new string[] { $"user-{Context.User.Id}", "users" });
 
-                await ReplyAsync("", embed: $"{Context.User.Mention} oznaczono {cardsSelected.Count} kart.".ToEmbedMessage(EMType.Success).Build());
+                await SafeReplyAsync("", embed: $"{Context.User.Mention} oznaczono {cardsSelected.Count} kart.".ToEmbedMessage(EMType.Success).Build());
             }
         }
 
@@ -2893,7 +2893,7 @@ namespace Sanakan.Modules
 
                 if (cardsSelected.IsNullOrEmpty())
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} nie odnaleziono nieoznaczonych kart.".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} nie odnaleziono nieoznaczonych kart.".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
@@ -2904,7 +2904,7 @@ namespace Sanakan.Modules
 
                 QueryCacheManager.ExpireTag(new string[] { $"user-{Context.User.Id}", "users" });
 
-                await ReplyAsync("", embed: $"{Context.User.Mention} usunięto oznaczenie z {cardsSelected.Count} kart.".ToEmbedMessage(EMType.Success).Build());
+                await SafeReplyAsync("", embed: $"{Context.User.Mention} usunięto oznaczenie z {cardsSelected.Count} kart.".ToEmbedMessage(EMType.Success).Build());
             }
         }
 
@@ -2916,7 +2916,7 @@ namespace Sanakan.Modules
         {
             if (tag.Contains(" "))
             {
-                await ReplyAsync("", embed: $"{Context.User.Mention} oznaczenie nie może zawierać spacji.".ToEmbedMessage(EMType.Error).Build());
+                await SafeReplyAsync("", embed: $"{Context.User.Mention} oznaczenie nie może zawierać spacji.".ToEmbedMessage(EMType.Error).Build());
                 return;
             }
 
@@ -2925,14 +2925,14 @@ namespace Sanakan.Modules
                 var thisTag = await db.GetTagAsync(_tags, tag, Context.User.Id);
                 if (thisTag is null)
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} nie odnaleziono oznaczenia `{tag}`".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} nie odnaleziono oznaczenia `{tag}`".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
                 var untaggedCards = await db.Cards.AsQueryable().Where(x => x.GameDeckId == Context.User.Id).Include(x => x.Tags).Where(x => !x.Tags.Any()).ToListAsync();
                 if (untaggedCards.IsNullOrEmpty())
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} nie odnaleziono nieoznaczonych kart.".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} nie odnaleziono nieoznaczonych kart.".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
@@ -2943,7 +2943,7 @@ namespace Sanakan.Modules
 
                 QueryCacheManager.ExpireTag(new string[] { $"user-{Context.User.Id}", "users" });
 
-                await ReplyAsync("", embed: $"{Context.User.Mention} oznaczono {untaggedCards.Count} kart.".ToEmbedMessage(EMType.Success).Build());
+                await SafeReplyAsync("", embed: $"{Context.User.Mention} oznaczono {untaggedCards.Count} kart.".ToEmbedMessage(EMType.Success).Build());
             }
         }
 
@@ -2956,13 +2956,13 @@ namespace Sanakan.Modules
             bool removeTag = newTag.Equals("%$-1");
             if (newTag.Contains(" "))
             {
-                await ReplyAsync("", embed: $"{Context.User.Mention} oznaczenie nie może zawierać spacji.".ToEmbedMessage(EMType.Error).Build());
+                await SafeReplyAsync("", embed: $"{Context.User.Mention} oznaczenie nie może zawierać spacji.".ToEmbedMessage(EMType.Error).Build());
                 return;
             }
 
             if (!removeTag && newTag.Equals(oldTag, StringComparison.CurrentCultureIgnoreCase))
             {
-                await ReplyAsync("", embed: $"{Context.User.Mention} nowe oznaczenie nie może być takie samo jak stare.".ToEmbedMessage(EMType.Error).Build());
+                await SafeReplyAsync("", embed: $"{Context.User.Mention} nowe oznaczenie nie może być takie samo jak stare.".ToEmbedMessage(EMType.Error).Build());
                 return;
             }
 
@@ -2971,14 +2971,14 @@ namespace Sanakan.Modules
                 var oldt = await db.GetTagAsync(_tags, oldTag, Context.User.Id);
                 if (oldt is null)
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} nie odnaleziono oznaczenia `{oldTag}`".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} nie odnaleziono oznaczenia `{oldTag}`".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
                 var newt = await db.GetTagAsync(_tags, newTag, Context.User.Id);
                 if (!removeTag && newt is null)
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} nie odnaleziono oznaczenia `{oldTag}`".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} nie odnaleziono oznaczenia `{oldTag}`".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
@@ -2988,7 +2988,7 @@ namespace Sanakan.Modules
 
                 if (cardsSelected.IsNullOrEmpty())
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} nie odnaleziono oznaczonych kart.".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} nie odnaleziono oznaczonych kart.".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
@@ -3004,7 +3004,7 @@ namespace Sanakan.Modules
                 QueryCacheManager.ExpireTag(new string[] { $"user-{Context.User.Id}", "users" });
 
                 string thing = removeTag ? "skasowane" : "zmienione";
-                await ReplyAsync("", embed: $"{Context.User.Mention} {thing} zostało oznaczenie na {cardsSelected.Count} kartach.".ToEmbedMessage(EMType.Success).Build());
+                await SafeReplyAsync("", embed: $"{Context.User.Mention} {thing} zostało oznaczenie na {cardsSelected.Count} kartach.".ToEmbedMessage(EMType.Success).Build());
             }
         }
 
@@ -3019,7 +3019,7 @@ namespace Sanakan.Modules
                 var thisTag = await db.GetTagAsync(_tags, tag, Context.User.Id);
                 if (thisTag is null)
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} nie odnaleziono oznaczenia `{tag}`".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} nie odnaleziono oznaczenia `{tag}`".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
@@ -3028,7 +3028,7 @@ namespace Sanakan.Modules
 
                 if (cardsSelected.IsNullOrEmpty())
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} nie odnaleziono nieoznaczonych kart.".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} nie odnaleziono nieoznaczonych kart.".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
@@ -3039,7 +3039,7 @@ namespace Sanakan.Modules
 
                 QueryCacheManager.ExpireTag(new string[] { $"user-{Context.User.Id}", "users" });
 
-                await ReplyAsync("", embed: $"{Context.User.Mention} skasowane zostało oznaczenie `{tag}` z {cardsSelected.Count} kart.".ToEmbedMessage(EMType.Success).Build());
+                await SafeReplyAsync("", embed: $"{Context.User.Mention} skasowane zostało oznaczenie `{tag}` z {cardsSelected.Count} kart.".ToEmbedMessage(EMType.Success).Build());
             }
         }
 
@@ -3059,7 +3059,7 @@ namespace Sanakan.Modules
 
                 QueryCacheManager.ExpireTag(new string[] { $"user-{bUser.Id}", "users" });
 
-                await ReplyAsync("", embed: $"{Context.User.Mention} ustawił nowe zasady wymiany.".ToEmbedMessage(EMType.Success).Build());
+                await SafeReplyAsync("", embed: $"{Context.User.Mention} ustawił nowe zasady wymiany.".ToEmbedMessage(EMType.Success).Build());
             }
         }
 
@@ -3076,12 +3076,12 @@ namespace Sanakan.Modules
                 {
                     if (active.Count < 1)
                     {
-                        await ReplyAsync("", embed: $"{Context.User.Mention} nie masz aktywnych kart.".ToEmbedMessage(EMType.Info).Build());
+                        await SafeReplyAsync("", embed: $"{Context.User.Mention} nie masz aktywnych kart.".ToEmbedMessage(EMType.Info).Build());
                         return;
                     }
 
                     var res = await _helepr.SendEmbedsOnDMAsync(Context.User, _waifu.GetActiveList(active));
-                    await ReplyAsync("", embed: res.ToEmbedMessage($"{Context.User.Mention} ").Build());
+                    await SafeReplyAsync("", embed: res.ToEmbedMessage($"{Context.User.Mention} ").Build());
                     return;
                 }
 
@@ -3090,19 +3090,19 @@ namespace Sanakan.Modules
 
                 if (thisCard == null || thisCard.GameDeckId != Context.User.Id)
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} nie odnaleziono karty.".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} nie odnaleziono karty.".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
                 if (thisCard.InCage)
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} ta karta znajduje się w klatce.".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} ta karta znajduje się w klatce.".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
                 if (thisCard.Expedition != CardExpedition.None)
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} ta karta znajduje się na wyprawie.".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} ta karta znajduje się na wyprawie.".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
@@ -3127,7 +3127,7 @@ namespace Sanakan.Modules
 
                 var message = thisCard.Active ? "aktywował: " : "dezaktywował: ";
                 var power = $"**Moc talii**: {bUser.GameDeck.DeckPower:F}";
-                await ReplyAsync("", embed: $"{Context.User.Mention} {message}{thisCard.GetString(false, false, true)}\n\n{power}".ToEmbedMessage(EMType.Success).Build());
+                await SafeReplyAsync("", embed: $"{Context.User.Mention} {message}{thisCard.GetString(false, false, true)}\n\n{power}".ToEmbedMessage(EMType.Success).Build());
             }
         }
 
@@ -3140,7 +3140,7 @@ namespace Sanakan.Modules
             var charInfo = await _shinden.GetCharacterInfoAsync(id);
             if (charInfo == null)
             {
-                await ReplyAsync("", embed: $"Nie odnaleziono postaci na shindenie!".ToEmbedMessage(EMType.Error).Build());
+                await SafeReplyAsync("", embed: $"Nie odnaleziono postaci na shindenie!".ToEmbedMessage(EMType.Error).Build());
                 return;
             }
 
@@ -3156,19 +3156,19 @@ namespace Sanakan.Modules
 
                 if (cards.IsNullOrEmpty())
                 {
-                    await ReplyAsync("", embed: $"Nie odnaleziono kart {charInfo}".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"Nie odnaleziono kart {charInfo}".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
                 var msgs = await _waifu.GetWaifuFromCharacterSearchResult($"[{charInfo}]({charInfo.CharacterUrl}) posiadają:", cards, !showNames, Context.Guild, showShindenUrl);
                 if (msgs.Count == 1)
                 {
-                    await ReplyAsync("", embed: msgs.First());
+                    await SafeReplyAsync("", embed: msgs.First());
                     return;
                 }
 
                 var res = await _helepr.SendEmbedsOnDMAsync(Context.User, msgs);
-                await ReplyAsync("", embed: res.ToEmbedMessage($"{Context.User.Mention} ").Build());
+                await SafeReplyAsync("", embed: res.ToEmbedMessage($"{Context.User.Mention} ").Build());
             }
         }
 
@@ -3185,14 +3185,14 @@ namespace Sanakan.Modules
                 var user = await db.GetCachedFullUserAsync(Context.User.Id);
                 if (user == null)
                 {
-                    await ReplyAsync("", embed: "Nie posiadasz profilu bota!".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: "Nie posiadasz profilu bota!".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
                 var response = await _shclient.User.GetFavCharactersAsync(user.Shinden);
                 if (!response.IsSuccessStatusCode())
                 {
-                    await ReplyAsync("", embed: $"Nie odnaleziono listy ulubionych postaci!".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"Nie odnaleziono listy ulubionych postaci!".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
@@ -3207,13 +3207,13 @@ namespace Sanakan.Modules
 
                 if (cards.Count < 1)
                 {
-                    await ReplyAsync("", embed: $"Nie odnaleziono kart.".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"Nie odnaleziono kart.".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
                 var embeds = await _waifu.GetWaifuFromCharacterTitleSearchResultAsync(cards, !showNames, Context.Guild, showShindenUrl);
                 var res = await _helepr.SendEmbedsOnDMAsync(Context.User, embeds);
-                await ReplyAsync("", embed: res.ToEmbedMessage($"{Context.User.Mention} ").Build());
+                await SafeReplyAsync("", embed: res.ToEmbedMessage($"{Context.User.Mention} ").Build());
             }
         }
 
@@ -3226,14 +3226,14 @@ namespace Sanakan.Modules
             var response = await _shclient.Title.GetCharactersAsync(id);
             if (!response.IsSuccessStatusCode())
             {
-                await ReplyAsync("", embed: $"Nie odnaleziono postaci z serii na shindenie!".ToEmbedMessage(EMType.Error).Build());
+                await SafeReplyAsync("", embed: $"Nie odnaleziono postaci z serii na shindenie!".ToEmbedMessage(EMType.Error).Build());
                 return;
             }
 
             var characterIds = response.Body.Select(x => x.CharacterId).Distinct().ToList();
             if (characterIds.Count < 1)
             {
-                await ReplyAsync("", embed: $"Nie odnaleziono postaci!".ToEmbedMessage(EMType.Error).Build());
+                await SafeReplyAsync("", embed: $"Nie odnaleziono postaci!".ToEmbedMessage(EMType.Error).Build());
                 return;
             }
 
@@ -3242,7 +3242,7 @@ namespace Sanakan.Modules
                 var user = await db.GetCachedFullUserAsync(Context.User.Id);
                 if (user is null)
                 {
-                    await ReplyAsync("", embed: $"Nie udało sie pobrać danych użytkownika.".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"Nie udało sie pobrać danych użytkownika.".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
@@ -3260,14 +3260,14 @@ namespace Sanakan.Modules
 
                 if (characterIds.IsNullOrEmpty())
                 {
-                    await ReplyAsync("", embed: $"Wygląda na to że masz już wszystko.".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"Wygląda na to że masz już wszystko.".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
                 var characters = response.Body.Where(x => characterIds.Any(c => c == x.CharacterId)).Select(x => $"{x.CharacterFirstName} {x.CharacterLastName}: {x.CharacterId}").Distinct().ToList();
                 var embeds = _helepr.BuildEmbedsFormTextRows(characters);
                 var res = await _helepr.SendEmbedsOnDMAsync(Context.User, embeds);
-                await ReplyAsync("", embed: res.ToEmbedMessage($"{Context.User.Mention} ").Build());
+                await SafeReplyAsync("", embed: res.ToEmbedMessage($"{Context.User.Mention} ").Build());
             }
         }
 
@@ -3280,14 +3280,14 @@ namespace Sanakan.Modules
             var response = await _shclient.Title.GetCharactersAsync(id);
             if (!response.IsSuccessStatusCode())
             {
-                await ReplyAsync("", embed: $"Nie odnaleziono postaci z serii na shindenie!".ToEmbedMessage(EMType.Error).Build());
+                await SafeReplyAsync("", embed: $"Nie odnaleziono postaci z serii na shindenie!".ToEmbedMessage(EMType.Error).Build());
                 return;
             }
 
             var characterIds = response.Body.Select(x => x.CharacterId).Distinct().ToList();
             if (characterIds.Count < 1)
             {
-                await ReplyAsync("", embed: $"Nie odnaleziono postaci!".ToEmbedMessage(EMType.Error).Build());
+                await SafeReplyAsync("", embed: $"Nie odnaleziono postaci!".ToEmbedMessage(EMType.Error).Build());
                 return;
             }
 
@@ -3298,7 +3298,7 @@ namespace Sanakan.Modules
                     var user = await db.GetCachedFullUserAsync(Context.User.Id);
                     if (user is null)
                     {
-                        await ReplyAsync("", embed: $"Nie udało sie pobrać danych użytkownika.".ToEmbedMessage(EMType.Error).Build());
+                        await SafeReplyAsync("", embed: $"Nie udało sie pobrać danych użytkownika.".ToEmbedMessage(EMType.Error).Build());
                         return;
                     }
 
@@ -3312,13 +3312,13 @@ namespace Sanakan.Modules
                 var cards = await db.Cards.AsQueryable().Include(x => x.Tags).Include(x => x.GameDeck).AsSplitQuery().Where(x => characterIds.Contains(x.Character)).AsNoTracking().FromCacheAsync(new[] { "users" });
                 if (cards.Count() < 1)
                 {
-                    await ReplyAsync("", embed: $"Nie odnaleziono kart.".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"Nie odnaleziono kart.".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
                 var embeds = await _waifu.GetWaifuFromCharacterTitleSearchResultAsync(cards, !showNames, Context.Guild);
                 var res = await _helepr.SendEmbedsOnDMAsync(Context.User, embeds);
-                await ReplyAsync("", embed: res.ToEmbedMessage($"{Context.User.Mention} ").Build());
+                await SafeReplyAsync("", embed: res.ToEmbedMessage($"{Context.User.Mention} ").Build());
             }
         }
 
@@ -3330,7 +3330,7 @@ namespace Sanakan.Modules
         {
             if (!string.IsNullOrEmpty(tag) && tag.Contains(" "))
             {
-                await ReplyAsync("", embed: $"{Context.User.Mention} oznaczenie nie może zawierać spacji.".ToEmbedMessage(EMType.Error).Build());
+                await SafeReplyAsync("", embed: $"{Context.User.Mention} oznaczenie nie może zawierać spacji.".ToEmbedMessage(EMType.Error).Build());
                 return;
             }
 
@@ -3339,7 +3339,7 @@ namespace Sanakan.Modules
 
             if (user1.Id == user2.Id)
             {
-                await ReplyAsync("", embed: $"{user1.Mention} wymiana z samym sobą?".ToEmbedMessage(EMType.Error).Build());
+                await SafeReplyAsync("", embed: $"{user1.Mention} wymiana z samym sobą?".ToEmbedMessage(EMType.Error).Build());
                 return;
             }
 
@@ -3347,7 +3347,7 @@ namespace Sanakan.Modules
             await Task.Delay(Services.Fun.GetRandomValue(30, 230));
             if (_session.SessionExist(session))
             {
-                await ReplyAsync("", embed: $"{user1.Mention} Ty lub twój partner znajdujecie się obecnie w trakcie wymiany.".ToEmbedMessage(EMType.Error).Build());
+                await SafeReplyAsync("", embed: $"{user1.Mention} Ty lub twój partner znajdujecie się obecnie w trakcie wymiany.".ToEmbedMessage(EMType.Error).Build());
                 return;
             }
 
@@ -3357,19 +3357,19 @@ namespace Sanakan.Modules
                 var duser2 = await db.GetCachedFullUserAsync(user2.Id);
                 if (duser1 == null || duser2 == null)
                 {
-                    await ReplyAsync("", embed: "Jeden z graczy nie posiada profilu!".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: "Jeden z graczy nie posiada profilu!".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
                 if (duser1.IsBlacklisted || duser2.IsBlacklisted)
                 {
-                    await ReplyAsync("", embed: "Jeden z graczy znajduje się na czarnej liście!".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: "Jeden z graczy znajduje się na czarnej liście!".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
                 if (duser1.GameDeck.MaxNumberOfCards <= duser1.GameDeck.Cards.Count || duser2.GameDeck.MaxNumberOfCards <= duser2.GameDeck.Cards.Count)
                 {
-                    await ReplyAsync("", embed: "Jeden z graczy nie posiada już miejsca na karty!".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: "Jeden z graczy nie posiada już miejsca na karty!".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
@@ -3397,7 +3397,7 @@ namespace Sanakan.Modules
                 session.Tips = $"Polecenia: `dodaj [WID]`, `usuń [WID]`.\n\n\u0031\u20E3 "
                     + $"- zakończenie dodawania {user1.Mention}\n\u0032\u20E3 - zakończenie dodawania {user2.Mention}";
 
-                var msg = await ReplyAsync("", embed: session.BuildEmbed());
+                var msg = await SafeReplyAsync("", embed: session.BuildEmbed());
                 await msg.AddReactionsAsync(session.StartReactions);
                 session.Message = msg;
 
@@ -3413,7 +3413,7 @@ namespace Sanakan.Modules
         {
             if (items.IsNullOrEmpty())
             {
-                await ReplyAsync("", embed: $"{Context.User.Mention} lista przedmiotów jest niepoprawna.".ToEmbedMessage(EMType.Error).Build());
+                await SafeReplyAsync("", embed: $"{Context.User.Mention} lista przedmiotów jest niepoprawna.".ToEmbedMessage(EMType.Error).Build());
                 return;
             }
 
@@ -3422,7 +3422,7 @@ namespace Sanakan.Modules
                 var buser = await db.Users.AsQueryable().Where(x => x.Id == Context.User.Id).Include(x => x.GameDeck).ThenInclude(x => x.Items).FirstOrDefaultAsync();
                 if (buser == null || buser.GameDeck.Items.IsNullOrEmpty())
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} nie masz żadnych przemiotów.".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} nie masz żadnych przemiotów.".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
@@ -3471,7 +3471,7 @@ namespace Sanakan.Modules
                 QueryCacheManager.ExpireTag(new string[] { $"user-{buser.Id}" });
 
                 string errorInfo = errors.Count > 0 ? $"\n\n❗ Nie udało się wymienić:\n\n{string.Join("\n", errors)}": "";
-                await ReplyAsync("", embed: $"{Context.User.Mention} udało się zyskać **{scrapes}** fragmentów, masz ich w sumie już **{tItem.Count}**.{errorInfo}"
+                await SafeReplyAsync("", embed: $"{Context.User.Mention} udało się zyskać **{scrapes}** fragmentów, masz ich w sumie już **{tItem.Count}**.{errorInfo}"
                     .ToEmbedMessage(errors.Count >= items.Length ? EMType.Warning : EMType.Success).Build());
             }
         }
@@ -3489,12 +3489,12 @@ namespace Sanakan.Modules
 
                 if (cardsOnExpedition.Count < 1)
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} nie posiadasz kart znajdujących się na wyprawie.".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} nie posiadasz kart znajdujących się na wyprawie.".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
                 var expStrs = cardsOnExpedition.Select(x => $"{x.GetShortString(true)}:\n Od {x.ExpeditionDate.ToShortDateTime()} na {x.Expedition.GetName("ej")} wyprawie.\nTraci siły {x.ExpeditionDate.AddMinutes(_expedition.GetMaxPossibleLengthOfExpedition(botUser, x)).ToRemTime()}.");
-                await ReplyAsync("", embed: $"**Wyprawy[**{cardsOnExpedition.Count}/{botUser.GameDeck.LimitOfCardsOnExpedition()}**]** {Context.User.Mention}:\n\n{string.Join("\n\n", expStrs)}".ToEmbedMessage(EMType.Bot).WithUser(Context.User).Build());
+                await SafeReplyAsync("", embed: $"**Wyprawy[**{cardsOnExpedition.Count}/{botUser.GameDeck.LimitOfCardsOnExpedition()}**]** {Context.User.Mention}:\n\n{string.Join("\n\n", expStrs)}".ToEmbedMessage(EMType.Bot).WithUser(Context.User).Build());
             }
         }
 
@@ -3506,7 +3506,7 @@ namespace Sanakan.Modules
         {
             if (_session.SessionExist(Context.User, typeof(ExchangeSession)))
             {
-                await ReplyAsync("", embed: $"{Context.User.Mention} znajdujesz się obecnie w trakcie wymiany.".ToEmbedMessage(EMType.Error).Build());
+                await SafeReplyAsync("", embed: $"{Context.User.Mention} znajdujesz się obecnie w trakcie wymiany.".ToEmbedMessage(EMType.Error).Build());
                 return;
             }
 
@@ -3516,13 +3516,13 @@ namespace Sanakan.Modules
                 var thisCard = botUser.GameDeck.Cards.FirstOrDefault(x => x.Id == wid);
                 if (thisCard == null)
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} nie odnaleziono karty.".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} nie odnaleziono karty.".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
                 if (thisCard.Expedition == CardExpedition.None)
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} ta karta nie jest na wyprawie.".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} ta karta nie jest na wyprawie.".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
@@ -3554,7 +3554,7 @@ namespace Sanakan.Modules
 
                 _ = Task.Run(async () =>
                 {
-                    await ReplyAsync("", embed: $"Karta {thisCard.GetString(false, false, true)} wróciła z {oldName.GetName("ej")} wyprawy!\n\n{message}{action}".ToEmbedMessage(EMType.Success).WithUser(Context.User).Build());
+                    await SafeReplyAsync("", embed: $"Karta {thisCard.GetString(false, false, true)} wróciła z {oldName.GetName("ej")} wyprawy!\n\n{message}{action}".ToEmbedMessage(EMType.Success).WithUser(Context.User).Build());
                 });
             }
         }
@@ -3567,13 +3567,13 @@ namespace Sanakan.Modules
         {
             if (expedition == CardExpedition.None)
             {
-                await ReplyAsync("", embed: $"{Context.User.Mention} nie podałeś poprawnej nazwy wyprawy.".ToEmbedMessage(EMType.Error).Build());
+                await SafeReplyAsync("", embed: $"{Context.User.Mention} nie podałeś poprawnej nazwy wyprawy.".ToEmbedMessage(EMType.Error).Build());
                 return;
             }
 
             if (_session.SessionExist(Context.User, typeof(ExchangeSession)))
             {
-                await ReplyAsync("", embed: $"{Context.User.Mention} znajdujesz się obecnie w trakcie wymiany.".ToEmbedMessage(EMType.Error).Build());
+                await SafeReplyAsync("", embed: $"{Context.User.Mention} znajdujesz się obecnie w trakcie wymiany.".ToEmbedMessage(EMType.Error).Build());
                 return;
             }
 
@@ -3583,14 +3583,14 @@ namespace Sanakan.Modules
                 var cardsSelected = botUser.GameDeck.Cards.Where(x => wids.Any(c => c == x.Id)).ToList();
                 if (cardsSelected.Count < 1)
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} nie odnaleziono kart.".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} nie odnaleziono kart.".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
                 var cardsOnExp = botUser.GameDeck.Cards.Count(x => x.Expedition != CardExpedition.None);
                 if (cardsOnExp + cardsSelected.Count > botUser.GameDeck.LimitOfCardsOnExpedition())
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} nie możesz wysłać więcej kart na wyprawę.".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} nie możesz wysłać więcej kart na wyprawę.".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
@@ -3615,7 +3615,7 @@ namespace Sanakan.Modules
                             _ => "????"
                         };
 
-                        await ReplyAsync("", embed: $"{Context.User.Mention} {card.GetIdWithUrl()} ta karta nie może się udać na tę wyprawę.\n{reason}".ToEmbedMessage(EMType.Error).Build());
+                        await SafeReplyAsync("", embed: $"{Context.User.Mention} {card.GetIdWithUrl()} ta karta nie może się udać na tę wyprawę.\n{reason}".ToEmbedMessage(EMType.Error).Build());
                         return;
                     }
 
@@ -3641,28 +3641,35 @@ namespace Sanakan.Modules
                     {
                         var thisCard = cardsSelected.FirstOrDefault();
                         var max = _expedition.GetMaxPossibleLengthOfExpedition(botUser, thisCard, expedition).ToString("F");
-                        await ReplyAsync("", embed: $"{thisCard.GetString(false, false, true)} udała się na {expedition.GetName("ą")} wyprawę!\nZmęczy się za {max} min.".ToEmbedMessage(EMType.Success).WithUser(Context.User).Build());
+                        await SafeReplyAsync("", embed: $"{thisCard.GetString(false, false, true)} udała się na {expedition.GetName("ą")} wyprawę!\nZmęczy się za {max} min.".ToEmbedMessage(EMType.Success).WithUser(Context.User).Build());
                     }
                     else
                     {
-                        await ReplyAsync("", embed: $"Wysłano **{cardsSelected.Count}** kart na {expedition.GetName("ą")} wyprawę!".ToEmbedMessage(EMType.Success).WithUser(Context.User).Build());
+                        await SafeReplyAsync("", embed: $"Wysłano **{cardsSelected.Count}** kart na {expedition.GetName("ą")} wyprawę!".ToEmbedMessage(EMType.Success).WithUser(Context.User).Build());
                     }
                 });
             }
         }
 
-        [Command("pojedynek")]
-        [Alias("duel")]
-        [Summary("stajesz do walki naprzeciw innemu graczowi")]
-        [Remarks(""), RequireWaifuDuelChannel]
-        public async Task MakeADuelAsync()
+        [Command("pojedynek testowy")]
+        [Alias("test duel")]
+        [Summary("stajesz do walki naprzeciw innemu graczowi - testowo")]
+        [Remarks("Porowizja"), RequireAnyCommandChannel]
+        public async Task MakeADuelTestAsync([Summary("nazwa użytkownika")] SocketGuildUser usr)
         {
             using (var db = new Database.DatabaseContext(Config))
             {
-                var duser = await db.GetUserOrCreateAsync(Context.User.Id);
+                var duser = await db.GetUserAndDontTrackAsync(Context.User.Id);
                 if (duser.GameDeck.NeedToSetDeckAgain())
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} musisz na nowo ustawić swóją talie!".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} musisz na nowo ustawić swóją talie!".ToEmbedMessage(EMType.Error).Build());
+                    return;
+                }
+
+                var euser = await db.GetUserAndDontTrackAsync(usr.Id);
+                if (euser.GameDeck.NeedToSetDeckAgain())
+                {
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} twój przeciwnik musi na nowo ustawić swóją talie!".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
@@ -3677,7 +3684,83 @@ namespace Sanakan.Modules
                         _ => "małą"
                     };
 
-                    await ReplyAsync("", embed: $"{Context.User.Mention} masz zbyt {err} talie ({duser.GameDeck.GetDeckPower():F}).".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} masz zbyt {err} talie ({duser.GameDeck.GetDeckPower():F}).".ToEmbedMessage(EMType.Error).Build());
+                    return;
+                }
+
+                canFight = euser.GameDeck.CanFightPvP();
+                if (canFight != DeckPowerStatus.Ok)
+                {
+                    var err = canFight switch
+                    {
+                        DeckPowerStatus.TooLow => "słabą",
+                        DeckPowerStatus.TooHigh => "silną",
+                        DeckPowerStatus.TooManyCards => "dużą",
+                        _ => "małą"
+                    };
+
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} twój przeciwnik ma zbyt {err} talie ({euser.GameDeck.GetDeckPower():F}).".ToEmbedMessage(EMType.Error).Build());
+                    return;
+                }
+
+                var players = new List<PlayerInfo>
+                {
+                    new PlayerInfo
+                    {
+                        Cards = duser.GameDeck.Cards.Where(x => x.Active).ToList(),
+                        User = Context.User,
+                        Dbuser = duser
+                    },
+                    new PlayerInfo
+                    {
+                        Cards = euser.GameDeck.Cards.Where(x => x.Active).ToList(),
+                        Dbuser = euser,
+                        User = usr
+                    }
+                };
+
+                var fight = _waifu.MakeFightAsync(players);
+                string deathLog = _waifu.GetDeathLog(fight, players);
+
+                var res = FightResult.Lose;
+                if (fight.Winner == null)
+                    res = FightResult.Draw;
+                else if (fight.Winner.User.Id == duser.Id)
+                    res = FightResult.Win;
+
+                var info = duser.GameDeck.CalculatePVPParams(duser.GameDeck, res);
+                string wStr = fight.Winner == null ? "Remis!" : $"Zwycięża {fight.Winner.User.Mention}!";
+                await SafeReplyAsync("", embed: $"⚔️ **Pojedynek testowy**:\n{Context.User.Mention} vs. {usr.Mention}\n\n{deathLog.TrimToLength(2000)}\n{wStr}\n{info}".ToEmbedMessage(EMType.Info).Build());
+            }
+        }
+
+        [Command("pojedynek")]
+        [Alias("duel")]
+        [Summary("stajesz do walki naprzeciw innemu graczowi")]
+        [Remarks(""), RequireWaifuDuelChannel]
+        public async Task MakeADuelAsync()
+        {
+            using (var db = new Database.DatabaseContext(Config))
+            {
+                var duser = await db.GetUserOrCreateAsync(Context.User.Id);
+                if (duser.GameDeck.NeedToSetDeckAgain())
+                {
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} musisz na nowo ustawić swóją talie!".ToEmbedMessage(EMType.Error).Build());
+                    return;
+                }
+
+                var canFight = duser.GameDeck.CanFightPvP();
+                if (canFight != DeckPowerStatus.Ok)
+                {
+                    var err = canFight switch
+                    {
+                        DeckPowerStatus.TooLow => "słabą",
+                        DeckPowerStatus.TooHigh => "silną",
+                        DeckPowerStatus.TooManyCards => "dużą",
+                        _ => "małą"
+                    };
+
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} masz zbyt {err} talie ({duser.GameDeck.GetDeckPower():F}).".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
@@ -3696,7 +3779,7 @@ namespace Sanakan.Modules
 
                 if (duser.GameDeck.ReachedDailyMaxPVPCount())
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} dziś już nie możesz rozegrać pojedynku.".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} dziś już nie możesz rozegrać pojedynku.".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
@@ -3709,7 +3792,7 @@ namespace Sanakan.Modules
                 var allPvpPlayers = await db.GetCachedPlayersForPVP(duser.Id);
                 if (allPvpPlayers.Count < 10)
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} zbyt mała liczba graczy ma utworzoną poprawną talię!".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} zbyt mała liczba graczy ma utworzoną poprawną talię!".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
@@ -3779,7 +3862,7 @@ namespace Sanakan.Modules
                 _ = Task.Run(async () =>
                 {
                     string wStr = fight.Winner == null ? "Remis!" : $"Zwycięża {fight.Winner.User.Mention}!";
-                    await ReplyAsync("", embed: $"⚔️ **Pojedynek**:\n{Context.User.Mention} vs. {euser.Mention}\n\n{deathLog.TrimToLength(2000)}\n{wStr}\n{info}".ToEmbedMessage(EMType.Bot).Build());
+                    await SafeReplyAsync("", embed: $"⚔️ **Pojedynek**:\n{Context.User.Mention} vs. {euser.Mention}\n\n{deathLog.TrimToLength(2000)}\n{wStr}\n{info}".ToEmbedMessage(EMType.Bot).Build());
                 });
             }
         }
@@ -3796,7 +3879,7 @@ namespace Sanakan.Modules
                 var botuser = await db.GetUserOrCreateAsync(Context.User.Id);
                 if (botuser.TcCnt < tcCost)
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} nie posiadasz wystarczającej liczby TC!".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} nie posiadasz wystarczającej liczby TC!".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
@@ -3804,7 +3887,7 @@ namespace Sanakan.Modules
                 var prevCard = botuser.GameDeck.Cards.FirstOrDefault(x => x.Id == botuser.GameDeck.PremiumWaifu);
                 if (thisCard == null)
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} nie odnaleziono karty.".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} nie odnaleziono karty.".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
@@ -3830,7 +3913,7 @@ namespace Sanakan.Modules
 
                 await db.SaveChangesAsync();
 
-                await ReplyAsync("", embed: $"Kupiłeś waifu, gratulacje {Context.User.Mention}!".ToEmbedMessage(EMType.Success).Build());
+                await SafeReplyAsync("", embed: $"Kupiłeś waifu, gratulacje {Context.User.Mention}!".ToEmbedMessage(EMType.Success).Build());
             }
         }
 
@@ -3862,20 +3945,20 @@ namespace Sanakan.Modules
                         await db.SaveChangesAsync();
                     }
 
-                    await ReplyAsync("", embed: $"{Context.User.Mention} zresetował ulubioną karte.".ToEmbedMessage(EMType.Success).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} zresetował ulubioną karte.".ToEmbedMessage(EMType.Success).Build());
                     return;
                 }
 
                 var thisCard = bUser.GameDeck.Cards.FirstOrDefault(x => x.Id == wid && !x.InCage);
                 if (thisCard == null)
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} nie posiadasz takiej karty lub znajduje się ona w klatce!".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} nie posiadasz takiej karty lub znajduje się ona w klatce!".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
                 if (bUser.GameDeck.Waifu == thisCard.Character)
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} masz już ustawioną tą postać!".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} masz już ustawioną tą postać!".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
@@ -3895,7 +3978,7 @@ namespace Sanakan.Modules
 
                 QueryCacheManager.ExpireTag(new string[] { $"user-{bUser.Id}", "users" });
 
-                await ReplyAsync("", embed: $"{Context.User.Mention} ustawił {thisCard.Name} jako ulubioną postać.".ToEmbedMessage(EMType.Success).Build());
+                await SafeReplyAsync("", embed: $"{Context.User.Mention} ustawił {thisCard.Name} jako ulubioną postać.".ToEmbedMessage(EMType.Success).Build());
             }
         }
 
@@ -3907,7 +3990,7 @@ namespace Sanakan.Modules
         {
             if (_session.SessionExist(Context.User, typeof(ExchangeSession)))
             {
-                await ReplyAsync("", embed: $"{Context.User.Mention} znajdujesz się obecnie w trakcie wymiany.".ToEmbedMessage(EMType.Error).Build());
+                await SafeReplyAsync("", embed: $"{Context.User.Mention} znajdujesz się obecnie w trakcie wymiany.".ToEmbedMessage(EMType.Error).Build());
                 return;
             }
 
@@ -3916,32 +3999,32 @@ namespace Sanakan.Modules
                 var bUser = await db.GetUserOrCreateAsync(Context.User.Id);
                 if (!bUser.GameDeck.CanCreateDemon() && !bUser.GameDeck.CanCreateAngel())
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} nie jesteś zły, ani dobry - po prostu nijaki.".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} nie jesteś zły, ani dobry - po prostu nijaki.".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
                 var thisCard = bUser.GameDeck.Cards.FirstOrDefault(x => x.Id == wid);
                 if (thisCard == null)
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} nie odnaleziono karty.".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} nie odnaleziono karty.".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
                 if (thisCard.InCage)
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} ta karta znajduje się w klatce.".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} ta karta znajduje się w klatce.".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
                 if (thisCard.Expedition != CardExpedition.None)
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} ta karta znajduje się na wyprawie.".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} ta karta znajduje się na wyprawie.".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
                 if (!thisCard.CanGiveBloodOrUpgradeToSSS())
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} ta karta ma zbyt niską relacje".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} ta karta ma zbyt niską relacje".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
@@ -3953,20 +4036,20 @@ namespace Sanakan.Modules
                 {
                     if (thisCard.Dere == Dere.Yami)
                     {
-                        await ReplyAsync("", embed: $"{Context.User.Mention} ta karta została już przeistoczona wcześniej.".ToEmbedMessage(EMType.Error).Build());
+                        await SafeReplyAsync("", embed: $"{Context.User.Mention} ta karta została już przeistoczona wcześniej.".ToEmbedMessage(EMType.Error).Build());
                         return;
                     }
 
                     var blood = bUser.GameDeck.Items.FirstOrDefault(x => x.Type == ItemType.BloodOfYourWaifu);
                     if (blood == null)
                     {
-                        await ReplyAsync("", embed: $"{Context.User.Mention} o dziwo nie posiadasz kropli krwi twojej waifu.".ToEmbedMessage(EMType.Error).Build());
+                        await SafeReplyAsync("", embed: $"{Context.User.Mention} o dziwo nie posiadasz kropli krwi twojej waifu.".ToEmbedMessage(EMType.Error).Build());
                         return;
                     }
 
                     if (blood.Count < bloodCost)
                     {
-                        await ReplyAsync("", embed: $"{Context.User.Mention} o dziwo posiadasz za mało kropli krwi twojej waifu.".ToEmbedMessage(EMType.Error).Build());
+                        await SafeReplyAsync("", embed: $"{Context.User.Mention} o dziwo posiadasz za mało kropli krwi twojej waifu.".ToEmbedMessage(EMType.Error).Build());
                         return;
                     }
 
@@ -3990,20 +4073,20 @@ namespace Sanakan.Modules
                 {
                     if (thisCard.Dere == Dere.Raito)
                     {
-                        await ReplyAsync("", embed: $"{Context.User.Mention} ta karta została już przeistoczona wcześniej.".ToEmbedMessage(EMType.Error).Build());
+                        await SafeReplyAsync("", embed: $"{Context.User.Mention} ta karta została już przeistoczona wcześniej.".ToEmbedMessage(EMType.Error).Build());
                         return;
                     }
 
                     var blood = bUser.GameDeck.Items.FirstOrDefault(x => x.Type == ItemType.BetterIncreaseUpgradeCnt);
                     if (blood == null)
                     {
-                        await ReplyAsync("", embed: $"{Context.User.Mention} o dziwo nie posiadasz kropli twojej krwi.".ToEmbedMessage(EMType.Error).Build());
+                        await SafeReplyAsync("", embed: $"{Context.User.Mention} o dziwo nie posiadasz kropli twojej krwi.".ToEmbedMessage(EMType.Error).Build());
                         return;
                     }
 
                     if (blood.Count < bloodCost)
                     {
-                        await ReplyAsync("", embed: $"{Context.User.Mention} o dziwo posiadasz za mało kropli twojej krwi.".ToEmbedMessage(EMType.Error).Build());
+                        await SafeReplyAsync("", embed: $"{Context.User.Mention} o dziwo posiadasz za mało kropli twojej krwi.".ToEmbedMessage(EMType.Error).Build());
                         return;
                     }
 
@@ -4032,7 +4115,7 @@ namespace Sanakan.Modules
                 await db.SaveChangesAsync();
                 QueryCacheManager.ExpireTag(new string[] { $"user-{bUser.Id}", "users" });
 
-                await ReplyAsync("", embed: $"{Context.User.Mention} nowy charakter to {thisCard.Dere}".ToEmbedMessage(EMType.Success).Build());
+                await SafeReplyAsync("", embed: $"{Context.User.Mention} nowy charakter to {thisCard.Dere}".ToEmbedMessage(EMType.Success).Build());
             }
         }
 
@@ -4050,7 +4133,7 @@ namespace Sanakan.Modules
                 var bUser = await db.GetCachedFullUserAsync(user.Id);
                 if (bUser == null)
                 {
-                    await ReplyAsync("", embed: "Ta osoba nie ma profilu bota.".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: "Ta osoba nie ma profilu bota.".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
@@ -4078,7 +4161,7 @@ namespace Sanakan.Modules
                     }
                 }
 
-                await ReplyAsync("", embed: embed.Build());
+                await SafeReplyAsync("", embed: embed.Build());
             }
         }
 
@@ -4096,7 +4179,7 @@ namespace Sanakan.Modules
                 var bUser = await db.GetCachedFullUserAsync(user.Id);
                 if (bUser == null)
                 {
-                    await ReplyAsync("", embed: "Ta osoba nie ma profilu bota.".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: "Ta osoba nie ma profilu bota.".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
@@ -4150,7 +4233,7 @@ namespace Sanakan.Modules
                     }
                 }
 
-                await ReplyAsync("", embed: embed.Build());
+                await SafeReplyAsync("", embed: embed.Build());
             }
         }
     }

@@ -34,13 +34,13 @@ namespace Sanakan.Modules
                 var land = _manager.DetermineLand(config.Lands, Context.User as SocketGuildUser, name);
                 if (land == null)
                 {
-                    await ReplyAsync("", embed: "Nie zarządzasz żadną krainą.".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: "Nie zarządzasz żadną krainą.".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
                 foreach (var emb in _manager.GetMembersList(land, Context.Guild))
                 {
-                    await ReplyAsync("", embed: emb);
+                    await SafeReplyAsync("", embed: emb);
                     await Task.Delay(TimeSpan.FromSeconds(2));
                 }
             }
@@ -58,21 +58,21 @@ namespace Sanakan.Modules
                 var land = _manager.DetermineLand(config.Lands, Context.User as SocketGuildUser, name);
                 if (land == null)
                 {
-                    await ReplyAsync("", embed: "Nie zarządzasz żadną krainą.".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: "Nie zarządzasz żadną krainą.".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
                 var role = Context.Guild.GetRole(land.Underling);
                 if (role == null)
                 {
-                    await ReplyAsync("", embed: "Nie odnaleziono roli członka!".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: "Nie odnaleziono roli członka!".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
                 if (!user.Roles.Contains(role))
                     await user.AddRoleAsync(role);
 
-                await ReplyAsync("", embed: $"{user.Mention} dołącza do `{land.Name}`.".ToEmbedMessage(EMType.Success).Build());
+                await SafeReplyAsync("", embed: $"{user.Mention} dołącza do `{land.Name}`.".ToEmbedMessage(EMType.Success).Build());
             }
         }
 
@@ -88,21 +88,21 @@ namespace Sanakan.Modules
                 var land = _manager.DetermineLand(config.Lands, Context.User as SocketGuildUser, name);
                 if (land == null)
                 {
-                    await ReplyAsync("", embed: "Nie zarządzasz żadną krainą.".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: "Nie zarządzasz żadną krainą.".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
                 var role = Context.Guild.GetRole(land.Underling);
                 if (role == null)
                 {
-                    await ReplyAsync("", embed: "Nie odnaleziono roli członka!".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: "Nie odnaleziono roli członka!".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
                 if (user.Roles.Contains(role))
                     await user.RemoveRoleAsync(role);
 
-                await ReplyAsync("", embed: $"{user.Mention} odchodzi z `{land.Name}`.".ToEmbedMessage(EMType.Success).Build());
+                await SafeReplyAsync("", embed: $"{user.Mention} odchodzi z `{land.Name}`.".ToEmbedMessage(EMType.Success).Build());
             }
         }
     }

@@ -57,7 +57,7 @@ namespace Sanakan.Modules
 
                 if (daily.IsActive(_time.Now()))
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} następne drobne możesz otrzymać dopiero {daily.EndsAt.ToRemTime()}!".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} następne drobne możesz otrzymać dopiero {daily.EndsAt.ToRemTime()}!".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
@@ -76,7 +76,7 @@ namespace Sanakan.Modules
 
                 QueryCacheManager.ExpireTag(new string[] { $"user-{botuser.Id}" });
 
-                await ReplyAsync("", embed: $"{Context.User.Mention} łap drobne na waciki!".ToEmbedMessage(EMType.Success).Build());
+                await SafeReplyAsync("", embed: $"{Context.User.Mention} łap drobne na waciki!".ToEmbedMessage(EMType.Success).Build());
             }
         }
 
@@ -92,7 +92,7 @@ namespace Sanakan.Modules
             using (var db = new Database.DatabaseContext(Config))
             {
                 long howMuch = Services.Fun.TakeATry(50d) ? Services.Fun.GetRandomValue(1, 5000) : _spawn.HowMuchToPacket(usr.Id);
-                await ReplyAsync("", embed: $"{usr.Mention} potrzebuje **{howMuch}** znaków do następnego pakietu*(teoretycznie)*."
+                await SafeReplyAsync("", embed: $"{usr.Mention} potrzebuje **{howMuch}** znaków do następnego pakietu*(teoretycznie)*."
                     .ToEmbedMessage(EMType.Info).Build());
             }
         }
@@ -111,7 +111,7 @@ namespace Sanakan.Modules
                 var config = await db.GetCachedGuildFullConfigAsync(Context.Guild.Id);
                 if (config == null)
                 {
-                    await ReplyAsync("", embed: "Serwer nie jest poprawnie skonfigurowany.".ToEmbedMessage(EMType.Bot).Build());
+                    await SafeReplyAsync("", embed: "Serwer nie jest poprawnie skonfigurowany.".ToEmbedMessage(EMType.Bot).Build());
                     return;
                 }
 
@@ -121,20 +121,20 @@ namespace Sanakan.Modules
 
                 if (muteRole == null)
                 {
-                    await ReplyAsync("", embed: "Rola wyciszająca nie jest ustawiona.".ToEmbedMessage(EMType.Bot).Build());
+                    await SafeReplyAsync("", embed: "Rola wyciszająca nie jest ustawiona.".ToEmbedMessage(EMType.Bot).Build());
                     return;
                 }
 
                 if (user.Roles.Contains(muteRole))
                 {
-                    await ReplyAsync("", embed: $"{user.Mention} już jest wyciszony.".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"{user.Mention} już jest wyciszony.".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
                 var session = new AcceptSession(user, null, Context.Client.CurrentUser);
                 await _session.KillSessionIfExistAsync(session);
 
-                var msg = await ReplyAsync("", embed: $"{user.Mention} na pewno chcesz muta?".ToEmbedMessage(EMType.Error).Build());
+                var msg = await SafeReplyAsync("", embed: $"{user.Mention} na pewno chcesz muta?".ToEmbedMessage(EMType.Error).Build());
                 await msg.AddReactionsAsync(session.StartReactions);
                 session.Actions = new AcceptMute(Config)
                 {
@@ -169,7 +169,7 @@ namespace Sanakan.Modules
 
                 if (hourly.IsActive(_time.Now()))
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} następne zaskórniaki możesz otrzymać dopiero {hourly.EndsAt.ToRemTime()}!".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} następne zaskórniaki możesz otrzymać dopiero {hourly.EndsAt.ToRemTime()}!".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
@@ -188,7 +188,7 @@ namespace Sanakan.Modules
 
                 QueryCacheManager.ExpireTag(new string[] { $"user-{botuser.Id}", "users" });
 
-                await ReplyAsync("", embed: $"{Context.User.Mention} łap piątaka!".ToEmbedMessage(EMType.Success).Build());
+                await SafeReplyAsync("", embed: $"{Context.User.Mention} łap piątaka!".ToEmbedMessage(EMType.Success).Build());
             }
         }
 
@@ -200,7 +200,7 @@ namespace Sanakan.Modules
         {
             if (options.Count() < 2)
             {
-                await ReplyAsync("", embed: "Podano zbyt mało opcji do wylosowania.".ToEmbedMessage(EMType.Error).Build());
+                await SafeReplyAsync("", embed: "Podano zbyt mało opcji do wylosowania.".ToEmbedMessage(EMType.Error).Build());
                 return;
             }
 
@@ -209,7 +209,7 @@ namespace Sanakan.Modules
 
             await Task.Delay(Services.Fun.GetRandomValue(100, 500));
 
-            await ReplyAsync("", embed: $"{emote} {Services.Fun.GetOneRandomFrom(allOptions)}".ToEmbedMessage(EMType.Success).WithAuthor(new EmbedAuthorBuilder().WithUser(Context.User)).Build());
+            await SafeReplyAsync("", embed: $"{emote} {Services.Fun.GetOneRandomFrom(allOptions)}".ToEmbedMessage(EMType.Success).WithAuthor(new EmbedAuthorBuilder().WithUser(Context.User)).Build());
         }
 
         [Command("rzut")]
@@ -220,7 +220,7 @@ namespace Sanakan.Modules
         {
             if (amount <= 0)
             {
-                await ReplyAsync("", embed: $"{Context.User.Mention} na minusie?!".ToEmbedMessage(EMType.Error).Build());
+                await SafeReplyAsync("", embed: $"{Context.User.Mention} na minusie?!".ToEmbedMessage(EMType.Error).Build());
                 return;
             }
 
@@ -229,7 +229,7 @@ namespace Sanakan.Modules
                 var botuser = await db.GetUserOrCreateSimpleAsync(Context.User.Id);
                 if (botuser.ScCnt < amount)
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} nie posiadasz wystarczającej liczby SC!".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} nie posiadasz wystarczającej liczby SC!".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
@@ -259,7 +259,7 @@ namespace Sanakan.Modules
                 QueryCacheManager.ExpireTag(new string[] { $"user-{botuser.Id}", "users" });
 
                 embed.ImageUrl = $"https://sanakan.pl/i/coin{(int)thrown}.png";
-                await ReplyAsync("", embed: embed.Build());
+                await SafeReplyAsync("", embed: embed.Build());
             }
         }
 
@@ -271,7 +271,7 @@ namespace Sanakan.Modules
         {
             if (setting == SlotMachineSetting.Info)
             {
-                await ReplyAsync("", false, $"{_fun.GetSlotMachineInfo()}".ToEmbedMessage(EMType.Info).Build());
+                await SafeReplyAsync("", false, $"{_fun.GetSlotMachineInfo()}".ToEmbedMessage(EMType.Info).Build());
                 return;
             }
 
@@ -280,7 +280,7 @@ namespace Sanakan.Modules
                 var botuser = await db.GetUserOrCreateSimpleAsync(Context.User.Id);
                 if (!botuser.ApplySlotMachineSetting(setting, value))
                 {
-                    await ReplyAsync("", embed: $"Podano niewłaściwą wartość parametru!".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"Podano niewłaściwą wartość parametru!".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
@@ -289,7 +289,7 @@ namespace Sanakan.Modules
                 QueryCacheManager.ExpireTag(new string[] { $"user-{botuser.Id}", "users" });
             }
 
-            await ReplyAsync("", embed: $"{Context.User.Mention} zmienił nastawy automatu.".ToEmbedMessage(EMType.Success).Build());
+            await SafeReplyAsync("", embed: $"{Context.User.Mention} zmienił nastawy automatu.".ToEmbedMessage(EMType.Success).Build());
         }
 
         [Command("automat")]
@@ -300,7 +300,7 @@ namespace Sanakan.Modules
         {
             if (type != "game")
             {
-                await ReplyAsync("", false, $"{_fun.GetSlotMachineGameInfo()}".ToEmbedMessage(EMType.Info).Build());
+                await SafeReplyAsync("", false, $"{_fun.GetSlotMachineGameInfo()}".ToEmbedMessage(EMType.Info).Build());
                 return;
             }
 
@@ -312,7 +312,7 @@ namespace Sanakan.Modules
                 var toPay = machine.ToPay();
                 if (botuser.ScCnt < toPay)
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} brakuje Ci SC, aby za tyle zagrać.".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} brakuje Ci SC, aby za tyle zagrać.".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
                 var win = machine.Play(new SlotWickedRandom());
@@ -322,7 +322,7 @@ namespace Sanakan.Modules
 
                 QueryCacheManager.ExpireTag(new string[] { $"user-{botuser.Id}", "users" });
 
-                await ReplyAsync("", embed: $"{_fun.GetSlotMachineResult(machine.Draw(), Context.User, botuser, win)}".ToEmbedMessage(EMType.Bot).Build());
+                await SafeReplyAsync("", embed: $"{_fun.GetSlotMachineResult(machine.Draw(), Context.User, botuser, win)}".ToEmbedMessage(EMType.Bot).Build());
             }
         }
 
@@ -334,13 +334,13 @@ namespace Sanakan.Modules
         {
             if (value < 1000)
             {
-                await ReplyAsync("", embed: "Nie można podarować mniej niż 1000 SC.".ToEmbedMessage(EMType.Error).Build());
+                await SafeReplyAsync("", embed: "Nie można podarować mniej niż 1000 SC.".ToEmbedMessage(EMType.Error).Build());
                 return;
             }
 
             if (user.Id == Context.User.Id)
             {
-                await ReplyAsync("", embed: "Coś tutaj nie gra.".ToEmbedMessage(EMType.Error).Build());
+                await SafeReplyAsync("", embed: "Coś tutaj nie gra.".ToEmbedMessage(EMType.Error).Build());
                 return;
             }
 
@@ -348,7 +348,7 @@ namespace Sanakan.Modules
             {
                 if (!db.Users.Any(x => x.Id == user.Id))
                 {
-                    await ReplyAsync("", embed: "Ta osoba nie ma profilu bota.".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: "Ta osoba nie ma profilu bota.".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
@@ -357,7 +357,7 @@ namespace Sanakan.Modules
 
                 if (thisUser.ScCnt < value)
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} nie masz wystarczającej ilości SC.".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} nie masz wystarczającej ilości SC.".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
@@ -370,7 +370,7 @@ namespace Sanakan.Modules
 
                 QueryCacheManager.ExpireTag(new string[] { $"user-{thisUser.Id}", "users", $"user-{targetUser.Id}" });
 
-                await ReplyAsync("", embed: $"{Context.User.Mention} podarował {user.Mention} {newScCnt} SC".ToEmbedMessage(EMType.Success).Build());
+                await SafeReplyAsync("", embed: $"{Context.User.Mention} podarował {user.Mention} {newScCnt} SC".ToEmbedMessage(EMType.Success).Build());
             }
         }
 
@@ -390,7 +390,7 @@ namespace Sanakan.Modules
             var riddle = riddles.FirstOrDefault();
 
             riddle.RandomizeAnswers();
-            var msg = await ReplyAsync(riddle.Get());
+            var msg = await SafeReplyAsync(riddle.Get());
             await msg.AddReactionsAsync(riddle.GetEmotes());
 
             await Task.Delay(15000);
@@ -407,13 +407,13 @@ namespace Sanakan.Modules
 
             if (react.Any(x => x.Id == Context.User.Id) && answers < 2)
             {
-                await ReplyAsync("", false, $"{Context.User.Mention} zgadłeś!".ToEmbedMessage(EMType.Success).Build());
+                await SafeReplyAsync("", false, $"{Context.User.Mention} zgadłeś!".ToEmbedMessage(EMType.Success).Build());
             }
             else if (answers > 1)
             {
-                await ReplyAsync("", false, $"{Context.User.Mention} wybrałeś więcej jak jedną odpowiedź!".ToEmbedMessage(EMType.Error).Build());
+                await SafeReplyAsync("", false, $"{Context.User.Mention} wybrałeś więcej jak jedną odpowiedź!".ToEmbedMessage(EMType.Error).Build());
             }
-            else await ReplyAsync("", false, $"{Context.User.Mention} pudło!".ToEmbedMessage(EMType.Error).Build());
+            else await SafeReplyAsync("", false, $"{Context.User.Mention} pudło!".ToEmbedMessage(EMType.Error).Build());
         }
     }
 }

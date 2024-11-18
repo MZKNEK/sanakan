@@ -51,11 +51,11 @@ namespace Sanakan.Modules
                 var botuser = await db.GetCachedFullUserAsync(usr.Id);
                 if (botuser == null)
                 {
-                    await ReplyAsync("", embed: "Ta osoba nie ma profilu bota.".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: "Ta osoba nie ma profilu bota.".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
-                await ReplyAsync("", embed: ($"**Portfel** {usr.Mention}:\n\n"
+                await SafeReplyAsync("", embed: ($"**Portfel** {usr.Mention}:\n\n"
                     + $"<:msc:1209243856759947296> {botuser?.ScCnt}\n"
                     + $"<:mtc:1209243855572967464> {botuser?.TcCnt}\n"
                     + $"<:mac:1209243865836683284> {botuser?.AcCnt}\n\n"
@@ -84,7 +84,7 @@ namespace Sanakan.Modules
                         subs += $"{sub.ToView(_time.Now())}\n";
                 }
 
-                await ReplyAsync("", embed: $"**Subskrypcje** {Context.User.Mention}:\n\n{subs.TrimToLength()}".ToEmbedMessage(EMType.Info).Build());
+                await SafeReplyAsync("", embed: $"**Subskrypcje** {Context.User.Mention}:\n\n{subs.TrimToLength()}".ToEmbedMessage(EMType.Info).Build());
             }
         }
 
@@ -105,14 +105,14 @@ namespace Sanakan.Modules
 
                 if (gRole == null)
                 {
-                    await ReplyAsync("", embed: $"Nie odnaleziono roli `{name}`".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"Nie odnaleziono roli `{name}`".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
                 if (!user.Roles.Contains(gRole))
                     await user.AddRoleAsync(gRole);
 
-                await ReplyAsync("", embed: $"{user.Mention} przyznano rolę: `{name}`".ToEmbedMessage(EMType.Success).Build());
+                await SafeReplyAsync("", embed: $"{user.Mention} przyznano rolę: `{name}`".ToEmbedMessage(EMType.Success).Build());
             }
         }
 
@@ -133,14 +133,14 @@ namespace Sanakan.Modules
 
                 if (gRole == null)
                 {
-                    await ReplyAsync("", embed: $"Nie odnaleziono roli `{name}`".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"Nie odnaleziono roli `{name}`".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
                 if (user.Roles.Contains(gRole))
                     await user.RemoveRoleAsync(gRole);
 
-                await ReplyAsync("", embed: $"{user.Mention} zdjęto rolę: `{name}`".ToEmbedMessage(EMType.Success).Build());
+                await SafeReplyAsync("", embed: $"{user.Mention} zdjęto rolę: `{name}`".ToEmbedMessage(EMType.Success).Build());
             }
         }
 
@@ -154,7 +154,7 @@ namespace Sanakan.Modules
                 var config = await db.GetCachedGuildFullConfigAsync(Context.Guild.Id);
                 if (config.SelfRoles.Count < 1)
                 {
-                    await ReplyAsync("", embed: "Nie odnaleziono roli.".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: "Nie odnaleziono roli.".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
@@ -165,7 +165,7 @@ namespace Sanakan.Modules
                     stringRole += $" `{selfRole.Name}` ";
                 }
 
-                await ReplyAsync($"**Dostępne role:**\n{stringRole}\n\nUżyj `s.przyznaj role [nazwa]` aby dodać lub `s.zdejmij role [nazwa]` odebrać sobie role.");
+                await SafeReplyAsync($"**Dostępne role:**\n{stringRole}\n\nUżyj `s.przyznaj role [nazwa]` aby dodać lub `s.zdejmij role [nazwa]` odebrać sobie role.");
             }
         }
 
@@ -183,11 +183,11 @@ namespace Sanakan.Modules
                 var botuser = await db.GetBaseUserAndDontTrackAsync(usr.Id);
                 if (botuser == null)
                 {
-                    await ReplyAsync("", embed: "Ta osoba nie ma profilu bota.".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: "Ta osoba nie ma profilu bota.".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
-                await ReplyAsync("", embed: botuser.GetStatsView(usr).Build());
+                await SafeReplyAsync("", embed: botuser.GetStatsView(usr).Build());
             }
         }
 
@@ -205,11 +205,11 @@ namespace Sanakan.Modules
                 var botuser = await db.Users.AsQueryable().AsSplitQuery().Where(x => x.Id == usr.Id).AsNoTracking().FirstOrDefaultAsync();
                 if (botuser == null)
                 {
-                    await ReplyAsync("", embed: "Ta osoba nie ma profilu bota.".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: "Ta osoba nie ma profilu bota.".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
-                await ReplyAsync("", embed: $"{usr.Mention} potrzebuje **{botuser.GetRemainingExp()}** punktów doświadczenia do następnego poziomu."
+                await SafeReplyAsync("", embed: $"{usr.Mention} potrzebuje **{botuser.GetRemainingExp()}** punktów doświadczenia do następnego poziomu."
                     .ToEmbedMessage(EMType.Info).Build());
             }
         }
@@ -223,7 +223,7 @@ namespace Sanakan.Modules
             var session = new ListSession<string>(Context.User, Context.Client.CurrentUser);
             await _session.KillSessionIfExistAsync(session);
 
-            var building = await ReplyAsync("", embed: $"🔨 Trwa budowanie topki...".ToEmbedMessage(EMType.Bot).Build());
+            var building = await SafeReplyAsync("", embed: $"🔨 Trwa budowanie topki...".ToEmbedMessage(EMType.Bot).Build());
             using (var db = new Database.DatabaseContext(Config))
             {
                 session.ListItems = _profile.BuildListView(await _profile.GetTopUsers(db.GetQueryableAllUsers(), type), type, Context.Guild);
@@ -237,7 +237,7 @@ namespace Sanakan.Modules
             };
 
             await building.DeleteAsync();
-            var msg = await ReplyAsync("", embed: session.BuildPage(0));
+            var msg = await SafeReplyAsync("", embed: session.BuildPage(0));
             await msg.AddReactionsAsync(new[] { new Emoji("⬅"), new Emoji("➡") });
 
             session.Message = msg;
@@ -261,7 +261,7 @@ namespace Sanakan.Modules
                 var dataUser = db.Users.AsQueryable().Include(x => x.GameDeck).AsNoTracking().FirstOrDefault(x => x.Id == searchId);
                 if (dataUser is null)
                 {
-                    await ReplyAsync("", embed: "Ta osoba nie ma profilu bota.".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: "Ta osoba nie ma profilu bota.".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
@@ -325,12 +325,12 @@ namespace Sanakan.Modules
                     {
                         QueryCacheManager.ExpireTag(new string[] { $"user-{botuser.Id}", "users" });
 
-                        await ReplyAsync("", embed: $"**Odebrane nagrody:**\n\n{string.Join("\n", rewards)}".ToEmbedMessage(EMType.Success).WithUser(Context.User).Build());
+                        await SafeReplyAsync("", embed: $"**Odebrane nagrody:**\n\n{string.Join("\n", rewards)}".ToEmbedMessage(EMType.Success).WithUser(Context.User).Build());
                         await db.SaveChangesAsync();
                         return;
                     }
 
-                    await ReplyAsync("", embed: "Nie masz nic do odebrania.".ToEmbedMessage(EMType.Error).WithUser(Context.User).Build());
+                    await SafeReplyAsync("", embed: "Nie masz nic do odebrania.".ToEmbedMessage(EMType.Error).WithUser(Context.User).Build());
                     return;
                 }
 
@@ -339,7 +339,7 @@ namespace Sanakan.Modules
                 string daily = $"**Dzienne misje:**\n\n{string.Join("\n", dailyQuests.Select(x => x.ToView(_time.Now())))}";
                 string weekly = $"**Tygodniowe misje:**\n\n{string.Join("\n", weeklyQuests.Select(x => x.ToView(_time.Now())))}";
 
-                await ReplyAsync("", embed: $"{daily}\n\n{dailyTip}\n\n\n{weekly}\n\n{totalTip}".ToEmbedMessage(EMType.Bot).WithUser(Context.User).Build());
+                await SafeReplyAsync("", embed: $"{daily}\n\n{dailyTip}\n\n\n{weekly}\n\n{totalTip}".ToEmbedMessage(EMType.Bot).WithUser(Context.User).Build());
             }
         }
 
@@ -351,7 +351,7 @@ namespace Sanakan.Modules
         {
             if (config.Type == ProfileConfigType.ShowInfo)
             {
-                await ReplyAsync("", embed: config.GetHelp().ToEmbedMessage(EMType.Info).Build());
+                await SafeReplyAsync("", embed: config.GetHelp().ToEmbedMessage(EMType.Info).Build());
                 return;
             }
 
@@ -362,7 +362,7 @@ namespace Sanakan.Modules
                 var toPay = config.ToPay();
                 if (config.NeedPay() && !botuser.Pay(toPay))
                 {
-                    await ReplyAsync("", embed: $"{Context.User.Mention} nie masz wystarczającej liczby **{toPay.Type}**, potrzebujesz {toPay.Cost}.".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} nie masz wystarczającej liczby **{toPay.Type}**, potrzebujesz {toPay.Cost}.".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
@@ -372,7 +372,7 @@ namespace Sanakan.Modules
                     {
                         if (!config.StyleNeedUrl())
                         {
-                            await ReplyAsync("", embed: $"{Context.User.Mention} tym poleceniem możesz ustawić tylko style wymagające obarazka!".ToEmbedMessage(EMType.Error).Build());
+                            await SafeReplyAsync("", embed: $"{Context.User.Mention} tym poleceniem możesz ustawić tylko style wymagające obarazka!".ToEmbedMessage(EMType.Error).Build());
                             return;
                         }
 
@@ -381,7 +381,7 @@ namespace Sanakan.Modules
                         var res = await _profile.SaveProfileAndStyleImageAsync(config.Url, bgUri, 750, 160, styleUri, 750, 340);
                         if (res != SaveResult.Success)
                         {
-                            await ReplyAsync("", embed: $"{Context.User.Mention} nie wykryto obrazka! Upewnij się, że podałeś poprawny adres!".ToEmbedMessage(EMType.Error).Build());
+                            await SafeReplyAsync("", embed: $"{Context.User.Mention} nie wykryto obrazka! Upewnij się, że podałeś poprawny adres!".ToEmbedMessage(EMType.Error).Build());
                             return;
                         }
 
@@ -397,7 +397,7 @@ namespace Sanakan.Modules
                         var res = await _profile.SaveProfileImageAsync(config.Url, bgUri, 750, 160, true);
                         if (res != SaveResult.Success)
                         {
-                            await ReplyAsync("", embed: $"{Context.User.Mention} nie wykryto obrazka! Upewnij się, że podałeś poprawny adres!".ToEmbedMessage(EMType.Error).Build());
+                            await SafeReplyAsync("", embed: $"{Context.User.Mention} nie wykryto obrazka! Upewnij się, że podałeś poprawny adres!".ToEmbedMessage(EMType.Error).Build());
                             return;
                         }
 
@@ -413,7 +413,7 @@ namespace Sanakan.Modules
                             var res = await _profile.SaveProfileImageAsync(config.Url, styleUri, 750, 340);
                             if (res != SaveResult.Success)
                             {
-                                await ReplyAsync("", embed: $"{Context.User.Mention} nie wykryto obrazka! Upewnij się, że podałeś poprawny adres!".ToEmbedMessage(EMType.Error).Build());
+                                await SafeReplyAsync("", embed: $"{Context.User.Mention} nie wykryto obrazka! Upewnij się, że podałeś poprawny adres!".ToEmbedMessage(EMType.Error).Build());
                                 return;
                             }
 
@@ -430,7 +430,7 @@ namespace Sanakan.Modules
                         var res = await _profile.SaveProfileImageAsync(config.Url, ovUri, 750, 402);
                         if (res != SaveResult.Success)
                         {
-                            await ReplyAsync("", embed: $"{Context.User.Mention} nie wykryto obrazka! Upewnij się, że podałeś poprawny adres!".ToEmbedMessage(EMType.Error).Build());
+                            await SafeReplyAsync("", embed: $"{Context.User.Mention} nie wykryto obrazka! Upewnij się, że podałeś poprawny adres!".ToEmbedMessage(EMType.Error).Build());
                             return;
                         }
 
@@ -444,7 +444,7 @@ namespace Sanakan.Modules
                         var res = await _profile.SaveProfileImageAsync(config.Url, uovUri, 750, 500);
                         if (res != SaveResult.Success)
                         {
-                            await ReplyAsync("", embed: $"{Context.User.Mention} nie wykryto obrazka! Upewnij się, że podałeś poprawny adres!".ToEmbedMessage(EMType.Error).Build());
+                            await SafeReplyAsync("", embed: $"{Context.User.Mention} nie wykryto obrazka! Upewnij się, że podałeś poprawny adres!".ToEmbedMessage(EMType.Error).Build());
                             return;
                         }
 
@@ -462,7 +462,7 @@ namespace Sanakan.Modules
                     {
                         if (!config.IsConfigurableStyle(botuser.ProfileType))
                         {
-                            await ReplyAsync("", embed: $"{Context.User.Mention} nie możesz zmienić tej opcji na obecnie ustawionym stylu!".ToEmbedMessage(EMType.Error).Build());
+                            await SafeReplyAsync("", embed: $"{Context.User.Mention} nie możesz zmienić tej opcji na obecnie ustawionym stylu!".ToEmbedMessage(EMType.Error).Build());
                             return;
                         }
 
@@ -486,7 +486,7 @@ namespace Sanakan.Modules
                     {
                         if (!config.CanUseSettingOnStyle(botuser.ProfileType))
                         {
-                            await ReplyAsync("", embed: $"{Context.User.Mention} nie możesz zmienić tej opcji na obecnie ustawionym stylu!".ToEmbedMessage(EMType.Error).Build());
+                            await SafeReplyAsync("", embed: $"{Context.User.Mention} nie możesz zmienić tej opcji na obecnie ustawionym stylu!".ToEmbedMessage(EMType.Error).Build());
                             return;
                         }
 
@@ -505,7 +505,7 @@ namespace Sanakan.Modules
 
                 QueryCacheManager.ExpireTag(new string[] { $"user-{botuser.Id}", "users" });
 
-                await ReplyAsync("", embed: $"{Context.User.Mention} {config.What()}".ToEmbedMessage(EMType.Success).Build());
+                await SafeReplyAsync("", embed: $"{Context.User.Mention} {config.What()}".ToEmbedMessage(EMType.Success).Build());
             }
         }
 
@@ -524,7 +524,7 @@ namespace Sanakan.Modules
                 var botuser = await db.GetUserOrCreateSimpleAsync(user.Id);
                 if (botuser.TcCnt < cost)
                 {
-                    await ReplyAsync("", embed: $"{user.Mention} nie posiadasz wystarczającej liczby TC!".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"{user.Mention} nie posiadasz wystarczającej liczby TC!".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
@@ -532,7 +532,7 @@ namespace Sanakan.Modules
                 var gRole = Context.Guild.GetRole(gConfig.GlobalEmotesRole);
                 if (gRole == null)
                 {
-                    await ReplyAsync("", embed: "Serwer nie ma ustawionej roli globalnych emotek.".ToEmbedMessage(EMType.Bot).Build());
+                    await SafeReplyAsync("", embed: "Serwer nie ma ustawionej roli globalnych emotek.".ToEmbedMessage(EMType.Bot).Build());
                     return;
                 }
 
@@ -554,7 +554,7 @@ namespace Sanakan.Modules
 
                 QueryCacheManager.ExpireTag(new string[] { $"user-{botuser.Id}", "users" });
 
-                await ReplyAsync("", embed: $"{user.Mention} wykupił miesiąc globalnych emotek!".ToEmbedMessage(EMType.Success).Build());
+                await SafeReplyAsync("", embed: $"{user.Mention} wykupił miesiąc globalnych emotek!".ToEmbedMessage(EMType.Success).Build());
             }
         }
 
@@ -584,7 +584,7 @@ namespace Sanakan.Modules
                 var hasNitro = gConfig.NitroRole != 0 && ((Context.User as SocketGuildUser)?.Roles?.Any(x => x.Id == gConfig.NitroRole) ?? false);
                 if (!hasNitro && points < color.Price(currency))
                 {
-                    await ReplyAsync("", embed: $"{user.Mention} nie posiadasz wystarczającej liczby {currency.ToString().ToUpper()}!".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"{user.Mention} nie posiadasz wystarczającej liczby {currency.ToString().ToUpper()}!".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
@@ -616,7 +616,7 @@ namespace Sanakan.Modules
                     colort.BValue = true;
                     if (!await _profile.SetUserColorAsync(user, gConfig.MuteRole, color))
                     {
-                        await ReplyAsync("", embed: $"Coś poszło nie tak!".ToEmbedMessage(EMType.Error).Build());
+                        await SafeReplyAsync("", embed: $"Coś poszło nie tak!".ToEmbedMessage(EMType.Error).Build());
                         return;
                     }
 
@@ -637,7 +637,7 @@ namespace Sanakan.Modules
 
                 QueryCacheManager.ExpireTag(new string[] { $"user-{botuser.Id}", "users" });
 
-                await ReplyAsync("", embed: $"{user.Mention} wykupił kolor!".ToEmbedMessage(EMType.Success).Build());
+                await SafeReplyAsync("", embed: $"{user.Mention} wykupił kolor!".ToEmbedMessage(EMType.Success).Build());
             }
         }
     }
