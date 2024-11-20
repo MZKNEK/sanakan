@@ -2351,8 +2351,8 @@ namespace Sanakan.Modules
         [Command("loteria")]
         [Alias("lottery", "dej")]
         [Summary("wybierasz się na loterię i liczysz że coś fajnego Ci z niej wypadnie (wymagana przepustka)")]
-        [Remarks(""), RequireWaifuCommandChannel]
-        public async Task GoToLotteryAsync()
+        [Remarks("25"), RequireWaifuCommandChannel]
+        public async Task GoToLotteryAsync([Summary("krotność użycia polecenia")] uint count = 1)
         {
             using (var db = new Database.DatabaseContext(Config))
             {
@@ -2364,20 +2364,29 @@ namespace Sanakan.Modules
                     return;
                 }
 
-                if (ticket.Count == 1)
+                if (ticket.Count < count)
                 {
-                    bUser.GameDeck.Items.Remove(ticket);
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} niestety nie masz tylu przepustek.".ToEmbedMessage(EMType.Error).Build());
+                    return;
                 }
-                else ticket.Count--;
 
-                var rewardInfo = await _lottery.GetAndApplyRewardAsync(bUser);
-                bUser.Stats.LotteryTicketsUsed++;
+                var rewards = new List<string>();
+                for (uint i = 0; i < count; i++)
+                {
+                    rewards.Add(await _lottery.GetAndApplyRewardAsync(bUser));
+                }
+
+                ticket.Count -= count;
+                if (ticket.Count < 1)
+                    bUser.GameDeck.Items.Remove(ticket);
+
+                bUser.Stats.LotteryTicketsUsed += count;
 
                 await db.SaveChangesAsync();
 
                 QueryCacheManager.ExpireTag(new string[] { $"user-{bUser.Id}", "users" });
 
-                await SafeReplyAsync("", embed: $"{Context.User.Mention} wygrał na loterii: **{rewardInfo}**".ToEmbedMessage(EMType.Success).Build());
+                await SafeReplyAsync("", embed: $"{Context.User.Mention} wygrał na loterii:\n**{string.Join("\n", rewards)}**".ToEmbedMessage(EMType.Success).Build());
             }
         }
 
