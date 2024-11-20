@@ -2370,10 +2370,16 @@ namespace Sanakan.Modules
                     return;
                 }
 
-                var rewards = new List<string>();
+                var rewards = new List<Lottery.LotteryRewardInfo>();
                 for (uint i = 0; i < count; i++)
                 {
                     rewards.Add(await _lottery.GetAndApplyRewardAsync(bUser));
+                }
+
+                var rewardString = rewards.First().Text;
+                if (rewards.Count > 1)
+                {
+                    rewardString = $"\n{string.Join("\n", Lottery.Simplify(rewards).OrderBy(x => x.Text).Select(x => x.Text))}";
                 }
 
                 ticket.Count -= count;
@@ -2386,7 +2392,7 @@ namespace Sanakan.Modules
 
                 QueryCacheManager.ExpireTag(new string[] { $"user-{bUser.Id}", "users" });
 
-                await SafeReplyAsync("", embed: $"{Context.User.Mention} wygrał na loterii:\n**{string.Join("\n", rewards)}**".ToEmbedMessage(EMType.Success).Build());
+                await SafeReplyAsync("", embed: $"{Context.User.Mention} wygrał na loterii:**{rewardString}**".TrimToLength().ToEmbedMessage(EMType.Success).Build());
             }
         }
 
