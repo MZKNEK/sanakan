@@ -191,13 +191,25 @@ namespace Sanakan.Services.PocketWaifu
                         }
                     }
 
-                    var name = reward == LotteryReward.CardsFromSeason ? "Sezonowy"
-                        : (reward == LotteryReward.CardsBig ? "Duży" : "Normalny");
+                    var isBig = Fun.TakeATry(35d);
+                    var name = reward switch
+                    {
+                        LotteryReward.CardsFromSeason => "Sezonowy",
+                        LotteryReward.CardsBig => isBig ? "Duży" : "Średni",
+                        _ => isBig ? "Normalny" : "Mały"
+                    };
+
+                    var cnt = reward switch
+                    {
+                        LotteryReward.CardsFromSeason => 2,
+                        LotteryReward.CardsBig => isBig ? 20 : 10,
+                        _ => isBig ? 2 : 1
+                    };
 
                     var pack = new BoosterPack
                     {
+                        CardCnt = cnt,
                         Title = reward == LotteryReward.CardsFromSeason ? randomTitle : 0,
-                        CardCnt = reward == LotteryReward.CardsBig ? 20 : 2,
                         RarityExcludedFromPack = new List<RarityExcluded>(),
                         Characters = new List<BoosterPackCharacter>(),
                         Name = $"Pakiet kart z loterii ({name})",
