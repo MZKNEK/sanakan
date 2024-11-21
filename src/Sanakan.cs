@@ -30,6 +30,7 @@ namespace Sanakan
         private ExperienceManager _exp;
         private Supervisor _supervisor;
         private Expedition _expedition;
+        private EmoteCounter _eCounter;
         private ImageProcessing _img;
         private DeletedLog _deleted;
         private Daemonizer _daemon;
@@ -114,6 +115,7 @@ namespace Sanakan
             _deleted = new DeletedLog(_client, _config);
             _chaos = new Chaos(_client, _config, _logger);
             _executor = new UserBasedExecutor(_logger);
+            _eCounter = new EmoteCounter(_client, _time);
             _sessions = new SessionManager(_client, _executor, _logger);
             _mod = new Moderator(_logger, _config, _client, _time, _img);
             _daemon = new Daemonizer(_client, _logger, _config);
@@ -158,6 +160,7 @@ namespace Sanakan
                 .AddSingleton(_shindenClient)
                 .AddSingleton(_expedition)
                 .AddSingleton(_sessions)
+                .AddSingleton(_eCounter)
                 .AddSingleton(_profile)
                 .AddSingleton(_shinden)
                 .AddSingleton(_config)

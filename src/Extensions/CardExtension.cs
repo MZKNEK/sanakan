@@ -235,7 +235,7 @@ namespace Sanakan.Extensions
 
         public static string GetDescSmall(this Card card, Services.PocketWaifu.TagHelper tags, ISystemTime time)
         {
-            var kcs = Fun.IsAF() ? Fun.GetRandomValue(0, 123) : card.WhoWantsCount;
+            var kcs = Fun.IsAF() ? Fun.GetAFKC(card.Character) : card.WhoWantsCount;
             return $"{card.GetIdWithUrl()} *({card.Character}) KC: {kcs} PWR: {card.CalculateCardPower():F}*\n"
                 + $"{card.GetString(true, true, true, false, true)}\n"
                 + $"_{card.Title}_\n\n"
@@ -249,7 +249,7 @@ namespace Sanakan.Extensions
 
         public static string GetDesc(this Card card, bool hideScalelInfo, Services.PocketWaifu.TagHelper tags, ISystemTime time)
         {
-            var kcs = Fun.IsAF() ? Fun.GetRandomValue(0, 123) : card.WhoWantsCount;
+            var kcs = Fun.IsAF() ? Fun.GetAFKC(card.Character) : card.WhoWantsCount;
             string scalpelInfo = (!string.IsNullOrEmpty(card.CustomImage) && !hideScalelInfo)
                 ? $"**Ustawiono obrazek:** {card.CustomImageDate.ToShortDateTime()}\n**Animacja:** {card.IsAnimatedImage.GetYesNo()}\n" : "";
 
@@ -771,7 +771,7 @@ namespace Sanakan.Extensions
         public static string ToHeartWishlist(this Card card, bool isOnUserWishlist = false)
         {
             if (Fun.IsAF() && Fun.TakeATry(75d))
-                return $"💗 ({Fun.GetRandomValue(1, 73)}) ";
+                return $"💗 ({Fun.GetAFKC(card.Character)}) ";
 
             if (isOnUserWishlist) return "💚 ";
             if (card.WhoWantsCount < 1) return "🤍 ";

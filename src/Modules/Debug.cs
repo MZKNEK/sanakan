@@ -36,15 +36,17 @@ namespace Sanakan.Modules
         private IConfig _config;
         private ISystemTime _time;
         private IExecutor _executor;
+        private EmoteCounter _eCounter;
         private Services.Helper _helper;
         private ShindenClient _shClient;
         private Services.ImageProcessing _img;
 
         public Debug(Waifu waifu, ShindenClient shClient, Services.Helper helper, Services.ImageProcessing img,
-            IConfig config, IExecutor executor, Spawn spawn, ISystemTime time)
+            IConfig config, IExecutor executor, Spawn spawn, ISystemTime time, EmoteCounter counter)
         {
             _shClient = shClient;
             _executor = executor;
+            _eCounter = counter;
             _helper = helper;
             _config = config;
             _waifu = waifu;
@@ -53,9 +55,23 @@ namespace Sanakan.Modules
             _img = img;
         }
 
-        [Command("poke", RunMode = RunMode.Async), RequireDevOrTester]
+        [Command("estats", RunMode = RunMode.Async), RequireDevOrTester]
+        [Summary("wyświetla staty emotek")]
+        [Remarks("10")]
+        public async Task GetEmotesStats([Summary("ile")]int count = 10, [Summary("najgorsze?")]bool worst = false)
+        {
+            if (count < 1)
+                count = 1;
+
+            var stats = _eCounter.GetEmotesStats();
+            var toShow = worst ? stats.Counter.OrderBy(x => x.Value).Take(count) : stats.Counter.OrderByDescending(x => x.Value).Take(count);
+
+            await SafeReplyAsync("", embed: $"Od: {stats.Start.ToShortDateTime()}\n\n {string.Join("\n", toShow.Select(x => $"{x.Key}: {x.Value}"))}".TrimToLength().ToEmbedMessage(EMType.Bot).Build());
+        }
+
         [Summary("generuje obrazek safari")]
         [Remarks("1")]
+        [Command("poke", RunMode = RunMode.Async), RequireDevOrTester]
         public async Task GeneratePokeImageAsync([Summary("nr grafiki")]int index)
         {
             try
@@ -1496,6 +1512,7 @@ namespace Sanakan.Modules
             await SafeReplyAsync("", embed: "To dobry czas by umrzeć.".ToEmbedMessage(EMType.Bot).Build());
             await Context.Client.LogoutAsync();
             _spawn.DumpData();
+            _eCounter.DumpData();
 
             await Task.Delay(1500);
             Environment.Exit(0);
@@ -1510,6 +1527,7 @@ namespace Sanakan.Modules
             await Context.Client.LogoutAsync();
             System.IO.File.Create("./updateNow");
             _spawn.DumpData();
+            _eCounter.DumpData();
 
             await Task.Delay(1500);
             Environment.Exit(200);

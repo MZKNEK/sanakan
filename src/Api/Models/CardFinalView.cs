@@ -208,7 +208,7 @@ namespace Sanakan.Api.Models
         public static CardFinalView ConvertFromRaw(Card card, ulong shindenId = 0, ISystemTime time = null)
         {
             if (card == null) return null;
-            var kcs = Fun.IsAF() ? Fun.GetRandomValue(0, 69) : card.WhoWantsCount;
+            var kcs = Fun.IsAF() ? Fun.GetAFKC(card.Character) : card.WhoWantsCount;
             return new CardFinalView
             {
                 Id = card.Id,
