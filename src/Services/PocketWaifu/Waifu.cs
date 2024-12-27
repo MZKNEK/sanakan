@@ -55,10 +55,12 @@ namespace Sanakan.Services.PocketWaifu
         public const int FatigueThirdPhase = 1000;
         public const double FatigueRecoveryRate = 0.173;
 
+        private AsyncNonKeyedLocker _semaphoreChars = new AsyncNonKeyedLocker(1);
+
         private const int DERE_TAB_SIZE = ((int)Dere.Yato) + 1;
-        private static CharacterPool<ulong> _charIdAnime = new CharacterPool<ulong>();
-        private static CharacterPool<ulong> _charIdManga = new CharacterPool<ulong>();
-        private static CharacterPool<ulong> _charIdAll = new CharacterPool<ulong>();
+        private static CharacterPool<ICharacterInfoTitle> _charIdAnime = new CharacterPool<ICharacterInfoTitle>();
+        private static CharacterPool<ICharacterInfoTitle> _charIdManga = new CharacterPool<ICharacterInfoTitle>();
+        private static CharacterPool<ICharacterInfoTitle> _charIdAll = new CharacterPool<ICharacterInfoTitle>();
         private DateTime _hiddeScalpelBeforeDate = new DateTime(2023, 5, 1);
 
         private static List<string> _qualityNamesList = Enum.GetNames(typeof(Quality)).ToList();
@@ -909,6 +911,30 @@ namespace Sanakan.Services.PocketWaifu
             return card;
         }
 
+        public Card GenerateNewCard(IUser user, ICharacterInfoTitle character, Rarity rarity, Quality quality)
+        {
+            var card = GenerateNewCard(user, character, (quality != Quality.Broken) ? Rarity.SSS : rarity);
+
+            card.FromFigure = quality != Quality.Broken;
+            card.QualityOnStart = quality;
+            card.Quality = quality;
+
+            return card;
+        }
+
+        public Card GenerateNewCard(IUser user, ICharacterInfoTitle character, Rarity rarity)
+        {
+            var card = GenerateNewCard(character.ToString(), character.TitleName,
+                character.HasImage ? character.PictureUrl : string.Empty, rarity, _time.Now());
+
+            card.Character = character.Id;
+
+            if (user != null)
+                card.FirstIdOwner = user.Id;
+
+            return card;
+        }
+
         public Card GenerateNewCard(IUser user, ICharacterInfo character, Rarity rarity)
         {
             var card = GenerateNewCard(character.ToString(),
@@ -935,8 +961,14 @@ namespace Sanakan.Services.PocketWaifu
             return card;
         }
 
+        public Card GenerateNewCard(IUser user, ICharacterInfoTitle character)
+            => GenerateNewCard(user, character, RandomizeRarity());
+
         public Card GenerateNewCard(IUser user, ICharacterInfo character)
             => GenerateNewCard(user, character, RandomizeRarity());
+
+        public Card GenerateNewCard(IUser user, ICharacterInfoTitle character, List<Rarity> rarityExcluded)
+            => GenerateNewCard(user, character, RandomizeRarity(rarityExcluded));
 
         public Card GenerateNewCard(IUser user, ICharacterInfo character, List<Rarity> rarityExcluded)
             => GenerateNewCard(user, character, RandomizeRarity(rarityExcluded));
@@ -1114,9 +1146,8 @@ namespace Sanakan.Services.PocketWaifu
             return msg;
         }
 
-        public async Task<ICharacterInfo> GetRandomCharacterAsync(CharacterPoolType type)
+        public async Task<ICharacterInfoTitle> GetRandomCharacterAsync(CharacterPoolType type)
         {
-            int check = 2;
             var idPool = type switch
             {
                 CharacterPoolType.Anime => _charIdAnime,
@@ -1126,36 +1157,32 @@ namespace Sanakan.Services.PocketWaifu
 
             if (idPool.IsNeedForUpdate(_time.Now()))
             {
-                try
+                using (await _semaphoreChars.LockAsync().ConfigureAwait(false))
                 {
-                    var characters = type switch
+                    if (idPool.IsNeedForUpdate(_time.Now()))
                     {
-                        CharacterPoolType.Anime => await _shClient.Ex.GetAllCharactersFromAnimeAsync(),
-                        CharacterPoolType.Manga => await _shClient.Ex.GetAllCharactersFromMangaAsync(),
-                        _ => await _shClient.Ex.GetAllCharactersAsync(),
-                    };
+                        try
+                        {
+                            var characters = type switch
+                            {
+                                CharacterPoolType.Anime => await _shClient.Ex.GetAllCharactersFromAnimeFatAsync(),
+                                CharacterPoolType.Manga => await _shClient.Ex.GetAllCharactersFromMangaFatAsync(),
+                                _ => await _shClient.Ex.GetAllCharactersFatAsync(),
+                            };
 
-                    if (!characters.IsSuccessStatusCode()) return null;
+                            if (!characters.IsSuccessStatusCode()) return null;
 
-                    idPool.Update(characters.Body, _time.Now());
-                }
-                catch (Exception)
-                {
-                    return null;
+                            idPool.Update(characters.Body, _time.Now());
+                        }
+                        catch (Exception)
+                        {
+                            return null;
+                        }
+                    }
                 }
             }
 
-            ulong id = idPool.GetOneRandom();
-            var chara = await _shinden.GetCharacterInfoAsync(id);
-
-            while (chara is null && --check > 0)
-            {
-                await Task.Delay(TimeSpan.FromMilliseconds(500));
-
-                id = idPool.GetOneRandom();
-                chara = await _shinden.GetCharacterInfoAsync(id);
-            }
-            return chara;
+            return idPool.GetOneRandom();
         }
 
         private bool FileIsTooBigToSend(string file)
@@ -1355,7 +1382,16 @@ namespace Sanakan.Services.PocketWaifu
                 }
                 else
                 {
-                    chara = await GetRandomCharacterAsync(poolType);
+                    var chart = await GetRandomCharacterAsync(poolType);
+                    var newCard = GenerateNewCard(user, chart, pack.RarityExcludedFromPack.Select(x => x.Rarity).ToList());
+                    if (pack.MinRarity != Rarity.E && i == pack.CardCnt - 1)
+                        newCard = GenerateNewCard(user, chart, pack.MinRarity);
+
+                    newCard.IsTradable = pack.IsCardFromPackTradable;
+                    newCard.Source = pack.CardSourceFromPack;
+
+                    cardsFromPack.Add(newCard);
+                    continue;
                 }
 
                 if (chara != null)

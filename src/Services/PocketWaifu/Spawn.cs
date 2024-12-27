@@ -128,7 +128,7 @@ namespace Sanakan.Services.PocketWaifu
         }
 
         private void RunSafari(EmbedBuilder embed, IUserMessage msg, Card newCard,
-            SafariImage pokeImage, ICharacterInfo character, ITextChannel trashChannel)
+            SafariImage pokeImage, ICharacterInfoTitle character, ITextChannel trashChannel)
         {
             _ = Task.Run(async () =>
             {
@@ -173,7 +173,7 @@ namespace Sanakan.Services.PocketWaifu
                         }
                     }
 
-                    var exe = GetSafariExe(embed, msg, newCard, pokeImage, character, trashChannel, winner);
+                    var exe = GetSafariExe(embed, msg, newCard, pokeImage, trashChannel, winner);
                     await _executor.TryAdd(exe, TimeSpan.FromSeconds(1));
                     await msg.RemoveAllReactionsAsync();
                 }
@@ -187,7 +187,7 @@ namespace Sanakan.Services.PocketWaifu
         }
 
         private Executable GetSafariExe(EmbedBuilder embed, IUserMessage msg, Card newCard,
-            SafariImage pokeImage, ICharacterInfo character, ITextChannel trashChannel, IUser winner)
+            SafariImage pokeImage, ITextChannel trashChannel, IUser winner)
         {
             return new Executable("safari", new Func<Task>(async () =>
             {

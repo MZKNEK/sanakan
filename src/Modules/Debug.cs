@@ -1217,8 +1217,17 @@ namespace Sanakan.Modules
         public async Task GenerateCardAsync([Summary("nazwa użytkownika")]SocketGuildUser user, [Summary("id postaci na shinden (nie podanie - losowo)")]ulong id = 0,
             [Summary("ranga karty (nie podanie - losowo)")]Rarity rarity = Rarity.E, [Summary("jakość karty (nadpisuje range)")]Quality quality = Quality.Broken)
         {
-            var character = (id == 0) ? await _waifu.GetRandomCharacterAsync(CharacterPoolType.All) : (await _shClient.GetCharacterInfoAsync(id)).Body;
-            var card = (rarity == Rarity.E && quality == Quality.Broken) ? _waifu.GenerateNewCard(user, character) : _waifu.GenerateNewCard(user, character, rarity, quality);
+            Card card;
+            if (id == 0)
+            {
+                var chart = await _waifu.GetRandomCharacterAsync(CharacterPoolType.All);
+                card = (rarity == Rarity.E && quality == Quality.Broken) ? _waifu.GenerateNewCard(user, chart) : _waifu.GenerateNewCard(user, chart, rarity, quality);
+            }
+            else
+            {
+                var character = (await _shClient.GetCharacterInfoAsync(id)).Body;
+                card = (rarity == Rarity.E && quality == Quality.Broken) ? _waifu.GenerateNewCard(user, character) : _waifu.GenerateNewCard(user, character, rarity, quality);
+            }
 
             card.Source = CardSource.GodIntervention;
             using (var db = new Database.DatabaseContext(Config))
