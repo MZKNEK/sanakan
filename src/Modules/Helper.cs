@@ -184,6 +184,24 @@ namespace Sanakan.Modules
             }
         }
 
+        [Command("można dostać?", RunMode = RunMode.Async)]
+        [Alias("mozna dostać?", "można dostac?", "mozna dostac?", "is char available", "ica")]
+        [Summary("wyświetla czy dana postać znajduje się w puli")]
+        [Remarks("1")]
+        public async Task IsThisCharacterInMyPoolAsync([Summary("id postaci")]ulong id)
+        {
+            using (var db = new Database.DatabaseContext(Config))
+            {
+                var botuser = await db.GetUserOrCreateSimpleAsync(Context.User.Id);
+                var charInfo = _waifu.IsInPool(botuser.PoolType, id);
+
+                string moreInfo = charInfo is null ? $"{id} nie znajduje się w puli."
+                 : $"{charInfo} znajduje się w puli.";
+
+                await SafeReplyAsync("", embed: $"{Context.User.Mention} {moreInfo}".ToEmbedMessage(EMType.Info).Build());
+            }
+        }
+
         [Command("napraw ramke")]
         [Alias("fix border")]
         [Summary("naprawia wygasły obrazek ramki")]

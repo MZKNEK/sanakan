@@ -1146,6 +1146,21 @@ namespace Sanakan.Services.PocketWaifu
             return msg;
         }
 
+        public ICharacterInfoTitle IsInPool(CharacterPoolType type, ulong id)
+        {
+            var idPool = type switch
+            {
+                CharacterPoolType.Anime => _charIdAnime,
+                CharacterPoolType.Manga => _charIdManga,
+                _ => _charIdAll,
+            };
+
+            if (idPool.Pool.IsNullOrEmpty())
+                return null;
+
+            return idPool.Pool.FirstOrDefault(x => x.Id == id);
+        }
+
         public async Task<ICharacterInfoTitle> GetRandomCharacterAsync(CharacterPoolType type)
         {
             var idPool = type switch
