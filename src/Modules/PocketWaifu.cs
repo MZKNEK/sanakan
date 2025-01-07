@@ -773,7 +773,8 @@ namespace Sanakan.Modules
                     card.CustomImage = null;
                 }
 
-                card.CalculateCardPower();
+                _ = card.RecoverFatigue(_time);
+                _ = card.CalculateCardPower();
 
                 _waifu.DeleteCardImageIfExist(card);
 

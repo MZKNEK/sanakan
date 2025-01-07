@@ -438,7 +438,7 @@ namespace Sanakan.Extensions
                 var breakFromExpedition = (time.Now() - card.ExpeditionEndDate).TotalMinutes;
                 if (breakFromExpedition > 1)
                 {
-                    var toRecover = Math.Min(Waifu.FatigueRecoveryRate * breakFromExpedition, Waifu.FatigueThirdPhase);
+                    var toRecover = Math.Min(Waifu.FatigueRecoveryRate * breakFromExpedition, double.MaxValue);
                     return Math.Max(card.Fatigue - toRecover, 0);
                 }
             }

@@ -361,6 +361,9 @@ namespace Sanakan.Modules
                     {
                         await card.Update(null, _shClient);
                         _waifu.DeleteCardImageIfExist(card);
+
+                        _ = card.RecoverFatigue(_time);
+                        _ = card.CalculateCardPower();
                     }
                     catch (Exception) { }
                 }
