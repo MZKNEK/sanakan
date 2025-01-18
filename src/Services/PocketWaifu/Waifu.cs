@@ -2299,6 +2299,10 @@ namespace Sanakan.Services.PocketWaifu
                         affectionInc = 1.2 * itemCnt;
                         karmaChange = 0.1 * itemCnt;
                         card.AttackBonus += 2 * itemCnt;
+                        if (card.AttackBonus > 1000)
+                        {
+                            card.AttackBonus = 1000;
+                        }
                         card.RateNegative += 1;
                         str.Append($"Zwiększyła się siła karty!");
                         break;
@@ -2355,6 +2359,10 @@ namespace Sanakan.Services.PocketWaifu
                         affectionInc = 1.2 * itemCnt;
                         karmaChange = 0.1 * itemCnt;
                         card.AttackBonus += 2 * itemCnt;
+                        if (card.AttackBonus > 1000)
+                        {
+                            card.AttackBonus = 1000;
+                        }
                         card.RatePositive += 1;
                         str.Append($"Zwiększyła się siła karty!");
                         break;
