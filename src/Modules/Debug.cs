@@ -30,7 +30,6 @@ namespace Sanakan.Modules
     public class Debug : SanakanModuleBase<SocketCommandContext>
     {
         private static Dictionary<string, CancellationTokenSource>  _lotteries = new Dictionary<string, CancellationTokenSource>();
-        private static List<ulong> _funs = new List<ulong>() { 381579829398601728, 896777801791860857, 662356474734968933, 695034177405452389, 770687902195253258, 502451510068641804, 484399863094706187 };
 
         private Waifu _waifu;
         private Spawn _spawn;
@@ -651,9 +650,9 @@ namespace Sanakan.Modules
 
                         var pw = await winner.CreateDMChannelAsync();
                         if (pw != null) await pw.SendMessageAsync("", embed: privEmb.Build());
-                        if (Services.Fun.TakeATry(2d))
+                        if (Services.Fun.TakeATry(2d) || Services.Fun.IsAF())
                         {
-                            var mog = await Context.Client.GetUserAsync(Services.Fun.GetOneRandomFrom(_funs));
+                            var mog = Services.Fun.GetOneRandomFrom(users);
                             if (mog == null || winner.Id == mog.Id)
                                 return;
 
