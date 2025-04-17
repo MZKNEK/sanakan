@@ -108,7 +108,7 @@ namespace Sanakan
 
             _time = new SystemTime();
             _events = new Events(_time);
-            _helper = new Helper(_config);
+            _helper = new Helper(_config, _logger);
             _expedition = new Expedition(_time);
             _img = new ImageProcessing(_shindenClient,
                 _tags.GetTag(Services.PocketWaifu.TagType.Gallery));

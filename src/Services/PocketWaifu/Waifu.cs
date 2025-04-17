@@ -1228,7 +1228,7 @@ namespace Sanakan.Services.PocketWaifu
         {
             var list = new List<Embed>();
 
-            var contentString = new StringBuilder($"{title} **[{cards.Count()}]**\n\n");
+            var contentString = new MessageContent(1).Append($"{title} **[{cards.Count()}]**\n\n");
             foreach (var card in cards.Select(async (x, i) => $"{i+1}: {await GetCardInfo(x, mention, guild, shindenUrls, tldr)}"))
             {
                 AppendMessage(list, contentString, await card);
@@ -1248,7 +1248,7 @@ namespace Sanakan.Services.PocketWaifu
             var list = new List<Embed>();
             var characters = cards.GroupBy(x => x.Character);
 
-            var contentString = new StringBuilder();
+            var contentString = new MessageContent();
             foreach (var cardsG in characters)
             {
                 var fC = cardsG.First();
@@ -1288,7 +1288,7 @@ namespace Sanakan.Services.PocketWaifu
             return $"[{user?.GetUserNickInGuild() ?? "????"}](https://shinden.pl/user/{card.GameDeck.User.Shinden}): {card.GetIdWithUrl()} **{card.GetCardRealRarity()}** {card.GetStatusIcons(_tags)}\n";
         }
 
-        private void AppendMessage(List<Embed> embeds, StringBuilder currentContent, string nextPart) =>
+        private void AppendMessage(List<Embed> embeds, MessageContent currentContent, string nextPart) =>
             _helper.AppendMessage(embeds, currentContent, nextPart);
 
         public Embed GetBoosterPackList(SocketUser user, List<BoosterPack> packs)

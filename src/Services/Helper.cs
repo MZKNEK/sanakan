@@ -13,6 +13,7 @@ using Discord.Commands;
 using Discord.WebSocket;
 using Sanakan.Config;
 using Sanakan.Extensions;
+using Shinden.Logger;
 
 namespace Sanakan.Services
 {
@@ -20,12 +21,14 @@ namespace Sanakan.Services
     {
         private IConfig _config;
         private HttpClient _httpClient;
+        private ILogger _log;
 
         public IEnumerable<ModuleInfo> PublicModulesInfo { get; set; }
         public Dictionary<string, ModuleInfo> PrivateModulesInfo { get; set; }
 
-        public Helper(IConfig config)
+        public Helper(IConfig config, ILogger log)
         {
+            _log = log;
             _config = config;
             _httpClient = new HttpClient(new HttpClientHandler { AllowAutoRedirect = false });
 
@@ -443,9 +446,9 @@ namespace Sanakan.Services
             }.Build();
         }
 
-        public void AppendMessage(List<Embed> embeds, StringBuilder currentContent, string nextPart)
+        public void AppendMessage(List<Embed> embeds, MessageContent currentContent, string nextPart)
         {
-            if (currentContent.Length + nextPart.Length > 3000)
+            if (currentContent.Length + nextPart.Length > 3000 || currentContent.Entries >= 27)
             {
                 embeds.Add(new EmbedBuilder() { Color = EMType.Info.Color(), Description = currentContent.ToString() }.Build());
                 currentContent.Clear();
@@ -456,7 +459,7 @@ namespace Sanakan.Services
         public List<Embed> BuildEmbedsFormTextRows(IEnumerable<string> rows)
         {
             var list = new List<Embed>();
-            var contentString = new StringBuilder();
+            var contentString = new MessageContent();
             foreach (var row in rows)
             {
                 AppendMessage(list, contentString, $"{row}\n");
