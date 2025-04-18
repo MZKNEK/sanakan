@@ -3,6 +3,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Discord;
+using Discord.WebSocket;
 using Sanakan.Database.Models;
 
 namespace Sanakan.Extensions
@@ -299,11 +301,22 @@ namespace Sanakan.Extensions
             return fig.IsFocus ? "**A**" : "";
         }
 
-        public static string GetFiguresList(this GameDeck deck)
+        public static List<Embed> GetFiguresList(this GameDeck deck, SocketUser user)
         {
-            if (deck.Figures.Count < 1) return "Nie posiadasz figurek.";
+            var pages = new List<Embed>();
+            var list = deck.Figures.Select(x => $"{x.GetStatus()} **[{x.Id}]** *{x.SkeletonQuality.ToName("??")}* [{x.Name}]({Shinden.API.Url.GetCharacterURL(x.Character)}) {x.IsActive()}").SplitList(30);
 
-            return string.Join("\n", deck.Figures.Select(x => $"{x.GetStatus()} **[{x.Id}]** *{x.SkeletonQuality.ToName("??")}* [{x.Name}]({Shinden.API.Url.GetCharacterURL(x.Character)}) {x.IsActive()}"));
+            for (int i = 0; i < list.Count; i++)
+            {
+                var embed = new EmbedBuilder
+                {
+                    Color = EMType.Info.Color(),
+                    Description = $"{user.Mention} twoje figurki **({i + 1}/{list.Count})**:\n\n{string.Join("\n", list[i]).TrimToLength()}"
+                };
+                pages.Add(embed.Build());
+            }
+
+            return pages;
         }
 
         public static string GetDesc(this Figure fig)

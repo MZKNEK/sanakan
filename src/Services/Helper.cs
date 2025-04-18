@@ -446,9 +446,9 @@ namespace Sanakan.Services
             }.Build();
         }
 
-        public void AppendMessage(List<Embed> embeds, MessageContent currentContent, string nextPart)
+        public void AppendMessage(List<Embed> embeds, MessageContent currentContent, MessageEntry nextPart, int limitEntries = 27)
         {
-            if (currentContent.Length + nextPart.Length > 3000 || currentContent.Entries >= 27)
+            if (currentContent.Length + nextPart.Length > 3000 || (limitEntries > 0 && currentContent.Entries >= limitEntries))
             {
                 embeds.Add(new EmbedBuilder() { Color = EMType.Info.Color(), Description = currentContent.ToString() }.Build());
                 currentContent.Clear();
@@ -462,7 +462,7 @@ namespace Sanakan.Services
             var contentString = new MessageContent();
             foreach (var row in rows)
             {
-                AppendMessage(list, contentString, $"{row}\n");
+                AppendMessage(list, contentString, new MessageEntry($"{row}\n", 20));
             }
 
             list.Add(new EmbedBuilder()

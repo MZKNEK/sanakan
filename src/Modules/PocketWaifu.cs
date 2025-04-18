@@ -247,7 +247,21 @@ namespace Sanakan.Modules
                 }
                 else
                 {
-                    await SafeReplyAsync("", embed: deck.GetFiguresList().TrimToLength().ToEmbedMessage(EMType.Info).WithAuthor(new EmbedAuthorBuilder().WithUser(Context.User)).Build());
+                    var pages = deck.GetFiguresList(Context.User);
+                    if (pages.Count < 1)
+                    {
+                        await SafeReplyAsync("", embed: $"{Context.User.Mention} nie odnaleniono figurek.".ToEmbedMessage(EMType.Error).Build());
+                        return;
+                    }
+
+                    if (pages.Count == 1)
+                    {
+                        await SafeReplyAsync("", embed: pages.FirstOrDefault());
+                        return;
+                    }
+
+                    var res = await _helepr.SendEmbedsOnDMAsync(Context.User, pages);
+                    await SafeReplyAsync("", embed: res.ToEmbedMessage($"{Context.User.Mention} ").Build());
                 }
             }
         }

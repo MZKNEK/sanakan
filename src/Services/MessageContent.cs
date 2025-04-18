@@ -34,5 +34,13 @@ namespace Sanakan.Services
             Length += str.Length;
             return this;
         }
+
+        public MessageContent Append(MessageEntry str)
+        {
+            Text.Append(str);
+            Entries += 1;
+            Length += str.Length;
+            return this;
+        }
     }
 }

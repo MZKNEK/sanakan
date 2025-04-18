@@ -1229,7 +1229,7 @@ namespace Sanakan.Services.PocketWaifu
             var list = new List<Embed>();
 
             var contentString = new MessageContent(1).Append($"{title} **[{cards.Count()}]**\n\n");
-            foreach (var card in cards.Select(async (x, i) => $"{i+1}: {await GetCardInfo(x, mention, guild, shindenUrls, tldr)}"))
+            foreach (var card in cards.Select(async (x, i) => $"{i+1}: " + await GetCardInfo(x, mention, guild, shindenUrls, tldr)))
             {
                 AppendMessage(list, contentString, await card);
             }
@@ -1255,7 +1255,7 @@ namespace Sanakan.Services.PocketWaifu
                 if (tldr) AppendMessage(list, contentString, $"\n{fC.Name} ({fC.Character}) {fC.GetCharacterUrl()} ({fC.WhoWantsCount})\n");
                 else AppendMessage(list, contentString, $"\n**{fC.GetNameWithUrl()}** (KC: {fC.WhoWantsCount}) **[{cardsG.Count()}]**\n");
 
-                foreach (var card in cardsG.Select(async (x, i) => $"{i+1}: {await GetCardInfo(x, mention, guild, shindenUrls, tldr)}"))
+                foreach (var card in cardsG.Select(async (x, i) => $"{i+1}: " + await GetCardInfo(x, mention, guild, shindenUrls, tldr)))
                 {
                     AppendMessage(list, contentString, await card);
                 }
@@ -1270,26 +1270,30 @@ namespace Sanakan.Services.PocketWaifu
             return list;
         }
 
-        private async Task<string> GetCardInfo(Card card, bool mention, SocketGuild guild, bool shindenUrls, bool tldr)
+        private async Task<MessageEntry> GetCardInfo(Card card, bool mention, SocketGuild guild, bool shindenUrls, bool tldr)
         {
+            var count = card.GetIconsCount(_tags) * 4;
             if (mention)
             {
                 var userId = card.GameDeckId == 1 ? (guild?.CurrentUser?.Id ?? 1) : card.GameDeckId;
-                if (tldr) return $"{userId}: {card.Id} {card.GetCardRealRarity()} {card.GetStatusIcons(_tags)} {card.GetPocketUrl()}\n";
-                return $"<@{userId}>: {card.GetIdWithUrl()} **{card.GetCardRealRarity()}** {card.GetStatusIcons(_tags)}\n";
+                if (tldr) return new MessageEntry($"{userId}: {card.Id} {card.GetCardRealRarity()} {card.GetStatusIcons(_tags)} {card.GetPocketUrl()}\n", count);
+                return new MessageEntry($"<@{userId}>: {card.GetIdWithUrl()} **{card.GetCardRealRarity()}** {card.GetStatusIcons(_tags)}\n", count);
             }
 
             var user = guild?.GetUser(card.GameDeckId) ?? await _client.GetUserAsync(card.GameDeckId);
-            if (tldr) return $"{user?.GetUserNickInGuild()}: {card.Id} {card.GetCardRealRarity()} {card.GetStatusIcons(_tags)} {card.GetPocketUrl()}\n";
+            if (tldr) return new MessageEntry($"{user?.GetUserNickInGuild()}: {card.Id} {card.GetCardRealRarity()} {card.GetStatusIcons(_tags)} {card.GetPocketUrl()}\n", count);
 
             if (!shindenUrls || card?.GameDeck?.User?.Shinden == 0 || card?.GameDeckId == 1)
-                return $"{user?.GetUserNickInGuild() ?? "????"}: {card.GetIdWithUrl()} **{card.GetCardRealRarity()}** {card.GetStatusIcons(_tags)}\n";
+                return new MessageEntry($"{user?.GetUserNickInGuild() ?? "????"}: {card.GetIdWithUrl()} **{card.GetCardRealRarity()}** {card.GetStatusIcons(_tags)}\n", count);
 
-            return $"[{user?.GetUserNickInGuild() ?? "????"}](https://shinden.pl/user/{card.GameDeck.User.Shinden}): {card.GetIdWithUrl()} **{card.GetCardRealRarity()}** {card.GetStatusIcons(_tags)}\n";
+            return new MessageEntry($"[{user?.GetUserNickInGuild() ?? "????"}](https://shinden.pl/user/{card.GameDeck.User.Shinden}): {card.GetIdWithUrl()} **{card.GetCardRealRarity()}** {card.GetStatusIcons(_tags)}\n", count);
         }
 
-        private void AppendMessage(List<Embed> embeds, MessageContent currentContent, string nextPart) =>
+        private void AppendMessage(List<Embed> embeds, MessageContent currentContent, MessageEntry nextPart) =>
             _helper.AppendMessage(embeds, currentContent, nextPart);
+
+        private void AppendMessage(List<Embed> embeds, MessageContent currentContent, string nextPart) =>
+            _helper.AppendMessage(embeds, currentContent, new MessageEntry(nextPart, 2));
 
         public Embed GetBoosterPackList(SocketUser user, List<BoosterPack> packs)
         {
