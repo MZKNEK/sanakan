@@ -16,6 +16,11 @@ namespace Sanakan.Services
         private DiscordSocketClient _client;
         private IConfig _config;
 
+        private enum VoiceActionType
+        {
+            Join, Left, Changed
+        }
+
         public DeletedLog(DiscordSocketClient client, IConfig config)
         {
             _client = client;
@@ -23,20 +28,35 @@ namespace Sanakan.Services
 
             _client.MessageDeleted += HandleDeletedMsgAsync;
             _client.MessageUpdated += HandleUpdatedMsgAsync;
+            _client.UserVoiceStateUpdated += HandleVoiceStateUpdatedAsync;
         }
 
-        private async Task HandleUpdatedMsgAsync(Cacheable<IMessage, ulong> oldMessage, SocketMessage newMessage, ISocketMessageChannel channel)
+        private Task HandleVoiceStateUpdatedAsync(SocketUser user, SocketVoiceState oldState, SocketVoiceState newState)
         {
-            if (!oldMessage.HasValue) return;
+            bool userJoined = oldState.VoiceChannel == null && newState.VoiceChannel != null;
+            bool userLeft = newState.VoiceChannel == null && oldState.VoiceChannel != null;
 
-            if (newMessage.Author.IsBot || newMessage.Author.IsWebhook) return;
+            var action = userJoined ? VoiceActionType.Join : (userLeft ? VoiceActionType.Left : VoiceActionType.Changed);
+            _ = Task.Run(async () =>
+            {
+                await LogVoiceChange(user, action, oldState.VoiceChannel, newState.VoiceChannel);
+            });
 
-            if (oldMessage.Value.Content.Equals(newMessage.Content, StringComparison.CurrentCultureIgnoreCase)) return;
+            return Task.CompletedTask;
+        }
+
+        private Task HandleUpdatedMsgAsync(Cacheable<IMessage, ulong> oldMessage, SocketMessage newMessage, ISocketMessageChannel channel)
+        {
+            if (!oldMessage.HasValue) return Task.CompletedTask;
+
+            if (newMessage.Author.IsBot || newMessage.Author.IsWebhook) return Task.CompletedTask;
+
+            if (oldMessage.Value.Content.Equals(newMessage.Content, StringComparison.CurrentCultureIgnoreCase)) return Task.CompletedTask;
 
             if (newMessage.Channel is SocketGuildChannel gChannel)
             {
                 if (_config.Get().BlacklistedGuilds.Any(x => x == gChannel.Guild.Id))
-                    return;
+                    return Task.CompletedTask;
 
                 _ = Task.Run(async () =>
                 {
@@ -44,21 +64,21 @@ namespace Sanakan.Services
                 });
             }
 
-            await Task.CompletedTask;
+            return Task.CompletedTask;
         }
 
-        private async Task HandleDeletedMsgAsync(Cacheable<IMessage, ulong> message, Cacheable<IMessageChannel, ulong> channel)
+        private Task HandleDeletedMsgAsync(Cacheable<IMessage, ulong> message, Cacheable<IMessageChannel, ulong> channel)
         {
-            if (!message.HasValue) return;
+            if (!message.HasValue) return Task.CompletedTask;
 
-            if (message.Value.Author.IsBot || message.Value.Author.IsWebhook) return;
+            if (message.Value.Author.IsBot || message.Value.Author.IsWebhook) return Task.CompletedTask;
 
-            if (message.Value.Content.Length < 4 && message.Value.Attachments.Count < 1) return;
+            if (message.Value.Content.Length < 4 && message.Value.Attachments.Count < 1) return Task.CompletedTask;
 
             if (message.Value.Channel is SocketGuildChannel gChannel)
             {
                 if (_config.Get().BlacklistedGuilds.Any(x => x == gChannel.Guild.Id))
-                    return;
+                    return Task.CompletedTask;
 
                 _ = Task.Run(async () =>
                 {
@@ -66,7 +86,48 @@ namespace Sanakan.Services
                 });
             }
 
-            await Task.CompletedTask;
+            return Task.CompletedTask;
+        }
+
+        private async Task LogVoiceChange(SocketUser user, VoiceActionType action, SocketVoiceChannel oldChannel, SocketVoiceChannel newChannel)
+        {
+            using (var db = new Database.DatabaseContext(_config))
+            {
+                var guild = oldChannel?.Guild ?? newChannel?.Guild;
+                if (guild == null) return;
+
+                var config = await db.GetCachedGuildFullConfigAsync(guild.Id);
+                if (config == null) return;
+
+                var ch = guild.GetTextChannel(config.LogChannel);
+                if (ch == null) return;
+
+                await ch.SendMessageAsync("", embed: BuildVoiceMessage(user, action, oldChannel?.Name ?? "??", newChannel?.Name ?? "??"));
+            }
+        }
+
+        private Embed BuildVoiceMessage(SocketUser user, VoiceActionType action, string newChannel, string oldChannel)
+        {
+            var color = action switch
+            {
+                VoiceActionType.Join => EMType.Success.Color(),
+                VoiceActionType.Left => EMType.Error.Color(),
+                _ => EMType.Bot.Color()
+            };
+
+            var text = action switch
+            {
+                VoiceActionType.Left => $"[VA] Opuścił kanał: {newChannel}",
+                VoiceActionType.Join => $"[VA] Dołączył do kanału: {oldChannel}",
+                _ => $"[VA] Zmienił kanał z: {oldChannel} na: {newChannel}"
+            };
+
+            return new EmbedBuilder
+            {
+                Color = color,
+                Author = new EmbedAuthorBuilder().WithUser(user, true),
+                Description = text,
+            }.Build();
         }
 
         private async Task LogMessageAsync(SocketGuildChannel channel, IMessage oldMessage, IMessage newMessage = null)
