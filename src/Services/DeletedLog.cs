@@ -37,6 +37,9 @@ namespace Sanakan.Services
             bool userLeft = newState.VoiceChannel == null && oldState.VoiceChannel != null;
 
             var action = userJoined ? VoiceActionType.Join : (userLeft ? VoiceActionType.Left : VoiceActionType.Changed);
+            if (action == VoiceActionType.Changed && (oldState.VoiceChannel?.Id ?? 0) == (newState.VoiceChannel?.Id ?? 0))
+                return Task.CompletedTask;
+
             _ = Task.Run(async () =>
             {
                 await LogVoiceChange(user, action, oldState.VoiceChannel, newState.VoiceChannel);
@@ -106,7 +109,7 @@ namespace Sanakan.Services
             }
         }
 
-        private Embed BuildVoiceMessage(SocketUser user, VoiceActionType action, string newChannel, string oldChannel)
+        private Embed BuildVoiceMessage(SocketUser user, VoiceActionType action, string oldChannel, string newChannel)
         {
             var color = action switch
             {
