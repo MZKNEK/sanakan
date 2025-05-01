@@ -120,8 +120,8 @@ namespace Sanakan.Services
 
             var text = action switch
             {
-                VoiceActionType.Left => $"[VA] Opuścił kanał: {newChannel}",
-                VoiceActionType.Join => $"[VA] Dołączył do kanału: {oldChannel}",
+                VoiceActionType.Left => $"[VA] Opuścił kanał: {oldChannel}",
+                VoiceActionType.Join => $"[VA] Dołączył do kanału: {newChannel}",
                 _ => $"[VA] Zmienił kanał z: {oldChannel} na: {newChannel}"
             };
 
