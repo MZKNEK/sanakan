@@ -98,6 +98,7 @@ namespace Sanakan.Database.Models
         public int DefenceBonus { get; set; }
         public Quality QualityOnStart { get; set; }
         public PreAssembledFigure PAS { get; set; }
+        public int BorderVariant { get; set; }
 
         public CardExpedition Expedition { get; set; }
         public DateTime ExpeditionDate { get; set; }
@@ -105,7 +106,6 @@ namespace Sanakan.Database.Models
         public DateTime ExpeditionEndDate { get; set; }
         public double Fatigue { get; set; }
 
-        public virtual ICollection<CardTag> TagList { get; set; }
         public virtual ICollection<Tag> Tags { get; set; }
 
         public ulong GameDeckId { get; set; }
