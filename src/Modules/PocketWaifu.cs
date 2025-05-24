@@ -936,6 +936,7 @@ namespace Sanakan.Modules
                     }
 
                     card.Quality = card.Quality.Next();
+                    card.BorderVariant = 0;
                 }
                 else
                 {

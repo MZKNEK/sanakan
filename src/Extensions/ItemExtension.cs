@@ -107,6 +107,8 @@ namespace Sanakan.Extensions
                     return $"Pozwala sprawdzić jaka klątwa ciąży na karcie.";
                 case ItemType.NotAnItem:
                     return $"Pozwala wytworzyć kartę postaci spoza bazy shindena.";
+                case ItemType.ChangeBorderVariant:
+                    return $"Zmienia wygląd ramki jeśli ona na to pozwala.";
 
                 default:
                     return "Brak opisu.";
@@ -162,6 +164,8 @@ namespace Sanakan.Extensions
                     return $"Zwiększono parametry karty!";
                 case ItemType.RemoveCurse:
                     return $"Karta już nie jest przeklęta!";
+                case ItemType.ChangeBorderVariant:
+                    return $"Zmieniono wygląd ramki na: {card.BorderVariant}";
 
                 default:
                     return "";
@@ -271,6 +275,8 @@ namespace Sanakan.Extensions
                     return $"Nieśmiertelnik";
                 case ItemType.NotAnItem:
                     return $"Magiczna rózga";
+                case ItemType.ChangeBorderVariant:
+                    return $"Taśma izolacyjna";
 
                 default:
                     return "Brak";
@@ -488,6 +494,7 @@ namespace Sanakan.Extensions
                 case ItemType.CheckCurse:
                 case ItemType.GiveTagSlot:
                 case ItemType.NotAnItem:
+                case ItemType.ChangeBorderVariant:
                     return true;
 
                 default:
@@ -524,6 +531,7 @@ namespace Sanakan.Extensions
             ItemType.GiveTagSlot              => 1151,
             ItemType.CreationItemBase         => 222,
             ItemType.CheckCurse               => 82,
+            ItemType.ChangeBorderVariant      => 4,
             ItemType.CardFragment             => 0,
             _ => 1
         };
@@ -539,6 +547,19 @@ namespace Sanakan.Extensions
                 case ItemType.RandomNormalBoosterPackS:
                 case ItemType.RandomNormalBoosterPackSS:
                 case ItemType.BigRandomBoosterPackE:
+                    return true;
+
+                default:
+                    return false;
+            }
+        }
+
+        public static bool ShouldForceSingleUseOnCheck(this ItemType type)
+        {
+            switch (type)
+            {
+                case ItemType.ChangeBorderVariant:
+                case ItemType.ChangeCardImage:
                     return true;
 
                 default:

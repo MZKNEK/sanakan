@@ -403,6 +403,7 @@ namespace Sanakan.Services.PocketWaifu
                 new ItemWithCost(9999,  ItemType.SetCustomAnimatedImage.ToItem()),
                 new ItemWithCost(444,   ItemType.GiveTagSlot.ToItem()),
                 new ItemWithCost(99999, ItemType.NotAnItem.ToItem()),
+                new ItemWithCost(55,    ItemType.ChangeBorderVariant.ToItem()),
             };
         }
 
@@ -437,6 +438,7 @@ namespace Sanakan.Services.PocketWaifu
                 new ItemWithCost(1500,  ItemType.BigRandomBoosterPackE.ToItem()),
                 new ItemWithCost(125,   ItemType.CreationItemBase.ToItem()),
                 new ItemWithCost(921,   ItemType.SetCustomBorder.ToItem()),
+                new ItemWithCost(216,   ItemType.ChangeBorderVariant.ToItem()),
             };
         }
 
@@ -2027,7 +2029,7 @@ namespace Sanakan.Services.PocketWaifu
 
             var item = itemList[itemNumber - 1];
             var parsedCount = int.TryParse(detail, out var itemCnt);
-            if (!parsedCount || itemCnt < 1 || item.Type == ItemType.ChangeCardImage)
+            if (!parsedCount || itemCnt < 1 || item.Type.ShouldForceSingleUseOnCheck())
                 itemCnt = 1;
 
             if (parsedCount && item.Type == ItemType.DereReRoll)
@@ -2235,6 +2237,20 @@ namespace Sanakan.Services.PocketWaifu
                         break;
                     }
                     return ExecutionResult.FromError("Nie rozpoznano typu gwiazdki!");
+
+                case ItemType.ChangeBorderVariant:
+                    if (int.TryParse(detail, out var variant))
+                    {
+                        if (card.GetCardVariantsCount() < variant || variant < 0)
+                            return ExecutionResult.FromError("Nie można na tej ramce ustawić takiego wyglądu!");
+
+                        if (card.BorderVariant == variant)
+                            return ExecutionResult.FromError("Już taki wygląd ramki jest ustawiony!");
+
+                        card.BorderVariant = variant;
+                        break;
+                    }
+                    return ExecutionResult.FromError("Nie rozpoznano wyglądu ramki!");
 
                 case ItemType.ChangeCardImage:
                     var charIf = await _shinden.GetCharacterInfoAsync(card.Character);

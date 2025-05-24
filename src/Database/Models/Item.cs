@@ -57,7 +57,9 @@ namespace Sanakan.Database.Models
         RemoveCurse,
         CreationItemBase,
         NotAnItem,
-        CheckCurse
+        CheckCurse,
+
+        ChangeBorderVariant
     }
 
     public class Item

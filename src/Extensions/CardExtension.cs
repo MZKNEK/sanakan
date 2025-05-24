@@ -209,7 +209,7 @@ namespace Sanakan.Extensions
         {
             return card.Quality switch
             {
-                Quality.Delta => 1,
+                Quality.Delta => 2,
                 _ => 0
             };
         }
