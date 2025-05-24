@@ -1259,7 +1259,7 @@ namespace Sanakan.Services
                     return Dir.GetResource($"PW/CG/{card.Quality}/Border/{card.Dere}.png");
 
                 default:
-                    return Dir.GetResource($"PW/CG/{card.Quality}/Border.png");
+                    return Dir.GetResource($"PW/CG/{card.Quality}/Border{card.GetCardVariantString()}.png");
             }
         }
 
@@ -1435,7 +1435,11 @@ namespace Sanakan.Services
             var drOps = new DrawingOptions() { Transform = Matrix3x2.CreateRotation(-0.46f) };
             var hpOps = new RichTextOptions(hpFont) { HorizontalAlignment = HorizontalAlignment.Center, Origin = new Point(114, 630) };
 
-            var brush = Brushes.Solid(GetOrCreateColor("#356231"));
+            bool hasVariants = !string.IsNullOrEmpty(card.GetCardVariantString());
+            var customColor = GetOrCreateColor("#000000");
+
+            var hpColor = hasVariants ? customColor : GetOrCreateColor("#356231");
+            var brush = Brushes.Solid(hpColor);
             var pen = Pens.Solid(GetOrCreateColor("#0000"), 0.1f);
 
             image.Mutate(x => x.DrawText(drOps, hpOps, $"{hp}", brush, pen));
@@ -1445,9 +1449,11 @@ namespace Sanakan.Services
                 HorizontalAlignment = HorizontalAlignment.Center,
                 Origin = new Point(92, 597)
             };
-            image.Mutate(x => x.DrawText(ops, $"{atk}", GetOrCreateColor("#78261a")));
+            var atkColor = hasVariants ? customColor : GetOrCreateColor("#78261a");
+            image.Mutate(x => x.DrawText(ops, $"{atk}", atkColor));
             ops.Origin = new Point(382, 597);
-            image.Mutate(x => x.DrawText(ops, $"{def}", GetOrCreateColor("#00527f")));
+            var defColor = hasVariants ? customColor : GetOrCreateColor("#00527f");
+            image.Mutate(x => x.DrawText(ops, $"{def}", defColor));
         }
 
         private void ApplyEpsilonStats(Image<Rgba32> image, Card card)
@@ -1667,7 +1673,7 @@ namespace Sanakan.Services
                     return Dir.GetResource($"PW/CG/{card.Quality}/Stats/{card.Dere}.png");
 
                 default:
-                    return Dir.GetResource($"PW/CG/{card.Quality}/Stats.png");
+                    return Dir.GetResource($"PW/CG/{card.Quality}/Stats{card.GetCardVariantString()}.png");
             }
         }
 
@@ -1676,7 +1682,7 @@ namespace Sanakan.Services
             switch (card.Quality)
             {
                 case Quality.Jota: return Dir.GetResource($"PW/CG/{card.Quality}/Border/{card.Dere}.png");
-                default: return Dir.GetResource($"PW/CG/{card.Quality}/BorderBack.png");
+                default: return Dir.GetResource($"PW/CG/{card.Quality}/BorderBack{card.GetCardVariantString()}.png");
             }
         }
 

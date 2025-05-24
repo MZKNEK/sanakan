@@ -205,6 +205,27 @@ namespace Sanakan.Extensions
             return MarketValue.Normal;
         }
 
+        public static int GetCardVariantsCount(this Card card)
+        {
+            return card.Quality switch
+            {
+                Quality.Delta => 1,
+                _ => 0
+            };
+        }
+
+        public static string GetCardVariantString(this Card card)
+        {
+            if (!card.FromFigure || card.BorderVariant < 1)
+                return string.Empty;
+
+            return card.Quality switch
+            {
+                Quality.Delta => $"{card.BorderVariant}",
+                _ => string.Empty
+            };
+        }
+
         public static string GetStatusIcons(this Card card, Services.PocketWaifu.TagHelper tags)
         {
             var icons = new List<string>();
