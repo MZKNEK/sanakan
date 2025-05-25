@@ -309,7 +309,7 @@ namespace Sanakan.Modules
         {
             using (var db = new Database.DatabaseContext(Config))
             {
-                var deck = db.GameDecks.Include(x => x.User).Include(x => x.Figures).Include(x => x.Cards).Where(x => x.Id == Context.User.Id).FirstOrDefault();
+                var deck = db.GameDecks.Include(x => x.User).Include(x => x.Figures).Include(x => x.Cards).Include(x => x.Items).Where(x => x.Id == Context.User.Id).FirstOrDefault();
                 var fig = deck.Figures.FirstOrDefault(x => x.IsFocus);
                 if (fig == null)
                 {
@@ -328,6 +328,11 @@ namespace Sanakan.Modules
 
                 var wishlists = db.GameDecks.Include(x => x.Wishes).AsNoTracking().Where(x => !x.WishlistIsPrivate && x.Wishes.Any(c => c.Type == WishlistObjectType.Character && c.ObjectId == card.Character)).ToList();
                 card.WhoWantsCount = wishlists.Count;
+
+                if (card.Quality == Quality.Eta)
+                {
+                    deck.AddItem(ItemType.ChangeBorderVariant.ToItem());
+                }
 
                 fig.CompletionDate = endTime;
                 fig.IsComplete = true;
