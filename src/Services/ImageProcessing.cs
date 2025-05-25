@@ -1513,6 +1513,42 @@ namespace Sanakan.Services
             image.Mutate(x => x.DrawText(ops, hp.ToString("D5"), GetOrCreateColor("#40ff40")));
         }
 
+        private void ApplyEtaStats(Image<Rgba32> image, Card card)
+        {
+            var aphFont = GetOrCreateFont(_latoBold, 22);
+
+            int hp = card.GetHealthWithPenalty();
+            int def = card.GetDefenceWithBonus();
+            int atk = card.GetAttackWithBonus();
+
+            var ops = new RichTextOptions(aphFont)
+            {
+                HorizontalAlignment = HorizontalAlignment.Center,
+                KerningMode = KerningMode.Auto,
+                Origin = new Point(60, 1),
+            };
+
+            using (var atkImg = new Image<Rgba32>(120, 40))
+            {
+                atkImg.Mutate(x => x.DrawText(ops, $"{atk}", GetOrCreateColor("#ffffff")));
+                atkImg.Mutate(x => x.Rotate(22));
+
+                image.Mutate(x => x.DrawImage(atkImg, new Point(57, 535), 1));
+            }
+
+            ops.Origin = new Point(238, 577);
+            image.Mutate(x => x.DrawText(ops, $"{hp}", GetOrCreateColor("#ffffff")));
+
+            using (var defImg = new Image<Rgba32>(120, 40))
+            {
+                ops.Origin = new Point(60, 1);
+                defImg.Mutate(x => x.DrawText(ops, $"{def}", GetOrCreateColor("#ffffff")));
+                defImg.Mutate(x => x.Rotate(-22));
+
+                image.Mutate(x => x.DrawImage(defImg, new Point(290, 535), 1));
+            }
+        }
+
         private String GetJotaStatColorString(Card card)
         {
             switch (card.Dere)
@@ -1714,6 +1750,9 @@ namespace Sanakan.Services
                     break;
                 case Quality.Zeta:
                     ApplyZetaStats(image, card);
+                    break;
+                case Quality.Eta:
+                    ApplyEtaStats(image, card);
                     break;
                 case Quality.Jota:
                     ApplyJotaStats(image, card);

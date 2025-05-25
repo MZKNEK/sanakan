@@ -210,18 +210,20 @@ namespace Sanakan.Extensions
             return card.Quality switch
             {
                 Quality.Delta => 2,
+                Quality.Eta   => 18,
                 _ => 0
             };
         }
 
         public static string GetCardVariantString(this Card card)
         {
-            if (!card.FromFigure || card.BorderVariant < 1)
+            if (card.GetCardVariantsCount() < 1 || card.BorderVariant < 1)
                 return string.Empty;
 
             return card.Quality switch
             {
                 Quality.Delta => $"{card.BorderVariant}",
+                Quality.Eta   => $"{card.BorderVariant}",
                 _ => string.Empty
             };
         }
