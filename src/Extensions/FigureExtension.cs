@@ -34,6 +34,15 @@ namespace Sanakan.Extensions
             }
         }
 
+        public static string GetOverflow(this Card c)
+        {
+            if (c.FromFigure && c.BorderOverflow > 0)
+            {
+                return $" (+{c.BorderOverflow})";
+            }
+            return "";
+        }
+
         public static string GetStatus(this Figure f)
         {
             if (f.IsComplete) return "🎖️";

@@ -47,7 +47,7 @@ namespace Sanakan.Extensions
              $"{card.GetIdWithUrl()} {(nameAsUrl ? card.GetNameWithUrl() : card.Name)} **{card.GetCardRealRarity()}**";
 
         public static string GetCardRealRarity(this Card card) =>
-            card.FromFigure ? card.Quality.ToName() : card.Rarity.ToString();
+            card.FromFigure ? $"{card.Quality.ToName()}{card.GetOverflow()}" : card.Rarity.ToString();
 
         public static string GetCardParams(this Card card, bool showBaseHp = false, bool allowZero = false, bool inNewLine = false)
         {
@@ -780,7 +780,7 @@ namespace Sanakan.Extensions
             }
 
             var currParams = card.AttackBonus + card.HealthBonus + card.DefenceBonus;
-            var maxParams = 4900 * (int)card.Quality;
+            var maxParams = 4900 * ((int)card.Quality + card.BorderOverflow);
             if (currParams + by >= maxParams)
             {
                 return ExecutionResult.FromError("nie można już bardziej zwiekszyć parametrów na tej karcie.");

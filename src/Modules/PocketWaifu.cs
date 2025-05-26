@@ -822,7 +822,7 @@ namespace Sanakan.Modules
         [Alias("upgrade")]
         [Summary("ulepsza kartę na lepszą jakość")]
         [Remarks("5412"), RequireWaifuCommandChannel]
-        public async Task UpgradeCardAsync([Summary("WID karty do ulepszenia")] ulong id, [Summary("WID karty do poświęcenia")] ulong cardToSac = 0)
+        public async Task UpgradeCardAsync([Summary("WID karty do ulepszenia")] ulong id, [Summary("WID karty do poświęcenia")] ulong cardToSac = 0, [Summary("Czy zwiększyć moc obecnej zamiast ulepszyć? (tylko ultimate)")] bool overflow = false)
         {
             if (_session.SessionExist(Context.User, typeof(ExchangeSession)))
             {
@@ -879,7 +879,8 @@ namespace Sanakan.Modules
 
                 if (card.Quality != Quality.Broken)
                 {
-                    if (card.Quality == Quality.Omega)
+                    var cardOverflowPower = (int)card.Quality + card.BorderOverflow;
+                    if (card.Quality == Quality.Omega || cardOverflowPower >= (int)Quality.Omega)
                     {
                         await SafeReplyAsync("", embed: $"{Context.User.Mention} tej karty nie można już ulepszyć.".ToEmbedMessage(EMType.Error).Build());
                         return;
@@ -906,7 +907,8 @@ namespace Sanakan.Modules
                             return;
                         }
 
-                        if (card.Quality != fig.GetAvgQuality())
+                        var figQ = fig.GetAvgQuality();
+                        if ((!overflow && card.Quality != figQ) || (overflow && cardOverflowPower < (int)figQ))
                         {
                             await SafeReplyAsync("", embed: $"{Context.User.Mention} ta figurka nie ma takiej samej jakości jak karta którą chcesz ulepszyć.".ToEmbedMessage(EMType.Error).Build());
                             return;
@@ -923,7 +925,8 @@ namespace Sanakan.Modules
                             return;
                         }
 
-                        if (card.Quality != cardSac.Quality)
+                        var cardToSacOverflowPower = (int)cardSac.Quality + cardSac.BorderOverflow;
+                        if ((!overflow && card.Quality != cardSac.Quality) || (overflow && cardOverflowPower < cardToSacOverflowPower))
                         {
                             await SafeReplyAsync("", embed: $"{Context.User.Mention} ta karta nie ma takiej samej jakości jak karta którą chcesz ulepszyć.".ToEmbedMessage(EMType.Error).Build());
                             return;
@@ -940,7 +943,15 @@ namespace Sanakan.Modules
                         bUser.GameDeck.Figures.Remove(figure);
                     }
 
-                    card.Quality = card.Quality.Next();
+                    if (overflow)
+                    {
+                        card.BorderOverflow += 1;
+                    }
+                    else
+                    {
+                        card.Quality = card.Quality.Next();
+                        card.BorderOverflow = 0;
+                    }
                     card.BorderVariant = 0;
                 }
                 else

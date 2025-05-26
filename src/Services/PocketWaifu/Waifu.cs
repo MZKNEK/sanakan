@@ -864,6 +864,7 @@ namespace Sanakan.Services.PocketWaifu
                 CustomBorder = null,
                 FromFigure = false,
                 CustomImage = null,
+                BorderOverflow = 0,
                 IsTradable = true,
                 BorderVariant = 0,
                 WhoWantsCount = 0,

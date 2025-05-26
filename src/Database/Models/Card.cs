@@ -99,6 +99,7 @@ namespace Sanakan.Database.Models
         public Quality QualityOnStart { get; set; }
         public PreAssembledFigure PAS { get; set; }
         public int BorderVariant { get; set; }
+        public int BorderOverflow { get; set; }
 
         public CardExpedition Expedition { get; set; }
         public DateTime ExpeditionDate { get; set; }
