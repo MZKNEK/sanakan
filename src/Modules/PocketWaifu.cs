@@ -309,8 +309,8 @@ namespace Sanakan.Modules
         {
             using (var db = new Database.DatabaseContext(Config))
             {
-                var deck = db.GameDecks.Include(x => x.User).Include(x => x.Figures).Include(x => x.Cards).Include(x => x.Items).Where(x => x.Id == Context.User.Id).FirstOrDefault();
-                var fig = deck.Figures.FirstOrDefault(x => x.IsFocus);
+                var user = await db.GetUserOrCreateAsync(Context.User.Id);
+                var fig = user.GameDeck.Figures.FirstOrDefault(x => x.IsFocus);
                 if (fig == null)
                 {
                     await SafeReplyAsync("", embed: $"{Context.User.Mention} żadna figurka nie jest aktywna.".ToEmbedMessage(EMType.Error).Build());
@@ -324,14 +324,14 @@ namespace Sanakan.Modules
 
                 var endTime = _time.Now();
                 var card = fig.ToCard(endTime);
-                deck.Cards.Add(card);
+                user.GameDeck.Cards.Add(card);
 
                 var wishlists = db.GameDecks.Include(x => x.Wishes).AsNoTracking().Where(x => !x.WishlistIsPrivate && x.Wishes.Any(c => c.Type == WishlistObjectType.Character && c.ObjectId == card.Character)).ToList();
                 card.WhoWantsCount = wishlists.Count;
 
                 if (card.Quality == Quality.Eta)
                 {
-                    deck.AddItem(ItemType.ChangeBorderVariant.ToItem());
+                    user.GameDeck.AddItem(ItemType.ChangeBorderVariant.ToItem());
                 }
 
                 fig.CompletionDate = endTime;
@@ -342,7 +342,7 @@ namespace Sanakan.Modules
 
                 fig.CreatedCardId = card.Id;
 
-                await db.UserActivities.AddAsync(new Services.UserActivityBuilder(_time).WithUser(deck.User, Context.User)
+                await db.UserActivities.AddAsync(new Services.UserActivityBuilder(_time).WithUser(user, Context.User)
                     .WithCard(card).WithType(Database.Models.ActivityType.CreatedUltiamte).Build());
 
                 await db.SaveChangesAsync();
