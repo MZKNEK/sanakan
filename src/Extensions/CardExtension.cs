@@ -19,19 +19,10 @@ namespace Sanakan.Extensions
     {
         private static Dictionary<string, StarStyle> _starStyleParsingDic = new Dictionary<string, StarStyle>
         {
-            {"waz",     StarStyle.Snek},
-            {"snek",    StarStyle.Snek},
-            {"snake",   StarStyle.Snek},
-            {"pig",     StarStyle.Pig},
-            {"swinka",  StarStyle.Pig},
-            {"white",   StarStyle.White},
-            {"biala",   StarStyle.White},
             {"full",    StarStyle.Full},
             {"pelna",   StarStyle.Full},
             {"empty",   StarStyle.Empty},
             {"pusta",   StarStyle.Empty},
-            {"black",   StarStyle.Black},
-            {"czarna",  StarStyle.Black},
         };
 
         public static string GetString(this Card card, bool withoutId = false, bool withUpgrades = false,
@@ -363,16 +354,40 @@ namespace Sanakan.Extensions
             return Math.Min(stars, max);
         }
 
-        public static int MaxStarType(this Card _) => 10;
+        public static int MaxStarType(this Card _) => 61;
 
-        public static int GetRestartCntPerStar(this Card _) => 2;
+        public static int GetRestartCntPerStar(this Card _) => 3;
 
-        public static int GetMaxStarsPerType(this Card _) => 5;
+        public static int GetMaxStarsPerType(this Card _) => 6;
+
+        public static int GetAttackFromStars(this Card card)
+        {
+            var basePoints = Math.Min(card.RestartCnt, 100);
+            var bonusPoints = Math.Max(0, card.RestartCnt - 100);
+
+            var totalStars = card.GetTotalCardStarCount();
+            var baseStars = Math.Min(totalStars, 50);
+            var bonusStars = Math.Max(0, totalStars - 50);
+
+            return (basePoints * 4) + bonusPoints + (baseStars * 20) + (bonusStars * 4);
+        }
+
+        public static int GetDefenceFromStars(this Card card)
+        {
+            var basePoints = Math.Min(card.RestartCnt, 100);
+            var bonusPoints = Math.Max(0, card.RestartCnt - 100);
+
+            var totalStars = card.GetTotalCardStarCount();
+            var baseStars = Math.Min(totalStars, 50);
+            var bonusStars = Math.Max(0, totalStars - 50);
+
+            return (basePoints * 2) + (bonusPoints / 2) + (baseStars * 5) + bonusStars;
+        }
 
         public static int GetAttackWithBonus(this Card card)
         {
             var maxAttack = card.FromFigure ? 9999 : 999;
-            var newAttack = card.Attack + (card.RestartCnt * 4) + (card.GetTotalCardStarCount() * 20);
+            var newAttack = card.Attack + card.GetAttackFromStars();
             newAttack += card.FromFigure ? card.AttackBonus : card.AttackBonus / 3;
 
             if (card.Curse == CardCurse.LoweredStats)
@@ -386,7 +401,7 @@ namespace Sanakan.Extensions
         public static int GetDefenceWithBonus(this Card card)
         {
             var maxDefence = card.FromFigure ? 9999 : 99;
-            var newDefence = card.Defence + (card.RestartCnt * 2) + (card.GetTotalCardStarCount() * 5);
+            var newDefence = card.Defence + card.GetDefenceFromStars();
             newDefence += card.FromFigure ? card.DefenceBonus : 0;
 
             if (card.Curse == CardCurse.LoweredStats)
@@ -542,7 +557,7 @@ namespace Sanakan.Extensions
                 case Rarity.SSS:
                     if (fromFigure)
                     {
-                        return 1000 + (120 * (int)q);
+                        return 1000 + (100 * (int)q);
                     }
                     return 1000;
                 case Rarity.SS:

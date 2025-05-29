@@ -1156,6 +1156,31 @@ namespace Sanakan.Modules
             }
         }
 
+        [Command("restest", RunMode = RunMode.Async), RequireDevOrTester]
+        [Summary("generuje obrazek karty z danym poziomem restartów")]
+        [Remarks("423")]
+        public async Task GenerateCardImageWithRestartsAsync([Summary("liczba restartów")]int count)
+        {
+            using (var db = new Database.DatabaseContext(Config))
+            {
+                var botuser = await db.GetUserAndDontTrackAsync(Context.User.Id);
+                var card = botuser.GameDeck.Cards.FirstOrDefault();
+                if (card == null) return;
+
+                card.RestartCnt = count;
+                card.Rarity = Rarity.SSS;
+                card.StarStyle = StarStyle.Full;
+
+                using (var img = await _img.GetWaifuCardAsync(card))
+                {
+                    using (var cardImage = img.ToWebpStream())
+                    {
+                        await Context.Channel.SendFileAsync(cardImage, "test.webp");
+                    }
+                }
+            }
+        }
+
         [Command("devr", RunMode = RunMode.Async), RequireDev]
         [Summary("przyznaje lub odbiera role developera")]
         [Remarks("")]

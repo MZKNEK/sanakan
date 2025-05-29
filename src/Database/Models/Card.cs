@@ -25,7 +25,7 @@ namespace Sanakan.Database.Models
 
     public enum StarStyle
     {
-        Full, White, Black, Empty, Pig, Snek
+        Full, Empty
     }
 
     public enum MarketValue

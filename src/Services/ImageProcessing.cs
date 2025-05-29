@@ -1805,17 +1805,20 @@ namespace Sanakan.Services
             }
 
             var starType = card.GetCardStarType();
+            var starColor = (starType % 5) + 1;
+            starType = (starType / 5) + 1;
+
             var starCnt = card.GetCardStarCount();
 
-            var starX = 239 - (18 * starCnt);
+            var starX = 239 - (19 * starCnt);
             for (int i = 0; i < starCnt; i++)
             {
-                using (var fire = Image.Load(Dir.GetResource($"PW/stars/{starType}_{card.StarStyle}.png")))
+                using (var fire = Image.Load(Dir.GetResource($"PW/stars/{card.StarStyle}/{starType}_{starColor}.png")))
                 {
-                    image.Mutate(x => x.DrawImage(fire, new Point(starX, 30), 1));
+                    image.Mutate(x => x.DrawImage(fire, new Point(starX, 34), 1));
                 }
 
-                starX += 36;
+                starX += 38;
             }
 
             int startXDef = 390;

@@ -751,7 +751,7 @@ namespace Sanakan.Modules
 
                 _ = card.CalculateCardPower();
 
-                if (card.RestartCnt > 1 && card.RestartCnt % 10 == 0 && card.RestartCnt <= 100)
+                if (card.RestartCnt > 1 && ((card.RestartCnt % 10 == 0 && card.RestartCnt <= 100) || (card.RestartCnt % 30 == 0 && card.RestartCnt <= 1100)))
                 {
                     bUser.GameDeck.AddItem(ItemType.SetCustomImage.ToItem());
                 }
