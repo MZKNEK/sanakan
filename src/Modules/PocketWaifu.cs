@@ -4059,6 +4059,8 @@ namespace Sanakan.Modules
                     }
                 }
 
+                _waifu.DeleteCardImageIfExist(thisCard);
+
                 _ = thisCard.CalculateCardPower();
 
                 await db.UserActivities.AddAsync(activity.Build());
