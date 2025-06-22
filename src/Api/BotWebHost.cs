@@ -4,7 +4,6 @@ using Microsoft.AspNetCore.Hosting;
 using System.Threading;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore;
-using Microsoft.AspNetCore.Mvc.Versioning;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.AspNetCore.HttpOverrides;
 using System.IO;
@@ -13,7 +12,6 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.Extensions.Logging;
 using System.Text;
 using Sanakan.Config;
-using Microsoft.AspNetCore.Mvc;
 using Sanakan.Services.Executor;
 using Discord.WebSocket;
 using Shinden;
@@ -22,6 +20,7 @@ using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Serialization;
 using Microsoft.OpenApi.Models;
 using Sanakan.Services.Time;
+using Asp.Versioning;
 
 namespace Sanakan.Api
 {
@@ -121,7 +120,7 @@ namespace Sanakan.Api
             }).ConfigureLogging(logging =>
             {
                 logging.ClearProviders();
-                logging.AddConsole(x => x.DisableColors = true);
+                logging.AddSimpleConsole(x => x.ColorBehavior = Microsoft.Extensions.Logging.Console.LoggerColorBehavior.Disabled);
                 logging.SetMinimumLevel(LogLevel.Warning);
             })
             .Configure(app =>

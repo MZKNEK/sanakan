@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
+using Microsoft.EntityFrameworkCore;
 using Sanakan.Config;
 using Sanakan.Database.Models;
 using Sanakan.Database.Models.Management;
