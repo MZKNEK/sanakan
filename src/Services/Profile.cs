@@ -92,6 +92,7 @@ namespace Sanakan.Services
         BlueBlueBlue = 0x1F75FE,
     }
 
+
     public class Profile
     {
         private DiscordSocketClient _client;
@@ -102,6 +103,8 @@ namespace Sanakan.Services
         private IConfig _config;
         private IExecutor _exe;
         private Timer _timer;
+
+        public string GetRainbowColorNameStart() => "$RCS#";
 
         public Profile(DiscordSocketClient client, ShindenClient shClient, ImageProcessing img,
             ILogger logger, IConfig config, ISystemTime time, IExecutor exe)
@@ -137,7 +140,7 @@ namespace Sanakan.Services
             using (var db = new Database.DatabaseContext(_config))
             {
                 if (!db.TimeStatuses.AsQueryable().AsNoTracking()
-                    .Any(x => (x.Type == StatusType.Color || x.Type == StatusType.Globals) && x.BValue))
+                    .Any(x => (x.Type == StatusType.Color || x.Type == StatusType.Globals || x.Type == StatusType.RainbowColor) && x.BValue))
                 {
                     return;
                 }
@@ -148,7 +151,7 @@ namespace Sanakan.Services
                 using (var db = new Database.DatabaseContext(_config))
                 {
                     bool save = false;
-                    var subs = await db.TimeStatuses.AsQueryable().Where(x => (x.Type == StatusType.Color || x.Type == StatusType.Globals) && x.BValue).ToListAsync();
+                    var subs = await db.TimeStatuses.AsQueryable().Where(x => (x.Type == StatusType.Color || x.Type == StatusType.Globals || x.Type == StatusType.RainbowColor) && x.BValue).ToListAsync();
                     foreach (var sub in subs)
                     {
                         if (sub.IsActive(_time.Now()))
@@ -166,6 +169,10 @@ namespace Sanakan.Services
 
                             case StatusType.Color:
                                 await RomoveUserColorAsync(guild.GetUser(sub.UserId));
+                                break;
+
+                            case StatusType.RainbowColor:
+                                await RemoveUserRainbowColorAsync(guild.GetUser(sub.UserId), GetRainbowColorNameStart());
                                 break;
 
                             default:
@@ -228,9 +235,9 @@ namespace Sanakan.Services
         {
             if (user == null) return;
 
-            foreach(uint color in Enum.GetValues(typeof(FColor)))
+            foreach (uint color in Enum.GetValues(typeof(FColor)))
             {
-                if (color == (uint) ignored) continue;
+                if (color == (uint)ignored) continue;
 
                 var cR = user.Roles.FirstOrDefault(x => x.Name == color.ToString());
                 if (cR != null)
@@ -242,6 +249,15 @@ namespace Sanakan.Services
                     }
                     await user.RemoveRoleAsync(cR);
                 }
+            }
+        }
+
+        public async Task RemoveUserRainbowColorAsync(SocketGuildUser user, string roleNameStart)
+        {
+            var allRoles = user.Roles.Where(x => x.Name.StartsWith(roleNameStart)).ToList();
+            foreach (var role in allRoles)
+            {
+                await user.RemoveRoleAsync(role);
             }
         }
 

@@ -1715,6 +1715,23 @@ namespace Sanakan.Modules
                 }
                 report += kolorRep;
 
+                string rkolorRep = $"**RKolor:** ✅\n\n";
+                if (user.Roles.Any(x => x.Name.StartsWith(_profile.GetRainbowColorNameStart())))
+                {
+                    var sub = duser.TimeStatuses.FirstOrDefault(x => x.Type == StatusType.RainbowColor && x.Guild == user.Guild.Id);
+                    if (sub == null)
+                    {
+                        rkolorRep = $"**RKolor:** ❗\n\n";
+                        await _profile.RemoveUserRainbowColorAsync(user, _profile.GetRainbowColorNameStart());
+                    }
+                    else if (!sub.IsActive(_time.Now()))
+                    {
+                        rkolorRep = $"**RKolor:** ⚠\n\n";
+                        await _profile.RemoveUserRainbowColorAsync(user, _profile.GetRainbowColorNameStart());
+                    }
+                }
+                report += rkolorRep;
+
                 string nickRep = $"**Nick:** ✅";
                 if (guildConfig.UserRole != 0)
                 {
