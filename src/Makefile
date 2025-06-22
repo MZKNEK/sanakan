@@ -26,4 +26,4 @@ backup:
 	cp -r ./bin/Release/ ./bin/Backup/
 
 update:
-	git pull
+	git pull https://github.com/MZKNEK/sanakan.git
