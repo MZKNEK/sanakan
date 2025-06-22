@@ -6,7 +6,7 @@ Overcomplicated discord bot built with [Discord.NET](https://github.com/RogueExc
 
 ## Requirements ##
 
-- .NET Core 3.1 SDK
+- .NET Core 6 SDK
 
 - MySql Database
 
