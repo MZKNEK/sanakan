@@ -34,6 +34,9 @@ namespace Sanakan.Extensions
                 case StatusType.Color:
                     return "Kolor";
 
+                case StatusType.RainbowColor:
+                    return "Kolor tęczy";
+
                 case StatusType.Globals:
                     return "Globalne emoty";
 
@@ -71,6 +74,7 @@ namespace Sanakan.Extensions
             switch (type)
             {
                 case StatusType.Color:
+                case StatusType.RainbowColor:
                 case StatusType.Globals:
                     return true;
 

@@ -558,6 +558,91 @@ namespace Sanakan.Modules
             }
         }
 
+        [Command("rkolor")]
+        [Alias("rcolor", "rcolour")]
+        [Summary("zmienia kolor użytkownika")]
+        [Remarks("1"), RequireCommandChannel]
+        public async Task ToggleRainbowColorRoleAsync([Summary("kolor z listy")] int idRoli = -1)
+        {
+            var user = Context.User as SocketGuildUser;
+            if (user == null) return;
+
+            string priceSeparator = ":";
+            string colorName = _profile.GetRainbowColorNameStart();
+            var allRoles = Context.Guild.Roles.Where(x => x.Name.StartsWith(colorName)).ToArray();
+            if (allRoles.IsNullOrEmpty())
+            {
+                await SafeReplyAsync("", embed: $"{user.Mention} nie znaleziono żadnego koloru.".ToEmbedMessage(EMType.Error).Build());
+                return;
+            }
+
+            if (idRoli < 0)
+            {
+                var rolesText = allRoles.Select((x, i) => $"{i + 1}: {x.Mention} | {x.Name.Split(priceSeparator).Last()} TC");
+                await SafeReplyAsync("", embed: $"Kolory:\n\n 0: Kasowanie roli\n{string.Join("\n", rolesText)}".ToEmbedMessage(EMType.Info).Build());
+                return;
+            }
+
+            using (var db = new Database.DatabaseContext(Config))
+            {
+                var botuser = await db.GetUserOrCreateSimpleAsync(user.Id);
+                var colort = botuser.TimeStatuses.FirstOrDefault(x => x.Type == StatusType.RainbowColor && x.Guild == Context.Guild.Id);
+                if (colort == null)
+                {
+                    colort = StatusType.RainbowColor.NewTimeStatus(Context.Guild.Id);
+                    botuser.TimeStatuses.Add(colort);
+                }
+
+                if (idRoli == 0)
+                {
+                    await _profile.RemoveUserRainbowColorAsync(user, colorName);
+                    await SafeReplyAsync("", embed: $"{user.Mention} zdjęto role koloru.".ToEmbedMessage(EMType.Success).Build());
+                    return;
+                }
+
+                var roleIndex = idRoli - 1;
+                if (roleIndex >= allRoles.Length)
+                {
+                    await SafeReplyAsync("", embed: $"{user.Mention} nie znaleziono takiego koloru.".ToEmbedMessage(EMType.Error).Build());
+                    return;
+                }
+
+                var selectedRole = allRoles[roleIndex];
+                var rolePriceText = selectedRole.Name.Split(priceSeparator).Last();
+                if (!int.TryParse(rolePriceText, out var rolePrice) || rolePrice < 0)
+                {
+                    await SafeReplyAsync("", embed: $"{user.Mention} ta rola jest niepoprawnie skonfigurowana.".ToEmbedMessage(EMType.Error).Build());
+                    return;
+                }
+
+                if (botuser.TcCnt < rolePrice)
+                {
+                    await SafeReplyAsync("", embed: $"{user.Mention} nie posiadasz wystarczającej liczby TC!".ToEmbedMessage(EMType.Error).Build());
+                    return;
+                }
+
+                if (user.Roles.Any(x => x.Id == selectedRole.Id) && colort.IsActive(_time.Now()))
+                {
+                    colort.EndsAt = colort.EndsAt.AddMonths(1);
+                }
+                else
+                {
+                    await _profile.RemoveUserRainbowColorAsync(user, colorName);
+                    colort.EndsAt = _time.Now().AddMonths(1);
+                }
+
+                botuser.TcCnt -= rolePrice;
+
+                await db.SaveChangesAsync();
+
+                QueryCacheManager.ExpireTag(new string[] { $"user-{botuser.Id}", "users" });
+
+                await user.AddRoleAsync(selectedRole);
+            }
+
+            await SafeReplyAsync("", embed: $"{user.Mention} wykupił kolor!".ToEmbedMessage(EMType.Success).Build());
+        }
+
         [Command("kolor")]
         [Alias("color", "colour")]
         [Summary("zmienia kolor użytkownika (koszt TC/SC na liście)")]

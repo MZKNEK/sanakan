@@ -126,7 +126,7 @@ namespace Sanakan.Extensions
             if (string.IsNullOrEmpty(tag)) return null;
             var internalTagId = helper.GetTagId(tag);
             return internalTagId != 0 ? await context.Tags.AsQueryable().FirstOrDefaultAsync(x => x.Id == internalTagId)
-                : await context.Tags.AsQueryable().FirstOrDefaultAsync(x => x.Name.Equals(tag, StringComparison.CurrentCultureIgnoreCase) && x.GameDeckId == ownerId);
+                : await context.Tags.AsQueryable().FirstOrDefaultAsync(x => x.Name.Equals(tag) && x.GameDeckId == ownerId);
         }
 
         public static async Task<User> GetUserOrCreateAsync(this Database.DatabaseContext context, ulong userId)
