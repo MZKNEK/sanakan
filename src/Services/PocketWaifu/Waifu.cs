@@ -55,6 +55,9 @@ namespace Sanakan.Services.PocketWaifu
         public const int FatigueThirdPhase = 1000;
         public const double FatigueRecoveryRate = 0.173;
 
+        public const string AnimatedCardExtension = "gif";
+        public const string NormalCardExtension = "webp";
+
         private AsyncNonKeyedLocker _semaphoreChars = new AsyncNonKeyedLocker(1);
 
         private const int DERE_TAB_SIZE = ((int)Dere.Yato) + 1;
@@ -1440,7 +1443,7 @@ namespace Sanakan.Services.PocketWaifu
 
         public async Task<string> GenerateAndSaveCardAsync(Card card, CardImageType type = CardImageType.Normal, bool fromApi = false)
         {
-            var ext = card.IsAnimatedImage ? "gif" : "webp";
+            var ext = card.IsAnimatedImage ? AnimatedCardExtension : NormalCardExtension;
             string imageLocation = $"{Dir.Cards}/{card.Id}.{ext}";
             string sImageLocation = $"{Dir.CardsMiniatures}/{card.Id}.{ext}";
             string pImageLocation = $"{Dir.CardsInProfiles}/{card.Id}.{ext}";
@@ -1510,7 +1513,7 @@ namespace Sanakan.Services.PocketWaifu
 
         private async Task<string> GetCardUrlIfExistAsync(Card card, bool force = false)
         {
-            string ext = card.IsAnimatedImage ? "gif" : "webp";
+            string ext = card.IsAnimatedImage ? AnimatedCardExtension : NormalCardExtension;
             string imageLocation = $"{Dir.Cards}/{card.Id}.{ext}";
             string sImageLocation = $"{Dir.CardsMiniatures}/{card.Id}.{ext}";
             bool generate = (!File.Exists(imageLocation) || !File.Exists(sImageLocation) || force) && card.Id != 0;
@@ -1519,7 +1522,7 @@ namespace Sanakan.Services.PocketWaifu
 
         private async Task<string> GetCardProfileUrlIfExistAsync(Card card, bool force = false)
         {
-            string ext = card.IsAnimatedImage ? "gif" : "webp";
+            string ext = card.IsAnimatedImage ? AnimatedCardExtension : NormalCardExtension;
             string imageLocation = $"{Dir.CardsInProfiles}/{card.Id}.{ext}";
             bool generate = (!File.Exists(imageLocation) || force) && card.Id != 0;
             return generate ? await GenerateAndSaveCardAsync(card, CardImageType.Profile) : imageLocation;
@@ -2290,8 +2293,14 @@ namespace Sanakan.Services.PocketWaifu
                         return ExecutionResult.FromError("Format obrazka nie pozwala na przeźroczystość, która jest wymagana do kart ultimate!");
 
                     bool isAnim = item.Type == ItemType.SetCustomAnimatedImage;
-                    _ = await _img.SaveCardImageFromUrlAsync(imgCheck.Url, card, isAnim);
-
+                    try
+                    {
+                        _ = await _img.SaveCardImageFromUrlAsync(imgCheck.Url, card, isAnim);
+                    }
+                    catch (Exception)
+                    {
+                        return ExecutionResult.FromError("Obrazek jest zbyt duży!");
+                    }
                     card.IsAnimatedImage = isAnim;
                     card.CustomImageDate = _time.Now();
                     consumeItem = isAnim || !card.FromFigure;

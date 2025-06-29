@@ -279,8 +279,14 @@ namespace Sanakan.Services
         public async Task<string> SaveCardImageFromUrlAsync(string url, Card card, bool animated = false)
         {
             var size = card.FromFigure ? new Size(475, 667) : new Size(448, 650);
-            var saveDir = $"{Dir.LocalCardData}/CI{card.Id}.{(animated ? "gif" : "webp")}";
+            var saveDir = $"{Dir.LocalCardData}/CI{card.Id}.{(animated ? Waifu.AnimatedCardExtension : Waifu.NormalCardExtension)}";
             await SaveImageFromUrlAsync(url, saveDir, size);
+            var fileInfo = new FileInfo(saveDir);
+            if (fileInfo.Length > 40000000)
+            {
+                File.Delete(saveDir);
+                throw new Exception("Too big");
+            }
             card.CustomImage = saveDir;
             return saveDir;
         }
@@ -1886,7 +1892,7 @@ namespace Sanakan.Services
 
         private async Task<Image> LoadOrGetNewWaifuProfileCardAsync(Card card)
         {
-            string ext = card.IsAnimatedImage ? "gif" : "webp";
+            string ext = card.IsAnimatedImage ? Waifu.AnimatedCardExtension : Waifu.NormalCardExtension;
             string imageLocation = $"{Dir.CardsInProfiles}/{card.Id}.{ext}";
             if (File.Exists(imageLocation))
                 return await Image.LoadAsync(imageLocation);

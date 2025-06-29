@@ -7,6 +7,7 @@ using Sanakan.Database.Models;
 using Sanakan.Extensions;
 using Sanakan.Services;
 using Sanakan.Services.Time;
+using Sanakan.Services.PocketWaifu;
 
 namespace Sanakan.Api.Models
 {
@@ -197,13 +198,13 @@ namespace Sanakan.Api.Models
         }
 
         public static string GetCardMiniInShindenUrl(Card card)
-            => $"https://cdn2.shinden.eu/small/{card.Id}.{(card.IsAnimatedImage ? "gif" : "webp")}";
+            => $"https://cdn2.shinden.eu/small/{card.Id}.{(card.IsAnimatedImage ? Waifu.AnimatedCardExtension : Waifu.NormalCardExtension)}";
 
         public static string GetCardBaseInShindenUrl(Card card)
-            => $"https://cdn2.shinden.eu/{card.Id}.{(card.IsAnimatedImage ? "gif" : "webp")}";
+            => $"https://cdn2.shinden.eu/{card.Id}.{(card.IsAnimatedImage ? Waifu.AnimatedCardExtension : Waifu.NormalCardExtension)}";
 
         public static string GetCardProfileInShindenUrl(Card card)
-            => $"https://cdn2.shinden.eu/profile/{card.Id}.{(card.IsAnimatedImage ? "gif" : "webp")}";
+            => $"https://cdn2.shinden.eu/profile/{card.Id}.{(card.IsAnimatedImage ? Waifu.AnimatedCardExtension : Waifu.NormalCardExtension)}";
 
         public static CardFinalView ConvertFromRaw(Card card, ulong shindenId = 0, ISystemTime time = null)
         {
