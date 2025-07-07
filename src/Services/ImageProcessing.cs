@@ -1129,10 +1129,10 @@ namespace Sanakan.Services
             var baseImg = new Image<Rgba32>((int)estimatedLength, 100);
 
             baseImg.Mutate(x => x.BackgroundColor(GetOrCreateColor("#313338")));
-            baseImg.Mutate(x => x.DrawText(msgText1, textFont, Color.Gray, new Point(98 + (int)lvlLength.Width, 77)));
+            baseImg.Mutate(x => x.DrawText(msgText1, textFont, Color.Gray, new PointF(98 + lvlLength.Width + 4, 76)));
             baseImg.Mutate(x => x.DrawText(name, nickNameFont, GetOrCreateColor(nickNameColor), new Point(98, 7)));
             baseImg.Mutate(x => x.DrawText(msgText2, textFont, Color.Gray, new Point(98, 31)));
-            baseImg.Mutate(x => x.DrawText($"{ulvl}", lvlFont, Color.Gray, new Point(96, 59)));
+            baseImg.Mutate(x => x.DrawText($"{ulvl}", lvlFont, Color.Gray, new Point(96, 58)));
 
             using (var colorRec = new Image<Rgba32>(82, 82))
             {
@@ -1840,9 +1840,9 @@ namespace Sanakan.Services
             if (health > 99) startXHp -= 15;
 
             var numFont = GetOrCreateFont(_latoBold, 54);
-            image.Mutate(x => x.DrawText($"{health}", numFont, GetOrCreateColor("#000000"), new Point(startXHp, 178)));
-            image.Mutate(x => x.DrawText($"{attack}", numFont, GetOrCreateColor("#000000"), new Point(startXAtk, 308)));
-            image.Mutate(x => x.DrawText($"{defence}", numFont, GetOrCreateColor("#000000"), new Point(startXDef, 428)));
+            image.Mutate(x => x.DrawText($"{health}", numFont, GetOrCreateColor("#000000"), new Point(startXHp, 182)));
+            image.Mutate(x => x.DrawText($"{attack}", numFont, GetOrCreateColor("#000000"), new Point(startXAtk, 314)));
+            image.Mutate(x => x.DrawText($"{defence}", numFont, GetOrCreateColor("#000000"), new Point(startXDef, 434)));
 
             if (applyNegativeStats)
             {
