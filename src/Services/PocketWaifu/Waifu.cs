@@ -2343,12 +2343,15 @@ namespace Sanakan.Services.PocketWaifu
                     {
                         if (card.Curse == CardCurse.None)
                         {
+                            affectionInc = -7.2;
                             karmaChange = -1.2;
                             card.Curse = CardCurse.LoweredStats;
+                            str.Append($"Karta została spaczona!");
                         }
-
-                        affectionInc = -10 * itemCnt;
-                        str.Append($"Karta została spaczona!");
+                        else
+                        {
+                            return ExecutionResult.FromError("Karta już jest spaczona!");
+                        }
                         break;
                     }
 
@@ -2403,12 +2406,15 @@ namespace Sanakan.Services.PocketWaifu
                     {
                         if (card.Curse == CardCurse.None)
                         {
-                            karmaChange = 1.2;
+                            affectionInc = -7.2;
+                            karmaChange = -1.2;
                             card.Curse = CardCurse.LoweredStats;
+                            str.Append($"Karta została spaczona!");
                         }
-
-                        affectionInc = -10 * itemCnt;
-                        str.Append($"Karta została spaczona!");
+                        else
+                        {
+                            return ExecutionResult.FromError("Karta już jest spaczona!");
+                        }
                         break;
                     }
 
