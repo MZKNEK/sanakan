@@ -2343,6 +2343,7 @@ namespace Sanakan.Services.PocketWaifu
                     {
                         if (card.Curse == CardCurse.None)
                         {
+                            itemCnt = 1;
                             affectionInc = -7.2;
                             karmaChange = -1.2;
                             card.Curse = CardCurse.LoweredStats;
@@ -2406,6 +2407,7 @@ namespace Sanakan.Services.PocketWaifu
                     {
                         if (card.Curse == CardCurse.None)
                         {
+                            itemCnt = 1;
                             affectionInc = -7.2;
                             karmaChange = -1.2;
                             card.Curse = CardCurse.LoweredStats;
