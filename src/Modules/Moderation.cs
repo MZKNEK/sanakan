@@ -1445,6 +1445,38 @@ namespace Sanakan.Modules
             await SafeReplyAsync("", embed: $"Ustawiono `{Context.Channel.Name}` jako kanał poleceń.".ToEmbedMessage(EMType.Success).Build());
         }
 
+        [Command("chinfo", RunMode = RunMode.Async)]
+        [Summary("wyświetla informacje o kanale")]
+        [Remarks(""), RequireAnyAdminOrModRole]
+        public async Task ShowChannelInfoAsync(ulong channelId = 0)
+        {
+            channelId = channelId == 0 ? Context.Channel.Id : channelId;
+            var channelInfo = Context.Guild.GetChannel(channelId);
+            if (channelInfo is null)
+            {
+                await SafeReplyAsync("", embed: $"Nie odnaleziono kanału: `{channelId}`.".ToEmbedMessage(EMType.Error).Build());
+                return;
+            }
+
+            ulong parentId = 0;
+            if (channelInfo is SocketThreadChannel stc)
+            {
+                parentId = stc.CategoryId ?? 0;
+            }
+
+            using (var db = new Database.DatabaseContext(Config))
+            {
+                var config = await db.GetGuildConfigOrCreateAsync(Context.Guild.Id);
+
+                var isIgnored = config.IgnoredChannels.Any(x => x.Channel == channelId);
+                var isNoExp = config.ChannelsWithoutExp.Any(x => x.Channel == channelId);
+                var parentIsIgnored = config.IgnoredChannels.Any(x => x.Channel == parentId);
+                var parentIssNoExp = config.ChannelsWithoutExp.Any(x => x.Channel == parentId);
+
+                await SafeReplyAsync("", embed: $"`{channelInfo.Name}`:\n\nI{isIgnored.GetYesNo()}\nNE{isNoExp.GetYesNo()}\nIP{parentIsIgnored.GetYesNo()}\nNEP{parentIssNoExp.GetYesNo()}.".ToEmbedMessage(EMType.Info).Build());
+            }
+        }
+
         [Command("ignch")]
         [Summary("ustawia kanał jako ignorowany")]
         [Remarks(""), RequireAdminRole]
