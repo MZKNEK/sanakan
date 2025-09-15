@@ -1448,13 +1448,21 @@ namespace Sanakan.Modules
         [Command("ignch")]
         [Summary("ustawia kanał jako ignorowany")]
         [Remarks(""), RequireAdminRole]
-        public async Task SetIgnoredChannelAsync()
+        public async Task SetIgnoredChannelAsync(ulong channelId = 0)
         {
+            channelId = channelId == 0 ? Context.Channel.Id : channelId;
+            var channelInfo = Context.Guild.GetChannel(channelId);
+            if (channelInfo is null)
+            {
+                await SafeReplyAsync("", embed: $"Nie odnaleziono kanału: `{channelId}`.".ToEmbedMessage(EMType.Error).Build());
+                return;
+            }
+
             using (var db = new Database.DatabaseContext(Config))
             {
                 var config = await db.GetGuildConfigOrCreateAsync(Context.Guild.Id);
 
-                var chan = config.IgnoredChannels.FirstOrDefault(x => x.Channel == Context.Channel.Id);
+                var chan = config.IgnoredChannels.FirstOrDefault(x => x.Channel == channelId);
                 if (chan != null)
                 {
                     config.IgnoredChannels.Remove(chan);
@@ -1462,30 +1470,38 @@ namespace Sanakan.Modules
 
                     QueryCacheManager.ExpireTag(new string[] { $"config-{Context.Guild.Id}" });
 
-                    await SafeReplyAsync("", embed: $"Usunięto `{Context.Channel.Name}` z listy kanałów ignorowanych.".ToEmbedMessage(EMType.Success).Build());
+                    await SafeReplyAsync("", embed: $"Usunięto `{channelInfo.Name}` z listy kanałów ignorowanych.".ToEmbedMessage(EMType.Success).Build());
                     return;
                 }
 
-                chan = new Database.Models.Configuration.WithoutMsgCntChannel { Channel = Context.Channel.Id };
+                chan = new Database.Models.Configuration.WithoutMsgCntChannel { Channel = channelId };
                 config.IgnoredChannels.Add(chan);
                 await db.SaveChangesAsync();
 
                 QueryCacheManager.ExpireTag(new string[] { $"config-{Context.Guild.Id}" });
             }
 
-            await SafeReplyAsync("", embed: $"Ustawiono `{Context.Channel.Name}` jako kanał ignorowany.".ToEmbedMessage(EMType.Success).Build());
+            await SafeReplyAsync("", embed: $"Ustawiono `{channelInfo.Name}` jako kanał ignorowany.".ToEmbedMessage(EMType.Success).Build());
         }
 
         [Command("noexpch")]
         [Summary("ustawia kanał bez punktów doświadczenia")]
         [Remarks(""), RequireAdminRole]
-        public async Task SetNonExpChannelAsync()
+        public async Task SetNonExpChannelAsync(ulong channelId = 0)
         {
+            channelId = channelId == 0 ? Context.Channel.Id : channelId;
+            var channelInfo = Context.Guild.GetChannel(channelId);
+            if (channelInfo is null)
+            {
+                await SafeReplyAsync("", embed: $"Nie odnaleziono kanału: `{channelId}`.".ToEmbedMessage(EMType.Error).Build());
+                return;
+            }
+
             using (var db = new Database.DatabaseContext(Config))
             {
                 var config = await db.GetGuildConfigOrCreateAsync(Context.Guild.Id);
 
-                var chan = config.ChannelsWithoutExp.FirstOrDefault(x => x.Channel == Context.Channel.Id);
+                var chan = config.ChannelsWithoutExp.FirstOrDefault(x => x.Channel == channelId);
                 if (chan != null)
                 {
                     config.ChannelsWithoutExp.Remove(chan);
@@ -1493,18 +1509,18 @@ namespace Sanakan.Modules
 
                     QueryCacheManager.ExpireTag(new string[] { $"config-{Context.Guild.Id}" });
 
-                    await SafeReplyAsync("", embed: $"Usunięto `{Context.Channel.Name}` z listy kanałów bez doświadczenia.".ToEmbedMessage(EMType.Success).Build());
+                    await SafeReplyAsync("", embed: $"Usunięto `{channelInfo.Name}` z listy kanałów bez doświadczenia.".ToEmbedMessage(EMType.Success).Build());
                     return;
                 }
 
-                chan = new Database.Models.Configuration.WithoutExpChannel { Channel = Context.Channel.Id };
+                chan = new Database.Models.Configuration.WithoutExpChannel { Channel = channelId };
                 config.ChannelsWithoutExp.Add(chan);
                 await db.SaveChangesAsync();
 
                 QueryCacheManager.ExpireTag(new string[] { $"config-{Context.Guild.Id}" });
             }
 
-            await SafeReplyAsync("", embed: $"Ustawiono `{Context.Channel.Name}` jako kanał bez doświadczenia.".ToEmbedMessage(EMType.Success).Build());
+            await SafeReplyAsync("", embed: $"Ustawiono `{channelInfo.Name}` jako kanał bez doświadczenia.".ToEmbedMessage(EMType.Success).Build());
         }
 
         [Command("nosupch")]
