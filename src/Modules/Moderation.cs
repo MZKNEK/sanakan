@@ -1473,7 +1473,7 @@ namespace Sanakan.Modules
                 var parentIsIgnored = config.IgnoredChannels.Any(x => x.Channel == parentId);
                 var parentIssNoExp = config.ChannelsWithoutExp.Any(x => x.Channel == parentId);
 
-                await SafeReplyAsync("", embed: $"`{channelInfo.Name}`:\n\nI{isIgnored.GetYesNo()}\nNE{isNoExp.GetYesNo()}\nIP{parentIsIgnored.GetYesNo()}\nNEP{parentIssNoExp.GetYesNo()}.".ToEmbedMessage(EMType.Info).Build());
+                await SafeReplyAsync("", embed: $"`{channelInfo.Name}`:\n\nI {isIgnored.GetYesNo()}\nNE {isNoExp.GetYesNo()}\nIP {parentIsIgnored.GetYesNo()}\nNEP {parentIssNoExp.GetYesNo()}".ToEmbedMessage(EMType.Info).Build());
             }
         }
 
