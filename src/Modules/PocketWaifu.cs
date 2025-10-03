@@ -951,8 +951,8 @@ namespace Sanakan.Modules
                     {
                         card.Quality = card.Quality.Next();
                         card.BorderOverflow = 0;
+                        card.BorderVariant = 0;
                     }
-                    card.BorderVariant = 0;
                 }
                 else
                 {
