@@ -1627,11 +1627,11 @@ namespace Sanakan.Services.PocketWaifu
         {
             if (!showNames)
             {
-                return wishlists.Select((x, i) => $"{i+1}: <@{x.Id}>").ToList();
+                return wishlists.Select((x, i) => $"{x.GetActiveMark(_time.Now())}{i+1}: <@{x.Id}>").ToList();
             }
 
             var str = new List<string>();
-            foreach (var user in wishlists.Select(async (x, i) => $"{i+1}: {await GetUserNameInfoAsync(x, guild)}"))
+            foreach (var user in wishlists.Select(async (x, i) => $"{x.GetActiveMark(_time.Now())}{i+1}: {await GetUserNameInfoAsync(x, guild)}"))
             {
                 str.Add(await user);
             }

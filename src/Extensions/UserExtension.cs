@@ -254,6 +254,12 @@ namespace Sanakan.Extensions
             }
         }
 
+        public static bool IsActive(this GameDeck deck, DateTime currentTime)
+            => (deck?.User?.IsCharCounterActive(currentTime) ?? true) && (deck?.User?.SendAnyMsgInMonth() ?? true);
+
+        public static string GetActiveMark(this GameDeck deck, DateTime currentTime)
+            =>  deck.IsActive(currentTime) ? "" : " ⚠️";
+
         public static bool ReachedDailyMaxPVPCount(this GameDeck deck)
             => deck.PVPDailyGamesPlayed >= 10;
 
@@ -282,7 +288,7 @@ namespace Sanakan.Extensions
 
         public static long GetPVPCoinsFromDuel(this GameDeck deck, FightResult res)
         {
-            var step = (ExperienceManager.CalculateLevel(deck.SeasonalPVPRank, PVPRankMultiplier) / 10);
+            var step = ExperienceManager.CalculateLevel(deck.SeasonalPVPRank, PVPRankMultiplier) / 10;
             if (step > 5) step = 5;
 
             var coinCnt = 40 + (20 * step);

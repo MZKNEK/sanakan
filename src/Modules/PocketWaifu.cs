@@ -1918,7 +1918,7 @@ namespace Sanakan.Modules
         [Alias("who wants", "kc", "ww")]
         [Summary("wyszukuje na listach życzeń użytkowników danej karty, pomija tytuły")]
         [Remarks("51545 tak"), RequireWaifuCommandChannel]
-        public async Task WhoWantsCardAsync([Summary("WID")] ulong wid, [Summary("czy zamienić oznaczenia na nicki?")] bool showNames = false)
+        public async Task WhoWantsCardAsync([Summary("WID")] ulong wid, [Summary("czy zamienić oznaczenia na nicki?")] bool showNames = false, [Summary("czy ukryć nieaktywnych użytkowników?")] bool hideInactive = false)
         {
             using (var db = new Database.DatabaseContext(Config))
             {
@@ -1930,6 +1930,10 @@ namespace Sanakan.Modules
                 }
 
                 var wishlists =  await db.GameDecks.AsQueryable().AsNoTracking().Where(x => !x.WishlistIsPrivate).Include(x => x.Wishes).Include(x => x.User).Where(x => x.Wishes.Any(c => c.Type == WishlistObjectType.Character && c.ObjectId == thisCards.Character)).ToListAsync();
+                if (hideInactive)
+                {
+                    wishlists = wishlists.Where(x => x.IsActive(_time.Now())).ToList();
+                }
                 if (wishlists.Count < 1)
                 {
                     await SafeReplyAsync("", embed: $"Nikt nie chce tej karty.".ToEmbedMessage(EMType.Error).Build());
@@ -2032,7 +2036,7 @@ namespace Sanakan.Modules
         [Alias("who wants anime", "kca", "wwa")]
         [Summary("wyszukuje na wishlistach danego anime")]
         [Remarks("21 tak"), RequireWaifuCommandChannel]
-        public async Task WhoWantsCardsFromAnimeAsync([Summary("id anime")] ulong id, [Summary("czy zamienić oznaczenia na nicki?")] bool showNames = false)
+        public async Task WhoWantsCardsFromAnimeAsync([Summary("id anime")] ulong id, [Summary("czy zamienić oznaczenia na nicki?")] bool showNames = false, [Summary("czy ukryć nieaktywnych użytkowników?")] bool hideInactive = false)
         {
             var response = await _shclient.Title.GetInfoAsync(id);
             if (!response.IsSuccessStatusCode())
@@ -2044,6 +2048,10 @@ namespace Sanakan.Modules
             using (var db = new Database.DatabaseContext(Config))
             {
                 var wishlists = db.GameDecks.Include(x => x.Wishes).Include(x => x.User).Where(x => !x.WishlistIsPrivate && x.Wishes.Any(c => c.Type == WishlistObjectType.Title && c.ObjectId == id)).ToList();
+                if (hideInactive)
+                {
+                    wishlists = wishlists.Where(x => x.IsActive(_time.Now())).ToList();
+                }
                 if (wishlists.Count < 1)
                 {
                     await SafeReplyAsync("", embed: $"Nikt nie ma tego tytułu wpisanego na listę życzeń.".ToEmbedMessage(EMType.Error).Build());
@@ -3613,14 +3621,14 @@ namespace Sanakan.Modules
                 var duser = await db.GetUserAndDontTrackAsync(Context.User.Id);
                 if (duser.GameDeck.NeedToSetDeckAgain())
                 {
-                    await SafeReplyAsync("", embed: $"{Context.User.Mention} musisz na nowo ustawić swóją talie!".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} musisz na nowo ustawić swoją talie!".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
                 var euser = await db.GetUserAndDontTrackAsync(usr.Id);
                 if (euser.GameDeck.NeedToSetDeckAgain())
                 {
-                    await SafeReplyAsync("", embed: $"{Context.User.Mention} twój przeciwnik musi na nowo ustawić swóją talie!".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} twój przeciwnik musi na nowo ustawić swoją talie!".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
@@ -3696,7 +3704,7 @@ namespace Sanakan.Modules
                 var duser = await db.GetUserOrCreateAsync(Context.User.Id);
                 if (duser.GameDeck.NeedToSetDeckAgain())
                 {
-                    await SafeReplyAsync("", embed: $"{Context.User.Mention} musisz na nowo ustawić swóją talie!".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} musisz na nowo ustawić swoją talie!".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
