@@ -376,6 +376,35 @@ namespace Sanakan.Modules
             }
         }
 
+        [Command("ccv")]
+        [Summary("zmienia wariant karty"), RequireDevOrTester]
+        [Remarks("3123 1")]
+        public async Task ChangeCardVariant([Summary("WID")]ulong id, [Summary("wariant")]int variant)
+        {
+            using (var db = new Database.DatabaseContext(Config))
+            {
+                var card = await db.Cards.AsQueryable().FirstOrDefaultAsync(x => x.Id == id);
+                if (card is null)
+                {
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} nie odnaleziono karty.".ToEmbedMessage(EMType.Error).Build());
+                    return;
+                }
+
+                try
+                {
+                    card.BorderVariant = variant;
+                    _waifu.DeleteCardImageIfExist(card);
+                }
+                catch (Exception) { }
+
+                await db.SaveChangesAsync();
+
+                QueryCacheManager.ExpireTag(new string[] { $"users" });
+
+                await SafeReplyAsync("", embed: $"Zmieniono karte.".ToEmbedMessage(EMType.Success).Build());
+            }
+        }
+
         [Command("time", RunMode = RunMode.Async), RequireDevOrTester]
         [Summary("wyświetla czas serwera")]
         [Remarks("")]

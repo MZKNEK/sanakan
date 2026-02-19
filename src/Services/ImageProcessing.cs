@@ -1277,7 +1277,7 @@ namespace Sanakan.Services
             if (card.FromFigure)
             {
                 borderStr = GetCustomBorderString(card);
-                dereStr = Dir.GetResource($"PW/CG/{card.Quality}/Dere/{card.Dere}.png");
+                dereStr = Dir.GetResource($"PW/CG/{card.Quality}/Dere/{card.Dere}{card.GetCardDereVariantString()}.png");
             }
 
             var img = Image.Load(borderStr);

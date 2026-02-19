@@ -200,8 +200,9 @@ namespace Sanakan.Extensions
         {
             return card.Quality switch
             {
-                Quality.Delta => 3,
-                Quality.Eta   => 18,
+                Quality.Lambda => 1,
+                Quality.Delta  => 3,
+                Quality.Eta    => 18,
                 _ => 0
             };
         }
@@ -213,8 +214,21 @@ namespace Sanakan.Extensions
 
             return card.Quality switch
             {
-                Quality.Delta => $"{card.BorderVariant}",
-                Quality.Eta   => $"{card.BorderVariant}",
+                Quality.Delta    => $"{card.BorderVariant}",
+                Quality.Eta      => $"{card.BorderVariant}",
+                Quality.Lambda   => $"{card.BorderVariant}",
+                _ => string.Empty
+            };
+        }
+
+        public static string GetCardDereVariantString(this Card card)
+        {
+            if (card.GetCardVariantsCount() < 1 || card.BorderVariant < 1)
+                return string.Empty;
+
+            return card.Quality switch
+            {
+                Quality.Lambda => $"{card.BorderVariant}",
                 _ => string.Empty
             };
         }
