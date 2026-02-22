@@ -1443,7 +1443,7 @@ namespace Sanakan.Services.PocketWaifu
 
         public async Task<string> GenerateAndSaveCardAsync(Card card, CardImageType type = CardImageType.Normal, bool fromApi = false)
         {
-            var ext = card.IsAnimatedImage ? AnimatedCardExtension : NormalCardExtension;
+            var ext = card.IsCardAnimated() ? AnimatedCardExtension : NormalCardExtension;
             string imageLocation = $"{Dir.Cards}/{card.Id}.{ext}";
             string sImageLocation = $"{Dir.CardsMiniatures}/{card.Id}.{ext}";
             string pImageLocation = $"{Dir.CardsInProfiles}/{card.Id}.{ext}";
@@ -1513,7 +1513,7 @@ namespace Sanakan.Services.PocketWaifu
 
         private async Task<string> GetCardUrlIfExistAsync(Card card, bool force = false)
         {
-            string ext = card.IsAnimatedImage ? AnimatedCardExtension : NormalCardExtension;
+            string ext = card.IsCardAnimated() ? AnimatedCardExtension : NormalCardExtension;
             string imageLocation = $"{Dir.Cards}/{card.Id}.{ext}";
             string sImageLocation = $"{Dir.CardsMiniatures}/{card.Id}.{ext}";
             bool generate = (!File.Exists(imageLocation) || !File.Exists(sImageLocation) || force) && card.Id != 0;
@@ -1522,7 +1522,7 @@ namespace Sanakan.Services.PocketWaifu
 
         private async Task<string> GetCardProfileUrlIfExistAsync(Card card, bool force = false)
         {
-            string ext = card.IsAnimatedImage ? AnimatedCardExtension : NormalCardExtension;
+            string ext = card.IsCardAnimated() ? AnimatedCardExtension : NormalCardExtension;
             string imageLocation = $"{Dir.CardsInProfiles}/{card.Id}.{ext}";
             bool generate = (!File.Exists(imageLocation) || force) && card.Id != 0;
             return generate ? await GenerateAndSaveCardAsync(card, CardImageType.Profile) : imageLocation;

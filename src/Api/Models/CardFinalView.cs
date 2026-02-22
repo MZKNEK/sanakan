@@ -198,13 +198,13 @@ namespace Sanakan.Api.Models
         }
 
         public static string GetCardMiniInShindenUrl(Card card)
-            => $"https://cdn2.shinden.eu/small/{card.Id}.{(card.IsAnimatedImage ? Waifu.AnimatedCardExtension : Waifu.NormalCardExtension)}";
+            => $"https://cdn2.shinden.eu/small/{card.Id}.{(card.IsCardAnimated() ? Waifu.AnimatedCardExtension : Waifu.NormalCardExtension)}";
 
         public static string GetCardBaseInShindenUrl(Card card)
-            => $"https://cdn2.shinden.eu/{card.Id}.{(card.IsAnimatedImage ? Waifu.AnimatedCardExtension : Waifu.NormalCardExtension)}";
+            => $"https://cdn2.shinden.eu/{card.Id}.{(card.IsCardAnimated() ? Waifu.AnimatedCardExtension : Waifu.NormalCardExtension)}";
 
         public static string GetCardProfileInShindenUrl(Card card)
-            => $"https://cdn2.shinden.eu/profile/{card.Id}.{(card.IsAnimatedImage ? Waifu.AnimatedCardExtension : Waifu.NormalCardExtension)}";
+            => $"https://cdn2.shinden.eu/profile/{card.Id}.{(card.IsCardAnimated() ? Waifu.AnimatedCardExtension : Waifu.NormalCardExtension)}";
 
         public static CardFinalView ConvertFromRaw(Card card, ulong shindenId = 0, ISystemTime time = null)
         {

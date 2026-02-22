@@ -300,7 +300,7 @@ namespace Sanakan.Extensions
         {
             var kcs = Fun.IsAF() ? Fun.GetAFKC(card.Character) : card.WhoWantsCount;
             string scalpelInfo = (!string.IsNullOrEmpty(card.CustomImage) && !hideScalelInfo)
-                ? $"**Ustawiono obrazek:** {card.CustomImageDate.ToShortDateTime()}\n**Animacja:** {card.IsAnimatedImage.GetYesNo()}\n" : "";
+                ? $"**Ustawiono obrazek:** {card.CustomImageDate.ToShortDateTime()}\n**Animacja:** {card.IsCardAnimated().GetYesNo()}\n" : "";
 
             return $"{card.GetNameWithUrl()} **{card.GetCardRealRarity()}**\n"
                 + $"*{card.Title ?? "????"}*\n\n"
@@ -765,6 +765,8 @@ namespace Sanakan.Extensions
                     card.Defence = min;
             }
         }
+
+        public static bool IsCardAnimated(this Card card) => card.IsAnimatedImage || card.Quality == Quality.Omega;
 
         public static string GetImage(this Card card) => card.CustomImage ?? card.Image;
 

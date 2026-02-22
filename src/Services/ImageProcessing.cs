@@ -1892,7 +1892,7 @@ namespace Sanakan.Services
 
         private async Task<Image> LoadOrGetNewWaifuProfileCardAsync(Card card)
         {
-            string ext = card.IsAnimatedImage ? Waifu.AnimatedCardExtension : Waifu.NormalCardExtension;
+            string ext = card.IsCardAnimated() ? Waifu.AnimatedCardExtension : Waifu.NormalCardExtension;
             string imageLocation = $"{Dir.CardsInProfiles}/{card.Id}.{ext}";
             if (File.Exists(imageLocation))
                 return await Image.LoadAsync(imageLocation);
@@ -1904,6 +1904,9 @@ namespace Sanakan.Services
         {
             if (card.IsAnimatedImage)
                 return await GetAnimatedWaifuCardAsync(card, true);
+
+            if (card.Quality == Quality.Omega)
+                return await GetOmegaCard(card, true);
 
             var image = new Image<Rgba32>(475, 667);
 
@@ -1990,6 +1993,9 @@ namespace Sanakan.Services
             if (card.IsAnimatedImage)
                 return await GetAnimatedWaifuCardAsync(card);
 
+            if (card.Quality == Quality.Omega)
+                return await GetOmegaCard(card);
+
             var image = await GetWaifuCardNoStatsAsync(card);
 
             if (card.FromFigure)
@@ -2002,6 +2008,52 @@ namespace Sanakan.Services
             }
 
             return image;
+        }
+
+        private async Task<Image> GetOmegaCard(Card card, bool noStatsImage = false)
+        {
+            using (var image = await GetImageFromUrlOrLocalAsync(card.GetImage() ?? "http://cdn.shinden.eu/cdn1/other/placeholders/title/225x350.jpg"))
+            {
+                using var dere = await Image.LoadAsync(Dir.GetResource($"PW/CG/{card.Quality}/Dere/{card.Dere}.png"));
+                using var stats = await Image.LoadAsync(Dir.GetResource($"PW/CG/{card.Quality}/Stats.png"));
+                using var bottomImg = await Image.LoadAsync(Dir.GetResource($"PW/CG/{card.Quality}/BorderBack.gif"));
+                using var topImg = await Image.LoadAsync(Dir.GetResource($"PW/CG/{card.Quality}/Border.gif"));
+
+                var animation = new Image<Rgba32>(475, 667);
+                var ometa = topImg.Metadata.GetGifMetadata();
+                var nmeta = animation.Metadata.GetGifMetadata();
+
+                nmeta.RepeatCount = ometa.RepeatCount;
+                nmeta.ColorTableMode = SixLabors.ImageSharp.Formats.Gif.GifColorTableMode.Local;
+
+                for (int i = 0; i < topImg.Frames.Count; i++)
+                {
+                    using var topImageFrame = topImg.Frames.CloneFrame(i);
+                    using var bottomImageFrame = bottomImg.Frames.CloneFrame(i);
+
+                    using var newFrame = new Image<Rgba32>(475, 667);
+                    var oldFrameMetadata = topImageFrame.Frames.RootFrame.Metadata.GetGifMetadata();
+                    var newFrameMetadata = newFrame.Frames.RootFrame.Metadata.GetGifMetadata();
+                    newFrameMetadata.FrameDelay = oldFrameMetadata.FrameDelay;
+
+                    using var charFrame = image.CloneAs<Rgba32>();
+                    newFrame.Mutate(x => x.DrawImage(bottomImageFrame, new Point(0, 0), 1));
+                    newFrame.Mutate(x => x.DrawImage(charFrame, new Point(0, 0), 1));
+                    newFrame.Mutate(x => x.DrawImage(topImageFrame, new Point(0, 0), 1));
+                    newFrame.Mutate(x => x.DrawImage(dere, new Point(0, 0), 1));
+
+                    if (!noStatsImage)
+                    {
+                        newFrame.Mutate(x => x.DrawImage(stats, new Point(0, 0), 1));
+                        ApplyDeltaStats(newFrame, card);
+                    }
+
+                    animation.Frames.AddFrame(newFrame.Frames.RootFrame);
+                }
+
+                animation.Frames.RemoveFrame(0);
+                return animation;
+            }
         }
 
         private async Task<Image> GetAnimatedWaifuCardAsync(Card card, bool noStatsImage = false)
