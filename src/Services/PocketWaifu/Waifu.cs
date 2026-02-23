@@ -2293,6 +2293,7 @@ namespace Sanakan.Services.PocketWaifu
                         return ExecutionResult.FromError("Format obrazka nie pozwala na przeźroczystość, która jest wymagana do kart ultimate!");
 
                     bool isAnim = item.Type == ItemType.SetCustomAnimatedImage;
+                    bool isOmega = card.Quality == Quality.Omega;
                     try
                     {
                         _ = await _img.SaveCardImageFromUrlAsync(imgCheck.Url, card, isAnim);
@@ -2303,7 +2304,7 @@ namespace Sanakan.Services.PocketWaifu
                     }
                     card.IsAnimatedImage = isAnim;
                     card.CustomImageDate = _time.Now();
-                    consumeItem = isAnim || !card.FromFigure;
+                    consumeItem = (isAnim && !isOmega) || !card.FromFigure;
                     activity = new UserActivityBuilder(_time).WithUser(user).WithCard(card).WithType(Database.Models.ActivityType.UsedScalpel);
                     break;
 
