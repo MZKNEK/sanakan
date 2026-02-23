@@ -2036,6 +2036,9 @@ namespace Sanakan.Services
                     var oldFrameMetadata = topImageFrame.Frames.RootFrame.Metadata.GetGifMetadata();
                     var newFrameMetadata = newFrame.Frames.RootFrame.Metadata.GetGifMetadata();
                     newFrameMetadata.FrameDelay = oldFrameMetadata.FrameDelay;
+                    newFrameMetadata.DisposalMethod = SixLabors.ImageSharp.Formats.Gif.GifDisposalMethod.RestoreToBackground;
+                    newFrameMetadata.ColorTableMode = SixLabors.ImageSharp.Formats.Gif.GifColorTableMode.Local;
+                    newFrameMetadata.HasTransparency = true;
 
                     using var charFrame = allowAnimation ? image.Frames.CloneFrame(i) : image.CloneAs<Rgba32>();
                     newFrame.Mutate(x => x.DrawImage(bottomImageFrame, new Point(0, 0), 1));
@@ -2092,6 +2095,9 @@ namespace Sanakan.Services
                         var oldFrameMetadata = oldFrame.Frames.RootFrame.Metadata.GetGifMetadata();
                         var newFrameMetadata = newFrame.Frames.RootFrame.Metadata.GetGifMetadata();
                         newFrameMetadata.FrameDelay = oldFrameMetadata.FrameDelay;
+                        newFrameMetadata.DisposalMethod = SixLabors.ImageSharp.Formats.Gif.GifDisposalMethod.RestoreToBackground;
+                        newFrameMetadata.ColorTableMode = SixLabors.ImageSharp.Formats.Gif.GifColorTableMode.Local;
+                        newFrameMetadata.HasTransparency = true;
 
                         newFrameChar.Mutate(x => x.DrawImage(oldFrame, new Point(0, startY), 1));
 

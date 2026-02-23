@@ -1654,6 +1654,24 @@ namespace Sanakan.Modules
             }
         }
 
+        [Command("dsci", RunMode = RunMode.Async), RequireDevOrTester]
+        [Summary("wysyła obrazek znajdujący się na serwerze")]
+        [Remarks("")]
+        public async Task DownloadCustomImage([Summary("WID")]ulong id)
+        {
+            using (var db = new Database.DatabaseContext(Config))
+            {
+                var card = await db.Cards.AsQueryable().FirstOrDefaultAsync(x => x.Id == id);
+                if (card == null)
+                {
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} nie odnaleziono karty.".ToEmbedMessage(EMType.Error).Build());
+                    return;
+                }
+
+                await Context.Channel.SendFileAsync(card.CustomImage);
+            }
+        }
+
         [Command("rmconfig", RunMode = RunMode.Async), RequireDev]
         [Summary("wyświetla konfiguracje powiadomień na obecnym serwerze")]
         [Remarks("")]
