@@ -1902,11 +1902,11 @@ namespace Sanakan.Services
 
         public async Task<Image> GetWaifuInProfileCardAsync(Card card)
         {
-            if (card.IsAnimatedImage)
-                return await GetAnimatedWaifuCardAsync(card, true);
-
             if (card.Quality == Quality.Omega)
                 return await GetOmegaCard(card, true);
+
+            if (card.IsAnimatedImage)
+                return await GetAnimatedWaifuCardAsync(card, true);
 
             var image = new Image<Rgba32>(475, 667);
 
@@ -1990,11 +1990,11 @@ namespace Sanakan.Services
 
         public async Task<Image> GetWaifuCardAsync(Card card)
         {
-            if (card.IsAnimatedImage)
-                return await GetAnimatedWaifuCardAsync(card);
-
             if (card.Quality == Quality.Omega)
                 return await GetOmegaCard(card);
+
+            if (card.IsAnimatedImage)
+                return await GetAnimatedWaifuCardAsync(card);
 
             var image = await GetWaifuCardNoStatsAsync(card);
 
@@ -2026,6 +2026,7 @@ namespace Sanakan.Services
                 nmeta.RepeatCount = ometa.RepeatCount;
                 nmeta.ColorTableMode = SixLabors.ImageSharp.Formats.Gif.GifColorTableMode.Local;
 
+                bool allowAnimation = topImg.Frames.Count == (card.IsAnimatedImage ? image.Frames.Count : 1);
                 for (int i = 0; i < topImg.Frames.Count; i++)
                 {
                     using var topImageFrame = topImg.Frames.CloneFrame(i);
@@ -2036,7 +2037,7 @@ namespace Sanakan.Services
                     var newFrameMetadata = newFrame.Frames.RootFrame.Metadata.GetGifMetadata();
                     newFrameMetadata.FrameDelay = oldFrameMetadata.FrameDelay;
 
-                    using var charFrame = image.CloneAs<Rgba32>();
+                    using var charFrame = allowAnimation ? image.Frames.CloneFrame(i) : image.CloneAs<Rgba32>();
                     newFrame.Mutate(x => x.DrawImage(bottomImageFrame, new Point(0, 0), 1));
                     newFrame.Mutate(x => x.DrawImage(charFrame, new Point(0, 0), 1));
                     newFrame.Mutate(x => x.DrawImage(topImageFrame, new Point(0, 0), 1));
