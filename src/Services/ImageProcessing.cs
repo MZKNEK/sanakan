@@ -17,6 +17,7 @@ using SixLabors.ImageSharp.Drawing.Processing;
 using SixLabors.ImageSharp.PixelFormats;
 using SixLabors.ImageSharp.Processing;
 using System.Numerics;
+using SixLabors.ImageSharp.Formats.Webp;
 
 namespace Sanakan.Services
 {
@@ -175,7 +176,18 @@ namespace Sanakan.Services
         private async Task<Image> GetImageFromUrlOrLocalAsync(string uri)
         {
             if (Dir.IsLocal(uri))
-                return File.Exists(uri) ? await Image.LoadAsync(uri) : new Image<Rgba32>(1, 1);
+            {
+                if (File.Exists(uri))
+                {
+                    var detectedFormat = await Image.DetectFormatAsync(uri);
+                    if (detectedFormat == WebpFormat.Instance)
+                    {
+                        return await LoadWebpFromDiskAsync(uri);
+                    }
+                    return await Image.LoadAsync(uri);
+                }
+                return new Image<Rgba32>(1, 1);
+            }
 
             try
             {
@@ -2010,21 +2022,29 @@ namespace Sanakan.Services
             return image;
         }
 
+        private async Task<Image> LoadWebpFromDiskAsync(string path)
+        {
+            var ops = new WebpDecoderOptions()
+            {
+                BackgroundColorHandling = BackgroundColorHandling.Ignore
+            };
+
+            using var fileStream = File.OpenRead(path);
+
+            return await WebpDecoder.Instance.DecodeAsync(ops, fileStream);
+        }
+
         private async Task<Image> GetOmegaCard(Card card, bool noStatsImage = false)
         {
             using (var image = await GetImageFromUrlOrLocalAsync(card.GetImage() ?? "http://cdn.shinden.eu/cdn1/other/placeholders/title/225x350.jpg"))
             {
                 using var dere = await Image.LoadAsync(Dir.GetResource($"PW/CG/{card.Quality}/Dere/{card.Dere}.png"));
                 using var stats = await Image.LoadAsync(Dir.GetResource($"PW/CG/{card.Quality}/Stats.png"));
-                using var bottomImg = await Image.LoadAsync(Dir.GetResource($"PW/CG/{card.Quality}/BorderBack.gif"));
-                using var topImg = await Image.LoadAsync(Dir.GetResource($"PW/CG/{card.Quality}/Border.gif"));
+                using var bottomImg = await LoadWebpFromDiskAsync(Dir.GetResource($"PW/CG/{card.Quality}/BorderBack.webp"));
+                using var topImg = await LoadWebpFromDiskAsync(Dir.GetResource($"PW/CG/{card.Quality}/Border.webp"));
 
-                var animation = new Image<Rgba32>(475, 667);
-                var ometa = topImg.Metadata.GetGifMetadata();
-                var nmeta = animation.Metadata.GetGifMetadata();
-
-                nmeta.RepeatCount = ometa.RepeatCount;
-                nmeta.ColorTableMode = SixLabors.ImageSharp.Formats.Gif.GifColorTableMode.Local;
+                var animation = new Image<Rgba32>(475, 667, Color.Transparent);
+                animation.Metadata.GetWebpMetadata().RepeatCount = 0;
 
                 bool allowAnimation = topImg.Frames.Count == (card.IsAnimatedImage ? image.Frames.Count : 1);
                 for (int i = 0; i < topImg.Frames.Count; i++)
@@ -2032,13 +2052,22 @@ namespace Sanakan.Services
                     using var topImageFrame = topImg.Frames.CloneFrame(i);
                     using var bottomImageFrame = bottomImg.Frames.CloneFrame(i);
 
-                    using var newFrame = new Image<Rgba32>(475, 667);
-                    var oldFrameMetadata = topImageFrame.Frames.RootFrame.Metadata.GetGifMetadata();
-                    var newFrameMetadata = newFrame.Frames.RootFrame.Metadata.GetGifMetadata();
-                    newFrameMetadata.FrameDelay = oldFrameMetadata.FrameDelay;
-                    newFrameMetadata.DisposalMethod = SixLabors.ImageSharp.Formats.Gif.GifDisposalMethod.RestoreToBackground;
-                    newFrameMetadata.ColorTableMode = SixLabors.ImageSharp.Formats.Gif.GifColorTableMode.Local;
-                    newFrameMetadata.HasTransparency = true;
+                    using var newFrame = new Image<Rgba32>(475, 667, Color.Transparent);
+                    uint frameDelayMs = 100;
+
+                    if (topImageFrame.Frames.RootFrame.Metadata.TryGetWebpFrameMetadata(out var webpMeta))
+                    {
+                        frameDelayMs = webpMeta.FrameDelay;
+                    }
+                    if (topImageFrame.Frames.RootFrame.Metadata.TryGetGifMetadata(out var gifMeta))
+                    {
+                        frameDelayMs = (uint)gifMeta.FrameDelay * 10;
+                    }
+
+                    var newFrameMetadata = newFrame.Frames.RootFrame.Metadata.GetWebpMetadata();
+                    newFrameMetadata.DisposalMethod = WebpDisposalMethod.RestoreToBackground;
+                    newFrameMetadata.BlendMethod = WebpBlendMethod.Over;
+                    newFrameMetadata.FrameDelay = frameDelayMs;
 
                     using var charFrame = allowAnimation ? image.Frames.CloneFrame(i) : image.CloneAs<Rgba32>();
                     newFrame.Mutate(x => x.DrawImage(bottomImageFrame, new Point(0, 0), 1));
@@ -2080,24 +2109,29 @@ namespace Sanakan.Services
                             startY = (characterImg.Height / 2) - (image.Height / 2);
                     }
 
-                    var animation = new Image<Rgba32>(475, 667);
-                    var ometa = image.Metadata.GetGifMetadata();
-                    var nmeta = animation.Metadata.GetGifMetadata();
-
-                    nmeta.RepeatCount = ometa.RepeatCount;
-                    nmeta.ColorTableMode = SixLabors.ImageSharp.Formats.Gif.GifColorTableMode.Local;
+                    var animation = new Image<Rgba32>(475, 667, Color.Transparent);
+                    animation.Metadata.GetWebpMetadata().RepeatCount = 0;
 
                     for (int i = 0; i < image.Frames.Count; i++)
                     {
+                        using var newFrame = new Image<Rgba32>(475, 667, Color.Transparent);
                         using var oldFrame = image.Frames.CloneFrame(i);
-                        using var newFrame = new Image<Rgba32>(475, 667);
+                        uint frameDelayMs = 100;
+
+                        if (oldFrame.Frames.RootFrame.Metadata.TryGetWebpFrameMetadata(out var webpMeta))
+                        {
+                            frameDelayMs = webpMeta.FrameDelay;
+                        }
+                        if (oldFrame.Frames.RootFrame.Metadata.TryGetGifMetadata(out var gifMeta))
+                        {
+                            frameDelayMs = (uint)gifMeta.FrameDelay * 10;
+                        }
+
                         using var newFrameChar = characterImg.CloneAs<Rgba32>();
-                        var oldFrameMetadata = oldFrame.Frames.RootFrame.Metadata.GetGifMetadata();
-                        var newFrameMetadata = newFrame.Frames.RootFrame.Metadata.GetGifMetadata();
-                        newFrameMetadata.FrameDelay = oldFrameMetadata.FrameDelay;
-                        newFrameMetadata.DisposalMethod = SixLabors.ImageSharp.Formats.Gif.GifDisposalMethod.RestoreToBackground;
-                        newFrameMetadata.ColorTableMode = SixLabors.ImageSharp.Formats.Gif.GifColorTableMode.Local;
-                        newFrameMetadata.HasTransparency = true;
+                        var newFrameMetadata = newFrame.Frames.RootFrame.Metadata.GetWebpMetadata();
+                        newFrameMetadata.DisposalMethod = WebpDisposalMethod.RestoreToBackground;
+                        newFrameMetadata.BlendMethod = WebpBlendMethod.Source;
+                        newFrameMetadata.FrameDelay = frameDelayMs;
 
                         newFrameChar.Mutate(x => x.DrawImage(oldFrame, new Point(0, startY), 1));
 

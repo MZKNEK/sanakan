@@ -55,7 +55,7 @@ namespace Sanakan.Services.PocketWaifu
         public const int FatigueThirdPhase = 1000;
         public const double FatigueRecoveryRate = 0.173;
 
-        public const string AnimatedCardExtension = "gif";
+        public const string AnimatedCardExtension = "webp";
         public const string NormalCardExtension = "webp";
 
         private AsyncNonKeyedLocker _semaphoreChars = new AsyncNonKeyedLocker(1);

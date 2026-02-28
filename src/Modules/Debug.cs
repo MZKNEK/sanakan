@@ -1636,6 +1636,15 @@ namespace Sanakan.Modules
             }
         }
 
+        [Command("siae", RunMode = RunMode.Async), RequireDev]
+        [Summary("wysyła obrazek z załącznika jako embed")]
+        [Remarks("")]
+        public async Task SendAsEmbedFromAttachment()
+        {
+            var url = Context.Message.Attachments.First().Url;
+            await SafeReplyAsync("", embed: $"Obrazek: {url}".ToEmbedMessage(EMType.Info).WithImageUrl(url).Build());
+        }
+
         [Command("sci", RunMode = RunMode.Async), RequireDevOrTester]
         [Summary("wypisuje url do obrazka karty")]
         [Remarks("")]
