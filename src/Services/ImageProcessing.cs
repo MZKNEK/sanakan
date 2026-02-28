@@ -315,13 +315,14 @@ namespace Sanakan.Services
         {
             using (var stream = await GetImageFromUrlAsync(url, true))
             {
-                using (var image = Image.Load(stream))
-                {
-                    if (size.Height > 0 || size.Width > 0)
-                        CheckImageSize(image, size, strech);
+                var detectedFormat = await Image.DetectFormatAsync(stream);
+                using var image = detectedFormat == WebpFormat.Instance ?
+                    await LoadWebpFromStreamAsync(stream) : await Image.LoadAsync(stream);
 
-                    image.SaveToPath(path);
-                }
+                if (size.Height > 0 || size.Width > 0)
+                    CheckImageSize(image, size, strech);
+
+                image.SaveToPath(path);
             }
         }
 
@@ -2022,16 +2023,20 @@ namespace Sanakan.Services
             return image;
         }
 
-        private async Task<Image> LoadWebpFromDiskAsync(string path)
+        private async Task<Image> LoadWebpFromStreamAsync(Stream file)
         {
             var ops = new WebpDecoderOptions()
             {
                 BackgroundColorHandling = BackgroundColorHandling.Ignore
             };
 
-            using var fileStream = File.OpenRead(path);
+            return await WebpDecoder.Instance.DecodeAsync(ops, file);
+        }
 
-            return await WebpDecoder.Instance.DecodeAsync(ops, fileStream);
+        private async Task<Image> LoadWebpFromDiskAsync(string path)
+        {
+            using var fileStream = File.OpenRead(path);
+            return await LoadWebpFromStreamAsync(fileStream);
         }
 
         private async Task<Image> GetOmegaCard(Card card, bool noStatsImage = false)
