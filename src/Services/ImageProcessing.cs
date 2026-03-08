@@ -1268,8 +1268,10 @@ namespace Sanakan.Services
             }
 
             var newFrameMetadata = newFrame.Frames.RootFrame.Metadata.GetWebpMetadata();
-            newFrameMetadata.DisposalMethod = WebpDisposalMethod.RestoreToBackground;
-            newFrameMetadata.BlendMethod = WebpBlendMethod.Over;
+            // newFrameMetadata.DisposalMethod = WebpDisposalMethod.RestoreToBackground;
+            newFrameMetadata.DisposalMethod = WebpDisposalMethod.DoNotDispose;
+            // newFrameMetadata.BlendMethod = WebpBlendMethod.Over;
+            newFrameMetadata.BlendMethod = WebpBlendMethod.Source;
             newFrameMetadata.FrameDelay = frameDelayMs;
             return isOK;
         }
