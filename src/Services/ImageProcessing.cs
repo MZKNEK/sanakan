@@ -720,7 +720,7 @@ namespace Sanakan.Services
             return image;
         }
 
-        public async Task<Image<Rgba32>> GetUserProfileAsync(IUserInfo shindenUser, User botUser, string avatarUrl, long topPos, string nickname, Discord.Color color)
+        public async Task<Image> GetUserProfileAsync(IUserInfo shindenUser, User botUser, string avatarUrl, long topPos, string nickname, Discord.Color color)
         {
             color = color == Discord.Color.Default ? Discord.Color.DarkerGrey : color;
             string rangName = botUser.Id == 1 ? "Safeguard" : (shindenUser?.Rank ?? "");

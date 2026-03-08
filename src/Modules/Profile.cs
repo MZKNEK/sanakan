@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Discord;
@@ -247,7 +248,7 @@ namespace Sanakan.Modules
         [Command("profil", RunMode = RunMode.Async)]
         [Alias("profile")]
         [Summary("wyświetla profil użytkownika")]
-        [Remarks("karna"), DelayNextUseBy(15)]
+        [Remarks("karna"), DelayNextUseBy(5)]
         public async Task ShowUserProfileAsync([Summary("nazwa użytkownika")]SocketGuildUser user = null)
         {
             var usr = user ?? Context.User as SocketGuildUser;
@@ -273,10 +274,39 @@ namespace Sanakan.Modules
                     rankingPosition = allUsers.OrderByDescending(x => x.ExpCnt).ToList().IndexOf(rankingUser) + 1;
                 }
 
-                dataUser.GameDeck.Cards = (await db.GetCachedUserGameDeckAsync(searchId)).Cards;
-                using (var stream = await _profile.GetProfileImageAsync(usr, dataUser, rankingPosition))
+                var url = Api.Models.CardFinalView.GetProfileUrl(dataUser.Id);
+                var profileUri = $"{Dir.FakeCardsAsProfiles}/{dataUser.Id}.webp";
+                if (File.Exists(profileUri))
                 {
-                    await Context.Channel.SendFileAsync(stream, $"{usr.Id}.webp");
+                    var file = new FileInfo(profileUri);
+                    var mb = file.Length / 1024 / 1024;
+                    var dateToCheck = _time.Now().AddDays(1);
+                    if (file.CreationTime < dateToCheck && mb > 2)
+                    {
+                        if (mb > 9)
+                        {
+                            await Context.Channel.SendMessageAsync(url);
+                        }
+                        else
+                        {
+                            await Context.Channel.SendFileAsync(profileUri);
+                        }
+                        return;
+                    }
+                }
+
+                dataUser.GameDeck.Cards = (await db.GetCachedUserGameDeckAsync(searchId)).Cards;
+                using (var image = await _profile.GetProfileImageAsync(usr, dataUser, rankingPosition))
+                {
+                    image.SaveToPath(profileUri);
+                    try
+                    {
+                        await Context.Channel.SendFileAsync(profileUri);
+                    }
+                    catch(Exception)
+                    {
+                        await Context.Channel.SendMessageAsync(url);
+                    }
                 }
             }
         }

@@ -342,15 +342,13 @@ namespace Sanakan.Services
             }
         }
 
-        public async Task<Stream> GetProfileImageAsync(SocketGuildUser user, Database.Models.User botUser, long topPosition)
+        public async Task<SixLabors.ImageSharp.Image> GetProfileImageAsync(SocketGuildUser user, Database.Models.User botUser, long topPosition)
         {
             bool isConnected = botUser.Shinden != 0;
             var response = _shClient.User.GetAsync(botUser.Shinden);
 
-            using var image = await _img.GetUserProfileAsync(isConnected ? (await response).Body : null, botUser, user.GetUserOrDefaultAvatarUrl(true),
+            return await _img.GetUserProfileAsync(isConnected ? (await response).Body : null, botUser, user.GetUserOrDefaultAvatarUrl(true),
                 topPosition, user.GetUserNickInGuild(), user.Roles.OrderByDescending(x => x.Position).FirstOrDefault()?.Color ?? Discord.Color.DarkerGrey);
-
-            return image.ToWebpStream();
         }
 
         public async Task<SaveResult> SaveProfileAndStyleImageAsync(string imgUrl, string pathTop, int widthTop, int heightTop, string pathBot, int widthBot, int heightBot)

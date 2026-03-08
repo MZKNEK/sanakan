@@ -14,11 +14,13 @@ namespace Sanakan.Services
             Directory.CreateDirectory(LocalCardData);
             Directory.CreateDirectory(CardsMiniatures);
             Directory.CreateDirectory(CardsInProfiles);
+            Directory.CreateDirectory(FakeCardsAsProfiles);
         }
 
         public static string Cards = $"{BaseOutput}/Cards";
         public static string CardsMiniatures = $"{Cards}/Small";
         public static string CardsInProfiles = $"{Cards}/Profile";
+        public static string FakeCardsAsProfiles = $"{Cards}/Prof";
 
         public static string SavedData = $"{BaseOutput}/Saved";
         public static string LocalCardData = $"{SavedData}/Card";

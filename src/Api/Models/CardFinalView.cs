@@ -197,6 +197,9 @@ namespace Sanakan.Api.Models
             return finalCard;
         }
 
+        public static string GetProfileUrl(ulong userId)
+            => $"https://cdn2.shinden.eu/prof/{userId}.webp";
+
         public static string GetCardMiniInShindenUrl(Card card)
             => $"https://cdn2.shinden.eu/small/{card.Id}.{(card.IsCardAnimated() ? Waifu.AnimatedCardExtension : Waifu.NormalCardExtension)}";
 
