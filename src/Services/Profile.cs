@@ -338,7 +338,7 @@ namespace Sanakan.Services
         {
             using (var image = _img.GetFColorsView(currency))
             {
-                return image.ToPngStream();
+                return image.ToWebpStream();
             }
         }
 
@@ -350,7 +350,7 @@ namespace Sanakan.Services
             using var image = await _img.GetUserProfileAsync(isConnected ? (await response).Body : null, botUser, user.GetUserOrDefaultAvatarUrl(true),
                 topPosition, user.GetUserNickInGuild(), user.Roles.OrderByDescending(x => x.Position).FirstOrDefault()?.Color ?? Discord.Color.DarkerGrey);
 
-            return image.ToPngStream();
+            return image.ToWebpStream();
         }
 
         public async Task<SaveResult> SaveProfileAndStyleImageAsync(string imgUrl, string pathTop, int widthTop, int heightTop, string pathBot, int widthBot, int heightBot)

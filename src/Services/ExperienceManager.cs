@@ -59,9 +59,9 @@ namespace Sanakan.Services
             using (var badge = await _img.GetLevelUpBadgeAsync(user.GetUserNickInGuild(),
                 level, user.GetUserOrDefaultAvatarUrl(true), user.Roles.OrderByDescending(x => x.Position).First().Color))
             {
-                using (var badgeStream = badge.ToPngStream())
+                using (var badgeStream = badge.ToWebpStream())
                 {
-                    await channel.SendFileAsync(badgeStream, $"{user.Id}.png");
+                    await channel.SendFileAsync(badgeStream, $"{user.Id}.webp");
                 }
             }
         }

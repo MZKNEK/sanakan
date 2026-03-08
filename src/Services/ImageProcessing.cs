@@ -470,6 +470,7 @@ namespace Sanakan.Services
 
         private async Task<Image> GetUserNewProfileStyleAsync(IUserInfo shindenUser, User botUser)
         {
+            bool alreadyAnimated = false;
             var shadowsOpacity = botUser.ProfileShadowsOpacity;
             var image = new Image<Rgba32>(750, 340, Color.Transparent);
             switch (botUser.ProfileType)
@@ -528,7 +529,16 @@ namespace Sanakan.Services
                             {
                                 using var cardImage = await LoadOrGetNewWaifuProfileCardAsync(card);
                                 cardImage.Mutate(x => x.Resize(new ResizeOptions { Mode = ResizeMode.Max, Size = new Size(0, cardSize) }));
-                                image.Mutate(x => x.DrawImage(cardImage, new Point(cardX, cardY), 1));
+                                if (cardImage.Frames.Count > 1 && !alreadyAnimated)
+                                {
+                                    Animate(image, cardImage, new Point(cardX, cardY));
+                                    alreadyAnimated = true;
+                                }
+                                else
+                                {
+                                    image.Mutate(x => x.DrawImage(cardImage, new Point(cardX, cardY), 1));
+                                }
+
                                 cardX += cardGap;
 
                                 if (cardX > ((cardGap * 2) + startX))
@@ -578,8 +588,16 @@ namespace Sanakan.Services
                             image.Mutate(x => x.DrawImage(shadow, new Point(statsX - 3, statsY - 3), shadowsOpacity));
                         }
 
-                        using var cards = await GetWaifuProfileStyleImage(botUser);
-                        image.Mutate(x => x.DrawImage(cards, new Point(statsX, statsY), 1));
+                        using var cards = await GetWaifuProfileStyleImage(botUser, alreadyAnimated);
+                        if (cards.Frames.Count > 1 && !alreadyAnimated)
+                        {
+                            Animate(image, cards, new Point(statsX, statsY));
+                            alreadyAnimated = true;
+                        }
+                        else
+                        {
+                            image.Mutate(x => x.DrawImage(cards, new Point(statsX, statsY), 1));
+                        }
                     }
 
                     if (botUser.ProfileType == ProfileType.StatsWithImg)
@@ -596,7 +614,15 @@ namespace Sanakan.Services
                     {
                         using var cardImage = await LoadOrGetNewWaifuProfileCardAsync(card);
                         cardImage.Mutate(x => x.Resize(new ResizeOptions { Mode = ResizeMode.Max, Size = new Size(0, 150) }));
-                        image.Mutate(x => x.DrawImage(cardImage, new Point(cardX, cardY), 1));
+                        if (cardImage.Frames.Count > 1 && !alreadyAnimated)
+                        {
+                            Animate(image, cardImage, new Point(cardX, cardY));
+                            alreadyAnimated = true;
+                        }
+                        else
+                        {
+                            image.Mutate(x => x.DrawImage(cardImage, new Point(cardX, cardY), 1));
+                        }
                         cardX += 121;
 
                         if (cardX > 730)
@@ -614,21 +640,9 @@ namespace Sanakan.Services
             return image;
         }
 
-        private async Task<Image> GetWaifuProfileStyleImage(User botUser)
+        private async Task<Image> GetWaifuProfileStyleImage(User botUser, bool alreadyAnimated)
         {
             var image = new Image<Rgba32>(364, 269);
-
-            if (botUser.GameDeck.Waifu != 0)
-            {
-                var waifuCard = botUser.GameDeck.GetWaifuCard();
-                if (waifuCard != null)
-                {
-                    using var cardImage = await LoadOrGetNewWaifuProfileCardAsync(waifuCard);
-                    cardImage.Mutate(x => x.Resize(new ResizeOptions { Mode = ResizeMode.Max, Size = new Size(0, 260) }));
-                    image.Mutate(x => x.DrawImage(cardImage, new Point(10, 4), 1));
-                }
-            }
-
             var font = GetOrCreateFont(_latoBold, 16);
             var fontDetail = GetOrCreateFont(_latoBold, 9);
             var fontColor = GetOrCreateColor("#a7a7a7");
@@ -685,6 +699,24 @@ namespace Sanakan.Services
                 image.Mutate(x => x.DrawImage(scissorsImg, new Point(startX + sGap, startY), 1));
             }
 
+            if (botUser.GameDeck.Waifu != 0)
+            {
+                var waifuCard = botUser.GameDeck.GetWaifuCard();
+                if (waifuCard != null)
+                {
+                    using var cardImage = await LoadOrGetNewWaifuProfileCardAsync(waifuCard);
+                    cardImage.Mutate(x => x.Resize(new ResizeOptions { Mode = ResizeMode.Max, Size = new Size(0, 260) }));
+                    if (cardImage.Frames.Count > 1 && !alreadyAnimated)
+                    {
+                        Animate(image, cardImage, new Point(10, 4));
+                    }
+                    else
+                    {
+                        image.Mutate(x => x.DrawImage(cardImage, new Point(10, 4), 1));
+                    }
+                }
+            }
+
             return image;
         }
 
@@ -710,7 +742,14 @@ namespace Sanakan.Services
             }
 
             using var profileStyle = await GetUserNewProfileStyleAsync(shindenUser, botUser);
-            profilePic.Mutate(x => x.DrawImage(profileStyle, new Point(0, 160), 1));
+            if (profileStyle.Frames.Count > 1)
+            {
+                Animate(profilePic, profileStyle, new Point(0, 160));
+            }
+            else
+            {
+                profilePic.Mutate(x => x.DrawImage(profileStyle, new Point(0, 160), 1));
+            }
 
             var nX = 27;
             var aX = 47 + 5;
@@ -882,7 +921,15 @@ namespace Sanakan.Services
                         Mode = ResizeMode.Crop,
                         Size = new Size(57, 57)
                     }));
-                    badge.Mutate(x => x.DrawImage(avatar, new Point(6, 5), 1));
+
+                    if (avatar.Frames.Count > 1)
+                    {
+                        Animate(badge, avatar, new Point(6, 5));
+                    }
+                    else
+                    {
+                        badge.Mutate(x => x.DrawImage(avatar, new Point(6, 5), 1));
+                    }
                 }
             }
 
@@ -1090,11 +1137,6 @@ namespace Sanakan.Services
                 baseImg.Mutate(x => x.DrawImage(template, new Point(0, 0), 1));
             }
 
-            using (var avatar = await GetSiteStatisticUserBadge(shindenInfo.AvatarUrl, shindenInfo.Name, color.RawValue.ToString("X6")))
-            {
-                baseImg.Mutate(x => x.DrawImage(avatar, new Point(0, 0), 1));
-            }
-
             using (var image = new Image<Rgba32>(325, 248))
             {
                 if (shindenInfo?.ListStats?.AnimeStatus != null)
@@ -1113,6 +1155,18 @@ namespace Sanakan.Services
             using (var image = await GetLastRWList(lastRead, lastWatch))
             {
                 baseImg.Mutate(x => x.DrawImage(image, new Point(330, 63), 1));
+            }
+
+            using (var avatar = await GetSiteStatisticUserBadge(shindenInfo.AvatarUrl, shindenInfo.Name, color.RawValue.ToString("X6")))
+            {
+                if (avatar.Frames.Count > 1)
+                {
+                    Animate(baseImg, avatar, new Point(0, 0));
+                }
+                else
+                {
+                    baseImg.Mutate(x => x.DrawImage(avatar, new Point(0, 0), 1));
+                }
             }
 
             return baseImg;
@@ -1164,12 +1218,60 @@ namespace Sanakan.Services
                             Mode = ResizeMode.Crop,
                             Size = new Size(80, 80)
                         }));
-                        baseImg.Mutate(x => x.DrawImage(avatar, new Point(10, 10), 1));
+
+                        if (avatar.Frames.Count > 1)
+                        {
+                            Animate(baseImg, avatar, new Point(10, 10));
+                        }
+                        else
+                        {
+                            baseImg.Mutate(x => x.DrawImage(avatar, new Point(10, 10), 1));
+                        }
                     }
                 }
             }
 
             return baseImg;
+        }
+
+        private bool Animate(Image staleImage, Image animation, Point point)
+        {
+            staleImage.Metadata.GetWebpMetadata().RepeatCount = 0;
+            for (int i = 0; i < animation.Frames.Count; i++)
+            {
+                using var newFrame = staleImage.CloneAs<Rgba32>();
+                using var oldFrame = animation.Frames.CloneFrame(i);
+                if (!TransferFrameData(newFrame, oldFrame))
+                {
+                    return false;
+                }
+                newFrame.Mutate(x => x.DrawImage(oldFrame, point, 1));
+                staleImage.Frames.AddFrame(newFrame.Frames.RootFrame);
+            }
+            staleImage.Frames.RemoveFrame(0);
+            return true;
+        }
+
+        private bool TransferFrameData(Image newFrame, Image sourceFrame)
+        {
+            bool isOK = false;
+            uint frameDelayMs = 100;
+            if (sourceFrame.Frames.RootFrame.Metadata.TryGetWebpFrameMetadata(out var webpMeta))
+            {
+                frameDelayMs = webpMeta.FrameDelay;
+                isOK = true;
+            }
+            if (sourceFrame.Frames.RootFrame.Metadata.TryGetGifMetadata(out var gifMeta))
+            {
+                frameDelayMs = (uint)gifMeta.FrameDelay * 10;
+                isOK = true;
+            }
+
+            var newFrameMetadata = newFrame.Frames.RootFrame.Metadata.GetWebpMetadata();
+            newFrameMetadata.DisposalMethod = WebpDisposalMethod.RestoreToBackground;
+            newFrameMetadata.BlendMethod = WebpBlendMethod.Over;
+            newFrameMetadata.FrameDelay = frameDelayMs;
+            return isOK;
         }
 
         public Image<Rgba32> GetFColorsView(CurrencyType currency)
@@ -2058,21 +2160,7 @@ namespace Sanakan.Services
                     using var bottomImageFrame = bottomImg.Frames.CloneFrame(i);
 
                     using var newFrame = new Image<Rgba32>(475, 667, Color.Transparent);
-                    uint frameDelayMs = 100;
-
-                    if (topImageFrame.Frames.RootFrame.Metadata.TryGetWebpFrameMetadata(out var webpMeta))
-                    {
-                        frameDelayMs = webpMeta.FrameDelay;
-                    }
-                    if (topImageFrame.Frames.RootFrame.Metadata.TryGetGifMetadata(out var gifMeta))
-                    {
-                        frameDelayMs = (uint)gifMeta.FrameDelay * 10;
-                    }
-
-                    var newFrameMetadata = newFrame.Frames.RootFrame.Metadata.GetWebpMetadata();
-                    newFrameMetadata.DisposalMethod = WebpDisposalMethod.RestoreToBackground;
-                    newFrameMetadata.BlendMethod = WebpBlendMethod.Over;
-                    newFrameMetadata.FrameDelay = frameDelayMs;
+                    TransferFrameData(newFrame, topImageFrame);
 
                     using var charFrame = allowAnimation ? image.Frames.CloneFrame(i) : image.CloneAs<Rgba32>();
                     newFrame.Mutate(x => x.DrawImage(bottomImageFrame, new Point(0, 0), 1));
@@ -2121,23 +2209,9 @@ namespace Sanakan.Services
                     {
                         using var newFrame = new Image<Rgba32>(475, 667, Color.Transparent);
                         using var oldFrame = image.Frames.CloneFrame(i);
-                        uint frameDelayMs = 100;
-
-                        if (oldFrame.Frames.RootFrame.Metadata.TryGetWebpFrameMetadata(out var webpMeta))
-                        {
-                            frameDelayMs = webpMeta.FrameDelay;
-                        }
-                        if (oldFrame.Frames.RootFrame.Metadata.TryGetGifMetadata(out var gifMeta))
-                        {
-                            frameDelayMs = (uint)gifMeta.FrameDelay * 10;
-                        }
+                        TransferFrameData(newFrame, oldFrame);
 
                         using var newFrameChar = characterImg.CloneAs<Rgba32>();
-                        var newFrameMetadata = newFrame.Frames.RootFrame.Metadata.GetWebpMetadata();
-                        newFrameMetadata.DisposalMethod = WebpDisposalMethod.RestoreToBackground;
-                        newFrameMetadata.BlendMethod = WebpBlendMethod.Source;
-                        newFrameMetadata.FrameDelay = frameDelayMs;
-
                         newFrameChar.Mutate(x => x.DrawImage(oldFrame, new Point(0, startY), 1));
 
                         ApplyBorderBack(newFrame, card);

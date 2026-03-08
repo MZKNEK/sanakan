@@ -7,8 +7,6 @@ using SixLabors.ImageSharp.Drawing;
 using SixLabors.ImageSharp.Drawing.Processing;
 using SixLabors.ImageSharp.Formats;
 using SixLabors.ImageSharp.Formats.Gif;
-using SixLabors.ImageSharp.Formats.Jpeg;
-using SixLabors.ImageSharp.Formats.Png;
 using SixLabors.ImageSharp.Formats.Webp;
 using SixLabors.ImageSharp.PixelFormats;
 using SixLabors.ImageSharp.Processing;
@@ -18,32 +16,11 @@ namespace Sanakan.Extensions
     public static class ImageExtension
     {
         private static IImageEncoder _gifEncoder = new GifEncoder();
-        private static IImageEncoder _pngEncoder = new PngEncoder();
-        private static IImageEncoder _jpgEncoder = new JpegEncoder()
-        {
-            Quality = 85
-        };
         private static IImageEncoder _webpEncoder = new WebpEncoder()
         {
             FileFormat = WebpFileFormatType.Lossy,
             Quality = 90
         };
-
-        public static Stream ToJpgStream(this Image img)
-        {
-            var stream = new MemoryStream();
-            img.Save(stream, _jpgEncoder);
-            stream.Seek(0, SeekOrigin.Begin);
-            return stream;
-        }
-
-        public static Stream ToPngStream(this Image img)
-        {
-            var stream = new MemoryStream();
-            img.Save(stream, _pngEncoder);
-            stream.Seek(0, SeekOrigin.Begin);
-            return stream;
-        }
 
         public static Stream ToWebpStream(this Image img)
         {
@@ -66,10 +43,8 @@ namespace Sanakan.Extensions
             var extension = path.Split(".").Last().ToLower();
             var encoder = extension switch
             {
-                "webp" => _webpEncoder,
-                "png" => _pngEncoder,
                 "gif" => _gifEncoder,
-                _ => _jpgEncoder
+                _ => _webpEncoder
             };
             img.Save(path, encoder);
             return path;

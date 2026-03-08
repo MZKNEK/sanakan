@@ -245,7 +245,7 @@ namespace Sanakan.Services
                 user.Roles.OrderByDescending(x => x.Position).FirstOrDefault()?.Color ?? Discord.Color.DarkerGrey,
                 resLR, resLW))
             {
-                return image.ToPngStream();
+                return image.ToWebpStream();
             }
         }
 

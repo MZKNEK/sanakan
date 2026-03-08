@@ -276,7 +276,7 @@ namespace Sanakan.Modules
                 dataUser.GameDeck.Cards = (await db.GetCachedUserGameDeckAsync(searchId)).Cards;
                 using (var stream = await _profile.GetProfileImageAsync(usr, dataUser, rankingPosition))
                 {
-                    await Context.Channel.SendFileAsync(stream, $"{usr.Id}.png");
+                    await Context.Channel.SendFileAsync(stream, $"{usr.Id}.webp");
                 }
             }
         }

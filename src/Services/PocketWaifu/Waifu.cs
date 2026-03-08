@@ -1552,9 +1552,9 @@ namespace Sanakan.Services.PocketWaifu
                 int posY = info != null ? info.GetY() : SafariImage.DefaultY();
                 using (var pokeImage = _img.GetCatchThatWaifuImage(cardImage, uri, posX, posY))
                 {
-                    using (var stream = pokeImage.ToJpgStream())
+                    using (var stream = pokeImage.ToWebpStream())
                     {
-                        var msg = await trashChannel.SendFileAsync(stream, $"poke.jpg");
+                        var msg = await trashChannel.SendFileAsync(stream, $"poke.webp");
                         return msg.Attachments.First().Url;
                     }
                 }
