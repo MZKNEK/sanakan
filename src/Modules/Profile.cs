@@ -281,7 +281,7 @@ namespace Sanakan.Modules
                     var file = new FileInfo(profileUri);
                     var mb = file.Length / 1024 / 1024;
                     var dateToCheck = _time.Now().AddDays(1);
-                    if (file.CreationTime < dateToCheck && mb > 2)
+                    if (file.CreationTime > dateToCheck && mb > 3)
                     {
                         if (mb > 9)
                         {
