@@ -122,6 +122,129 @@ namespace Sanakan.Services.PocketWaifu
 
         private static string[] _imgExtWithAlpha = { "png", "webp", "gif" };
 
+        private static readonly List<ItemType> _ultMarketItems = new List<(ItemType, int)>
+        {
+            (ItemType.FigureBodyPart,       1),
+            (ItemType.FigureClothesPart,    1),
+            (ItemType.FigureHeadPart,       1),
+            (ItemType.FigureLeftArmPart,    1),
+            (ItemType.FigureLeftLegPart,    1),
+            (ItemType.FigureRightArmPart,   1),
+            (ItemType.FigureRightLegPart,   1),
+        }.ToRealList();
+
+        private static readonly Dictionary<Quality, List<Quality>> _ultMarket = new Dictionary<Quality, List<Quality>>
+        {
+            {Quality.Alpha, new List<(Quality, int)>
+                {
+                    (Quality.Alpha,   50),
+                    (Quality.Beta,    25),
+                    (Quality.Gamma,   19),
+                    (Quality.Delta,   5),
+                    (Quality.Epsilon, 1),
+                }.ToRealList()
+            },
+            {Quality.Beta, new List<(Quality, int)>
+                {
+                    (Quality.Alpha,   25),
+                    (Quality.Beta,    50),
+                    (Quality.Gamma,   19),
+                    (Quality.Delta,   5),
+                    (Quality.Epsilon, 1),
+                }.ToRealList()
+            },
+            {Quality.Gamma, new List<(Quality, int)>
+                {
+                    (Quality.Alpha,   5),
+                    (Quality.Beta,    25),
+                    (Quality.Gamma,   50),
+                    (Quality.Delta,   19),
+                    (Quality.Epsilon, 1),
+                }.ToRealList()
+            },
+            {Quality.Delta, new List<(Quality, int)>
+                {
+                    (Quality.Beta,    5),
+                    (Quality.Gamma,   25),
+                    (Quality.Delta,   50),
+                    (Quality.Epsilon, 19),
+                    (Quality.Zeta,    1),
+                }.ToRealList()
+            },
+            {Quality.Epsilon, new List<(Quality, int)>
+                {
+                    (Quality.Gamma,   5),
+                    (Quality.Delta,   25),
+                    (Quality.Epsilon, 50),
+                    (Quality.Zeta,    19),
+                    (Quality.Eta,     1),
+                }.ToRealList()
+            },
+            {Quality.Zeta, new List<(Quality, int)>
+                {
+                    (Quality.Delta,   5),
+                    (Quality.Epsilon, 25),
+                    (Quality.Zeta,    50),
+                    (Quality.Eta,     19),
+                    (Quality.Theta,   1),
+                }.ToRealList()
+            },
+            {Quality.Eta, new List<(Quality, int)>
+                {
+                    (Quality.Epsilon, 5),
+                    (Quality.Zeta,    25),
+                    (Quality.Eta,     50),
+                    (Quality.Theta,   19),
+                    (Quality.Jota,    1),
+                }.ToRealList()
+            },
+            {Quality.Theta, new List<(Quality, int)>
+                {
+                    (Quality.Zeta,    5),
+                    (Quality.Eta,     25),
+                    (Quality.Theta,   50),
+                    (Quality.Jota,    19),
+                    (Quality.Lambda,  1),
+                }.ToRealList()
+            },
+            {Quality.Jota, new List<(Quality, int)>
+                {
+                    (Quality.Eta,     5),
+                    (Quality.Theta,   25),
+                    (Quality.Jota,    50),
+                    (Quality.Lambda,  19),
+                    (Quality.Sigma,   1),
+                }.ToRealList()
+            },
+            {Quality.Lambda, new List<(Quality, int)>
+                {
+                    (Quality.Theta,   5),
+                    (Quality.Jota,    25),
+                    (Quality.Lambda,  50),
+                    (Quality.Sigma,   19),
+                    (Quality.Omega,   1),
+                }.ToRealList()
+            },
+            {Quality.Sigma, new List<(Quality, int)>
+                {
+                    (Quality.Theta,   1),
+                    (Quality.Jota,    5),
+                    (Quality.Lambda,  25),
+                    (Quality.Sigma,   50),
+                    (Quality.Omega,   19),
+                }.ToRealList()
+            },
+            {Quality.Omega, new List<(Quality, int)>
+                {
+                    (Quality.Theta,   1),
+                    (Quality.Jota,    5),
+                    (Quality.Lambda,  19),
+                    (Quality.Sigma,   25),
+                    (Quality.Omega,   59),
+                }.ToRealList()
+            }
+        };
+
         private static List<Dere> _dereToRandomize = new List<Dere>
         {
             Dere.Tsundere,
@@ -367,6 +490,13 @@ namespace Sanakan.Services.PocketWaifu
             if (num < 250) return ItemType.DereReRoll;
             if (num < 780) return ItemType.AffectionRecoveryNormal;
             return ItemType.AffectionRecoverySmall;
+        }
+
+        public Item RandomizeItemFromMarketUlt(Quality cardQuality)
+        {
+            var itemType = Fun.GetOneRandomFrom(_ultMarketItems);
+            var itemQuality = Fun.GetOneRandomFrom(_ultMarket[cardQuality]);
+            return itemType.ToItem(1, itemQuality);
         }
 
         public ItemType RandomizeItemFromMarket()

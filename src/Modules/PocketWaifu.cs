@@ -1362,12 +1362,6 @@ namespace Sanakan.Modules
                     return;
                 }
 
-                if (card.FromFigure)
-                {
-                    await SafeReplyAsync("", embed: $"{Context.User.Mention} z tą kartą nie można iść na rynek.".ToEmbedMessage(EMType.Error).Build());
-                    return;
-                }
-
                 if (card.Expedition != CardExpedition.None)
                 {
                     await SafeReplyAsync("", embed: $"{Context.User.Mention} ta karta jest na wyprawie!".ToEmbedMessage(EMType.Error).Build());
@@ -1421,6 +1415,7 @@ namespace Sanakan.Modules
 
                 if (card.CanGiveRing()) ++itemCnt;
                 if (botuser.GameDeck.CanCreateAngel()) ++itemCnt;
+                itemCnt += card.GetMarketBonusFromUltimate();
 
                 market.EndsAt = _time.Now().AddHours(nextMarket);
                 card.Affection += 0.1;
@@ -1432,6 +1427,11 @@ namespace Sanakan.Modules
                 {
                     var itmType = _waifu.RandomizeItemFromMarket();
                     var item = itmType.ToItem(1);
+
+                    if (card.FromFigure && Services.Fun.TakeATry(10d))
+                    {
+                        item = _waifu.RandomizeItemFromMarketUlt(card.Quality);
+                    }
                     botuser.GameDeck.AddItem(item);
 
                     reward += $"+{item.Name}\n";
@@ -1478,12 +1478,6 @@ namespace Sanakan.Modules
                 if (card == null)
                 {
                     await SafeReplyAsync("", embed: $"{Context.User.Mention} nie posiadasz takiej karty.".ToEmbedMessage(EMType.Error).Build());
-                    return;
-                }
-
-                if (card.FromFigure)
-                {
-                    await SafeReplyAsync("", embed: $"{Context.User.Mention} z tą kartą nie można iść na czarny rynek.".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
@@ -1534,6 +1528,7 @@ namespace Sanakan.Modules
 
                 if (card.CanGiveBloodOrUpgradeToSSS()) ++itemCnt;
                 if (botuser.GameDeck.CanCreateDemon()) ++itemCnt;
+                itemCnt += card.GetMarketBonusFromUltimate();
 
                 market.EndsAt = _time.Now().AddHours(nextMarket);
                 card.Affection -= 0.2;
@@ -1545,6 +1540,11 @@ namespace Sanakan.Modules
                 {
                     var itmType = _waifu.RandomizeItemFromBlackMarket();
                     var item = itmType.ToItem(1);
+
+                    if (card.FromFigure && Services.Fun.TakeATry(10d))
+                    {
+                        item = _waifu.RandomizeItemFromMarketUlt(card.Quality);
+                    }
                     botuser.GameDeck.AddItem(item);
 
                     reward += $"+{item.Name}\n";

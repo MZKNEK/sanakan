@@ -982,6 +982,23 @@ namespace Sanakan.Extensions
             db.AddActivityFromNewCard(card, isOnUserWishlist, time, target.user, target.username);
         }
 
+        public static int GetMarketBonusFromUltimate(this Card card) => card.Quality switch
+        {
+            Quality.Alpha   => 1,
+            Quality.Beta    => 2,
+            Quality.Gamma   => 3,
+            Quality.Delta   => 4,
+            Quality.Epsilon => 4,
+            Quality.Zeta    => 5,
+            Quality.Eta     => 5,
+            Quality.Theta   => 6,
+            Quality.Jota    => 6,
+            Quality.Lambda  => 7,
+            Quality.Sigma   => 8,
+            Quality.Omega   => 10,
+            _ => 0
+        };
+
         public static bool IsProtectedFromDiscarding(this Card card, TagHelper helper) => card is null
             || card.Active
             || card.InCage
