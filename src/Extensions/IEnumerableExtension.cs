@@ -40,6 +40,13 @@ namespace Sanakan.Extensions
             return true;
         }
 
+        public static T Fake<T>(this T src, int overflow) where T : Enum
+        {
+            T[] Arr = (T[])Enum.GetValues(src.GetType());
+            int j = Array.IndexOf<T>(Arr, src) + overflow;
+            return (Arr.Length==j) ? Arr[0] : Arr[j];
+        }
+
         public static T Next<T>(this T src) where T : Enum
         {
             T[] Arr = (T[])Enum.GetValues(src.GetType());

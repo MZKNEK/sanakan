@@ -982,7 +982,7 @@ namespace Sanakan.Extensions
             db.AddActivityFromNewCard(card, isOnUserWishlist, time, target.user, target.username);
         }
 
-        public static int GetMarketBonusFromUltimate(this Card card) => card.Quality switch
+        public static int GetMarketBonusFromUltimate(this Card card) => card.Quality.Fake(card.BorderOverflow) switch
         {
             Quality.Alpha   => 1,
             Quality.Beta    => 2,

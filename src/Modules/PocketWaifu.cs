@@ -1430,7 +1430,7 @@ namespace Sanakan.Modules
 
                     if (card.FromFigure && Services.Fun.TakeATry(10d))
                     {
-                        item = _waifu.RandomizeItemFromMarketUlt(card.Quality);
+                        item = _waifu.RandomizeItemFromMarketUlt(card);
                     }
                     botuser.GameDeck.AddItem(item);
 
@@ -1543,7 +1543,7 @@ namespace Sanakan.Modules
 
                     if (card.FromFigure && Services.Fun.TakeATry(10d))
                     {
-                        item = _waifu.RandomizeItemFromMarketUlt(card.Quality);
+                        item = _waifu.RandomizeItemFromMarketUlt(card);
                     }
                     botuser.GameDeck.AddItem(item);
 

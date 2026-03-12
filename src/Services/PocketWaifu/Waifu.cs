@@ -492,8 +492,9 @@ namespace Sanakan.Services.PocketWaifu
             return ItemType.AffectionRecoverySmall;
         }
 
-        public Item RandomizeItemFromMarketUlt(Quality cardQuality)
+        public Item RandomizeItemFromMarketUlt(Card card)
         {
+            var cardQuality = card.Quality.Fake(card.BorderOverflow);
             var itemType = Fun.GetOneRandomFrom(_ultMarketItems);
             var itemQuality = Fun.GetOneRandomFrom(_ultMarket[cardQuality]);
             return itemType.ToItem(1, itemQuality);

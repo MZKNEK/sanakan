@@ -1645,6 +1645,18 @@ namespace Sanakan.Modules
             await SafeReplyAsync("", embed: $"Obrazek: {url}".ToEmbedMessage(EMType.Info).WithImageUrl(url).Build());
         }
 
+        [Command("sfcq", RunMode = RunMode.Async), RequireDev]
+        [Summary("zwraca jakość karty z przepełnieniem")]
+        [Remarks("")]
+        public async Task SendCardQualityWithOverflow([Summary("WID")]ulong wid)
+        {
+            using (var db = new Database.DatabaseContext(Config))
+            {
+                var card = await db.Cards.AsQueryable().FirstOrDefaultAsync(x => x.Id == wid);
+                await SafeReplyAsync("", embed: $"Fake: {card.Quality.Fake(card.BorderOverflow).ToName()}".ToEmbedMessage(EMType.Info).Build());
+            }
+        }
+
         [Command("sci", RunMode = RunMode.Async), RequireDevOrTester]
         [Summary("wypisuje url do obrazka karty")]
         [Remarks("")]
