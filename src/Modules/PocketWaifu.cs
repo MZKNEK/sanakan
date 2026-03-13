@@ -1428,7 +1428,7 @@ namespace Sanakan.Modules
                     var itmType = _waifu.RandomizeItemFromMarket();
                     var item = itmType.ToItem(1);
 
-                    if (card.FromFigure && Services.Fun.TakeATry(10d))
+                    if (card.FromFigure && Services.Fun.TakeATry(5d))
                     {
                         item = _waifu.RandomizeItemFromMarketUlt(card);
                     }
@@ -1541,7 +1541,7 @@ namespace Sanakan.Modules
                     var itmType = _waifu.RandomizeItemFromBlackMarket();
                     var item = itmType.ToItem(1);
 
-                    if (card.FromFigure && Services.Fun.TakeATry(10d))
+                    if (card.FromFigure && Services.Fun.TakeATry(5d))
                     {
                         item = _waifu.RandomizeItemFromMarketUlt(card);
                     }

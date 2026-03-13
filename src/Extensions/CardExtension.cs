@@ -994,8 +994,8 @@ namespace Sanakan.Extensions
             Quality.Theta   => 6,
             Quality.Jota    => 6,
             Quality.Lambda  => 7,
-            Quality.Sigma   => 8,
-            Quality.Omega   => 10,
+            Quality.Sigma   => 7,
+            Quality.Omega   => 8,
             _ => 0
         };
 

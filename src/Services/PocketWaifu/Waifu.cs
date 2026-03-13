@@ -240,7 +240,7 @@ namespace Sanakan.Services.PocketWaifu
                     (Quality.Jota,    5),
                     (Quality.Lambda,  19),
                     (Quality.Sigma,   25),
-                    (Quality.Omega,   59),
+                    (Quality.Omega,   50),
                 }.ToRealList()
             }
         };
