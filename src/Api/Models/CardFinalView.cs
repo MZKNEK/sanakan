@@ -153,6 +153,10 @@ namespace Sanakan.Api.Models
         /// </summary>
         public Quality UltimateQuality { get; set; }
         /// <summary>
+        /// Ile razy karta ultimate zostala ulepszona ponad swoją jakość
+        /// </summary>
+        public int UltimateOverflow { get; set; }
+        /// <summary>
         /// Czy na karcie znajduje się klątwa
         /// </summary>
         public bool IsCursed { get; set; }
@@ -245,6 +249,7 @@ namespace Sanakan.Api.Models
                 CardPower = card.CardPower,
                 DiscordId = card.GameDeckId,
                 WhoWantsCount = kcs,
+                UltimateOverflow = card.BorderOverflow,
                 IsCursed = card.Curse != CardCurse.None,
                 Value = card.GetThreeStateMarketValue(),
                 ExpCntForNextLevel = card.ExpToUpgrade(),
