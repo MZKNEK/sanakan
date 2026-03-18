@@ -178,7 +178,8 @@ namespace Sanakan.Modules
                 .Append("[Strona](https://sanakan.pl/) | ")
                 .Append("[GitHub](https://github.com/MZKNEK/sanakan.git) | ")
                 .Append("[Wiki](https://wiki.sanakan.pl/) | ")
-                .Append("[Karty](https://waifu.sanakan.pl/#/)");
+                .Append("[Karty](https://waifu.sanakan.pl/#/)")
+                .Append("[Alter](https://alter.sanakan.pl/)");
 
                 await SafeReplyAsync("", embed: info.ToString().ToEmbedMessage(EMType.Bot).Build());
             }

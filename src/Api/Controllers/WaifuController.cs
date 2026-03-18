@@ -138,7 +138,7 @@ namespace Sanakan.Api.Controllers
         /// <param name="count">liczba kart</param>
         /// <param name="filter">filtry listy</param>
         /// <returns>lista kart</returns>
-        [HttpPost("user/total/cards/{offset}/{count}")]
+        [HttpPost("total/cards/{offset}/{count}")]
         public async Task<FilteredCards> GetCardsWithOffsetAndFilterAsync(uint offset, uint count, [FromBody]CardsQueryFilter filter)
         {
             using (var db = new Database.DatabaseContext(_config))
