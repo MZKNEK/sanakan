@@ -29,11 +29,11 @@ namespace Sanakan.Api.Models
         /// </summary>
         public CardFinalView Card { get; set; }
 
-        public static ExpeditionCard ConvertFromRaw(User user, Card card, Expedition helper)
+        public static ExpeditionCard ConvertFromRaw(User user, Card card, Expedition helper, string username)
         {
             return new ExpeditionCard
             {
-                Card = card.ToView(),
+                Card = card.ToView(username),
                 StartTime = card.ExpeditionDate,
                 Expedition = card.Expedition.GetName(),
                 MaxTime = helper.GetMaxPossibleLengthOfExpedition(user, card)

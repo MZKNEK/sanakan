@@ -47,6 +47,10 @@ namespace Sanakan.Api.Models
         /// Lista id kart
         /// </summary>
         public List<ulong> CardIds { get; set; }
+        /// <summary>
+        /// Lista id postaci
+        /// </summary>
+        public List<ulong> CharIds { get; set; }
 
         public static IQueryable<Card> Use(OrderType type, IQueryable<Card> query)
         {

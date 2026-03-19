@@ -820,26 +820,29 @@ namespace Sanakan.Extensions
             return ExecutionResult.FromSuccess("");
         }
 
-        public static Api.Models.CardFinalView ToViewUser(this Card c, string name, ulong shinden = 0, ISystemTime time = null)
+        public static Api.Models.CardFinalView ToView(this Card c, string name, ulong shinden = 0, ISystemTime time = null)
+            => string.IsNullOrEmpty(name) ? c.ToViewNoUser(shinden, time) : c.ToViewUser(name, shinden, time);
+
+        private static Api.Models.CardFinalView ToViewUser(this Card c, string name, ulong shinden = 0, ISystemTime time = null)
             => Api.Models.CardFinalView.ConvertFromRawWithUserInfo(c, name, shinden, time);
 
-        public static Api.Models.CardFinalView ToView(this Card c, ulong shindenId = 0, ISystemTime time = null)
-            => Api.Models.CardFinalView.ConvertFromRaw(c, shindenId, time);
+        private static Api.Models.CardFinalView ToViewNoUser(this Card c, ulong shindenId = 0, ISystemTime time = null)
+            => Api.Models.CardFinalView.ConvertFromRawWithUserInfo(c, "????", shindenId, time);
 
-        public static Api.Models.ExpeditionCard ToExpeditionView(this Card card, User user, Expedition helper)
-            => Api.Models.ExpeditionCard.ConvertFromRaw(user, card, helper);
+        public static Api.Models.ExpeditionCard ToExpeditionView(this Card card, User user, Expedition helper, string username)
+            => Api.Models.ExpeditionCard.ConvertFromRaw(user, card, helper, username);
 
-        public static List<Api.Models.ExpeditionCard> ToExpeditionView(this IEnumerable<Card> clist, User user, Expedition helper)
+        public static List<Api.Models.ExpeditionCard> ToExpeditionView(this IEnumerable<Card> clist, User user, Expedition helper, string username)
         {
             var list = new List<Api.Models.ExpeditionCard>();
-            foreach (var c in clist) list.Add(c.ToExpeditionView(user, helper));
+            foreach (var c in clist) list.Add(c.ToExpeditionView(user, helper, username));
             return list;
         }
 
-        public static List<Api.Models.CardFinalView> ToView(this IEnumerable<Card> clist, ulong shindenId = 0, ISystemTime time = null)
+        public static List<Api.Models.CardFinalView> ToView(this IEnumerable<Card> clist, string name, ulong shindenId = 0, ISystemTime time = null)
         {
             var list = new List<Api.Models.CardFinalView>();
-            foreach (var c in clist) list.Add(c.ToView(shindenId, time));
+            foreach (var c in clist) list.Add(c.ToView(name, shindenId, time));
             return list;
         }
 

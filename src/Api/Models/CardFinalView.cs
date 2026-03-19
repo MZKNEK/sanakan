@@ -213,7 +213,7 @@ namespace Sanakan.Api.Models
         public static string GetCardProfileInShindenUrl(Card card)
             => $"https://cdn2.shinden.eu/profile/{card.Id}.{(card.IsCardAnimated() ? Waifu.AnimatedCardExtension : Waifu.NormalCardExtension)}";
 
-        public static CardFinalView ConvertFromRaw(Card card, ulong shindenId = 0, ISystemTime time = null)
+        private static CardFinalView ConvertFromRaw(Card card, ulong shindenId = 0, ISystemTime time = null)
         {
             if (card == null) return null;
             var kcs = Fun.IsAF() ? Fun.GetAFKC(card.Character) : card.WhoWantsCount;

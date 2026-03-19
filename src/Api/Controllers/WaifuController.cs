@@ -154,7 +154,7 @@ namespace Sanakan.Api.Controllers
 
                 var cards = (await FilterCardsByTags(query, filter).FromCacheAsync("api-all-cards")).ToList();
 
-                return new FilteredCards{TotalCards = cards.Count, Cards = cards.Skip((int)offset).Take((int)count).ToView(0, _time)};
+                return new FilteredCards{TotalCards = cards.Count, Cards = cards.Skip((int)offset).Take((int)count).Select(x => x.ToView(GetUsernameAsync(x.GameDeck.User.Shinden).Result, 0, _time))};
             }
         }
 
@@ -181,7 +181,7 @@ namespace Sanakan.Api.Controllers
 
                 var cards = await FilterCardsByTags(query, filter).ToListAsync();
 
-                return new FilteredCards{TotalCards = cards.Count, Cards = cards.Skip((int)offset).Take((int)count).ToView(0, _time)};
+                return new FilteredCards{TotalCards = cards.Count, Cards = cards.Skip((int)offset).Take((int)count).Select(x => x.ToView(GetUsernameAsync(x.GameDeck.User.Shinden).Result, 0, _time))};
             }
         }
 
@@ -208,7 +208,7 @@ namespace Sanakan.Api.Controllers
 
                 var cards = await FilterCardsByTags(query, filter).ToListAsync();
 
-                return new FilteredCards{TotalCards = cards.Count, Cards = cards.Skip((int)offset).Take((int)count).ToView(0, _time)};
+                return new FilteredCards{TotalCards = cards.Count, Cards = cards.Skip((int)offset).Take((int)count).Select(x => x.ToView(GetUsernameAsync(x.GameDeck.User.Shinden).Result, 0, _time))};
             }
         }
 
@@ -249,9 +249,10 @@ namespace Sanakan.Api.Controllers
                 query = CardsQueryFilter.Use(filter.OrderBy, query);
                 query = FilterCardsByIds(query, filter);
 
+                var username = await GetUsernameAsync(user.Shinden);
                 var cards = await FilterCardsByTags(query, filter).ToListAsync();
 
-                return new FilteredCards{TotalCards = cards.Count, Cards = cards.Skip((int)offset).Take((int)count).ToView(id, _time)};
+                return new FilteredCards{TotalCards = cards.Count, Cards = cards.Skip((int)offset).Take((int)count).ToView(username, id, _time)};
             }
         }
 
@@ -283,7 +284,8 @@ namespace Sanakan.Api.Controllers
                 }
 
                 var cards = await db.Cards.AsQueryable().AsSplitQuery().Where(x => x.GameDeckId == user.GameDeck.Id).Include(x => x.Tags).Skip((int)offset).Take((int)count).AsNoTracking().ToListAsync();
-                return cards.ToView(id, _time);
+                var username = await GetUsernameAsync(user.Shinden);
+                return cards.ToView(username, 0, _time);
             }
         }
 
@@ -308,28 +310,8 @@ namespace Sanakan.Api.Controllers
                     return new CardFinalView();
                 }
 
-                if (card.GameDeck.User.Shinden != 0)
-                {
-                    if (_nameCache.TryGetValue(card.GameDeck.User.Shinden, out string username))
-                    {
-                        return card.ToViewUser(username, 0, _time);
-                    }
-
-                    if (card.GameDeck.User.Shinden == 1)
-                    {
-                        return card.ToViewUser(_client.CurrentUser.GetUserNickInGuild(), 0, _time);
-                    }
-
-                    var res = await _shClient.User.GetAsync(card.GameDeck.User.Shinden);
-                    if (res.IsSuccessStatusCode())
-                    {
-                        _nameCache.Set(card.GameDeck.User.Shinden, res.Body.Name, new MemoryCacheEntryOptions()
-                            .SetAbsoluteExpiration(TimeSpan.FromHours(12)));
-
-                        return card.ToViewUser(res.Body.Name, 0, _time);
-                    }
-                }
-                return card.ToView(0, _time);
+                var username = await GetUsernameAsync(card.GameDeck.User.Shinden);
+                return card.ToView(username, 0, _time);
             }
         }
 
@@ -451,6 +433,7 @@ namespace Sanakan.Api.Controllers
                 tags.Add(_tags.GetTag(TagType.Reservation).ToView());
                 tags.Add(_tags.GetTag(TagType.TrashBin).ToView());
 
+                var username = await GetUsernameAsync(user.Shinden);
                 return new UserSiteProfile()
                 {
                     TagList = tags,
@@ -459,15 +442,15 @@ namespace Sanakan.Api.Controllers
                     Karma = user.GameDeck.Karma,
                     GalleryOrder = galleryOrder,
                     UserTitle = user.GameDeck.GetUserNameStatus(),
-                    Waifu = user.GameDeck.GetWaifuCard().ToView(0, _time),
+                    Waifu = user.GameDeck.GetWaifuCard().ToView(username, 0, _time),
                     ForegroundColor = user.GameDeck.ForegroundColor,
                     ForegroundPosition = user.GameDeck.ForegroundPosition,
                     BackgroundPosition = user.GameDeck.BackgroundPosition,
                     ExchangeConditions = user.GameDeck.ExchangeConditions,
                     BackgroundImageUrl = user.GameDeck.BackgroundImageUrl,
                     ForegroundImageUrl = user.GameDeck.ForegroundImageUrl,
-                    Expeditions = user.GameDeck.Cards.Where(x => x.Expedition != CardExpedition.None).ToExpeditionView(user, _expedition),
-                    Gallery = user.GameDeck.GetOrderedGalleryCards(galleryTag.Id).ToView(0, _time)
+                    Expeditions = user.GameDeck.Cards.Where(x => x.Expedition != CardExpedition.None).ToExpeditionView(user, _expedition, username),
+                    Gallery = user.GameDeck.GetOrderedGalleryCards(galleryTag.Id).ToView(username, 0, _time)
                 };
             }
         }
@@ -1019,6 +1002,32 @@ namespace Sanakan.Api.Controllers
             await "The appropriate claim was not found".ToResponse(403).ExecuteResultAsync(ControllerContext);
         }
 
+        private async Task<string> GetUsernameAsync(ulong shindenId)
+        {
+            if (shindenId != 0)
+            {
+                if (shindenId == 1)
+                {
+                    return _client.CurrentUser.GetUserNickInGuild();
+                }
+
+                if (_nameCache.TryGetValue(shindenId, out string username))
+                {
+                    return username;
+                }
+
+                var res = await _shClient.User.GetAsync(shindenId);
+                if (res.IsSuccessStatusCode())
+                {
+                    _nameCache.Set(shindenId, res.Body.Name, new MemoryCacheEntryOptions()
+                        .SetAbsoluteExpiration(TimeSpan.FromHours(24)));
+
+                    return res.Body.Name;
+                }
+            }
+            return string.Empty;
+        }
+
         private async Task<List<BoosterPack>> ValidateBoosterPackAsync(ControllerContext context, List<Models.CardBoosterPack> boosterPacks)
         {
             if (boosterPacks?.Count < 1)
@@ -1109,6 +1118,11 @@ namespace Sanakan.Api.Controllers
             if (!filter.CardIds.IsNullOrEmpty())
             {
                 cards = cards.Where(x => filter.CardIds.Contains(x.Id));
+            }
+
+            if (!filter.CharIds.IsNullOrEmpty())
+            {
+                cards = cards.Where(x => filter.CharIds.Contains(x.Character));
             }
 
             return cards;
