@@ -143,7 +143,7 @@ namespace Sanakan.Api.Controllers
         {
             using (var db = new Database.DatabaseContext(_config))
             {
-                var query = db.Cards.AsQueryable().AsSplitQuery().Include(x => x.Tags).AsNoTracking();
+                var query = db.Cards.AsQueryable().AsSplitQuery().Include(x => x.GameDeck).ThenInclude(x => x.User).Include(x => x.Tags).AsNoTracking();
                 if (!string.IsNullOrEmpty(filter.SearchText))
                 {
                     query = query.Where(x => x.Name.Contains(filter.SearchText) || x.Title.Contains(filter.SearchText));
@@ -152,7 +152,7 @@ namespace Sanakan.Api.Controllers
                 query = CardsQueryFilter.Use(filter.OrderBy, query);
                 query = FilterCardsByIds(query, filter);
 
-                var cards = (await FilterCardsByTags(query, filter).FromCacheAsync("api-all-cards")).ToList();
+                var cards = await FilterCardsByTags(query, filter).ToListAsync();
 
                 return new FilteredCards{TotalCards = cards.Count, Cards = cards.Skip((int)offset).Take((int)count).Select(x => x.ToView(GetUsernameAsync(x.GameDeck.User.Shinden).Result, 0, _time))};
             }
