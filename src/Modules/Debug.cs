@@ -1335,6 +1335,43 @@ namespace Sanakan.Modules
             }
         }
 
+        [Command("mcard"), Priority(1), RequireDev]
+        [Summary("zamienia kartę")]
+        [Remarks("54861 SSS 100 100 1000")]
+        public async Task ModifyCardAsync([Summary("WID")]ulong id, [Summary("ranga karty")]Rarity rarity, [Summary("relacja")]double aff = 0,
+            [Summary("dodatkowy atak")]int atk = 0, [Summary("dodatkowa obrona")]int def = 0, [Summary("dodatkowe hp")]int hp = 0)
+        {
+            using (var db = new Database.DatabaseContext(Config))
+            {
+                var card = await db.Cards.AsQueryable().Include(x => x.Tags).AsSingleQuery().FirstOrDefaultAsync(x => x.Id == id);
+                if (card == null)
+                {
+                    await SafeReplyAsync("", embed: "W bazie nie ma takiej karty!".ToEmbedMessage(EMType.Error).Build());
+                    return;
+                }
+
+                card.PAS = PreAssembledFigure.None;
+                card.Quality = Quality.Broken;
+                card.FromFigure = false;
+                card.Rarity = rarity;
+
+                if (def != 0) card.DefenceBonus = def;
+                if (atk != 0) card.AttackBonus = atk;
+                if (hp != 0) card.HealthBonus = hp;
+                if (aff != 0) card.Affection = aff;
+
+                card.CalculateCardPower();
+
+                await db.SaveChangesAsync();
+
+                _waifu.DeleteCardImageIfExist(card);
+
+                QueryCacheManager.ExpireTag(new string[] { $"user-{card.GameDeckId}", "users" });
+
+                await SafeReplyAsync("", embed: $"Zmieniono: {card.GetString(false, false, true)}.".ToEmbedMessage(EMType.Success).Build());
+            }
+        }
+
         [Command("ctou"), Priority(1), RequireDev]
         [Summary("zamienia kartę na ultimate")]
         [Remarks("54861 Zeta 100 100 1000")]
@@ -1358,6 +1395,8 @@ namespace Sanakan.Modules
                 if (def != 0) card.DefenceBonus = def;
                 if (atk != 0) card.AttackBonus = atk;
                 if (hp != 0) card.HealthBonus = hp;
+
+                card.CalculateCardPower();
 
                 await db.SaveChangesAsync();
 
