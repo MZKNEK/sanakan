@@ -400,16 +400,29 @@ namespace Sanakan.Api.Controllers
 
                 var cardCount = new Dictionary<string, long>
                 {
-                    {Rarity.SSS.ToString(), user.GameDeck.Cards.Count(x => x.Rarity == Rarity.SSS)},
-                    {Rarity.SS.ToString(),  user.GameDeck.Cards.Count(x => x.Rarity == Rarity.SS)},
-                    {Rarity.S.ToString(),   user.GameDeck.Cards.Count(x => x.Rarity == Rarity.S)},
-                    {Rarity.A.ToString(),   user.GameDeck.Cards.Count(x => x.Rarity == Rarity.A)},
-                    {Rarity.B.ToString(),   user.GameDeck.Cards.Count(x => x.Rarity == Rarity.B)},
-                    {Rarity.C.ToString(),   user.GameDeck.Cards.Count(x => x.Rarity == Rarity.C)},
-                    {Rarity.D.ToString(),   user.GameDeck.Cards.Count(x => x.Rarity == Rarity.D)},
-                    {Rarity.E.ToString(),   user.GameDeck.Cards.Count(x => x.Rarity == Rarity.E)},
-                    {"max",                 user.GameDeck.MaxNumberOfCards},
-                    {"total",               user.GameDeck.Cards.Count}
+                    {Rarity.SSS.ToString(),      user.GameDeck.Cards.Count(x => x.Rarity == Rarity.SSS && !x.FromFigure)},
+                    {Rarity.SS.ToString(),       user.GameDeck.Cards.Count(x => x.Rarity == Rarity.SS)},
+                    {Rarity.S.ToString(),        user.GameDeck.Cards.Count(x => x.Rarity == Rarity.S)},
+                    {Rarity.A.ToString(),        user.GameDeck.Cards.Count(x => x.Rarity == Rarity.A)},
+                    {Rarity.B.ToString(),        user.GameDeck.Cards.Count(x => x.Rarity == Rarity.B)},
+                    {Rarity.C.ToString(),        user.GameDeck.Cards.Count(x => x.Rarity == Rarity.C)},
+                    {Rarity.D.ToString(),        user.GameDeck.Cards.Count(x => x.Rarity == Rarity.D)},
+                    {Rarity.E.ToString(),        user.GameDeck.Cards.Count(x => x.Rarity == Rarity.E)},
+                    {"max",                      user.GameDeck.MaxNumberOfCards},
+                    {"total",                    user.GameDeck.Cards.Count},
+                    {"ultimate",                 user.GameDeck.Cards.Count(x => x.FromFigure)},
+                    {Quality.Alpha.ToString(),   user.GameDeck.Cards.Count(x => x.Quality == Quality.Alpha)},
+                    {Quality.Beta.ToString(),    user.GameDeck.Cards.Count(x => x.Quality == Quality.Beta)},
+                    {Quality.Gamma.ToString(),   user.GameDeck.Cards.Count(x => x.Quality == Quality.Gamma)},
+                    {Quality.Delta.ToString(),   user.GameDeck.Cards.Count(x => x.Quality == Quality.Delta)},
+                    {Quality.Epsilon.ToString(), user.GameDeck.Cards.Count(x => x.Quality == Quality.Epsilon)},
+                    {Quality.Zeta.ToString(),    user.GameDeck.Cards.Count(x => x.Quality == Quality.Zeta)},
+                    {Quality.Eta.ToString(),     user.GameDeck.Cards.Count(x => x.Quality == Quality.Eta)},
+                    {Quality.Theta.ToString(),   user.GameDeck.Cards.Count(x => x.Quality == Quality.Theta)},
+                    {Quality.Jota.ToString(),    user.GameDeck.Cards.Count(x => x.Quality == Quality.Jota)},
+                    {Quality.Lambda.ToString(),  user.GameDeck.Cards.Count(x => x.Quality == Quality.Lambda)},
+                    {Quality.Sigma.ToString(),   user.GameDeck.Cards.Count(x => x.Quality == Quality.Sigma)},
+                    {Quality.Omega.ToString(),   user.GameDeck.Cards.Count(x => x.Quality == Quality.Omega)},
                 };
 
                 var wallet = new Dictionary<string, long>

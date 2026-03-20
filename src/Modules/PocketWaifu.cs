@@ -4144,7 +4144,8 @@ namespace Sanakan.Modules
                     return;
                 }
 
-                var sssCnt = bUser.GameDeck.Cards.Count(x => x.Rarity == Rarity.SSS);
+                var ultimate = bUser.GameDeck.Cards.Count(x => x.FromFigure);
+                var sssCnt = bUser.GameDeck.Cards.Count(x => x.Rarity == Rarity.SSS) - ultimate;
                 var ssCnt = bUser.GameDeck.Cards.Count(x => x.Rarity == Rarity.SS);
                 var sCnt = bUser.GameDeck.Cards.Count(x => x.Rarity == Rarity.S);
                 var aCnt = bUser.GameDeck.Cards.Count(x => x.Rarity == Rarity.A);
@@ -4152,6 +4153,19 @@ namespace Sanakan.Modules
                 var cCnt = bUser.GameDeck.Cards.Count(x => x.Rarity == Rarity.C);
                 var dCnt = bUser.GameDeck.Cards.Count(x => x.Rarity == Rarity.D);
                 var eCnt = bUser.GameDeck.Cards.Count(x => x.Rarity == Rarity.E);
+
+                var alCnt = bUser.GameDeck.Cards.Count(x => x.Quality == Quality.Alpha);
+                var beCnt = bUser.GameDeck.Cards.Count(x => x.Quality == Quality.Beta);
+                var gaCnt = bUser.GameDeck.Cards.Count(x => x.Quality == Quality.Gamma);
+                var deCnt = bUser.GameDeck.Cards.Count(x => x.Quality == Quality.Delta);
+                var epCnt = bUser.GameDeck.Cards.Count(x => x.Quality == Quality.Epsilon);
+                var zeCnt = bUser.GameDeck.Cards.Count(x => x.Quality == Quality.Zeta);
+                var etCnt = bUser.GameDeck.Cards.Count(x => x.Quality == Quality.Eta);
+                var thCnt = bUser.GameDeck.Cards.Count(x => x.Quality == Quality.Theta);
+                var jtCnt = bUser.GameDeck.Cards.Count(x => x.Quality == Quality.Jota);
+                var lbCnt = bUser.GameDeck.Cards.Count(x => x.Quality == Quality.Lambda);
+                var sgCnt = bUser.GameDeck.Cards.Count(x => x.Quality == Quality.Sigma);
+                var ogCnt = bUser.GameDeck.Cards.Count(x => x.Quality == Quality.Omega);
 
                 var resetCnt = bUser.GameDeck.Cards.Sum(x => x.RestartCnt);
 
@@ -4168,6 +4182,11 @@ namespace Sanakan.Modules
                 if (sssCnt > 0)
                     sssString = $"**SSS**: {sssCnt} ";
 
+                var ultString = "";
+                if (ultimate > 0)
+                    ultString = $"**[{ultimate}]** **α**: {alCnt} **β**: {beCnt} **γ**: {gaCnt} **Δ**: {deCnt}"
+                    + $"**ε**: {epCnt} **ζ**: {zeCnt} **η**: {etCnt} **Θ**: {thCnt} **ι**: {jtCnt} **λ**: {lbCnt} **Σ**: {sgCnt} **Ω**: {ogCnt}";
+
                 var embed = new EmbedBuilder()
                 {
                     Color = EMType.Bot.Color(),
@@ -4177,7 +4196,7 @@ namespace Sanakan.Modules
                                 + $"**Uwolnione**: {bUser.Stats.ReleasedCards}\n**Zniszczone**: {bUser.Stats.DestroyedCards}\n**Poświęcone**: {bUser.Stats.SacraficeCards}\n**Ulepszone**: {bUser.Stats.UpgaredCards}\n**Wyzwolone**: {bUser.Stats.UnleashedCards}\n\n"
                                 + $"**Restartów na kartach**: {resetCnt}\n\n"
                                 + $"**CT**: {bUser.GameDeck.CTCnt}\n**Karma**: {bUser.GameDeck.Karma:F}\n\n**Posiadane karty**: {bUser.GameDeck.Cards.Count}\n"
-                                + $"{sssString}**SS**: {ssCnt} **S**: {sCnt} **A**: {aCnt} **B**: {bCnt} **C**: {cCnt} **D**: {dCnt} **E**:{eCnt}\n\n"
+                                + $"{sssString}**SS**: {ssCnt} **S**: {sCnt} **A**: {aCnt} **B**: {bCnt} **C**: {cCnt} **D**: {dCnt} **E**:{eCnt}\n{ultString}\n\n"
                                 + $"**PVP** Rozegrane: {aPvp} Wygrane: {wPvp}\n**GR**: {globalString}\n**SR**: {seasonString}"
                 };
 
