@@ -332,11 +332,11 @@ namespace Sanakan.Extensions
 
         public static string GetDesc(this Figure fig)
         {
+            var widUrl = CardExtension._UseAlterUrl ? $"[{fig.CreatedCardId}](https://alter.sanakan.pl/card/{fig.CreatedCardId})" : $"[{fig.CreatedCardId}](https://waifu.sanakan.pl/#/card/{fig.CreatedCardId})";
             var selectedPart = $"**Aktywna część:**\n{fig.FocusedPart.ToName()} *{fig.PartExp:F} pk*\n\n";
             var name =  $"[{fig.Name}]({Shinden.API.Url.GetCharacterURL(fig.Character)})";
             var desc = fig.IsComplete
-                ? $"**Ukończona**: {fig.CompletionDate.ToShortDateTime()}\n"
-                + $"**WID**: [{fig.CreatedCardId}](https://waifu.sanakan.pl/#/card/{fig.CreatedCardId})"
+                ? $"**Ukończona**: {fig.CompletionDate.ToShortDateTime()}\n**WID**: {widUrl}"
                 : $"*{fig.ExpCnt:F} / {CardExtension.ExpToUpgrade(Rarity.SSS, true, fig.SkeletonQuality)} exp*\n\n"
                 + $"{(fig.AllPartsInstalled() ? "" : selectedPart)}"
                 + $"**Części:**\n"

@@ -672,7 +672,7 @@ namespace Sanakan.Services
             var fontCards = GetOrCreateFont(_latoBold, 17);
             foreach (Rarity rarity in Enum.GetValues(typeof(Rarity)))
             {
-                var cardCount = botUser.GameDeck.Cards.Count(x => x.Rarity == rarity);
+                var cardCount = botUser.GameDeck.Cards.Count(x => x.Rarity == rarity && !x.FromFigure);
                 if (cardCount > 0)
                 {
                     using var cimg = Image.Load(Dir.GetResource($"np/r{rarity}.png"));
@@ -683,7 +683,7 @@ namespace Sanakan.Services
             }
 
             startY = 246;
-            var sGap = 84;
+            var sGap = 50;
 
             var scalpelCount = botUser.GameDeck.Cards.Count(x => !string.IsNullOrEmpty(x.CustomImage));
             if (scalpelCount > 0)
@@ -697,6 +697,13 @@ namespace Sanakan.Services
             {
                 using var scissorsImg = GetCurrencyImage(scissorsCount, Dir.GetResource("np/mbor.png"));
                 image.Mutate(x => x.DrawImage(scissorsImg, new Point(startX + sGap, startY), 1));
+            }
+
+            var ultimateCount = botUser.GameDeck.Cards.Count(x => x.FromFigure);
+            if (ultimateCount > 0)
+            {
+                using var ultimateImg = GetCurrencyImage(ultimateCount, Dir.GetResource("np/mul.png"));
+                image.Mutate(x => x.DrawImage(ultimateImg, new Point(startX + (sGap * 2), startY), 1));
             }
 
             if (botUser.GameDeck.Waifu != 0)

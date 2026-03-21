@@ -4184,7 +4184,7 @@ namespace Sanakan.Modules
 
                 var ultString = "";
                 if (ultimate > 0)
-                    ultString = $"**[{ultimate}]** **α**: {alCnt} **β**: {beCnt} **γ**: {gaCnt} **Δ**: {deCnt}"
+                    ultString = $"**[{ultimate}]** **α**: {alCnt} **β**: {beCnt} **γ**: {gaCnt} **Δ**: {deCnt} "
                     + $"**ε**: {epCnt} **ζ**: {zeCnt} **η**: {etCnt} **Θ**: {thCnt} **ι**: {jtCnt} **λ**: {lbCnt} **Σ**: {sgCnt} **Ω**: {ogCnt}";
 
                 var embed = new EmbedBuilder()

@@ -17,6 +17,8 @@ namespace Sanakan.Extensions
 {
     public static class CardExtension
     {
+        public static readonly bool _UseAlterUrl = true;
+
         private static Dictionary<string, StarStyle> _starStyleParsingDic = new Dictionary<string, StarStyle>
         {
             {"full",    StarStyle.Full},
@@ -278,9 +280,13 @@ namespace Sanakan.Extensions
             return count;
         }
 
-        public static string GetPocketUrl(this Card card) => card.Id == 0 ? "": $"https://waifu.sanakan.pl/#/card/{card.Id}";
+        public static string GetPocketUrl(this Card card) => _UseAlterUrl ? card.GetPocketAlterUrl() : card.GetPocketWaifuUrl();
+        public static string GetPocketWaifuUrl(this Card card) => card.Id == 0 ? "": $"https://waifu.sanakan.pl/#/card/{card.Id}";
+        public static string GetPocketAlterUrl(this Card card) => card.Id == 0 ? "": $"https://alter.sanakan.pl/card/{card.Id}";
 
-        public static string GetIdWithUrl(this Card card) => card.Id == 0 ? "~~**[0]**~~": $"**[[{card.Id}](https://waifu.sanakan.pl/#/card/{card.Id})]**";
+        public static string GetIdWithUrl(this Card card) => _UseAlterUrl ? card.GetIdWithAlterUrl() : card.GetIdWithWaifuUrl();
+        public static string GetIdWithWaifuUrl(this Card card) => card.Id == 0 ? "~~**[0]**~~": $"**[[{card.Id}](https://waifu.sanakan.pl/#/card/{card.Id})]**";
+        public static string GetIdWithAlterUrl(this Card card) => card.Id == 0 ? "~~**[0]**~~": $"**[[{card.Id}](https://alter.sanakan.pl/card/{card.Id})]**";
 
         public static string GetDescSmall(this Card card, Services.PocketWaifu.TagHelper tags, ISystemTime time)
         {
