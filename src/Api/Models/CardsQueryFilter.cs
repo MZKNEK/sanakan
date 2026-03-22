@@ -10,7 +10,8 @@ namespace Sanakan.Api.Models
     {
         Id, IdDes, Name, NameDes, Rarity, RarityDes, Title, TitleDes, Health, HealthDes, HealthBase, HealthBaseDes,
         Atack, AtackDes, Defence, DefenceDes, Exp, ExpDes, Dere, DereDes, Picture, PictureDes, Relation, RelationDes,
-        CardPower, CardPowerDes, WhoWantsCount, WhoWantsCountDes, Blocked, BlockedDes
+        CardPower, CardPowerDes, WhoWantsCount, WhoWantsCountDes, Blocked, BlockedDes, Curse, CurseDes, Fatigue, FatigueDes,
+        Overflow, OverflowDes
     }
 
     public enum FilterTagsMethodType
@@ -56,6 +57,18 @@ namespace Sanakan.Api.Models
         {
             switch (type)
             {
+                case OrderType.Overflow:
+                    return query.OrderBy(x => x.BorderOverflow);
+                case OrderType.OverflowDes:
+                    return query.OrderByDescending(x => x.BorderOverflow);
+                case OrderType.Fatigue:
+                    return query.OrderBy(x => x.Fatigue);
+                case OrderType.FatigueDes:
+                    return query.OrderByDescending(x => x.Fatigue);
+                case OrderType.Curse:
+                    return query.OrderBy(x => x.Curse != CardCurse.None ? 1 : 0);
+                case OrderType.CurseDes:
+                    return query.OrderByDescending(x => x.Curse != CardCurse.None ? 1 : 0);
                 case OrderType.Atack:
                     return query.OrderBy(x => x.Attack + x.AttackBonus + (x.RestartCnt * 2d));
                 case OrderType.AtackDes:
@@ -97,9 +110,9 @@ namespace Sanakan.Api.Models
                 case OrderType.TitleDes:
                     return query.OrderByDescending(x => x.Title);
                 case OrderType.RarityDes:
-                    return query.OrderBy(x => x.Rarity).ThenByDescending(x => x.Quality);
+                    return query.OrderBy(x => x.Rarity).ThenByDescending(x => x.Quality).ThenByDescending(x => x.BorderOverflow);
                 case OrderType.Rarity:
-                    return query.OrderByDescending(x => x.Rarity).ThenBy(x => x.Quality);
+                    return query.OrderByDescending(x => x.Rarity).ThenBy(x => x.Quality).ThenBy(x => x.BorderOverflow);
                 case OrderType.Name:
                     return query.OrderBy(x => x.Name);
                 case OrderType.NameDes:
