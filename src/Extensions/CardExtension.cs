@@ -577,7 +577,7 @@ namespace Sanakan.Extensions
                 case Rarity.SSS:
                     if (fromFigure)
                     {
-                        return 1000 + (100 * (int)q);
+                        return 1000 + (50 * (int)q);
                     }
                     return 1000;
                 case Rarity.SS:
@@ -590,7 +590,7 @@ namespace Sanakan.Extensions
 
         public static double ExpToUpgrade(this Card card)
         {
-            return card.Rarity.ExpToUpgrade(card.FromFigure, card.Quality);
+            return card.Rarity.ExpToUpgrade(card.FromFigure, card.Quality.Fake(card.BorderOverflow));
         }
 
         public static int GetAttackMin(this Rarity rarity)
@@ -817,7 +817,7 @@ namespace Sanakan.Extensions
             }
 
             var currParams = card.AttackBonus + card.HealthBonus + card.DefenceBonus;
-            var maxParams = 4900 * ((int)card.Quality + card.BorderOverflow);
+            var maxParams = 4900 * (int)card.Quality.Fake(card.BorderOverflow);
             if (currParams + by >= maxParams)
             {
                 return ExecutionResult.FromError("nie można już bardziej zwiekszyć parametrów na tej karcie.");

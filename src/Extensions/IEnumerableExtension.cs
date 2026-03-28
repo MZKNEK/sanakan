@@ -42,6 +42,7 @@ namespace Sanakan.Extensions
 
         public static T Fake<T>(this T src, int overflow) where T : Enum
         {
+            if (overflow < 1) return src;
             T[] Arr = (T[])Enum.GetValues(src.GetType());
             int j = Array.IndexOf<T>(Arr, src) + overflow;
             return (Arr.Length==j) ? Arr[0] : Arr[j];

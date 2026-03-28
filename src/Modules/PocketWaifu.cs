@@ -926,7 +926,7 @@ namespace Sanakan.Modules
                         }
 
                         var cardToSacOverflowPower = (int)cardSac.Quality + cardSac.BorderOverflow;
-                        if ((!overflow && card.Quality != cardSac.Quality) || (overflow && cardOverflowPower < cardToSacOverflowPower))
+                        if (cardOverflowPower != cardToSacOverflowPower)
                         {
                             await SafeReplyAsync("", embed: $"{Context.User.Mention} ta karta nie ma takiej samej jakości jak karta którą chcesz ulepszyć.".ToEmbedMessage(EMType.Error).Build());
                             return;
@@ -949,7 +949,11 @@ namespace Sanakan.Modules
                     }
                     else
                     {
-                        card.Quality = card.Quality.Next();
+                        var cq = card.BorderOverflow > 0
+                            ? card.Quality.Fake(card.BorderOverflow)
+                            : card.Quality;
+
+                        card.Quality = card.Quality.Fake(card.BorderOverflow).Next();
                         card.BorderOverflow = 0;
                         card.BorderVariant = 0;
                     }
@@ -961,7 +965,7 @@ namespace Sanakan.Modules
 
                     card.Defence = _waifu.GetDefenceAfterLevelUp(card.Rarity, card.Defence);
                     card.Attack = _waifu.GetAttactAfterLevelUp(card.Rarity, card.Attack);
-                    card.UpgradesCnt -= (card.Rarity == Rarity.SS ? 5 : 1);
+                    card.UpgradesCnt -= card.Rarity == Rarity.SS ? 5 : 1;
                     card.Rarity = --card.Rarity;
                     card.Affection += 1;
                     card.ExpCnt = 0;
