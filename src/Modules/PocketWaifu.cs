@@ -1432,9 +1432,16 @@ namespace Sanakan.Modules
                     var itmType = _waifu.RandomizeItemFromMarket();
                     var item = itmType.ToItem(1);
 
-                    if (card.FromFigure && Services.Fun.TakeATry(5d))
+                    if (card.FromFigure)
                     {
-                        item = _waifu.RandomizeItemFromMarketUlt(card);
+                        if (Services.Fun.TakeATry(5d))
+                        {
+                            item = _waifu.RandomizeItemFromMarketUlt(card);
+                        }
+                        else if (Services.Fun.TakeATry(1d))
+                        {
+                            item = ItemType.IncreaseUltimateHealth.ToItem();
+                        }
                     }
                     botuser.GameDeck.AddItem(item);
 
@@ -1545,9 +1552,16 @@ namespace Sanakan.Modules
                     var itmType = _waifu.RandomizeItemFromBlackMarket();
                     var item = itmType.ToItem(1);
 
-                    if (card.FromFigure && Services.Fun.TakeATry(5d))
+                    if (card.FromFigure)
                     {
-                        item = _waifu.RandomizeItemFromMarketUlt(card);
+                        if (Services.Fun.TakeATry(5d))
+                        {
+                            item = _waifu.RandomizeItemFromMarketUlt(card);
+                        }
+                        else if (Services.Fun.TakeATry(1d))
+                        {
+                            item = ItemType.IncreaseUltimateHealth.ToItem();
+                        }
                     }
                     botuser.GameDeck.AddItem(item);
 
