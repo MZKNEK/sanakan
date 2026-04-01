@@ -398,6 +398,8 @@ namespace Sanakan.Api.Controllers
                     return new UserSiteProfile();
                 }
 
+                var countingTimer = System.Diagnostics.Stopwatch.StartNew();
+
                 var cardCount = new Dictionary<string, long>
                 {
                     {Rarity.SSS.ToString(),      user.GameDeck.Cards.Count(x => x.Rarity == Rarity.SSS && !x.FromFigure)},
@@ -447,10 +449,15 @@ namespace Sanakan.Api.Controllers
                 tags.Add(_tags.GetTag(TagType.TrashBin).ToView());
 
                 var username = await GetUsernameAsync(user.Shinden);
-                return new UserSiteProfile()
+                var profile = new UserSiteProfile
                 {
                     TagList = tags,
                     Wallet = wallet,
+                    TotalUltimateCardPower = user.GameDeck.Cards.Where(x => x.FromFigure).Sum(x => x.CardPower),
+                    TotalCardPower = user.GameDeck.Cards.Where(x => !x.FromFigure).Sum(x => x.CardPower),
+                    CameraCount = user.GameDeck.Cards.Count(x => x.IsAnimatedImage),
+                    ScissorsCount = user.GameDeck.Cards.Count(x => !string.IsNullOrEmpty(x.CustomBorder)),
+                    ScalpelCount = user.GameDeck.Cards.Count(x => !string.IsNullOrEmpty(x.CustomImage) && !x.IsAnimatedImage),
                     CardsCount = cardCount,
                     Karma = user.GameDeck.Karma,
                     GalleryOrder = galleryOrder,
@@ -463,8 +470,11 @@ namespace Sanakan.Api.Controllers
                     BackgroundImageUrl = user.GameDeck.BackgroundImageUrl,
                     ForegroundImageUrl = user.GameDeck.ForegroundImageUrl,
                     Expeditions = user.GameDeck.Cards.Where(x => x.Expedition != CardExpedition.None).ToExpeditionView(user, _expedition, username),
-                    Gallery = user.GameDeck.GetOrderedGalleryCards(galleryTag.Id).ToView(username, 0, _time)
+                    Gallery = user.GameDeck.GetOrderedGalleryCards(galleryTag.Id).ToView(username, 0, _time),
+                    DiagnosticMs = countingTimer.ElapsedMilliseconds
                 };
+
+                return profile;
             }
         }
 

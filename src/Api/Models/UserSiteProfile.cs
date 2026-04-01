@@ -69,6 +69,30 @@ namespace Sanakan.Api.Models
         /// Karma użytkownika
         /// </summary>
         public double Karma { get; set; }
+        /// <summary>
+        /// Zsumowana moc kart ultimate
+        /// </summary>
+        public double TotalUltimateCardPower { get; set; }
+        /// <summary>
+        /// Zsumowana moc kart
+        /// </summary>
+        public double TotalCardPower { get; set; }
+        /// <summary>
+        /// Liczba skalpeli
+        /// </summary>
+        public int ScalpelCount { get; set; }
+        /// <summary>
+        /// Liczba kamer
+        /// </summary>
+        public int CameraCount { get; set; }
+        /// <summary>
+        /// Liczba nożyczek
+        /// </summary>
+        public int ScissorsCount { get; set; }
+        /// <summary>
+        /// Jak długo był przeliczany profil
+        /// </summary>
+        public long DiagnosticMs { get; set; }
 
         public static ulong TryParseIds(string s)
         {
