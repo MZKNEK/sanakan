@@ -22,6 +22,10 @@ namespace Sanakan.Api.Models
         /// </summary>
         public CardFinalView Waifu { get; set; }
         /// <summary>
+        /// Karta z największą liczbą restartów
+        /// </summary>
+        public CardFinalView CardWithMostRestarts { get; set; }
+        /// <summary>
         /// Galeria
         /// </summary>
         public List<CardFinalView> Gallery { get; set; }

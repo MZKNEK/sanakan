@@ -463,6 +463,7 @@ namespace Sanakan.Api.Controllers
                     GalleryOrder = galleryOrder,
                     UserTitle = user.GameDeck.GetUserNameStatus(),
                     Waifu = user.GameDeck.GetWaifuCard().ToView(username, 0, _time),
+                    CardWithMostRestarts = user.GameDeck.Cards.Where(x => x.RestartCnt > 0).OrderByDescending(x => x.RestartCnt).FirstOrDefault().ToView(username, 0, _time),
                     ForegroundColor = user.GameDeck.ForegroundColor,
                     ForegroundPosition = user.GameDeck.ForegroundPosition,
                     BackgroundPosition = user.GameDeck.BackgroundPosition,
