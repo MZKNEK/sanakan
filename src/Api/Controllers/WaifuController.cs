@@ -436,6 +436,24 @@ namespace Sanakan.Api.Controllers
                     {"SC", user.ScCnt},
                 };
 
+                var misc = new Dictionary<string, long>
+                {
+                    {"upgraded",        user.Stats.UpgaredCards},
+                    {"upgradedsss",     user.Stats.UpgradedToSSS},
+                    {"sacrafice",       user.Stats.SacraficeCards},
+                    {"destroyed",       user.Stats.DestroyedCards},
+                    {"unleashed",       user.Stats.UnleashedCards},
+                    {"released",        user.Stats.ReleasedCards},
+                    {"yami",            user.Stats.YamiUpgrades},
+                    {"raito",           user.Stats.RaitoUpgrades},
+                    {"yato",            user.Stats.YatoUpgrades},
+                    {"packs",           user.Stats.OpenedBoosterPacks},
+                    {"packsactiv",      user.Stats.OpenedBoosterPacksActivity},
+                    {"premiumwaifu",    user.GameDeck.PremiumWaifu != 0 ? 1 : 0},
+                    {"lottery",         user.Stats.LotteryTicketsUsed},
+                    {"reversedkarma",   user.Stats.ReversedKarmaCnt},
+                };
+
                 var galleryOrder = string.IsNullOrEmpty(user.GameDeck.GalleryOrderedIds) ? new List<ulong>()
                     : user.GameDeck.GalleryOrderedIds.Split(" ").Select(x => UserSiteProfile.TryParseIds(x)).ToList();
 
@@ -461,9 +479,13 @@ namespace Sanakan.Api.Controllers
                     CardsCount = cardCount,
                     Karma = user.GameDeck.Karma,
                     GalleryOrder = galleryOrder,
+                    MiscStats = misc,
+                    RestartsCount = user.GameDeck.Cards.Sum(x => x.RestartCnt),
+                    TotalOverflowCount = user.GameDeck.Cards.Sum(x => x.BorderOverflow),
                     UserTitle = user.GameDeck.GetUserNameStatus(),
                     Waifu = user.GameDeck.GetWaifuCard().ToView(username, 0, _time),
                     CardWithMostRestarts = user.GameDeck.Cards.Where(x => x.RestartCnt > 0).OrderByDescending(x => x.RestartCnt).FirstOrDefault().ToView(username, 0, _time),
+                    MostPowerfulCard = user.GameDeck.Cards.OrderByDescending(x => x.CardPower).FirstOrDefault().ToView(username, 0, _time),
                     ForegroundColor = user.GameDeck.ForegroundColor,
                     ForegroundPosition = user.GameDeck.ForegroundPosition,
                     BackgroundPosition = user.GameDeck.BackgroundPosition,

@@ -26,6 +26,10 @@ namespace Sanakan.Api.Models
         /// </summary>
         public CardFinalView CardWithMostRestarts { get; set; }
         /// <summary>
+        /// Karta z obliczoną największa mocą
+        /// </summary>
+        public CardFinalView MostPowerfulCard { get; set; }
+        /// <summary>
         /// Galeria
         /// </summary>
         public List<CardFinalView> Gallery { get; set; }
@@ -93,6 +97,18 @@ namespace Sanakan.Api.Models
         /// Liczba nożyczek
         /// </summary>
         public int ScissorsCount { get; set; }
+        /// <summary>
+        /// Liczba restartów kart
+        /// </summary>
+        public int RestartsCount { get; set; }
+        /// <summary>
+        /// Liczba ulepszeń typu overflow
+        /// </summary>
+        public int TotalOverflowCount { get; set; }
+        /// <summary>
+        /// Inne trzeciorzędne statystyki
+        /// </summary>
+        public Dictionary<string, long> MiscStats { get; set; }
         /// <summary>
         /// Jak długo był przeliczany profil
         /// </summary>
