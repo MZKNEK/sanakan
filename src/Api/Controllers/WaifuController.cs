@@ -384,7 +384,7 @@ namespace Sanakan.Api.Controllers
             using (var db = new Database.DatabaseContext(_config))
             {
                 var user = await db.Users.AsQueryable().AsSplitQuery().Where(x => x.Shinden == id).Include(x => x.GameDeck).ThenInclude(x => x.Tags)
-                    .Include(x => x.GameDeck).ThenInclude(x => x.Cards).ThenInclude(x => x.Tags).AsNoTracking().FirstOrDefaultAsync();
+                    .Include(x => x.GameDeck).ThenInclude(x => x.Cards).ThenInclude(x => x.Tags).Include(x => x.Stats).AsNoTracking().FirstOrDefaultAsync();
 
                 if (user == null)
                 {
