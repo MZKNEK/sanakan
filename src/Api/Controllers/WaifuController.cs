@@ -151,10 +151,10 @@ namespace Sanakan.Api.Controllers
 
                 query = CardsQueryFilter.Use(filter.OrderBy, query);
                 query = FilterCardsByIds(query, filter);
+                query = FilterCardsByTags(query, filter);
+                var cards = await query.Skip((int)offset).Take((int)count).ToListAsync();
 
-                var cards = await FilterCardsByTags(query, filter).ToListAsync();
-
-                return new FilteredCards{TotalCards = cards.Count, Cards = cards.Skip((int)offset).Take((int)count).Select(x => x.ToView(GetUsernameAsync(x.GameDeck.User.Shinden).Result, 0, _time))};
+                return new FilteredCards{TotalCards = query.Count(), Cards = cards.Select(x => x.ToView(GetUsernameAsync(x.GameDeck.User.Shinden).Result, 0, _time))};
             }
         }
 
@@ -179,7 +179,9 @@ namespace Sanakan.Api.Controllers
                 query = CardsQueryFilter.Use(filter.OrderBy, query);
                 query = FilterCardsByIds(query, filter);
 
-                var cards = await FilterCardsByTags(query, filter).ToListAsync();
+                var expireTime = new MemoryCacheEntryOptions().SetAbsoluteExpiration(_time.Now().AddHours(4));
+                var cached = await FilterCardsByTags(query, filter).FromCacheAsync(expireTime, $"ultimate-cards");
+                var cards = cached.ToList();
 
                 return new FilteredCards{TotalCards = cards.Count, Cards = cards.Skip((int)offset).Take((int)count).Select(x => x.ToView(GetUsernameAsync(x.GameDeck.User.Shinden).Result, 0, _time))};
             }
@@ -206,7 +208,9 @@ namespace Sanakan.Api.Controllers
                 query = CardsQueryFilter.Use(filter.OrderBy, query);
                 query = FilterCardsByIds(query, filter);
 
-                var cards = await FilterCardsByTags(query, filter).ToListAsync();
+                var expireTime = new MemoryCacheEntryOptions().SetAbsoluteExpiration(_time.Now().AddHours(8));
+                var cached = await FilterCardsByTags(query, filter).FromCacheAsync(expireTime, $"unique-cards");
+                var cards = cached.ToList();
 
                 return new FilteredCards{TotalCards = cards.Count, Cards = cards.Skip((int)offset).Take((int)count).Select(x => x.ToView(GetUsernameAsync(x.GameDeck.User.Shinden).Result, 0, _time))};
             }
@@ -248,11 +252,12 @@ namespace Sanakan.Api.Controllers
 
                 query = CardsQueryFilter.Use(filter.OrderBy, query);
                 query = FilterCardsByIds(query, filter);
+                query = FilterCardsByTags(query, filter);
 
                 var username = await GetUsernameAsync(user.Shinden);
-                var cards = await FilterCardsByTags(query, filter).ToListAsync();
+                var cards = await query.Skip((int)offset).Take((int)count).ToListAsync();
 
-                return new FilteredCards{TotalCards = cards.Count, Cards = cards.Skip((int)offset).Take((int)count).ToView(username, id, _time)};
+                return new FilteredCards{TotalCards = query.Count(), Cards = cards.ToView(username, id, _time)};
             }
         }
 
@@ -384,9 +389,11 @@ namespace Sanakan.Api.Controllers
             using (var db = new Database.DatabaseContext(_config))
             {
                 var countingTimer = System.Diagnostics.Stopwatch.StartNew();
-
-                var user = await db.Users.AsQueryable().AsSplitQuery().Where(x => x.Shinden == id).Include(x => x.GameDeck).ThenInclude(x => x.Tags).Include(x => x.GameDeck)
-                    .ThenInclude(x => x.PvPStats).Include(x => x.GameDeck).ThenInclude(x => x.Cards).ThenInclude(x => x.Tags).Include(x => x.Stats).AsNoTracking().FirstOrDefaultAsync();
+                var expireTime = new MemoryCacheEntryOptions().SetAbsoluteExpiration(_time.Now().AddMinutes(30));
+                var cached = await db.Users.AsQueryable().AsSplitQuery().Where(x => x.Shinden == id).Include(x => x.GameDeck).ThenInclude(x => x.Tags).Include(x => x.GameDeck)
+                    .ThenInclude(x => x.PvPStats).Include(x => x.GameDeck).ThenInclude(x => x.Cards).ThenInclude(x => x.Tags).Include(x => x.Stats).AsNoTracking()
+                    .FromCacheAsync(expireTime, $"user-profile-{id}");
+                var user = cached.FirstOrDefault();
 
                 if (user == null)
                 {
