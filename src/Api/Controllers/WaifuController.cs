@@ -480,6 +480,7 @@ namespace Sanakan.Api.Controllers
                     Karma = user.GameDeck.Karma,
                     GalleryOrder = galleryOrder,
                     MiscStats = misc,
+                    UniqueCardsCount = user.GameDeck.Cards.Count(x => x.Unique),
                     RestartsCount = user.GameDeck.Cards.Sum(x => x.RestartCnt),
                     TotalOverflowCount = user.GameDeck.Cards.Sum(x => x.BorderOverflow),
                     UserTitle = user.GameDeck.GetUserNameStatus(),

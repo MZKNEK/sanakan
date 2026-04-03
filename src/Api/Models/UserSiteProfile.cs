@@ -106,6 +106,10 @@ namespace Sanakan.Api.Models
         /// </summary>
         public int TotalOverflowCount { get; set; }
         /// <summary>
+        /// Liczba unikalnych kart
+        /// </summary>
+        public int UniqueCardsCount { get; set; }
+        /// <summary>
         /// Inne trzeciorzędne statystyki
         /// </summary>
         public Dictionary<string, long> MiscStats { get; set; }
