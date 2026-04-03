@@ -383,8 +383,10 @@ namespace Sanakan.Api.Controllers
         {
             using (var db = new Database.DatabaseContext(_config))
             {
-                var user = await db.Users.AsQueryable().AsSplitQuery().Where(x => x.Shinden == id).Include(x => x.GameDeck).ThenInclude(x => x.Tags)
-                    .Include(x => x.GameDeck).ThenInclude(x => x.Cards).ThenInclude(x => x.Tags).Include(x => x.Stats).AsNoTracking().FirstOrDefaultAsync();
+                var countingTimer = System.Diagnostics.Stopwatch.StartNew();
+
+                var user = await db.Users.AsQueryable().AsSplitQuery().Where(x => x.Shinden == id).Include(x => x.GameDeck).ThenInclude(x => x.Tags).Include(x => x.GameDeck)
+                    .ThenInclude(x => x.PvPStats).Include(x => x.GameDeck).ThenInclude(x => x.Cards).ThenInclude(x => x.Tags).Include(x => x.Stats).AsNoTracking().FirstOrDefaultAsync();
 
                 if (user == null)
                 {
@@ -398,7 +400,6 @@ namespace Sanakan.Api.Controllers
                     return new UserSiteProfile();
                 }
 
-                var countingTimer = System.Diagnostics.Stopwatch.StartNew();
                 var cardDetails = _waifu.GetCardsDetails(user.GameDeck.Cards);
                 var cardCount = cardDetails.CardsByRarityAndQuality;
                 cardCount.Add("max", user.GameDeck.MaxNumberOfCards);
@@ -414,6 +415,7 @@ namespace Sanakan.Api.Controllers
                     {"SC", user.ScCnt},
                 };
 
+                var newPvp = user.GameDeck.PvPStats.Where(x => x.Type == FightType.NewVersus).ToList();
                 var misc = new Dictionary<string, long>
                 {
                     {"upgraded",        user.Stats.UpgaredCards},
@@ -430,6 +432,10 @@ namespace Sanakan.Api.Controllers
                     {"premiumwaifu",    user.GameDeck.PremiumWaifu != 0 ? 1 : 0},
                     {"lottery",         user.Stats.LotteryTicketsUsed},
                     {"reversedkarma",   user.Stats.ReversedKarmaCnt},
+                    {"pvpplayed",       newPvp.Count},
+                    {"pvpwon",          newPvp.Count(x => x.Result == FightResult.Win)},
+                    {"pvpglobal",       user.GameDeck.GlobalPVPRank},
+                    {"pvpseason",       user.IsPVPSeasonalRankActive(_time.Now()) ? user.GameDeck.SeasonalPVPRank : 0},
                 };
 
                 var galleryOrder = string.IsNullOrEmpty(user.GameDeck.GalleryOrderedIds) ? new List<ulong>()
