@@ -399,33 +399,11 @@ namespace Sanakan.Api.Controllers
                 }
 
                 var countingTimer = System.Diagnostics.Stopwatch.StartNew();
-
-                var cardCount = new Dictionary<string, long>
-                {
-                    {Rarity.SSS.ToString(),      user.GameDeck.Cards.Count(x => x.Rarity == Rarity.SSS && !x.FromFigure)},
-                    {Rarity.SS.ToString(),       user.GameDeck.Cards.Count(x => x.Rarity == Rarity.SS)},
-                    {Rarity.S.ToString(),        user.GameDeck.Cards.Count(x => x.Rarity == Rarity.S)},
-                    {Rarity.A.ToString(),        user.GameDeck.Cards.Count(x => x.Rarity == Rarity.A)},
-                    {Rarity.B.ToString(),        user.GameDeck.Cards.Count(x => x.Rarity == Rarity.B)},
-                    {Rarity.C.ToString(),        user.GameDeck.Cards.Count(x => x.Rarity == Rarity.C)},
-                    {Rarity.D.ToString(),        user.GameDeck.Cards.Count(x => x.Rarity == Rarity.D)},
-                    {Rarity.E.ToString(),        user.GameDeck.Cards.Count(x => x.Rarity == Rarity.E)},
-                    {"max",                      user.GameDeck.MaxNumberOfCards},
-                    {"total",                    user.GameDeck.Cards.Count},
-                    {"ultimate",                 user.GameDeck.Cards.Count(x => x.FromFigure)},
-                    {Quality.Alpha.ToString(),   user.GameDeck.Cards.Count(x => x.Quality == Quality.Alpha)},
-                    {Quality.Beta.ToString(),    user.GameDeck.Cards.Count(x => x.Quality == Quality.Beta)},
-                    {Quality.Gamma.ToString(),   user.GameDeck.Cards.Count(x => x.Quality == Quality.Gamma)},
-                    {Quality.Delta.ToString(),   user.GameDeck.Cards.Count(x => x.Quality == Quality.Delta)},
-                    {Quality.Epsilon.ToString(), user.GameDeck.Cards.Count(x => x.Quality == Quality.Epsilon)},
-                    {Quality.Zeta.ToString(),    user.GameDeck.Cards.Count(x => x.Quality == Quality.Zeta)},
-                    {Quality.Eta.ToString(),     user.GameDeck.Cards.Count(x => x.Quality == Quality.Eta)},
-                    {Quality.Theta.ToString(),   user.GameDeck.Cards.Count(x => x.Quality == Quality.Theta)},
-                    {Quality.Jota.ToString(),    user.GameDeck.Cards.Count(x => x.Quality == Quality.Jota)},
-                    {Quality.Lambda.ToString(),  user.GameDeck.Cards.Count(x => x.Quality == Quality.Lambda)},
-                    {Quality.Sigma.ToString(),   user.GameDeck.Cards.Count(x => x.Quality == Quality.Sigma)},
-                    {Quality.Omega.ToString(),   user.GameDeck.Cards.Count(x => x.Quality == Quality.Omega)},
-                };
+                var cardDetails = _waifu.GetCardsDetails(user.GameDeck.Cards);
+                var cardCount = cardDetails.CardsByRarityAndQuality;
+                cardCount.Add("max", user.GameDeck.MaxNumberOfCards);
+                cardCount.Add("total", cardDetails.TotalCardsCount);
+                cardCount.Add("ultimate", cardDetails.UltimateCardsCount);
 
                 var wallet = new Dictionary<string, long>
                 {
@@ -471,29 +449,29 @@ namespace Sanakan.Api.Controllers
                 {
                     TagList = tags,
                     Wallet = wallet,
-                    TotalUltimateCardPower = user.GameDeck.Cards.Where(x => x.FromFigure).Sum(x => x.CardPower),
-                    TotalCardPower = user.GameDeck.Cards.Where(x => !x.FromFigure).Sum(x => x.CardPower),
-                    CameraCount = user.GameDeck.Cards.Count(x => x.IsAnimatedImage),
-                    ScissorsCount = user.GameDeck.Cards.Count(x => !string.IsNullOrEmpty(x.CustomBorder)),
-                    ScalpelCount = user.GameDeck.Cards.Count(x => !string.IsNullOrEmpty(x.CustomImage) && !x.IsAnimatedImage),
+                    TotalUltimateCardPower = cardDetails.TotalUltimateCardPower,
+                    TotalCardPower = cardDetails.TotalNormalCardPower,
+                    CameraCount = cardDetails.CameraCount,
+                    ScissorsCount = cardDetails.ScissorsCount,
+                    ScalpelCount = cardDetails.ScalpelCount,
+                    UniqueCardsCount = cardDetails.UniqueCardsCount,
+                    RestartsCount = cardDetails.RestartCount,
+                    TotalOverflowCount = cardDetails.OverflowCount,
+                    CardWithMostRestarts = cardDetails.CardWithMostRestarts.ToView(username, 0, _time),
+                    MostPowerfulCard = cardDetails.MostPowerfulCard.ToView(username, 0, _time),
+                    Expeditions = cardDetails.CardsOnExpeditions.ToExpeditionView(user, _expedition, username),
                     CardsCount = cardCount,
                     Karma = user.GameDeck.Karma,
                     GalleryOrder = galleryOrder,
                     MiscStats = misc,
-                    UniqueCardsCount = user.GameDeck.Cards.Count(x => x.Unique),
-                    RestartsCount = user.GameDeck.Cards.Sum(x => x.RestartCnt),
-                    TotalOverflowCount = user.GameDeck.Cards.Sum(x => x.BorderOverflow),
                     UserTitle = user.GameDeck.GetUserNameStatus(),
                     Waifu = user.GameDeck.GetWaifuCard().ToView(username, 0, _time),
-                    CardWithMostRestarts = user.GameDeck.Cards.Where(x => x.RestartCnt > 0).OrderByDescending(x => x.RestartCnt).FirstOrDefault().ToView(username, 0, _time),
-                    MostPowerfulCard = user.GameDeck.Cards.OrderByDescending(x => x.CardPower).FirstOrDefault().ToView(username, 0, _time),
                     ForegroundColor = user.GameDeck.ForegroundColor,
                     ForegroundPosition = user.GameDeck.ForegroundPosition,
                     BackgroundPosition = user.GameDeck.BackgroundPosition,
                     ExchangeConditions = user.GameDeck.ExchangeConditions,
                     BackgroundImageUrl = user.GameDeck.BackgroundImageUrl,
                     ForegroundImageUrl = user.GameDeck.ForegroundImageUrl,
-                    Expeditions = user.GameDeck.Cards.Where(x => x.Expedition != CardExpedition.None).ToExpeditionView(user, _expedition, username),
                     Gallery = user.GameDeck.GetOrderedGalleryCards(galleryTag.Id).ToView(username, 0, _time),
                     DiagnosticMs = countingTimer.ElapsedMilliseconds
                 };

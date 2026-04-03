@@ -369,6 +369,85 @@ namespace Sanakan.Services.PocketWaifu
             TimeSpan.FromDays(5));
         }
 
+        public CardCollectionInfo GetCardsDetails(IEnumerable<Card> cards)
+        {
+            int prevRestarts = 0;
+            double prevPower = 0;
+            var collectionInfo = new CardCollectionInfo();
+            foreach (var card in cards)
+            {
+                collectionInfo.TotalCardsCount++;
+                collectionInfo.RestartCount += card.RestartCnt;
+                collectionInfo.OverflowCount += card.BorderOverflow;
+
+                if (card.Unique)
+                {
+                    collectionInfo.UniqueCardsCount++;
+                }
+
+                string rqKey = string.Empty;
+                if (card.FromFigure)
+                {
+                    collectionInfo.UltimateCardsCount++;
+                    collectionInfo.TotalUltimateCardPower += card.CardPower;
+                    if (card.BorderOverflow > 0)
+                    {
+                        rqKey = card.Quality.ToString() + $"+{card.BorderOverflow}";
+                    }
+                    else
+                    {
+                        rqKey = card.Quality.ToString();
+                    }
+                }
+                else
+                {
+                    collectionInfo.TotalNormalCardPower += card.CardPower;
+                    rqKey = card.Rarity.ToString();
+                }
+
+                if (!string.IsNullOrEmpty(card.CustomImage))
+                {
+                    if (card.IsAnimatedImage)
+                    {
+                        collectionInfo.CameraCount++;
+                    }
+                    else
+                    {
+                        collectionInfo.ScalpelCount++;
+                    }
+                }
+
+                if (!string.IsNullOrEmpty(card.CustomBorder))
+                {
+                    collectionInfo.ScissorsCount++;
+                }
+
+                if (card.Expedition != CardExpedition.None)
+                {
+                    collectionInfo.CardsOnExpeditions.Add(card);
+                }
+
+                if (prevRestarts < card.RestartCnt)
+                {
+                    prevRestarts = card.RestartCnt;
+                    collectionInfo.CardWithMostRestarts = card;
+                }
+
+                if (prevPower < card.CardPower)
+                {
+                    prevPower = card.CardPower;
+                    collectionInfo.MostPowerfulCard = card;
+                }
+
+                if (!collectionInfo.CardsByRarityAndQuality.TryAdd(rqKey, 1))
+                {
+                    collectionInfo.CardsByRarityAndQuality[rqKey]++;
+                }
+            }
+
+            return collectionInfo;
+        }
+
         static public double GetDereDmgMultiplier(Card atk, Card def) => _dereDmgRelation[(int)def.Dere, (int)atk.Dere];
 
         public ItemRecipe GetItemRecipe(RecipeType type) => _recipes[type];
