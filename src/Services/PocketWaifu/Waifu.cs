@@ -2218,7 +2218,7 @@ namespace Sanakan.Services.PocketWaifu
                     return Fun.TakeATry(20d);
 
                 case CardExpedition.UltimateMedium:
-                    return Fun.TakeATry(25d);
+                    return Fun.TakeATry(15d);
 
                 case CardExpedition.UltimateHard:
                     return Fun.TakeATry(40d);
