@@ -1496,6 +1496,24 @@ namespace Sanakan.Modules
             }
         }
 
+        [Command("karma"), Priority(1), RequireDev]
+        [Summary("dodaje podaną wartość karmy użytkownikowi")]
+        [Remarks("Sniku 10000")]
+        public async Task ChangeUserTcAsync([Summary("nazwa użytkownika")]SocketGuildUser user, [Summary("karma")]double amount)
+        {
+            using (var db = new Database.DatabaseContext(Config))
+            {
+                var botuser = await db.GetUserOrCreateSimpleAsync(user.Id);
+                botuser.GameDeck.Karma += amount;
+
+                await db.SaveChangesAsync();
+
+                QueryCacheManager.ExpireTag(new string[] { $"user-{botuser.Id}", "users" });
+
+                await SafeReplyAsync("", embed: $"{user.Mention} ma teraz {botuser.GameDeck.Karma} karmy dla ptaków".ToEmbedMessage(EMType.Success).Build());
+            }
+        }
+
         [Command("tc"), Priority(1), RequireDev]
         [Summary("dodaje podaną wartość TC użytkownikowi")]
         [Remarks("Sniku 10000")]

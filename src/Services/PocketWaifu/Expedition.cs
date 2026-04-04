@@ -534,10 +534,10 @@ namespace Sanakan.Services.PocketWaifu
                 CardExpedition.ExtremeItemWithExp   => 0.0385,
                 CardExpedition.LightItemWithExp     => 0.008,
                 CardExpedition.LightItems           => 0.008,
-                CardExpedition.LightExp             => 0.008,
+                CardExpedition.LightExp             => -0.0064,
                 CardExpedition.DarkItemWithExp      => 0.0045,
                 CardExpedition.DarkItems            => 0.0045,
-                CardExpedition.DarkExp              => 0.0045,
+                CardExpedition.DarkExp              => -0.0064,
                 CardExpedition.UltimateEasy         => 0.061,
                 CardExpedition.UltimateMedium       => 0.072,
                 CardExpedition.UltimateHard         => 0.141,
@@ -547,8 +547,8 @@ namespace Sanakan.Services.PocketWaifu
 
             var dereMod = card.Dere switch
             {
-                Dere.Kamidere => 0.7,
-                Dere.Yandere  => 1.3,
+                Dere.Kamidere => 0.5,
+                Dere.Yandere  => 1.75,
                 _ => 1
             };
 
@@ -624,6 +624,7 @@ namespace Sanakan.Services.PocketWaifu
         public double GetMaxPossibleLengthOfExpedition(User user, Card card, CardExpedition expedition = CardExpedition.None)
         {
             expedition = expedition == CardExpedition.None ? card.Expedition : expedition;
+            var karmaDebuff = Math.Max(0, (Math.Abs(user.GameDeck.Karma) - 10000d) / 20000d);
             var costPerMinute = GetAffectionCostOfExpedition(1, card);
             var costOffset = user.GameDeck.IsNeutral() ? 23d : 6d;
             var karmaBonus = user.GameDeck.Karma / 200d;
@@ -632,7 +633,7 @@ namespace Sanakan.Services.PocketWaifu
             switch (expedition)
             {
                 case CardExpedition.NormalItemWithExp:
-                    karmaBonus = -Math.Abs(karmaBonus);
+                    karmaBonus = -Math.Abs(karmaBonus * 0.5);
                     break;
 
                 case CardExpedition.ExtremeItemWithExp:
@@ -664,6 +665,7 @@ namespace Sanakan.Services.PocketWaifu
                     break;
             }
 
+            costPerMinute *= karmaDebuff + 1;
             costPerMinute *= card.HasImage() ? 1 : 4;
             fuel += costOffset + karmaBonus;
             var time = fuel / costPerMinute;

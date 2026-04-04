@@ -473,6 +473,8 @@ namespace Sanakan.Extensions
 
         public static string GetUserNameStatus(this GameDeck deck)
         {
+            if (deck.Karma >= 30000) return $"Bugu";
+            if (deck.Karma >= 10000) return $"Aniołeczek";
             if (deck.Karma >= 2000) return $"Papaj";
             if (deck.Karma >= 1600) return $"Miłościwy kumpel";
             if (deck.Karma >= 1200) return $"Oślepiony bugiem";
@@ -483,6 +485,8 @@ namespace Sanakan.Extensions
             if (deck.Karma >= 50) return $"Biały koleś";
             if (deck.Karma >= 10) return $"Pantofel";
             if (deck.Karma >= 5) return $"Lizus";
+            if (deck.Karma <= -30000) return $"Diabuł";
+            if (deck.Karma <= -10000) return $"Diabołeczek";
             if (deck.Karma <= -2000) return $"Mroczny panocek";
             if (deck.Karma <= -1600) return $"Nienawistny koleżka";
             if (deck.Karma <= -1200) return $"Mściwy ślepiec";
@@ -512,8 +516,10 @@ namespace Sanakan.Extensions
                 .OrderBy(x => x.Rarity).ThenByDescending(x => x.Quality).ThenBy(x => !x.IsAnimatedImage).ThenBy(x => x.Character);
         }
 
+        public static bool IsSupaBad(this GameDeck deck) => deck.Karma <= -5000;
         public static bool CanCreateDemon(this GameDeck deck) => deck.Karma <= -2000;
 
+        public static bool IsSupaGood(this GameDeck deck) => deck.Karma >= 5000;
         public static bool CanCreateAngel(this GameDeck deck) => deck.Karma >= 2000;
 
         public static bool IsMarketDisabled(this GameDeck deck) => deck.Karma <= -400;
