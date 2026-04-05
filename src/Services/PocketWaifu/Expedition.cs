@@ -104,9 +104,9 @@ namespace Sanakan.Services.PocketWaifu
             {ItemDropType.Legendary, new List<(ItemType, int)>
                 {
                     (ItemType.LotteryTicket,           2),
-                    (ItemType.IncreaseUltimateAttack,  4),
-                    (ItemType.IncreaseUltimateDefence, 3),
-                    (ItemType.IncreaseUltimateHealth,  1),
+                    (ItemType.IncreaseUltimateAttack,  2),
+                    (ItemType.IncreaseUltimateDefence, 2),
+                    (ItemType.IncreaseUltimateHealth,  4),
                 }.ToRealList()
             },
         };
@@ -355,12 +355,12 @@ namespace Sanakan.Services.PocketWaifu
             },
             {CardExpedition.UltimateHard, new List<(Quality, int)>
                 {
-                    (Quality.Alpha,    550),
-                    (Quality.Beta,     200),
-                    (Quality.Gamma,    130),
-                    (Quality.Delta,    60),
-                    (Quality.Epsilon,  36),
-                    (Quality.Zeta,     10),
+                    (Quality.Alpha,    290),
+                    (Quality.Beta,     380),
+                    (Quality.Gamma,    185),
+                    (Quality.Delta,    70),
+                    (Quality.Epsilon,  41),
+                    (Quality.Zeta,     20),
                     (Quality.Eta,      6),
                     (Quality.Theta,    4),
                     (Quality.Jota,     3),
@@ -369,18 +369,17 @@ namespace Sanakan.Services.PocketWaifu
             },
             {CardExpedition.UltimateHardcore, new List<(Quality, int)>
                 {
-                    (Quality.Alpha,    2000),
-                    (Quality.Beta,     3000),
-                    (Quality.Gamma,    2000),
-                    (Quality.Delta,    900),
+                    (Quality.Beta,     2700),
+                    (Quality.Gamma,    3300),
+                    (Quality.Delta,    1440),
                     (Quality.Epsilon,  900),
-                    (Quality.Zeta,     500),
-                    (Quality.Eta,      300),
-                    (Quality.Theta,    250),
-                    (Quality.Jota,     130),
-                    (Quality.Lambda,   15),
-                    (Quality.Sigma,    4),
-                    (Quality.Omega,    1),
+                    (Quality.Zeta,     600),
+                    (Quality.Eta,      400),
+                    (Quality.Theta,    350),
+                    (Quality.Jota,     230),
+                    (Quality.Lambda,   68),
+                    (Quality.Sigma,    10),
+                    (Quality.Omega,    2),
                 }.ToRealList()
             }
         };
@@ -397,8 +396,8 @@ namespace Sanakan.Services.PocketWaifu
             var checkCurse = expedition switch
             {
                 CardExpedition.ExtremeItemWithExp   => Fun.TakeATry(5d),
-                CardExpedition.UltimateMedium       => Fun.TakeATry(10d),
-                CardExpedition.UltimateHard         => Fun.TakeATry(25d),
+                CardExpedition.UltimateMedium       => Fun.TakeATry(5d),
+                CardExpedition.UltimateHard         => Fun.TakeATry(20d),
                 CardExpedition.UltimateHardcore     => Fun.TakeATry(35d),
                 _ => false
             };
@@ -534,8 +533,8 @@ namespace Sanakan.Services.PocketWaifu
                 CardExpedition.LightItems           => specialDere ? 20 : 16,
                 CardExpedition.DarkItems            => specialDere ? 20 : 16,
                 CardExpedition.UltimateEasy         => specialDere ? 1 : 0.8,
-                CardExpedition.UltimateMedium       => specialDere ? 8 : 4,
-                CardExpedition.UltimateHard         => specialDere ? 9 : 5,
+                CardExpedition.UltimateMedium       => specialDere ? 8 : 5,
+                CardExpedition.UltimateHard         => specialDere ? 9 : 7,
                 CardExpedition.UltimateHardcore     => specialDere ? 4 : 2,
                 _ => 0
             };
@@ -556,8 +555,8 @@ namespace Sanakan.Services.PocketWaifu
                 CardExpedition.DarkItems            => 0.0045,
                 CardExpedition.DarkExp              => -0.0064,
                 CardExpedition.UltimateEasy         => -0.0285,
-                CardExpedition.UltimateMedium       => 0.072,
-                CardExpedition.UltimateHard         => 0.141,
+                CardExpedition.UltimateMedium       => 0.0392,
+                CardExpedition.UltimateHard         => 0.0683,
                 CardExpedition.UltimateHardcore     => 0.0448,
                 _ => 0
             };
@@ -611,8 +610,8 @@ namespace Sanakan.Services.PocketWaifu
                 CardExpedition.LightItemWithExp     => 0.125,
                 CardExpedition.DarkItemWithExp      => 0.125,
                 CardExpedition.UltimateEasy         => 0.182 * qualityMod,
-                CardExpedition.UltimateMedium       => 1 * dereUltMod * qualityMod,
-                CardExpedition.UltimateHard         => 4 * dereUltMod * qualityMod,
+                CardExpedition.UltimateMedium       => 0.6 * dereUltMod * qualityMod,
+                CardExpedition.UltimateHard         => 2.2 * dereUltMod * qualityMod,
                 CardExpedition.UltimateHardcore     => 1.7 * dereUltMod * qualityMod,
                 _ => 0
             };

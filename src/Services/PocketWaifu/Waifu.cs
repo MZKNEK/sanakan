@@ -2178,12 +2178,11 @@ namespace Sanakan.Services.PocketWaifu
 
             var fatigue = _expedition.GetFatigueFromExpedition(duration.RealTime, card);
 
+            card.DecAffectionOnExpeditionBy(ref affectionCost);
             if (showStats)
             {
                 reward += $"\n\nRT: {duration.CalcTime:F} E: {totalExp:F} AI: {minAff:F} A: {affectionCost:F} K: {karmaCost:F} KI: {karmaItem:F} MI: {totalItemsCnt} LI: {missingItems} F: {fatigue:F}";
             }
-
-            card.DecAffectionOnExpeditionBy(affectionCost);
             card.Expedition = CardExpedition.None;
             card.ExpeditionEndDate = _time.Now();
             user.GameDeck.Karma -= karmaCost;
