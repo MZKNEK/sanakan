@@ -7,7 +7,6 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Linq;
 using Sanakan.Database.Models;
-using Microsoft.IdentityModel.Tokens;
 using Sanakan.Extensions;
 
 namespace Sanakan.TypeReaders
@@ -193,6 +192,14 @@ namespace Sanakan.TypeReaders
                 ? _avatarBorderTypes.FirstOrDefault(x => x.Index == index)
                 : _avatarBorderTypes.FirstOrDefault(x => input.StartsWith(x.Name, StringComparison.OrdinalIgnoreCase));
 
+        private bool ShouldSetupDefaultImageSource(ProfileConfigType type) => type switch
+        {
+            ProfileConfigType.Overlay           => true,
+            ProfileConfigType.PremiumOverlay    => true,
+            ProfileConfigType.Background        => true,
+            _ => false
+        };
+
         public override Task<TypeReaderResult> ReadAsync(ICommandContext context, string input, IServiceProvider services)
         {
             var config = new ProfileConfig { Currency = CurrencyType.SC, Type = ProfileConfigType.ShowInfo, ToggleCurentValue = false };
@@ -217,7 +224,14 @@ namespace Sanakan.TypeReaders
                 {
                     if (strippedInput.IsEmpty)
                     {
-                        return Task.FromResult(TypeReaderResult.FromError(CommandError.ParseFailed, "Nie podano parametrów konfiguracji!"));
+                        if (ShouldSetupDefaultImageSource(config.Type))
+                        {
+                            strippedInput = "att".AsSpan();
+                        }
+                        else
+                        {
+                            return Task.FromResult(TypeReaderResult.FromError(CommandError.ParseFailed, "Nie podano parametrów konfiguracji!"));
+                        }
                     }
                     strippedInput = strippedInput.TrimStart();
                 }
@@ -293,7 +307,7 @@ namespace Sanakan.TypeReaders
                         {
                             if (strippedInput.IsEmpty)
                             {
-                                return Task.FromResult(TypeReaderResult.FromError(CommandError.ParseFailed, "Nie podano parametrów konfiguracji stylu!"));
+                                strippedInput = "att".AsSpan();
                             }
                             strippedInput = strippedInput.TrimStart();
                             goto case ProfileConfigType.Background;

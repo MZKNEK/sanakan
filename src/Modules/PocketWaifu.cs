@@ -457,6 +457,7 @@ namespace Sanakan.Modules
         [Remarks("1 4212 2"), RequireWaifuCommandChannel]
         public async Task UseItemOnCardAsync([Summary("nr przedmiotu")] int itemNumber, [Summary("WID")] ulong wid = 0, [Summary("liczba przedmiotów/link do obrazka/typ gwiazdki")] string detail = "1", [Hidden] bool itemToExp = false)
         {
+            string attachmentUrl = Context.Message.Attachments.FirstOrDefault()?.Url ?? "";
             if (detail.Equals("att", StringComparison.CurrentCultureIgnoreCase))
             {
                 if (Context.Message.Attachments.IsNullOrEmpty())
@@ -464,13 +465,13 @@ namespace Sanakan.Modules
                     await SafeReplyAsync("", embed: $"{Context.User.Mention} wybrano upload przez załącznik, lecz nie został on wykryty.".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
-                detail = Context.Message.Attachments.FirstOrDefault()?.Url ?? "";
+                detail = attachmentUrl;
             }
 
             using (var db = new Database.DatabaseContext(Config))
             {
                 var bUser = await db.GetUserOrCreateAsync(Context.User.Id);
-                var res = await _waifu.UseItemAsync(bUser, Context.User.GetUserNickInGuild(), itemNumber, wid, detail, itemToExp);
+                var res = await _waifu.UseItemAsync(bUser, Context.User.GetUserNickInGuild(), itemNumber, wid, detail, itemToExp, attachmentUrl);
 
                 if (res.IsError())
                 {

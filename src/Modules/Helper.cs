@@ -39,6 +39,7 @@ namespace Sanakan.Modules
         };
 
         private Services.PocketWaifu.Waifu _waifu;
+        private Services.Profile _profile;
         private SessionManager _session;
         private Services.Helper _helper;
         private Moderator _moderation;
@@ -47,10 +48,11 @@ namespace Sanakan.Modules
         private ILogger _logger;
         private IConfig _config;
 
-        public Helper(Services.Helper helper, Services.Moderator moderation, SessionManager session,
+        public Helper(Services.Helper helper, Services.Moderator moderation, SessionManager session, Services.Profile profile,
             ILogger logger, IConfig config, Services.PocketWaifu.Waifu  waifu, ISystemTime time, ImageProcessing img)
         {
             _moderation = moderation;
+            _profile = profile;
             _session = session;
             _helper = helper;
             _logger = logger;
@@ -203,12 +205,154 @@ namespace Sanakan.Modules
             }
         }
 
+        [Command("napraw profil")]
+        [Alias("fix profile")]
+        [Summary("naprawia wygasły obrazek profilu")]
+        [Remarks("BG"), RequireWaifuCommandChannel]
+        public async Task FixProfileImageAsync([Summary("typ(BG/SR/OV/UOV)")] string type)
+        {
+            if (Context.Message.Attachments.IsNullOrEmpty())
+            {
+                await SafeReplyAsync("", embed: $"{Context.User.Mention} aby skorzystać z tej funkcji należy dołączyć obrazek jako załącznik.".ToEmbedMessage(EMType.Error).Build());
+                return;
+            }
+            string url = Context.Message.Attachments.FirstOrDefault()?.Url ?? "";
+            var imgCheck = await _img.CheckImageUrlAsync(url);
+            if (imgCheck.IsError())
+            {
+                await SafeReplyAsync("", embed: ExecutionResult.From(imgCheck).ToEmbedMessage($"{Context.User.Mention} ").Build());
+                return;
+            }
+
+            using (var db = new Database.DatabaseContext(Config))
+            {
+                var botuser = await db.GetUserOrCreateAsync(Context.User.Id);
+                switch (type.ToUpper())
+                {
+                    case "BG":
+                    {
+                        if (botuser.BackgroundProfileUri == null)
+                        {
+                            await SafeReplyAsync("", embed: $"{Context.User.Mention} ta karta nie ma ustawionego niestandardowego obrazka ramki.".ToEmbedMessage(EMType.Error).Build());
+                            return;
+                        }
+
+                        if (Dir.IsLocal(botuser.BackgroundProfileUri))
+                        {
+                            await SafeReplyAsync("", embed: $"{Context.User.Mention} ten obrazek jest przechowywany lokalnie.".ToEmbedMessage(EMType.Error).Build());
+                            return;
+                        }
+
+                        var bgUri = $"{Dir.SavedData}/BG{botuser.Id}.webp";
+                        var res = await _profile.SaveProfileImageAsync(imgCheck.Url, bgUri, 750, 160, true);
+                        if (res != SaveResult.Success)
+                        {
+                            await SafeReplyAsync("", embed: $"{Context.User.Mention} nie wykryto obrazka! Upewnij się, że podałeś poprawny adres!".ToEmbedMessage(EMType.Error).Build());
+                            return;
+                        }
+
+                        botuser.BackgroundProfileUri = bgUri;
+                        break;
+                    }
+                    case "SR":
+                    {
+                        if (botuser.StatsReplacementProfileUri == null)
+                        {
+                            await SafeReplyAsync("", embed: $"{Context.User.Mention} ta karta nie ma ustawionego niestandardowego obrazka ramki.".ToEmbedMessage(EMType.Error).Build());
+                            return;
+                        }
+
+                        if (Dir.IsLocal(botuser.StatsReplacementProfileUri))
+                        {
+                            await SafeReplyAsync("", embed: $"{Context.User.Mention} ten obrazek jest przechowywany lokalnie.".ToEmbedMessage(EMType.Error).Build());
+                            return;
+                        }
+
+                        var styleUri = $"{Dir.SavedData}/SR{botuser.Id}.webp";
+                        var res = await _profile.SaveProfileImageAsync(imgCheck.Url, styleUri, 750, 340);
+                        if (res != SaveResult.Success)
+                        {
+                            await SafeReplyAsync("", embed: $"{Context.User.Mention} nie wykryto obrazka! Upewnij się, że podałeś poprawny adres!".ToEmbedMessage(EMType.Error).Build());
+                            return;
+                        }
+
+                        botuser.StatsReplacementProfileUri = styleUri;
+                        break;
+                    }
+                    case "OV":
+                    {
+                        if (botuser.CustomProfileOverlayUrl == null)
+                        {
+                            await SafeReplyAsync("", embed: $"{Context.User.Mention} ta karta nie ma ustawionego niestandardowego obrazka ramki.".ToEmbedMessage(EMType.Error).Build());
+                            return;
+                        }
+
+                        if (Dir.IsLocal(botuser.CustomProfileOverlayUrl))
+                        {
+                            await SafeReplyAsync("", embed: $"{Context.User.Mention} ten obrazek jest przechowywany lokalnie.".ToEmbedMessage(EMType.Error).Build());
+                            return;
+                        }
+
+                        var ovUri = $"{Dir.SavedData}/OV{botuser.Id}.webp";
+                        var res = await _profile.SaveProfileImageAsync(imgCheck.Url, ovUri, 750, 402);
+                        if (res != SaveResult.Success)
+                        {
+                            await SafeReplyAsync("", embed: $"{Context.User.Mention} nie wykryto obrazka! Upewnij się, że podałeś poprawny adres!".ToEmbedMessage(EMType.Error).Build());
+                            return;
+                        }
+
+                        botuser.CustomProfileOverlayUrl = ovUri;
+                        break;
+                    }
+                    case "UOV":
+                    {
+                        if (botuser.PremiumCustomProfileOverlayUrl == null)
+                        {
+                            await SafeReplyAsync("", embed: $"{Context.User.Mention} ta karta nie ma ustawionego niestandardowego obrazka ramki.".ToEmbedMessage(EMType.Error).Build());
+                            return;
+                        }
+
+                        if (Dir.IsLocal(botuser.PremiumCustomProfileOverlayUrl))
+                        {
+                            await SafeReplyAsync("", embed: $"{Context.User.Mention} ten obrazek jest przechowywany lokalnie.".ToEmbedMessage(EMType.Error).Build());
+                            return;
+                        }
+
+                        var uovUri = $"{Dir.SavedData}/UOV{botuser.Id}.webp";
+                        var res = await _profile.SaveProfileImageAsync(imgCheck.Url, uovUri, 750, 500);
+                        if (res != SaveResult.Success)
+                        {
+                            await SafeReplyAsync("", embed: $"{Context.User.Mention} nie wykryto obrazka! Upewnij się, że podałeś poprawny adres!".ToEmbedMessage(EMType.Error).Build());
+                            return;
+                        }
+
+                        botuser.PremiumCustomProfileOverlayUrl = uovUri;
+                        break;
+                    }
+                    default:
+                    {
+                        await SafeReplyAsync("", embed: $"{Context.User.Mention} niepoprawny typ obrazka. Dozwolone to: BG, SR, OV, UOV.".ToEmbedMessage(EMType.Error).Build());
+                        return;
+                    }
+                }
+
+                await db.SaveChangesAsync();
+                await SafeReplyAsync("", embed: $"{Context.User.Mention} obrazek został poprawiony!".ToEmbedMessage(EMType.Success).Build());
+            }
+        }
+
         [Command("napraw ramke")]
         [Alias("fix border")]
         [Summary("naprawia wygasły obrazek ramki")]
         [Remarks("123123"), RequireWaifuCommandChannel]
-        public async Task FixCardCustomBorderImageAsync([Summary("WID")] ulong wid, [Summary("bezpośredni adres do obrazka")] string url)
+        public async Task FixCardCustomBorderImageAsync([Summary("WID")] ulong wid)
         {
+            if (Context.Message.Attachments.IsNullOrEmpty())
+            {
+                await SafeReplyAsync("", embed: $"{Context.User.Mention} aby skorzystać z tej funkcji należy dołączyć obrazek jako załącznik.".ToEmbedMessage(EMType.Error).Build());
+                return;
+            }
+            string url = Context.Message.Attachments.FirstOrDefault()?.Url ?? "";
             var imgCheck = await _img.CheckImageUrlAsync(url);
             if (imgCheck.IsError())
             {
@@ -258,8 +402,14 @@ namespace Sanakan.Modules
         [Alias("fix image")]
         [Summary("naprawia wygasły obrazek karty")]
         [Remarks("123123"), RequireWaifuCommandChannel]
-        public async Task FixCardCustomImageAsync([Summary("WID")] ulong wid, [Summary("bezpośredni adres do obrazka")] string url)
+        public async Task FixCardCustomImageAsync([Summary("WID")] ulong wid)
         {
+            if (Context.Message.Attachments.IsNullOrEmpty())
+            {
+                await SafeReplyAsync("", embed: $"{Context.User.Mention} aby skorzystać z tej funkcji należy dołączyć obrazek jako załącznik.".ToEmbedMessage(EMType.Error).Build());
+                return;
+            }
+            string url = Context.Message.Attachments.FirstOrDefault()?.Url ?? "";
             var imgCheck = await _img.CheckImageUrlAsync(url);
             if (imgCheck.IsError())
             {

@@ -468,6 +468,20 @@ namespace Sanakan.Extensions
             }
         }
 
+        public static bool RequireImage(this ItemType type)
+        {
+            switch (type)
+            {
+                case ItemType.SetCustomImage:
+                case ItemType.SetCustomAnimatedImage:
+                case ItemType.SetCustomBorder:
+                    return true;
+
+                default:
+                    return false;
+            }
+        }
+
         public static bool IsProtected(this ItemType type)
         {
             switch (type)

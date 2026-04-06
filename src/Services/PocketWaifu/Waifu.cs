@@ -2281,7 +2281,7 @@ namespace Sanakan.Services.PocketWaifu
             return ExecutionResult.FromSuccess(response.ToString());
         }
 
-        public async Task<ExecutionResult> UseItemAsync(User user, string userName, int itemNumber, ulong wid, string detail, bool itemToExp = false)
+        public async Task<ExecutionResult> UseItemAsync(User user, string userName, int itemNumber, ulong wid, string detail, bool itemToExp = false, string att = "")
         {
             var itemList = user.GetAllItems().ToList();
             if (itemList.IsNullOrEmpty())
@@ -2291,6 +2291,9 @@ namespace Sanakan.Services.PocketWaifu
                 return ExecutionResult.FromError("nie masz aż tylu przedmiotów.");
 
             var item = itemList[itemNumber - 1];
+            if (item.Type.RequireImage() && detail == "1")
+                detail = att;
+
             var parsedCount = int.TryParse(detail, out var itemCnt);
             if (!parsedCount || itemCnt < 1 || item.Type.ShouldForceSingleUseOnCheck())
                 itemCnt = 1;
