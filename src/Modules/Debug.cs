@@ -1607,7 +1607,7 @@ namespace Sanakan.Modules
         [Command("sime"), Priority(1), RequireDevOrTester]
         [Summary("symuluje wyprawę daną kartą")]
         [Remarks("12312 n")]
-        public async Task SimulateExpeditionAsync([Summary("WID")]ulong wid, [Summary("typ wyprawy")]CardExpedition expedition = CardExpedition.None, [Summary("karma")]double k = -1, [Summary("relacja")]double a = -1, [Summary("czas w minutach")]int time = -1)
+        public async Task SimulateExpeditionAsync([Summary("WID")]ulong wid, [Summary("typ wyprawy")]CardExpedition expedition = CardExpedition.None, [Summary("karma")]double k = -1, [Summary("relacja")]double a = -1, [Summary("zmeczenie")]int fatigue = -1)
         {
             if (expedition == CardExpedition.None)
                 return;
@@ -1618,7 +1618,8 @@ namespace Sanakan.Modules
                     .Include(x => x.GameDeck).ThenInclude(x => x.ExpContainer).Include(x => x.GameDeck).ThenInclude(x => x.Items).FirstOrDefaultAsync(x => x.Id == wid);
                 if (thisCard == null) return;
 
-                thisCard.ExpeditionDate = _time.Now().AddMinutes(time > 0 ? -time : -10080);
+                thisCard.ExpeditionDate = _time.Now().AddMinutes(-10080);
+                thisCard.RecoverFatigue(_time);
 
                 if (k != -1)
                 {
@@ -1628,6 +1629,11 @@ namespace Sanakan.Modules
                 if (a != -1)
                 {
                     thisCard.Affection = a;
+                }
+
+                if (fatigue != -1)
+                {
+                    thisCard.Fatigue = fatigue;
                 }
 
                 thisCard.Expedition = expedition;

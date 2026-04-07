@@ -554,7 +554,7 @@ namespace Sanakan.Services.PocketWaifu
                 CardExpedition.DarkItemWithExp      => 0.0055,
                 CardExpedition.DarkItems            => 0.0091,
                 CardExpedition.DarkExp              => -0.0064,
-                CardExpedition.UltimateEasy         => -0.0285,
+                CardExpedition.UltimateEasy         => -0.0261,
                 CardExpedition.UltimateMedium       => 0.0392,
                 CardExpedition.UltimateHard         => 0.1101,
                 CardExpedition.UltimateHardcore     => 0.0666,
@@ -564,7 +564,7 @@ namespace Sanakan.Services.PocketWaifu
             var dereMod = card.Dere switch
             {
                 Dere.Kamidere => 0.5,
-                Dere.Yandere  => 1.75,
+                Dere.Yandere  => 1.5,
                 _ => 1
             };
 
