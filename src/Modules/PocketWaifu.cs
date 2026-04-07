@@ -2175,12 +2175,11 @@ namespace Sanakan.Modules
 
         [Command("kolor strony")]
         [Alias("site color")]
-        [Summary("zmienia kolor przewodni profilu na stronie waifu (500 TC)")]
+        [Summary("zmienia kolor przewodni profilu na stronie waifu (200 TC)")]
         [Remarks("#dc5341"), RequireWaifuCommandChannel]
         public async Task ChangeWaifuSiteForegroundColorAsync([Summary("kolor w formacie hex")] string color)
         {
-            var tcCost = 500;
-
+            var tcCost = 200;
             using (var db = new Database.DatabaseContext(Config))
             {
                 var botuser = await db.GetUserOrCreateSimpleAsync(Context.User.Id);
@@ -2207,29 +2206,32 @@ namespace Sanakan.Modules
 
         [Command("szczegół strony")]
         [Alias("szczegoł strony", "szczegol strony", "szczegól strony", "site fg", "site foreground")]
-        [Summary("zmienia obrazek nakładany na tło profilu na stronie waifu (500 TC)")]
+        [Summary("zmienia obrazek nakładany na tło profilu na stronie waifu (jednorazowo 500 TC)")]
         [Remarks("https://sanakan.pl/i/example_foreground.png"), RequireWaifuCommandChannel]
         public async Task ChangeWaifuSiteForegroundAsync([Summary("bezpośredni adres do obrazka")] string imgUrl)
         {
             var tcCost = 500;
+            var imageCheck = await _img.CheckImageUrlAsync(imgUrl);
+            if (imageCheck.IsError())
+            {
+                await SafeReplyAsync("", embed: ExecutionResult.From(imageCheck).ToEmbedMessage($"{Context.User.Mention} ").Build());
+                return;
+            }
 
             using (var db = new Database.DatabaseContext(Config))
             {
                 var botuser = await db.GetUserOrCreateSimpleAsync(Context.User.Id);
-                if (botuser.TcCnt < tcCost)
+                if (string.IsNullOrEmpty(botuser.GameDeck.ForegroundImageUrl))
                 {
-                    await SafeReplyAsync("", embed: $"{Context.User.Mention} nie posiadasz wystarczającej liczby TC!".ToEmbedMessage(EMType.Error).Build());
-                    return;
+                    if (botuser.TcCnt < tcCost)
+                    {
+                        await SafeReplyAsync("", embed: $"{Context.User.Mention} nie posiadasz wystarczającej liczby TC!".ToEmbedMessage(EMType.Error).Build());
+                        return;
+                    }
+
+                    botuser.TcCnt -= tcCost;
                 }
 
-                var imageCheck = await _img.CheckImageUrlAsync(imgUrl);
-                if (imageCheck.IsError())
-                {
-                    await SafeReplyAsync("", embed: ExecutionResult.From(imageCheck).ToEmbedMessage($"{Context.User.Mention} ").Build());
-                    return;
-                }
-
-                botuser.TcCnt -= tcCost;
                 botuser.GameDeck.ForegroundImageUrl = imageCheck.Url;
 
                 await db.SaveChangesAsync();
@@ -2240,29 +2242,32 @@ namespace Sanakan.Modules
 
         [Command("tło strony")]
         [Alias("tlo strony", "site bg", "site background")]
-        [Summary("zmienia obrazek tła profilu na stronie waifu (2000 TC)")]
+        [Summary("zmienia obrazek tła profilu na stronie waifu (jednorazowo 2000 TC)")]
         [Remarks("https://sanakan.pl/i/example_background.jpg"), RequireWaifuCommandChannel]
         public async Task ChangeWaifuSiteBackgroundAsync([Summary("bezpośredni adres do obrazka")] string imgUrl)
         {
             var tcCost = 2000;
+            var imageCheck = await _img.CheckImageUrlAsync(imgUrl);
+            if (imageCheck.IsError())
+            {
+                await SafeReplyAsync("", embed: ExecutionResult.From(imageCheck).ToEmbedMessage($"{Context.User.Mention} ").Build());
+                return;
+            }
 
             using (var db = new Database.DatabaseContext(Config))
             {
                 var botuser = await db.GetUserOrCreateSimpleAsync(Context.User.Id);
-                if (botuser.TcCnt < tcCost)
+                if (string.IsNullOrEmpty(botuser.GameDeck.BackgroundImageUrl))
                 {
-                    await SafeReplyAsync("", embed: $"{Context.User.Mention} nie posiadasz wystarczającej liczby TC!".ToEmbedMessage(EMType.Error).Build());
-                    return;
+                    if (botuser.TcCnt < tcCost)
+                    {
+                        await SafeReplyAsync("", embed: $"{Context.User.Mention} nie posiadasz wystarczającej liczby TC!".ToEmbedMessage(EMType.Error).Build());
+                        return;
+                    }
+
+                    botuser.TcCnt -= tcCost;
                 }
 
-                var imageCheck = await _img.CheckImageUrlAsync(imgUrl);
-                if (imageCheck.IsError())
-                {
-                    await SafeReplyAsync("", embed: ExecutionResult.From(imageCheck).ToEmbedMessage($"{Context.User.Mention} ").Build());
-                    return;
-                }
-
-                botuser.TcCnt -= tcCost;
                 botuser.GameDeck.BackgroundImageUrl = imageCheck.Url;
 
                 await db.SaveChangesAsync();
