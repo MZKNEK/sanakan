@@ -683,7 +683,7 @@ namespace Sanakan.Extensions
             }
         }
 
-        public static void DecAffectionOnExpeditionBy(this Card card, double value)
+        public static void DecAffectionOnExpeditionBy(this Card card, ref double value)
         {
             card.Affection -= value;
 
@@ -691,15 +691,23 @@ namespace Sanakan.Extensions
             {
                 case CardExpedition.UltimateEasy:
                 {
-                    if (card.Affection < -10)
-                        card.Affection = -10;
+                    if (card.Affection < 0)
+                    {
+                        var r = -card.Affection;
+                        card.Affection = 0;
+                        value -= r;
+                    }
                 }
                 break;
 
                 case CardExpedition.UltimateMedium:
                 {
-                    if (card.Affection < -100)
-                        card.Affection = -100;
+                    if (card.Affection < -10)
+                    {
+                        var r = -card.Affection + 10;
+                        card.Affection = -10;
+                        value -= r;
+                    }
                 }
                 break;
 
