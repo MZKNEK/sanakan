@@ -306,10 +306,10 @@ namespace Sanakan.Extensions
 
         public static double GetBaseKarmaChange(this ItemType type) => type switch
         {
-            ItemType.AffectionRecoveryGreat  => 0.24,
-            ItemType.AffectionRecoveryBig    => 0.08,
-            ItemType.AffectionRecoveryNormal => 0.008,
-            ItemType.AffectionRecoverySmall  => 0.001,
+            ItemType.AffectionRecoveryGreat  => 0.31,
+            ItemType.AffectionRecoveryBig    => 0.14,
+            ItemType.AffectionRecoveryNormal => 0.012,
+            ItemType.AffectionRecoverySmall  => 0.002,
             ItemType.RemoveCurse             => 1,
             _ => 0
         };

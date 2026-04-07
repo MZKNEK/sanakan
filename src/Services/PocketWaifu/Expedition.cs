@@ -548,16 +548,16 @@ namespace Sanakan.Services.PocketWaifu
             {
                 CardExpedition.NormalItemWithExp    => user.GameDeck.IsGood() ? 0.025 : 0.00225,
                 CardExpedition.ExtremeItemWithExp   => 0.0385,
-                CardExpedition.LightItemWithExp     => 0.008,
-                CardExpedition.LightItems           => 0.008,
+                CardExpedition.LightItemWithExp     => 0.0055,
+                CardExpedition.LightItems           => 0.0091,
                 CardExpedition.LightExp             => -0.0064,
-                CardExpedition.DarkItemWithExp      => 0.0045,
-                CardExpedition.DarkItems            => 0.0045,
+                CardExpedition.DarkItemWithExp      => 0.0055,
+                CardExpedition.DarkItems            => 0.0091,
                 CardExpedition.DarkExp              => -0.0064,
                 CardExpedition.UltimateEasy         => -0.0285,
                 CardExpedition.UltimateMedium       => 0.0392,
-                CardExpedition.UltimateHard         => 0.0683,
-                CardExpedition.UltimateHardcore     => 0.0448,
+                CardExpedition.UltimateHard         => 0.1101,
+                CardExpedition.UltimateHardcore     => 0.0666,
                 _ => 0
             };
 
