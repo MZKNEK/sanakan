@@ -43,6 +43,7 @@ namespace Sanakan.Database.Models
         public int MaxNumberOfTags { get; set; }
         public ActionAfterExpedition EndOfExpeditionAction { get; set; }
         public string GalleryOrderedIds { get; set; }
+        public DateTime LastSignificantActivity { get; set; }
 
         public virtual ICollection<Card> Cards { get; set; }
         public virtual ICollection<Item> Items { get; set; }

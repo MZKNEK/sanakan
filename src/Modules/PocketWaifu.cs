@@ -338,6 +338,8 @@ namespace Sanakan.Modules
                 fig.IsComplete = true;
                 fig.IsFocus = false;
 
+                user.MarkActivity(_time.Now());
+
                 await db.SaveChangesAsync();
 
                 fig.CreatedCardId = card.Id;
@@ -483,6 +485,8 @@ namespace Sanakan.Modules
                     await db.UserActivities.AddAsync(res.Activity.AddMisc($"u:{Context.User.GetUserNickInGuild()}").Build());
                 }
 
+                bUser.MarkActivity(_time.Now());
+
                 await SafeReplyAsync("", embed: res.ToEmbedMessage().WithUser(Context.User).Build());
 
                 await db.SaveChangesAsync();
@@ -520,7 +524,7 @@ namespace Sanakan.Modules
         [Alias("lp")]
         [Summary("otwiera pierwszy pakiet z domyślnie ustawionym niszczeniem kc na 3 oraz tagiem wymiana")]
         [Remarks("2 nie Wymiana Ulubione"), RequireAnyCommandChannelOrLevel(200)]
-        public async Task OpenPacketLazyModeAsync([Summary("czy zniszczyć karty nie będące na liście życzeń i nie posiadające danej kc?")] uint destroyCards = 3, [Summary("czy zamienić niszczenie na uwalnianie?")] bool changeToRelease = false,
+        public async Task OpenPacketLazyModeAsync([Summary("czy zniszczyć karty nie będące na liście życzeń i nie posiadające danej kc?")] uint destroyCards = 1, [Summary("czy zamienić niszczenie na uwalnianie?")] bool changeToRelease = false,
             [Summary("oznacz niezniszczone karty")] string tag = "wymiana", [Summary("oznacz karty z wishlisty")] string tagWishlist = "ulubione")
                 => await OpenPacketAsync(1, 1, true, destroyCards, changeToRelease, tag, tagWishlist);
 
@@ -594,6 +598,8 @@ namespace Sanakan.Modules
                     mission = StatusType.DPacket.NewTimeStatus();
                     bUser.TimeStatuses.Add(mission);
                 }
+
+                bUser.MarkActivity(_time.Now());
 
                 var totalCards = new List<Card>();
                 var charactersOnWishlist = new List<string>();
@@ -739,6 +745,7 @@ namespace Sanakan.Modules
                 }
 
                 bUser.GameDeck.Karma -= 5;
+                bUser.MarkActivity(_time.Now());
 
                 card.Defence = Waifu.RandomizeDefence(Rarity.E);
                 card.Attack = Waifu.RandomizeAttack(Rarity.E);
@@ -989,6 +996,8 @@ namespace Sanakan.Modules
                     }
                 }
 
+                bUser.MarkActivity(_time.Now());
+
                 await db.SaveChangesAsync();
                 _waifu.DeleteCardImageIfExist(card);
 
@@ -1117,6 +1126,8 @@ namespace Sanakan.Modules
                 bUser.GameDeck.ExpContainer.ExpCount -= exp;
                 bUser.GameDeck.CTCnt -= cost;
 
+                bUser.MarkActivity(_time.Now());
+
                 await db.SaveChangesAsync();
 
                 QueryCacheManager.ExpireTag(new string[] { $"user-{bUser.Id}", "users" });
@@ -1224,7 +1235,7 @@ namespace Sanakan.Modules
         [Alias("lc")]
         [Summary("dostajesz jedną darmową kart z domyślnie ustawionym niszczeniem kc na 3 oraz tagiem wymiana")]
         [Remarks("3 nie Wymiana Ulubione"), RequireAnyCommandChannelLevelOrNitro(40)]
-        public async Task GetLazyFreeCardAsync([Summary("czy zniszczyć karty nie będące na liście życzeń i nie posiadające danej kc?")] uint destroyCards = 3,
+        public async Task GetLazyFreeCardAsync([Summary("czy zniszczyć karty nie będące na liście życzeń i nie posiadające danej kc?")] uint destroyCards = 1,
             [Summary("czy zamienić niszczenie na uwalnianie?")] bool changeToRelease = false, [Summary("oznacz niezniszczone karty")] string tag = "wymiana", [Summary("oznacz karty z wishlisty")] string tagWishlist = "ulubione")
                 => await GetFreeCardAsync(destroyCards, changeToRelease, tag, tagWishlist);
 
@@ -1298,6 +1309,7 @@ namespace Sanakan.Modules
                     return;
                 }
 
+                botuser.MarkActivity(_time.Now());
                 var card = _waifu.GenerateNewCard(Context.User, character,
                     new List<Rarity>() { Rarity.SS, Rarity.S, Rarity.A });
 
@@ -1463,6 +1475,8 @@ namespace Sanakan.Modules
                     }
                 }
 
+                botuser.MarkActivity(_time.Now());
+
                 await db.SaveChangesAsync();
 
                 QueryCacheManager.ExpireTag(new string[] { $"user-{botuser.Id}", "users" });
@@ -1569,6 +1583,8 @@ namespace Sanakan.Modules
                     reward += $"+{item.Name}\n";
                 }
 
+                botuser.MarkActivity(_time.Now());
+
                 await db.SaveChangesAsync();
 
                 QueryCacheManager.ExpireTag(new string[] { $"user-{botuser.Id}", "users" });
@@ -1638,6 +1654,8 @@ namespace Sanakan.Modules
                 }
 
                 _ = cardToUp.CalculateCardPower();
+
+                bUser.MarkActivity(_time.Now());
 
                 await db.SaveChangesAsync();
 
@@ -1828,6 +1846,7 @@ namespace Sanakan.Modules
                 }
 
                 bUser.GameDeck.Wishes.Add(obj);
+                bUser.MarkActivity(_time.Now());
 
                 await db.SaveChangesAsync();
 
@@ -2451,6 +2470,7 @@ namespace Sanakan.Modules
                     bUser.GameDeck.Items.Remove(ticket);
 
                 bUser.Stats.LotteryTicketsUsed += count;
+                bUser.MarkActivity(_time.Now());
 
                 await db.SaveChangesAsync();
 
@@ -2593,6 +2613,8 @@ namespace Sanakan.Modules
                     card.WhoWantsCount = wishlistsCnt;
                     bUser.GameDeck.Cards.Add(card);
                 }
+
+                bUser.MarkActivity(_time.Now());
 
                 await db.SaveChangesAsync();
                 QueryCacheManager.ExpireTag(new string[] { $"user-{bUser.Id}", "users" });
@@ -3531,6 +3553,8 @@ namespace Sanakan.Modules
                     botUser.GameDeck.Cards.Remove(thisCard);
                 }
 
+                botUser.MarkActivity(_time.Now());
+
                 await db.SaveChangesAsync();
 
                 QueryCacheManager.ExpireTag(new string[] { $"user-{botUser.Id}", "users" });
@@ -3613,6 +3637,8 @@ namespace Sanakan.Modules
                     botUser.TimeStatuses.Add(mission);
                 }
                 mission.Count(_time.Now(), cardsSelected.Count);
+
+                botUser.MarkActivity(_time.Now());
 
                 await db.SaveChangesAsync();
 

@@ -34,6 +34,16 @@ namespace Sanakan.Extensions
         public static bool IsPVPSeasonalRankActive(this User u, DateTime currentTime)
             => u.GameDeck.IsPVPSeasonalRankActive(currentTime);
 
+        public static bool MarkActivity(this User u, DateTime currentTime)
+        {
+            if (u.GameDeck != null)
+            {
+                u.GameDeck.LastSignificantActivity = currentTime;
+                return true;
+            }
+            return false;
+        }
+
         public static User Default(this User u, ulong id, DateTime creationTime)
         {
             var user = new User
@@ -95,6 +105,7 @@ namespace Sanakan.Extensions
                     Wishes = new List<WishlistObject>(),
                     PvPStats = new List<CardPvPStats>(),
                     BoosterPacks = new List<BoosterPack>(),
+                    LastSignificantActivity = creationTime,
                     EndOfExpeditionAction = ActionAfterExpedition.Nothing,
                     PVPSeasonBeginDate = new DateTime(creationTime.Year, creationTime.Month, 1),
                     ExpContainer = new ExpContainer
@@ -254,11 +265,14 @@ namespace Sanakan.Extensions
             }
         }
 
+        public static bool IsUserActive(this GameDeck deck, DateTime currentTime)
+            => deck.IsActive(currentTime) || (deck?.LastSignificantActivity ?? DateTime.MinValue).AddDays(14) >= currentTime;
+
         public static bool IsActive(this GameDeck deck, DateTime currentTime)
             => (deck?.User?.IsCharCounterActive(currentTime) ?? true) && (deck?.User?.SendAnyMsgInMonth() ?? true);
 
         public static string GetActiveMark(this GameDeck deck, DateTime currentTime)
-            =>  deck.IsActive(currentTime) ? "" : " ⚠️";
+            =>  deck.IsUserActive(currentTime) ? "" : " ⚠️";
 
         public static bool ReachedDailyMaxPVPCount(this GameDeck deck)
             => deck.PVPDailyGamesPlayed >= 10;
