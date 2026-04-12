@@ -291,7 +291,7 @@ namespace Sanakan.Extensions
         public static string GetDescSmall(this Card card, Services.PocketWaifu.TagHelper tags, ISystemTime time)
         {
             var kcs = Fun.IsAF() ? Fun.GetAFKC(card.Character) : card.WhoWantsCount;
-            return $"{card.GetIdWithUrl()} *({card.Character}) KC: {kcs} PWR: {card.CalculateCardPower():F}*\n"
+            return $"{card.GetIdWithUrl()} *({card.Character}) KC: {kcs}({card.AWhoWantsCount}) PWR: {card.CalculateCardPower():F}*\n"
                 + $"{card.GetString(true, true, true, false, true)}\n"
                 + $"_{card.Title}_\n\n"
                 + $"{card.Dere}\n"
@@ -324,7 +324,7 @@ namespace Sanakan.Extensions
                 + $"**Moc:** {card.CalculateCardPower():F}\n"
                 + $"**Charakter:** {card.Dere}\n"
                 + $"**Utworzona:** {card.CreationDate.ToShortDateTime()}\n{scalpelInfo}"
-                + $"**KC:** {kcs}\n"
+                + $"**KC:** {kcs} ({card.AWhoWantsCount})\n"
                 + $"**Tagi:** {(card.Tags.IsNullOrEmpty() ? "---" : string.Join(" ", card.Tags.Select(x => x.Name)))}\n"
                 + $"{card.GetStatusIcons(tags)}\n\n";
         }

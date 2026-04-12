@@ -188,6 +188,10 @@ namespace Sanakan.Api.Models
         /// Liczba kc karty
         /// </summary>
         public int WhoWantsCount { get; set; }
+        /// <summary>
+        /// Liczba aktywnych kc karty
+        /// </summary>
+        public int ActiveWhoWantsCount { get; set; }
 
         public static CardFinalView ConvertFromRawWithUserInfo(Card card, string username, ulong shindenId = 0, ISystemTime time = null)
         {
@@ -249,6 +253,7 @@ namespace Sanakan.Api.Models
                 CardPower = card.CardPower,
                 DiscordId = card.GameDeckId,
                 WhoWantsCount = kcs,
+                ActiveWhoWantsCount = card.AWhoWantsCount,
                 UltimateOverflow = card.BorderOverflow,
                 IsCursed = card.Curse != CardCurse.None,
                 Value = card.GetThreeStateMarketValue(),
