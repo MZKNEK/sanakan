@@ -531,7 +531,7 @@ namespace Sanakan.Modules
         [Alias("lp")]
         [Summary("otwiera pierwszy pakiet z domyślnie ustawionym uwalnianiem aktywnych kc aktywnych na 1 oraz tagiem wymiana")]
         [Remarks("2 nie Wymiana Ulubione"), RequireAnyCommandChannelOrLevel(200)]
-        public async Task OpenPacketLazyModeAsync([Summary("czy zniszczyć karty nie będące na liście życzeń i nie posiadające danej kc?")] uint destroyCards = 1, [Summary("czy zamienić niszczenie na niszczenie?")] bool changeToDestroy = false,
+        public async Task OpenPacketLazyModeAsync([Summary("czy zniszczyć karty nie będące na liście życzeń i nie posiadające danej kc?")] uint destroyCards = 1, [Summary("czy zamienić uwalnianie na niszczenie?")] bool changeToDestroy = false,
             [Summary("oznacz niezniszczone karty")] string tag = "wymiana", [Summary("oznacz karty z wishlisty")] string tagWishlist = "ulubione", [Summary("czy kc mają być aktywne?")]bool aliveKc = true)
                 => await OpenPacketAsync(1, 1, true, destroyCards, !changeToDestroy, tag, tagWishlist, aliveKc);
 
@@ -1802,8 +1802,116 @@ namespace Sanakan.Modules
         [Command("żdodaj")]
         [Alias("wadd", "zdodaj")]
         [Summary("dodaje kartę/tytuł/postać do listy życzeń")]
+        [Remarks("karta 4212 1234"), RequireWaifuCommandChannel]
+        public async Task AddToWishlistAsync([Summary("typ (p - postać, t - tytuł)")] WishlistObjectType type, [Summary("IDs/WIDs")] params ulong[] ids)
+        {
+            try
+            {
+                using (var db = new Database.DatabaseContext(Config))
+                {
+                    string response = "";
+                    var bUser = await db.GetUserOrCreateSimpleAsync(Context.User.Id);
+                    var objs = bUser.GameDeck.Wishes.Where(x => x.Type == type && ids.Any(c => c == x.ObjectId)).ToList();
+                    if (objs.Count > 1)
+                    {
+                        await SafeReplyAsync("", embed: "Już posiadasz taki wpis w liście życzeń!".ToEmbedMessage(EMType.Error).Build());
+                        return;
+                    }
+
+                    var objl = new List<WishlistObject>();
+                    foreach (var id in ids)
+                    {
+                        objl.Add(new WishlistObject
+                        {
+                            Entry = WishlistEntryType.Normal,
+                            ObjectId = id,
+                            Type = type
+                        });
+                    }
+
+                    switch (type)
+                    {
+                        case WishlistObjectType.Card:
+                            await SafeReplyAsync("", embed: $"{Context.User.Mention} dodawanie kart do listy życzeń nie jest już wspierane!".ToEmbedMessage(EMType.Error).Build());
+                            return;
+
+                        case WishlistObjectType.Title:
+                        {
+                            foreach (var obj in objl)
+                            {
+                                var res1 = await _shclient.Title.GetInfoAsync(obj.ObjectId);
+                                if (!res1.IsSuccessStatusCode())
+                                {
+                                    await SafeReplyAsync("", embed: $"Nie odnaleziono serii!".ToEmbedMessage(EMType.Error).Build());
+                                    return;
+                                }
+                                response = res1.Body.Title;
+                                obj.ObjectName = res1.Body.Title;
+
+                                if (!bUser.GameDeck.WishlistIsPrivate)
+                                {
+                                    await db.UserActivities.AddAsync(new Services.UserActivityBuilder(_time).AddMisc($"t:{res1.Body.Title}")
+                                    .WithUser(bUser, Context.User).WithType(Database.Models.ActivityType.AddedToWishlistTitle, obj.ObjectId).Build());
+                                }
+                            }
+                            if (ids.Length > 1)
+                            {
+                                response = $"{ids.Length} tytułów";
+                            }
+                            break;
+                        }
+
+                        case WishlistObjectType.Character:
+                        {
+                            foreach (var obj in objl)
+                            {
+                                var charInfo = await _shinden.GetCharacterInfoAsync(obj.ObjectId);
+                                if (charInfo == null)
+                                {
+                                    await SafeReplyAsync("", embed: $"Nie odnaleziono postaci!".ToEmbedMessage(EMType.Error).Build());
+                                    return;
+                                }
+                                response = charInfo.ToString();
+                                obj.ObjectName = response;
+                                await db.CreateOrChangeWishlistCountByAsync(obj.ObjectId, obj.ObjectName);
+                                if (!bUser.GameDeck.WishlistIsPrivate)
+                                {
+                                    await db.UserActivities.AddAsync(new Services.UserActivityBuilder(_time).AddMisc($"c:{response.ToString().Trim()}")
+                                    .WithUser(bUser, Context.User).WithType(Database.Models.ActivityType.AddedToWishlistCharacter, obj.ObjectId).Build());
+                                }
+                            }
+                            if (ids.Length > 1)
+                            {
+                                response = $"{ids.Length} postaci";
+                            }
+                            break;
+                        }
+                    }
+
+                    foreach (var obj in objl)
+                    {
+                        bUser.GameDeck.Wishes.Add(obj);
+                    }
+                    bUser.MarkActivity(_time.Now());
+
+                    await db.SaveChangesAsync();
+
+                    QueryCacheManager.ExpireTag(new string[] { $"user-{bUser.Id}", "users" });
+
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} dodał do listy życzeń: {response}".ToEmbedMessage(EMType.Success).Build());
+                }
+            }
+            catch (Exception ex)
+            {
+                await SafeReplyAsync("", embed: $"Laud lama: {ex.Message}".ToEmbedMessage(EMType.Error).Build());
+            }
+        }
+
+        [Command("żdodajs")]
+        [Alias("wadds", "zdodajs")]
+        [Summary("dodaje kartę/tytuł/postać do listy życzeń jako wpis nie kasujący się")]
         [Remarks("karta 4212 tak"), RequireWaifuCommandChannel]
-        public async Task AddToWishlistAsync([Summary("typ (p - postać, t - tytuł)")] WishlistObjectType type, [Summary("ID/WID")] ulong id, [Summary("czy wpis ma zostać na liście po otrzymaniu karty?")]bool isStatic = false)
+        public async Task AddToWishlistStaticAsync([Summary("typ (p - postać, t - tytuł)")] WishlistObjectType type, [Summary("ID/WID")] ulong id)
         {
             using (var db = new Database.DatabaseContext(Config))
             {
@@ -1817,7 +1925,7 @@ namespace Sanakan.Modules
 
                 var obj = new WishlistObject
                 {
-                    Entry = isStatic ? WishlistEntryType.Persistent : WishlistEntryType.Normal,
+                    Entry = WishlistEntryType.Persistent,
                     ObjectId = id,
                     Type = type
                 };
