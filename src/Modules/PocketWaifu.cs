@@ -2026,7 +2026,7 @@ namespace Sanakan.Modules
                 {
                     using (var dbs = new Database.DatabaseContext(_config))
                     {
-                        var wish = await db.GameDecks.Include(x => x.Wishes).AsNoTracking().Where(x => !x.WishlistIsPrivate && x.Wishes.Any(c => c.Type == WishlistObjectType.Character && c.ObjectId == thisCards.Character)).ToListAsync();
+                        var wish = await db.GameDecks.Include(x => x.User).Include(x => x.Wishes).AsNoTracking().Where(x => !x.WishlistIsPrivate && x.Wishes.Any(c => c.Type == WishlistObjectType.Character && c.ObjectId == thisCards.Character)).ToListAsync();
                         var aCount = wish.Count(x => x.IsUserActive(_time.Now()));
                         var wCount = wish.Count;
 

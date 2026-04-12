@@ -184,6 +184,59 @@ namespace Sanakan.Modules
             await SafeReplyAsync("", embed: msg.Build());
         }
 
+        [Command("reckc"), RequireDev]
+        [Summary("przelicza kc dla kazdej postaci z wishlisty")]
+        [Remarks("")]
+        public async Task RecalculateKCAsync()
+        {
+            using (var db = new Database.DatabaseContext(Config))
+            {
+                var wishlistCount = await db.WishlistCountData.ToListAsync();
+                await SafeReplyAsync("", embed: $"Przeliczanie KC dla {wishlistCount.Count} postaci...".ToEmbedMessage(EMType.Bot).Build());
+
+                var updatedList = new List<(ulong Id, int Count, int ACount)>();
+                foreach (var w in wishlistCount)
+                {
+                    var wish = await db.GameDecks.Include(x => x.User).Include(x => x.Wishes).AsNoTracking().Where(x => !x.WishlistIsPrivate && x.Wishes.Any(c => c.Type == WishlistObjectType.Character && c.ObjectId == w.Id)).ToListAsync();
+                    var aCount = wish.Count(x => x.IsUserActive(_time.Now()));
+                    var wCount = wish.Count;
+
+                    if (w.ACount != aCount || w.Count != wCount)
+                    {
+                        w.ACount = aCount;
+                        w.Count = wCount;
+                        updatedList.Add((w.Id, w.Count, w.ACount));
+                    }
+                }
+
+                long updatedCards = 0;
+                if (updatedList.Count > 0)
+                {
+                    await db.SaveChangesAsync();
+                    await SafeReplyAsync("", embed: $"Przeliczono KC dla {updatedList.Count} postaci. Aktualizowanie kart...".ToEmbedMessage(EMType.Bot).Build());
+
+                    foreach (var w in updatedList)
+                    {
+                        var cards = await db.Cards.AsQueryable().Where(x => x.Character == w.Id).ToListAsync();
+                        updatedCards += cards.Count;
+
+                        foreach (var c in cards)
+                        {
+                            c.WhoWantsCount = w.Count;
+                            c.AWhoWantsCount = w.ACount;
+                        }
+                    }
+
+                    if (updatedCards > 0)
+                    {
+                        await db.SaveChangesAsync();
+                    }
+                }
+
+                await SafeReplyAsync("", embed: $"Gotowe. Zaktualizowano {updatedCards} kart.".ToEmbedMessage(EMType.Success).Build());
+            }
+        }
+
         [Command("missingu", RunMode = RunMode.Async), RequireDev]
         [Summary("generuje listę id użytkowników, których nie widzi bot na serwerach")]
         [Remarks("")]
