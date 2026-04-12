@@ -449,7 +449,7 @@ namespace Sanakan.Api.Controllers
                     : user.GameDeck.GalleryOrderedIds.Split(" ").Select(x => UserSiteProfile.TryParseIds(x)).ToList();
 
                 var galleryTag = _tags.GetTag(TagType.Gallery);
-                var tags = user.GameDeck.Tags.Select(x => new TagIdPair { Name = x.Name, Id = x.Id }).ToList();
+                var tags = user.GameDeck.GetOrderedTags().Select(x => new TagIdPair { Name = x.Name, Id = x.Id }).ToList();
 
                 tags.Add(galleryTag.ToView());
                 tags.Add(_tags.GetTag(TagType.Favorite).ToView());
@@ -478,6 +478,7 @@ namespace Sanakan.Api.Controllers
                     GalleryOrder = galleryOrder,
                     MiscStats = misc,
                     UserTitle = user.GameDeck.GetUserNameStatus(),
+                    LastActivity = user.GameDeck.LastSignificantActivity,
                     Waifu = user.GameDeck.GetWaifuCard().ToView(username, 0, _time),
                     ForegroundColor = user.GameDeck.ForegroundColor,
                     ForegroundPosition = user.GameDeck.ForegroundPosition,

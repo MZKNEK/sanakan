@@ -94,6 +94,7 @@ namespace Sanakan.Extensions
                     BackgroundPosition = 35,
                     PVPDailyGamesPlayed = 0,
                     MaxNumberOfCards = 1000,
+                    TagsOrder = TagsOrder.Id,
                     Items = new List<Item>(),
                     Cards = new List<Card>(),
                     GalleryOrderedIds = null,
@@ -523,6 +524,11 @@ namespace Sanakan.Extensions
                 .OrderBy(x => x.Rarity).ThenByDescending(x => x.Quality).FirstOrDefault();
         }
 
+        public static IEnumerable<Tag> GetOrderedTags(this GameDeck deck) => deck.TagsOrder switch
+        {
+            TagsOrder.Alphabetically => deck.Tags.OrderBy(x => x.Name),
+            _ => deck.Tags.AsEnumerable()
+        };
 
         public static IEnumerable<Card> GetOrderedGalleryCards(this GameDeck deck, ulong galleryTagId)
         {

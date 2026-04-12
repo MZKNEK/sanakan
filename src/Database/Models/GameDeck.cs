@@ -11,6 +11,11 @@ namespace Sanakan.Database.Models
         Nothing, Destroy, Release
     }
 
+    public enum TagsOrder
+    {
+        Id, Alphabetically
+    }
+
     public class GameDeck
     {
         public ulong Id { get; set; }
@@ -44,6 +49,7 @@ namespace Sanakan.Database.Models
         public ActionAfterExpedition EndOfExpeditionAction { get; set; }
         public string GalleryOrderedIds { get; set; }
         public DateTime LastSignificantActivity { get; set; }
+        public TagsOrder TagsOrder { get; set; }
 
         public virtual ICollection<Card> Cards { get; set; }
         public virtual ICollection<Item> Items { get; set; }

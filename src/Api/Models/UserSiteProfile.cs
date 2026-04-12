@@ -1,5 +1,6 @@
 ﻿#pragma warning disable 1591
 
+using System;
 using System.Collections.Generic;
 
 namespace Sanakan.Api.Models
@@ -113,6 +114,10 @@ namespace Sanakan.Api.Models
         /// Inne trzeciorzędne statystyki
         /// </summary>
         public Dictionary<string, long> MiscStats { get; set; }
+        /// <summary>
+        /// Kiedy użytkownik był ostatnio aktywny
+        /// </summary>
+        public DateTime LastActivity { get; set; }
         /// <summary>
         /// Jak długo był przeliczany profil
         /// </summary>

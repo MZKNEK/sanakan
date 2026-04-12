@@ -662,7 +662,7 @@ namespace Sanakan.Services.PocketWaifu
                 new ItemWithCost(249,   ItemType.RandomNormalBoosterPackS.ToItem()),
                 new ItemWithCost(399,   ItemType.RandomNormalBoosterPackSS.ToItem()),
                 new ItemWithCost(369,   ItemType.ResetCardValue.ToItem()),
-                new ItemWithCost(9999,  ItemType.SetCustomAnimatedImage.ToItem()),
+                new ItemWithCost(4999,  ItemType.SetCustomAnimatedImage.ToItem()),
                 new ItemWithCost(444,   ItemType.GiveTagSlot.ToItem()),
                 new ItemWithCost(99999, ItemType.NotAnItem.ToItem()),
                 new ItemWithCost(55,    ItemType.ChangeBorderVariant.ToItem()),

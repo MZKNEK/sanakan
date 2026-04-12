@@ -340,6 +340,12 @@ namespace Sanakan.Modules
 
                 user.MarkActivity(_time.Now());
 
+                var createdCount = user.GameDeck.Figures.Count(x => x.IsComplete && x.SkeletonQuality > Quality.Beta);
+                if (createdCount % 35 == 34)
+                {
+                    user.GameDeck.AddItem(ItemType.SetCustomAnimatedImage.ToItem());
+                }
+
                 await db.SaveChangesAsync();
 
                 fig.CreatedCardId = card.Id;
@@ -2709,6 +2715,22 @@ namespace Sanakan.Modules
             await SafeReplyAsync("", embed: _waifu.GetItemRecipe(recipe).ToString().ToEmbedMessage(EMType.Info).Build());
         }
 
+        [Command("sortuj moje oznaczenia")]
+        [Alias("sort my tags")]
+        [Summary("ustawia sortowanie oznaczeń")]
+        [Remarks("id"), RequireWaifuCommandChannel]
+        public async Task SortTagsAsync([Summary("kolejność (0 - id, 1 - alfabetycznie)")]TagsOrder order)
+        {
+            using (var db = new Database.DatabaseContext(Config))
+            {
+                var user = await db.GetUserOrCreateAsync(Context.User.Id);
+                user.GameDeck.TagsOrder = order;
+                await db.SaveChangesAsync();
+
+                await SafeReplyAsync("", embed: $"{Context.User.Mention} ustawiono sortowanie oznaczeń na **{(order == TagsOrder.Id ? "id" : "alfabetycznie")}**.".ToEmbedMessage(EMType.Success).Build());
+            }
+        }
+
         [Command("moje oznaczenia", RunMode = RunMode.Async)]
         [Alias("my tags")]
         [Summary("wypisuje dostepne oznaczenia")]
@@ -2720,7 +2742,7 @@ namespace Sanakan.Modules
                 var buser = await db.GetBaseUserAndDontTrackAsync(Context.User.Id);
 
                 var tags = new List<(Tag Tag, long Count)>();
-                foreach (var tag in buser.GameDeck.Tags)
+                foreach (var tag in buser.GameDeck.GetOrderedTags())
                     tags.Add((tag, await db.Cards.AsQueryable().AsNoTracking().CountAsync(x => x.GameDeckId == buser.Id &&  x.Tags.Contains(tag))));
 
                 var dtag = new List<(TagIcon Tag, long Count)>();
