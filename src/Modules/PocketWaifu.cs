@@ -326,7 +326,7 @@ namespace Sanakan.Modules
                 var card = fig.ToCard(endTime);
                 user.GameDeck.Cards.Add(card);
 
-                var wishlists = db.GameDecks.Include(x => x.User).Include(x => x.Wishes).AsNoTracking().Where(x => !x.WishlistIsPrivate && x.Wishes.Any(c => c.Type == WishlistObjectType.Character && c.ObjectId == card.Character)).ToList();
+                var wishlists = db.GameDecks.AsQueryable().AsSplitQuery().Include(x => x.User).Include(x => x.Wishes).AsNoTracking().Where(x => !x.WishlistIsPrivate && x.Wishes.Any(c => c.Type == WishlistObjectType.Character && c.ObjectId == card.Character)).ToList();
                 card.AWhoWantsCount = wishlists.Count(x => x.IsUserActive(_time.Now()));
                 card.WhoWantsCount = wishlists.Count;
 
@@ -824,7 +824,7 @@ namespace Sanakan.Modules
                 {
                     await card.Update(Context.User, _shclient, defaultImage);
 
-                    var wish = await db.GameDecks.Include(x => x.Wishes).AsNoTracking().Where(x => !x.WishlistIsPrivate && x.Wishes.Any(c => c.Type == WishlistObjectType.Character && c.ObjectId == card.Character)).ToListAsync();
+                    var wish = await db.GameDecks.AsQueryable().AsSplitQuery().Include(x => x.User).Include(x => x.Wishes).AsNoTracking().Where(x => !x.WishlistIsPrivate && x.Wishes.Any(c => c.Type == WishlistObjectType.Character && c.ObjectId == card.Character)).ToListAsync();
                     var aCount = wish.Count(x => x.IsUserActive(_time.Now()));
                     var wCount = wish.Count;
 
@@ -1333,7 +1333,7 @@ namespace Sanakan.Modules
                 card.Affection += botuser.GameDeck.AffectionFromKarma();
                 card.Source = CardSource.Daily;
 
-                var wishlists = db.GameDecks.Include(x => x.User).Include(x => x.Wishes).AsNoTracking().Where(x => !x.WishlistIsPrivate && x.Wishes.Any(c => c.Type == WishlistObjectType.Character && c.ObjectId == card.Character)).ToList();
+                var wishlists = db.GameDecks.AsQueryable().AsSplitQuery().Include(x => x.User).Include(x => x.Wishes).AsNoTracking().Where(x => !x.WishlistIsPrivate && x.Wishes.Any(c => c.Type == WishlistObjectType.Character && c.ObjectId == card.Character)).ToList();
                 card.AWhoWantsCount = wishlists.Count(x => x.IsUserActive(_time.Now()));
                 card.WhoWantsCount = wishlists.Count;
 
@@ -2024,23 +2024,30 @@ namespace Sanakan.Modules
 
                 var exe = new Executable($"kc-check-{thisCards.Character}", new Func<Task>(async () =>
                 {
+                    try
+                    {
                     using (var dbs = new Database.DatabaseContext(_config))
                     {
-                        var wish = await db.GameDecks.Include(x => x.User).Include(x => x.Wishes).AsNoTracking().Where(x => !x.WishlistIsPrivate && x.Wishes.Any(c => c.Type == WishlistObjectType.Character && c.ObjectId == thisCards.Character)).ToListAsync();
+                        var wish = await db.GameDecks.AsQueryable().AsSplitQuery().Include(x => x.User).Include(x => x.Wishes).AsNoTracking().Where(x => !x.WishlistIsPrivate && x.Wishes.Any(c => c.Type == WishlistObjectType.Character && c.ObjectId == thisCards.Character)).ToListAsync();
                         var aCount = wish.Count(x => x.IsUserActive(_time.Now()));
                         var wCount = wish.Count;
 
                         var ww = await dbs.CreateOrChangeWishlistCountByAsync(thisCards.Character, thisCards.Name, wCount, aCount, true);
-                        if (ww)
-                        {
-                            var cds = await dbs.Cards.AsQueryable().Where(x => x.Character == thisCards.Character && (x.WhoWantsCount != wCount || x.AWhoWantsCount != aCount)).ToListAsync();
-                            foreach (var c in cds)
-                            {
-                                c.WhoWantsCount = wCount;
-                                c.AWhoWantsCount = aCount;
-                            }
-                        }
+                        // if (ww)
+                        // {
+                        //     var cds = await dbs.Cards.AsQueryable().Where(x => x.Character == thisCards.Character && (x.WhoWantsCount != wCount || x.AWhoWantsCount != aCount)).ToListAsync();
+                        //     foreach (var c in cds)
+                        //     {
+                        //         c.WhoWantsCount = wCount;
+                        //         c.AWhoWantsCount = aCount;
+                        //     }
+                        // }
                         await dbs.SaveChangesAsync();
+                    }
+                    }
+                    catch (Exception ex)
+                    {
+                        await SafeReplyAsync("", embed: $"Laud lama: {ex.Message}".ToEmbedMessage(EMType.Error).Build());
                     }
                 }));
                 await _executor.TryAdd(exe, TimeSpan.FromSeconds(1));
@@ -2109,7 +2116,7 @@ namespace Sanakan.Modules
 
             using (var db = new Database.DatabaseContext(Config))
             {
-                var wishlists = db.GameDecks.Include(x => x.Wishes).Include(x => x.User).Where(x => !x.WishlistIsPrivate && x.Wishes.Any(c => c.Type == WishlistObjectType.Title && c.ObjectId == id)).ToList();
+                var wishlists = db.GameDecks.AsQueryable().AsSplitQuery().Include(x => x.Wishes).Include(x => x.User).Where(x => !x.WishlistIsPrivate && x.Wishes.Any(c => c.Type == WishlistObjectType.Title && c.ObjectId == id)).ToList();
                 if (hideInactive)
                 {
                     wishlists = wishlists.Where(x => x.IsActive(_time.Now())).ToList();

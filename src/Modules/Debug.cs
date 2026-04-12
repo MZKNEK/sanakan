@@ -189,51 +189,66 @@ namespace Sanakan.Modules
         [Remarks("")]
         public async Task RecalculateKCAsync()
         {
-            using (var db = new Database.DatabaseContext(Config))
+            try
             {
-                var wishlistCount = await db.WishlistCountData.ToListAsync();
-                await SafeReplyAsync("", embed: $"Przeliczanie KC dla {wishlistCount.Count} postaci...".ToEmbedMessage(EMType.Bot).Build());
-
-                var updatedList = new List<(ulong Id, int Count, int ACount)>();
-                foreach (var w in wishlistCount)
+                using (var db = new Database.DatabaseContext(Config))
                 {
-                    var wish = await db.GameDecks.Include(x => x.User).Include(x => x.Wishes).AsNoTracking().Where(x => !x.WishlistIsPrivate && x.Wishes.Any(c => c.Type == WishlistObjectType.Character && c.ObjectId == w.Id)).ToListAsync();
-                    var aCount = wish.Count(x => x.IsUserActive(_time.Now()));
-                    var wCount = wish.Count;
+                    var wishlistCount = await db.WishlistCountData.Where(x => x.Count > 0).ToListAsync();
+                    await SafeReplyAsync("", embed: $"Przeliczanie KC dla {wishlistCount.Count} postaci...".ToEmbedMessage(EMType.Bot).Build());
 
-                    if (w.ACount != aCount || w.Count != wCount)
+                    var singleUpdateTime = new Stopwatch();
+                    long updateTime = 0;
+                    var updatedList = new List<(ulong Id, int Count, int ACount)>();
+                    foreach (var w in wishlistCount)
                     {
-                        w.ACount = aCount;
-                        w.Count = wCount;
-                        updatedList.Add((w.Id, w.Count, w.ACount));
-                    }
-                }
+                        var wish = await db.GameDecks.AsQueryable().AsSplitQuery().Include(x => x.User).Include(x => x.Wishes).AsNoTracking().Where(x => !x.WishlistIsPrivate && x.Wishes.Any(c => c.Type == WishlistObjectType.Character && c.ObjectId == w.Id)).ToListAsync();
+                        var aCount = wish.Count(x => x.IsUserActive(_time.Now()));
+                        var wCount = wish.Count;
 
-                long updatedCards = 0;
-                if (updatedList.Count > 0)
-                {
-                    await db.SaveChangesAsync();
-                    await SafeReplyAsync("", embed: $"Przeliczono KC dla {updatedList.Count} postaci. Aktualizowanie kart...".ToEmbedMessage(EMType.Bot).Build());
-
-                    foreach (var w in updatedList)
-                    {
-                        var cards = await db.Cards.AsQueryable().Where(x => x.Character == w.Id).ToListAsync();
-                        updatedCards += cards.Count;
-
-                        foreach (var c in cards)
+                        if (w.ACount != aCount || w.Count != wCount)
                         {
-                            c.WhoWantsCount = w.Count;
-                            c.AWhoWantsCount = w.ACount;
+                            w.ACount = aCount;
+                            w.Count = wCount;
+                            updatedList.Add((w.Id, w.Count, w.ACount));
+                        }
+
+                        if (updateTime == 0)
+                        {
+                            updateTime = singleUpdateTime.ElapsedMilliseconds;
+                            await SafeReplyAsync("", embed: $"Przybliżony czas: {TimeSpan.FromMilliseconds(updateTime * wishlistCount.Count):g}".ToEmbedMessage(EMType.Bot).Build());
                         }
                     }
 
-                    if (updatedCards > 0)
+                    // long updatedCards = 0;
+                    if (updatedList.Count > 0)
                     {
                         await db.SaveChangesAsync();
-                    }
-                }
+                        await SafeReplyAsync("", embed: $"Przeliczono KC dla {updatedList.Count} postaci. Aktualizowanie kart...".ToEmbedMessage(EMType.Bot).Build());
+                        // foreach (var w in updatedList)
+                        // {
+                        //     var cards = await db.Cards.AsQueryable().Where(x => x.Character == w.Id).ToListAsync();
+                        //     updatedCards += cards.Count;
 
-                await SafeReplyAsync("", embed: $"Gotowe. Zaktualizowano {updatedCards} kart.".ToEmbedMessage(EMType.Success).Build());
+                        //     foreach (var c in cards)
+                        //     {
+                        //         c.WhoWantsCount = w.Count;
+                        //         c.AWhoWantsCount = w.ACount;
+                        //     }
+                        // }
+
+                        // if (updatedCards > 0)
+                        // {
+                        //     await db.SaveChangesAsync();
+                        // }
+                    }
+
+                    // await SafeReplyAsync("", embed: $"Gotowe. Zaktualizowano {updatedCards} kart.".ToEmbedMessage(EMType.Success).Build());
+                    await SafeReplyAsync("", embed: $"Gotowe.".ToEmbedMessage(EMType.Success).Build());
+                }
+            }
+            catch (Exception ex)
+            {
+                await SafeReplyAsync("", embed: $"Laud lama: {ex.Message}".ToEmbedMessage(EMType.Error).Build());
             }
         }
 
