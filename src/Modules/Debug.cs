@@ -193,11 +193,11 @@ namespace Sanakan.Modules
             {
                 using (var db = new Database.DatabaseContext(Config))
                 {
-                    var wishlistCount = await db.WishlistCountData.Where(x => x.Count > 0).ToListAsync();
+                    var wishlistCount = await db.WishlistCountData.ToListAsync();
                     await SafeReplyAsync("", embed: $"Przeliczanie KC dla {wishlistCount.Count} postaci...".ToEmbedMessage(EMType.Bot).Build());
 
                     long time = 0;
-                    int batchCount = 1000;
+                    int batchCount = 5000;
                     long updateCounter = 0;
                     var st = Stopwatch.StartNew();
                     var updatedList = new List<(ulong Id, int Count, int ACount)>();
