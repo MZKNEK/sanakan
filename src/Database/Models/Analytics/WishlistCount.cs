@@ -6,6 +6,7 @@ namespace Sanakan.Database.Models.Analytics
     {
         public ulong Id { get; set; }
         public int Count { get; set; }
+        public int ACount { get; set; }
         public string Name { get; set; }
     }
 }

@@ -201,6 +201,7 @@ namespace Sanakan.Services.PocketWaifu
                     newCard.Affection += botUser.GameDeck.AffectionFromKarma();
 
                     var wwc = await db.WishlistCountData.AsQueryable().FirstOrDefaultAsync(x => x.Id == newCard.Character);
+                    newCard.AWhoWantsCount = wwc?.ACount ?? 0;
                     newCard.WhoWantsCount = wwc?.Count ?? 0;
 
                     isOnUserWishlist = botUser.GameDeck.RemoveCharacterFromWishList(newCard.Character, db);

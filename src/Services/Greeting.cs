@@ -155,7 +155,7 @@ namespace Sanakan.Services
 
                         foreach (var w in duser.GameDeck.Wishes.Where(x => x.Type == Database.Models.WishlistObjectType.Character))
                         {
-                            await db.WishlistCountData.CreateOrChangeWishlistCountByAsync(w.ObjectId, w.ObjectName, -1);
+                            await db.WishlistCountData.CreateOrChangeWishlistCountByAsync(w.ObjectId, w.ObjectName, -1, -1);
                         }
 
                         db.Users.Remove(duser);

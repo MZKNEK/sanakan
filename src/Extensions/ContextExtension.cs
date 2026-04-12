@@ -176,7 +176,7 @@ namespace Sanakan.Extensions
             return (await context.Questions.AsQueryable().Include(x => x.Answers).AsNoTracking().AsSplitQuery().FromCacheAsync(new string[] { $"quiz" })).FirstOrDefault(x => x.Id == id);
         }
 
-        public static Database.Models.Analytics.WishlistCount CreateOrChangeWishlistCountBy(this Database.DatabaseContext context, ulong id, string name, int by = 1)
+        public static Database.Models.Analytics.WishlistCount CreateOrChangeWishlistCountBy(this Database.DatabaseContext context, ulong id, string name, int by = 1, int aBy = 1)
         {
             var ww = context.WishlistCountData.AsQueryable().FirstOrDefault(x => x.Id == id);
             if (ww == null)
@@ -185,20 +185,25 @@ namespace Sanakan.Extensions
                 {
                     Id = id,
                     Name = name,
-                    Count = by < 0 ? 0 : by
+                    Count = by < 0 ? 0 : by,
+                    ACount = aBy < 0 ? 0 : aBy
                 };
                 context.WishlistCountData.Add(ww);
                 return ww;
             }
 
             ww.Count += by;
+            ww.ACount += aBy;
             if (ww.Count < 0)
                 ww.Count = 0;
+
+            if (ww.ACount < 0)
+                ww.ACount = 0;
 
             return ww;
         }
 
-        public static async Task<bool> CreateOrChangeWishlistCountByAsync(this Database.DatabaseContext context, ulong id, string name, int by = 1, bool setTo = false)
+        public static async Task<bool> CreateOrChangeWishlistCountByAsync(this Database.DatabaseContext context, ulong id, string name, int by = 1, int aBy = 1, bool setTo = false)
         {
             var ww = await context.WishlistCountData.AsQueryable().FirstOrDefaultAsync(x => x.Id == id);
             if (ww == null)
@@ -207,21 +212,32 @@ namespace Sanakan.Extensions
                 {
                     Id = id,
                     Name = name,
-                    Count = by < 0 ? 0 : by
+                    Count = by < 0 ? 0 : by,
+                    ACount = aBy < 0 ? 0 : aBy
                 };
                 await context.WishlistCountData.AddAsync(ww);
                 return false;
             }
 
-            bool update = setTo ? (ww.Count == by) : false;
+            bool update = setTo && (ww.Count == by);
+            update = update || (setTo && (ww.ACount == aBy));
 
             if (setTo)
+            {
                 ww.Count = by;
+                ww.ACount = aBy;
+            }
             else
+            {
                 ww.Count += by;
+                ww.ACount += aBy;
+            }
 
             if (ww.Count < 0)
                 ww.Count = 0;
+
+            if (ww.ACount < 0)
+                ww.ACount = 0;
 
             if (ww.Name != name)
                 ww.Name = name;
@@ -229,7 +245,7 @@ namespace Sanakan.Extensions
             return update;
         }
 
-        public static async Task<Database.Models.Analytics.WishlistCount> CreateOrChangeWishlistCountByAsync(this DbSet<Database.Models.Analytics.WishlistCount> wwCount, ulong id, string name, int by = 1, bool setTo = false)
+        public static async Task<Database.Models.Analytics.WishlistCount> CreateOrChangeWishlistCountByAsync(this DbSet<Database.Models.Analytics.WishlistCount> wwCount, ulong id, string name, int by = 1, int aBy = 1, bool setTo = false)
         {
             var ww = await wwCount.AsQueryable().FirstOrDefaultAsync(x => x.Id == id);
             if (ww == null)
@@ -238,19 +254,29 @@ namespace Sanakan.Extensions
                 {
                     Id = id,
                     Name = name,
-                    Count = by < 0 ? 0 : by
+                    Count = by < 0 ? 0 : by,
+                    ACount = aBy < 0 ? 0 : aBy
                 };
                 await wwCount.AddAsync(ww);
                 return ww;
             }
 
             if (setTo)
+            {
                 ww.Count = by;
+                ww.ACount = aBy;
+            }
             else
+            {
                 ww.Count += by;
+                ww.ACount += aBy;
+            }
 
             if (ww.Count < 0)
                 ww.Count = 0;
+
+            if (ww.ACount < 0)
+                ww.ACount = 0;
 
             if (ww.Name != name)
                 ww.Name = name;

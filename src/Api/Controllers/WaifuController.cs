@@ -1120,6 +1120,7 @@ namespace Sanakan.Api.Controllers
                 card.FirstIdOwner = user.Id;
 
                 var wwc = allWWCnt.FirstOrDefault(x => x.Id == card.Character);
+                card.AWhoWantsCount = wwc?.ACount ?? 0;
                 card.WhoWantsCount = wwc?.Count ?? 0;
 
                 user.GameDeck.Cards.Add(card);

@@ -326,7 +326,8 @@ namespace Sanakan.Modules
                 var card = fig.ToCard(endTime);
                 user.GameDeck.Cards.Add(card);
 
-                var wishlists = db.GameDecks.Include(x => x.Wishes).AsNoTracking().Where(x => !x.WishlistIsPrivate && x.Wishes.Any(c => c.Type == WishlistObjectType.Character && c.ObjectId == card.Character)).ToList();
+                var wishlists = db.GameDecks.Include(x => x.User).Include(x => x.Wishes).AsNoTracking().Where(x => !x.WishlistIsPrivate && x.Wishes.Any(c => c.Type == WishlistObjectType.Character && c.ObjectId == card.Character)).ToList();
+                card.AWhoWantsCount = wishlists.Count(x => x.IsUserActive(_time.Now()));
                 card.WhoWantsCount = wishlists.Count;
 
                 if (card.Quality == Quality.Eta)
@@ -528,11 +529,11 @@ namespace Sanakan.Modules
 
         [Command("lazyp")]
         [Alias("lp")]
-        [Summary("otwiera pierwszy pakiet z domyślnie ustawionym niszczeniem kc na 3 oraz tagiem wymiana")]
+        [Summary("otwiera pierwszy pakiet z domyślnie ustawionym uwalnianiem aktywnych kc aktywnych na 1 oraz tagiem wymiana")]
         [Remarks("2 nie Wymiana Ulubione"), RequireAnyCommandChannelOrLevel(200)]
-        public async Task OpenPacketLazyModeAsync([Summary("czy zniszczyć karty nie będące na liście życzeń i nie posiadające danej kc?")] uint destroyCards = 1, [Summary("czy zamienić niszczenie na uwalnianie?")] bool changeToRelease = false,
-            [Summary("oznacz niezniszczone karty")] string tag = "wymiana", [Summary("oznacz karty z wishlisty")] string tagWishlist = "ulubione")
-                => await OpenPacketAsync(1, 1, true, destroyCards, changeToRelease, tag, tagWishlist);
+        public async Task OpenPacketLazyModeAsync([Summary("czy zniszczyć karty nie będące na liście życzeń i nie posiadające danej kc?")] uint destroyCards = 1, [Summary("czy zamienić niszczenie na niszczenie?")] bool changeToDestroy = false,
+            [Summary("oznacz niezniszczone karty")] string tag = "wymiana", [Summary("oznacz karty z wishlisty")] string tagWishlist = "ulubione", [Summary("czy kc mają być aktywne?")]bool aliveKc = true)
+                => await OpenPacketAsync(1, 1, true, destroyCards, !changeToDestroy, tag, tagWishlist, aliveKc);
 
         [Command("pakiet")]
         [Alias("pakiet kart", "booster", "booster pack", "pack")]
@@ -540,7 +541,7 @@ namespace Sanakan.Modules
         [Remarks("1 1 tak 2 nie Wymiana Ulubione"), RequireWaifuCommandChannel]
         public async Task OpenPacketAsync([Summary("nr pakietu kart")] int numberOfPack = 0, [Summary("liczba kolejnych pakietów")] int count = 1, [Summary("czy sprawdzić listy życzeń?")] bool checkWishlists = true,
             [Summary("czy zniszczyć karty nie będące na liście życzeń i nie posiadające danej kc?")] uint destroyCards = 0, [Summary("czy zamienić niszczenie na uwalnianie?")] bool changeToRelease = false, [Summary("oznacz niezniszczone karty")] string tag = "",
-            [Summary("oznacz karty z wishlisty")] string tagWishlist = "")
+            [Summary("oznacz karty z wishlisty")] string tagWishlist = "", [Summary("czy kc mają być aktywne?")] bool aliveKc = false)
         {
             if (!string.IsNullOrEmpty(tag) && tag.Contains(" "))
             {
@@ -608,6 +609,7 @@ namespace Sanakan.Modules
                 bUser.MarkActivity(_time.Now());
 
                 var totalCards = new List<Card>();
+                var destroyedCards = new List<Card>();
                 var charactersOnWishlist = new List<string>();
                 foreach (var pack in packs)
                 {
@@ -643,17 +645,22 @@ namespace Sanakan.Modules
                     if (checkWishlists)
                     {
                         bool isOnUserWishlist = charactersOnWishlist.Any(x => x == card.Name);
-                        var wishlistsCnt = allWWCnt.FirstOrDefault(x => x.Id == card.Character)?.Count ?? 0;
+                        var thisCardWishlistInfo = allWWCnt.FirstOrDefault(x => x.Id == card.Character);
+                        var wishlistsCnt = thisCardWishlistInfo?.Count ?? 0;
+                        var awishlistsCnt = thisCardWishlistInfo?.ACount ?? 0;
+                        var wishlistToDestroy = aliveKc ? awishlistsCnt : wishlistsCnt;
                         if (destroyCards > 0)
                         {
-                            if (wishlistsCnt < destroyCards && !isOnUserWishlist)
+                            if (wishlistToDestroy < destroyCards && !isOnUserWishlist)
                             {
+                                destroyedCards.Add(card);
                                 card.DestroyOrRelease(bUser, changeToRelease);
                                 continue;
                             }
                         }
 
                         card.WhoWantsCount = wishlistsCnt;
+                        card.AWhoWantsCount = awishlistsCnt;
                         if (!string.IsNullOrEmpty(tag) && !isOnUserWishlist)
                         {
                             var btag = await db.GetTagAsync(_tags, tag, Context.User.Id);
@@ -683,7 +690,7 @@ namespace Sanakan.Modules
                     if (checkWishlists)
                     {
                         bool isOnUserWishlist = charactersOnWishlist.Any(x => x == card.Name);
-                        if (card.WhoWantsCount < destroyCards && !isOnUserWishlist && destroyCards > 0)
+                        if (destroyedCards.Any(x => x.Id == card.Id))
                         {
                             openString += "🖤 ";
                         }
@@ -817,8 +824,11 @@ namespace Sanakan.Modules
                 {
                     await card.Update(Context.User, _shclient, defaultImage);
 
-                    var wCount = await db.GameDecks.Include(x => x.Wishes).AsNoTracking().Where(x => !x.WishlistIsPrivate && x.Wishes.Any(c => c.Type == WishlistObjectType.Character && c.ObjectId == card.Character)).CountAsync();
-                    await db.WishlistCountData.CreateOrChangeWishlistCountByAsync(card.Character, card.Name, wCount, true);
+                    var wish = await db.GameDecks.Include(x => x.Wishes).AsNoTracking().Where(x => !x.WishlistIsPrivate && x.Wishes.Any(c => c.Type == WishlistObjectType.Character && c.ObjectId == card.Character)).ToListAsync();
+                    var aCount = wish.Count(x => x.IsUserActive(_time.Now()));
+                    var wCount = wish.Count;
+
+                    await db.WishlistCountData.CreateOrChangeWishlistCountByAsync(card.Character, card.Name, wCount, aCount, true);
 
                     await db.SaveChangesAsync();
 
@@ -1323,7 +1333,8 @@ namespace Sanakan.Modules
                 card.Affection += botuser.GameDeck.AffectionFromKarma();
                 card.Source = CardSource.Daily;
 
-                var wishlists = db.GameDecks.Include(x => x.Wishes).AsNoTracking().Where(x => !x.WishlistIsPrivate && x.Wishes.Any(c => c.Type == WishlistObjectType.Character && c.ObjectId == card.Character)).ToList();
+                var wishlists = db.GameDecks.Include(x => x.User).Include(x => x.Wishes).AsNoTracking().Where(x => !x.WishlistIsPrivate && x.Wishes.Any(c => c.Type == WishlistObjectType.Character && c.ObjectId == card.Character)).ToList();
+                card.AWhoWantsCount = wishlists.Count(x => x.IsUserActive(_time.Now()));
                 card.WhoWantsCount = wishlists.Count;
 
                 if (destroyCards > 0 && card.WhoWantsCount < destroyCards && !isOnUserWishlist)
@@ -1776,7 +1787,7 @@ namespace Sanakan.Modules
 
                 foreach (var obj in objs)
                 {
-                    await db.CreateOrChangeWishlistCountByAsync(obj.ObjectId, obj.ObjectName, -1);
+                    await db.CreateOrChangeWishlistCountByAsync(obj.ObjectId, obj.ObjectName, -1, -1);
                     bUser.GameDeck.Wishes.Remove(obj);
                 }
 
@@ -2015,12 +2026,19 @@ namespace Sanakan.Modules
                 {
                     using (var dbs = new Database.DatabaseContext(_config))
                     {
-                        var wCount = await dbs.GameDecks.Include(x => x.Wishes).AsNoTracking().Where(x => !x.WishlistIsPrivate && x.Wishes.Any(c => c.Type == WishlistObjectType.Character && c.ObjectId == thisCards.Character)).CountAsync();
-                        var ww = await dbs.CreateOrChangeWishlistCountByAsync(thisCards.Character, thisCards.Name, wCount, true);
+                        var wish = await db.GameDecks.Include(x => x.Wishes).AsNoTracking().Where(x => !x.WishlistIsPrivate && x.Wishes.Any(c => c.Type == WishlistObjectType.Character && c.ObjectId == thisCards.Character)).ToListAsync();
+                        var aCount = wish.Count(x => x.IsUserActive(_time.Now()));
+                        var wCount = wish.Count;
+
+                        var ww = await dbs.CreateOrChangeWishlistCountByAsync(thisCards.Character, thisCards.Name, wCount, aCount, true);
                         if (ww)
                         {
-                            var cds = await dbs.Cards.AsQueryable().Where(x => x.Character == thisCards.Character && x.WhoWantsCount != wCount).ToListAsync();
-                            foreach (var c in cds) c.WhoWantsCount = wCount;
+                            var cds = await dbs.Cards.AsQueryable().Where(x => x.Character == thisCards.Character && (x.WhoWantsCount != wCount || x.AWhoWantsCount != aCount)).ToListAsync();
+                            foreach (var c in cds)
+                            {
+                                c.WhoWantsCount = wCount;
+                                c.AWhoWantsCount = aCount;
+                            }
                         }
                         await dbs.SaveChangesAsync();
                     }
@@ -2594,7 +2612,9 @@ namespace Sanakan.Modules
                     if (isOnUserWishlist)
                         charactersOnWishlist.Add(card.Name);
 
-                    var wishlistsCnt = allWWCnt.FirstOrDefault(x => x.Id == card.Character)?.Count ?? 0;
+                    var thisCardWishlist = allWWCnt.FirstOrDefault(x => x.Id == card.Character);
+                    var wishlistsCnt = thisCardWishlist?.Count ?? 0;
+                    var awishlistsCnt = thisCardWishlist?.ACount ?? 0;
                     if (destroyCards > 0)
                     {
                         if (wishlistsCnt < destroyCards && !isOnUserWishlist)
@@ -2617,6 +2637,7 @@ namespace Sanakan.Modules
                     }
 
                     card.WhoWantsCount = wishlistsCnt;
+                    card.AWhoWantsCount = awishlistsCnt;
                     bUser.GameDeck.Cards.Add(card);
                 }
 
