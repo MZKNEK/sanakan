@@ -196,8 +196,6 @@ namespace Sanakan.Modules
                     var wishlistCount = await db.WishlistCountData.Where(x => x.Count > 0).ToListAsync();
                     await SafeReplyAsync("", embed: $"Przeliczanie KC dla {wishlistCount.Count} postaci...".ToEmbedMessage(EMType.Bot).Build());
 
-                    var singleUpdateTime = new Stopwatch();
-                    long updateTime = 0;
                     var updatedList = new List<(ulong Id, int Count, int ACount)>();
                     foreach (var w in wishlistCount)
                     {
@@ -210,12 +208,6 @@ namespace Sanakan.Modules
                             w.ACount = aCount;
                             w.Count = wCount;
                             updatedList.Add((w.Id, w.Count, w.ACount));
-                        }
-
-                        if (updateTime == 0)
-                        {
-                            updateTime = singleUpdateTime.ElapsedMilliseconds;
-                            await SafeReplyAsync("", embed: $"Przybliżony czas: {TimeSpan.FromMilliseconds(updateTime * wishlistCount.Count):g}".ToEmbedMessage(EMType.Bot).Build());
                         }
                     }
 
