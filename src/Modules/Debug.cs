@@ -196,6 +196,10 @@ namespace Sanakan.Modules
                     var wishlistCount = await db.WishlistCountData.Where(x => x.Count > 0).ToListAsync();
                     await SafeReplyAsync("", embed: $"Przeliczanie KC dla {wishlistCount.Count} postaci...".ToEmbedMessage(EMType.Bot).Build());
 
+                    long time = 0;
+                    int batchCount = 50;
+                    long updateCounter = 0;
+                    var st = Stopwatch.StartNew();
                     var updatedList = new List<(ulong Id, int Count, int ACount)>();
                     foreach (var w in wishlistCount)
                     {
@@ -209,32 +213,20 @@ namespace Sanakan.Modules
                             w.Count = wCount;
                             updatedList.Add((w.Id, w.Count, w.ACount));
                         }
+
+                        if (time == 0 && updateCounter++ % batchCount == 0)
+                        {
+                            time = st.ElapsedMilliseconds;
+                            await SafeReplyAsync("", embed: $"Przybliżony czas: {TimeSpan.FromMilliseconds(time * (wishlistCount.Count / batchCount)):g}".ToEmbedMessage(EMType.Bot).Build());
+                        }
                     }
 
-                    // long updatedCards = 0;
                     if (updatedList.Count > 0)
                     {
                         await db.SaveChangesAsync();
                         await SafeReplyAsync("", embed: $"Przeliczono KC dla {updatedList.Count} postaci. Aktualizowanie kart...".ToEmbedMessage(EMType.Bot).Build());
-                        // foreach (var w in updatedList)
-                        // {
-                        //     var cards = await db.Cards.AsQueryable().Where(x => x.Character == w.Id).ToListAsync();
-                        //     updatedCards += cards.Count;
-
-                        //     foreach (var c in cards)
-                        //     {
-                        //         c.WhoWantsCount = w.Count;
-                        //         c.AWhoWantsCount = w.ACount;
-                        //     }
-                        // }
-
-                        // if (updatedCards > 0)
-                        // {
-                        //     await db.SaveChangesAsync();
-                        // }
                     }
 
-                    // await SafeReplyAsync("", embed: $"Gotowe. Zaktualizowano {updatedCards} kart.".ToEmbedMessage(EMType.Success).Build());
                     await SafeReplyAsync("", embed: $"Gotowe.".ToEmbedMessage(EMType.Success).Build());
                 }
             }

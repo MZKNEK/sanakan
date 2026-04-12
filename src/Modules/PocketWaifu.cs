@@ -2032,16 +2032,7 @@ namespace Sanakan.Modules
                         var aCount = wish.Count(x => x.IsUserActive(_time.Now()));
                         var wCount = wish.Count;
 
-                        var ww = await dbs.CreateOrChangeWishlistCountByAsync(thisCards.Character, thisCards.Name, wCount, aCount, true);
-                        // if (ww)
-                        // {
-                        //     var cds = await dbs.Cards.AsQueryable().Where(x => x.Character == thisCards.Character && (x.WhoWantsCount != wCount || x.AWhoWantsCount != aCount)).ToListAsync();
-                        //     foreach (var c in cds)
-                        //     {
-                        //         c.WhoWantsCount = wCount;
-                        //         c.AWhoWantsCount = aCount;
-                        //     }
-                        // }
+                        _ = await dbs.CreateOrChangeWishlistCountByAsync(thisCards.Character, thisCards.Name, wCount, aCount, true);
                         await dbs.SaveChangesAsync();
                     }
                     }
