@@ -197,15 +197,32 @@ namespace Sanakan.Modules
                     await SafeReplyAsync("", embed: $"Przeliczanie KC dla {wishlistCount.Count} postaci...".ToEmbedMessage(EMType.Bot).Build());
 
                     long time = 0;
-                    int batchCount = 200;
+                    int batchCount = 1000;
                     long updateCounter = 0;
                     var st = Stopwatch.StartNew();
                     var updatedList = new List<(ulong Id, int Count, int ACount)>();
+                    var allWishlists = await db.GameDecks.AsQueryable().AsSplitQuery().Include(x => x.User).Include(x => x.Wishes).AsNoTracking()
+                        .Where(x => !x.WishlistIsPrivate)
+                        .SelectMany(x => x.Wishes
+                        .Where(c => c.Type == WishlistObjectType.Character),
+                        (deck, wish) => new
+                        {
+                            Deck = deck,
+                            Wish = wish
+                        })
+                        .GroupBy(x => x.Wish.ObjectId)
+                        .Select(g => new
+                        {
+                            ObjectId = g.Key,
+                            Decks = g.Select(x => x.Deck).ToList()
+                        }).ToListAsync();
+
                     foreach (var w in wishlistCount)
                     {
-                        var wish = await db.GameDecks.AsQueryable().AsSplitQuery().Include(x => x.User).Include(x => x.Wishes).AsNoTracking().Where(x => !x.WishlistIsPrivate && x.Wishes.Any(c => c.Type == WishlistObjectType.Character && c.ObjectId == w.Id)).ToListAsync();
-                        var aCount = wish.Count(x => x.IsUserActive(_time.Now()));
-                        var wCount = wish.Count;
+                        // var wish = await db.GameDecks.AsQueryable().AsSplitQuery().Include(x => x.User).Include(x => x.Wishes).AsNoTracking().Where(x => !x.WishlistIsPrivate && x.Wishes.Any(c => c.Type == WishlistObjectType.Character && c.ObjectId == w.Id)).ToListAsync();
+                        var wish = allWishlists.FirstOrDefault(x => x.ObjectId == w.Id);
+                        var aCount = wish?.Decks?.Count(x => x.IsUserActive(_time.Now())) ?? 0;
+                        var wCount = wish?.Decks?.Count ?? 0;
 
                         if (w.ACount != aCount || w.Count != wCount)
                         {
