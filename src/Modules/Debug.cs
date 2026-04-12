@@ -197,7 +197,7 @@ namespace Sanakan.Modules
                     await SafeReplyAsync("", embed: $"Przeliczanie KC dla {wishlistCount.Count} postaci...".ToEmbedMessage(EMType.Bot).Build());
 
                     long time = 0;
-                    int batchCount = 50;
+                    int batchCount = 200;
                     long updateCounter = 0;
                     var st = Stopwatch.StartNew();
                     var updatedList = new List<(ulong Id, int Count, int ACount)>();
@@ -214,17 +214,18 @@ namespace Sanakan.Modules
                             updatedList.Add((w.Id, w.Count, w.ACount));
                         }
 
-                        if (time == 0 && updateCounter++ % batchCount == 0)
+                        if (updateCounter++ % batchCount == 0)
                         {
                             time = st.ElapsedMilliseconds;
-                            await SafeReplyAsync("", embed: $"Przybliżony czas: {TimeSpan.FromMilliseconds(time * (wishlistCount.Count / batchCount)):g}".ToEmbedMessage(EMType.Bot).Build());
+                            st = Stopwatch.StartNew();
+                            await SafeReplyAsync("", embed: $"Przybliżony czas: {TimeSpan.FromMilliseconds(time * ((wishlistCount.Count - updateCounter) / batchCount)):g}".ToEmbedMessage(EMType.Bot).Build());
                         }
                     }
 
                     if (updatedList.Count > 0)
                     {
-                        await db.SaveChangesAsync();
                         await SafeReplyAsync("", embed: $"Przeliczono KC dla {updatedList.Count} postaci. Aktualizowanie kart...".ToEmbedMessage(EMType.Bot).Build());
+                        await db.SaveChangesAsync();
                     }
 
                     await SafeReplyAsync("", embed: $"Gotowe.".ToEmbedMessage(EMType.Success).Build());
