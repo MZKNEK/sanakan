@@ -201,9 +201,13 @@ namespace Sanakan.Modules
                     long updateCounter = 0;
                     var st = Stopwatch.StartNew();
                     var updatedList = new List<(ulong Id, int Count, int ACount)>();
+
                     var allWishlists = await db.GameDecks.AsQueryable().AsSplitQuery().Include(x => x.User).Include(x => x.Wishes).AsNoTracking()
-                        .Where(x => !x.WishlistIsPrivate)
-                        .SelectMany(x => x.Wishes
+                        .Where(x => !x.WishlistIsPrivate).ToListAsync();
+
+                    await SafeReplyAsync("", embed: $"Załadowano wszystkie wishlisty. Przetwarzanie...".ToEmbedMessage(EMType.Bot).Build());
+
+                    var filtered = allWishlists.SelectMany(x => x.Wishes
                         .Where(c => c.Type == WishlistObjectType.Character),
                         (deck, wish) => new
                         {
@@ -215,12 +219,11 @@ namespace Sanakan.Modules
                         {
                             ObjectId = g.Key,
                             Decks = g.Select(x => x.Deck).ToList()
-                        }).ToListAsync();
+                        }).ToList();
 
                     foreach (var w in wishlistCount)
                     {
-                        // var wish = await db.GameDecks.AsQueryable().AsSplitQuery().Include(x => x.User).Include(x => x.Wishes).AsNoTracking().Where(x => !x.WishlistIsPrivate && x.Wishes.Any(c => c.Type == WishlistObjectType.Character && c.ObjectId == w.Id)).ToListAsync();
-                        var wish = allWishlists.FirstOrDefault(x => x.ObjectId == w.Id);
+                        var wish = filtered.FirstOrDefault(x => x.ObjectId == w.Id);
                         var aCount = wish?.Decks?.Count(x => x.IsUserActive(_time.Now())) ?? 0;
                         var wCount = wish?.Decks?.Count ?? 0;
 
