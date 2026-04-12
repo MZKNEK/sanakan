@@ -2095,7 +2095,7 @@ namespace Sanakan.Modules
                 var wishlists =  await db.GameDecks.AsQueryable().AsNoTracking().Where(x => !x.WishlistIsPrivate).Include(x => x.Wishes).Include(x => x.User).Where(x => x.Wishes.Any(c => c.Type == WishlistObjectType.Character && c.ObjectId == thisCards.Character)).ToListAsync();
                 if (hideInactive)
                 {
-                    wishlists = wishlists.Where(x => x.IsActive(_time.Now())).ToList();
+                    wishlists = wishlists.Where(x => x.IsUserActive(_time.Now())).ToList();
                 }
                 if (wishlists.Count < 1)
                 {
@@ -2218,7 +2218,7 @@ namespace Sanakan.Modules
                 var wishlists = db.GameDecks.AsQueryable().AsSplitQuery().Include(x => x.Wishes).Include(x => x.User).Where(x => !x.WishlistIsPrivate && x.Wishes.Any(c => c.Type == WishlistObjectType.Title && c.ObjectId == id)).ToList();
                 if (hideInactive)
                 {
-                    wishlists = wishlists.Where(x => x.IsActive(_time.Now())).ToList();
+                    wishlists = wishlists.Where(x => x.IsUserActive(_time.Now())).ToList();
                 }
                 if (wishlists.Count < 1)
                 {

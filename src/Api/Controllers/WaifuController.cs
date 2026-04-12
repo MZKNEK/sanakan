@@ -244,7 +244,7 @@ namespace Sanakan.Api.Controllers
                     return new FilteredCards{TotalCards = 0, Cards = new List<CardFinalView>()};
                 }
 
-                var query = db.Cards.AsQueryable().AsSplitQuery().Where(x => x.GameDeckId == user.GameDeck.Id).Include(x => x.Tags).AsNoTracking();
+                var query = db.Cards.AsQueryable().AsSplitQuery().Where(x => x.GameDeckId == user.GameDeck.Id).Include(x => x.Tags).AsNoTrackingWithIdentityResolution();
                 if (!string.IsNullOrEmpty(filter.SearchText))
                 {
                     query = query.Where(x => x.Name.Contains(filter.SearchText) || x.Title.Contains(filter.SearchText));
@@ -288,7 +288,7 @@ namespace Sanakan.Api.Controllers
                     return new List<CardFinalView>();
                 }
 
-                var cards = await db.Cards.AsQueryable().AsSplitQuery().Where(x => x.GameDeckId == user.GameDeck.Id).Include(x => x.Tags).Skip((int)offset).Take((int)count).AsNoTracking().ToListAsync();
+                var cards = await db.Cards.AsQueryable().AsSplitQuery().Where(x => x.GameDeckId == user.GameDeck.Id).Include(x => x.Tags).Skip((int)offset).Take((int)count).AsNoTrackingWithIdentityResolution().ToListAsync();
                 var username = await GetUsernameAsync(user.Shinden);
                 return cards.ToView(username, 0, _time);
             }
