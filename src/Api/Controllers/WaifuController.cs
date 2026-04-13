@@ -389,7 +389,7 @@ namespace Sanakan.Api.Controllers
             using (var db = new Database.DatabaseContext(_config))
             {
                 var countingTimer = System.Diagnostics.Stopwatch.StartNew();
-                var expireTime = new MemoryCacheEntryOptions().SetAbsoluteExpiration(_time.Now().AddMinutes(30));
+                var expireTime = new MemoryCacheEntryOptions().SetAbsoluteExpiration(_time.Now().AddMinutes(15));
                 var cached = await db.Users.AsQueryable().AsSplitQuery().Where(x => x.Shinden == id).Include(x => x.GameDeck).ThenInclude(x => x.Tags).Include(x => x.GameDeck)
                     .ThenInclude(x => x.PvPStats).Include(x => x.GameDeck).ThenInclude(x => x.Cards).ThenInclude(x => x.Tags).Include(x => x.Stats).AsNoTracking()
                     .FromCacheAsync(expireTime, $"user-profile-{id}");
@@ -443,6 +443,8 @@ namespace Sanakan.Api.Controllers
                     {"pvpwon",          newPvp.Count(x => x.Result == FightResult.Win)},
                     {"pvpglobal",       user.GameDeck.GlobalPVPRank},
                     {"pvpseason",       user.IsPVPSeasonalRankActive(_time.Now()) ? user.GameDeck.SeasonalPVPRank : 0},
+                    {"kccnt",           cardDetails.TotalKCount},
+                    {"activekccnt",     cardDetails.TotalActiveKCCount}
                 };
 
                 var galleryOrder = string.IsNullOrEmpty(user.GameDeck.GalleryOrderedIds) ? new List<ulong>()

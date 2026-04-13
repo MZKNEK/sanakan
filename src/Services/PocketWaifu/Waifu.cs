@@ -372,6 +372,8 @@ namespace Sanakan.Services.PocketWaifu
         public CardCollectionInfo GetCardsDetails(IEnumerable<Card> cards)
         {
             int prevRestarts = 0;
+            int prevCardKC = 0;
+            int prevCardActiveKC = 0;
             double prevPower = 0;
             var collectionInfo = new CardCollectionInfo();
             foreach (var card in cards)
@@ -379,6 +381,8 @@ namespace Sanakan.Services.PocketWaifu
                 collectionInfo.TotalCardsCount++;
                 collectionInfo.RestartCount += card.RestartCnt;
                 collectionInfo.OverflowCount += card.BorderOverflow;
+                collectionInfo.TotalKCount += card.WhoWantsCount;
+                collectionInfo.TotalActiveKCCount += card.AWhoWantsCount;
 
                 if (card.Unique)
                 {
@@ -437,6 +441,18 @@ namespace Sanakan.Services.PocketWaifu
                 {
                     prevPower = card.CardPower;
                     collectionInfo.MostPowerfulCard = card;
+                }
+
+                if (prevCardKC < card.WhoWantsCount)
+                {
+                    prevCardKC = card.WhoWantsCount;
+                    collectionInfo.CardWithMostKC = card;
+                }
+
+                if (prevCardActiveKC < card.AWhoWantsCount)
+                {
+                    prevCardActiveKC = card.AWhoWantsCount;
+                    collectionInfo.CardWithMostActiveKC = card;
                 }
 
                 if (!collectionInfo.CardsByRarityAndQuality.TryAdd(rqKey, 1))

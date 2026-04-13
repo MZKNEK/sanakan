@@ -526,14 +526,15 @@ namespace Sanakan.Extensions
 
         public static IEnumerable<Tag> GetOrderedTags(this GameDeck deck) => deck.TagsOrder switch
         {
-            TagsOrder.Alphabetically => deck.Tags.OrderBy(x => x.Name),
+            TagsOrder.Alphabetically => deck.Tags.OrderBy(x => x.Name).ThenBy(x => x.Id),
             _ => deck.Tags.AsEnumerable()
         };
 
         public static IEnumerable<Card> GetOrderedGalleryCards(this GameDeck deck, ulong galleryTagId)
         {
             return deck.Cards.Where(x => x.Tags.Any(t => t.Id == galleryTagId)).Take(deck.CardsInGallery)
-                .OrderBy(x => x.Rarity).ThenByDescending(x => x.Quality).ThenBy(x => !x.IsAnimatedImage).ThenBy(x => x.Character);
+                .OrderBy(x => x.Rarity).ThenByDescending(x => x.Quality).ThenByDescending(x => x.BorderOverflow)
+                .ThenBy(x => x.Character).ThenBy(x => x.BorderVariant).ThenBy(x => x.Id);
         }
 
         public static bool IsSupaBad(this GameDeck deck) => deck.Karma <= -5000;
