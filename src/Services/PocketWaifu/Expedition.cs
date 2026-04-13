@@ -547,7 +547,7 @@ namespace Sanakan.Services.PocketWaifu
             var karmaCostPerMinute = card.Expedition switch
             {
                 CardExpedition.NormalItemWithExp    => user.GameDeck.IsGood() ? 0.025 : 0.00225,
-                CardExpedition.ExtremeItemWithExp   => 0.0385,
+                CardExpedition.ExtremeItemWithExp   => 0.0427,
                 CardExpedition.LightItemWithExp     => 0.0055,
                 CardExpedition.LightItems           => 0.0091,
                 CardExpedition.LightExp             => -0.0064,
@@ -557,7 +557,7 @@ namespace Sanakan.Services.PocketWaifu
                 CardExpedition.UltimateEasy         => -0.0261,
                 CardExpedition.UltimateMedium       => 0.0392,
                 CardExpedition.UltimateHard         => 0.1101,
-                CardExpedition.UltimateHardcore     => 0.0666,
+                CardExpedition.UltimateHardcore     => 0.0696,
                 _ => 0
             };
 
