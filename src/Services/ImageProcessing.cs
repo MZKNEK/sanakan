@@ -1564,13 +1564,14 @@ namespace Sanakan.Services
             var hpOps = new RichTextOptions(hpFont) { HorizontalAlignment = HorizontalAlignment.Center, Origin = new Point(114, 630) };
 
             bool hasVariants = !string.IsNullOrEmpty(card.GetCardVariantString());
-            var customColor = GetOrCreateColor("#000000");
+            var customColor = card.BorderVariant == 8
+                ? GetOrCreateColor("#FFD700")
+                : GetOrCreateColor("#000000");
 
             var hpColor = hasVariants ? customColor : GetOrCreateColor("#356231");
             var brush = Brushes.Solid(hpColor);
-            var pen = Pens.Solid(GetOrCreateColor("#0000"), 0.1f);
 
-            image.Mutate(x => x.DrawText(drOps, hpOps, $"{hp}", brush, pen));
+            image.Mutate(x => x.DrawText(drOps, hpOps, $"{hp}", brush, null));
 
             var ops = new RichTextOptions(adFont)
             {
