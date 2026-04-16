@@ -1562,27 +1562,22 @@ namespace Sanakan.Services
 
             var drOps = new DrawingOptions() { Transform = Matrix3x2.CreateRotation(-0.46f) };
             var hpOps = new RichTextOptions(hpFont) { HorizontalAlignment = HorizontalAlignment.Center, Origin = new Point(114, 630) };
-
             bool hasVariants = !string.IsNullOrEmpty(card.GetCardVariantString());
-            var customColor = card.BorderVariant == 8
-                ? GetOrCreateColor("#FFD700")
-                : GetOrCreateColor("#000000");
-
-            var hpColor = hasVariants ? customColor : GetOrCreateColor("#356231");
-            var brush = Brushes.Solid(hpColor);
-
-            image.Mutate(x => x.DrawText(drOps, hpOps, $"{hp}", brush, null));
-
-            var ops = new RichTextOptions(adFont)
+            var customColor = GetOrCreateColor("#000000");
+            Brush hpBrush = Brushes.Solid(hasVariants ? customColor : GetOrCreateColor("#356231"));
+            Brush atkBrush = Brushes.Solid(hasVariants ? customColor : GetOrCreateColor("#78261a"));
+            Brush defBrush = Brushes.Solid(hasVariants ? customColor : GetOrCreateColor("#00527f"));
+            if (card.BorderVariant == 8)
             {
-                HorizontalAlignment = HorizontalAlignment.Center,
-                Origin = new Point(92, 597)
-            };
-            var atkColor = hasVariants ? customColor : GetOrCreateColor("#78261a");
-            image.Mutate(x => x.DrawText(ops, $"{atk}", atkColor));
+                defBrush = atkBrush = hpBrush = new LinearGradientBrush(new PointF(0, 0), new PointF(50, 25), GradientRepetitionMode.Repeat,
+                    new ColorStop[] { new ColorStop(0f, GetOrCreateColor("#a8833c")), new ColorStop(0.5f, GetOrCreateColor("#f9eaaf")), new ColorStop(1f, GetOrCreateColor("#a8833c")) });
+            }
+
+            image.Mutate(x => x.DrawText(drOps, hpOps, $"{hp}", hpBrush, null));
+            var ops = new RichTextOptions(adFont) { HorizontalAlignment = HorizontalAlignment.Center, Origin = new Point(92, 597)};
+            image.Mutate(x => x.DrawText(ops, $"{atk}", atkBrush));
             ops.Origin = new Point(382, 597);
-            var defColor = hasVariants ? customColor : GetOrCreateColor("#00527f");
-            image.Mutate(x => x.DrawText(ops, $"{def}", defColor));
+            image.Mutate(x => x.DrawText(ops, $"{def}", defBrush));
         }
 
         private void ApplyEpsilonStats(Image<Rgba32> image, Card card)
