@@ -1812,7 +1812,7 @@ namespace Sanakan.Modules
                     string response = "";
                     var bUser = await db.GetUserOrCreateSimpleAsync(Context.User.Id);
                     var objs = bUser.GameDeck.Wishes.Where(x => x.Type == type && ids.Any(c => c == x.ObjectId)).ToList();
-                    if (objs.Count > 1)
+                    if (objs.Count >= 1)
                     {
                         await SafeReplyAsync("", embed: "Już posiadasz taki wpis w liście życzeń!".ToEmbedMessage(EMType.Error).Build());
                         return;
