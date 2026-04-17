@@ -2104,7 +2104,7 @@ namespace Sanakan.Services.PocketWaifu
             }
 
             var karmaCost = _expedition.GetKarmaCostOfExpedition(duration.CalcTime, card, user) * karmaMod;
-            var rawAffectionCost = _expedition.GetAffectionCostOfExpedition(duration.CalcTime, card);
+            var rawAffectionCost = _expedition.GetAffectionCostOfExpedition(duration.CalcTime, card, user);
             var affectionCost = rawAffectionCost * multiplier;
 
             if (duration.CalcTime <= 5)

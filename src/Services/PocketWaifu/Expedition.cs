@@ -571,7 +571,7 @@ namespace Sanakan.Services.PocketWaifu
             return karmaCostPerMinute * length * dereMod;
         }
 
-        public double GetAffectionCostOfExpedition(double length, Card card)
+        public double GetAffectionCostOfExpedition(double length, Card card, User user)
         {
             var qualityMod = card.Quality.Fake(card.BorderOverflow) switch
             {
@@ -634,14 +634,14 @@ namespace Sanakan.Services.PocketWaifu
                 _ => 1
             };
 
-            return affectionCostPerMinute * length * rarityMod * dereMod;
+            var karmaDebuff = Math.Max(0, (Math.Abs(user.GameDeck.Karma) - 10000d) / 20000d) + 1;
+            return affectionCostPerMinute * length * rarityMod * dereMod * karmaDebuff;
         }
 
         public double GetMaxPossibleLengthOfExpedition(User user, Card card, CardExpedition expedition = CardExpedition.None)
         {
             expedition = expedition == CardExpedition.None ? card.Expedition : expedition;
-            var karmaDebuff = Math.Max(0, (Math.Abs(user.GameDeck.Karma) - 10000d) / 20000d);
-            var costPerMinute = GetAffectionCostOfExpedition(1, card);
+            var costPerMinute = GetAffectionCostOfExpedition(1, card, user);
             var costOffset = user.GameDeck.IsNeutral() ? 23d : 6d;
             var karmaBonus = user.GameDeck.Karma / 200d;
             var fuel = card.Affection;
@@ -685,7 +685,6 @@ namespace Sanakan.Services.PocketWaifu
                     break;
             }
 
-            costPerMinute *= karmaDebuff + 1;
             costPerMinute *= card.HasImage() ? 1 : 4;
             fuel += costOffset + karmaBonus;
             var time = fuel / costPerMinute;
