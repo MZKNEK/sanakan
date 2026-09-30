@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading;
 using AsyncKeyedLock;
@@ -25,10 +26,28 @@ namespace Sanakan.Services.Supervisor
         private const int COMMAND_MOD = 2;
         private const int UNCONNECTED_MOD = -2;
 
+    #if DEBUG
+        private const bool isDebug = true;
+    #else
+        private const bool isDebug = false;
+    #endif
+
+        private static readonly string[] _imageExtensions =
+        {
+            ".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp"
+        };
+
         private AsyncNonKeyedLocker _semaphore = new AsyncNonKeyedLocker(1);
         private AsyncNonKeyedLocker _semaphoreJoin = new AsyncNonKeyedLocker(1);
+        private AsyncKeyedLocker<ulong> _semaphoreUser = new AsyncKeyedLocker<ulong>(x =>
+        {
+            x.PoolSize = 200;
+            x.PoolInitialFill = 10;
+            x.MaxCount = 1;
+        });
         private Dictionary<ulong, Dictionary<ulong, SupervisorEntity>> _guilds;
         private Dictionary<ulong, Dictionary<string, SupervisorJoinEntity>> _guildsJoin;
+        private Dictionary<ulong, HashSet<ulong>> _temporarySupervisionChannels;
 
         private DiscordSocketClient _client;
         private Moderator _moderator;
@@ -47,10 +66,12 @@ namespace Sanakan.Services.Supervisor
 
             _guilds = new Dictionary<ulong, Dictionary<ulong, SupervisorEntity>>();
             _guildsJoin = new Dictionary<ulong, Dictionary<string, SupervisorJoinEntity>>();
+            _temporarySupervisionChannels = new Dictionary<ulong, HashSet<ulong>>();
 
             _timer = new Timer(async _ =>
             {
                 using (await _semaphore.LockAsync().ConfigureAwait(false))
+                using (await _semaphoreJoin.LockAsync().ConfigureAwait(false))
                 {
                     AutoValidate();
                 }
@@ -58,16 +79,12 @@ namespace Sanakan.Services.Supervisor
             null,
             TimeSpan.FromMinutes(5),
             TimeSpan.FromMinutes(5));
-#if !DEBUG
             _client.MessageReceived += HandleMessageAsync;
             _client.UserJoined += UserJoinedAsync;
-#endif
         }
 
         private async Task HandleMessageAsync(SocketMessage message)
         {
-            if (!_config.Get().Supervision) return;
-
             var msg = message as SocketUserMessage;
             if (msg == null) return;
 
@@ -76,12 +93,17 @@ namespace Sanakan.Services.Supervisor
             var user = msg.Author as SocketGuildUser;
             if (user == null) return;
 
+            if (await HandleSupervisionCommandAsync(user, msg))
+                return;
+
+            if (!_config.Get().Supervision) return;
+
             if (_config.Get().BlacklistedGuilds.Any(x => x == user.Guild.Id))
                 return;
 
             _ = Task.Run(async () =>
             {
-                using (await _semaphore.LockAsync().ConfigureAwait(false))
+                using (await _semaphoreUser.LockAsync(user.Id).ConfigureAwait(false))
                 {
                     await Analize(user, msg);
                 }
@@ -90,63 +112,138 @@ namespace Sanakan.Services.Supervisor
             await Task.CompletedTask;
         }
 
+        private async Task<bool> HandleSupervisionCommandAsync(SocketGuildUser user, SocketUserMessage message)
+        {
+            var command = message.Content?.Trim();
+            var isStatusCommand = string.Equals(command, "isSuper", StringComparison.OrdinalIgnoreCase);
+            var isActivateCommand = string.Equals(command, "activesuper", StringComparison.OrdinalIgnoreCase);
+            if (!isStatusCommand && !isActivateCommand)
+                return false;
+
+            using (var db = new Database.DatabaseContext(_config))
+            {
+                var gConfig = await db.GetCachedGuildFullConfigAsync(user.Guild.Id);
+                if (gConfig == null)
+                    return true;
+
+                var isAdmin = gConfig.AdminRole != 0 && user.Roles.Any(x => x.Id == gConfig.AdminRole);
+                if (!isAdmin)
+                    return true;
+
+                var isBlacklisted = _config.Get().BlacklistedGuilds.Any(x => x == user.Guild.Id);
+                if (isActivateCommand && !isBlacklisted)
+                {
+                    using (await _semaphore.LockAsync().ConfigureAwait(false))
+                    {
+                        if (!_temporarySupervisionChannels.TryGetValue(user.Guild.Id, out var channels))
+                        {
+                            channels = new HashSet<ulong>();
+                            _temporarySupervisionChannels.Add(user.Guild.Id, channels);
+                        }
+
+                        channels.Add(message.Channel.Id);
+                    }
+
+                    await message.Channel.SendMessageAsync("Nadzór został tymczasowo aktywowany na tym kanale (do restartu bota).");
+                    return true;
+                }
+
+                var isTemporary = await IsTemporarySupervisionActiveAsync(user.Guild.Id, message.Channel.Id);
+                var isActive = !isBlacklisted && (isTemporary ||
+                    (gConfig.Supervision && !gConfig.ChannelsWithoutSupervision.Any(x => x.Channel == message.Channel.Id)));
+                var status = isActive ? "aktywny" : "nieaktywny";
+
+                await message.Channel.SendMessageAsync($"Nadzór na tym kanale jest {status}.");
+                return true;
+            }
+        }
+
+        private async Task<bool> IsTemporarySupervisionActiveAsync(ulong guildId, ulong channelId)
+        {
+            using (await _semaphore.LockAsync().ConfigureAwait(false))
+            {
+                return _temporarySupervisionChannels.TryGetValue(guildId, out var channels) &&
+                    channels.Contains(channelId);
+            }
+        }
+
         private async Task Analize(SocketGuildUser user, SocketUserMessage message)
         {
+            Action action;
+            SocketRole muteRole;
+            SocketRole userRole;
+            ITextChannel notifChannel;
+            bool deleteMessage = false;
+            var hasTooManyImages = HasMoreThanThreeImages(message);
+
             using (var db = new Database.DatabaseContext(_config))
             {
                 var gConfig = await db.GetCachedGuildFullConfigAsync(user.Guild.Id);
                 if (gConfig == null) return;
 
-                if (!gConfig.Supervision) return;
+                var isTemporary = await IsTemporarySupervisionActiveAsync(user.Guild.Id, message.Channel.Id);
+                if (!gConfig.Supervision && !isTemporary) return;
 
-                if (!_guilds.Any(x => x.Key == user.Guild.Id))
-                {
-                    _guilds.Add(user.Guild.Id, new Dictionary<ulong, SupervisorEntity>());
+                if (gConfig.AdminRole != 0 && user.Roles.Any(x => x.Id == gConfig.AdminRole))
                     return;
-                }
 
-                var guild = _guilds[user.Guild.Id];
+                if (!isTemporary && gConfig.ChannelsWithoutSupervision.Any(x => x.Channel == message.Channel.Id))
+                    return;
+
                 var messageContent = GetMessageContent(message);
-                if (!guild.Any(x => x.Key == user.Id))
+                muteRole = user.Guild.GetRole(gConfig.MuteRole);
+                userRole = user.Guild.GetRole(gConfig.UserRole);
+                notifChannel = user.Guild.GetTextChannel(gConfig.NotificationChannel);
+
+                using (await _semaphore.LockAsync().ConfigureAwait(false))
                 {
-                    guild.Add(user.Id, new SupervisorEntity(messageContent, _time));
-                    return;
+                    if (!_guilds.Any(x => x.Key == user.Guild.Id))
+                        _guilds.Add(user.Guild.Id, new Dictionary<ulong, SupervisorEntity>());
+
+                    var guild = _guilds[user.Guild.Id];
+                    if (!guild.Any(x => x.Key == user.Id))
+                        guild.Add(user.Id, new SupervisorEntity(_time));
+
+                    var susspect = guild[user.Id];
+                    if (!susspect.IsValid())
+                    {
+                        susspect = new SupervisorEntity(_time);
+                        guild[user.Id] = susspect;
+                    }
+
+                    var thisMessage = susspect.Get(messageContent);
+
+                    bool hasRole = user.Roles.Any(x => x.Id == gConfig.UserRole || x.Id == gConfig.MuteRole) || gConfig.UserRole == 0;
+                    bool isBannable = thisMessage.IsBannable();
+                    if (_config.Get().GiveBanForUrlSpam)
+                    {
+                        isBannable |= thisMessage.AnyUrl(!hasRole);
+                    }
+
+                    action = MakeDecision(messageContent, susspect.Inc(), thisMessage.Inc(), hasRole && !isBannable);
+                    if (hasTooManyImages)
+                    {
+                        deleteMessage = true;
+                        var imageSpamCount = susspect.IncImageSpam();
+                        if (imageSpamCount >= 3)
+                            action = hasRole ? Action.Mute : Action.Ban;
+                    }
                 }
-
-                var susspect = guild[user.Id];
-                if (!susspect.IsValid())
-                {
-                    susspect = new SupervisorEntity(messageContent, _time);
-                    return;
-                }
-
-                var thisMessage = susspect.Get(messageContent);
-                if (!thisMessage.IsValid())
-                {
-                    thisMessage = new SupervisorMessage(messageContent, _time);
-                }
-
-                if (gConfig.AdminRole != 0)
-                    if (user.Roles.Any(x => x.Id == gConfig.AdminRole))
-                        return;
-
-                if (gConfig.ChannelsWithoutSupervision.Any(x => x.Channel == message.Channel.Id))
-                    return;
-
-                var muteRole = user.Guild.GetRole(gConfig.MuteRole);
-                var userRole = user.Guild.GetRole(gConfig.UserRole);
-                var notifChannel = user.Guild.GetTextChannel(gConfig.NotificationChannel);
-
-                bool hasRole = user.Roles.Any(x => x.Id == gConfig.UserRole || x.Id == gConfig.MuteRole) || gConfig.UserRole == 0;
-                bool isBannable = thisMessage.IsBannable();
-                if (_config.Get().GiveBanForUrlSpam)
-                {
-                    isBannable |= thisMessage.AnyUrl(!hasRole);
-                }
-
-                var action = MakeDecision(messageContent, susspect.Inc(), thisMessage.Inc(), hasRole && !isBannable);
-                await MakeActionAsync(action, user, message, userRole, muteRole, notifChannel);
             }
+
+            if (deleteMessage)
+            {
+                try
+                {
+                    await message.DeleteAsync();
+                }
+                catch (Exception ex)
+                {
+                    _logger.Log($"Supervisor: unable to delete image spam message {message.Id}: {ex}");
+                }
+            }
+
+            await MakeActionAsync(action, user, message, userRole, muteRole, notifChannel);
         }
 
         private async Task MakeActionAsync(Action action, SocketGuildUser user, SocketUserMessage message, SocketRole userRole, SocketRole muteRole, ITextChannel notifChannel)
@@ -159,7 +256,11 @@ namespace Sanakan.Services.Supervisor
                     break;
 
                 case Action.Mute:
-                    if (muteRole != null)
+                    if (IsDebugBuild())
+                    {
+                        await message.Channel.SendMessageAsync($"{user.Mention} No i właśnie dostałeś muta.");
+                    }
+                    else if (muteRole != null)
                     {
                         if (user.Roles.Contains(muteRole))
                             return;
@@ -173,13 +274,21 @@ namespace Sanakan.Services.Supervisor
                     break;
 
                 case Action.Ban:
-                    await user.Guild.AddBanAsync(user, 1, "Supervisor(ban) spam/flood/scam urls:" + string.Join(" ", message.Content.GetURLs()));
+                    if (IsDebugBuild())
+                        await message.Channel.SendMessageAsync($"{user.Mention} No i właśnie dostałeś bana.");
+                    else
+                        await user.Guild.AddBanAsync(user, 1, "Supervisor(ban) spam/flood/scam urls:" + string.Join(" ", message.Content.GetURLs()));
                     break;
 
                 default:
                 case Action.None:
                     break;
             }
+        }
+
+        private bool IsDebugBuild()
+        {
+            return isDebug;
         }
 
         private Action MakeDecision(string content, int total, int specified, bool hasRole)
@@ -202,14 +311,14 @@ namespace Sanakan.Services.Supervisor
             int mWSpec = mSpecified - 1;
             int mWTot = mTotal - 1;
 
-            if ((total == mWTot || specified == mWSpec) && hasRole)
-                return Action.Warn;
-
-            if (total == mTotal || specified == mSpecified)
+            if (total >= mTotal || specified >= mSpecified)
             {
                 if (!hasRole) return Action.Ban;
                 return Action.Mute;
             }
+
+            if ((total >= mWTot || specified >= mWSpec) && hasRole)
+                return Action.Warn;
 
             return Action.None;
         }
@@ -221,6 +330,17 @@ namespace Sanakan.Services.Supervisor
                 content = message?.Attachments?.FirstOrDefault()?.Filename ?? "embed";
 
             return content;
+        }
+
+        private bool HasMoreThanThreeImages(SocketUserMessage message)
+        {
+            return message.Attachments.Count(IsImageAttachment) > 3;
+        }
+
+        private bool IsImageAttachment(IAttachment attachment)
+        {
+            var extension = Path.GetExtension(attachment.Filename);
+            return _imageExtensions.Any(x => extension.Equals(x, StringComparison.OrdinalIgnoreCase));
         }
 
         private void AutoValidate()
@@ -242,7 +362,10 @@ namespace Sanakan.Services.Supervisor
                 foreach (var guild in toClean)
                 {
                     foreach (var uId in guild.Value)
-                        _guilds[guild.Key][uId] = new SupervisorEntity(_time);
+                        _guilds[guild.Key].Remove(uId);
+
+                    if (_guilds[guild.Key].Count == 0)
+                        _guilds.Remove(guild.Key);
                 }
 
                 var toClean2 = new Dictionary<ulong, List<string>>();
@@ -260,7 +383,10 @@ namespace Sanakan.Services.Supervisor
                 foreach (var guild in toClean2)
                 {
                     foreach (var nick in guild.Value)
-                        _guildsJoin[guild.Key][nick] = new SupervisorJoinEntity(_time);
+                        _guildsJoin[guild.Key].Remove(nick);
+
+                    if (_guildsJoin[guild.Key].Count == 0)
+                        _guildsJoin.Remove(guild.Key);
                 }
             }
             catch (Exception ex)
@@ -283,7 +409,7 @@ namespace Sanakan.Services.Supervisor
 
             _ = Task.Run(async () =>
             {
-                using (await _semaphoreJoin.LockAsync().ConfigureAwait(false))
+                using (await _semaphoreUser.LockAsync(usr.Id).ConfigureAwait(false))
                 {
                     await AnalizeJoin(usr);
                 }
@@ -294,6 +420,8 @@ namespace Sanakan.Services.Supervisor
 
         private async Task AnalizeJoin(SocketGuildUser user)
         {
+            List<ulong> usersToBan = null;
+
             using (var db = new Database.DatabaseContext(_config))
             {
                 var gConfig = await db.GetCachedGuildFullConfigAsync(user.Guild.Id);
@@ -301,35 +429,36 @@ namespace Sanakan.Services.Supervisor
 
                 if (!gConfig.Supervision) return;
 
-                if (!_guildsJoin.Any(x => x.Key == user.Guild.Id))
+                using (await _semaphoreJoin.LockAsync().ConfigureAwait(false))
                 {
-                    _guildsJoin.Add(user.Guild.Id, new Dictionary<string, SupervisorJoinEntity>());
-                    return;
-                }
+                    if (!_guildsJoin.Any(x => x.Key == user.Guild.Id))
+                        _guildsJoin.Add(user.Guild.Id, new Dictionary<string, SupervisorJoinEntity>());
 
-                var guild = _guildsJoin[user.Guild.Id];
-                if (!guild.Any(x => x.Key == user.Username))
-                {
-                    guild.Add(user.Username, new SupervisorJoinEntity(user.Id, _time));
-                    return;
-                }
+                    var guild = _guildsJoin[user.Guild.Id];
+                    if (!guild.Any(x => x.Key == user.Username))
+                        guild.Add(user.Username, new SupervisorJoinEntity(user.Id, _time));
 
-                var susspect = guild[user.Username];
-                if (!susspect.IsValid())
-                {
-                    susspect = new SupervisorJoinEntity(user.Id, _time);
-                    return;
-                }
-
-                susspect.Add(user.Id);
-                if (susspect.IsBannable())
-                {
-                    foreach(var toBan in susspect.GetUsersToBan())
+                    var susspect = guild[user.Username];
+                    if (!susspect.IsValid())
                     {
-                        var thisUser = user.Guild.GetUser(toBan);
-                        await user.Guild.AddBanAsync(thisUser, 1, $"Supervisor(ban) raid/scam [{user.GetUserNickInGuild()}]");
+                        susspect = new SupervisorJoinEntity(user.Id, _time);
+                        guild[user.Username] = susspect;
                     }
+
+                    susspect.Add(user.Id);
+                    if (susspect.IsBannable())
+                        usersToBan = susspect.GetUsersToBan();
                 }
+            }
+
+            if (usersToBan == null)
+                return;
+
+            foreach (var toBan in usersToBan)
+            {
+                var thisUser = user.Guild.GetUser(toBan);
+                if (thisUser != null)
+                    await user.Guild.AddBanAsync(thisUser, 1, $"Supervisor(ban) raid/scam [{user.GetUserNickInGuild()}]");
             }
         }
     }

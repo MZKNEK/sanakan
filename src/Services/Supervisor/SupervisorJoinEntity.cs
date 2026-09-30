@@ -43,7 +43,9 @@ namespace Sanakan.Services.Supervisor
 
         public List<ulong> GetUsersToBan()
         {
+            LastJoinTime = _timeProvider.Now();
             var copy = IDs.ToList();
+            TotalUsers = 0;
             IDs.Clear();
             return copy;
         }

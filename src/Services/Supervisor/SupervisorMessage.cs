@@ -36,7 +36,8 @@ namespace Sanakan.Services.Supervisor
         public string Content { get; private set; }
         public int Count { get; private set; }
 
-        public bool IsBannable() => _bannableStrings.Any(x => Content.Contains(x));
+        public bool IsBannable() => !string.IsNullOrEmpty(Content) &&
+            _bannableStrings.Any(x => Content.IndexOf(x, StringComparison.OrdinalIgnoreCase) >= 0);
         public bool IsValid() => (_timeProvider.Now() - PreviousOccurrence).TotalMinutes <= 1;
         public int Inc()
         {
@@ -53,7 +54,7 @@ namespace Sanakan.Services.Supervisor
             bool found = false;
             foreach (var url in Content.GetURLs())
             {
-                if (!_whitelistUrls.Any(x => url.Contains(x)))
+                if (!IsWhitelistedUrl(url))
                 {
                     found = true;
                     if (countUrls)
@@ -61,6 +62,17 @@ namespace Sanakan.Services.Supervisor
                 }
             }
             return found;
+        }
+
+        private static bool IsWhitelistedUrl(string url)
+        {
+            var normalizedUrl = url.Contains("://") ? url : $"https://{url}";
+            if (!Uri.TryCreate(normalizedUrl, UriKind.Absolute, out var uri))
+                return false;
+
+            var host = uri.Host.TrimEnd('.');
+            return _whitelistUrls.Any(x => host.Equals(x, StringComparison.OrdinalIgnoreCase) ||
+                host.EndsWith($".{x}", StringComparison.OrdinalIgnoreCase));
         }
     }
 }
