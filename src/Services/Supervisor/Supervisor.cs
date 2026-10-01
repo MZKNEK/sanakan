@@ -1,6 +1,7 @@
 ﻿#pragma warning disable 1591
 
 using System;
+using System.Globalization;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -25,6 +26,7 @@ namespace Sanakan.Services.Supervisor
 
         private const int COMMAND_MOD = 2;
         private const int UNCONNECTED_MOD = -2;
+        private const string IMAGE_SPAM_EXEMPTION = "Szanowny sanakanie, pozwól mi wysłać więcej jak trzy obrazki, błagam!";
 
     #if DEBUG
         private const bool isDebug = true;
@@ -120,6 +122,9 @@ namespace Sanakan.Services.Supervisor
             if (!isStatusCommand && !isActivateCommand)
                 return false;
 
+            if (!isDebug && isActivateCommand)
+                return true;
+
             using (var db = new Database.DatabaseContext(_config))
             {
                 var gConfig = await db.GetCachedGuildFullConfigAsync(user.Guild.Id);
@@ -174,7 +179,8 @@ namespace Sanakan.Services.Supervisor
             SocketRole userRole;
             ITextChannel notifChannel;
             bool deleteMessage = false;
-            var hasTooManyImages = HasMoreThanThreeImages(message);
+            bool sendImageScamWarning = false;
+            var hasTooManyImages = HasMoreThanThreeImages(message) && !IsImageSpamExempt(message);
 
             using (var db = new Database.DatabaseContext(_config))
             {
@@ -225,6 +231,7 @@ namespace Sanakan.Services.Supervisor
                     {
                         deleteMessage = true;
                         var imageSpamCount = susspect.IncImageSpam();
+                        sendImageScamWarning = imageSpamCount == 1;
                         if (imageSpamCount >= 3)
                             action = hasRole ? Action.Mute : Action.Ban;
                     }
@@ -243,11 +250,15 @@ namespace Sanakan.Services.Supervisor
                 }
             }
 
-            await MakeActionAsync(action, user, message, userRole, muteRole, notifChannel);
+            await MakeActionAsync(action, user, message, userRole, muteRole, notifChannel, sendImageScamWarning);
         }
 
-        private async Task MakeActionAsync(Action action, SocketGuildUser user, SocketUserMessage message, SocketRole userRole, SocketRole muteRole, ITextChannel notifChannel)
+        private async Task MakeActionAsync(Action action, SocketGuildUser user, SocketUserMessage message, SocketRole userRole, SocketRole muteRole, ITextChannel notifChannel, bool sendImageScamWarning)
         {
+            if (sendImageScamWarning)
+                await message.Channel.SendMessageAsync("",
+                    embed: $"{user.Mention} wysyłanie samych obrazków traktujemy jako scam. Zachowaj ostrożność.".ToEmbedMessage(EMType.Bot).Build());
+
             switch (action)
             {
                 case Action.Warn:
@@ -335,6 +346,15 @@ namespace Sanakan.Services.Supervisor
         private bool HasMoreThanThreeImages(SocketUserMessage message)
         {
             return message.Attachments.Count(IsImageAttachment) > 3;
+        }
+
+        private bool IsImageSpamExempt(SocketUserMessage message)
+        {
+            return !string.IsNullOrEmpty(message.Content) &&
+                CultureInfo.CurrentCulture.CompareInfo.IndexOf(
+                    message.Content,
+                    IMAGE_SPAM_EXEMPTION,
+                    CompareOptions.IgnoreCase | CompareOptions.IgnoreNonSpace) >= 0;
         }
 
         private bool IsImageAttachment(IAttachment attachment)
