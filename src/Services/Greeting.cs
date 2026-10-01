@@ -54,7 +54,23 @@ namespace Sanakan.Services
                 var notifCh = guild.GetTextChannel(config.NotificationChannel);
                 if (notifCh == null) return;
 
-                await notifCh.SendMessageAsync("", embed: "Poleciał, szczegółów raczej brak.".ToEmbedMessage(EMType.Error).WithUser(user, true).Build());
+                var banReason = string.Empty;
+                try
+                {
+                    var ban = await guild.GetBanAsync(user.Id);
+                    if (!string.IsNullOrWhiteSpace(ban?.Reason))
+                        banReason = ban.Reason;
+                }
+                catch (Exception ex)
+                {
+                    _logger.Log($"Greeting: nie udało się pobrać powodu bana użytkownika {user.Id}: {ex}");
+                }
+
+                var banMessage = string.IsNullOrWhiteSpace(banReason)
+                    ? "Poleciał, szczegółów raczej brak."
+                    : $"Poleciał. Powód: {banReason}";
+
+                await notifCh.SendMessageAsync("", embed: banMessage.ToEmbedMessage(EMType.Error).WithUser(user, true).Build());
             }
         }
 

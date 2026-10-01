@@ -180,6 +180,7 @@ namespace Sanakan.Services.Supervisor
             ITextChannel notifChannel;
             bool deleteMessage = false;
             bool sendImageScamWarning = false;
+            string penaltyReason = null;
             var hasTooManyImages = HasMoreThanThreeImages(message) && !IsImageSpamExempt(message);
 
             using (var db = new Database.DatabaseContext(_config))
@@ -220,20 +221,29 @@ namespace Sanakan.Services.Supervisor
                     var thisMessage = susspect.Get(messageContent);
 
                     bool hasRole = user.Roles.Any(x => x.Id == gConfig.UserRole || x.Id == gConfig.MuteRole) || gConfig.UserRole == 0;
-                    bool isBannable = thisMessage.IsBannable();
+                    bool hasSuspiciousUrl = thisMessage.IsBannable();
+                    bool hasNonWhitelistedUrl = false;
                     if (_config.Get().GiveBanForUrlSpam)
                     {
-                        isBannable |= thisMessage.AnyUrl(!hasRole);
+                        hasNonWhitelistedUrl = thisMessage.AnyUrl(!hasRole);
                     }
 
+                    bool isBannable = hasSuspiciousUrl || hasNonWhitelistedUrl;
                     action = MakeDecision(messageContent, susspect.Inc(), thisMessage.Inc(), hasRole && !isBannable);
+                    var imageSpamCount = 0;
                     if (hasTooManyImages)
                     {
                         deleteMessage = true;
-                        var imageSpamCount = susspect.IncImageSpam();
+                        imageSpamCount = susspect.IncImageSpam();
                         sendImageScamWarning = imageSpamCount == 1;
                         if (imageSpamCount >= 3)
                             action = hasRole ? Action.Mute : Action.Ban;
+                    }
+
+                    if (action == Action.Mute || action == Action.Ban)
+                    {
+                        penaltyReason = GetPenaltyReason(action, messageContent, hasSuspiciousUrl,
+                            hasNonWhitelistedUrl, imageSpamCount, susspect.TotalMessages, thisMessage.Count);
                     }
                 }
             }
@@ -250,10 +260,10 @@ namespace Sanakan.Services.Supervisor
                 }
             }
 
-            await MakeActionAsync(action, user, message, userRole, muteRole, notifChannel, sendImageScamWarning);
+            await MakeActionAsync(action, user, message, userRole, muteRole, notifChannel, sendImageScamWarning, penaltyReason);
         }
 
-        private async Task MakeActionAsync(Action action, SocketGuildUser user, SocketUserMessage message, SocketRole userRole, SocketRole muteRole, ITextChannel notifChannel, bool sendImageScamWarning)
+        private async Task MakeActionAsync(Action action, SocketGuildUser user, SocketUserMessage message, SocketRole userRole, SocketRole muteRole, ITextChannel notifChannel, bool sendImageScamWarning, string penaltyReason)
         {
             if (sendImageScamWarning)
                 await message.Channel.SendMessageAsync("",
@@ -278,7 +288,7 @@ namespace Sanakan.Services.Supervisor
 
                         using (var db = new Database.DatabaseContext(_config))
                         {
-                            var info = await _moderator.MuteUserAsync(user, muteRole, null, userRole, db, 24, "spam/flood");
+                            var info = await _moderator.MuteUserAsync(user, muteRole, null, userRole, db, 24, penaltyReason);
                             await _moderator.NotifyAboutPenaltyAsync(user, notifChannel, info);
                         }
                     }
@@ -288,13 +298,36 @@ namespace Sanakan.Services.Supervisor
                     if (IsDebugBuild())
                         await message.Channel.SendMessageAsync($"{user.Mention} No i właśnie dostałeś bana.");
                     else
-                        await user.Guild.AddBanAsync(user, 1, "Supervisor(ban) spam/flood/scam urls:" + string.Join(" ", message.Content.GetURLs()));
+                        await user.Guild.AddBanAsync(user, 1, penaltyReason);
                     break;
 
                 default:
                 case Action.None:
                     break;
             }
+        }
+
+        private string GetPenaltyReason(Action action, string messageContent, bool hasSuspiciousUrl,
+            bool hasNonWhitelistedUrl, int imageSpamCount, int totalMessages, int specifiedMessages)
+        {
+            var penalty = action == Action.Ban ? "ban" : "mute";
+
+            if (imageSpamCount >= 3)
+                return $"Automatyczny {penalty}: spam obrazkami - wysłano {imageSpamCount} wiadomości zawierających więcej niż trzy obrazki w ciągu 2 minut.";
+
+            if (hasSuspiciousUrl)
+                return $"Automatyczny ban: wykryto podejrzany link lub wzorzec phishingowy. Adresy: {GetUrlsDescription(messageContent)}";
+
+            if (hasNonWhitelistedUrl)
+                return $"Automatyczny ban: spam linkami - wykryto adres spoza listy zaufanych domen. Adresy: {GetUrlsDescription(messageContent)}";
+
+            return $"Automatyczny {penalty}: spam/flood - {specifiedMessages} powtórzeń tej samej treści, łącznie {totalMessages} wiadomości w krótkim czasie.";
+        }
+
+        private string GetUrlsDescription(string content)
+        {
+            var urls = content.GetURLs().ToList();
+            return urls.Count == 0 ? "nie odczytano adresu" : string.Join(" ", urls).TrimToLength(450);
         }
 
         private bool IsDebugBuild()
@@ -478,7 +511,8 @@ namespace Sanakan.Services.Supervisor
             {
                 var thisUser = user.Guild.GetUser(toBan);
                 if (thisUser != null)
-                    await user.Guild.AddBanAsync(thisUser, 1, $"Supervisor(ban) raid/scam [{user.GetUserNickInGuild()}]");
+                    await user.Guild.AddBanAsync(thisUser, 1,
+                        $"Automatyczny ban: raid - wykryto {usersToBan.Count} kont, które dołączyły w ciągu 2 minut z tą samą nazwą użytkownika ({user.Username}).");
             }
         }
     }
