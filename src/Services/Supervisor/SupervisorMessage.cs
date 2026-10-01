@@ -49,19 +49,15 @@ namespace Sanakan.Services.Supervisor
             return ++Count;
         }
 
-        public bool AnyUrl(bool countUrls = false)
+        public bool AnyUrl()
         {
-            bool found = false;
             foreach (var url in Content.GetURLs())
             {
                 if (!IsWhitelistedUrl(url))
-                {
-                    found = true;
-                    if (countUrls)
-                        Count++;
-                }
+                    return true;
             }
-            return found;
+
+            return false;
         }
 
         private static bool IsWhitelistedUrl(string url)

@@ -55,7 +55,7 @@ namespace Sanakan.Extensions
         }
 
         public static List<string> GetURLs(this string s) =>
-            new Regex(@"(?<![\w@])(?:(?:https?|ftp):\/\/)?(?:www\.)?(?:[\w-]+\.)+[\p{L}]{2,63}(?:[\w\-\.,@?^=%&amp;:/~\+#]*[\w\-\@?^=%&amp;/~\+#])?", RegexOptions.Compiled | RegexOptions.IgnoreCase).Matches(s).Select(x => x.Value).ToList();
+             new Regex(@"(http|ftp|https):\/\/([\w\-_]+(?:(?:\.[\w\-_]+)+))([\w\-\.,@?^=%&amp;:/~\+#]*[\w\-\@?^=%&amp;/~\+#])?", RegexOptions.Compiled | RegexOptions.IgnoreCase).Matches(s).Select(x => x.Value).ToList();
 
         public static string GetQMarksIfEmpty(this string s)
         {

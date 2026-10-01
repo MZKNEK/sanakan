@@ -218,14 +218,17 @@ namespace Sanakan.Services.Supervisor
                         guild[user.Id] = susspect;
                     }
 
-                    var thisMessage = susspect.Get(messageContent);
+                    var trackedContent = string.IsNullOrEmpty(message.Content)
+                        ? $"attachment:{message.Id}"
+                        : messageContent;
+                    var thisMessage = susspect.Get(trackedContent);
 
                     bool hasRole = user.Roles.Any(x => x.Id == gConfig.UserRole || x.Id == gConfig.MuteRole) || gConfig.UserRole == 0;
                     bool hasSuspiciousUrl = thisMessage.IsBannable();
                     bool hasNonWhitelistedUrl = false;
                     if (_config.Get().GiveBanForUrlSpam)
                     {
-                        hasNonWhitelistedUrl = thisMessage.AnyUrl(!hasRole);
+                        hasNonWhitelistedUrl = thisMessage.AnyUrl();
                     }
 
                     bool isBannable = hasSuspiciousUrl || hasNonWhitelistedUrl;
@@ -369,11 +372,7 @@ namespace Sanakan.Services.Supervisor
 
         private string GetMessageContent(SocketUserMessage message)
         {
-            string content = message.Content;
-            if (string.IsNullOrEmpty(message.Content))
-                content = message?.Attachments?.FirstOrDefault()?.Filename ?? "embed";
-
-            return content;
+            return string.IsNullOrEmpty(message.Content) ? "embed" : message.Content;
         }
 
         private bool HasMoreThanThreeImages(SocketUserMessage message)
