@@ -11,6 +11,10 @@ namespace Sanakan.Api.Models
     public class UserSiteProfile
     {
         /// <summary>
+        /// Id użytkownika na Discordzie
+        /// </summary>
+        public string DiscordId { get; set; }
+        /// <summary>
         /// Liczba posaidanych kart z podziałem na jakość
         /// </summary>
         public Dictionary<string, long> CardsCount { get; set; }

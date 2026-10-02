@@ -464,6 +464,7 @@ namespace Sanakan.Api.Controllers
                 var username = await GetUsernameAsync(user.Shinden);
                 var profile = new UserSiteProfile
                 {
+                    DiscordId = user.Id.ToString(),
                     TagList = tags,
                     Wallet = wallet,
                     TotalUltimateCardPower = cardDetails.TotalUltimateCardPower,
