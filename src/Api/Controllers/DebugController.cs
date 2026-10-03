@@ -26,25 +26,27 @@ namespace Sanakan.Api.Controllers
         /// Zabija bota
         /// </summary>
         [HttpPost("kill"), Authorize(Policy = "Site")]
-        public async Task RestartBotAsync()
+        public async Task<IActionResult> RestartBotAsync()
         {
             await _client.LogoutAsync();
             _logger.Log("Kill app from web.");
             await Task.Delay(1500);
             Environment.Exit(0);
+            return Ok();
         }
 
         /// <summary>
         /// Aktualizuje bota
         /// </summary>
         [HttpPost("update"), Authorize(Policy = "Site")]
-        public async Task UpdateBotAsync()
+        public async Task<IActionResult> UpdateBotAsync()
         {
             await _client.LogoutAsync();
             System.IO.File.Create("./updateNow");
             _logger.Log("Update app from web.");
             await Task.Delay(1500);
             Environment.Exit(200);
+            return Ok();
         }
     }
 }

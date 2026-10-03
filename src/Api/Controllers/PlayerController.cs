@@ -266,7 +266,7 @@ namespace Sanakan.Api.Controllers
         public Task<IActionResult> SetExchangeConditionsAsync([FromBody] string conditions)
         {
             if (conditions?.Length > MaxExchangeConditionsLength)
-                return Task.FromResult("Text too long!".ToResponse(400));
+                return Task.FromResult<IActionResult>("Text too long!".ToResponse(400));
 
             return RunAsPlayerAsync("exchange-conditions", async (db, discordId) =>
             {

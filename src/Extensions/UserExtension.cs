@@ -235,6 +235,14 @@ namespace Sanakan.Extensions
             return price;
         }
 
+        public const int GallerySlotsPerPurchase = 5;
+        public const int GallerySlotPrice = 100;
+
+        public static long CalculatePriceOfIncGallery(uint count) => (long)GallerySlotPrice * count;
+
+        public static bool CanIncGalleryLimit(this GameDeck deck, uint count)
+            => count > 0 && deck.CardsInGallery + (long)GallerySlotsPerPurchase * count <= int.MaxValue;
+
         private const double PVPRankMultiplier = 0.45;
 
         public static string GetRankName(this GameDeck deck, long? rank = null)
@@ -600,6 +608,8 @@ namespace Sanakan.Extensions
         {
             return deck.Wishes.Where(x => x.Type == WishlistObjectType.Character).Select(x => x.ObjectId).ToList();
         }
+
+        public static bool AffectsWishlistCount(this WishlistObject obj) => obj.Type == WishlistObjectType.Character;
 
         public static bool RemoveCharacterFromWishList(this GameDeck deck, ulong id, Database.DatabaseContext db)
         {

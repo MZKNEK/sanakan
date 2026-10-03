@@ -207,9 +207,9 @@ namespace Sanakan.Services.PocketWaifu
                     isOnUserWishlist = botUser.GameDeck.RemoveCharacterFromWishList(newCard.Character, db);
                     botUser.GameDeck.Cards.Add(newCard);
 
-                    QueryCacheManager.ExpireTag(new string[] { $"user-{botUser.Id}", "users" });
-
                     await db.SaveChangesAsync();
+
+                    QueryCacheManager.ExpireTag(new string[] { $"user-{botUser.Id}", "users" });
 
                     if (db.AddActivityFromNewCard(newCard, isOnUserWishlist, _time, botUser, winner.GetUserNickInGuild()))
                     {

@@ -282,6 +282,18 @@ namespace Sanakan.Extensions
         public static bool IsActive(this TimeStatus status, DateTime currentTime)
             => status.IsSet() && !status.HasEnded(currentTime);
 
+        public static void ExtendSubscription(this TimeStatus status, DateTime currentTime, int months = 1)
+        {
+            status.EndsAt = (status.IsActive(currentTime) ? status.EndsAt : currentTime).AddMonths(months);
+            status.BValue = true;
+        }
+
+        public static void StartSubscription(this TimeStatus status, DateTime currentTime, int months = 1)
+        {
+            status.EndsAt = currentTime.AddMonths(months);
+            status.BValue = true;
+        }
+
         public static string ToView(this TimeStatus status, DateTime currentTime)
         {
             if (status.Type.IsQuest())

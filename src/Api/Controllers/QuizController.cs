@@ -26,7 +26,7 @@ namespace Sanakan.Api.Controllers
         /// Pobiera liste pytań
         /// </summary>
         [HttpGet("questions")]
-        public async Task<List<Database.Models.Question>> GetQuestionsAsync()
+        public async Task<ActionResult<List<Database.Models.Question>>> GetQuestionsAsync()
         {
             using (var db = new Database.DatabaseContext(_config))
             {
@@ -40,7 +40,7 @@ namespace Sanakan.Api.Controllers
         /// <param name="id">id pytania</param>
         /// <response code="500">Internal Server Error</response>
         [HttpGet("question/{id}")]
-        public async Task<Database.Models.Question> GetQuestionAsync(ulong id)
+        public async Task<ActionResult<Database.Models.Question>> GetQuestionAsync(ulong id)
         {
             using (var db = new Database.DatabaseContext(_config))
             {
@@ -54,7 +54,7 @@ namespace Sanakan.Api.Controllers
         /// <param name="question">pytanie</param>
         /// <response code="500">Internal Server Error</response>
         [HttpPost("question")]
-        public async Task AddQuestionAsync([FromBody]Database.Models.Question question)
+        public async Task<IActionResult> AddQuestionAsync([FromBody]Database.Models.Question question)
         {
             using (var db = new Database.DatabaseContext(_config))
             {
@@ -63,7 +63,7 @@ namespace Sanakan.Api.Controllers
 
                 QueryCacheManager.ExpireTag(new string[] { $"quiz" });
             }
-            await "Question added!".ToResponse(200).ExecuteResultAsync(ControllerContext);
+            return "Question added!".ToResponse(200);
         }
 
         /// <summary>
@@ -73,11 +73,11 @@ namespace Sanakan.Api.Controllers
         /// <response code="404">Question not found</response>
         /// <response code="500">Internal Server Error</response>
         [HttpDelete("question/{id}")]
-        public async Task RemoveQuestionAsync(ulong id)
+        public async Task<IActionResult> RemoveQuestionAsync(ulong id)
         {
             using (var db = new Database.DatabaseContext(_config))
             {
-                var question = await db.Questions.Include(x => x.Answer).FirstOrDefaultAsync(x => x.Id == id);
+                var question = await db.Questions.Include(x => x.Answers).FirstOrDefaultAsync(x => x.Id == id);
                 if (question != null)
                 {
                     db.Questions.Remove(question);
@@ -85,11 +85,10 @@ namespace Sanakan.Api.Controllers
 
                     QueryCacheManager.ExpireTag(new string[] { $"quiz" });
 
-                    await "Question removed!".ToResponse(200).ExecuteResultAsync(ControllerContext);
-                    return;
+                    return "Question removed!".ToResponse(200);
                 }
             }
-            await "Question not found!".ToResponse(404).ExecuteResultAsync(ControllerContext);
+            return "Question not found!".ToResponse(404);
         }
     }
 }

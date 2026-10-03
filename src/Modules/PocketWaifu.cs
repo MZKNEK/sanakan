@@ -949,6 +949,13 @@ namespace Sanakan.Modules
                             return;
                         }
 
+                        var sacBlockReason = cardSac.GetUpgradeSacrificeBlockReason(card, _tags.HasTag(cardSac, Services.PocketWaifu.TagType.Favorite));
+                        if (sacBlockReason != null)
+                        {
+                            await SafeReplyAsync("", embed: $"{Context.User.Mention} {sacBlockReason}".ToEmbedMessage(EMType.Error).Build());
+                            return;
+                        }
+
                         var cardToSacOverflowPower = (int)cardSac.Quality + cardSac.BorderOverflow;
                         if (cardOverflowPower != cardToSacOverflowPower)
                         {
@@ -1777,7 +1784,9 @@ namespace Sanakan.Modules
 
                 foreach (var obj in objs)
                 {
-                    await db.CreateOrChangeWishlistCountByAsync(obj.ObjectId, obj.ObjectName, -1, -1);
+                    if (obj.AffectsWishlistCount())
+                        await db.CreateOrChangeWishlistCountByAsync(obj.ObjectId, obj.ObjectName, -1, -1);
+
                     bUser.GameDeck.Wishes.Remove(obj);
                 }
 
@@ -2524,13 +2533,19 @@ namespace Sanakan.Modules
         [Remarks("0"), RequireWaifuCommandChannel]
         public async Task IncGalleryLimitAsync([Summary("krotność użycia polecenia")] uint count = 0)
         {
-            int cost = 100 * (int)count;
+            long cost = UserExtension.CalculatePriceOfIncGallery(count);
             using (var db = new Database.DatabaseContext(Config))
             {
                 var bUser = await db.GetUserOrCreateSimpleAsync(Context.User.Id);
                 if (count < 1)
                 {
                     await SafeReplyAsync("", embed: $"{Context.User.Mention} obecny limit to: {bUser.GameDeck.CardsInGallery}.".ToEmbedMessage(EMType.Info).Build());
+                    return;
+                }
+
+                if (!bUser.GameDeck.CanIncGalleryLimit(count))
+                {
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} nie można aż tak zwiększyć limitu.".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
@@ -2541,7 +2556,7 @@ namespace Sanakan.Modules
                 }
 
                 bUser.TcCnt -= cost;
-                bUser.GameDeck.CardsInGallery += 5 * (int)count;
+                bUser.GameDeck.CardsInGallery += UserExtension.GallerySlotsPerPurchase * (int)count;
 
                 await db.SaveChangesAsync();
 

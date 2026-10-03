@@ -1025,6 +1025,26 @@ namespace Sanakan.Extensions
             || card.IsBlockadeFromFatigue()
             || card.Expedition != CardExpedition.None;
 
+        public static string GetUpgradeSacrificeBlockReason(this Card sacrifice, Card target, bool isFavorite)
+        {
+            if (sacrifice.Id == target.Id)
+                return "nie można poświęcić karty, którą się ulepsza.";
+
+            if (sacrifice.Expedition != CardExpedition.None)
+                return "karta do poświęcenia jest na wyprawie!";
+
+            if (sacrifice.InCage)
+                return "karta do poświęcenia znajduje się w klatce.";
+
+            if (sacrifice.Active)
+                return "karta do poświęcenia znajduje się w talii.";
+
+            if (isFavorite)
+                return "karta do poświęcenia jest oznaczona jako ulubiona.";
+
+            return null;
+        }
+
         public static bool IsDisallowedToExchange(this Card card) => card is null
             || card.Active
             || card.InCage

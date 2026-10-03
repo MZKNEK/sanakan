@@ -3,7 +3,6 @@
 using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
-using AsyncKeyedLock;
 using Sanakan.Services.Executor;
 using Shinden.Logger;
 using System;
@@ -22,8 +21,8 @@ namespace Sanakan.Services.Session
         private ILogger _logger;
         private Timer _timer;
 
-        private AsyncNonKeyedLocker _semaphore = new AsyncNonKeyedLocker(1);
-        private List<ISession> _sessions = new List<ISession>();
+        private readonly object _lock = new object();
+        private readonly List<ISession> _sessions = new List<ISession>();
 
         public SessionManager(DiscordSocketClient client, IExecutor executor, ILogger logger)
         {
@@ -49,13 +48,13 @@ namespace Sanakan.Services.Session
             _client.ReactionRemoved += HandleReactionRemovedAsync;
         }
 
-        public async Task<bool> TryAddSession<T>(T session) where T : ISession
+        public Task<bool> TryAddSession<T>(T session) where T : ISession
         {
-            if (SessionExist(session))
-                return false;
-
-            using(await _semaphore.LockAsync().ConfigureAwait(false))
+            lock (_lock)
             {
+                if (SessionExistUnsafe(session))
+                    return Task.FromResult(false);
+
                 if (_sessions.Count < 1)
                     ToggleAutoValidation(true);
 
@@ -63,33 +62,59 @@ namespace Sanakan.Services.Session
                 session.MarkAsAdded();
             }
 
-            return true;
+            return Task.FromResult(true);
         }
 
         public async Task KillSessionIfExistAsync<T>(T session) where T : ISession
         {
-            var thisSession = _sessions.FirstOrDefault(x => x.IsOwner(session.GetOwner())
-                && ((x.GetId() == null) ? (x is T) : (x.GetId() == session.GetId())));
+            ISession thisSession;
+            lock (_lock)
+            {
+                thisSession = _sessions.FirstOrDefault(x => x.IsOwner(session.GetOwner())
+                    && ((x.GetId() == null) ? (x is T) : (x.GetId() == session.GetId())));
+            }
 
             if (thisSession != null) await DisposeAsync(thisSession).ConfigureAwait(false);
         }
 
         public bool SessionExist<T>(T session) where T : ISession
+        {
+            lock (_lock)
+            {
+                return SessionExistUnsafe(session);
+            }
+        }
+
+        public bool SessionExist(IUser user, Type sessionType)
+        {
+            lock (_lock)
+            {
+                return _sessions.Where(x => x.IsOwner(user)).Any(x => (x.GetType() == sessionType));
+            }
+        }
+
+        private bool SessionExistUnsafe<T>(T session) where T : ISession
             => _sessions.Where(x => x.IsOwner(session.GetParticipants()))
                 .Any(x => ((x.GetId() == null) ? (x is T) : (x.GetId() == session.GetId())));
 
-		public bool SessionExist(IUser user, Type sessionType)
-		   => _sessions.Where(x => x.IsOwner(user)).Any(x => (x.GetType() == sessionType));
-
-		private async Task DisposeAsync(ISession session)
+        private List<ISession> FindSessions(Func<ISession, bool> predicate)
         {
-            using(await _semaphore.LockAsync().ConfigureAwait(false))
+            lock (_lock)
             {
-                if (_sessions.Contains(session))
-                    _sessions.Remove(session);
-
-                await session.DisposeAsync().ConfigureAwait(false);
+                return _sessions.Where(predicate).ToList();
             }
+        }
+
+        // sesja może zostać zamknięta z kilku miejsc naraz (timer, koniec akcji, nowa sesja), sprząta tylko pierwsze wywołanie
+        private async Task DisposeAsync(ISession session)
+        {
+            lock (_lock)
+            {
+                if (!_sessions.Remove(session))
+                    return;
+            }
+
+            await session.DisposeAsync().ConfigureAwait(false);
         }
 
         private async Task RunSessions(List<ISession> sessions, SessionContext context)
@@ -131,7 +156,7 @@ namespace Sanakan.Services.Session
 
             if (msg.Author.IsBot || msg.Author.IsWebhook) return;
 
-            var userSessions = _sessions.FindAll(x => x.IsOwner(message.Author)
+            var userSessions = FindSessions(x => x.IsOwner(message.Author)
                 && x.GetEventType().HasFlag(ExecuteOn.Message));
 
             if (userSessions.Count == 0) return;
@@ -146,7 +171,7 @@ namespace Sanakan.Services.Session
 
             if ((user.IsBot || user.IsWebhook)) return;
 
-            var userSessions = _sessions.FindAll(x => x.IsOwner(user)
+            var userSessions = FindSessions(x => x.IsOwner(user)
                 && x.GetEventType().HasFlag(ExecuteOn.ReactionAdded));
 
             if (userSessions.Count == 0) return;
@@ -173,7 +198,7 @@ namespace Sanakan.Services.Session
 
             if ((user.IsBot || user.IsWebhook)) return;
 
-            var userSessions = _sessions.FindAll(x => x.IsOwner(user)
+            var userSessions = FindSessions(x => x.IsOwner(user)
                 && x.GetEventType().HasFlag(ExecuteOn.ReactionRemoved));
 
             if (userSessions.Count == 0) return;
@@ -203,19 +228,19 @@ namespace Sanakan.Services.Session
 
         private async Task AutoValidate()
         {
-            if (_sessions.Count < 1)
+            lock (_lock)
             {
-                ToggleAutoValidation(false);
-                return;
+                if (_sessions.Count < 1)
+                {
+                    ToggleAutoValidation(false);
+                    return;
+                }
             }
 
             try
             {
-                for (int i = _sessions.Count; i > 0; i--)
-                {
-                    if (!_sessions[i - 1].IsValid())
-                        await DisposeAsync(_sessions[i - 1]);
-                }
+                foreach (var session in FindSessions(x => !x.IsValid()))
+                    await DisposeAsync(session);
             }
             catch(Exception ex)
             {

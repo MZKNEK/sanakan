@@ -167,7 +167,7 @@ namespace Sanakan.Services
                             card.GameDeckId = fakeu.GameDeck.Id;
                         }
 
-                        foreach (var w in duser.GameDeck.Wishes.Where(x => x.Type == Database.Models.WishlistObjectType.Character))
+                        foreach (var w in duser.GameDeck.Wishes.Where(x => x.AffectsWishlistCount()))
                         {
                             await db.WishlistCountData.CreateOrChangeWishlistCountByAsync(w.ObjectId, w.ObjectName, -1, -1);
                         }

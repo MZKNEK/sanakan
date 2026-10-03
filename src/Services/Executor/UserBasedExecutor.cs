@@ -13,21 +13,32 @@ namespace Sanakan.Services.Executor
     public class UserBasedExecutor : IExecutor
     {
         private const int QueueLength = 100;
+        private static readonly TimeSpan DefaultGlobalMaxWait = TimeSpan.FromSeconds(5);
+
+        private class QueuedTask
+        {
+            public IExecutable Task { get; init; }
+            public Stopwatch Waiting { get; init; }
+        }
 
         private IServiceProvider _provider;
         private ILogger _logger;
         private Timer _timer;
+        private readonly TimeSpan _globalMaxWait;
 
         private readonly object _lock = new object();
-        private readonly List<IExecutable> _queue = new List<IExecutable>();
+        private readonly List<QueuedTask> _queue = new List<QueuedTask>();
         private readonly HashSet<ulong> _busyOwners = new HashSet<ulong>();
         private readonly SemaphoreSlim _freeSlots = new SemaphoreSlim(QueueLength, QueueLength);
         private int _running = 0;
         private bool _globalRunning = false;
 
-        public UserBasedExecutor(ILogger logger)
+        public UserBasedExecutor(ILogger logger) : this(logger, DefaultGlobalMaxWait) {}
+
+        public UserBasedExecutor(ILogger logger, TimeSpan globalMaxWait)
         {
             _logger = logger;
+            _globalMaxWait = globalMaxWait;
             _timer = new Timer(_ => Pump(), null, TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(1));
         }
 
@@ -49,7 +60,7 @@ namespace Sanakan.Services.Executor
 
             lock (_lock)
             {
-                _queue.Add(task);
+                _queue.Add(new QueuedTask { Task = task, Waiting = Stopwatch.StartNew() });
             }
 
             Pump();
@@ -62,6 +73,13 @@ namespace Sanakan.Services.Executor
             return Task.CompletedTask;
         }
 
+        private static int Order(Priority priority) => priority switch
+        {
+            Priority.High => 0,
+            Priority.Low => 2,
+            _ => 1,
+        };
+
         private void Pump()
         {
             if (_provider == null)
@@ -70,19 +88,30 @@ namespace Sanakan.Services.Executor
             var toStart = new List<IExecutable>();
             lock (_lock)
             {
-                for (int i = 0; i < _queue.Count && !_globalRunning; i++)
-                {
-                    var task = _queue[i];
-                    var owners = task.GetOwners().Distinct().ToList();
+                var waitingOwners = new HashSet<ulong>();
+                var waitingForGlobal = false;
 
+                foreach (var queued in _queue.OrderBy(x => Order(x.Task.GetPriority())).ToList())
+                {
+                    if (_globalRunning || waitingForGlobal)
+                        break;
+
+                    var task = queued.Task;
+                    var owners = task.GetOwners().Distinct().ToList();
                     if (owners.First() == 0)
                     {
-                        // zadanie globalne wymaga, by nic innego nie działało
-                        if (_running > 0) continue;
+                        if (_running > 0 || toStart.Count > 0)
+                        {
+                            waitingForGlobal = queued.Waiting.Elapsed >= _globalMaxWait;
+                            continue;
+                        }
                         _globalRunning = true;
                     }
-                    else if (owners.Any(x => _busyOwners.Contains(x)))
+                    else if (owners.Any(x => _busyOwners.Contains(x) || waitingOwners.Contains(x)))
                     {
+                        foreach (var owner in owners)
+                            waitingOwners.Add(owner);
+
                         continue;
                     }
 
@@ -90,7 +119,7 @@ namespace Sanakan.Services.Executor
                         _busyOwners.Add(owner);
 
                     ++_running;
-                    _queue.RemoveAt(i--);
+                    _queue.Remove(queued);
                     toStart.Add(task);
                 }
             }

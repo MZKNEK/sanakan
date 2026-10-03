@@ -10,6 +10,7 @@ using Discord.WebSocket;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Sanakan.Config;
+using Sanakan.Config.Model;
 using Sanakan.Extensions;
 
 namespace Sanakan.Api.Controllers
@@ -37,38 +38,18 @@ namespace Sanakan.Api.Controllers
         /// <response code="404">Message not found</response>
         /// <response code="500">Internal Server Error</response>
         [HttpDelete("{id}")]
-        public async Task DeleteRichMessageAsync(ulong id)
+        public async Task<IActionResult> DeleteRichMessageAsync(ulong id)
         {
-            var config = _config.Get();
+            var deleted = await ApplyToRichMessageAsync(id,
+                webhook => webhook.DeleteMessageAsync(id),
+                msg => msg.DeleteAsync());
 
-            _ = Task.Run(async () =>
+            if (!deleted)
             {
-                foreach (var rmc in config.RMConfig)
-                {
-                    if (!string.IsNullOrEmpty(rmc.WebHookUrl))
-                    {
-                        using (var webhook = new Discord.Webhook.DiscordWebhookClient(rmc.WebHookUrl))
-                        {
-                            await webhook.DeleteMessageAsync(id);
-                        }
-                        continue;
-                    }
+                return "Message not found!".ToResponse(404);
+            }
 
-                    var guild = _client.GetGuild(rmc.GuildId);
-                    if (guild == null) continue;
-
-                    var channel = guild.GetTextChannel(rmc.ChannelId);
-                    if (channel == null) continue;
-
-                    var msg = await channel.GetMessageAsync(id);
-                    if (msg == null) continue;
-
-                    await msg.DeleteAsync();
-                    break;
-                }
-            });
-
-            await "Message deleted!".ToResponse(200).ExecuteResultAsync(ControllerContext);
+            return "Message deleted!".ToResponse(200);
         }
 
         /// <summary>
@@ -83,21 +64,33 @@ namespace Sanakan.Api.Controllers
         /// <response code="404">Message not found</response>
         /// <response code="500">Internal Server Error</response>
         [HttpPut("{id}")]
-        public async Task ModifyeRichMessageAsync(ulong id, [FromBody, Required]Models.RichMessage message)
+        public async Task<IActionResult> ModifyeRichMessageAsync(ulong id, [FromBody, Required]Models.RichMessage message)
         {
-            var config = _config.Get();
+            var modified = await ApplyToRichMessageAsync(id,
+                webhook => webhook.ModifyMessageAsync(id, x => x.Embeds = message.ToEmbeds()),
+                msg => msg.ModifyAsync(x => x.Embed = message.ToEmbed()));
 
-            _ = Task.Run(async () =>
+            if (!modified)
             {
-                foreach (var rmc in config.RMConfig)
+                return "Message not found!".ToResponse(404);
+            }
+
+            return "Message modified!".ToResponse(200);
+        }
+
+        private async Task<bool> ApplyToRichMessageAsync(ulong id, Func<Discord.Webhook.DiscordWebhookClient, Task> onWebhook, Func<IUserMessage, Task> onMessage)
+        {
+            foreach (var rmc in _config.Get().RMConfig ?? new List<RichMessageConfig>())
+            {
+                try
                 {
                     if (!string.IsNullOrEmpty(rmc.WebHookUrl))
                     {
                         using (var webhook = new Discord.Webhook.DiscordWebhookClient(rmc.WebHookUrl))
                         {
-                            await webhook.ModifyMessageAsync(id, x => x.Embeds = message.ToEmbeds());
+                            await onWebhook(webhook);
                         }
-                        continue;
+                        return true;
                     }
 
                     var guild = _client.GetGuild(rmc.GuildId);
@@ -106,15 +99,15 @@ namespace Sanakan.Api.Controllers
                     var channel = guild.GetTextChannel(rmc.ChannelId);
                     if (channel == null) continue;
 
-                    var msg = await channel.GetMessageAsync(id);
-                    if (msg == null) continue;
-
-                    await ((IUserMessage)msg).ModifyAsync(x => x.Embed = message.ToEmbed());
-                    break;
+                    if (await channel.GetMessageAsync(id) is IUserMessage msg)
+                    {
+                        await onMessage(msg);
+                        return true;
+                    }
                 }
-            });
-
-            await "Message modified!".ToResponse(200).ExecuteResultAsync(ControllerContext);
+                catch (Exception) { }
+            }
+            return false;
         }
 
         /// <summary>
@@ -128,7 +121,7 @@ namespace Sanakan.Api.Controllers
         /// <param name="mention">czy oznanczyć zainteresowanych</param>
         /// <response code="500">Internal Server Error</response>
         [HttpPost]
-        public async Task PostRichMessageAsync([FromBody, Required]Models.RichMessage message, [FromQuery]bool? mention)
+        public async Task<IActionResult> PostRichMessageAsync([FromBody, Required]Models.RichMessage message, [FromQuery]bool? mention)
         {
             var config = _config.Get();
             if (!mention.HasValue) mention = false;
@@ -187,17 +180,15 @@ namespace Sanakan.Api.Controllers
 
             if (msgList.Count == 0)
             {
-                await "Message not send!".ToResponse(400).ExecuteResultAsync(ControllerContext);
-                return;
+                return "Message not send!".ToResponse(400);
             }
 
             if (msgList.Count > 1)
             {
-                await "Message sended!".ToResponseRich(msgList).ExecuteResultAsync(ControllerContext);
-                return;
+                return "Message sended!".ToResponseRich(msgList);
             }
 
-            await "Message sended!".ToResponseRich(msgList.First()).ExecuteResultAsync(ControllerContext);
+            return "Message sended!".ToResponseRich(msgList.First());
         }
 
         /// <summary>
@@ -205,7 +196,7 @@ namespace Sanakan.Api.Controllers
         /// </summary>
         /// <returns>wiadomość typu RichMessage</returns>
         [HttpGet]
-        public Models.RichMessage GetExampleMsg()
+        public ActionResult<Models.RichMessage> GetExampleMsg()
         {
             return new Models.RichMessage().Example();
         }

@@ -114,26 +114,37 @@ namespace Sanakan.Services.Supervisor
             await Task.CompletedTask;
         }
 
+        public enum SupervisionCommand { None, Status, Activate }
+
+        public static SupervisionCommand ParseSupervisionCommand(string content, bool debug)
+        {
+            var command = content?.Trim();
+            if (string.Equals(command, "isSuper", StringComparison.OrdinalIgnoreCase))
+                return SupervisionCommand.Status;
+
+            if (debug && string.Equals(command, "activesuper", StringComparison.OrdinalIgnoreCase))
+                return SupervisionCommand.Activate;
+
+            return SupervisionCommand.None;
+        }
+
+        // zwraca true tylko gdy polecenie zostało obsłużone dla admina, inaczej wiadomość idzie do zwykłej analizy
         private async Task<bool> HandleSupervisionCommandAsync(SocketGuildUser user, SocketUserMessage message)
         {
-            var command = message.Content?.Trim();
-            var isStatusCommand = string.Equals(command, "isSuper", StringComparison.OrdinalIgnoreCase);
-            var isActivateCommand = string.Equals(command, "activesuper", StringComparison.OrdinalIgnoreCase);
-            if (!isStatusCommand && !isActivateCommand)
+            var command = ParseSupervisionCommand(message.Content, isDebug);
+            if (command == SupervisionCommand.None)
                 return false;
 
-            if (!isDebug && isActivateCommand)
-                return true;
-
+            var isActivateCommand = command == SupervisionCommand.Activate;
             using (var db = new Database.DatabaseContext(_config))
             {
                 var gConfig = await db.GetCachedGuildFullConfigAsync(user.Guild.Id);
                 if (gConfig == null)
-                    return true;
+                    return false;
 
                 var isAdmin = gConfig.AdminRole != 0 && user.Roles.Any(x => x.Id == gConfig.AdminRole);
                 if (!isAdmin)
-                    return true;
+                    return false;
 
                 var isBlacklisted = _config.Get().BlacklistedGuilds.Any(x => x == user.Guild.Id);
                 if (isActivateCommand && !isBlacklisted)

@@ -31,7 +31,7 @@ namespace Sanakan.Api.Controllers
         /// </summary>
         /// <response code="500">Internal Server Error</response>
         [HttpGet("commands")]
-        public async Task<Commands> GetCommansInfoAsync()
+        public async Task<ActionResult<Commands>> GetCommansInfoAsync()
         {
             try
             {
@@ -43,8 +43,7 @@ namespace Sanakan.Api.Controllers
             }
             catch(Exception ex)
             {
-                await ex.Message.ToResponse(500).ExecuteResultAsync(ControllerContext);
-                return null;
+                return ex.Message.ToResponse(500);
             }
         }
 

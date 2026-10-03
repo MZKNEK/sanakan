@@ -20,6 +20,7 @@ namespace Sanakan.Services.Session
         private Stopwatch _timer { get; set; }
         private ILogger _logger { get; set; }
         private bool _added { get; set; }
+        private volatile bool _disposed;
 
         public Session(IUser owner)
         {
@@ -74,21 +75,25 @@ namespace Sanakan.Services.Session
 
         public bool IsValid()
         {
+            if (_disposed) return false;
             if (_timer == null) return true;
             return _timer.ElapsedMilliseconds <= TimeoutMs;
         }
 
+        // właściciele zostają, bo inne wątki mogą jeszcze trzymać tę sesję i pytać o IsOwner
         public async Task DisposeAsync()
         {
-            if (OnDispose != null)
-                await OnDispose();
+            if (_disposed) return;
+            _disposed = true;
 
-            _timer = null;
-            _owners = null;
-
+            var onDispose = OnDispose;
             OnDispose = null;
             OnExecute = null;
             OnSyncEnd = null;
+            _timer = null;
+
+            if (onDispose != null)
+                await onDispose();
         }
 
         public IExecutable GetExecutable(SessionContext context)
@@ -102,12 +107,13 @@ namespace Sanakan.Services.Session
                 try
                 {
                     var res = await onExecute(context, this).ConfigureAwait(false);
-                    if (res && RunMode == RunMode.Sync && OnSyncEnd != null)
+                    var onSyncEnd = OnSyncEnd;
+                    if (res && RunMode == RunMode.Sync && onSyncEnd != null)
                     {
                         _ = Task.Run(async () =>
                        {
                            await Task.Delay(500);
-                           await OnSyncEnd(this);
+                           await onSyncEnd(this);
                        });
                     }
 

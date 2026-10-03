@@ -12,60 +12,78 @@ namespace Sanakan.Services
 {
     public class Daemonizer
     {
-        private static readonly TimeSpan _timeout = TimeSpan.FromSeconds(40);
+        private static readonly TimeSpan _defaultTimeout = TimeSpan.FromSeconds(40);
 
+        private readonly object _lock = new object();
         private CancellationTokenSource _cts { get; set; }
-        private DiscordSocketClient _client { get; set; }
+        private Func<ConnectionState> _state { get; set; }
+        private Action<int> _exit { get; set; }
+        private TimeSpan _timeout { get; set; }
         private ILogger _logger { get; set; }
         private IConfig _config { get; set; }
 
         public Daemonizer(DiscordSocketClient client, ILogger logger, IConfig config)
+            : this(() => client.ConnectionState, logger, config, _defaultTimeout, Environment.Exit)
         {
-            _client = client;
+            client.Connected += () => { HandleConnected(); return Task.CompletedTask; };
+            client.Disconnected += _ => { HandleDisconnected(); return Task.CompletedTask; };
+        }
+
+        public Daemonizer(Func<ConnectionState> state, ILogger logger, IConfig config, TimeSpan timeout, Action<int> exit)
+        {
+            _state = state;
             _logger = logger;
             _config = config;
+            _timeout = timeout;
+            _exit = exit;
             _cts = new CancellationTokenSource();
-
-            _client.Connected += ConnectedAsync;
-            _client.Disconnected += DisconnectedAsync;
         }
 
-        private Task ConnectedAsync()
+        public void HandleConnected()
         {
-            _cts.Cancel();
-            _cts = new CancellationTokenSource();
-
-            return Task.CompletedTask;
-        }
-
-        private Task DisconnectedAsync(Exception ex)
-        {
-            _ = Task.Delay(_timeout, _cts.Token).ContinueWith(async _ =>
+            lock (_lock)
             {
-                await CheckStateAsync();
-            });
-
-            return Task.CompletedTask;
+                _cts.Cancel();
+                _cts.Dispose();
+                _cts = new CancellationTokenSource();
+            }
         }
 
-        private async Task CheckStateAsync()
+        public void HandleDisconnected()
         {
-            if (!_config.Get().Demonization) return;
-            _logger.Log("Disconnected! Running demonization check.");
-            if (_client.ConnectionState == ConnectionState.Connected) return;
+            CancellationToken token;
+            lock (_lock)
+            {
+                token = _cts.Token;
+            }
 
-            var timeout = Task.Delay(_timeout);
-            var connect = _client.StartAsync();
-            var task = await Task.WhenAny(timeout, connect);
+            _ = WatchReconnectAsync(token);
+        }
 
-            if (task != timeout && connect.IsCompletedSuccessfully)
+        private async Task WatchReconnectAsync(CancellationToken token)
+        {
+            try
+            {
+                await Task.Delay(_timeout, token);
+
+                if (!_config.Get().Demonization) return;
+                _logger.Log("Disconnected! Running demonization check.");
+
+                await Task.Delay(_timeout, token);
+            }
+            catch (OperationCanceledException)
+            {
+                return;
+            }
+
+            if (_state() == ConnectionState.Connected)
             {
                 _logger.Log("Reconnected!");
                 return;
             }
 
             _logger.Log("Timeout! Shutting down!");
-            Environment.Exit(1);
+            _exit(1);
         }
     }
 }

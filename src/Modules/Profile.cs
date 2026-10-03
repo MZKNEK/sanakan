@@ -353,10 +353,11 @@ namespace Sanakan.Modules
 
                     if (rewards.Count > 0)
                     {
+                        await db.SaveChangesAsync();
+
                         QueryCacheManager.ExpireTag(new string[] { $"user-{botuser.Id}", "users" });
 
                         await SafeReplyAsync("", embed: $"**Odebrane nagrody:**\n\n{string.Join("\n", rewards)}".ToEmbedMessage(EMType.Success).WithUser(Context.User).Build());
-                        await db.SaveChangesAsync();
                         return;
                     }
 
@@ -576,8 +577,7 @@ namespace Sanakan.Modules
                 if (!user.Roles.Contains(gRole))
                     await user.AddRoleAsync(gRole);
 
-                global.BValue = true;
-                global.EndsAt = global.EndsAt.AddMonths(1);
+                global.ExtendSubscription(_time.Now());
                 botuser.TcCnt -= cost;
 
                 await db.SaveChangesAsync();
@@ -653,12 +653,12 @@ namespace Sanakan.Modules
 
                 if (user.Roles.Any(x => x.Id == selectedRole.Id) && colort.IsActive(_time.Now()))
                 {
-                    colort.EndsAt = colort.EndsAt.AddMonths(1);
+                    colort.ExtendSubscription(_time.Now());
                 }
                 else
                 {
                     await _profile.RemoveUserRainbowColorAsync(user, colorName);
-                    colort.EndsAt = _time.Now().AddMonths(1);
+                    colort.StartSubscription(_time.Now());
                 }
 
                 botuser.TcCnt -= rolePrice;

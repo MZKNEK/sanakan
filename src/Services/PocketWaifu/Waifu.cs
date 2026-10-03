@@ -785,7 +785,7 @@ namespace Sanakan.Services.PocketWaifu
             }
         }
 
-        public void IncreaseMoneySpentOnCookies(ShopType type, User user, int cost)
+        public void IncreaseMoneySpentOnCookies(ShopType type, User user, long cost)
         {
             switch (type)
             {
@@ -806,7 +806,7 @@ namespace Sanakan.Services.PocketWaifu
             }
         }
 
-        public void IncreaseMoneySpentOnCards(ShopType type, User user, int cost)
+        public void IncreaseMoneySpentOnCards(ShopType type, User user, long cost)
         {
             switch (type)
             {
@@ -827,7 +827,7 @@ namespace Sanakan.Services.PocketWaifu
             }
         }
 
-        public void RemoveMoneyFromUser(ShopType type, User user, int cost)
+        public void RemoveMoneyFromUser(ShopType type, User user, long cost)
         {
             switch (type)
             {
@@ -848,7 +848,9 @@ namespace Sanakan.Services.PocketWaifu
             }
         }
 
-        public bool CheckIfUserCanBuy(ShopType type, User user, int cost)
+        public static long GetShopCost(int itemCount, int unitCost) => (long)itemCount * unitCost;
+
+        public bool CheckIfUserCanBuy(ShopType type, User user, long cost)
         {
             switch (type)
             {
@@ -981,7 +983,7 @@ namespace Sanakan.Services.PocketWaifu
                     break;
             }
 
-            var realCost = itemCount * thisItem.Cost;
+            var realCost = GetShopCost(itemCount, thisItem.Cost);
             string count = (itemCount > 1) ? $" x{itemCount}" : "";
 
             using (var db = new Database.DatabaseContext(config))
@@ -1115,6 +1117,19 @@ namespace Sanakan.Services.PocketWaifu
                 Math.Max(card.Rarity.GetHealthMin(), card.GetHealthMax() + 1));
 
         static public Dere RandomizeDere() => Fun.GetOneRandomFrom(_dereToRandomize);
+
+        static public long RerollDereUntil(Card card, Dere target, long available, Func<Dere> roll)
+        {
+            long used = 0;
+            while (used < available)
+            {
+                ++used;
+                card.Dere = roll();
+                if (card.Dere == target)
+                    break;
+            }
+            return used;
+        }
 
         static public Card GenerateNewCard(string name, string title, string image, Rarity rarity,
             DateTime creationTime)
@@ -2762,15 +2777,7 @@ namespace Sanakan.Services.PocketWaifu
                         if (targetDere == Dere.Yato || targetDere == Dere.Yami || targetDere == Dere.Raito)
                             return ExecutionResult.FromError("nie można zmienić charaketru na ten który został wybrany!");
 
-                        int usedItems = 1;
-                        for (; usedItems < item.Count; usedItems++)
-                        {
-                            card.Dere = RandomizeDere();
-                            if (card.Dere == targetDere)
-                                break;
-                        }
-
-                        itemCnt = usedItems;
+                        itemCnt = (int)RerollDereUntil(card, targetDere, item.Count, RandomizeDere);
                         karmaChange *= itemCnt;
                         affectionInc *= itemCnt;
                         str.Append($"Użyto {itemCnt} przedmiotów by osiągnać cel!\n");

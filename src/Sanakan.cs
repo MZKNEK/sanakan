@@ -85,7 +85,10 @@ namespace Sanakan
         {
             Services.Dir.Create();
 
-            _logger = new ConsoleLogger(_config);
+            var discordLogger = new DiscordChannelLogger(new ConsoleLogger(_config), _config);
+            _logger = discordLogger;
+
+            AppDomain.CurrentDomain.ProcessExit += (_, _) => discordLogger.FlushAllAsync(TimeSpan.FromSeconds(5)).GetAwaiter().GetResult();
 
             _client = new DiscordSocketClient(new DiscordSocketConfig()
             {
@@ -141,8 +144,9 @@ namespace Sanakan
 
         private void AddSigTermHandler()
         {
-            Console.CancelKeyPress += delegate
+            Console.CancelKeyPress += (_, e) =>
             {
+                e.Cancel = true;
                 _ = Task.Run(async () =>
                 {
                     _logger.Log("SIGTERM Received!");

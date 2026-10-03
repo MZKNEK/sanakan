@@ -55,7 +55,7 @@ namespace Sanakan.Api.Controllers
         /// <param name="id">id użytkownika discorda</param>
         /// <returns>użytkownik bota</returns>
         [HttpGet("discord/{id}"), Authorize(Policy = "Site")]
-        public async Task<Database.Models.User> GetUserByDiscordIdAsync(ulong id)
+        public async Task<ActionResult<Database.Models.User>> GetUserByDiscordIdAsync(ulong id)
         {
             using (var db = new Database.DatabaseContext(_config))
             {
@@ -69,13 +69,12 @@ namespace Sanakan.Api.Controllers
         /// <param name="name">nazwa użytkownika</param>
         /// <returns>id użytkownika</returns>
         [HttpPost("find")]
-        public async Task<IEnumerable<Shinden.Models.IUserSearch>> GetUserIdByNameAsync([FromBody, Required]string name)
+        public async Task<ActionResult<IEnumerable<Shinden.Models.IUserSearch>>> GetUserIdByNameAsync([FromBody, Required]string name)
         {
             var res = await _shClient.Search.UserAsync(name);
             if (!res.IsSuccessStatusCode())
             {
-                await "User not found!".ToResponse(404).ExecuteResultAsync(ControllerContext);
-                return null;
+                return "User not found!".ToResponse(404);
             }
             return res.Body;
         }
@@ -86,7 +85,7 @@ namespace Sanakan.Api.Controllers
         /// <param name="id">id użytkownika shindena</param>
         /// <returns>nazwa użytkownika</returns>
         [HttpGet("shinden/{id}/username")]
-        public async Task<string> GetShindenUsernameByShindenId(ulong id)
+        public async Task<ActionResult<string>> GetShindenUsernameByShindenId(ulong id)
         {
             if (_nameCache.TryGetValue(id, out string username))
             {
@@ -96,8 +95,7 @@ namespace Sanakan.Api.Controllers
             var res = await _shClient.User.GetAsync(id);
             if (!res.IsSuccessStatusCode())
             {
-                await "User not found!".ToResponse(404).ExecuteResultAsync(ControllerContext);
-                return null;
+                return "User not found!".ToResponse(404);
             }
 
             _nameCache.Set(id, res.Body.Name, new MemoryCacheEntryOptions()
@@ -112,15 +110,14 @@ namespace Sanakan.Api.Controllers
         /// <param name="id">id użytkownika shindena</param>
         /// <returns>użytkownik bota</returns>
         [HttpGet("shinden/{id}"), Authorize(Policy = "Site")]
-        public async Task<UserWithToken> GetUserByShindenIdAsync(ulong id)
+        public async Task<ActionResult<UserWithToken>> GetUserByShindenIdAsync(ulong id)
         {
             using (var db = new Database.DatabaseContext(_config))
             {
                 var user = await db.GetCachedFullUserByShindenIdAsync(id);
                 if (user == null)
                 {
-                    await "User not found!".ToResponse(404).ExecuteResultAsync(ControllerContext);
-                    return null;
+                    return "User not found!".ToResponse(404);
                 }
 
                 TokenData tokenData = null;
@@ -145,15 +142,14 @@ namespace Sanakan.Api.Controllers
         /// <param name="id">id użytkownika shindena</param>
         /// <returns>użytkownik bota</returns>
         [HttpGet("shinden/simple/{id}"), Authorize(Policy = "Site")]
-        public async Task<UserWithToken> GetUserByShindenIdSimpleAsync(ulong id)
+        public async Task<ActionResult<UserWithToken>> GetUserByShindenIdSimpleAsync(ulong id)
         {
             using (var db = new Database.DatabaseContext(_config))
             {
                 var user = db.Users.AsQueryable().AsSplitQuery().Where(x => x.Shinden == id).Include(x => x.GameDeck).AsNoTracking().FirstOrDefault();
                 if (user == null)
                 {
-                    await "User not found!".ToResponse(404).ExecuteResultAsync(ControllerContext);
-                    return null;
+                    return "User not found!".ToResponse(404);
                 }
 
                 TokenData tokenData = null;
@@ -179,35 +175,32 @@ namespace Sanakan.Api.Controllers
         /// <param name="nickname">ksywka użytkownika</param>
         /// <response code="404">User not found</response>
         [HttpPost("shinden/{id}/nickname"), Authorize(Policy = "Site")]
-        public async Task ChangeNicknameShindenUserAsync(ulong id, [FromBody, Required]string nickname)
+        public async Task<IActionResult> ChangeNicknameShindenUserAsync(ulong id, [FromBody, Required]string nickname)
         {
             using (var db = new Database.DatabaseContext(_config))
             {
                 var user = await db.Users.AsQueryable().AsSplitQuery().Where(x => x.Shinden == id).AsNoTracking().FirstOrDefaultAsync();
                 if (user == null)
                 {
-                    await "User not found!".ToResponse(404).ExecuteResultAsync(ControllerContext);
-                    return;
+                    return "User not found!".ToResponse(404);
                 }
 
                 var guild = _client.GetGuild(245931283031523330);
                 if (guild == null)
                 {
-                    await "Guild not found!".ToResponse(404).ExecuteResultAsync(ControllerContext);
-                    return;
+                    return "Guild not found!".ToResponse(404);
                 }
 
                 var userOnGuild = guild.GetUser(user.Id);
                 if (userOnGuild == null)
                 {
-                    await "User not found!".ToResponse(404).ExecuteResultAsync(ControllerContext);
-                    return;
+                    return "User not found!".ToResponse(404);
                 }
 
                 await userOnGuild.ModifyAsync(x => x.Nickname = nickname);
             }
 
-            await "User nickname changed!".ToResponse(200).ExecuteResultAsync(ControllerContext);
+            return "User nickname changed!".ToResponse(200);
         }
 
         /// <summary>
@@ -218,25 +211,17 @@ namespace Sanakan.Api.Controllers
         /// <response code="404">User not found</response>
         /// <response code="500">Model is invalid!</response>
         [HttpPut("register"), Authorize(Policy = "Site")]
-        public async Task RegisterUserAsync([FromBody, Required]UserRegistration id)
+        public async Task<IActionResult> RegisterUserAsync([FromBody, Required]UserRegistration id)
         {
             if (id == null)
             {
-                var body = new System.IO.StreamReader(ControllerContext.HttpContext.Request.Body);
-                body.BaseStream.Seek(0, System.IO.SeekOrigin.Begin);
-                var requestBody = body.ReadToEnd();
-
-                _logger.Log(requestBody);
-
-                await "Model is Invalid!".ToResponse(500).ExecuteResultAsync(ControllerContext);
-                return;
+                return "Model is Invalid!".ToResponse(500);
             }
 
             var user = _client.GetUser(id.DiscordUserId);
             if (user == null)
             {
-                await "User not found!".ToResponse(404).ExecuteResultAsync(ControllerContext);
-                return;
+                return "User not found!".ToResponse(404);
             }
 
             using (var db = new Database.DatabaseContext(_config))
@@ -246,28 +231,31 @@ namespace Sanakan.Api.Controllers
                 {
                     if (botUser.Shinden != 0)
                     {
-                        await "User already connected!".ToResponse(404).ExecuteResultAsync(ControllerContext);
-                        return;
+                        return "User already connected!".ToResponse(404);
                     }
                 }
 
                 var response = await _shClient.Search.UserAsync(id.Username);
                 if (!response.IsSuccessStatusCode())
                 {
-                    await "Can't connect to shinden!".ToResponse(403).ExecuteResultAsync(ControllerContext);
-                    return;
+                    return "Can't connect to shinden!".ToResponse(403);
                 }
 
-                var sUser = (await _shClient.User.GetAsync(response.Body.First())).Body;
-                if (sUser.ForumId.Value != id.ForumUserId)
+                var found = PickShindenUser(response.Body, id.Username);
+                if (found == null)
                 {
-                    await "Something went wrong!".ToResponse(500).ExecuteResultAsync(ControllerContext);
-                    return;
+                    return "User not found on shinden!".ToResponse(404);
+                }
+
+                var sResponse = await _shClient.User.GetAsync(found);
+                var sUser = sResponse.IsSuccessStatusCode() ? sResponse.Body : null;
+                if (sUser?.ForumId == null || sUser.ForumId.Value != id.ForumUserId)
+                {
+                    return "Something went wrong!".ToResponse(500);
                 }
 
                 if (db.Users.Any(x => x.Shinden == sUser.Id))
                 {
-                    await "This account is already linked!".ToResponse(401).ExecuteResultAsync(ControllerContext);
                     var oldUsers = await db.Users.AsQueryable().Where(x => x.Shinden == sUser.Id && x.Id != id.DiscordUserId).ToListAsync();
 
                     if (oldUsers.Count > 0)
@@ -285,7 +273,7 @@ namespace Sanakan.Api.Controllers
                                 + $"SN: {sUser.Name}\n\noDID: {string.Join(",", oldUsers.Select(x => $"{x.Id} <@{x.Id}>"))}").TrimToLength().ToEmbedMessage(EMType.Error).Build());
                         }
                     }
-                    return;
+                    return "This account is already linked!".ToResponse(401);
                 }
 
                 var exe = new Executable($"api-register u{id.DiscordUserId}", new Func<Task>(async () =>
@@ -301,9 +289,22 @@ namespace Sanakan.Api.Controllers
                     }
                 }), id.DiscordUserId, Priority.High);
 
-                await _executor.TryAdd(exe, TimeSpan.FromSeconds(1));
-                await "User connected!".ToResponse(200).ExecuteResultAsync(ControllerContext);
+                if (!await _executor.TryAdd(exe, TimeSpan.FromSeconds(1)))
+                {
+                    return "Command queue is full".ToResponse(503);
+                }
+
+                return "User connected!".ToResponse(200);
             }
+        }
+
+        public static Shinden.Models.IUserSearch PickShindenUser(IEnumerable<Shinden.Models.IUserSearch> results, string username)
+        {
+            if (results == null) return null;
+
+            var list = results.Where(x => x != null).ToList();
+            return list.FirstOrDefault(x => string.Equals(x.Name, username, StringComparison.OrdinalIgnoreCase))
+                ?? list.FirstOrDefault();
         }
 
         /// <summary>
@@ -313,15 +314,14 @@ namespace Sanakan.Api.Controllers
         /// <param name="value">liczba TC</param>
         /// <response code="404">User not found</response>
         [HttpPut("discord/{id}/tc"), Authorize(Policy = "Site")]
-        public async Task ModifyPointsTCDiscordAsync(ulong id, [FromBody, Required]long value)
+        public async Task<IActionResult> ModifyPointsTCDiscordAsync(ulong id, [FromBody, Required]long value)
         {
             using (var db = new Database.DatabaseContext(_config))
             {
                 var user = db.Users.FirstOrDefault(x => x.Id == id);
                 if (user == null)
                 {
-                    await "User not found!".ToResponse(404).ExecuteResultAsync(ControllerContext);
-                    return;
+                    return "User not found!".ToResponse(404);
                 }
 
                 var exe = new Executable($"api-tc u{id} ({value})", new Func<Task>(async () =>
@@ -331,8 +331,6 @@ namespace Sanakan.Api.Controllers
                         user = await dbc.GetUserOrCreateSimpleAsync(id);
                         var beforeChange = user.TcCnt;
                         user.TcCnt += value;
-
-                        QueryCacheManager.ExpireTag(new string[] { $"user-{user.Id}", "users" });
 
                         dbc.TransferData.Add(new Database.Models.Analytics.TransferAnalytics()
                         {
@@ -346,11 +344,17 @@ namespace Sanakan.Api.Controllers
                         });
 
                         await dbc.SaveChangesAsync();
+
+                        QueryCacheManager.ExpireTag(new string[] { $"user-{user.Id}", "users" });
                     }
                 }), id, Priority.High);
 
-                await _executor.TryAdd(exe, TimeSpan.FromSeconds(1));
-                await "TC added!".ToResponse(200).ExecuteResultAsync(ControllerContext);
+                if (!await _executor.TryAdd(exe, TimeSpan.FromSeconds(1)))
+                {
+                    return "Command queue is full".ToResponse(503);
+                }
+
+                return "TC added!".ToResponse(200);
             }
         }
 
@@ -361,15 +365,14 @@ namespace Sanakan.Api.Controllers
         /// <param name="value">liczba TC</param>
         /// <response code="404">User not found</response>
         [HttpPut("shinden/{id}/tc"), Authorize(Policy = "Site")]
-        public async Task ModifyPointsTCAsync(ulong id, [FromBody, Required]long value)
+        public async Task<IActionResult> ModifyPointsTCAsync(ulong id, [FromBody, Required]long value)
         {
             using (var db = new Database.DatabaseContext(_config))
             {
                 var user = db.Users.FirstOrDefault(x => x.Shinden == id);
                 if (user == null)
                 {
-                    await "User not found!".ToResponse(404).ExecuteResultAsync(ControllerContext);
-                    return;
+                    return "User not found!".ToResponse(404);
                 }
 
                 var exe = new Executable($"api-tc su{id} ({value})", new Func<Task>(async () =>
@@ -377,10 +380,10 @@ namespace Sanakan.Api.Controllers
                     using (var dbs = new Database.DatabaseContext(_config))
                     {
                         user = await dbs.Users.AsQueryable().FirstOrDefaultAsync(x => x.Shinden == id);
+                        if (user == null) return;
+
                         var beforeChange = user.TcCnt;
                         user.TcCnt += value;
-
-                        QueryCacheManager.ExpireTag(new string[] { $"user-{user.Id}", "users" });
 
                         dbs.TransferData.Add(new Database.Models.Analytics.TransferAnalytics()
                         {
@@ -394,11 +397,17 @@ namespace Sanakan.Api.Controllers
                         });
 
                         await dbs.SaveChangesAsync();
+
+                        QueryCacheManager.ExpireTag(new string[] { $"user-{user.Id}", "users" });
                     }
                 }), user.Id, Priority.High);
 
-                await _executor.TryAdd(exe, TimeSpan.FromSeconds(1));
-                await "TC added!".ToResponse(200).ExecuteResultAsync(ControllerContext);
+                if (!await _executor.TryAdd(exe, TimeSpan.FromSeconds(1)))
+                {
+                    return "Command queue is full".ToResponse(503);
+                }
+
+                return "TC added!".ToResponse(200);
             }
         }
     }
