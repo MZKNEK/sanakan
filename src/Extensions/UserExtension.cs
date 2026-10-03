@@ -275,8 +275,10 @@ namespace Sanakan.Extensions
         public static string GetActiveMark(this GameDeck deck, DateTime currentTime)
             =>  deck.IsUserActive(currentTime) ? "" : " ⚠️";
 
+        public const int MAX_PVP_DAILY_GAMES = 10;
+
         public static bool ReachedDailyMaxPVPCount(this GameDeck deck)
-            => deck.PVPDailyGamesPlayed >= 10;
+            => deck.PVPDailyGamesPlayed >= MAX_PVP_DAILY_GAMES;
 
         public static DeckPowerStatus CanFightPvP(this GameDeck deck)
         {
@@ -479,6 +481,21 @@ namespace Sanakan.Extensions
 
         public static double CalculateDeckPower(this GameDeck deck)
             => deck.Cards.Where(x => x.Active).Sum(x => x.CalculateCardPower());
+
+        public static int GetFreeCardCooldownReductionHours(this GameDeck deck)
+        {
+            var ultimateCards = deck.Cards.Where(x => x.FromFigure).ToList();
+            var cnt = ultimateCards.Count;
+            if (cnt > 5) cnt = 5;
+
+            cnt += ultimateCards.Any(x => x.Quality > Quality.Alpha) ? 1 : 0;
+            cnt += ultimateCards.Any(x => x.Quality > Quality.Gamma) ? 2 : 0;
+            cnt += ultimateCards.Any(x => x.Quality > Quality.Zeta) ? 3 : 0;
+            cnt += ultimateCards.Any(x => x.Quality > Quality.Lambda) ? 5 : 0;
+            if (cnt > 12) cnt = 12;
+
+            return cnt;
+        }
 
         public static double GetMaxDeckPower(this GameDeck _) => MAX_DECK_POWER;
 

@@ -134,6 +134,16 @@ namespace Sanakan.Api
                 app.UseRouting();
                 app.UseAuthentication();
                 app.UseAuthorization();
+
+                var auditLogger = app.ApplicationServices.GetService<Shinden.Logger.ILogger>();
+                app.Use(async (context, next) =>
+                {
+                    var watch = System.Diagnostics.Stopwatch.StartNew();
+                    await next();
+
+                    var entry = ApiAudit.Describe(context, watch.ElapsedMilliseconds);
+                    if (entry != null) auditLogger?.Log(entry);
+                });
                 app.UseEndpoints(endpoints =>
                 {
                     endpoints.MapControllers();

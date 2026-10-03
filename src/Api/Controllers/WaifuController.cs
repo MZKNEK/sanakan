@@ -28,6 +28,7 @@ namespace Sanakan.Api.Controllers
     public class WaifuController : ControllerBase
     {
         private const uint MaxCardsPerRequest = 4000;
+        private const uint MaxActivitiesPerRequest = 4000;
 
         private readonly Waifu _waifu;
         private readonly TagHelper _tags;
@@ -102,12 +103,15 @@ namespace Sanakan.Api.Controllers
         /// <summary>
         /// Pobiera listę aktywności
         /// </summary>
-        /// <param name="count">liczba wpisów</param>
+        /// <param name="count">liczba wpisów (0 lub więcej niż limit oznacza limit - 4000)</param>
         /// <param name="users">id użytkowników shinden</param>
         /// <returns>lista aktywności</returns>
         [HttpPost("user/activity/{count}")]
         public async Task<IEnumerable<UserActivity>> GetUsersActivitiesAsync(uint count, [FromBody]List<ulong> users)
         {
+            if (count == 0 || count > MaxActivitiesPerRequest)
+                count = MaxActivitiesPerRequest;
+
             using (var db = new Database.DatabaseContext(_config))
             {
                 var query = db.UserActivities.AsQueryable().AsSplitQuery().AsNoTracking();
@@ -115,12 +119,12 @@ namespace Sanakan.Api.Controllers
                 {
                     query = query.Where(x => users.Any(c => c == x.ShindenId));
                 }
-                return count == 0 ? await query.OrderByDescending(x => x.Id).ToListAsync() : await query.OrderByDescending(x => x.Id).Take((int)count).ToListAsync();
+                return await query.OrderByDescending(x => x.Id).Take((int)count).ToListAsync();
             }
         }
 
         /// <summary>
-        /// Pobiera listę aktywności od konkretnego id
+        /// Pobiera listę aktywności od konkretnego id (maksymalnie 4000 najnowszych)
         /// </summary>
         /// <param name="lastId">id aktywności od której zacząć nową liste</param>
         /// <returns>lista aktywności</returns>
@@ -129,7 +133,7 @@ namespace Sanakan.Api.Controllers
         {
             using (var db = new Database.DatabaseContext(_config))
             {
-                return await db.UserActivities.AsQueryable().Where(x => x.Id > lastId).AsNoTracking().OrderByDescending(x => x.Id).ToListAsync();
+                return await db.UserActivities.AsQueryable().Where(x => x.Id > lastId).AsNoTracking().OrderByDescending(x => x.Id).Take((int)MaxActivitiesPerRequest).ToListAsync();
             }
         }
 

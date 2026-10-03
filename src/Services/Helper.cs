@@ -37,7 +37,10 @@ namespace Sanakan.Services
         }
 
         public async Task<HttpStatusCode> GetResponseFromUrl(string url)
-            => (await _httpClient.GetAsync(url)).StatusCode;
+        {
+            using var res = await _httpClient.GetAsync(url, HttpCompletionOption.ResponseHeadersRead);
+            return res.StatusCode;
+        }
 
         public string GivePublicHelp()
         {

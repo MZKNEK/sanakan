@@ -68,8 +68,8 @@ namespace Sanakan.Database
         {
             QueryCacheManager.DefaultMemoryCacheEntryOptions = new MemoryCacheEntryOptions()
             {
-                SlidingExpiration = TimeSpan.FromHours(4),
-                AbsoluteExpirationRelativeToNow  = TimeSpan.FromHours(24)
+                SlidingExpiration = TimeSpan.FromMinutes(60),
+                AbsoluteExpirationRelativeToNow  = TimeSpan.FromHours(12)
             };
             optionsBuilder.UseMySql(_config.Get().ConnectionString,
                 new MySqlServerVersion(new System.Version(5, 7)), opt => opt.EnableRetryOnFailure());

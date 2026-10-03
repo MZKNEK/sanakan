@@ -1,6 +1,7 @@
 ﻿#pragma warning disable 1591
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Cryptography;
@@ -39,7 +40,7 @@ namespace Sanakan.Services
 
     public class Fun
     {
-        private static Dictionary<ulong, int> _fakeKc = new Dictionary<ulong, int>();
+        private static ConcurrentDictionary<ulong, int> _fakeKc = new ConcurrentDictionary<ulong, int>();
         private static List<string> _botReactions = new List<string>()
         {
             "https://sanakan.pl/i/gif/mute_1.gif",
@@ -57,14 +58,7 @@ namespace Sanakan.Services
         };
 
         public static int GetAFKC(ulong charId)
-        {
-            if (_fakeKc.ContainsKey(charId))
-                return _fakeKc[charId];
-
-            var fkc = GetRandomValue(0, 156);
-            _fakeKc.Add(charId, fkc);
-            return fkc;
-        }
+            => _fakeKc.GetOrAdd(charId, _ => GetRandomValue(0, 156));
 
         public static bool IsAF() => DateTime.Now.Month == 4 && DateTime.Now.Day == 1;
 

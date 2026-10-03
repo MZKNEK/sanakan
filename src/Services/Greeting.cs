@@ -139,17 +139,15 @@ namespace Sanakan.Services
                 using (var db = new Database.DatabaseContext(_config))
                 {
                     var config = await db.GetCachedGuildFullConfigAsync(guild.Id);
-                    if (config?.GoodbyeMessage == null) return;
-                    if (config.GoodbyeMessage == "off") return;
+                    channelId = config?.GreetingChannel ?? 0;
+                    adminRoleId = config?.AdminRole ?? 0;
 
-                    await SendMessageAsync(ReplaceTags(user, config.GoodbyeMessage), guild.GetTextChannel(config.GreetingChannel));
-
-                    channelId = config.GreetingChannel;
-                    adminRoleId = config.AdminRole;
+                    if (config?.GoodbyeMessage != null && config.GoodbyeMessage != "off")
+                        await SendMessageAsync(ReplaceTags(user, config.GoodbyeMessage), guild.GetTextChannel(config.GreetingChannel));
                 }
             }
 
-            if (_client.Guilds.Any(x => x.Id != guild.Id && x.Users.Any(u => u.Id == user.Id)))
+            if (await IsStillOnAnyGuildAsync(guild.Id, user.Id))
                 return;
 
             var moveTask = new Func<Task>(async () =>
@@ -189,6 +187,28 @@ namespace Sanakan.Services
             });
 
             await _executor.TryAdd(new Executable("delete user", moveTask, user.Id, Priority.High), TimeSpan.FromSeconds(1));
+        }
+
+        // cache członków bywa niepełny (np. po ponownym połączeniu), więc brak w cache potwierdzamy przez REST
+        private async Task<bool> IsStillOnAnyGuildAsync(ulong leftGuildId, ulong userId)
+        {
+            foreach (var guild in _client.Guilds.Where(x => x.Id != leftGuildId))
+            {
+                if (guild.GetUser(userId) != null)
+                    return true;
+
+                try
+                {
+                    if (await _client.Rest.GetGuildUserAsync(guild.Id, userId) != null)
+                        return true;
+                }
+                catch (Exception ex)
+                {
+                    _logger.Log($"In user leave check g{guild.Id} u{userId}: {ex}");
+                    return true;
+                }
+            }
+            return false;
         }
 
         private async Task SendMessageAsync(string message, ITextChannel channel)

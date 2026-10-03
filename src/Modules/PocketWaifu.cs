@@ -1284,17 +1284,7 @@ namespace Sanakan.Modules
                     botuser.TimeStatuses.Add(freeCard);
                 }
 
-                var ultimateCards = botuser.GameDeck.Cards.Where(x => x.FromFigure).ToList();
-                var cnt = ultimateCards.Count;
-                if (cnt > 5) cnt = 5;
-
-                cnt += ultimateCards.Any(x => x.Quality > Quality.Alpha) ? 1 : 0;
-                cnt += ultimateCards.Any(x => x.Quality > Quality.Gamma) ? 2 : 0;
-                cnt += ultimateCards.Any(x => x.Quality > Quality.Zeta) ? 3 : 0;
-                cnt += ultimateCards.Any(x => x.Quality > Quality.Lambda) ? 5 : 0;
-                if (cnt > 12) cnt = 12;
-
-                var ns = freeCard.Sub(TimeSpan.FromHours(cnt));
+                var ns = freeCard.Sub(TimeSpan.FromHours(botuser.GameDeck.GetFreeCardCooldownReductionHours()));
 
                 if (ns.IsActive(_time.Now()))
                 {

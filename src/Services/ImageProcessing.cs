@@ -1,6 +1,7 @@
 ﻿#pragma warning disable 1591
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -23,6 +24,10 @@ namespace Sanakan.Services
 {
     public class ImageProcessing
     {
+        private const long MaxImageBytes = 40 * 1024 * 1024;
+        private const int MaxImageDimension = 8192;
+        private const long MaxImagePixels = 64_000_000;
+
         private FontFamily _digital = new FontCollection().Add("Fonts/Digital.ttf");
         private FontFamily _latoBold = new FontCollection().Add("Fonts/Lato-Bold.ttf");
         private FontFamily _latoLight = new FontCollection().Add("Fonts/Lato-Light.ttf");
@@ -31,8 +36,8 @@ namespace Sanakan.Services
         private readonly TagIcon _galleryTag;
         private readonly HttpClient _httpClient;
         private readonly ShindenClient _shclient;
-        private Dictionary<string, Color> _colors;
-        private Dictionary<(FontFamily, float), Font> _fonts;
+        private ConcurrentDictionary<string, Color> _colors;
+        private ConcurrentDictionary<(FontFamily, float), Font> _fonts;
         private readonly List<DomainData> _imageServices;
         private readonly string[] _extensions = new[] { "png", "jpg", "jpeg", "gif", "webp" };
 
@@ -40,9 +45,9 @@ namespace Sanakan.Services
         {
             _shclient = shinden;
             _galleryTag = gallery;
-            _httpClient = new HttpClient();
-            _fonts = new Dictionary<(FontFamily, float), Font>();
-            _colors = new Dictionary<string, Color>();
+            _httpClient = new HttpClient { Timeout = TimeSpan.FromSeconds(30) };
+            _fonts = new ConcurrentDictionary<(FontFamily, float), Font>();
+            _colors = new ConcurrentDictionary<string, Color>();
             _imageServices = new List<DomainData>
             {
                 new DomainData("sanakan.pl", true),
@@ -57,8 +62,8 @@ namespace Sanakan.Services
 
         private async Task<string> TransformDropboxAsync(string url)
         {
-            var res = await _httpClient.GetAsync(url.Replace("www.dropbox", "dl.dropbox"));
-            if (res.IsSuccessStatusCode && res.Content.Headers.ContentType.MediaType.StartsWith("image"))
+            using var res = await _httpClient.GetAsync(url.Replace("www.dropbox", "dl.dropbox"), HttpCompletionOption.ResponseHeadersRead);
+            if (res.IsSuccessStatusCode && (res.Content.Headers.ContentType?.MediaType?.StartsWith("image") ?? false))
             {
                 return res.RequestMessage.RequestUri.AbsoluteUri;
             }
@@ -130,10 +135,10 @@ namespace Sanakan.Services
 
             try
             {
-                var res = await _httpClient.GetAsync(url);
-                if (res.IsSuccessStatusCode)
+                using var res = await _httpClient.GetAsync(url, HttpCompletionOption.ResponseHeadersRead);
+                if (res.IsSuccessStatusCode && !IsTooLarge(res))
                 {
-                    var type = res.Content.Headers.ContentType.MediaType.Split("/");
+                    var type = (res.Content.Headers.ContentType?.MediaType ?? "").Split("/");
                     return (type.First().Equals("image", StringComparison.CurrentCultureIgnoreCase), type.Last());
                 }
                 return (false, string.Empty);
@@ -144,13 +149,16 @@ namespace Sanakan.Services
             }
         }
 
+        private static bool IsTooLarge(HttpResponseMessage res)
+            => res.Content.Headers.ContentLength > MaxImageBytes;
+
         private async Task<Stream> GetImageFromUrlAsync(string url, bool fixExt = false)
         {
             try
             {
-                var res = await _httpClient.GetAsync(url);
-                if (res.IsSuccessStatusCode)
-                    return await res.Content.ReadAsStreamAsync();
+                var stream = await DownloadImageAsync(url);
+                if (stream != null)
+                    return stream;
 
                 if (fixExt)
                 {
@@ -158,10 +166,10 @@ namespace Sanakan.Services
                     foreach (var ext in _extensions)
                     {
                         splited[splited.Length - 1] = ext;
-                        res = await _httpClient.GetAsync(string.Join(".", splited));
+                        stream = await DownloadImageAsync(string.Join(".", splited));
 
-                        if (res.IsSuccessStatusCode)
-                            return await res.Content.ReadAsStreamAsync();
+                        if (stream != null)
+                            return stream;
                     }
                 }
             }
@@ -171,6 +179,57 @@ namespace Sanakan.Services
             }
 
             return null;
+        }
+
+        private async Task<Stream> DownloadImageAsync(string url)
+        {
+            using var res = await _httpClient.GetAsync(url, HttpCompletionOption.ResponseHeadersRead);
+            if (!res.IsSuccessStatusCode)
+                return null;
+
+            if (IsTooLarge(res))
+                return Stream.Null;
+
+            var buffer = new MemoryStream();
+            using (var source = await res.Content.ReadAsStreamAsync())
+            {
+                var chunk = new byte[81920];
+                int read;
+                while ((read = await source.ReadAsync(chunk)) > 0)
+                {
+                    if (buffer.Length + read > MaxImageBytes)
+                    {
+                        buffer.Dispose();
+                        return Stream.Null;
+                    }
+                    buffer.Write(chunk, 0, read);
+                }
+            }
+
+            buffer.Position = 0;
+            if (!await HasAcceptableDimensionsAsync(buffer))
+            {
+                buffer.Dispose();
+                return Stream.Null;
+            }
+
+            buffer.Position = 0;
+            return buffer;
+        }
+
+        private static async Task<bool> HasAcceptableDimensionsAsync(Stream stream)
+        {
+            try
+            {
+                var info = await Image.IdentifyAsync(stream);
+                var frames = Math.Max(1, info.FrameMetadataCollection.Count);
+                return info.Width <= MaxImageDimension && info.Height <= MaxImageDimension
+                    && (long)info.Width * info.Height * frames <= MaxImagePixels;
+            }
+            catch (Exception)
+            {
+                return false;
+            }
         }
 
         private async Task<Image> GetImageFromUrlOrLocalAsync(string uri)
@@ -203,28 +262,10 @@ namespace Sanakan.Services
         }
 
         private Font GetOrCreateFont(FontFamily family, float size)
-        {
-            if (_fonts.ContainsKey((family, size)))
-                return _fonts[(family, size)];
-            else
-            {
-                var font = new Font(family, size);
-                _fonts.Add((family, size), font);
-                return font;
-            }
-        }
+            => _fonts.GetOrAdd((family, size), key => new Font(key.Item1, key.Item2));
 
         private Color GetOrCreateColor(string hex)
-        {
-            if (_colors.ContainsKey(hex))
-                return _colors[hex];
-            else
-            {
-                var color = Color.ParseHex(hex);
-                _colors.Add(hex, color);
-                return color;
-            }
-        }
+            => _colors.GetOrAdd(hex, Color.ParseHex);
 
         private Font GetFontSize(FontFamily fontFamily, float size, string text, float maxWidth)
         {
