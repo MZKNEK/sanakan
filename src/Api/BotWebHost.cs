@@ -7,6 +7,7 @@ using Microsoft.AspNetCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.AspNetCore.HttpOverrides;
 using System.IO;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.Extensions.Logging;
@@ -65,12 +66,12 @@ namespace Sanakan.Api
                         ValidAudience = tmpCnf.Jwt.Issuer,
                         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(tmpCnf.Jwt.Key))
                     };
-                });
+                }).AddScheme<AuthenticationSchemeOptions, UserKeyAuthenticationHandler>(UserKeyAuthenticationHandler.SchemeName, null);
                 services.AddAuthorization(op =>
                 {
                     op.AddPolicy("Player", policy =>
                     {
-                        policy.AddAuthenticationSchemes(JwtBearerDefaults.AuthenticationScheme);
+                        policy.AddAuthenticationSchemes(JwtBearerDefaults.AuthenticationScheme, UserKeyAuthenticationHandler.SchemeName);
                         policy.RequireAuthenticatedUser();
 
                         policy.RequireAssertion(context => context.User.HasClaim(c => c.Type == "Player" && c.Value == "waifu_player"));
@@ -109,6 +110,7 @@ namespace Sanakan.Api
                         Title = "Sanakan API",
                         Version = "1.0",
                         Description = "Autentykacja następuje poprzez dopasowanie tokenu przesłanego w ciele zapytania `api/token`, a następnie wysyłania w nagłowku `Authorization` z przedrostkiem `Bearer` otrzymanego w zwrocie tokena."
+                            + "\n\nEndpointy wymagające użytkownika (`Player`) akceptują również klucz użytkownika przesłany w nagłówku `x-user-key`. Klucze generuje uprawniona aplikacja przez `api/userkey`, podając swój klucz w nagłówku `x-app-key`."
                             + "\n\nDocelowa wersja api powinna zostać przesłana pod nagówkiem `x-api-version`, w przypadku jej nie podania zapytania są interpretowane jako wysłane do wersji `1.0`.",
                     });
 

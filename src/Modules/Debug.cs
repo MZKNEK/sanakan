@@ -13,6 +13,7 @@ using Discord.WebSocket;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using Sanakan.Config;
+using Sanakan.Config.Model;
 using Sanakan.Database.Models;
 using Sanakan.Extensions;
 using Sanakan.Preconditions;
@@ -1231,6 +1232,91 @@ namespace Sanakan.Modules
 
             await SafeReplyAsync("", embed: $"AutoClean: `{config.AutoCleanCards.GetYesNo()}`".ToEmbedMessage(EMType.Success).Build());
         }
+
+        [Command("ukapps"), Priority(1), RequireDev]
+        [Summary("wyświetla aplikacje mogące generować klucze użytkowników")]
+        [Remarks("")]
+        public async Task ShowUserKeyAppsAsync()
+        {
+            var apps = Config.Get().UserKeyApps;
+            if (apps.IsNullOrEmpty())
+            {
+                await SafeReplyAsync("", embed: "Brak aplikacji.".ToEmbedMessage(EMType.Info).Build());
+                return;
+            }
+
+            using (var db = new Database.DatabaseContext(Config))
+            {
+                var counts = await db.UserApiKeys.AsQueryable().GroupBy(x => x.Application)
+                    .Select(x => new { App = x.Key, Count = x.Count() }).ToListAsync();
+
+                var list = apps.Select(x => $"**{x.Bearer}** `{MaskKey(x.Key)}` kluczy: {counts.FirstOrDefault(c => c.App == x.Bearer)?.Count ?? 0}");
+                await SafeReplyAsync("", embed: $"**Aplikacje kluczy użytkowników:**\n\n{string.Join("\n", list)}".TrimToLength().ToEmbedMessage(EMType.Info).Build());
+            }
+        }
+
+        [Command("ukapp add"), Priority(1), RequireDev]
+        [Summary("dodaje aplikację mogącą generować klucze użytkowników lub zmienia jej klucz (klucz idzie na PW)")]
+        [Remarks("strona")]
+        public async Task AddUserKeyAppAsync([Summary("nazwa aplikacji")] string name)
+        {
+            if (string.IsNullOrWhiteSpace(name) || name.Length > 100)
+            {
+                await SafeReplyAsync("", embed: "Nazwa aplikacji musi mieć od 1 do 100 znaków.".ToEmbedMessage(EMType.Error).Build());
+                return;
+            }
+
+            var key = Api.UserKeyAuthenticationHandler.GenerateKey(Api.UserKeyAuthenticationHandler.AppKeyPrefix);
+            try
+            {
+                var dm = await Context.User.CreateDMChannelAsync();
+                await dm.SendMessageAsync("", embed: $"Klucz aplikacji **{name}** (nagłówek `x-app-key`):\n\n`{key}`".ToEmbedMessage(EMType.Info).Build());
+            }
+            catch (Exception)
+            {
+                await SafeReplyAsync("", embed: $"{Context.User.Mention} nie można wysłać do Ciebie PW, klucz nie został zmieniony!".ToEmbedMessage(EMType.Error).Build());
+                return;
+            }
+
+            var config = Config.Get();
+            var exists = config.UserKeyApps?.Any(x => x.Bearer == name) ?? false;
+            var apps = (config.UserKeyApps ?? new List<SanakanApiKey>()).Where(x => x.Bearer != name).ToList();
+            apps.Add(new SanakanApiKey { Key = key, Bearer = name });
+
+            config.UserKeyApps = apps;
+            Config.Save();
+
+            var message = exists ? $"Zmieniono klucz aplikacji **{name}**, poprzedni przestał działać." : $"Dodano aplikację **{name}**.";
+            await SafeReplyAsync("", embed: $"{message} Klucz poszedł na PW.".ToEmbedMessage(EMType.Success).Build());
+        }
+
+        [Command("ukapp rm"), Priority(1), RequireDev]
+        [Summary("usuwa aplikację i wszystkie wygenerowane przez nią klucze użytkowników")]
+        [Remarks("strona")]
+        public async Task RemoveUserKeyAppAsync([Summary("nazwa aplikacji")] string name)
+        {
+            var config = Config.Get();
+            if (!(config.UserKeyApps?.Any(x => x.Bearer == name) ?? false))
+            {
+                await SafeReplyAsync("", embed: $"Nie odnaleziono aplikacji **{name}**.".ToEmbedMessage(EMType.Error).Build());
+                return;
+            }
+
+            config.UserKeyApps = config.UserKeyApps.Where(x => x.Bearer != name).ToList();
+            Config.Save();
+
+            using (var db = new Database.DatabaseContext(Config))
+            {
+                var keys = await db.UserApiKeys.AsQueryable().Where(x => x.Application == name).ToListAsync();
+                db.UserApiKeys.RemoveRange(keys);
+                await db.SaveChangesAsync();
+
+                await SafeReplyAsync("", embed: $"Usunięto aplikację **{name}** i `{keys.Count}` kluczy użytkowników.".ToEmbedMessage(EMType.Success).Build());
+            }
+        }
+
+        private static string MaskKey(string key)
+            => string.IsNullOrEmpty(key) || key.Length <= 12 ? "***" : $"{key.Substring(0, 8)}…";
 
         [Command("force clean", RunMode = RunMode.Async), Priority(1), RequireDev]
         [Summary("wymusza czyszczenie obrazków kart")]

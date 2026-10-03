@@ -62,6 +62,7 @@ namespace Sanakan.Database
         public DbSet<UserActivity> UserActivities { get; set; }
         public DbSet<TagCardRelation> TagCardRelations { get; set; }
         public DbSet<Tag> Tags { get; set; }
+        public DbSet<UserApiKey> UserApiKeys { get; set; }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
@@ -381,6 +382,20 @@ namespace Sanakan.Database
             modelBuilder.Entity<UserActivity>(entity =>
             {
                 entity.HasKey(e => e.Id);
+            });
+
+            modelBuilder.Entity<UserApiKey>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.KeyHash).HasMaxLength(64).IsRequired();
+                entity.Property(e => e.Application).HasMaxLength(100).IsRequired();
+                entity.HasIndex(e => e.KeyHash).IsUnique();
+                entity.HasIndex(e => new { e.UserId, e.Application }).IsUnique();
+
+                entity.HasOne<User>()
+                    .WithMany()
+                    .HasForeignKey(e => e.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
             });
         }
     }

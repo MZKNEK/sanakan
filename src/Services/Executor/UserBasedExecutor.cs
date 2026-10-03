@@ -1,8 +1,7 @@
 ﻿#pragma warning disable 1591
 
 using System;
-using AsyncKeyedLock;
-using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
@@ -13,34 +12,29 @@ namespace Sanakan.Services.Executor
 {
     public class UserBasedExecutor : IExecutor
     {
+        private const int QueueLength = 100;
+
         private IServiceProvider _provider;
         private ILogger _logger;
         private Timer _timer;
 
-        private AsyncKeyedLocker<ulong> _semaphore = new AsyncKeyedLocker<ulong>(x =>
-        {
-            x.PoolSize = 200;
-            x.PoolInitialFill = 10;
-            x.MaxCount = 1;
-        });
-
-        private BlockingCollection<IExecutable> _queue = new BlockingCollection<IExecutable>(100);
+        private readonly object _lock = new object();
+        private readonly List<IExecutable> _queue = new List<IExecutable>();
+        private readonly HashSet<ulong> _busyOwners = new HashSet<ulong>();
+        private readonly SemaphoreSlim _freeSlots = new SemaphoreSlim(QueueLength, QueueLength);
+        private int _running = 0;
+        private bool _globalRunning = false;
 
         public UserBasedExecutor(ILogger logger)
         {
             _logger = logger;
-            _timer = new Timer(_ =>
-            {
-                _ = Task.Run(async () => await RunWorker());
-            },
-            null,
-            TimeSpan.FromSeconds(10),
-            TimeSpan.FromMilliseconds(500));
+            _timer = new Timer(_ => Pump(), null, TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(1));
         }
 
         public void Initialize(IServiceProvider provider)
         {
             _provider = provider;
+            Pump();
         }
 
         public string WhatIsRunning()
@@ -50,65 +44,90 @@ namespace Sanakan.Services.Executor
 
         public async Task<bool> TryAdd(IExecutable task, TimeSpan timeout)
         {
-            if (_queue.TryAdd(task, timeout))
+            if (!await _freeSlots.WaitAsync(timeout).ConfigureAwait(false))
+                return false;
+
+            lock (_lock)
             {
-                await Task.Delay(TimeSpan.FromMilliseconds(10));
-                _ = Task.Run(async () => await RunWorker());
-                return true;
+                _queue.Add(task);
             }
-            return false;
+
+            Pump();
+            return true;
         }
 
-        public async Task RunWorker()
+        public Task RunWorker()
         {
-            if (_queue.TryTake(out var task))
+            Pump();
+            return Task.CompletedTask;
+        }
+
+        private void Pump()
+        {
+            if (_provider == null)
+                return;
+
+            var toStart = new List<IExecutable>();
+            lock (_lock)
             {
-                if (!await ProcessCommandsAsync(task).ConfigureAwait(false))
+                for (int i = 0; i < _queue.Count && !_globalRunning; i++)
                 {
-                    _queue.Add(task);
+                    var task = _queue[i];
+                    var owners = task.GetOwners().Distinct().ToList();
+
+                    if (owners.First() == 0)
+                    {
+                        // zadanie globalne wymaga, by nic innego nie działało
+                        if (_running > 0) continue;
+                        _globalRunning = true;
+                    }
+                    else if (owners.Any(x => _busyOwners.Contains(x)))
+                    {
+                        continue;
+                    }
+
+                    foreach (var owner in owners)
+                        _busyOwners.Add(owner);
+
+                    ++_running;
+                    _queue.RemoveAt(i--);
+                    toStart.Add(task);
                 }
             }
+
+            foreach (var task in toStart)
+            {
+                _freeSlots.Release();
+                _ = Task.Run(() => RunAsync(task));
+            }
         }
 
-        private bool IsInUse(AsyncKeyedLockReleaser<ulong> releaser)
-        {
-            return releaser.ReferenceCount > 0;
-        }
-
-        private async Task<bool> ProcessCommandsAsync(IExecutable cmd)
+        private async Task RunAsync(IExecutable cmd)
         {
             var taskName = cmd.GetName();
-            var owners = cmd.GetOwners();
-            var userId = owners.First();
-
-            if (_semaphore.IsInUse(0) || owners.Any(x => _semaphore.IsInUse(x))
-                || (userId == 0 && _semaphore.Index.Any(x => IsInUse(x.Value))))
+            try
             {
-                return false;
+                _logger.Log($"Executor: running {taskName}");
+                var watch = Stopwatch.StartNew();
+                await cmd.ExecuteAsync(_provider).ConfigureAwait(false);
+                _logger.Log($"Executor: completed {taskName} in {watch.ElapsedMilliseconds}ms");
             }
-
-            using (var releaser = await _semaphore.LockAsync(userId, 0).ConfigureAwait(false))
+            catch (Exception ex)
             {
-                if (releaser.EnteredSemaphore)
-                {
-                    try
-                    {
-                        _logger.Log($"Executor: running {taskName}");
-                        var watch = Stopwatch.StartNew();
-                        await cmd.ExecuteAsync(_provider).ConfigureAwait(false);
-                        _logger.Log($"Executor: completed {taskName} in {watch.ElapsedMilliseconds}ms");
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.Log($"Executor: {taskName} - {ex}");
-                    }
-                }
-                else
-                {
-                    return false;
-                }
+                _logger.Log($"Executor: {taskName} - {ex}");
             }
-            return true;
+            finally
+            {
+                lock (_lock)
+                {
+                    foreach (var owner in cmd.GetOwners())
+                        _busyOwners.Remove(owner);
+
+                    --_running;
+                    _globalRunning = false;
+                }
+                Pump();
+            }
         }
     }
 }

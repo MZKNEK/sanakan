@@ -27,6 +27,8 @@ namespace Sanakan.Api.Controllers
     [Route("api/[controller]")]
     public class WaifuController : ControllerBase
     {
+        private const uint MaxCardsPerRequest = 4000;
+
         private readonly Waifu _waifu;
         private readonly TagHelper _tags;
         private readonly IConfig _config;
@@ -152,9 +154,9 @@ namespace Sanakan.Api.Controllers
                 query = CardsQueryFilter.Use(filter.OrderBy, query);
                 query = FilterCardsByIds(query, filter);
                 query = FilterCardsByTags(query, filter);
-                var cards = await query.Skip((int)offset).Take((int)count).ToListAsync();
+                var cards = await query.Skip((int)offset).Take((int)Math.Min(count, MaxCardsPerRequest)).ToListAsync();
 
-                return new FilteredCards{TotalCards = query.Count(), Cards = cards.Select(x => x.ToView(GetUsernameAsync(x.GameDeck.User.Shinden).Result, 0, _time))};
+                return new FilteredCards{TotalCards = await query.CountAsync(), Cards = await ToViewWithUsernamesAsync(cards)};
             }
         }
 
@@ -182,8 +184,9 @@ namespace Sanakan.Api.Controllers
                 var expireTime = new MemoryCacheEntryOptions().SetAbsoluteExpiration(_time.Now().AddHours(4));
                 var cached = await FilterCardsByTags(query, filter).FromCacheAsync(expireTime, $"ultimate-cards");
                 var cards = cached.ToList();
+                var page = cards.Skip((int)offset).Take((int)Math.Min(count, MaxCardsPerRequest)).ToList();
 
-                return new FilteredCards{TotalCards = cards.Count, Cards = cards.Skip((int)offset).Take((int)count).Select(x => x.ToView(GetUsernameAsync(x.GameDeck.User.Shinden).Result, 0, _time))};
+                return new FilteredCards{TotalCards = cards.Count, Cards = await ToViewWithUsernamesAsync(page)};
             }
         }
 
@@ -211,8 +214,9 @@ namespace Sanakan.Api.Controllers
                 var expireTime = new MemoryCacheEntryOptions().SetAbsoluteExpiration(_time.Now().AddHours(8));
                 var cached = await FilterCardsByTags(query, filter).FromCacheAsync(expireTime, $"unique-cards");
                 var cards = cached.ToList();
+                var page = cards.Skip((int)offset).Take((int)Math.Min(count, MaxCardsPerRequest)).ToList();
 
-                return new FilteredCards{TotalCards = cards.Count, Cards = cards.Skip((int)offset).Take((int)count).Select(x => x.ToView(GetUsernameAsync(x.GameDeck.User.Shinden).Result, 0, _time))};
+                return new FilteredCards{TotalCards = cards.Count, Cards = await ToViewWithUsernamesAsync(page)};
             }
         }
 
@@ -896,7 +900,7 @@ namespace Sanakan.Api.Controllers
                 return null;
             }
 
-            exe.Wait();
+            await exe.WaitAsync();
 
             return cards;
         }
@@ -908,6 +912,8 @@ namespace Sanakan.Api.Controllers
         /// <response code="403">The appropriate claim was not found</response>
         /// <response code="404">User not found</response>
         /// <response code="406">User has no space</response>
+        /// <response code="409">Boosterpack already opened</response>
+        /// <response code="503">Command queue is full / Can't connect to shinden</response>
         [HttpPost("boosterpack/open/{packNumber}"), Authorize(Policy = "Player")]
         public async Task<List<Card>> OpenAPackAsync(int packNumber)
         {
@@ -916,8 +922,8 @@ namespace Sanakan.Api.Controllers
             {
                 if (ulong.TryParse(currUser.Claims.First(x => x.Type == "DiscordId").Value, out var discordId))
                 {
-                    string bPackName = "";
-                    var cards = new List<Card>();
+                    ulong packId = 0;
+                    var opened = new List<Card>();
                     using (var db = new Database.DatabaseContext(_config))
                     {
                         var botUserCh = await db.GetCachedFullUserAsync(discordId);
@@ -927,40 +933,62 @@ namespace Sanakan.Api.Controllers
                             return null;
                         }
 
-                        if (botUserCh.GameDeck.BoosterPacks.Count < packNumber || packNumber <= 0)
+                        var packs = botUserCh.GameDeck.BoosterPacks.ToList();
+                        if (packs.Count < packNumber || packNumber <= 0)
                         {
                             await "Boosterpack not found!".ToResponse(404).ExecuteResultAsync(ControllerContext);
                             return null;
                         }
 
-                        var pack = botUserCh.GameDeck.BoosterPacks.ToArray()[packNumber - 1];
-
-                        if (botUserCh.GameDeck.Cards.Count + pack.CardCnt > botUserCh.GameDeck.MaxNumberOfCards)
+                        var packCh = packs[packNumber - 1];
+                        if (botUserCh.GameDeck.Cards.Count + packCh.CardCnt > botUserCh.GameDeck.MaxNumberOfCards)
                         {
                             await "User has no space left in deck!".ToResponse(406).ExecuteResultAsync(ControllerContext);
                             return null;
                         }
 
-                        cards = await _waifu.OpenBoosterPackAsync(null, pack, botUserCh.PoolType);
-                        bPackName = pack.Name;
+                        opened = await _waifu.OpenBoosterPackAsync(null, packCh, botUserCh.PoolType);
+                        if (opened.Count < packCh.CardCnt)
+                        {
+                            await "Can't connect to shinden!".ToResponse(503).ExecuteResultAsync(ControllerContext);
+                            return null;
+                        }
+                        packId = packCh.Id;
                     }
 
+                    IActionResult error = null;
+                    var cards = new List<Card>();
                     var exe = new Executable($"api-packet-open u{discordId}", new Func<Task>(async () =>
                     {
                         using (var db = new Database.DatabaseContext(_config))
                         {
                             var botUser = await db.GetUserOrCreateAsync(discordId);
-
-                            var bPack = botUser.GameDeck.BoosterPacks.ToArray()[packNumber - 1];
-                            if (bPack?.Name != bPackName)
+                            var pack = botUser.GameDeck.BoosterPacks.FirstOrDefault(x => x.Id == packId);
+                            if (pack == null)
                             {
-                                await "Boosterpack already opened!".ToResponse(500).ExecuteResultAsync(ControllerContext);
+                                error = "Boosterpack already opened!".ToResponse(409);
                                 return;
                             }
 
-                            botUser.GameDeck.BoosterPacks.Remove(bPack);
+                            if (botUser.GameDeck.Cards.Count + opened.Count > botUser.GameDeck.MaxNumberOfCards)
+                            {
+                                error = "User has no space left in deck!".ToResponse(406);
+                                return;
+                            }
 
-                            if (bPack.CardSourceFromPack == CardSource.Activity || bPack.CardSourceFromPack == CardSource.Migration)
+                            var mission = botUser.TimeStatuses.FirstOrDefault(x => x.Type == StatusType.DPacket);
+                            if (mission == null)
+                            {
+                                mission = StatusType.DPacket.NewTimeStatus();
+                                botUser.TimeStatuses.Add(mission);
+                            }
+
+                            if (pack.CardSourceFromPack != CardSource.Api)
+                                mission.Count(_time.Now());
+
+                            botUser.MarkActivity(_time.Now());
+
+                            if (pack.CardSourceFromPack == CardSource.Activity || pack.CardSourceFromPack == CardSource.Migration)
                             {
                                 botUser.Stats.OpenedBoosterPacksActivity += 1;
                             }
@@ -969,17 +997,30 @@ namespace Sanakan.Api.Controllers
                                 botUser.Stats.OpenedBoosterPacks += 1;
                             }
 
-                            await UpdateWishlistCountAsync(db, cards, botUser);
+                            botUser.GameDeck.BoosterPacks.Remove(pack);
+
+                            await UpdateWishlistCountAsync(db, opened, botUser);
 
                             await db.SaveChangesAsync();
 
                             QueryCacheManager.ExpireTag(new string[] { $"user-{botUser.Id}", "users" });
+                            cards = opened;
                         }
                     }), discordId);
 
-                    await _executor.TryAdd(exe, TimeSpan.FromSeconds(1));
+                    if (!await _executor.TryAdd(exe, TimeSpan.FromSeconds(1)))
+                    {
+                        await "Command queue is full".ToResponse(503).ExecuteResultAsync(ControllerContext);
+                        return null;
+                    }
 
-                    exe.Wait();
+                    await exe.WaitAsync();
+
+                    if (error != null)
+                    {
+                        await error.ExecuteResultAsync(ControllerContext);
+                        return null;
+                    }
 
                     return cards;
                 }
@@ -992,8 +1033,9 @@ namespace Sanakan.Api.Controllers
         /// Aktywuje lub dezaktywuje kartę (wymagany Bearer od użytkownika)
         /// </summary>
         /// <param name="wid">id karty</param>
-        /// <response code="403">The appropriate claim was not found</response>
+        /// <response code="403">The appropriate claim was not found / Card is in cage / Card is on expedition</response>
         /// <response code="404">Card not found</response>
+        /// <response code="503">Command queue is full</response>
         [HttpPut("deck/toggle/card/{wid}"), Authorize(Policy = "Player")]
         public async Task ToggleCardStatusAsync(ulong wid)
         {
@@ -1002,49 +1044,68 @@ namespace Sanakan.Api.Controllers
             {
                 if (ulong.TryParse(currUser.Claims.First(x => x.Type == "DiscordId").Value, out var discordId))
                 {
-                    using (var db = new Database.DatabaseContext(_config))
-                    {
-                        var botUserCh = await db.GetCachedFullUserAsync(discordId);
-                        if (botUserCh == null)
-                        {
-                            await "User not found!".ToResponse(404).ExecuteResultAsync(ControllerContext);
-                            return;
-                        }
-
-                        var thisCardCh = botUserCh.GameDeck.Cards.FirstOrDefault(x => x.Id == wid);
-                        if (thisCardCh == null)
-                        {
-                            await "Card not found!".ToResponse(404).ExecuteResultAsync(ControllerContext);
-                            return;
-                        }
-
-                        if (thisCardCh.InCage)
-                        {
-                            await "Card is in cage!".ToResponse(403).ExecuteResultAsync(ControllerContext);
-                            return;
-                        }
-                    }
-
+                    IActionResult result = null;
                     var exe = new Executable($"api-deck u{discordId}", new Func<Task>(async () =>
                     {
                         using (var db = new Database.DatabaseContext(_config))
                         {
-                            var botUser = await db.GetUserOrCreateAsync(discordId);
-                            var thisCard = botUser.GameDeck.Cards.FirstOrDefault(x => x.Id == wid);
+                            var thisCard = await db.Cards.AsQueryable().FirstOrDefaultAsync(x => x.Id == wid && x.GameDeckId == discordId);
+                            if (thisCard == null)
+                            {
+                                result = "Card not found!".ToResponse(404);
+                                return;
+                            }
+
+                            if (thisCard.InCage)
+                            {
+                                result = "Card is in cage!".ToResponse(403);
+                                return;
+                            }
+
+                            if (thisCard.Expedition != CardExpedition.None)
+                            {
+                                result = "Card is on expedition!".ToResponse(403);
+                                return;
+                            }
+
+                            var botUser = await db.GetUserOrCreateSimpleAsync(discordId);
+                            var active = await db.Cards.AsQueryable().AsNoTracking().Where(x => x.Active && x.GameDeckId == discordId && x.Id != wid).ToListAsync();
+
                             thisCard.Active = !thisCard.Active;
+                            if (thisCard.Active) active.Add(thisCard);
+
+                            botUser.GameDeck.DeckPower = active.Sum(x => x.CalculateCardPower());
+                            botUser.GameDeck.CardsInDeck = active.Count;
 
                             await db.SaveChangesAsync();
 
                             QueryCacheManager.ExpireTag(new string[] { $"user-{botUser.Id}", "users" });
+                            result = "Card status toggled".ToResponse(200);
                         }
                     }), discordId);
 
-                    await _executor.TryAdd(exe, TimeSpan.FromSeconds(1));
-                    await "Card status toggled".ToResponse(200).ExecuteResultAsync(ControllerContext);
+                    if (!await _executor.TryAdd(exe, TimeSpan.FromSeconds(1)))
+                    {
+                        await "Command queue is full".ToResponse(503).ExecuteResultAsync(ControllerContext);
+                        return;
+                    }
+
+                    await exe.WaitAsync();
+                    await result.ExecuteResultAsync(ControllerContext);
                     return;
                 }
             }
             await "The appropriate claim was not found".ToResponse(403).ExecuteResultAsync(ControllerContext);
+        }
+
+        private async Task<List<CardFinalView>> ToViewWithUsernamesAsync(List<Card> cards)
+        {
+            var usernames = new Dictionary<ulong, string>();
+            foreach (var shindenId in cards.Select(x => x.GameDeck.User.Shinden).Distinct())
+            {
+                usernames[shindenId] = await GetUsernameAsync(shindenId);
+            }
+            return cards.Select(x => x.ToView(usernames[x.GameDeck.User.Shinden], 0, _time)).ToList();
         }
 
         private async Task<string> GetUsernameAsync(ulong shindenId)

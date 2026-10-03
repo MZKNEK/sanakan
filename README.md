@@ -63,6 +63,12 @@ comments to it.
       "Bearer": "your-bearer-name"
     }
   ],
+  "UserKeyApps": [
+    {
+      "Key": "your-app-key",
+      "Bearer": "your-app-name"
+    }
+  ],
   "RMConfig": [
     {
       "RoleId": 123456789012345678,

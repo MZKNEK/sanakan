@@ -78,7 +78,7 @@ namespace Sanakan.Api.Controllers
 
         private string Authenticate(string apikey)
         {
-            return _config.Get().ApiKeys.FirstOrDefault(x => x.Key.Equals(apikey))?.Bearer;
+            return _config.Get().ApiKeys?.FirstOrDefault(x => x.Key != null && x.Key.Equals(apikey))?.Bearer;
         }
     }
 }

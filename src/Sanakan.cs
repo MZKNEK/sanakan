@@ -85,7 +85,7 @@ namespace Sanakan
         {
             Services.Dir.Create();
 
-            _logger = new ConsoleLogger();
+            _logger = new ConsoleLogger(_config);
 
             _client = new DiscordSocketClient(new DiscordSocketConfig()
             {

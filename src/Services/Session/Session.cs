@@ -93,14 +93,15 @@ namespace Sanakan.Services.Session
 
         public IExecutable GetExecutable(SessionContext context)
         {
-            var task = new Executable($"session-{this}", new Task<bool>(() =>
+            var task = new Executable($"session-{this}", new Func<Task<bool>>(async () =>
             {
-                if (OnExecute == null)
+                var onExecute = OnExecute;
+                if (onExecute == null)
                     return true;
 
                 try
                 {
-                    var res = OnExecute(context, this).GetAwaiter().GetResult();
+                    var res = await onExecute(context, this).ConfigureAwait(false);
                     if (res && RunMode == RunMode.Sync && OnSyncEnd != null)
                     {
                         _ = Task.Run(async () =>

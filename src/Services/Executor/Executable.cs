@@ -10,6 +10,7 @@ namespace Sanakan.Services.Executor
     {
         private Func<Task> _task { get; set; }
         private Task _internalTask { get; set; }
+        private readonly TaskCompletionSource _started = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
 
         private readonly string _name;
         private readonly Priority _priority;
@@ -41,23 +42,36 @@ namespace Sanakan.Services.Executor
 
         public string GetName() => _name;
 
-        public void Wait()
+        public void Wait() => WaitAsync().GetAwaiter().GetResult();
+
+        public async Task WaitAsync()
         {
-            while (_internalTask is null) {}
-            _internalTask.Wait();
+            await _started.Task.ConfigureAwait(false);
+            await _internalTask.ConfigureAwait(false);
         }
 
         public async Task<bool> ExecuteAsync(IServiceProvider provider)
         {
             try
             {
-                if (_internalTask is null)
+                try
                 {
-                    _internalTask = _task();
+                    if (_internalTask is null)
+                    {
+                        _internalTask = _task();
+                    }
+                    else
+                    {
+                        _internalTask.Start();
+                    }
                 }
-                else
+                catch (Exception ex) when (_internalTask is null)
                 {
-                    _internalTask.Start();
+                    _internalTask = Task.FromException(ex);
+                }
+                finally
+                {
+                    _started.TrySetResult();
                 }
 
                 await _internalTask.ConfigureAwait(false);
