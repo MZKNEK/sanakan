@@ -40,6 +40,12 @@ namespace Sanakan.Services.Commands
             _logger = logger;
             _executor = executor;
             _cmd = new CommandService();
+            _cmd.CommandExecuted += (cmd, _, result) =>
+            {
+                if (cmd.IsSpecified)
+                    MinuteStats.Commands.Add(result.Error is CommandError.Exception or CommandError.Unsuccessful);
+                return Task.CompletedTask;
+            };
 
             _timer = new Timer(async _ =>
             {
@@ -138,7 +144,10 @@ namespace Sanakan.Services.Commands
                         default:
                         case RunMode.Sync:
                             if (!await _executor.TryAdd(res.Command, TimeSpan.FromSeconds(1)))
-                                    await context.Channel.SendMessageAsync("", embed: "Odrzucono polecenie!".ToEmbedMessage(EMType.Error).Build());
+                            {
+                                MinuteStats.RejectedCommands.Add(false);
+                                await context.Channel.SendMessageAsync("", embed: "Odrzucono polecenie!".ToEmbedMessage(EMType.Error).Build());
+                            }
                             break;
                     }
                 }

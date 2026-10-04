@@ -33,6 +33,7 @@ namespace Sanakan
         private EmoteCounter _eCounter;
         private ImageProcessing _img;
         private DeletedLog _deleted;
+        private HealthMonitor _health;
         private Daemonizer _daemon;
         private Greeting _greeting;
         private ISystemTime _time;
@@ -64,7 +65,7 @@ namespace Sanakan
 
             var services = BuildServiceProvider();
             BotWebHost.RunWebHost(_client, _shindenClient, _waifu,
-                _config, _helper, _executor, _logger, _time, _tags, _expedition);
+                _config, _helper, _executor, _logger, _time, _tags, _expedition, _health);
 
             _executor.Initialize(services);
             _sessions.Initialize(services);
@@ -128,6 +129,7 @@ namespace Sanakan
                 tmpCnf.Shinden.UserAgent, tmpCnf.Shinden.Marmolade), discordLogger.Shinden,
                 LogLevel.Information, tmpCnf.Shinden.BaseUri, TimeSpan.FromSeconds(10));
 
+            _health = new HealthMonitor(_client, _shindenClient, _config);
             _time = new SystemTime();
             _events = new Events(_time);
             _helper = new Helper(_config, _logger);

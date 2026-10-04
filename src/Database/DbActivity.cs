@@ -25,6 +25,10 @@ namespace Sanakan.Database
         private static Timer _timer;
         private static DateTime _lastReport = DateTime.UtcNow;
 
+        private static readonly Services.RecentLatency _recent = new Services.RecentLatency();
+
+        public static readonly Services.MinuteStats Stats = new Services.MinuteStats();
+
         public static readonly DbCommandInterceptor Commands = new CommandCounter();
         public static readonly SaveChangesInterceptor Saves = new SaveCounter();
 
@@ -66,14 +70,31 @@ namespace Sanakan.Database
             return $"DB: zapytania {queries}, zapisy {saves} (encji {entities}), komendy zapisujące {writes}";
         }
 
-        private static void CountQuery()
+        public static long? GetRecentLatencyMs() => _recent.Get();
+
+        private static void CountLatency(TimeSpan duration)
         {
+            var ms = (long)duration.TotalMilliseconds;
+            Stats.AddTimed(ms);
+            _recent.Success(ms);
+        }
+
+        private static void CountFailure()
+        {
+            Stats.Add(true);
+            _recent.Failure();
+        }
+
+        private static void CountQuery(TimeSpan duration)
+        {
+            CountLatency(duration);
             Interlocked.Increment(ref _queries);
             Interlocked.Increment(ref _dayQueries);
         }
 
-        private static void CountWriteCommand()
+        private static void CountWriteCommand(TimeSpan duration)
         {
+            CountLatency(duration);
             Interlocked.Increment(ref _writeCommands);
             Interlocked.Increment(ref _dayWriteCommands);
         }
@@ -82,41 +103,50 @@ namespace Sanakan.Database
         {
             public override DbDataReader ReaderExecuted(DbCommand command, CommandExecutedEventData eventData, DbDataReader result)
             {
-                CountQuery();
+                CountQuery(eventData.Duration);
                 return result;
             }
 
             public override ValueTask<DbDataReader> ReaderExecutedAsync(DbCommand command, CommandExecutedEventData eventData,
                 DbDataReader result, CancellationToken cancellationToken = default)
             {
-                CountQuery();
+                CountQuery(eventData.Duration);
                 return new ValueTask<DbDataReader>(result);
             }
 
             public override object ScalarExecuted(DbCommand command, CommandExecutedEventData eventData, object result)
             {
-                CountQuery();
+                CountQuery(eventData.Duration);
                 return result;
             }
 
             public override ValueTask<object> ScalarExecutedAsync(DbCommand command, CommandExecutedEventData eventData,
                 object result, CancellationToken cancellationToken = default)
             {
-                CountQuery();
+                CountQuery(eventData.Duration);
                 return new ValueTask<object>(result);
             }
 
             public override int NonQueryExecuted(DbCommand command, CommandExecutedEventData eventData, int result)
             {
-                CountWriteCommand();
+                CountWriteCommand(eventData.Duration);
                 return result;
             }
 
             public override ValueTask<int> NonQueryExecutedAsync(DbCommand command, CommandExecutedEventData eventData,
                 int result, CancellationToken cancellationToken = default)
             {
-                CountWriteCommand();
+                CountWriteCommand(eventData.Duration);
                 return new ValueTask<int>(result);
+            }
+
+            public override void CommandFailed(DbCommand command, CommandErrorEventData eventData) => CountFailure();
+
+            public override Task CommandFailedAsync(DbCommand command, CommandErrorEventData eventData,
+                CancellationToken cancellationToken = default)
+            {
+                CountFailure();
+                return Task.CompletedTask;
             }
         }
 

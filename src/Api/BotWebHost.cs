@@ -35,7 +35,7 @@ namespace Sanakan.Api
         private static IWebHost _host;
 
         public static void RunWebHost(DiscordSocketClient client, ShindenClient shinden, Waifu waifu, IConfig config, Services.Helper helper,
-            IExecutor executor, Shinden.Logger.ILogger logger, ISystemTime time, TagHelper tags, Expedition expedition)
+            IExecutor executor, Shinden.Logger.ILogger logger, ISystemTime time, TagHelper tags, Expedition expedition, HealthMonitor health)
         {
             var host = CreateWebHostBuilder(config).ConfigureServices(services =>
             {
@@ -48,6 +48,7 @@ namespace Sanakan.Api
                 services.AddSingleton(shinden);
                 services.AddSingleton(executor);
                 services.AddSingleton(expedition);
+                services.AddSingleton(health);
             }).Build();
 
             _host = host;
@@ -189,6 +190,7 @@ namespace Sanakan.Api
             {
                 var watch = System.Diagnostics.Stopwatch.StartNew();
                 await next();
+                if (context.Request.Path.StartsWithSegments("/api/health")) return;
 
                 ApiStats.Add(context);
                 var entry = ApiAudit.Describe(context, watch.ElapsedMilliseconds);

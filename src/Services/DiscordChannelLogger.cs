@@ -251,7 +251,11 @@ namespace Sanakan.Services
 
             public ShindenLogger(DiscordChannelLogger parent) => _parent = parent;
 
-            public void Log(string message) => _parent.Log(message, true);
+            public void Log(string message)
+            {
+                ShindenActivity.Default.Track(message);
+                _parent.Log(message, true);
+            }
         }
     }
 }
