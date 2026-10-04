@@ -126,7 +126,17 @@ namespace Sanakan.Modules
         [Alias("items", "item", "przedmiot")]
         [Summary("wypisuje posiadane przedmioty (informacje o przedmiocie, gdy podamy jego numer)")]
         [Remarks("tort/1"), RequireWaifuCommandChannel]
-        public async Task ShowItemsAsync([Summary("nazwa przedmiotu/nr przedmiotu")] string filter = "")
+        public Task ShowItemsAsync([Summary("nazwa przedmiotu/nr przedmiotu")] string filter = "")
+            => ShowItemsImplAsync(filter, false);
+
+        [Command("przedmioty-", RunMode = RunMode.Async)]
+        [Alias("items-", "item-", "przedmiot-")]
+        [Summary("wypisuje posiadane przedmioty z pominięciem przedmiotów do tworzenia figurek (informacje o przedmiocie, gdy podamy jego numer)")]
+        [Remarks("tort/1"), RequireWaifuCommandChannel]
+        public Task ShowItemsWithoutFigureItemsAsync([Summary("nazwa przedmiotu/nr przedmiotu")] string filter = "")
+            => ShowItemsImplAsync(filter, true);
+
+        private async Task ShowItemsImplAsync(string filter, bool hideFigureItems)
         {
             using (var db = new Database.DatabaseContext(Config))
             {
@@ -135,7 +145,7 @@ namespace Sanakan.Modules
 
                 if (itemList.IsNullOrEmpty())
                 {
-                    await SafeReplyAsync("", embed: $"{Context.User.Mention} nie masz żadnych przemiotów.".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} nie masz żadnych przedmiotów.".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
@@ -146,10 +156,16 @@ namespace Sanakan.Modules
                         ? _waifu.NormalizeItemFilter(filter)
                         : string.Empty;
 
-                    var pages = _waifu.GetItemList(Context.User, itemList, filter);
+                    var pages = _waifu.GetItemList(Context.User, itemList, filter, hideFigureItems);
                     if (pages.Count < 1)
                     {
-                        await SafeReplyAsync("", embed: $"{Context.User.Mention} nie odnaleniono przedmiotów zawierających **{filter}** w nazwie.".ToEmbedMessage(EMType.Error).Build());
+                        var msg = string.IsNullOrEmpty(filter)
+                            ? "poza przedmiotami do tworzenia figurek nie masz żadnych przedmiotów."
+                            : hideFigureItems
+                                ? $"nie odnaleziono przedmiotów zawierających **{filter}** w nazwie (pominięto przedmioty do tworzenia figurek)."
+                                : $"nie odnaleziono przedmiotów zawierających **{filter}** w nazwie.";
+
+                        await SafeReplyAsync("", embed: $"{Context.User.Mention} {msg}".ToEmbedMessage(EMType.Error).Build());
                         return;
                     }
 
@@ -161,6 +177,7 @@ namespace Sanakan.Modules
 
                     var res = await _helepr.SendEmbedsOnDMAsync(Context.User, pages);
                     await SafeReplyAsync("", embed: res.ToEmbedMessage($"{Context.User.Mention} ").Build());
+                    return;
                 }
 
                 if (bUser.GameDeck.Items.Count < numberOfItem)
@@ -3581,7 +3598,7 @@ namespace Sanakan.Modules
                 var buser = await db.Users.AsQueryable().Where(x => x.Id == Context.User.Id).Include(x => x.GameDeck).ThenInclude(x => x.Items).FirstOrDefaultAsync();
                 if (buser == null || buser.GameDeck.Items.IsNullOrEmpty())
                 {
-                    await SafeReplyAsync("", embed: $"{Context.User.Mention} nie masz żadnych przemiotów.".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} nie masz żadnych przedmiotów.".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 

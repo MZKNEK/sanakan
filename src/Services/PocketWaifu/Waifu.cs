@@ -1643,10 +1643,11 @@ namespace Sanakan.Services.PocketWaifu
             return filter;
         }
 
-        public List<Embed> GetItemList(SocketUser user, IEnumerable<Item> items, string filter = "")
+        public List<Embed> GetItemList(SocketUser user, IEnumerable<Item> items, string filter = "", bool hideFigureItems = false)
         {
             var pages = new List<Embed>();
-            var list = items.ToItemList(filter).SplitList(50);
+            var list = items.ToItemList(filter, hideFigureItems).SplitList(50);
+            var hiddenCnt = hideFigureItems ? items.CountFigureCreationItems(filter) : 0;
 
             for (int i = 0; i < list.Count; i++)
             {
@@ -1655,6 +1656,10 @@ namespace Sanakan.Services.PocketWaifu
                     Color = EMType.Info.Color(),
                     Description = $"{user.Mention} twoje przedmioty **({i + 1}/{list.Count})**:\n\n{string.Join("\n", list[i]).TrimToLength()}"
                 };
+
+                if (hiddenCnt > 0)
+                    embed.WithFooter(ItemExtension.GetHiddenFigureItemsInfo(hiddenCnt));
+
                 pages.Add(embed.Build());
             }
 

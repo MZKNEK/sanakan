@@ -329,6 +329,29 @@ namespace Sanakan.Extensions
             }
         }
 
+        public static bool IsFigureCreationItem(this ItemType type)
+        {
+            switch (type)
+            {
+                case ItemType.PreAssembledMegumin:
+                case ItemType.PreAssembledGintoki:
+                case ItemType.PreAssembledAsuna:
+                case ItemType.FigureSkeleton:
+                case ItemType.FigureUniversalPart:
+                case ItemType.FigureHeadPart:
+                case ItemType.FigureBodyPart:
+                case ItemType.FigureLeftArmPart:
+                case ItemType.FigureRightArmPart:
+                case ItemType.FigureLeftLegPart:
+                case ItemType.FigureRightLegPart:
+                case ItemType.FigureClothesPart:
+                    return true;
+
+                default:
+                    return false;
+            }
+        }
+
         public static bool IsFigureNeededToUse(this ItemType type)
         {
             switch (type)
@@ -833,9 +856,11 @@ namespace Sanakan.Extensions
             return items.ToString();
         }
 
-        public static List<string> ToItemList(this IEnumerable<Item> list, string filter)
+        private static bool MatchesItemFilter(this Item item, string filter)
+            => string.IsNullOrEmpty(filter) || item.Name.Contains(filter, StringComparison.InvariantCultureIgnoreCase);
+
+        public static List<string> ToItemList(this IEnumerable<Item> list, string filter, bool hideFigureItems = false)
         {
-            var filterDisabled = string.IsNullOrEmpty(filter);
             var items = new List<string>();
             var index = 0;
 
@@ -843,11 +868,28 @@ namespace Sanakan.Extensions
             {
                 index++;
 
-                if (filterDisabled || item.Name.Contains(filter, StringComparison.InvariantCultureIgnoreCase))
+                if (hideFigureItems && item.Type.IsFigureCreationItem())
+                    continue;
+
+                if (item.MatchesItemFilter(filter))
                     items.Add($"**[{index}]** {item.Name} x{item.Count}");
             }
 
             return items;
+        }
+
+        public static int CountFigureCreationItems(this IEnumerable<Item> list, string filter)
+            => list.Count(x => x.Type.IsFigureCreationItem() && x.MatchesItemFilter(filter));
+
+        public static string GetHiddenFigureItemsInfo(int count)
+        {
+            var lastTwo = count % 100;
+            var last = count % 10;
+            var noun = count == 1 ? "przedmiot"
+                : (last >= 2 && last <= 4 && (lastTwo < 12 || lastTwo > 14)) ? "przedmioty"
+                : "przedmiotów";
+
+            return $"Pominięto {count} {noun} do tworzenia figurek – pełną listę pokaże polecenie przedmioty";
         }
 
         public static List<List<T>> SplitList<T>(this List<T> locations, int nSize = 50)
