@@ -198,12 +198,24 @@ namespace Sanakan.Extensions
             return MarketValue.Normal;
         }
 
+        public static bool UsesSigmaFallback(this Card card)
+        {
+            if (card.Quality != Quality.Sigma)
+                return false;
+
+            var dir = Dir.GetResource($"PW/CG/{Quality.Sigma}");
+            return !Directory.Exists(dir) || !Directory.EnumerateFiles(dir, "*", SearchOption.AllDirectories).Any();
+        }
+
+        public static Quality GetGraphicsQuality(this Card card) => card.UsesSigmaFallback() ? Quality.Delta : card.Quality;
+
         public static int GetCardVariantsCount(this Card card)
         {
             return card.Quality switch
             {
                 Quality.Lambda => 1,
                 Quality.Delta  => 8,
+                Quality.Sigma  => 8,
                 Quality.Eta    => 18,
                 _ => 0
             };
@@ -217,6 +229,7 @@ namespace Sanakan.Extensions
             return card.Quality switch
             {
                 Quality.Delta    => $"{card.BorderVariant}",
+                Quality.Sigma    => $"{card.BorderVariant}",
                 Quality.Eta      => $"{card.BorderVariant}",
                 Quality.Lambda   => $"{card.BorderVariant}",
                 _ => string.Empty

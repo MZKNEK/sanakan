@@ -1408,7 +1408,7 @@ namespace Sanakan.Services
             return characterImg;
         }
 
-        private bool HasDereString(Card card) => card.Quality switch
+        private bool HasDereString(Card card) => card.GetGraphicsQuality() switch
         {
             Quality.Beta => false,
             Quality.Gamma => false,
@@ -1419,16 +1419,17 @@ namespace Sanakan.Services
 
         private string GetCustomBorderString(Card card)
         {
-            switch (card.Quality)
+            var quality = card.GetGraphicsQuality();
+            switch (quality)
             {
                 case Quality.Epsilon:
                 case Quality.Gamma:
                 case Quality.Beta:
                 case Quality.Theta:
-                    return Dir.GetResource($"PW/CG/{card.Quality}/Border/{card.Dere}.png");
+                    return Dir.GetResource($"PW/CG/{quality}/Border/{card.Dere}.png");
 
                 default:
-                    return Dir.GetResource($"PW/CG/{card.Quality}/Border{card.GetCardVariantString()}.png");
+                    return Dir.GetResource($"PW/CG/{quality}/Border{card.GetCardVariantString()}.png");
             }
         }
 
@@ -1440,7 +1441,7 @@ namespace Sanakan.Services
             if (card.FromFigure)
             {
                 borderStr = GetCustomBorderString(card);
-                dereStr = Dir.GetResource($"PW/CG/{card.Quality}/Dere/{card.Dere}{card.GetCardDereVariantString()}.png");
+                dereStr = Dir.GetResource($"PW/CG/{card.GetGraphicsQuality()}/Dere/{card.Dere}{card.GetCardDereVariantString()}.png");
             }
 
             var img = Image.Load(borderStr);
@@ -1449,6 +1450,9 @@ namespace Sanakan.Services
                 using var dere = Image.Load(dereStr);
                 img.Mutate(x => x.DrawImage(dere, new Point(0, 0), 1));
             }
+
+            if (card.FromFigure && card.UsesSigmaFallback())
+                img.Mutate(x => x.Rotate(RotateMode.Rotate180));
 
             return img;
         }
@@ -1882,43 +1886,49 @@ namespace Sanakan.Services
         private string GetStatsString(Card card)
         {
             bool isSpecialDere = card.Dere == Dere.Yami || card.Dere == Dere.Yato || card.Dere == Dere.Raito;
-            switch (card.Quality)
+            var quality = card.GetGraphicsQuality();
+            switch (quality)
             {
                 case Quality.Beta:
                 case Quality.Epsilon:
                     return isSpecialDere
-                        ? Dir.GetResource($"PW/CG/{card.Quality}/Stats/{card.Dere}.png")
-                        : Dir.GetResource($"PW/CG/{card.Quality}/Stats.png");
+                        ? Dir.GetResource($"PW/CG/{quality}/Stats/{card.Dere}.png")
+                        : Dir.GetResource($"PW/CG/{quality}/Stats.png");
 
                 case Quality.Gamma:
                 case Quality.Jota:
                 case Quality.Theta:
-                    return Dir.GetResource($"PW/CG/{card.Quality}/Stats/{card.Dere}.png");
+                    return Dir.GetResource($"PW/CG/{quality}/Stats/{card.Dere}.png");
 
                 default:
-                    return Dir.GetResource($"PW/CG/{card.Quality}/Stats{card.GetCardVariantString()}.png");
+                    return Dir.GetResource($"PW/CG/{quality}/Stats{card.GetCardVariantString()}.png");
             }
         }
 
         private string GetBorderBackString(Card card)
         {
-            switch (card.Quality)
+            var quality = card.GetGraphicsQuality();
+            switch (quality)
             {
-                case Quality.Jota: return Dir.GetResource($"PW/CG/{card.Quality}/Border/{card.Dere}.png");
-                default: return Dir.GetResource($"PW/CG/{card.Quality}/BorderBack{card.GetCardVariantString()}.png");
+                case Quality.Jota: return Dir.GetResource($"PW/CG/{quality}/Border/{card.Dere}.png");
+                default: return Dir.GetResource($"PW/CG/{quality}/BorderBack{card.GetCardVariantString()}.png");
             }
         }
 
         private void ApplyUltimateStats(Image<Rgba32> image, Card card)
         {
+            var rotated = card.UsesSigmaFallback();
             var statsStr = GetStatsString(card);
             if (File.Exists(statsStr))
             {
                 using var stats = Image.Load(statsStr);
+                if (rotated)
+                    stats.Mutate(x => x.Rotate(RotateMode.Rotate180));
+
                 image.Mutate(x => x.DrawImage(stats, new Point(0, 0), 1));
             }
 
-            switch (card.Quality)
+            switch (card.GetGraphicsQuality())
             {
                 case Quality.Alpha:
                     ApplyAlphaStats(image, card);
@@ -1930,7 +1940,7 @@ namespace Sanakan.Services
                     ApplyGammaStats(image, card);
                     break;
                 case Quality.Delta:
-                    ApplyDeltaStats(image, card);
+                    ApplyDeltaStats(image, card, rotated);
                     break;
                 case Quality.Epsilon:
                     ApplyEpsilonStats(image, card);
@@ -2042,6 +2052,9 @@ namespace Sanakan.Services
             if (isFromFigureOriginalBorder && File.Exists(backBorderStr))
             {
                 using var back = Image.Load(backBorderStr);
+                if (card.UsesSigmaFallback())
+                    back.Mutate(x => x.Rotate(RotateMode.Rotate180));
+
                 image.Mutate(x => x.DrawImage(back, new Point(0, 0), 1));
             }
         }
@@ -2085,9 +2098,6 @@ namespace Sanakan.Services
         {
             if (card.Quality == Quality.Omega)
                 return await GetOmegaCard(card, true);
-
-            if (UseSigmaFallback(card))
-                return await GetSigmaFallbackCard(card, true);
 
             if (card.IsAnimatedImage)
                 return await GetAnimatedWaifuCardAsync(card, true);
@@ -2177,9 +2187,6 @@ namespace Sanakan.Services
             if (card.Quality == Quality.Omega)
                 return await GetOmegaCard(card);
 
-            if (UseSigmaFallback(card))
-                return await GetSigmaFallbackCard(card);
-
             if (card.IsAnimatedImage)
                 return await GetAnimatedWaifuCardAsync(card);
 
@@ -2252,71 +2259,6 @@ namespace Sanakan.Services
                 animation.Frames.RemoveFrame(0);
                 return animation;
             }
-        }
-
-        private static bool HasOwnGraphics(Quality quality)
-        {
-            var dir = Dir.GetResource($"PW/CG/{quality}");
-            return Directory.Exists(dir) && Directory.EnumerateFiles(dir, "*", SearchOption.AllDirectories).Any();
-        }
-
-        private static bool UseSigmaFallback(Card card) => card.Quality == Quality.Sigma && !HasOwnGraphics(Quality.Sigma);
-
-        private static Image<Rgba32> ToSigmaFallbackPart(Image source)
-        {
-            using var firstFrame = source.Frames.CloneFrame(0);
-            var part = firstFrame.CloneAs<Rgba32>();
-            part.Mutate(x => x.Rotate(RotateMode.Rotate180).Saturate(0f));
-            return part;
-        }
-
-        private async Task<Image> GetSigmaFallbackCard(Card card, bool noStatsImage = false)
-        {
-            const Quality source = Quality.Omega;
-            using var image = await GetImageFromUrlOrLocalAsync(card.GetImage() ?? "http://cdn.shinden.eu/cdn1/other/placeholders/title/225x350.jpg");
-
-            using var bottomImg = await LoadWebpFromDiskAsync(Dir.GetResource($"PW/CG/{source}/BorderBack.webp"));
-            using var topImg = await LoadWebpFromDiskAsync(Dir.GetResource($"PW/CG/{source}/Border.webp"));
-            using var dereImg = await Image.LoadAsync(Dir.GetResource($"PW/CG/{source}/Dere/{card.Dere}.png"));
-            using var statsImg = await Image.LoadAsync(Dir.GetResource($"PW/CG/{source}/Stats.png"));
-
-            using var bottom = ToSigmaFallbackPart(bottomImg);
-            using var top = ToSigmaFallbackPart(topImg);
-            using var dere = ToSigmaFallbackPart(dereImg);
-            using var stats = ToSigmaFallbackPart(statsImg);
-
-            Image<Rgba32> BuildFrame(Image charFrame)
-            {
-                var frame = new Image<Rgba32>(475, 667, Color.Transparent);
-                frame.Mutate(x => x.DrawImage(bottom, new Point(0, 0), 1));
-                frame.Mutate(x => x.DrawImage(charFrame, new Point(0, 0), 1));
-                frame.Mutate(x => x.DrawImage(top, new Point(0, 0), 1));
-                frame.Mutate(x => x.DrawImage(dere, new Point(0, 0), 1));
-
-                if (!noStatsImage)
-                {
-                    frame.Mutate(x => x.DrawImage(stats, new Point(0, 0), 1));
-                    ApplyDeltaStats(frame, card, true);
-                }
-                return frame;
-            }
-
-            if (!card.IsAnimatedImage || image.Frames.Count < 2)
-                return BuildFrame(image);
-
-            var animation = new Image<Rgba32>(475, 667, Color.Transparent);
-            animation.Metadata.GetWebpMetadata().RepeatCount = 0;
-
-            for (int i = 0; i < image.Frames.Count; i++)
-            {
-                using var charFrame = image.Frames.CloneFrame(i);
-                using var newFrame = BuildFrame(charFrame);
-                TransferFrameData(newFrame, charFrame);
-                animation.Frames.AddFrame(newFrame.Frames.RootFrame);
-            }
-
-            animation.Frames.RemoveFrame(0);
-            return animation;
         }
 
         private async Task<Image> GetAnimatedWaifuCardAsync(Card card, bool noStatsImage = false)
