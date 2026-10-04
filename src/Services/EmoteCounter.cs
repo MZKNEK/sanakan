@@ -78,7 +78,7 @@ namespace Sanakan.Services
             }
             catch (Exception ex)
             {
-                _logger.Log($"EmoteCounter: zapis dumpEmotes.json: {ex.Message}");
+                _logger.LogError($"EmoteCounter: zapis dumpEmotes.json: {ex.Message}");
             }
         }
 
@@ -99,7 +99,7 @@ namespace Sanakan.Services
             }
             catch (Exception ex)
             {
-                _logger.Log($"EmoteCounter: odczyt dumpEmotes.json: {ex.Message}");
+                _logger.LogError($"EmoteCounter: odczyt dumpEmotes.json: {ex.Message}");
             }
         }
 

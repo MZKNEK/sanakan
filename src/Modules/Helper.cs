@@ -600,7 +600,7 @@ namespace Sanakan.Modules
                 }
                 catch (Exception ex)
                 {
-                    _logger.Log($"in raport: {ex}");
+                    _logger.LogError($"in raport: {ex}");
                     await sendMsg.DeleteAsync();
                 }
             }

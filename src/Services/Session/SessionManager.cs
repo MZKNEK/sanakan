@@ -243,7 +243,7 @@ namespace Sanakan.Services.Session
             }
             catch(Exception ex)
             {
-                _logger.Log($"Session: autovalidate error {ex}");
+                _logger.LogError($"Session: autovalidate error {ex}");
             }
         }
     }

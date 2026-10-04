@@ -69,7 +69,7 @@ namespace Sanakan.Services
             }
             catch (Exception ex)
             {
-                _logger.Log($"Shinden: GetCharacterInfo {characterId}: {ex.Message}");
+                _logger.LogError($"Shinden: GetCharacterInfo {characterId}: {ex.Message}");
             }
             return character;
         }
@@ -92,7 +92,7 @@ namespace Sanakan.Services
             }
             catch (Exception ex)
             {
-                _logger.Log($"Shinden: GetCharactersFromTitle {titleId}: {ex.Message}");
+                _logger.LogError($"Shinden: GetCharactersFromTitle {titleId}: {ex.Message}");
             }
             return characaters;
         }
@@ -115,7 +115,7 @@ namespace Sanakan.Services
             }
             catch (Exception ex)
             {
-                _logger.Log($"Shinden: GetInfoFromTitle {titleId}: {ex.Message}");
+                _logger.LogError($"Shinden: GetInfoFromTitle {titleId}: {ex.Message}");
             }
             return info;
         }
@@ -271,7 +271,7 @@ namespace Sanakan.Services
             }
             catch (Exception ex)
             {
-                _logger.Log($"Shinden: GetLastWatched {shindenId}: {ex.Message}");
+                _logger.LogError($"Shinden: GetLastWatched {shindenId}: {ex.Message}");
             }
             return lw;
         }
@@ -286,7 +286,7 @@ namespace Sanakan.Services
             }
             catch (Exception ex)
             {
-                _logger.Log($"Shinden: GetLastReaded {shindenId}: {ex.Message}");
+                _logger.LogError($"Shinden: GetLastReaded {shindenId}: {ex.Message}");
             }
             return lr;
         }
@@ -306,7 +306,7 @@ namespace Sanakan.Services
             }
             catch (Exception ex)
             {
-                _logger.Log($"Shinden: GetUserInfo {shindenId}: {ex.Message}");
+                _logger.LogError($"Shinden: GetUserInfo {shindenId}: {ex.Message}");
             }
             return (uInfo, code);
         }
@@ -320,7 +320,7 @@ namespace Sanakan.Services
             }
             catch (Exception ex)
             {
-                _logger.Log($"Shinden: QuickSearch '{title}': {ex.Message}");
+                _logger.LogError($"Shinden: QuickSearch '{title}': {ex.Message}");
             }
             return (false, HttpStatusCode.RequestTimeout, null);
         }

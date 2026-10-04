@@ -82,7 +82,7 @@ namespace Sanakan.Services
                 return;
             }
 
-            _logger.Log("Timeout! Shutting down!");
+            _logger.LogError("Timeout! Shutting down!");
             _exit(1);
         }
     }

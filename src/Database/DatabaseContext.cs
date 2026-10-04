@@ -72,7 +72,8 @@ namespace Sanakan.Database
                 AbsoluteExpirationRelativeToNow  = TimeSpan.FromHours(12)
             };
             optionsBuilder.UseMySql(_config.Get().ConnectionString,
-                new MySqlServerVersion(new System.Version(5, 7)), opt => opt.EnableRetryOnFailure());
+                new MySqlServerVersion(new System.Version(5, 7)), opt => opt.EnableRetryOnFailure())
+                .AddInterceptors(DbActivity.Commands, DbActivity.Saves);
         }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)

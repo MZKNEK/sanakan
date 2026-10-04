@@ -1932,7 +1932,7 @@ namespace Sanakan.Modules
                         }
                         catch (Exception ex)
                         {
-                            Logger?.Log($"mod: edycja raportu {raport.Id}: {ex.Message}");
+                            Logger?.LogError($"mod: edycja raportu {raport.Id}: {ex.Message}");
                         }
                         await reportMsg.DeleteAsync();
                     }
@@ -1958,7 +1958,7 @@ namespace Sanakan.Modules
                     }
                     catch (Exception ex)
                     {
-                        Logger?.Log($"mod: edycja raportu {raport.Id}: {ex.Message}");
+                        Logger?.LogError($"mod: edycja raportu {raport.Id}: {ex.Message}");
                     }
 
                     await reportMsg.DeleteAsync();

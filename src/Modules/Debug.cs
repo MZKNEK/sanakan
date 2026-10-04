@@ -441,7 +441,7 @@ namespace Sanakan.Modules
                     }
                     catch (Exception ex)
                     {
-                        Logger?.Log($"dev: aktualizacja karty {card.Id}: {ex.Message}");
+                        Logger?.LogError($"dev: aktualizacja karty {card.Id}: {ex.Message}");
                     }
                 }
 
@@ -474,7 +474,7 @@ namespace Sanakan.Modules
                 }
                 catch (Exception ex)
                 {
-                    Logger?.Log($"dev: zmiana ramki karty {card.Id}: {ex.Message}");
+                    Logger?.LogError($"dev: zmiana ramki karty {card.Id}: {ex.Message}");
                 }
 
                 await db.SaveChangesAsync();
@@ -929,7 +929,7 @@ namespace Sanakan.Modules
                 }
                 catch (Exception ex)
                 {
-                    Logger?.Log($"dev: multi kick {user.Id}: {ex.Message}");
+                    Logger?.LogError($"dev: multi kick {user.Id}: {ex.Message}");
                 }
             }
 
@@ -952,7 +952,7 @@ namespace Sanakan.Modules
                 }
                 catch (Exception ex)
                 {
-                    Logger?.Log($"dev: multi ban {user.Id}: {ex.Message}");
+                    Logger?.LogError($"dev: multi ban {user.Id}: {ex.Message}");
                 }
             }
 

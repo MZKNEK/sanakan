@@ -101,6 +101,8 @@ namespace Sanakan
 
             var discordLogger = new DiscordChannelLogger(new ConsoleLogger(_config), _config);
             _logger = discordLogger;
+            Database.DbActivity.Start(_logger, TimeSpan.FromHours(1));
+            DailyReport.Start(_logger, Api.ApiStats.FlushDaily, Database.DbActivity.FlushDaily);
 
             AppDomain.CurrentDomain.ProcessExit += (_, _) => discordLogger.FlushAllAsync(TimeSpan.FromSeconds(5)).GetAwaiter().GetResult();
 
@@ -114,7 +116,10 @@ namespace Sanakan
 
             _client.Log += log =>
             {
-                _logger.Log(log.ToString());
+                if (log.Severity <= LogSeverity.Error)
+                    _logger.LogError(log.ToString());
+                else
+                    _logger.Log(log.ToString());
                 return Task.CompletedTask;
             };
 

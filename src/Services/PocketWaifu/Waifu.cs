@@ -362,7 +362,7 @@ namespace Sanakan.Services.PocketWaifu
                 }
                 catch (Exception ex)
                 {
-                    _logger.Log($"in waifu - clean cards: {ex}");
+                    _logger.LogError($"in waifu - clean cards: {ex}");
                 }
             },
             null,
@@ -509,7 +509,7 @@ namespace Sanakan.Services.PocketWaifu
                 }
                 catch (Exception ex)
                 {
-                    _logger.Log($"CleanCards: {filePath}: {ex.Message}");
+                    _logger.LogError($"CleanCards: {filePath}: {ex.Message}");
                 }
             }
             return deletedImages;
@@ -1522,7 +1522,7 @@ namespace Sanakan.Services.PocketWaifu
                 }
                 catch (Exception ex)
                 {
-                    _logger.Log($"Sending file: {ex.Message}");
+                    _logger.LogError($"Sending file: {ex.Message}");
                 }
             }
             return url;
@@ -1775,7 +1775,7 @@ namespace Sanakan.Services.PocketWaifu
                 }
                 catch (Exception ex)
                 {
-                    _logger.Log($"Error while generating card {card.Id}: {ex.Message}");
+                    _logger.LogError($"Error while generating card {card.Id}: {ex.Message}");
                 }
             }
 
@@ -1807,7 +1807,7 @@ namespace Sanakan.Services.PocketWaifu
             }
             catch (Exception ex)
             {
-                _logger.Log($"DeleteCardImageIfExist: card {card.Id}: {ex.Message}");
+                _logger.LogError($"DeleteCardImageIfExist: card {card.Id}: {ex.Message}");
             }
         }
 
@@ -1839,7 +1839,7 @@ namespace Sanakan.Services.PocketWaifu
             }
             catch (Exception ex)
             {
-                _logger.Log($"GetRandomSarafiImage: {ex.Message}");
+                _logger.LogError($"GetRandomSarafiImage: {ex.Message}");
             }
 
             return dImg;
@@ -1884,7 +1884,7 @@ namespace Sanakan.Services.PocketWaifu
                 }
                 catch (Exception ex)
                 {
-                    _logger.Log($"Sending file: {ex.Message}");
+                    _logger.LogError($"Sending file: {ex.Message}");
                 }
             }
             return url;

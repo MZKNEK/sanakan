@@ -126,7 +126,7 @@ namespace Sanakan.Services
                 }
                 catch (Exception ex)
                 {
-                    _logger.Log($"in profile check: {ex}");
+                    _logger.LogError($"in profile check: {ex}");
                 }
             },
             null,

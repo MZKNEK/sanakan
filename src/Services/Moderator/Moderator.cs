@@ -63,7 +63,7 @@ namespace Sanakan.Services
                 }
                 catch (Exception ex)
                 {
-                    _logger.Log($"in penalty: {ex}");
+                    _logger.LogError($"in penalty: {ex}");
                 }
             },
             null,
@@ -371,7 +371,7 @@ namespace Sanakan.Services
             }
             catch (Exception ex)
             {
-                _logger.Log($"in notify: {ex}");
+                _logger.LogError($"in notify: {ex}");
             }
         }
 
@@ -437,7 +437,7 @@ namespace Sanakan.Services
             }
             catch (Exception ex)
             {
-                _logger.Log($"in mute: {ex}");
+                _logger.LogError($"in mute: {ex}");
             }
         }
 

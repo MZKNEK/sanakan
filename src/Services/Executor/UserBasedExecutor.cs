@@ -143,7 +143,7 @@ namespace Sanakan.Services.Executor
             }
             catch (Exception ex)
             {
-                _logger.Log($"Executor: {taskName} - {ex}");
+                _logger.LogError($"Executor: {taskName} - {ex}");
             }
             finally
             {

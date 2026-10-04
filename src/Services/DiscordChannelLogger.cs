@@ -21,7 +21,7 @@ namespace Sanakan.Services
         private const int MaxMessagesPerFlush = 5;
         private static readonly TimeSpan FlushInterval = TimeSpan.FromSeconds(5);
 
-        private const string BlockStart = "```\n";
+        private const string BlockStart = "```diff\n";
         private const string BlockEnd = "\n```";
 
         private static readonly string[] _routinePrefixes =
@@ -67,7 +67,11 @@ namespace Sanakan.Services
             if (!IsEnabled() || !ShouldSend(message))
                 return;
 
-            var entry = $"[{DateTime.Now:HH:mm:ss}] {_console.MaskSecrets(message)}";
+            var isError = message.StartsWith(LoggerExtensions.ErrorPrefix, StringComparison.Ordinal);
+            var text = isError ? message.Substring(LoggerExtensions.ErrorPrefix.Length) : message;
+            var entry = $"[{DateTime.Now:HH:mm:ss}] {(isError ? "ERROR " : "")}{_console.MaskSecrets(text)}";
+            if (isError)
+                entry = string.Join("\n", entry.Replace("\r", "").Split('\n').Select(x => "- " + x));
             lock (_lock)
             {
                 _pending.Enqueue(entry);

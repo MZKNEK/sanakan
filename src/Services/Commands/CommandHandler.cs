@@ -62,7 +62,7 @@ namespace Sanakan.Services.Commands
                 }
                 catch (Exception ex)
                 {
-                    _logger.Log($"in mem check: {ex}");
+                    _logger.LogError($"in mem check: {ex}");
                 }
             },
             null,

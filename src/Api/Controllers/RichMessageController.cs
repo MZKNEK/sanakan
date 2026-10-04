@@ -109,7 +109,7 @@ namespace Sanakan.Api.Controllers
                 }
                 catch (Exception ex)
                 {
-                    _logger.Log($"RichMessage {id}: {ex.Message}");
+                    _logger.LogError($"RichMessage {id}: {ex.Message}");
                 }
             }
             return false;

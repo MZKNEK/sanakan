@@ -59,7 +59,7 @@ namespace Sanakan.Api
                 }
                 catch (Exception ex)
                 {
-                    logger.Log($"API przestało działać: {ex}");
+                    logger.LogError($"API przestało działać: {ex}");
                     Environment.Exit(1);
                 }
             }) { IsBackground = true }.Start();
@@ -184,12 +184,13 @@ namespace Sanakan.Api
             app.UseAuthorization();
 
             var auditLogger = app.ApplicationServices.GetService<Shinden.Logger.ILogger>();
-            var traffic = new ApiTraffic(x => auditLogger?.Log(x), System.TimeSpan.FromSeconds(30));
+            var traffic = new ApiTraffic(x => auditLogger?.Log(x), System.TimeSpan.FromHours(1));
             app.Use(async (context, next) =>
             {
                 var watch = System.Diagnostics.Stopwatch.StartNew();
                 await next();
 
+                ApiStats.Add(context);
                 var entry = ApiAudit.Describe(context, watch.ElapsedMilliseconds);
                 if (entry != null) auditLogger?.Log(entry);
                 else traffic.Add(context);

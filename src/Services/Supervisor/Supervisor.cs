@@ -269,7 +269,7 @@ namespace Sanakan.Services.Supervisor
                 }
                 catch (Exception ex)
                 {
-                    _logger.Log($"Supervisor: unable to delete image spam message {message.Id}: {ex}");
+                    _logger.LogError($"Supervisor: unable to delete image spam message {message.Id}: {ex}");
                 }
             }
 
@@ -453,7 +453,7 @@ namespace Sanakan.Services.Supervisor
             }
             catch (Exception ex)
             {
-                _logger.Log($"Supervisor: autovalidate error {ex}");
+                _logger.LogError($"Supervisor: autovalidate error {ex}");
             }
         }
 

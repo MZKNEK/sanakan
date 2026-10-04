@@ -63,7 +63,7 @@ namespace Sanakan.Services
                 }
                 catch (Exception ex)
                 {
-                    _logger.Log($"Greeting: nie udało się pobrać powodu bana użytkownika {user.Id}: {ex}");
+                    _logger.LogError($"Greeting: nie udało się pobrać powodu bana użytkownika {user.Id}: {ex}");
                 }
 
                 var banMessage = string.IsNullOrWhiteSpace(banReason)
@@ -122,7 +122,7 @@ namespace Sanakan.Services
                 }
                 catch (Exception ex)
                 {
-                    _logger.Log($"Greeting: {ex}");
+                    _logger.LogError($"Greeting: {ex}");
                 }
             }
         }
@@ -181,7 +181,7 @@ namespace Sanakan.Services
                 }
                 catch (Exception ex)
                 {
-                    _logger.Log("In user leave:" + ex.ToString());
+                    _logger.LogError("In user leave:" + ex.ToString());
                     await SendMessageAsync($"**ERR:** `{user.Id}` {guild.GetRole(adminRoleId)?.Mention}", guild.GetTextChannel(channelId));
                 }
             });
@@ -203,7 +203,7 @@ namespace Sanakan.Services
                 }
                 catch (Exception ex)
                 {
-                    _logger.Log($"In user leave check g{guild.Id} u{userId}: {ex}");
+                    _logger.LogError($"In user leave check g{guild.Id} u{userId}: {ex}");
                     return true;
                 }
             }
