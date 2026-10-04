@@ -14,6 +14,7 @@ using Sanakan.Services.PocketWaifu;
 using Sanakan.Services.Session;
 using Sanakan.Services.Session.Models;
 using Shinden;
+using Shinden.Logger;
 using Shinden.Models;
 
 namespace Sanakan.Services
@@ -40,9 +41,11 @@ namespace Sanakan.Services
         private ShindenClient _shClient;
         private SessionManager _session;
         private ImageProcessing _img;
+        private ILogger _logger;
 
-        public Shinden(ShindenClient client, SessionManager session, ImageProcessing img)
+        public Shinden(ShindenClient client, SessionManager session, ImageProcessing img, ILogger logger)
         {
+            _logger = logger;
             _shClient = client;
             _session = session;
             _img = img;
@@ -64,7 +67,10 @@ namespace Sanakan.Services
                         .SetAbsoluteExpiration(TimeSpan.FromHours(8)));
                 }
             }
-            catch (Exception) { }
+            catch (Exception ex)
+            {
+                _logger.Log($"Shinden: GetCharacterInfo {characterId}: {ex.Message}");
+            }
             return character;
         }
 
@@ -84,7 +90,10 @@ namespace Sanakan.Services
                         .SetAbsoluteExpiration(TimeSpan.FromHours(8)));
                 }
             }
-            catch (Exception) { }
+            catch (Exception ex)
+            {
+                _logger.Log($"Shinden: GetCharactersFromTitle {titleId}: {ex.Message}");
+            }
             return characaters;
         }
 
@@ -104,7 +113,10 @@ namespace Sanakan.Services
                         .SetAbsoluteExpiration(TimeSpan.FromHours(8)));
                 }
             }
-            catch (Exception) { }
+            catch (Exception ex)
+            {
+                _logger.Log($"Shinden: GetInfoFromTitle {titleId}: {ex.Message}");
+            }
             return info;
         }
 
@@ -257,7 +269,10 @@ namespace Sanakan.Services
                 var response = await _shClient.User.GetLastWatchedAsync(shindenId);
                 if (response.IsSuccessStatusCode()) lw = response.Body;
             }
-            catch (Exception) {}
+            catch (Exception ex)
+            {
+                _logger.Log($"Shinden: GetLastWatched {shindenId}: {ex.Message}");
+            }
             return lw;
         }
 
@@ -269,7 +284,10 @@ namespace Sanakan.Services
                 var response = await _shClient.User.GetLastReadedAsync(shindenId);
                 if (response.IsSuccessStatusCode()) lr = response.Body;
             }
-            catch (Exception) {}
+            catch (Exception ex)
+            {
+                _logger.Log($"Shinden: GetLastReaded {shindenId}: {ex.Message}");
+            }
             return lr;
         }
 
@@ -286,7 +304,10 @@ namespace Sanakan.Services
                     uInfo = response.Body;
                 }
             }
-            catch (Exception) {}
+            catch (Exception ex)
+            {
+                _logger.Log($"Shinden: GetUserInfo {shindenId}: {ex.Message}");
+            }
             return (uInfo, code);
         }
 
@@ -297,7 +318,10 @@ namespace Sanakan.Services
                 var res = await _shClient.Search.QuickSearchAsync(title, type);
                 return (res.IsSuccessStatusCode(), res.Code, res.Body);
             }
-            catch (Exception) {}
+            catch (Exception ex)
+            {
+                _logger.Log($"Shinden: QuickSearch '{title}': {ex.Message}");
+            }
             return (false, HttpStatusCode.RequestTimeout, null);
         }
     }

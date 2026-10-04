@@ -58,7 +58,10 @@ namespace Sanakan.Services.PocketWaifu
                 var file = GetReader();
                 file.Save(UserCounter);
             }
-            catch (Exception) { }
+            catch (Exception ex)
+            {
+                _logger.Log($"Spawn: zapis dump.json: {ex.Message}");
+            }
         }
 
         public long HowMuchToPacket(ulong userId)
@@ -93,7 +96,10 @@ namespace Sanakan.Services.PocketWaifu
                     file.Delete();
                 }
             }
-            catch (Exception) { }
+            catch (Exception ex)
+            {
+                _logger.Log($"Spawn: odczyt dump.json: {ex.Message}");
+            }
         }
 
         private JsonFileReader GetReader() => new Config.JsonFileReader("./dump.json");

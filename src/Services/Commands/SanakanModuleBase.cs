@@ -14,10 +14,12 @@ namespace Sanakan.Services.Commands
         private const int DELAY_MS = 75;
 
         public IConfig Config { get; set; }
+        public global::Shinden.Logger.ILogger Logger { get; set; }
 
         public async Task<IUserMessage> SafeReplyAsync(string message = null, bool isTTS = false, Embed embed = null, RequestOptions options = null, AllowedMentions allowedMentions = null, MessageReference messageReference = null, MessageComponent components = null, ISticker[] stickers = null, Embed[] embeds = null, MessageFlags flags = MessageFlags.None)
         {
             IUserMessage msg = null;
+            Exception last = null;
             for (int i = 0; i < MAX_SNED_ATTEMPTS; i++)
             {
                 try
@@ -26,14 +28,20 @@ namespace Sanakan.Services.Commands
                     if (msg != null)
                         return msg;
                 }
-                catch (Exception) {}
+                catch (Exception ex)
+                {
+                    last = ex;
+                }
                 await Task.Delay(DELAY_MS);
             }
+            if (last != null)
+                Logger?.Log($"SafeReply: {last.Message}");
             return msg;
         }
 
         public async Task<bool> SafeAddReactionToMsg(IUserMessage msg, IEmote emote)
         {
+            Exception last = null;
             for (int i = 0; i < MAX_SNED_ATTEMPTS; i++)
             {
                 try
@@ -41,9 +49,13 @@ namespace Sanakan.Services.Commands
                     await msg.AddReactionAsync(emote);
                     return true;
                 }
-                catch (Exception) {}
+                catch (Exception ex)
+                {
+                    last = ex;
+                }
                 await Task.Delay(DELAY_MS);
             }
+            Logger?.Log($"SafeAddReaction: {last?.Message}");
             return false;
         }
     }

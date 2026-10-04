@@ -1930,7 +1930,10 @@ namespace Sanakan.Modules
                             rEmbedBuilder.Fields.FirstOrDefault(x => x.Name == "Id zgloszenia:").Value = "Odrzucone!";
                             await SafeReplyAsync("", embed: rEmbedBuilder.Build());
                         }
-                        catch (Exception) { }
+                        catch (Exception ex)
+                        {
+                            Logger?.Log($"mod: edycja raportu {raport.Id}: {ex.Message}");
+                        }
                         await reportMsg.DeleteAsync();
                     }
 
@@ -1953,7 +1956,10 @@ namespace Sanakan.Modules
                         rEmbedBuilder.Fields.FirstOrDefault(x => x.Name == "Id zgloszenia:").Value = "Rozpatrzone!";
                         await SafeReplyAsync("", embed: rEmbedBuilder.Build());
                     }
-                    catch (Exception) { }
+                    catch (Exception ex)
+                    {
+                        Logger?.Log($"mod: edycja raportu {raport.Id}: {ex.Message}");
+                    }
 
                     await reportMsg.DeleteAsync();
                 }

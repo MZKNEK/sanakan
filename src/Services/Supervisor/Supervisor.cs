@@ -128,7 +128,6 @@ namespace Sanakan.Services.Supervisor
             return SupervisionCommand.None;
         }
 
-        // zwraca true tylko gdy polecenie zostało obsłużone dla admina, inaczej wiadomość idzie do zwykłej analizy
         private async Task<bool> HandleSupervisionCommandAsync(SocketGuildUser user, SocketUserMessage message)
         {
             var command = ParseSupervisionCommand(message.Content, isDebug);

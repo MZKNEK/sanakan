@@ -21,9 +21,11 @@ namespace Sanakan.Api.Controllers
     {
         private readonly IConfig _config;
         private readonly DiscordSocketClient _client;
+        private readonly Shinden.Logger.ILogger _logger;
 
-        public RichMessageController(DiscordSocketClient client, IConfig config)
+        public RichMessageController(DiscordSocketClient client, IConfig config, Shinden.Logger.ILogger logger)
         {
+            _logger = logger;
             _client = client;
             _config = config;
         }
@@ -105,7 +107,10 @@ namespace Sanakan.Api.Controllers
                         return true;
                     }
                 }
-                catch (Exception) { }
+                catch (Exception ex)
+                {
+                    _logger.Log($"RichMessage {id}: {ex.Message}");
+                }
             }
             return false;
         }

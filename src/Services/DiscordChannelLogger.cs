@@ -83,7 +83,6 @@ namespace Sanakan.Services
             => !string.IsNullOrWhiteSpace(message)
                 && !_routinePrefixes.Any(x => message.StartsWith(x, StringComparison.Ordinal));
 
-        // wysyła wszystko, co zostało w kolejce - wołane przy zamykaniu procesu, po wylogowaniu bota
         public async Task FlushAllAsync(TimeSpan timeout)
         {
             _timer.Change(Timeout.Infinite, Timeout.Infinite);
@@ -107,7 +106,6 @@ namespace Sanakan.Services
             }
         }
 
-        // zdejmuje z kolejki tyle wpisów, ile zmieści się w maxMessages wiadomościach, reszta czeka na kolejną turę
         public static List<string> Pack(Queue<string> pending, string header, int maxMessages, int maxLength = MaxMessageLength)
         {
             var bodyLimit = maxLength - BlockStart.Length - BlockEnd.Length;
@@ -216,7 +214,6 @@ namespace Sanakan.Services
             }
             catch (HttpException) { }
 
-            // bot bez dostępu do kanału (np. debugowy) nie odpytuje discorda co 5s i nie zbiera logów na zapas
             if (channel == null || channel.GuildId != cfg.GuildId)
             {
                 _missingChannelId = cfg.ChannelId;

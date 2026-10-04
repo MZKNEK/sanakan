@@ -80,7 +80,6 @@ namespace Sanakan.Services.Session
             return _timer.ElapsedMilliseconds <= TimeoutMs;
         }
 
-        // właściciele zostają, bo inne wątki mogą jeszcze trzymać tę sesję i pytać o IsOwner
         public async Task DisposeAsync()
         {
             if (_disposed) return;

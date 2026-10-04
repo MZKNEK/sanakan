@@ -439,7 +439,10 @@ namespace Sanakan.Modules
                         _ = card.RecoverFatigue(_time);
                         _ = card.CalculateCardPower();
                     }
-                    catch (Exception) { }
+                    catch (Exception ex)
+                    {
+                        Logger?.Log($"dev: aktualizacja karty {card.Id}: {ex.Message}");
+                    }
                 }
 
                 await db.SaveChangesAsync();
@@ -469,7 +472,10 @@ namespace Sanakan.Modules
                     card.BorderVariant = variant;
                     _waifu.DeleteCardImageIfExist(card);
                 }
-                catch (Exception) { }
+                catch (Exception ex)
+                {
+                    Logger?.Log($"dev: zmiana ramki karty {card.Id}: {ex.Message}");
+                }
 
                 await db.SaveChangesAsync();
 
@@ -921,7 +927,10 @@ namespace Sanakan.Modules
                     await user.KickAsync("Multi kick - łamanie regulaminu");
                     ++count;
                 }
-                catch (Exception) {}
+                catch (Exception ex)
+                {
+                    Logger?.Log($"dev: multi kick {user.Id}: {ex.Message}");
+                }
             }
 
             await SafeReplyAsync("", embed: $"Wyrzucono {count} użytkowników.".ToEmbedMessage(EMType.Success).Build());
@@ -941,7 +950,10 @@ namespace Sanakan.Modules
                     await Context.Guild.AddBanAsync(user, 0, "Multi ban - łamanie regulaminu");
                     ++count;
                 }
-                catch (Exception) {}
+                catch (Exception ex)
+                {
+                    Logger?.Log($"dev: multi ban {user.Id}: {ex.Message}");
+                }
             }
 
             await SafeReplyAsync("", embed: $"Zbanowano {count} użytkowników.".ToEmbedMessage(EMType.Success).Build());

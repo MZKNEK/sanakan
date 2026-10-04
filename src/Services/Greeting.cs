@@ -189,7 +189,6 @@ namespace Sanakan.Services
             await _executor.TryAdd(new Executable("delete user", moveTask, user.Id, Priority.High), TimeSpan.FromSeconds(1));
         }
 
-        // cache członków bywa niepełny (np. po ponownym połączeniu), więc brak w cache potwierdzamy przez REST
         private async Task<bool> IsStillOnAnyGuildAsync(ulong leftGuildId, ulong userId)
         {
             foreach (var guild in _client.Guilds.Where(x => x.Id != leftGuildId))

@@ -22,30 +22,68 @@ using Newtonsoft.Json.Serialization;
 using Microsoft.OpenApi.Models;
 using Sanakan.Services.Time;
 using Asp.Versioning;
+using System;
+using System.Threading.Tasks;
+using Sanakan.Config.Model;
 
 namespace Sanakan.Api
 {
     public static class BotWebHost
     {
+        private const int MinJwtKeyBytes = 32;
+
+        private static IWebHost _host;
+
         public static void RunWebHost(DiscordSocketClient client, ShindenClient shinden, Waifu waifu, IConfig config, Services.Helper helper,
             IExecutor executor, Shinden.Logger.ILogger logger, ISystemTime time, TagHelper tags, Expedition expedition)
         {
+            var host = CreateWebHostBuilder(config).ConfigureServices(services =>
+            {
+                services.AddSingleton(tags);
+                services.AddSingleton(time);
+                services.AddSingleton(waifu);
+                services.AddSingleton(logger);
+                services.AddSingleton(client);
+                services.AddSingleton(helper);
+                services.AddSingleton(shinden);
+                services.AddSingleton(executor);
+                services.AddSingleton(expedition);
+            }).Build();
+
+            _host = host;
             new Thread(() =>
             {
-                Thread.CurrentThread.IsBackground = true;
-                CreateWebHostBuilder(config).ConfigureServices(services =>
+                try
                 {
-                    services.AddSingleton(tags);
-                    services.AddSingleton(time);
-                    services.AddSingleton(waifu);
-                    services.AddSingleton(logger);
-                    services.AddSingleton(client);
-                    services.AddSingleton(helper);
-                    services.AddSingleton(shinden);
-                    services.AddSingleton(executor);
-                    services.AddSingleton(expedition);
-                }).Build().Run();
-            }).Start();
+                    host.Run();
+                }
+                catch (Exception ex)
+                {
+                    logger.Log($"API przestało działać: {ex}");
+                    Environment.Exit(1);
+                }
+            }) { IsBackground = true }.Start();
+        }
+
+        public static void ValidateConfig(ConfigModel config)
+        {
+            if (config.Jwt == null || string.IsNullOrWhiteSpace(config.Jwt.Key) || Encoding.UTF8.GetByteCount(config.Jwt.Key) < MinJwtKeyBytes)
+                throw new InvalidOperationException($"Jwt.Key musi być ustawiony i mieć co najmniej {MinJwtKeyBytes} bajty");
+
+            if (string.IsNullOrWhiteSpace(config.Jwt.Issuer))
+                throw new InvalidOperationException("Jwt.Issuer musi być ustawiony");
+        }
+
+        public static async Task StopAsync(TimeSpan timeout)
+        {
+            if (_host == null) return;
+
+            try
+            {
+                using var cts = new CancellationTokenSource(timeout);
+                await _host.StopAsync(cts.Token);
+            }
+            catch (OperationCanceledException) { }
         }
 
         private static IWebHostBuilder CreateWebHostBuilder(IConfig config) =>
@@ -146,6 +184,7 @@ namespace Sanakan.Api
             app.UseAuthorization();
 
             var auditLogger = app.ApplicationServices.GetService<Shinden.Logger.ILogger>();
+            var traffic = new ApiTraffic(x => auditLogger?.Log(x), System.TimeSpan.FromSeconds(30));
             app.Use(async (context, next) =>
             {
                 var watch = System.Diagnostics.Stopwatch.StartNew();
@@ -153,6 +192,7 @@ namespace Sanakan.Api
 
                 var entry = ApiAudit.Describe(context, watch.ElapsedMilliseconds);
                 if (entry != null) auditLogger?.Log(entry);
+                else traffic.Add(context);
             });
             app.UseEndpoints(endpoints =>
             {

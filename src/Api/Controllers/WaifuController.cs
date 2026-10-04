@@ -1109,7 +1109,6 @@ namespace Sanakan.Api.Controllers
             return string.Empty;
         }
 
-        // zwraca błąd do odesłania albo null, gdy pakiety są poprawne
         private static ObjectResult TryGetBoosterPacks(List<Models.CardBoosterPack> boosterPacks, out List<BoosterPack> packs)
         {
             packs = new List<BoosterPack>();

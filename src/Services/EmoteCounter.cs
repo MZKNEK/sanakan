@@ -7,12 +7,14 @@ using Discord;
 using Discord.WebSocket;
 using Sanakan.Config;
 using Sanakan.Services.Time;
+using Shinden.Logger;
 
 namespace Sanakan.Services
 {
     public class EmoteCounter
     {
         private ISystemTime _time;
+        private ILogger _logger;
         private DiscordSocketClient _client;
         private EmotesStats _stats;
 
@@ -22,8 +24,9 @@ namespace Sanakan.Services
             public DateTime Start;
         }
 
-        public EmoteCounter(DiscordSocketClient client, ISystemTime time)
+        public EmoteCounter(DiscordSocketClient client, ISystemTime time, ILogger logger)
         {
+            _logger = logger;
             _time = time;
             _client = client;
             _stats = new EmotesStats { Counter = new Dictionary<string, long>(), Start = _time.Now() };
@@ -73,7 +76,10 @@ namespace Sanakan.Services
                 var file = GetReader();
                 file.Save(_stats);
             }
-            catch (Exception) { }
+            catch (Exception ex)
+            {
+                _logger.Log($"EmoteCounter: zapis dumpEmotes.json: {ex.Message}");
+            }
         }
 
         private void LoadDumpedData()
@@ -91,7 +97,10 @@ namespace Sanakan.Services
                     file.Delete();
                 }
             }
-            catch (Exception) { }
+            catch (Exception ex)
+            {
+                _logger.Log($"EmoteCounter: odczyt dumpEmotes.json: {ex.Message}");
+            }
         }
 
         private JsonFileReader GetReader() => new Config.JsonFileReader("./dumpEmotes.json");

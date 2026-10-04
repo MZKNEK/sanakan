@@ -105,7 +105,6 @@ namespace Sanakan.Services.Session
             }
         }
 
-        // sesja może zostać zamknięta z kilku miejsc naraz (timer, koniec akcji, nowa sesja), sprząta tylko pierwsze wywołanie
         private async Task DisposeAsync(ISession session)
         {
             lock (_lock)

@@ -507,7 +507,10 @@ namespace Sanakan.Services.PocketWaifu
 
                     }
                 }
-                catch (Exception) { }
+                catch (Exception ex)
+                {
+                    _logger.Log($"CleanCards: {filePath}: {ex.Message}");
+                }
             }
             return deletedImages;
         }
@@ -1802,7 +1805,10 @@ namespace Sanakan.Services.PocketWaifu
                         File.Delete(tr);
                 }
             }
-            catch (Exception) { }
+            catch (Exception ex)
+            {
+                _logger.Log($"DeleteCardImageIfExist: card {card.Id}: {ex.Message}");
+            }
         }
 
         private async Task<string> GetCardUrlIfExistAsync(Card card, bool force = false)
@@ -1831,7 +1837,10 @@ namespace Sanakan.Services.PocketWaifu
                 var images = reader.Load<List<SafariImage>>();
                 dImg = Fun.GetOneRandomFrom(images);
             }
-            catch (Exception) { }
+            catch (Exception ex)
+            {
+                _logger.Log($"GetRandomSarafiImage: {ex.Message}");
+            }
 
             return dImg;
         }
