@@ -1592,7 +1592,7 @@ namespace Sanakan.Services
             }
         }
 
-        private void ApplyDeltaStats(Image<Rgba32> image, Card card)
+        private void ApplyDeltaStats(Image<Rgba32> image, Card card, bool rotated = false)
         {
             var hpFont = GetOrCreateFont(_latoBold, 34);
             var adFont = GetOrCreateFont(_latoBold, 26);
@@ -1614,11 +1614,33 @@ namespace Sanakan.Services
                     new ColorStop[] { new ColorStop(0f, GetOrCreateColor("#a8833c")), new ColorStop(0.5f, GetOrCreateColor("#f9eaaf")), new ColorStop(1f, GetOrCreateColor("#a8833c")) });
             }
 
+            if (rotated)
+            {
+                DrawTextOnRotatedCard(image, hpFont, $"{hp}", new PointF(114, 630), hpBrush, -0.46f);
+                DrawTextOnRotatedCard(image, adFont, $"{atk}", new PointF(92, 597), atkBrush);
+                DrawTextOnRotatedCard(image, adFont, $"{def}", new PointF(382, 597), defBrush);
+                return;
+            }
+
             image.Mutate(x => x.DrawText(drOps, hpOps, $"{hp}", hpBrush, null));
             var ops = new RichTextOptions(adFont) { HorizontalAlignment = HorizontalAlignment.Center, Origin = new Point(92, 597)};
             image.Mutate(x => x.DrawText(ops, $"{atk}", atkBrush));
             ops.Origin = new Point(382, 597);
             image.Mutate(x => x.DrawText(ops, $"{def}", defBrush));
+        }
+
+        private static void DrawTextOnRotatedCard(Image<Rgba32> image, Font font, string text, PointF origin, Brush brush, float rotation = 0)
+        {
+            var ops = new RichTextOptions(font) { HorizontalAlignment = HorizontalAlignment.Center, Origin = origin };
+            var bounds = TextMeasurer.MeasureBounds(text, ops);
+            var offset = new Vector2(bounds.X + bounds.Width / 2 - origin.X, bounds.Y + bounds.Height / 2 - origin.Y);
+
+            var center = Vector2.Transform(new Vector2(origin.X, origin.Y) + offset, Matrix3x2.CreateRotation(rotation));
+            var target = new Vector2(image.Width - center.X, image.Height - center.Y);
+
+            ops.Origin = target - offset;
+            var drOps = new DrawingOptions() { Transform = Matrix3x2.CreateRotation(rotation, target) };
+            image.Mutate(x => x.DrawText(drOps, ops, text, brush, null));
         }
 
         private void ApplyEpsilonStats(Image<Rgba32> image, Card card)
@@ -2064,6 +2086,9 @@ namespace Sanakan.Services
             if (card.Quality == Quality.Omega)
                 return await GetOmegaCard(card, true);
 
+            if (UseSigmaFallback(card))
+                return await GetSigmaFallbackCard(card, true);
+
             if (card.IsAnimatedImage)
                 return await GetAnimatedWaifuCardAsync(card, true);
 
@@ -2152,6 +2177,9 @@ namespace Sanakan.Services
             if (card.Quality == Quality.Omega)
                 return await GetOmegaCard(card);
 
+            if (UseSigmaFallback(card))
+                return await GetSigmaFallbackCard(card);
+
             if (card.IsAnimatedImage)
                 return await GetAnimatedWaifuCardAsync(card);
 
@@ -2224,6 +2252,71 @@ namespace Sanakan.Services
                 animation.Frames.RemoveFrame(0);
                 return animation;
             }
+        }
+
+        private static bool HasOwnGraphics(Quality quality)
+        {
+            var dir = Dir.GetResource($"PW/CG/{quality}");
+            return Directory.Exists(dir) && Directory.EnumerateFiles(dir, "*", SearchOption.AllDirectories).Any();
+        }
+
+        private static bool UseSigmaFallback(Card card) => card.Quality == Quality.Sigma && !HasOwnGraphics(Quality.Sigma);
+
+        private static Image<Rgba32> ToSigmaFallbackPart(Image source)
+        {
+            using var firstFrame = source.Frames.CloneFrame(0);
+            var part = firstFrame.CloneAs<Rgba32>();
+            part.Mutate(x => x.Rotate(RotateMode.Rotate180).Saturate(0f));
+            return part;
+        }
+
+        private async Task<Image> GetSigmaFallbackCard(Card card, bool noStatsImage = false)
+        {
+            const Quality source = Quality.Omega;
+            using var image = await GetImageFromUrlOrLocalAsync(card.GetImage() ?? "http://cdn.shinden.eu/cdn1/other/placeholders/title/225x350.jpg");
+
+            using var bottomImg = await LoadWebpFromDiskAsync(Dir.GetResource($"PW/CG/{source}/BorderBack.webp"));
+            using var topImg = await LoadWebpFromDiskAsync(Dir.GetResource($"PW/CG/{source}/Border.webp"));
+            using var dereImg = await Image.LoadAsync(Dir.GetResource($"PW/CG/{source}/Dere/{card.Dere}.png"));
+            using var statsImg = await Image.LoadAsync(Dir.GetResource($"PW/CG/{source}/Stats.png"));
+
+            using var bottom = ToSigmaFallbackPart(bottomImg);
+            using var top = ToSigmaFallbackPart(topImg);
+            using var dere = ToSigmaFallbackPart(dereImg);
+            using var stats = ToSigmaFallbackPart(statsImg);
+
+            Image<Rgba32> BuildFrame(Image charFrame)
+            {
+                var frame = new Image<Rgba32>(475, 667, Color.Transparent);
+                frame.Mutate(x => x.DrawImage(bottom, new Point(0, 0), 1));
+                frame.Mutate(x => x.DrawImage(charFrame, new Point(0, 0), 1));
+                frame.Mutate(x => x.DrawImage(top, new Point(0, 0), 1));
+                frame.Mutate(x => x.DrawImage(dere, new Point(0, 0), 1));
+
+                if (!noStatsImage)
+                {
+                    frame.Mutate(x => x.DrawImage(stats, new Point(0, 0), 1));
+                    ApplyDeltaStats(frame, card, true);
+                }
+                return frame;
+            }
+
+            if (!card.IsAnimatedImage || image.Frames.Count < 2)
+                return BuildFrame(image);
+
+            var animation = new Image<Rgba32>(475, 667, Color.Transparent);
+            animation.Metadata.GetWebpMetadata().RepeatCount = 0;
+
+            for (int i = 0; i < image.Frames.Count; i++)
+            {
+                using var charFrame = image.Frames.CloneFrame(i);
+                using var newFrame = BuildFrame(charFrame);
+                TransferFrameData(newFrame, charFrame);
+                animation.Frames.AddFrame(newFrame.Frames.RootFrame);
+            }
+
+            animation.Frames.RemoveFrame(0);
+            return animation;
         }
 
         private async Task<Image> GetAnimatedWaifuCardAsync(Card card, bool noStatsImage = false)

@@ -120,6 +120,9 @@ namespace Sanakan.Services
                     await pw.SendMessageAsync(ReplaceTags(user, config.WelcomeMessagePW));
                     await pw.CloseAsync();
                 }
+                catch (Discord.Net.HttpException ex) when ((int?)ex.DiscordCode is 50007 or 50278)
+                {
+                }
                 catch (Exception ex)
                 {
                     _logger.LogError($"Greeting: {ex}");

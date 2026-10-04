@@ -98,7 +98,7 @@ namespace Sanakan.Services.Executor
 
                     var task = queued.Task;
                     var owners = task.GetOwners().Distinct().ToList();
-                    if (owners.First() == 0)
+                    if (owners.FirstOrDefault() == 0)
                     {
                         if (_running > 0 || toStart.Count > 0)
                         {

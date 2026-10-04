@@ -21,8 +21,12 @@ namespace Sanakan.Services
         private const int MaxMessagesPerFlush = 5;
         private static readonly TimeSpan FlushInterval = TimeSpan.FromSeconds(5);
 
-        private const string BlockStart = "```diff\n";
+        private const string BlockStart = "```ansi\n";
         private const string BlockEnd = "\n```";
+
+        private const string ColorDefault = "\u001b[0m";
+        private const string ColorRed = "\u001b[0;31m";
+        private const string ColorYellow = "\u001b[0;33m";
 
         private static readonly string[] _routinePrefixes =
         {
@@ -58,9 +62,14 @@ namespace Sanakan.Services
             _console = console;
             _config = config;
             _timer = new Timer(_ => _ = FlushAsync(), null, FlushInterval, FlushInterval);
+            Shinden = new ShindenLogger(this);
         }
 
-        public void Log(string message)
+        public ILogger Shinden { get; }
+
+        public void Log(string message) => Log(message, false);
+
+        private void Log(string message, bool fromShinden)
         {
             _console.Log(message);
 
@@ -70,8 +79,7 @@ namespace Sanakan.Services
             var isError = message.StartsWith(LoggerExtensions.ErrorPrefix, StringComparison.Ordinal);
             var text = isError ? message.Substring(LoggerExtensions.ErrorPrefix.Length) : message;
             var entry = $"[{DateTime.Now:HH:mm:ss}] {(isError ? "ERROR " : "")}{_console.MaskSecrets(text)}";
-            if (isError)
-                entry = string.Join("\n", entry.Replace("\r", "").Split('\n').Select(x => "- " + x));
+            entry = PrefixLines(entry, isError ? ColorRed : fromShinden ? ColorYellow : ColorDefault);
             lock (_lock)
             {
                 _pending.Enqueue(entry);
@@ -82,6 +90,9 @@ namespace Sanakan.Services
                 }
             }
         }
+
+        private static string PrefixLines(string entry, string prefix)
+            => string.Join("\n", entry.Replace("\r", "").Split('\n').Select(x => prefix + x));
 
         public static bool ShouldSend(string message)
             => !string.IsNullOrWhiteSpace(message)
@@ -232,6 +243,15 @@ namespace Sanakan.Services
 
             _channel = channel;
             return channel;
+        }
+
+        private class ShindenLogger : ILogger
+        {
+            private readonly DiscordChannelLogger _parent;
+
+            public ShindenLogger(DiscordChannelLogger parent) => _parent = parent;
+
+            public void Log(string message) => _parent.Log(message, true);
         }
     }
 }

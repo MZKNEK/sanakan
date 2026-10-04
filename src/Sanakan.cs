@@ -125,7 +125,7 @@ namespace Sanakan
 
             var tmpCnf = _config.Get();
             _shindenClient = new ShindenClient(new Auth(tmpCnf.Shinden.Token,
-                tmpCnf.Shinden.UserAgent, tmpCnf.Shinden.Marmolade), _logger,
+                tmpCnf.Shinden.UserAgent, tmpCnf.Shinden.Marmolade), discordLogger.Shinden,
                 LogLevel.Information, tmpCnf.Shinden.BaseUri, TimeSpan.FromSeconds(10));
 
             _time = new SystemTime();
