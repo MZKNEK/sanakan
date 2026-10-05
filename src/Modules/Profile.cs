@@ -91,7 +91,7 @@ namespace Sanakan.Modules
 
         [Command("przyznaj role", RunMode = RunMode.Async)]
         [Alias("add role")]
-        [Summary("dodaje samo zarządzaną role")]
+        [Summary("dodaje samozarządzaną rolę")]
         [Remarks("newsy"), RequireCommandChannel]
         public async Task AddRoleAsync([Summary("nazwa roli z wypisz role")]string name)
         {
@@ -119,7 +119,7 @@ namespace Sanakan.Modules
 
         [Command("zdejmij role", RunMode = RunMode.Async)]
         [Alias("remove role")]
-        [Summary("zdejmuje samo zarządzaną role")]
+        [Summary("zdejmuje samozarządzaną rolę")]
         [Remarks("newsy"), RequireCommandChannel]
         public async Task RemoveRoleAsync([Summary("nazwa roli z wypisz role")]string name)
         {
@@ -166,7 +166,7 @@ namespace Sanakan.Modules
                     stringRole += $" `{selfRole.Name}` ";
                 }
 
-                await SafeReplyAsync($"**Dostępne role:**\n{stringRole}\n\nUżyj `s.przyznaj role [nazwa]` aby dodać lub `s.zdejmij role [nazwa]` odebrać sobie role.");
+                await SafeReplyAsync($"**Dostępne role:**\n{stringRole}\n\nUżyj `s.przyznaj role [nazwa]` aby dodać lub `s.zdejmij role [nazwa]` odebrać sobie rolę.");
             }
         }
 
@@ -217,7 +217,7 @@ namespace Sanakan.Modules
 
         [Command("topka", RunMode = RunMode.Async)]
         [Alias("top")]
-        [Summary("wyświetla topke użytkowników")]
+        [Summary("wyświetla topkę użytkowników")]
         [Remarks(""), RequireAnyCommandChannel]
         public async Task ShowTopAsync([Summary("rodzaj topki (poziom/sc/tc/pc/ac/posty(m/ms)/kart(a/y/ym)/karma(-))/pvp(s)")]TopType type = TopType.Level)
         {
@@ -376,7 +376,7 @@ namespace Sanakan.Modules
 
         [Command("konfiguracja profilu")]
         [Alias("configure profile", "konprof", "conprof", "conp", "konp")]
-        [Summary("pozwala ustawić konfigurowac profil użytkownika")]
+        [Summary("pozwala konfigurować profil użytkownika")]
         [Remarks("konfiguracja profilu info"), RequireCommandChannel]
         public async Task ConfigureProfileAsync([Summary("konfiguracja (podanie info wyświetla dodatkowe informacje)")][Remainder]ProfileConfig config)
         {
@@ -403,7 +403,7 @@ namespace Sanakan.Modules
                     {
                         if (!config.StyleNeedUrl())
                         {
-                            await SafeReplyAsync("", embed: $"{Context.User.Mention} tym poleceniem możesz ustawić tylko style wymagające obarazka!".ToEmbedMessage(EMType.Error).Build());
+                            await SafeReplyAsync("", embed: $"{Context.User.Mention} tym poleceniem możesz ustawić tylko style wymagające obrazka!".ToEmbedMessage(EMType.Error).Build());
                             return;
                         }
 
@@ -626,7 +626,7 @@ namespace Sanakan.Modules
                 if (idRoli == 0)
                 {
                     await _profile.RemoveUserRainbowColorAsync(user, colorName);
-                    await SafeReplyAsync("", embed: $"{user.Mention} zdjęto role koloru.".ToEmbedMessage(EMType.Success).Build());
+                    await SafeReplyAsync("", embed: $"{user.Mention} zdjęto rolę koloru.".ToEmbedMessage(EMType.Success).Build());
                     return;
                 }
 

@@ -260,7 +260,7 @@ namespace Sanakan.TypeReaders
                         {
                             if (context.Message.Attachments.IsNullOrEmpty())
                             {
-                                return Task.FromResult(TypeReaderResult.FromError(CommandError.ParseFailed, "Nie wykrytko załącznika!"));
+                                return Task.FromResult(TypeReaderResult.FromError(CommandError.ParseFailed, "Nie wykryto załącznika!"));
                             }
                             config.Url = context.Message.Attachments.FirstOrDefault()?.Url ?? "";
                         }

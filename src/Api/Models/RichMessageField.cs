@@ -14,7 +14,7 @@
         /// </summary>
         public string Value { get; set; }
         /// <summary>
-        /// Czy pole może zostać wyświetlne w jednej lini z innymi
+        /// Czy pole może zostać wyświetlone w jednej linii z innymi
         /// </summary>
         public bool IsInline { get; set; }
     }

@@ -135,7 +135,7 @@ namespace Sanakan.Services
                     _activity.Text = $"Użytkownik zdobył kartę ultimate: {_cardText}";
                 break;
                 case ActivityType.UsedScalpel:
-                    _activity.Text = $"Użytkownik użył skalpel na karcie: {_cardText}";
+                    _activity.Text = $"Użytkownik użył skalpela na karcie: {_cardText}";
                 break;
                 case ActivityType.CreatedYato:
                     _activity.Text = $"Użytkownik ustawił charakter Yato na karcie: {_cardText}";
@@ -147,7 +147,7 @@ namespace Sanakan.Services
                     _activity.Text = $"Użytkownik ustawił charakter Raito na karcie: {_cardText}";
                 break;
                 case ActivityType.CreatedSSS:
-                    _activity.Text = $"Użytkownik zwiększył jakośc karty do SSS: {_cardText}";
+                    _activity.Text = $"Użytkownik zwiększył jakość karty do SSS: {_cardText}";
                 break;
                 case ActivityType.CreatedUltiamte:
                     _activity.Text = $"Użytkownik utworzył kartę ultimate: {_cardText}";

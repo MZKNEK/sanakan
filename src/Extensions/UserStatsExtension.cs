@@ -32,7 +32,7 @@ namespace Sanakan.Extensions
                 + $"**Ustawienie Raito**: {stats.RaitoUpgrades}\n"
                 + $"**Ustawienie Yami**: {stats.YamiUpgrades}\n\n"
                 + $"**Użyte bilety**: {stats.LotteryTicketsUsed}\n"
-                + $"**Odwrocona karma**: {stats.ReversedKarmaCnt}\n"
+                + $"**Odwrócona karma**: {stats.ReversedKarmaCnt}\n"
                 + $"**Druciarstwo**: {stats.CreatedCardsFromItems}";
         }
     }

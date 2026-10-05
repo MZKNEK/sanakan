@@ -224,7 +224,7 @@ namespace Sanakan.Modules
 
         [Command("figurki")]
         [Alias("figures")]
-        [Summary("pozwala wyświetlić liste figurę/ustawić aktywną figurkę")]
+        [Summary("pozwala wyświetlić listę figurek/ustawić aktywną figurkę")]
         [Remarks("2"), RequireWaifuCommandChannel]
         public async Task ShowFigureListAsync([Summary("ID")] ulong id = 0)
         {
@@ -249,7 +249,7 @@ namespace Sanakan.Modules
                     {
                         if (fig.Id == oldFig.Id)
                         {
-                            await SafeReplyAsync("", embed: $"{Context.User.Mention} ta figurką już jest wybrana.".ToEmbedMessage(EMType.Error).Build());
+                            await SafeReplyAsync("", embed: $"{Context.User.Mention} ta figurka już jest wybrana.".ToEmbedMessage(EMType.Error).Build());
                             return;
                         }
 
@@ -267,7 +267,7 @@ namespace Sanakan.Modules
                     var pages = deck.GetFiguresList(Context.User);
                     if (pages.Count < 1)
                     {
-                        await SafeReplyAsync("", embed: $"{Context.User.Mention} nie odnaleniono figurek.".ToEmbedMessage(EMType.Error).Build());
+                        await SafeReplyAsync("", embed: $"{Context.User.Mention} nie odnaleziono figurek.".ToEmbedMessage(EMType.Error).Build());
                         return;
                     }
 
@@ -335,7 +335,7 @@ namespace Sanakan.Modules
                 }
                 if (!fig.CanCreateUltimateCard())
                 {
-                    await SafeReplyAsync("", embed: $"{Context.User.Mention} nie można utowrzyć karty ultimate, brakuje części lub doświadczenia.".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} nie można utworzyć karty ultimate, brakuje części lub doświadczenia.".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
@@ -463,7 +463,7 @@ namespace Sanakan.Modules
 
         [Command("sklepik")]
         [Alias("shop", "p2w")]
-        [Summary("listowanie/zakup przedmiotu/wypisanie informacji (du użycia wymagany 10 lvl)")]
+        [Summary("listowanie/zakup przedmiotu/wypisanie informacji (do użycia wymagany 10 lvl)")]
         [Remarks("1 info/4"), RequireWaifuCommandChannel, RequireLevel(10)]
         public async Task BuyItemAsync([Summary("nr przedmiotu")] int itemNumber = 0, [Summary("informacje/id tytułu/liczba przedmiotów do zakupu")] string info = "0")
         {
@@ -472,14 +472,14 @@ namespace Sanakan.Modules
 
         [Command("użyjbk")]
         [Alias("usewc", "uzyjbk")]
-        [Summary("używa przedmiot")]
+        [Summary("używa przedmiotu")]
         [Remarks("1 1 tak"), RequireWaifuCommandChannel]
         public async Task UseItemAsync([Summary("nr przedmiotu")] int itemNumber, [Summary("liczba przedmiotów")] string detail = "1", [Summary("czy zamienić część figurki na exp?")] bool itemToExp = false, [Hidden] ulong wid = 0)
             => await UseItemOnCardAsync(itemNumber, wid, detail, itemToExp);
 
         [Command("użyj")]
         [Alias("uzyj", "use")]
-        [Summary("używa przedmiot na karcie")]
+        [Summary("używa przedmiotu na karcie")]
         [Remarks("1 4212 2"), RequireWaifuCommandChannel]
         public async Task UseItemOnCardAsync([Summary("nr przedmiotu")] int itemNumber, [Summary("WID")] ulong wid = 0, [Summary("liczba przedmiotów/link do obrazka/typ gwiazdki")] string detail = "1", [Hidden] bool itemToExp = false)
         {
@@ -521,7 +521,7 @@ namespace Sanakan.Modules
 
         [Command("chce wszystkie waifu")]
         [Alias("i want them all")]
-        [Summary("zwiększa pule postaci o te z mang")]
+        [Summary("zwiększa pulę postaci o te z mang")]
         [Remarks(""), RequireWaifuCommandChannel]
         public async Task SetCharacterPoolAsync()
         {
@@ -546,9 +546,9 @@ namespace Sanakan.Modules
 
         [Command("lazyp")]
         [Alias("lp")]
-        [Summary("otwiera pierwszy pakiet z domyślnie ustawionym uwalnianiem aktywnych kc aktywnych na 1 oraz tagiem wymiana")]
+        [Summary("otwiera pierwszy pakiet z domyślnie ustawionym uwalnianiem aktywnych kc na 1 oraz tagiem wymiana")]
         [Remarks("2 nie Wymiana Ulubione"), RequireAnyCommandChannelOrLevel(200)]
-        public async Task OpenPacketLazyModeAsync([Summary("czy zniszczyć karty nie będące na liście życzeń i nie posiadające danej kc?")] uint destroyCards = 1, [Summary("czy zamienić uwalnianie na niszczenie?")] bool changeToDestroy = false,
+        public async Task OpenPacketLazyModeAsync([Summary("czy zniszczyć karty niebędące na liście życzeń i nieposiadające danej kc?")] uint destroyCards = 1, [Summary("czy zamienić uwalnianie na niszczenie?")] bool changeToDestroy = false,
             [Summary("oznacz niezniszczone karty")] string tag = "wymiana", [Summary("oznacz karty z wishlisty")] string tagWishlist = "ulubione", [Summary("czy kc mają być aktywne?")]bool aliveKc = true)
                 => await OpenPacketAsync(1, 1, true, destroyCards, !changeToDestroy, tag, tagWishlist, aliveKc);
 
@@ -557,7 +557,7 @@ namespace Sanakan.Modules
         [Summary("wypisuje dostępne pakiety/otwiera pakiety(maksymalna suma kart z pakietów do otworzenia to 20)")]
         [Remarks("1 1 tak 2 nie Wymiana Ulubione"), RequireWaifuCommandChannel]
         public async Task OpenPacketAsync([Summary("nr pakietu kart")] int numberOfPack = 0, [Summary("liczba kolejnych pakietów")] int count = 1, [Summary("czy sprawdzić listy życzeń?")] bool checkWishlists = true,
-            [Summary("czy zniszczyć karty nie będące na liście życzeń i nie posiadające danej kc?")] uint destroyCards = 0, [Summary("czy zamienić niszczenie na uwalnianie?")] bool changeToRelease = false, [Summary("oznacz niezniszczone karty")] string tag = "",
+            [Summary("czy zniszczyć karty niebędące na liście życzeń i nieposiadające danej kc?")] uint destroyCards = 0, [Summary("czy zamienić niszczenie na uwalnianie?")] bool changeToRelease = false, [Summary("oznacz niezniszczone karty")] string tag = "",
             [Summary("oznacz karty z wishlisty")] string tagWishlist = "", [Summary("czy kc mają być aktywne?")] bool aliveKc = false)
         {
             if (!string.IsNullOrEmpty(tag) && tag.Contains(" "))
@@ -633,7 +633,7 @@ namespace Sanakan.Modules
                     var cards = await _waifu.OpenBoosterPackAsync(Context.User, pack, bUser.PoolType);
                     if (cards.Count < pack.CardCnt)
                     {
-                        await SafeReplyAsync("", embed: $"{Context.User.Mention} nie udało się otworzyć pakietu. Brak połączania z Shindenem!".ToEmbedMessage(EMType.Error).Build());
+                        await SafeReplyAsync("", embed: $"{Context.User.Mention} nie udało się otworzyć pakietu. Brak połączenia z Shindenem!".ToEmbedMessage(EMType.Error).Build());
                         return;
                     }
 
@@ -805,7 +805,7 @@ namespace Sanakan.Modules
 
         [Command("aktualizuj")]
         [Alias("update")]
-        [Summary("pobiera dane na tamat karty z shindena")]
+        [Summary("pobiera dane na temat karty z shindena")]
         [Remarks("5412 nie"), RequireWaifuCommandChannel]
         public async Task UpdateCardAsync([Summary("WID")] ulong id, [Summary("czy przywrócić obrazek ze strony?")] bool defaultImage = false)
         {
@@ -1049,7 +1049,7 @@ namespace Sanakan.Modules
 
         [Command("uwolnij")]
         [Alias("release", "puśmje")]
-        [Summary("uwalnia posiadaną kartę(nie podanie kart, uwalnia te oznaczone jako kosz)")]
+        [Summary("uwalnia posiadaną kartę(niepodanie kart, uwalnia te oznaczone jako kosz)")]
         [Remarks("5412 5413"), RequireWaifuCommandChannel]
         public async Task ReleaseCardAsync([Summary("WIDs")] params ulong[] ids)
         {
@@ -1074,7 +1074,7 @@ namespace Sanakan.Modules
 
         [Command("zniszcz")]
         [Alias("destroy")]
-        [Summary("niszczy posiadaną kartę(nie podanie kart, niszczy te oznaczone jako kosz)")]
+        [Summary("niszczy posiadaną kartę(niepodanie kart, niszczy te oznaczone jako kosz)")]
         [Remarks("5412"), RequireWaifuCommandChannel]
         public async Task DestroyCardAsync([Summary("WIDs")] params ulong[] ids)
         {
@@ -1099,7 +1099,7 @@ namespace Sanakan.Modules
 
         [Command("skrzynia")]
         [Alias("chest")]
-        [Summary("przenosi doświadczenie z skrzyni do karty lub figurki gdy podane wid 0 (kosztuje CT)")]
+        [Summary("przenosi doświadczenie ze skrzyni do karty lub figurki gdy podane wid 0 (kosztuje CT)")]
         [Remarks("2154 10"), RequireWaifuCommandChannel]
         public async Task TransferExpFromChestAsync([Summary("WID")] ulong id, [Summary("ilość doświadczenia")] uint exp)
         {
@@ -1273,9 +1273,9 @@ namespace Sanakan.Modules
 
         [Command("lazyc")]
         [Alias("lc")]
-        [Summary("dostajesz jedną darmową kart z domyślnie ustawionym niszczeniem kc na 3 oraz tagiem wymiana")]
+        [Summary("dostajesz jedną darmową kartę z domyślnie ustawionym niszczeniem kc na 3 oraz tagiem wymiana")]
         [Remarks("3 nie Wymiana Ulubione"), RequireAnyCommandChannelLevelOrNitro(40)]
-        public async Task GetLazyFreeCardAsync([Summary("czy zniszczyć karty nie będące na liście życzeń i nie posiadające danej kc?")] uint destroyCards = 1,
+        public async Task GetLazyFreeCardAsync([Summary("czy zniszczyć karty niebędące na liście życzeń i nieposiadające danej kc?")] uint destroyCards = 1,
             [Summary("czy zamienić niszczenie na uwalnianie?")] bool changeToRelease = false, [Summary("oznacz niezniszczone karty")] string tag = "wymiana", [Summary("oznacz karty z wishlisty")] string tagWishlist = "ulubione")
                 => await GetFreeCardAsync(destroyCards, changeToRelease, tag, tagWishlist);
 
@@ -1283,7 +1283,7 @@ namespace Sanakan.Modules
         [Alias("free card")]
         [Summary("dostajesz jedną darmową kartę")]
         [Remarks("3 nie Wymiana Ulubione"), RequireAnyCommandChannelLevelOrNitro(40)]
-        public async Task GetFreeCardAsync([Summary("czy zniszczyć karty nie będące na liście życzeń i nie posiadające danej kc?")] uint destroyCards = 0,
+        public async Task GetFreeCardAsync([Summary("czy zniszczyć karty niebędące na liście życzeń i nieposiadające danej kc?")] uint destroyCards = 0,
             [Summary("czy zamienić niszczenie na uwalnianie?")] bool changeToRelease = false, [Summary("oznacz niezniszczone karty")] string tag = "", [Summary("oznacz karty z wishlisty")] string tagWishlist = "")
         {
             if (!string.IsNullOrEmpty(tag) && tag.Contains(" "))
@@ -1335,7 +1335,7 @@ namespace Sanakan.Modules
                 var character = await _waifu.GetRandomCharacterAsync(botuser.PoolType);
                 if (character.CharInfo == null)
                 {
-                    await SafeReplyAsync("", embed: $"Brak połączania z Shindenem! ({character.Code})".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"Brak połączenia z Shindenem! ({character.Code})".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
@@ -1925,7 +1925,7 @@ namespace Sanakan.Modules
 
         [Command("żdodajs")]
         [Alias("wadds", "zdodajs")]
-        [Summary("dodaje kartę/tytuł/postać do listy życzeń jako wpis nie kasujący się")]
+        [Summary("dodaje kartę/tytuł/postać do listy życzeń jako wpis niekasujący się")]
         [Remarks("karta 4212 tak"), RequireWaifuCommandChannel]
         public async Task AddToWishlistStaticAsync([Summary("typ (p - postać, t - tytuł)")] WishlistObjectType type, [Summary("ID/WID")] ulong id)
         {
@@ -2037,7 +2037,7 @@ namespace Sanakan.Modules
 
         [Command("życzenia", RunMode = RunMode.Async)]
         [Alias("wishlist", "zyczenia", "wl")]
-        [Summary("wyświetla liste życzeń użytkownika")]
+        [Summary("wyświetla listę życzeń użytkownika")]
         [Remarks("Dzida tak tak tak tak nie"), RequireWaifuCommandChannel]
         public async Task ShowWishlistAsync([Summary("nazwa użytkownika")] SocketGuildUser usr = null,
             [Summary("czy pokazać ulubione, domyślnie ukryte, wymaga podania użytkownika? (true/false)")] bool showFavs = false,
@@ -2515,13 +2515,13 @@ namespace Sanakan.Modules
                     _ => "nic"
                 };
 
-                await SafeReplyAsync("", embed: $"{Context.User.Mention} ustawiono akcje: **{actionName}**.".ToEmbedMessage(EMType.Success).Build());
+                await SafeReplyAsync("", embed: $"{Context.User.Mention} ustawiono akcję: **{actionName}**.".ToEmbedMessage(EMType.Success).Build());
             }
         }
 
         [Command("sortowanie galerii")]
         [Alias("sort gallery")]
-        [Summary("ustawia sortowanie w galerii, podaje się kolejno WID kart jak mają być wyświetlone odzielone spacją")]
+        [Summary("ustawia sortowanie w galerii, podaje się kolejno WID kart jak mają być wyświetlone oddzielone spacją")]
         [Remarks("23 234 123 1231"), RequireWaifuCommandChannel]
         public async Task GalleryOrderAsync([Summary("WIDs")][Remainder] string ids)
         {
@@ -2634,17 +2634,17 @@ namespace Sanakan.Modules
 
         [Command("lazyt")]
         [Alias("lt")]
-        [Summary("towrzy karty z ich fragmentów z domyślnie ustawionym niszczeniem kc na 3 oraz tagiem wymiana")]
+        [Summary("tworzy karty z ich fragmentów z domyślnie ustawionym niszczeniem kc na 3 oraz tagiem wymiana")]
         [Remarks("2 3 nie Wymiana Ulubione"), RequireAnyCommandChannelOrLevel(200)]
-        public async Task MakeCardsFromFragmentsLazyModeAsync([Summary("ilość kart do utworzenia")] uint count = 20, [Summary("czy zniszczyć karty nie będące na liście życzeń i nie posiadające danej kc?")] uint destroyCards = 3,
+        public async Task MakeCardsFromFragmentsLazyModeAsync([Summary("ilość kart do utworzenia")] uint count = 20, [Summary("czy zniszczyć karty niebędące na liście życzeń i nieposiadające danej kc?")] uint destroyCards = 3,
             [Summary("czy zamienić niszczenie na uwalnianie?")] bool changeToRelease = false, [Summary("oznacz niezniszczone karty")] string tag = "wymiana", [Summary("oznacz karty z wishlisty")] string tagWishlist = "ulubione")
                 => await MakeCardsFromFragmentsAsync(count, destroyCards, changeToRelease, tag, tagWishlist);
 
         [Command("druciarstwo")]
         [Alias("tinkering")]
-        [Summary("towrzy karty z ich fragmentów(maks 20")]
+        [Summary("tworzy karty z ich fragmentów(maks 20")]
         [Remarks("5"), RequireWaifuCommandChannel]
-        public async Task MakeCardsFromFragmentsAsync([Summary("ilość kart do utworzenia(1337 fragmentów na kartę, co dwie karty podwaja się cena w danym dniu)")] uint count = 1, [Summary("czy zniszczyć karty nie będące na liście życzeń i nie posiadające danej kc?")] uint destroyCards = 0,
+        public async Task MakeCardsFromFragmentsAsync([Summary("ilość kart do utworzenia(1337 fragmentów na kartę, co dwie karty podwaja się cena w danym dniu)")] uint count = 1, [Summary("czy zniszczyć karty niebędące na liście życzeń i nieposiadające danej kc?")] uint destroyCards = 0,
             [Summary("czy zamienić niszczenie na uwalnianie?")] bool changeToRelease = false, [Summary("oznacz niezniszczone karty")] string tag = "", [Summary("oznacz karty z wishlisty")] string tagWishlist = "")
         {
             if (count < 1)
@@ -2724,7 +2724,7 @@ namespace Sanakan.Modules
                     var character = await _waifu.GetRandomCharacterAsync(bUser.PoolType);
                     if (character.CharInfo == null)
                     {
-                        await SafeReplyAsync("", embed: $"Brak połączania z Shindenem! ({character.Code})".ToEmbedMessage(EMType.Error).Build());
+                        await SafeReplyAsync("", embed: $"Brak połączenia z Shindenem! ({character.Code})".ToEmbedMessage(EMType.Error).Build());
                         return;
                     }
 
@@ -2805,7 +2805,7 @@ namespace Sanakan.Modules
 
         [Command("wytwórz")]
         [Alias("craft", "wytworz")]
-        [Summary("towrzy przedmiot z listy przepisów")]
+        [Summary("tworzy przedmiot z listy przepisów")]
         [Remarks("2 20"), RequireWaifuCommandChannel]
         public async Task CraftItemAsync([Summary("przepis")]RecipeType recipe, [Summary("ilość")]int count = 1)
         {
@@ -2824,7 +2824,7 @@ namespace Sanakan.Modules
                 {
                     if (!bUser.Pay(currency, count))
                     {
-                        await SafeReplyAsync("", embed: $"{Context.User.Mention} nie masz wystarczającej liczby **{currency.Type}** by wytowrzyć **{itemRecipe.Name}**{times}.".ToEmbedMessage(EMType.Error).Build());
+                        await SafeReplyAsync("", embed: $"{Context.User.Mention} nie masz wystarczającej liczby **{currency.Type}** by wytworzyć **{itemRecipe.Name}**{times}.".ToEmbedMessage(EMType.Error).Build());
                         return;
                     }
                 }
@@ -2833,7 +2833,7 @@ namespace Sanakan.Modules
                 {
                     if (!bUser.GameDeck.RemoveItem(item, count))
                     {
-                        await SafeReplyAsync("", embed: $"{Context.User.Mention} nie masz wystarczającej liczby **{item.Name}** by wytowrzyć **{itemRecipe.Name}**{times}.".ToEmbedMessage(EMType.Error).Build());
+                        await SafeReplyAsync("", embed: $"{Context.User.Mention} nie masz wystarczającej liczby **{item.Name}** by wytworzyć **{itemRecipe.Name}**{times}.".ToEmbedMessage(EMType.Error).Build());
                         return;
                     }
                 }
@@ -2851,7 +2851,7 @@ namespace Sanakan.Modules
 
         [Command("przepisy", RunMode = RunMode.Async)]
         [Alias("recipes")]
-        [Summary("wypisuje liste przepisów lub konkretny przepis")]
+        [Summary("wypisuje listę przepisów lub konkretny przepis")]
         [Remarks("2"), RequireWaifuCommandChannel]
         public async Task ShoItemRecipesAsync([Summary("przepis (opcjonalne)")]RecipeType recipe = RecipeType.None)
         {
@@ -2882,7 +2882,7 @@ namespace Sanakan.Modules
 
         [Command("moje oznaczenia", RunMode = RunMode.Async)]
         [Alias("my tags")]
-        [Summary("wypisuje dostepne oznaczenia")]
+        [Summary("wypisuje dostępne oznaczenia")]
         [Remarks(""), RequireAnyCommandChannelOrLevel(60)]
         public async Task ShowUserTagsAsync()
         {
@@ -3311,7 +3311,7 @@ namespace Sanakan.Modules
         [Alias("who")]
         [Summary("pozwala wyszukać użytkowników posiadających kartę danej postaci")]
         [Remarks("51 tak tak"), RequireWaifuCommandChannel]
-        public async Task SearchCharacterCardsAsync([Summary("id postaci na shinden")] ulong id, [Summary("czy zamienić oznaczenia na nicki?")] bool showNames = false, [Summary("czy dodać linki do profili?")] bool showShindenUrl = false, [Summary("czy wyświetlić tylko karty z skalpelem/kamerą?")] bool onlyScalpels = false, [Summary("czy sortować po użytkowniku?")] bool groupByUser = false)
+        public async Task SearchCharacterCardsAsync([Summary("id postaci na shinden")] ulong id, [Summary("czy zamienić oznaczenia na nicki?")] bool showNames = false, [Summary("czy dodać linki do profili?")] bool showShindenUrl = false, [Summary("czy wyświetlić tylko karty ze skalpelem/kamerą?")] bool onlyScalpels = false, [Summary("czy sortować po użytkowniku?")] bool groupByUser = false)
         {
             var charInfo = await _shinden.GetCharacterInfoAsync(id);
             if (charInfo == null)
@@ -3418,7 +3418,7 @@ namespace Sanakan.Modules
                 var user = await db.GetCachedFullUserAsync(Context.User.Id);
                 if (user is null)
                 {
-                    await SafeReplyAsync("", embed: $"Nie udało sie pobrać danych użytkownika.".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"Nie udało się pobrać danych użytkownika.".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
@@ -3474,7 +3474,7 @@ namespace Sanakan.Modules
                     var user = await db.GetCachedFullUserAsync(Context.User.Id);
                     if (user is null)
                     {
-                        await SafeReplyAsync("", embed: $"Nie udało sie pobrać danych użytkownika.".ToEmbedMessage(EMType.Error).Build());
+                        await SafeReplyAsync("", embed: $"Nie udało się pobrać danych użytkownika.".ToEmbedMessage(EMType.Error).Build());
                         return;
                     }
 
@@ -3583,7 +3583,7 @@ namespace Sanakan.Modules
 
         [Command("barter")]
         [Alias("scrape")]
-        [Summary("wymienia przedmioty na fragementy kart")]
+        [Summary("wymienia przedmioty na fragmenty kart")]
         [Remarks("3:30 5:40 1:0"), RequireWaifuCommandChannel]
         public async Task ChangeItemsToCardFragmentsAsync([Summary("nr przedmiotu:ilość przedmiotu(0 traktowane jako wszystkie)")] params ItemCountPair[] items)
         {
@@ -3717,8 +3717,8 @@ namespace Sanakan.Modules
                     var receivedCt = thisCard.DestroyOrRelease(botUser, botUser.GameDeck.EndOfExpeditionAction == ActionAfterExpedition.Release, 0.14);
                     var addMsg = receivedCt && botUser.GameDeck.EndOfExpeditionAction == ActionAfterExpedition.Release;
 
-                    action = addMsg ? $"\n\n{trashTag.Icon} Wykonano akcje: **{botUser.GameDeck.EndOfExpeditionAction.ToName()}** na karcie powracającej z wyprawy.\nWieść o twoim okrucieństwie się rozeszła."
-                        : $"\n\n{trashTag.Icon} Wykonano akcje: **{botUser.GameDeck.EndOfExpeditionAction.ToName()}** na karcie powracającej z wyprawy.";
+                    action = addMsg ? $"\n\n{trashTag.Icon} Wykonano akcję: **{botUser.GameDeck.EndOfExpeditionAction.ToName()}** na karcie powracającej z wyprawy.\nWieść o twoim okrucieństwie się rozeszła."
+                        : $"\n\n{trashTag.Icon} Wykonano akcję: **{botUser.GameDeck.EndOfExpeditionAction.ToName()}** na karcie powracającej z wyprawy.";
 
                     _waifu.DeleteCardImageIfExist(thisCard);
                     botUser.GameDeck.Cards.Remove(thisCard);
@@ -3784,12 +3784,12 @@ namespace Sanakan.Modules
                             Expedition.BlockadeReason.Expedition    => "Karta jest na wyprawie.",
                             Expedition.BlockadeReason.Curse         => "Karta posiada klątwę.",
                             Expedition.BlockadeReason.Cage          => "Karta znajduje się w klatce.",
-                            Expedition.BlockadeReason.Affection     => "Karta ma zbyt niską relacje.",
+                            Expedition.BlockadeReason.Affection     => "Karta ma zbyt niską relację.",
                             Expedition.BlockadeReason.Tag           => "Karta ma oznaczenie blokujące wyprawę.",
                             Expedition.BlockadeReason.Rarity        => "Karta ma zbyt niską jakość.",
                             Expedition.BlockadeReason.Ultimate      => "Karta nie może być kartą ultimate.",
                             Expedition.BlockadeReason.Karma         => "Nie spełniasz wymogów karmy na wyprawę.",
-                            Expedition.BlockadeReason.Active        => "Karta znajduje się w taili.",
+                            Expedition.BlockadeReason.Active        => "Karta znajduje się w talii.",
                             _ => "????"
                         };
 
@@ -3842,14 +3842,14 @@ namespace Sanakan.Modules
                 var duser = await db.GetUserAndDontTrackAsync(Context.User.Id);
                 if (duser.GameDeck.NeedToSetDeckAgain())
                 {
-                    await SafeReplyAsync("", embed: $"{Context.User.Mention} musisz na nowo ustawić swoją talie!".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} musisz na nowo ustawić swoją talię!".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
                 var euser = await db.GetUserAndDontTrackAsync(usr.Id);
                 if (euser.GameDeck.NeedToSetDeckAgain())
                 {
-                    await SafeReplyAsync("", embed: $"{Context.User.Mention} twój przeciwnik musi na nowo ustawić swoją talie!".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} twój przeciwnik musi na nowo ustawić swoją talię!".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
@@ -3864,7 +3864,7 @@ namespace Sanakan.Modules
                         _ => "małą"
                     };
 
-                    await SafeReplyAsync("", embed: $"{Context.User.Mention} masz zbyt {err} talie ({duser.GameDeck.GetDeckPower():F}).".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} masz zbyt {err} talię ({duser.GameDeck.GetDeckPower():F}).".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
@@ -3879,7 +3879,7 @@ namespace Sanakan.Modules
                         _ => "małą"
                     };
 
-                    await SafeReplyAsync("", embed: $"{Context.User.Mention} twój przeciwnik ma zbyt {err} talie ({euser.GameDeck.GetDeckPower():F}).".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} twój przeciwnik ma zbyt {err} talię ({euser.GameDeck.GetDeckPower():F}).".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
@@ -3925,7 +3925,7 @@ namespace Sanakan.Modules
                 var duser = await db.GetUserOrCreateAsync(Context.User.Id);
                 if (duser.GameDeck.NeedToSetDeckAgain())
                 {
-                    await SafeReplyAsync("", embed: $"{Context.User.Mention} musisz na nowo ustawić swoją talie!".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} musisz na nowo ustawić swoją talię!".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
@@ -3940,7 +3940,7 @@ namespace Sanakan.Modules
                         _ => "małą"
                     };
 
-                    await SafeReplyAsync("", embed: $"{Context.User.Mention} masz zbyt {err} talie ({duser.GameDeck.GetDeckPower():F}).".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} masz zbyt {err} talię ({duser.GameDeck.GetDeckPower():F}).".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
@@ -4132,7 +4132,7 @@ namespace Sanakan.Modules
                         await db.SaveChangesAsync();
                     }
 
-                    await SafeReplyAsync("", embed: $"{Context.User.Mention} zresetował ulubioną karte.".ToEmbedMessage(EMType.Success).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} zresetował ulubioną kartę.".ToEmbedMessage(EMType.Success).Build());
                     return;
                 }
 
@@ -4145,7 +4145,7 @@ namespace Sanakan.Modules
 
                 if (bUser.GameDeck.Waifu == thisCard.Character)
                 {
-                    await SafeReplyAsync("", embed: $"{Context.User.Mention} masz już ustawioną tą postać!".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} masz już ustawioną tę postać!".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
@@ -4211,7 +4211,7 @@ namespace Sanakan.Modules
 
                 if (!thisCard.CanGiveBloodOrUpgradeToSSS())
                 {
-                    await SafeReplyAsync("", embed: $"{Context.User.Mention} ta karta ma zbyt niską relacje".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} ta karta ma zbyt niską relację".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 

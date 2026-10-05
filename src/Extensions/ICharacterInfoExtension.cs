@@ -51,7 +51,7 @@ namespace Sanakan.Extensions
                 },
                 new EmbedFieldBuilder
                 {
-                    Name = "Grupa krwii",
+                    Name = "Grupa krwi",
                     Value = info.Bloodtype.GetQMarksIfEmpty(),
                     IsInline = true
                 },

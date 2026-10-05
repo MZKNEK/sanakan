@@ -26,7 +26,7 @@ namespace Sanakan.Services.Supervisor
 
         private const int COMMAND_MOD = 2;
         private const int UNCONNECTED_MOD = -2;
-        private const string IMAGE_SPAM_EXEMPTION = "Szanowny sanakanie, pozwól mi wysłać więcej jak trzy obrazki, błagam!";
+        private const string IMAGE_SPAM_EXEMPTION = "Szanowny sanakanie, pozwól mi wysłać więcej niż trzy obrazki, błagam!";
 
     #if DEBUG
         private const bool isDebug = true;

@@ -56,7 +56,7 @@ namespace Sanakan.Api.Controllers
         }
 
         /// <summary>
-        /// Pobiera użytkowników posiadających karte postaci
+        /// Pobiera użytkowników posiadających kartę postaci
         /// </summary>
         /// <param name="id">id postaci z bazy shindena</param>
         /// <returns>lista id</returns>
@@ -77,7 +77,7 @@ namespace Sanakan.Api.Controllers
         }
 
         /// <summary>
-        /// Pobiera liste kart użytkownika
+        /// Pobiera listę kart użytkownika
         /// </summary>
         /// <param name="id">id użytkownika shindena</param>
         /// <returns>lista kart</returns>
@@ -125,7 +125,7 @@ namespace Sanakan.Api.Controllers
         /// <summary>
         /// Pobiera listę aktywności od konkretnego id (maksymalnie 4000 najnowszych)
         /// </summary>
-        /// <param name="lastId">id aktywności od której zacząć nową liste</param>
+        /// <param name="lastId">id aktywności od której zacząć nową listę</param>
         /// <returns>lista aktywności</returns>
         [HttpGet("user/activity/{lastId}")]
         public async Task<ActionResult<IEnumerable<UserActivity>>> GetUsersActivitiesFromIdAsync(ulong lastId)
@@ -323,7 +323,7 @@ namespace Sanakan.Api.Controllers
         }
 
         /// <summary>
-        /// Pobiera surową listę życzeń użtykownika
+        /// Pobiera surową listę życzeń użytkownika
         /// </summary>
         /// <param name="id">id użytkownika shindena</param>
         /// <returns>lista życzeń</returns>
@@ -356,7 +356,7 @@ namespace Sanakan.Api.Controllers
         }
 
         /// <summary>
-        /// Pobiera topke życzeń użytkowników
+        /// Pobiera topkę życzeń użytkowników
         /// </summary>
         /// <param name="count">jak dużo wpisów</param>
         /// <returns>topka życzeń</returns>
@@ -669,7 +669,7 @@ namespace Sanakan.Api.Controllers
         }
 
         /// <summary>
-        /// Pobiera liste kart z danym tagiem
+        /// Pobiera listę kart z danym tagiem
         /// </summary>
         /// <param name="tag">tag na karcie</param>
         [HttpGet("cards/tag/{tag}"), Authorize(Policy = "Site")]

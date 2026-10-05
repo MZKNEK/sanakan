@@ -119,11 +119,11 @@ namespace Sanakan.Api.Controllers
         /// Wysyła wiadomość typu RichMessage
         /// </summary>
         /// <remarks>
-        /// Do utworzenia wiadomości wystarczy ustawić jej typ oraz, podać opis.
+        /// Do utworzenia wiadomości wystarczy ustawić jej typ oraz podać opis.
         /// Jeśli chcemy aby link z pola Url zadziałał to należy również sprecyzować tytuł wiadomości.
         /// </remarks>
         /// <param name="message">wiadomość</param>
-        /// <param name="mention">czy oznanczyć zainteresowanych</param>
+        /// <param name="mention">czy oznaczyć zainteresowanych</param>
         /// <response code="500">Internal Server Error</response>
         [HttpPost]
         public async Task<IActionResult> PostRichMessageAsync([FromBody, Required]Models.RichMessage message, [FromQuery]bool? mention)

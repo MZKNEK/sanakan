@@ -44,7 +44,7 @@ namespace Sanakan.Extensions
                     return "Odbierz zaskórniaki";
 
                 case StatusType.DExpeditions:
-                    return "Wyślij karte na wyprawę";
+                    return "Wyślij kartę na wyprawę";
 
                 case StatusType.DMarket:
                     return "Odwiedź rynek lub czarny rynek";
@@ -56,10 +56,10 @@ namespace Sanakan.Extensions
                     return "Rozegraj pojedynek PVP";
 
                 case StatusType.DUsedItems:
-                    return "Użyj przedmiot";
+                    return "Użyj przedmiotu";
 
                 case StatusType.WCardPlus:
-                    return "Odbierz Karte+";
+                    return "Odbierz Kartę+";
 
                 case StatusType.WDaily:
                     return "Odbierz drobne";

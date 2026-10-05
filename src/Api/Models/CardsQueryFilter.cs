@@ -42,7 +42,7 @@ namespace Sanakan.Api.Models
         /// </summary>
         public List<TagIdPair> ExcludeTags { get; set; }
         /// <summary>
-        /// W jaki sposów filtrować po tagach
+        /// W jaki sposób filtrować po tagach
         /// </summary>
         public FilterTagsMethodType FilterTagsMethod { get; set; }
         /// <summary>

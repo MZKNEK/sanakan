@@ -46,9 +46,9 @@ namespace Sanakan.Extensions
                 case ItemType.CheckAffection:
                     return "Pozwala sprawdzić dokładny poziom relacji z kartą.";
                 case ItemType.SetCustomImage:
-                    return "Pozwala ustawić własny obrazek karcie. Zalecany wymiary 448x650.";
+                    return "Pozwala ustawić własny obrazek karcie. Zalecane wymiary 448x650.";
                 case ItemType.SetCustomAnimatedImage:
-                    return "Pozwala ustawić własny animowany obrazek karcie. Zalecany wymiary 448x650.";
+                    return "Pozwala ustawić własny animowany obrazek karcie. Zalecane wymiary 448x650.";
                 case ItemType.IncreaseExpSmall:
                     return "Dodaje odrobinę punktów doświadczenia do karty.";
                 case ItemType.IncreaseExpBig:
@@ -62,7 +62,7 @@ namespace Sanakan.Extensions
                 case ItemType.PreAssembledAsuna:
                 case ItemType.PreAssembledGintoki:
                 case ItemType.PreAssembledMegumin:
-                    return "Gotowy szkielet nie wymagający użycia karty SSS.";
+                    return "Gotowy szkielet niewymagający użycia karty SSS.";
                 case ItemType.FigureSkeleton:
                     return $"Szkielet pozwalający rozpoczęcie tworzenia figurki.";
                 case ItemType.FigureUniversalPart:
@@ -82,11 +82,11 @@ namespace Sanakan.Extensions
                 case ItemType.FigureRightLegPart:
                     return $"Część, którą można zamontować jako prawą nogę figurki.";
                 case ItemType.ResetCardValue:
-                    return $"Resetuje warość karty do początkowego poziomu.";
+                    return $"Resetuje wartość karty do początkowego poziomu.";
                 case ItemType.LotteryTicket:
                     return $"Zapewnia jedno wejście na loterię.";
                 case ItemType.CardFragment:
-                    return $"Pozwalalają utworzyć kartę po uzbieraniu ich odpowiedniej liczby.";
+                    return $"Pozwalają utworzyć kartę po uzbieraniu ich odpowiedniej liczby.";
                 case ItemType.BloodOfYourWaifu:
                     return $"Nie mam pojęcia co zamierzasz z tym zrobić.";
                 case ItemType.IncreaseUltimateAttack:

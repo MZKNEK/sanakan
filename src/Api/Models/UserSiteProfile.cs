@@ -15,7 +15,7 @@ namespace Sanakan.Api.Models
         /// </summary>
         public string DiscordId { get; set; }
         /// <summary>
-        /// Liczba posaidanych kart z podziałem na jakość
+        /// Liczba posiadanych kart z podziałem na jakość
         /// </summary>
         public Dictionary<string, long> CardsCount { get; set; }
         /// <summary>
@@ -31,7 +31,7 @@ namespace Sanakan.Api.Models
         /// </summary>
         public CardFinalView CardWithMostRestarts { get; set; }
         /// <summary>
-        /// Karta z obliczoną największa mocą
+        /// Karta z obliczoną największą mocą
         /// </summary>
         public CardFinalView MostPowerfulCard { get; set; }
         /// <summary>
@@ -63,7 +63,7 @@ namespace Sanakan.Api.Models
         /// </summary>
         public string UserTitle { get; set; }
         /// <summary>
-        /// Pozycja obrazku tła profilu użytkownika
+        /// Pozycja obrazka tła profilu użytkownika
         /// </summary>
         public int BackgroundPosition { get; set; }
         /// <summary>

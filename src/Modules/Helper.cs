@@ -34,7 +34,7 @@ namespace Sanakan.Modules
             new FixableHosting { Name = "imgur",   Enabled = true, Threshold = new DateTime(2024, 10, 15),  Host = new []{ new DomainData("imgur.com") } },
             new FixableHosting { Name = "imgur i",   Enabled = true, Threshold = new DateTime(2024, 10, 15),  Host = new []{ new DomainData("i.imgur.com") } },
             new FixableHosting { Name = "discord cdn", Enabled = true, Threshold = new DateTime(2023, 11, 13), Host = new []{ new DomainData("cdn.discordapp.com") } },
-            new FixableHosting { Name = "discord madia", Enabled = true, Threshold = new DateTime(2023, 11, 13), Host = new []{ new DomainData("media.discordapp.net") } },
+            new FixableHosting { Name = "discord media", Enabled = true, Threshold = new DateTime(2023, 11, 13), Host = new []{ new DomainData("media.discordapp.net") } },
             new FixableHosting { Name = "google",  Enabled = true, Threshold = new DateTime(2024, 02, 13), Host = new []{ new DomainData("drive.google.com") } },
         };
 

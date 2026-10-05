@@ -364,7 +364,7 @@ namespace Sanakan.Services.Session.Models
                 else if (reaction.Emote.Equals(DeclineEmote) && State != ExchangeStatus.End)
                 {
                     RestartTimer();
-                    Tips = $"{player.User.Mention} odrzucił propozycje wymiany!";
+                    Tips = $"{player.User.Mention} odrzucił propozycję wymiany!";
                     msgCh = true;
                     end = true;
                 }

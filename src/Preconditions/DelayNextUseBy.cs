@@ -89,16 +89,16 @@ namespace Sanakan.Preconditions
                     switch (_responseType)
                     {
                         case ResType.Nothing:
-                            return PreconditionResult.FromError($"{context.User.Mention} to polecenie możesz użyć raz na jakiś czas.");
+                            return PreconditionResult.FromError($"{context.User.Mention} tego polecenia możesz użyć raz na jakiś czas.");
 
                         case ResType.HourMin:
                             var min = (int)(lastUse + _time - tService.Now()).TotalMinutes;
-                            return PreconditionResult.FromError($"{context.User.Mention} to polecenie możesz użyć za {min / 60}h {min % 60}m.");
+                            return PreconditionResult.FromError($"{context.User.Mention} tego polecenia możesz użyć za {min / 60}h {min % 60}m.");
 
                         default:
                         case ResType.MinSec:
                             var sec = (int)(lastUse + _time - tService.Now()).TotalSeconds;
-                            return PreconditionResult.FromError($"{context.User.Mention} to polecenie możesz użyć za {sec / 60}m {sec % 60}s.");
+                            return PreconditionResult.FromError($"{context.User.Mention} tego polecenia możesz użyć za {sec / 60}m {sec % 60}s.");
                     }
                 }
 

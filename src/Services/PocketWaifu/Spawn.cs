@@ -254,7 +254,7 @@ namespace Sanakan.Services.PocketWaifu
             var character = await _waifu.GetRandomCharacterAsync(CharacterPoolType.Anime);
             if (character.CharInfo == null)
             {
-                _logger.LogError("In Satafi: bad shinden connection");
+                _logger.LogError("In Safari: bad shinden connection");
                 return;
             }
 

@@ -356,7 +356,7 @@ namespace Sanakan.Services.PocketWaifu
                 }
 
                 default:
-                    rewardInfo.Text = "Nic nie wgrywa?";
+                    rewardInfo.Text = "Nic nie wygrywa?";
                     rewardInfo.SubType = "Nic";
                     break;
             }

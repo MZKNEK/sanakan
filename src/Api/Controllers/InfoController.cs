@@ -28,7 +28,7 @@ namespace Sanakan.Api.Controllers
         }
 
         /// <summary>
-        /// Pobiera publiczną liste poleceń bota
+        /// Pobiera publiczną listę poleceń bota
         /// </summary>
         /// <response code="500">Internal Server Error</response>
         [HttpGet("commands")]
@@ -49,7 +49,7 @@ namespace Sanakan.Api.Controllers
         }
 
         /// <summary>
-        /// Pobiera liste poleceń moderatorskich i debug bota (token strony lub nagłówek x-app-key z uprawnieniem Info)
+        /// Pobiera listę poleceń moderatorskich i debug bota (token strony lub nagłówek x-app-key z uprawnieniem Info)
         /// </summary>
         /// <response code="500">Internal Server Error</response>
         [HttpGet("commands/private"), Authorize(Policy = "Info")]

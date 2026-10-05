@@ -12,7 +12,7 @@ namespace Sanakan.Api.Models
         /// </summary>
         public int TotalCards { get; set; }
         /// <summary>
-        /// Karty uwzględniające paginacje
+        /// Karty uwzględniające paginację
         /// </summary>
         public IEnumerable<CardFinalView> Cards { get; set; }
     }

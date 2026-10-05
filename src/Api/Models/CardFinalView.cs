@@ -45,7 +45,7 @@ namespace Sanakan.Api.Models
         /// </summary>
         public bool IsOnExpedition { get; set; }
         /// <summary>
-        /// Czy karta można wymienić
+        /// Czy kartę można wymienić
         /// </summary>
         public bool IsTradable { get; set; }
         /// <summary>
@@ -113,7 +113,7 @@ namespace Sanakan.Api.Models
         /// </summary>
         public int BaseHealth { get; set; }
         /// <summary>
-        /// Punkty życia karty zmienione o relacje
+        /// Punkty życia karty zmienione o relację
         /// </summary>
         public int FinalHealth { get; set; }
         /// <summary>
@@ -153,7 +153,7 @@ namespace Sanakan.Api.Models
         /// </summary>
         public Quality UltimateQuality { get; set; }
         /// <summary>
-        /// Ile razy karta ultimate zostala ulepszona ponad swoją jakość
+        /// Ile razy karta ultimate została ulepszona ponad swoją jakość
         /// </summary>
         public int UltimateOverflow { get; set; }
         /// <summary>

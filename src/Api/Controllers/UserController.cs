@@ -82,7 +82,7 @@ namespace Sanakan.Api.Controllers
         }
 
         /// <summary>
-        /// Pobieranie nazwę użytkownika z shindena
+        /// Pobiera nazwę użytkownika z shindena
         /// </summary>
         /// <param name="id">id użytkownika shindena</param>
         /// <returns>nazwa użytkownika</returns>
@@ -139,7 +139,7 @@ namespace Sanakan.Api.Controllers
         }
 
         /// <summary>
-        /// Pobieranie użytkownika bota z zmniejszoną ilością danych
+        /// Pobieranie użytkownika bota ze zmniejszoną ilością danych
         /// </summary>
         /// <param name="id">id użytkownika shindena</param>
         /// <returns>użytkownik bota</returns>

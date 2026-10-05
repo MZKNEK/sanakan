@@ -31,7 +31,7 @@ namespace Sanakan.Preconditions
                 if (botUser != null)
                 {
                     if (botUser.IsBlacklisted)
-                        return PreconditionResult.FromError($"{user.Mention} znajdujesz się na czarnej liście bota i nie możesz uzyć tego polecenia.");
+                        return PreconditionResult.FromError($"{user.Mention} znajdujesz się na czarnej liście bota i nie możesz użyć tego polecenia.");
 
                     if (botUser.Level >= _level)
                         return PreconditionResult.FromSuccess();

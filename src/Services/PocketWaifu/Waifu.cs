@@ -881,7 +881,7 @@ namespace Sanakan.Services.PocketWaifu
 
             if (selectedItem > itemsToBuy.Length)
             {
-                return $"{discordUser.Mention} nie odnaleznino takiego przedmiotu do zakupu.".ToEmbedMessage(EMType.Error).Build();
+                return $"{discordUser.Mention} nie odnaleziono takiego przedmiotu do zakupu.".ToEmbedMessage(EMType.Error).Build();
             }
 
             var thisItem = itemsToBuy[--selectedItem];
@@ -967,7 +967,7 @@ namespace Sanakan.Services.PocketWaifu
                     }
                     if (charsInTitle.Select(x => x.CharacterId).Where(x => x.HasValue).Distinct().Count() < minCharactersInPack)
                     {
-                        return $"{discordUser.Mention} nie można kupić pakietu z tytułu z mniejszą liczbą postaci jak {minCharactersInPack}.".ToEmbedMessage(EMType.Error).Build();
+                        return $"{discordUser.Mention} nie można kupić pakietu z tytułu z mniejszą liczbą postaci niż {minCharactersInPack}.".ToEmbedMessage(EMType.Error).Build();
                     }
                     boosterPackTitleName = $" ({titleInfo.Title})";
                     boosterPackTitleId = titleInfo.Id;
@@ -2106,7 +2106,7 @@ namespace Sanakan.Services.PocketWaifu
                 {
                     if (card.Curse == CardCurse.DereBlockade)
                     {
-                        reward += $"zmiana zablokowana przez klątwe.\n";
+                        reward += $"zmiana zablokowana przez klątwę.\n";
                     }
                     else
                     {
@@ -2356,7 +2356,7 @@ namespace Sanakan.Services.PocketWaifu
                 return ExecutionResult.FromError("tego przedmiotu nie można użyć za pomocą komendy `użyj`.");
 
             if (itemCnt != 1 && !item.Type.CanUseMoreThanOne(itemToExp))
-                return ExecutionResult.FromError("możesz użyć tylko jeden przedmiot tego typu na raz!");
+                return ExecutionResult.FromError("możesz użyć tylko jednego przedmiotu tego typu naraz!");
 
             var res = wid == 0 ? UseItem(item, user, itemCnt, itemToExp) : await UseItemOnCardAsync(item, user, userName, itemCnt, wid, detail);
             if (res.IsOk())
@@ -2434,7 +2434,7 @@ namespace Sanakan.Services.PocketWaifu
                         str.Append($"Dodano do wybranej części figurki {expFromPart:F} punktów konstrukcji. W sumie posiada ich {activeFigure.PartExp:F}.");
                         break;
                     }
-                    return ExecutionResult.FromError("nie możesz użyć szkieletu bez karty, chyba, że chcesz przerobić go na exp.");
+                    return ExecutionResult.FromError("nie możesz użyć szkieletu bez karty, chyba że chcesz przerobić go na exp.");
 
                 default:
                     return ExecutionResult.FromError($"tego przedmiotu ({item.Name}) nie powinno tutaj być!");
@@ -2765,7 +2765,7 @@ namespace Sanakan.Services.PocketWaifu
                         return ExecutionResult.FromError("karty **SSS** nie można już ulepszyć!");
 
                     if (card.UpgradesCnt + itemCnt > 5)
-                        return ExecutionResult.FromError("nie można mieć więcej jak pięć ulepszeń dostępnych na karcie.");
+                        return ExecutionResult.FromError("nie można mieć więcej niż pięć ulepszeń dostępnych na karcie.");
 
                     card.UpgradesCnt += itemCnt;
                     break;
@@ -2789,12 +2789,12 @@ namespace Sanakan.Services.PocketWaifu
                     if (itemCnt == 1 && Enum.TryParse<Dere>(detail, out var targetDere))
                     {
                         if (targetDere == Dere.Yato || targetDere == Dere.Yami || targetDere == Dere.Raito)
-                            return ExecutionResult.FromError("nie można zmienić charaketru na ten który został wybrany!");
+                            return ExecutionResult.FromError("nie można zmienić charakteru na ten który został wybrany!");
 
                         itemCnt = (int)RerollDereUntil(card, targetDere, item.Count, RandomizeDere);
                         karmaChange *= itemCnt;
                         affectionInc *= itemCnt;
-                        str.Append($"Użyto {itemCnt} przedmiotów by osiągnać cel!\n");
+                        str.Append($"Użyto {itemCnt} przedmiotów by osiągnąć cel!\n");
                     }
                     else
                     {

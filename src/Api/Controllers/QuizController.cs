@@ -23,7 +23,7 @@ namespace Sanakan.Api.Controllers
         }
 
         /// <summary>
-        /// Pobiera liste pytań
+        /// Pobiera listę pytań
         /// </summary>
         [HttpGet("questions")]
         public async Task<ActionResult<List<Database.Models.Question>>> GetQuestionsAsync()

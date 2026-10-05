@@ -141,7 +141,7 @@ namespace Sanakan.Modules
         }
 
         [Command("mute modifier")]
-        [Summary("dodaje modyfikacje muta")]
+        [Summary("dodaje modyfikację muta")]
         [Remarks("Karna"), RequireAnyAdminRoleOrChannelPermission(ChannelPermission.ManageRoles), Priority(1)]
         public async Task SetMuteModifierAsync([Summary("nazwa użytkownika")] SocketGuildUser user, [Summary("czas w godzinach (0 - kasacja)")] long duration, [Summary("typ (Constant/Growing)")] ModifierType type)
         {
@@ -318,7 +318,7 @@ namespace Sanakan.Modules
         }
 
         [Command("prefix")]
-        [Summary("ustawia prefix serwera (nie podanie - reset)")]
+        [Summary("ustawia prefix serwera (niepodanie - reset)")]
         [Remarks("."), RequireAdminRole]
         public async Task SetPrefixPerServerAsync([Summary("nowy prefix")] string prefix = null)
         {
@@ -367,7 +367,7 @@ namespace Sanakan.Modules
 
         [Command("przywitaniepw")]
         [Alias("welcomepw")]
-        [Summary("ustawia/wyświetla wiadomośc przywitania wysyłanego na pw")]
+        [Summary("ustawia/wyświetla wiadomość przywitania wysyłanego na pw")]
         [Remarks("No elo ^mention!"), RequireAdminRole]
         public async Task SetOrShowWelcomeMessagePWAsync([Summary("wiadomość (off - wyłączenie)")][Remainder] string messsage = null)
         {
@@ -376,7 +376,7 @@ namespace Sanakan.Modules
                 var config = await db.GetGuildConfigOrCreateAsync(Context.Guild.Id);
                 if (messsage == null)
                 {
-                    await SafeReplyAsync("", embed: $"**Wiadomość przywitalna pw:**\n\n{config?.WelcomeMessagePW ?? "off"}".ToEmbedMessage(EMType.Bot).Build());
+                    await SafeReplyAsync("", embed: $"**Wiadomość powitalna pw:**\n\n{config?.WelcomeMessagePW ?? "off"}".ToEmbedMessage(EMType.Bot).Build());
                     return;
                 }
 
@@ -449,7 +449,7 @@ namespace Sanakan.Modules
         }
 
         [Command("clean config")]
-        [Summary("przeczyszcza konfiguracje serwera z usuniętych ról i kanałów")]
+        [Summary("przeczyszcza konfigurację serwera z usuniętych ról i kanałów")]
         [Remarks(""), RequireAdminRole]
         public async Task CleanConfigAsync([Summary("id serwera")] ulong guildId = 0)
         {
@@ -556,7 +556,7 @@ namespace Sanakan.Modules
 
                 if (clearedRows < 1)
                 {
-                    await SafeReplyAsync("", embed: $"Konfiguracja serwera nie wymaga czyszcenia!".ToEmbedMessage(EMType.Info).Build());
+                    await SafeReplyAsync("", embed: $"Konfiguracja serwera nie wymaga czyszczenia!".ToEmbedMessage(EMType.Info).Build());
                     return;
                 }
 
@@ -568,7 +568,7 @@ namespace Sanakan.Modules
         }
 
         [Command("config")]
-        [Summary("wyświetla konfiguracje serwera")]
+        [Summary("wyświetla konfigurację serwera")]
         [Remarks("mods"), RequireAnyAdminRole]
         public async Task ShowConfigAsync([Summary("typ")][Remainder] Services.ConfigType type = Services.ConfigType.Global)
         {
@@ -622,7 +622,7 @@ namespace Sanakan.Modules
         }
 
         [Command("sadminr")]
-        [Summary("ustawia role semi administratora")]
+        [Summary("ustawia rolę semi administratora")]
         [Remarks("34125343243432"), RequireAdminRole]
         public async Task SetSemiAdminRoleAsync([Summary("id roli")] SocketRole role)
         {
@@ -651,7 +651,7 @@ namespace Sanakan.Modules
         }
 
         [Command("testr")]
-        [Summary("ustawia role testera")]
+        [Summary("ustawia rolę testera")]
         [Remarks("34125343243432"), RequireAdminRole]
         public async Task SetTesterRoleAsync([Summary("id roli")] SocketRole role)
         {
@@ -680,7 +680,7 @@ namespace Sanakan.Modules
         }
 
         [Command("userr")]
-        [Summary("ustawia role użytkownika")]
+        [Summary("ustawia rolę użytkownika")]
         [Remarks("34125343243432"), RequireAdminRole]
         public async Task SetUserRoleAsync([Summary("id roli")] SocketRole role)
         {
@@ -709,7 +709,7 @@ namespace Sanakan.Modules
         }
 
         [Command("nitror")]
-        [Summary("ustawia role nitro")]
+        [Summary("ustawia rolę nitro")]
         [Remarks("34125343243432"), RequireAdminRole]
         public async Task SetNitroRoleAsync([Summary("id roli")] SocketRole role)
         {
@@ -876,7 +876,7 @@ namespace Sanakan.Modules
 
                     QueryCacheManager.ExpireTag(new string[] { $"config-{Context.Guild.Id}" });
 
-                    await SafeReplyAsync("", embed: $"Usunięto {role.Mention} z listy roli moderatorów.".ToEmbedMessage(EMType.Success).Build());
+                    await SafeReplyAsync("", embed: $"Usunięto {role.Mention} z listy ról moderatorów.".ToEmbedMessage(EMType.Success).Build());
                     return;
                 }
 
@@ -913,7 +913,7 @@ namespace Sanakan.Modules
 
                     QueryCacheManager.ExpireTag(new string[] { $"config-{Context.Guild.Id}" });
 
-                    await SafeReplyAsync("", embed: $"Usunięto {role.Mention} z listy roli na poziom.".ToEmbedMessage(EMType.Success).Build());
+                    await SafeReplyAsync("", embed: $"Usunięto {role.Mention} z listy ról na poziom.".ToEmbedMessage(EMType.Success).Build());
                     return;
                 }
 
@@ -928,7 +928,7 @@ namespace Sanakan.Modules
         }
 
         [Command("selfrole")]
-        [Summary("dodaje/usuwa role do automatycznego zarządzania")]
+        [Summary("dodaje/usuwa rolę do automatycznego zarządzania")]
         [Remarks("34125343243432 newsy"), RequireAnyAdminRole]
         public async Task SetSelfRoleAsync([Summary("id roli")] SocketRole role, [Summary("nazwa")][Remainder] string name = null)
         {
@@ -950,7 +950,7 @@ namespace Sanakan.Modules
 
                     QueryCacheManager.ExpireTag(new string[] { $"config-{Context.Guild.Id}" });
 
-                    await SafeReplyAsync("", embed: $"Usunięto {role.Mention} z listy roli automatycznego zarządzania.".ToEmbedMessage(EMType.Success).Build());
+                    await SafeReplyAsync("", embed: $"Usunięto {role.Mention} z listy ról automatycznego zarządzania.".ToEmbedMessage(EMType.Success).Build());
                     return;
                 }
 
@@ -1382,7 +1382,7 @@ namespace Sanakan.Modules
         }
 
         [Command("wcmdch")]
-        [Summary("ustawia kanał poleneń waifu")]
+        [Summary("ustawia kanał poleceń waifu")]
         [Remarks(""), RequireAdminRole]
         public async Task SetCmdWaifuChannelAsync()
         {
@@ -1415,7 +1415,7 @@ namespace Sanakan.Modules
         }
 
         [Command("cmdch")]
-        [Summary("ustawia kanał poleneń")]
+        [Summary("ustawia kanał poleceń")]
         [Remarks(""), RequireAdminRole]
         public async Task SetCmdChannelAsync()
         {
@@ -1711,7 +1711,7 @@ namespace Sanakan.Modules
 
                 QueryCacheManager.ExpireTag(new string[] { $"config-{Context.Guild.Id}" });
 
-                await SafeReplyAsync("", embed: $"Tryb nadzoru - włączony?`{config.ChaosMode.GetYesNo()}`.".ToEmbedMessage(EMType.Success).Build());
+                await SafeReplyAsync("", embed: $"Tryb nadzoru - włączony? `{config.Supervision.GetYesNo()}`.".ToEmbedMessage(EMType.Success).Build());
             }
         }
 
@@ -1885,7 +1885,7 @@ namespace Sanakan.Modules
 
         [Command("raport")]
         [Alias("report")]
-        [Summary("rozwiązuje raport, nie podanie czasu odrzuca go, podanie czasu 0 ostrzega użytkownika")]
+        [Summary("rozwiązuje raport, niepodanie czasu odrzuca go, podanie czasu 0 ostrzega użytkownika")]
         [Remarks("2342123444212 4 kara dla Ciebie"), RequireAnyAdminRole, Priority(1)]
         public async Task ResolveReportAsync([Summary("id raportu")] ulong rId, [Summary("długość wyciszenia w h")] long duration = -1, [Summary("powód")][Remainder] string reason = "z raportu")
         {
@@ -1970,7 +1970,7 @@ namespace Sanakan.Modules
                 var user = Context.Guild.GetUser(raport.User);
                 if (user == null)
                 {
-                    await SafeReplyAsync("", embed: $"Użytkownika nie ma serwerze.".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"Użytkownika nie ma na serwerze.".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 

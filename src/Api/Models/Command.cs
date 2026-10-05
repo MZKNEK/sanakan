@@ -16,7 +16,7 @@ namespace Sanakan.Api.Models
         /// </summary>
         public string Description { get; set; }
         /// <summary>
-        /// Głowna nazwa
+        /// Główna nazwa
         /// </summary>
         public string Name { get; set; }
         /// <summary>

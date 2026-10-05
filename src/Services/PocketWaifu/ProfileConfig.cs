@@ -63,7 +63,7 @@ namespace Sanakan.Services.PocketWaifu
                 $"{ToPay(ProfileConfigType.BackgroundAndStyle, CurrencyType.SC)} / {ToPay(ProfileConfigType.BackgroundAndStyle, CurrencyType.TC)}",
                 $"**[2]** obrazek\n**[3]** obrazek na statystykach\n**[5]** duża galeria na obrazku\n**[6]** statystyki na obrazku\n**[8]** galeria z karcianką na obrazku"),
 
-            new OptionInfo("tło", "Pozwala ustwić obrazek w górnej części profilu o wymiarach 750 x 160px.",
+            new OptionInfo("tło", "Pozwala ustawić obrazek w górnej części profilu o wymiarach 750 x 160px.",
                 "konfiguracja profilu tło https://sanakan.pl/i/example_new_profile_bg.png", "`bezpośredni link do obrazka`",
                 $"{ToPay(ProfileConfigType.Background, CurrencyType.SC)} / {ToPay(ProfileConfigType.Background, CurrencyType.TC)}"),
 
@@ -72,7 +72,7 @@ namespace Sanakan.Services.PocketWaifu
                 $"{ToPay(ProfileConfigType.Style, CurrencyType.SC)} / {ToPay(ProfileConfigType.Style, CurrencyType.TC)}",
                 $"**[1]** statystyki\n**[2]** obrazek *(wymagany link)*\n**[3]** obrazek na statystykach *(wymagany link)*\n**[4]** duża galeria\n**[5]** duża galeria na obrazku *(wymagany link)*\n**[6]** statystyki na obrazku *(wymagany link)*\n**[7]** galeria z karcianką\n**[8]** galeria z karcianką na obrazku *(wymagany link)*"),
 
-            new OptionInfo("nakładka", "Pozwala ustwić obrazek będący prawie nad wszystkimi elementami w profilu zaczynający się od czarnego paska z nazwą użytkownika i idący do dołu profilu o wymiarach 750 x 402px.\n\n*Jeśli nakładka zasłoni nazwę użytkownika, to należy ją umieścić na nakładce w innym miejscu. W przeciwnym razie nakładka zostanie usunięta.*",
+            new OptionInfo("nakładka", "Pozwala ustawić obrazek będący prawie nad wszystkimi elementami w profilu zaczynający się od czarnego paska z nazwą użytkownika i idący do dołu profilu o wymiarach 750 x 402px.\n\n*Jeśli nakładka zasłoni nazwę użytkownika, to należy ją umieścić na nakładce w innym miejscu. W przeciwnym razie nakładka zostanie usunięta.*",
                 "konfiguracja profilu nakładka https://sanakan.pl/i/example_profile_overlay.png", "`bezpośredni link do obrazka`",
                 $"{ToPay(ProfileConfigType.Overlay, CurrencyType.SC)} / {ToPay(ProfileConfigType.Overlay, CurrencyType.TC)}"),
 
@@ -84,7 +84,7 @@ namespace Sanakan.Services.PocketWaifu
             new OptionInfo("przeźroczystość cieni", "Pozwala zmienić przeźroczystość czarnych cieni pod panelami profilu na wybranych stylach.",
                 "konfiguracja profilu przeźroczystość cieni 30", "`procent`"),
 
-            new OptionInfo("ultra nakładka", "Pozwala ustwić obrazek będący nad wszystkimi elementami w profilu poza paskiem o wymiarach 750 x 500px.\n\n*Jeśli nakładka zasłoni nazwę użytkownika, to należy ją umieścić na nakładce w innym miejscu. W przeciwnym razie nakładka zostanie usunięta.*",
+            new OptionInfo("ultra nakładka", "Pozwala ustawić obrazek będący nad wszystkimi elementami w profilu poza paskiem o wymiarach 750 x 500px.\n\n*Jeśli nakładka zasłoni nazwę użytkownika, to należy ją umieścić na nakładce w innym miejscu. W przeciwnym razie nakładka zostanie usunięta.*",
                 "konfiguracja profilu ultra nakładka https://sanakan.pl/i/example_profile_ult_overlay.png", "`bezpośredni link do obrazka`",
                 $"{ToPay(ProfileConfigType.PremiumOverlay, CurrencyType.SC)} / {ToPay(ProfileConfigType.PremiumOverlay, CurrencyType.TC)}"),
 
@@ -94,7 +94,7 @@ namespace Sanakan.Services.PocketWaifu
             new OptionInfo("manga", "Pozwala zmienić widoczność panelu statystyk mang, wymaga stylu wyświetlającego statystyki."),
             new OptionInfo("karcianka", "Pozwala zmienić widoczność panelu statystyk karcianki, wymaga stylu wyświetlającego statystyki."),
             new OptionInfo("mini galeria", "Pozwala zmienić widoczność panelu mini galerii, wymaga stylu wyświetlającego statystyki oraz mini galerię."),
-            new OptionInfo("ilość kart mini galerii", "Pozwala zmienić liczbe kart w mini galerii między 2 a 6, wymaga stylu wyświetlającego statystyki oraz mini galerie."),
+            new OptionInfo("ilość kart mini galerii", "Pozwala zmienić liczbę kart w mini galerii między 2 a 6, wymaga stylu wyświetlającego statystyki oraz mini galerię."),
             new OptionInfo("zamiana paneli", "Pozwala zamienić między sobą prawy i lewy panel wymaga stylu wyświetlającego statystyki."),
             new OptionInfo("ramka na poziom", "Pozwala aktywować ramkę awatara zależną od poziomu która działa wyłącznie z niektórymi ramkami."),
             new OptionInfo("okrągły awatar", "Pozwala aktywować zaokrąglony awatar, gdy nie mamy ustawionej ramki."),
@@ -194,11 +194,11 @@ namespace Sanakan.Services.PocketWaifu
             ProfileConfigType.BackgroundAndStyle => "zmieniony został styl oraz tło profilu.",
             ProfileConfigType.Background => "zmienione zostało tło profilu",
             ProfileConfigType.AvatarBorder => "zmieniona została ramka awatara.",
-            ProfileConfigType.AnimeStats => "zmieniona została widoczność panelu z statystykami anime.",
-            ProfileConfigType.MangaStats => "zmieniona została widoczność panelu z statystykami mang.",
+            ProfileConfigType.AnimeStats => "zmieniona została widoczność panelu ze statystykami anime.",
+            ProfileConfigType.MangaStats => "zmieniona została widoczność panelu ze statystykami mang.",
             ProfileConfigType.Bar => "zmieniona została pozycja paska profilu.",
             ProfileConfigType.CardCntInMiniGallery => "zmieniona została liczba kart w mini galerii.",
-            ProfileConfigType.CardsStats => "zmieniona została widoczność panelu z statystykami karcianki.",
+            ProfileConfigType.CardsStats => "zmieniona została widoczność panelu ze statystykami karcianki.",
             ProfileConfigType.FlipPanels => "panele stylu zostały ze sobą zamienione.",
             ProfileConfigType.MiniFavCard => "zmieniona została widoczność karty ustawionej jako waifu w prawym górnym rogu profilu.",
             ProfileConfigType.MiniGallery => "zmieniona została widoczność panelu mini galerii.",

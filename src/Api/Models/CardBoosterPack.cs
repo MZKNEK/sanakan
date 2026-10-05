@@ -11,11 +11,11 @@ namespace Sanakan.Api.Models
     public class CardBoosterPack
     {
         /// <summary>
-        /// Definuje czy kartami otrzymanymi z pakietu będzie można się wymieć
+        /// Definiuje czy kartami otrzymanymi z pakietu będzie można się wymienić
         /// </summary>
         public bool Tradable { get; set; }
         /// <summary>
-        /// Gwarantowana jakość jednej z kart, E - 100% losowanei
+        /// Gwarantowana jakość jednej z kart, E - 100% losowanie
         /// </summary>
         public Rarity Rarity { get; set; }
         /// <summary>
@@ -31,7 +31,7 @@ namespace Sanakan.Api.Models
         /// </summary>
         public int Count { get; set; }
         /// <summary>
-        /// Definuje jak będą losowane postacie do kart
+        /// Definiuje jak będą losowane postacie do kart
         /// </summary>
         public BoosterPackPool Pool { get; set; }
 

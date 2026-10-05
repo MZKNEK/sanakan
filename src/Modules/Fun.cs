@@ -411,7 +411,7 @@ namespace Sanakan.Modules
             }
             else if (answers > 1)
             {
-                await SafeReplyAsync("", false, $"{Context.User.Mention} wybrałeś więcej jak jedną odpowiedź!".ToEmbedMessage(EMType.Error).Build());
+                await SafeReplyAsync("", false, $"{Context.User.Mention} wybrałeś więcej niż jedną odpowiedź!".ToEmbedMessage(EMType.Error).Build());
             }
             else await SafeReplyAsync("", false, $"{Context.User.Mention} pudło!".ToEmbedMessage(EMType.Error).Build());
         }

@@ -51,7 +51,7 @@ namespace Sanakan.Extensions
 
         public static string ToName(this CardCurse curse) => curse switch
         {
-            CardCurse.BloodBlockade      => "blokada używania krwii",
+            CardCurse.BloodBlockade      => "blokada używania krwi",
             CardCurse.DereBlockade       => "blokada zmiany dere",
             CardCurse.ExpeditionBlockade => "blokada wypraw",
             CardCurse.InvertedItems      => "odwrócenie działania przedmiotów",
@@ -828,7 +828,7 @@ namespace Sanakan.Extensions
             => _starStyleParsingDic.TryGetValue(s.RemoveDiacritics().ToLower(), out type);
 
         public static StarStyle Parse(this StarStyle star, string s)
-            => star.TryParse(s, out var type) ? type : throw new Exception("Could't parse input!");
+            => star.TryParse(s, out var type) ? type : throw new Exception("Couldn't parse input!");
 
         public static ExecutionResult CanUpgradePower(this Card card, int by = 1)
         {
@@ -841,7 +841,7 @@ namespace Sanakan.Extensions
             var maxParams = 4900 * (int)card.Quality.Fake(card.BorderOverflow);
             if (currParams + by >= maxParams)
             {
-                return ExecutionResult.FromError("nie można już bardziej zwiekszyć parametrów na tej karcie.");
+                return ExecutionResult.FromError("nie można już bardziej zwiększyć parametrów na tej karcie.");
             }
 
             return ExecutionResult.FromSuccess("");

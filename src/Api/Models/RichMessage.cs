@@ -59,12 +59,12 @@ namespace Sanakan.Api.Models
     }
 
     /// <summary>
-    /// Wiadomośc Embed generowane przez discorda, jedno z pól opcjonalnych musi zostać sprecyzowane
+    /// Wiadomość Embed generowana przez discorda, jedno z pól opcjonalnych musi zostać sprecyzowane
     /// </summary>
     public class RichMessage
     {
         /// <summary>
-        /// Adres do kótego prowadzi tytuł wiadomości
+        /// Adres do którego prowadzi tytuł wiadomości
         /// </summary>
         public string Url { get; set; }
         /// <summary>

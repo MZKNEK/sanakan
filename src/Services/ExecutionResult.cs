@@ -68,7 +68,7 @@ namespace Sanakan.Services
                 break;
 
                 case ImageUrlCheckResult.TransformError:
-                    result.Message = "Nie udało się zamienić adresu znanego hosta na poprawy!";
+                    result.Message = "Nie udało się zamienić adresu znanego hosta na poprawny!";
                 break;
 
                 default:
