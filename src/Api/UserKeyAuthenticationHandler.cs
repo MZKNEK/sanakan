@@ -12,6 +12,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Sanakan.Config;
+using Sanakan.Config.Model;
 
 namespace Sanakan.Api
 {
@@ -47,7 +48,7 @@ namespace Sanakan.Api
                     return AuthenticateResult.Fail("User key is invalid");
 
                 var apps = _config.Get().UserKeyApps;
-                if (apps == null || !apps.Any(x => x.Bearer == userKey.Application))
+                if (apps == null || !apps.Any(x => x.Bearer == userKey.Application && x.Has(ApiAppPermission.UserKeys)))
                     return AuthenticateResult.Fail("Application is no longer authorized");
 
                 if (await db.Users.AsQueryable().AnyAsync(x => x.Id == userKey.UserId && x.IsBlacklisted))

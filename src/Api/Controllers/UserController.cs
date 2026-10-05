@@ -29,6 +29,8 @@ namespace Sanakan.Api.Controllers
     [Route("api/[controller]")]
     public class UserController : ControllerBase
     {
+        private const ulong MainGuildId = 245931283031523330;
+
         private readonly IConfig _config;
         private readonly ILogger _logger;
         private readonly ISystemTime _time;
@@ -169,6 +171,79 @@ namespace Sanakan.Api.Controllers
         }
 
         /// <summary>
+        /// Pobiera uprawnienia użytkownika na serwerze: dev, tester, admin, moderator itp. (token strony lub nagłówek x-app-key z uprawnieniem Info)
+        /// </summary>
+        /// <param name="id">id użytkownika discorda</param>
+        /// <param name="guildId">id serwera, domyślnie główny serwer</param>
+        /// <response code="404">Guild not found</response>
+        [HttpGet("discord/{id}/permissions"), Authorize(Policy = "Info")]
+        public async Task<ActionResult<UserPermissions>> GetUserPermissionsByDiscordIdAsync(ulong id, [FromQuery] ulong? guildId)
+        {
+            return await GetUserPermissionsAsync(id, guildId ?? MainGuildId);
+        }
+
+        /// <summary>
+        /// Pobiera uprawnienia użytkownika na serwerze: dev, tester, admin, moderator itp. (token strony lub nagłówek x-app-key z uprawnieniem Info)
+        /// </summary>
+        /// <param name="id">id użytkownika shindena</param>
+        /// <param name="guildId">id serwera, domyślnie główny serwer</param>
+        /// <response code="404">User or guild not found</response>
+        [HttpGet("shinden/{id}/permissions"), Authorize(Policy = "Info")]
+        public async Task<ActionResult<UserPermissions>> GetUserPermissionsByShindenIdAsync(ulong id, [FromQuery] ulong? guildId)
+        {
+            using (var db = new Database.DatabaseContext(_config))
+            {
+                var discordId = await db.Users.AsQueryable().Where(x => x.Shinden == id).AsNoTracking().Select(x => (ulong?)x.Id).FirstOrDefaultAsync();
+                if (discordId == null)
+                {
+                    return "User not found!".ToResponse(404);
+                }
+
+                return await GetUserPermissionsAsync(discordId.Value, guildId ?? MainGuildId);
+            }
+        }
+
+        private async Task<ActionResult<UserPermissions>> GetUserPermissionsAsync(ulong userId, ulong guildId)
+        {
+            var guild = _client.GetGuild(guildId);
+            if (guild == null)
+            {
+                return "Guild not found!".ToResponse(404);
+            }
+
+            var permissions = new UserPermissions
+            {
+                DiscordId = userId.ToString(),
+                GuildId = guildId.ToString(),
+                Dev = _config.Get().Dev?.Any(x => x == userId) ?? false
+            };
+
+            var user = guild.GetUser(userId);
+            if (user == null) return permissions;
+
+            using (var db = new Database.DatabaseContext(_config))
+            {
+                var gConfig = await db.GetCachedGuildFullConfigAsync(guildId);
+                bool hasRole(ulong roleId) => user.Roles.Any(x => x.Id == roleId);
+
+                permissions.OnGuild = true;
+                permissions.Admin = user.GuildPermissions.Administrator || (gConfig != null && hasRole(gConfig.AdminRole));
+                if (gConfig == null)
+                {
+                    permissions.User = true;
+                    return permissions;
+                }
+
+                permissions.Tester = hasRole(gConfig.TesterRole);
+                permissions.SemiAdmin = hasRole(gConfig.SemiAdminRole);
+                permissions.Moderator = gConfig.ModeratorRoles.Any(x => hasRole(x.Role));
+                permissions.User = permissions.Admin || guild.GetRole(gConfig.UserRole) == null || hasRole(gConfig.UserRole);
+            }
+
+            return permissions;
+        }
+
+        /// <summary>
         /// Zmienia użytkownikowi shindena nick
         /// </summary>
         /// <param name="id">id użytkownika shindena</param>
@@ -185,7 +260,7 @@ namespace Sanakan.Api.Controllers
                     return "User not found!".ToResponse(404);
                 }
 
-                var guild = _client.GetGuild(245931283031523330);
+                var guild = _client.GetGuild(MainGuildId);
                 if (guild == null)
                 {
                     return "Guild not found!".ToResponse(404);

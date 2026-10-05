@@ -21,7 +21,7 @@ namespace Sanakan.Config.Model
         public JwtConfig Jwt { get; set; }
         public bool GiveBanForUrlSpam { get; set; }
         public List<SanakanApiKey> ApiKeys { get; set; }
-        public List<SanakanApiKey> UserKeyApps { get; set; }
+        public List<ApiApp> UserKeyApps { get; set; }
         public List<RichMessageConfig> RMConfig { get; set; }
         public List<ulong> BlacklistedGuilds { get; set; }
         public LogChannelConfig LogChannel { get; set; } = new LogChannelConfig { GuildId = 428569745579704321, ChannelId = 1556085068051513394 };

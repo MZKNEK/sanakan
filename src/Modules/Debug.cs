@@ -1246,7 +1246,7 @@ namespace Sanakan.Modules
         }
 
         [Command("ukapps"), Priority(1), RequireDev]
-        [Summary("wyświetla aplikacje mogące generować klucze użytkowników")]
+        [Summary("wyświetla aplikacje z kluczem x-app-key i ich uprawnienia")]
         [Remarks("")]
         public async Task ShowUserKeyAppsAsync()
         {
@@ -1262,13 +1262,13 @@ namespace Sanakan.Modules
                 var counts = await db.UserApiKeys.AsQueryable().GroupBy(x => x.Application)
                     .Select(x => new { App = x.Key, Count = x.Count() }).ToListAsync();
 
-                var list = apps.Select(x => $"**{x.Bearer}** `{MaskKey(x.Key)}` kluczy: {counts.FirstOrDefault(c => c.App == x.Bearer)?.Count ?? 0}");
-                await SafeReplyAsync("", embed: $"**Aplikacje kluczy użytkowników:**\n\n{string.Join("\n", list)}".TrimToLength().ToEmbedMessage(EMType.Info).Build());
+                var list = apps.Select(x => $"**{x.Bearer}** `{MaskKey(x.Key)}` uprawnienia: `{x.Permissions}` kluczy: {counts.FirstOrDefault(c => c.App == x.Bearer)?.Count ?? 0}");
+                await SafeReplyAsync("", embed: $"**Aplikacje (x-app-key):**\n\n{string.Join("\n", list)}".TrimToLength().ToEmbedMessage(EMType.Info).Build());
             }
         }
 
         [Command("ukapp add"), Priority(1), RequireDev]
-        [Summary("dodaje aplikację mogącą generować klucze użytkowników lub zmienia jej klucz (klucz idzie na PW)")]
+        [Summary("dodaje aplikację (domyślnie z uprawnieniem UserKeys) lub zmienia jej klucz zachowując uprawnienia (klucz idzie na PW)")]
         [Remarks("strona")]
         public async Task AddUserKeyAppAsync([Summary("nazwa aplikacji")] string name)
         {
@@ -1291,9 +1291,10 @@ namespace Sanakan.Modules
             }
 
             var config = Config.Get();
-            var exists = config.UserKeyApps?.Any(x => x.Bearer == name) ?? false;
-            var apps = (config.UserKeyApps ?? new List<SanakanApiKey>()).Where(x => x.Bearer != name).ToList();
-            apps.Add(new SanakanApiKey { Key = key, Bearer = name });
+            var existing = config.UserKeyApps?.FirstOrDefault(x => x.Bearer == name);
+            var exists = existing != null;
+            var apps = (config.UserKeyApps ?? new List<ApiApp>()).Where(x => x.Bearer != name).ToList();
+            apps.Add(new ApiApp { Key = key, Bearer = name, Permissions = existing?.Permissions ?? ApiAppPermission.UserKeys });
 
             config.UserKeyApps = apps;
             Config.Save();
@@ -1325,6 +1326,30 @@ namespace Sanakan.Modules
 
                 await SafeReplyAsync("", embed: $"Usunięto aplikację **{name}** i `{keys.Count}` kluczy użytkowników.".ToEmbedMessage(EMType.Success).Build());
             }
+        }
+
+        [Command("ukapp perm"), Priority(1), RequireDev]
+        [Summary("przełącza uprawnienie aplikacji (UserKeys - generowanie i używanie kluczy użytkowników, Info - polecenia moderatorskie i uprawnienia użytkowników, Site - wszystko co strona)")]
+        [Remarks("strona Info")]
+        public async Task ToggleUserKeyAppPermissionAsync([Summary("nazwa aplikacji")] string name, [Summary("uprawnienie")] ApiAppPermission permission)
+        {
+            var app = Config.Get().UserKeyApps?.FirstOrDefault(x => x.Bearer == name);
+            if (app == null)
+            {
+                await SafeReplyAsync("", embed: $"Nie odnaleziono aplikacji **{name}**.".ToEmbedMessage(EMType.Error).Build());
+                return;
+            }
+
+            if (permission == ApiAppPermission.None)
+            {
+                await SafeReplyAsync("", embed: "Podaj konkretne uprawnienie.".ToEmbedMessage(EMType.Error).Build());
+                return;
+            }
+
+            app.Permissions ^= permission;
+            Config.Save();
+
+            await SafeReplyAsync("", embed: $"Uprawnienia aplikacji **{name}**: `{app.Permissions}`".ToEmbedMessage(EMType.Success).Build());
         }
 
         private static string MaskKey(string key)

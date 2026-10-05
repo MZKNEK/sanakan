@@ -1,13 +1,12 @@
 #pragma warning disable 1591
 
 using System.Linq;
-using System.Security.Cryptography;
-using System.Text;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Sanakan.Config;
+using Sanakan.Config.Model;
 using Sanakan.Extensions;
 using Sanakan.Services.Time;
 
@@ -32,7 +31,7 @@ namespace Sanakan.Api.Controllers
         /// <param name="id">id użytkownika discorda</param>
         /// <param name="appKey">klucz aplikacji</param>
         /// <response code="401">App Key Not Provided</response>
-        /// <response code="403">App Key Is Invalid</response>
+        /// <response code="403">App Key Is Invalid or app has no UserKeys permission</response>
         /// <response code="404">User not found</response>
         [HttpPost("discord/{id}"), AllowAnonymous]
         public async Task<IActionResult> GenerateUserKeyAsync(ulong id, [FromHeader(Name = "x-app-key")]string appKey)
@@ -72,7 +71,7 @@ namespace Sanakan.Api.Controllers
         /// <param name="id">id użytkownika discorda</param>
         /// <param name="appKey">klucz aplikacji</param>
         /// <response code="401">App Key Not Provided</response>
-        /// <response code="403">App Key Is Invalid</response>
+        /// <response code="403">App Key Is Invalid or app has no UserKeys permission</response>
         /// <response code="404">Key not found</response>
         [HttpDelete("discord/{id}"), AllowAnonymous]
         public async Task<IActionResult> RevokeUserKeyAsync(ulong id, [FromHeader(Name = "x-app-key")]string appKey)
@@ -110,9 +109,8 @@ namespace Sanakan.Api.Controllers
 
         private string Authenticate(string appKey)
         {
-            var provided = Encoding.UTF8.GetBytes(appKey);
-            return _config.Get().UserKeyApps?.FirstOrDefault(x => x.Key != null
-                && CryptographicOperations.FixedTimeEquals(Encoding.UTF8.GetBytes(x.Key), provided))?.Bearer;
+            var app = AppKeyAuthenticationHandler.FindApp(_config, appKey);
+            return app != null && app.Has(ApiAppPermission.UserKeys) ? app.Bearer : null;
         }
     }
 }

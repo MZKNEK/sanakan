@@ -107,7 +107,7 @@ namespace Sanakan.Api
 
         public static string GetClient(ClaimsPrincipal user)
         {
-            var app = user?.Claims.FirstOrDefault(x => x.Type == "UserKeyApp")?.Value;
+            var app = user?.Claims.FirstOrDefault(x => x.Type == "UserKeyApp" || x.Type == AppKeyAuthenticationHandler.AppClaim)?.Value;
             if (app != null)
                 return $"app:{app}";
 
@@ -123,6 +123,10 @@ namespace Sanakan.Api
                 var app = user.Claims.FirstOrDefault(x => x.Type == "UserKeyApp")?.Value;
                 return $"u{discordId} app:{app ?? "token"}";
             }
+
+            var appKey = user?.Claims.FirstOrDefault(x => x.Type == AppKeyAuthenticationHandler.AppClaim)?.Value;
+            if (appKey != null)
+                return $"app:{appKey}";
 
             var site = user?.Claims.FirstOrDefault(x => x.Type == ClaimTypes.Webpage)?.Value;
             return site != null ? $"site:{site}" : null;
