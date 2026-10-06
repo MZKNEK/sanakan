@@ -1369,7 +1369,7 @@ namespace Sanakan.Modules
             var info = $"**Heartbeat:** `{(enabled ? "włączony" : "wyłączony")}`\n"
                 + $"**URL:** `{(enabled ? cfg.Url : "-")}`\n"
                 + $"**Sekret:** `{(string.IsNullOrEmpty(cfg?.Secret) ? "brak" : MaskKey(cfg.Secret))}`\n"
-                + $"**Co ile:** `{Math.Max(cfg?.IntervalSeconds ?? 60, Services.Heartbeat.MinIntervalSeconds)} s`\n"
+                + $"**Co ile:** `{Services.Heartbeat.Interval.TotalSeconds} s` (do 3 prób po 5 s)\n"
                 + $"**Ostatnio wysłany:** {(lastSuccess.HasValue ? $"<t:{new DateTimeOffset(lastSuccess.Value).ToUnixTimeSeconds()}:R>" : "`jeszcze nie`")}"
                 + (_heartbeat.LastError != null ? $"\n**Ostatni błąd:** `{_heartbeat.LastError}`" : "");
 
@@ -1436,25 +1436,6 @@ namespace Sanakan.Modules
             Config.Save();
 
             await SafeReplyAsync("", embed: (generated ? "Ustawiono nowy sekret heartbeatu, poszedł na PW." : "Ustawiono sekret heartbeatu.").ToEmbedMessage(EMType.Success).Build());
-        }
-
-        [Command("heartbeat interval"), Priority(2), RequireDev]
-        [Summary("ustawia co ile sekund bot wysyła swój stan")]
-        [Remarks("60")]
-        public async Task SetHeartbeatIntervalAsync([Summary("sekundy")] int seconds)
-        {
-            if (seconds < Services.Heartbeat.MinIntervalSeconds)
-            {
-                await SafeReplyAsync("", embed: $"Najmniej `{Services.Heartbeat.MinIntervalSeconds}` s.".ToEmbedMessage(EMType.Error).Build());
-                return;
-            }
-
-            var config = Config.Get();
-            config.Heartbeat ??= new HeartbeatConfig();
-            config.Heartbeat.IntervalSeconds = seconds;
-            Config.Save();
-
-            await SafeReplyAsync("", embed: $"Heartbeat co `{seconds}` s (od następnego wysłania).".ToEmbedMessage(EMType.Success).Build());
         }
 
         [Command("heartbeat test", RunMode = RunMode.Async), Priority(2), RequireDev]

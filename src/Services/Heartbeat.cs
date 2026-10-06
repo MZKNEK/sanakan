@@ -1,6 +1,8 @@
 #pragma warning disable 1591
 
 using System;
+using System.Diagnostics;
+using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
@@ -15,13 +17,14 @@ using Shinden.Logger;
 
 namespace Sanakan.Services
 {
-    // Wysyła stan bota na zewnętrzny adres - działa też wtedy, gdy API bota jest nieosiągalne z zewnątrz.
+    // Co minutę wysyła stan bota na zewnętrzny adres - działa też wtedy, gdy API bota jest nieosiągalne z zewnątrz.
     public class Heartbeat
     {
-        public const int MinIntervalSeconds = 10;
+        public static readonly TimeSpan Interval = TimeSpan.FromMinutes(1);
         private static readonly TimeSpan FirstDelay = TimeSpan.FromSeconds(30);
-        private static readonly TimeSpan DisabledRecheck = TimeSpan.FromMinutes(1);
-        private static readonly TimeSpan RequestTimeout = TimeSpan.FromSeconds(10);
+        private static readonly TimeSpan RequestTimeout = TimeSpan.FromSeconds(5);
+        private static readonly TimeSpan RetryDelay = TimeSpan.FromSeconds(3);
+        private const int Attempts = 3;
 
         private static readonly JsonSerializerSettings _json = new JsonSerializerSettings
         {
@@ -33,16 +36,18 @@ namespace Sanakan.Services
         private readonly IConfig _config;
         private readonly ILogger _logger;
         private readonly HttpClient _http;
+        private readonly Func<TimeSpan, Task> _delay;
         private Timer _timer;
         private volatile bool _failing;
         private long _lastSuccessTicks;
         private volatile string _lastError;
 
-        public Heartbeat(Func<Task<HealthStatus>> status, IConfig config, ILogger logger, HttpMessageHandler handler = null)
+        public Heartbeat(Func<Task<HealthStatus>> status, IConfig config, ILogger logger, HttpMessageHandler handler = null, Func<TimeSpan, Task> delay = null)
         {
             _status = status;
             _config = config;
             _logger = logger;
+            _delay = delay ?? (x => Task.Delay(x));
             _http = new HttpClient(handler ?? new HttpClientHandler()) { Timeout = RequestTimeout };
         }
 
@@ -62,44 +67,87 @@ namespace Sanakan.Services
             _timer = new Timer(_ => _ = TickAsync(), null, FirstDelay, Timeout.InfiniteTimeSpan);
         }
 
+        // kolejne wysłanie minutę po początku poprzedniego, niezależnie od ponowień
         private async Task TickAsync()
         {
+            var watch = Stopwatch.StartNew();
             try
             {
                 await SendAsync().ConfigureAwait(false);
             }
             finally
             {
-                _timer.Change(GetInterval(), Timeout.InfiniteTimeSpan);
+                var next = Interval - watch.Elapsed;
+                _timer.Change(next > TimeSpan.FromSeconds(1) ? next : TimeSpan.FromSeconds(1), Timeout.InfiniteTimeSpan);
             }
         }
 
-        // false - wyłączony w konfiguracji lub wysłanie się nie udało
+        // false - wyłączony w konfiguracji lub wysłanie się nie udało mimo ponowień
         public async Task<bool> SendAsync()
         {
             var cfg = _config.Get()?.Heartbeat;
             if (string.IsNullOrWhiteSpace(cfg?.Url))
                 return false;
 
+            string body;
+            string version;
             try
             {
                 var status = await _status().ConfigureAwait(false);
-                using var request = new HttpRequestMessage(HttpMethod.Post, cfg.Url)
-                {
-                    Content = new StringContent(JsonConvert.SerializeObject(status, _json), Encoding.UTF8, "application/json"),
-                };
-                if (!string.IsNullOrEmpty(cfg.Secret))
-                    request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", cfg.Secret);
-
-                using var response = await _http.SendAsync(request).ConfigureAwait(false);
-                if (!response.IsSuccessStatusCode)
-                    return Failed($"odpowiedź {(int)response.StatusCode}");
+                body = JsonConvert.SerializeObject(status, _json);
+                version = string.IsNullOrEmpty(status?.Version) ? "unknown" : status.Version;
             }
             catch (Exception ex)
             {
-                return Failed(ex is OperationCanceledException ? "timeout" : ex.Message);
+                return Failed($"stan bota: {ex.Message}");
             }
 
+            string reason = null;
+            for (int attempt = 1; attempt <= Attempts; attempt++)
+            {
+                if (attempt > 1)
+                    await _delay(RetryDelay).ConfigureAwait(false);
+
+                bool retry;
+                (reason, retry) = await TrySendAsync(cfg.Url, cfg.Secret, body, version).ConfigureAwait(false);
+                if (reason == null)
+                    return Succeeded();
+                if (!retry)
+                    break;
+            }
+
+            return Failed(reason);
+        }
+
+        // (null, _) - wysłane; (powód, czy ponowić)
+        private async Task<(string Reason, bool Retry)> TrySendAsync(string url, string secret, string body, string version)
+        {
+            try
+            {
+                using var request = new HttpRequestMessage(HttpMethod.Post, url)
+                {
+                    Content = new StringContent(body, Encoding.UTF8, "application/json"),
+                };
+                request.Headers.TryAddWithoutValidation("User-Agent", $"SanakanBot/{version} (heartbeat; +https://sanakan.pl)");
+                if (!string.IsNullOrEmpty(secret))
+                    request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", secret);
+
+                using var response = await _http.SendAsync(request).ConfigureAwait(false);
+                if (response.IsSuccessStatusCode)
+                    return (null, false);
+
+                var code = (int)response.StatusCode;
+                // błędy serwera (też 52x Cloudflare) mijają, zły sekret czy adres - nie
+                return ($"odpowiedź {code}", code >= 500 || response.StatusCode is HttpStatusCode.RequestTimeout or HttpStatusCode.TooManyRequests);
+            }
+            catch (Exception ex)
+            {
+                return (ex is OperationCanceledException ? "timeout" : ex.Message, true);
+            }
+        }
+
+        private bool Succeeded()
+        {
             Interlocked.Exchange(ref _lastSuccessTicks, DateTime.UtcNow.Ticks);
             _lastError = null;
             if (_failing)
@@ -120,15 +168,6 @@ namespace Sanakan.Services
                 _logger.LogError($"Heartbeat: nie udało się wysłać stanu: {reason}");
             }
             return false;
-        }
-
-        private TimeSpan GetInterval()
-        {
-            var cfg = _config.Get()?.Heartbeat;
-            if (string.IsNullOrWhiteSpace(cfg?.Url))
-                return DisabledRecheck;
-
-            return TimeSpan.FromSeconds(Math.Max(cfg.IntervalSeconds, MinIntervalSeconds));
         }
     }
 }
