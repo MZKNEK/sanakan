@@ -21,7 +21,7 @@ namespace Sanakan.Api.Controllers
         /// <summary>
         /// Pobiera stan bota (Discord, baza, Shinden, ruch poleceń)
         /// </summary>
-        /// <remarks>Odpowiedź jest trzymana w pamięci przez 15 s. Bazy i Shindena nie sprawdzamy, jeśli bot korzystał z nich poprawnie w bieżącej minucie; w przeciwnym razie wynik sprawdzenia jest trzymany przez 20 s.</remarks>
+        /// <remarks>Odpowiedź jest trzymana w pamięci przez 15 s. Bazy i Shindena nie sprawdzamy, jeśli bot korzystał z nich poprawnie w bieżącej minucie; w przeciwnym razie wynik sprawdzenia jest trzymany przez 20 s. Po nieudanym zapytaniu do Shindena przez 2 minuty zgłaszamy go jako niedziałający bez sprawdzania.</remarks>
         /// <response code="200">Stan ok lub degraded</response>
         /// <response code="503">Stan down - bot nie jest połączony z Discordem</response>
         [HttpGet, AllowAnonymous]
@@ -33,5 +33,15 @@ namespace Sanakan.Api.Controllers
             var health = await _health.GetAsync();
             return StatusCode(health.Status == HealthMonitor.Down ? 503 : 200, health);
         }
+
+        /// <summary>
+        /// Czy API bota odpowiada - zwraca "ok" bez sprawdzania czegokolwiek
+        /// </summary>
+        /// <response code="200">ok</response>
+        [HttpGet("/api/alive"), AllowAnonymous]
+        [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
+        [Produces("text/plain")]
+        [ProducesResponseType(typeof(string), 200)]
+        public ContentResult GetAlive() => Content("ok", "text/plain");
     }
 }

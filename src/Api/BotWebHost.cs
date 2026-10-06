@@ -200,7 +200,7 @@ namespace Sanakan.Api
             {
                 var watch = System.Diagnostics.Stopwatch.StartNew();
                 await next();
-                if (context.Request.Path.StartsWithSegments("/api/health")) return;
+                if (context.Request.Path.StartsWithSegments("/api/health") || context.Request.Path.StartsWithSegments("/api/alive")) return;
 
                 ApiStats.Add(context);
                 var entry = ApiAudit.Describe(context, watch.ElapsedMilliseconds);

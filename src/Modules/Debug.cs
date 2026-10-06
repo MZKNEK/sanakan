@@ -41,10 +41,12 @@ namespace Sanakan.Modules
         private Services.Helper _helper;
         private ShindenClient _shClient;
         private Services.ImageProcessing _img;
+        private Services.Heartbeat _heartbeat;
 
         public Debug(Waifu waifu, ShindenClient shClient, Services.Helper helper, Services.ImageProcessing img,
-            IConfig config, IExecutor executor, Spawn spawn, ISystemTime time, EmoteCounter counter)
+            IConfig config, IExecutor executor, Spawn spawn, ISystemTime time, EmoteCounter counter, Services.Heartbeat heartbeat)
         {
+            _heartbeat = heartbeat;
             _shClient = shClient;
             _executor = executor;
             _eCounter = counter;
@@ -1354,6 +1356,121 @@ namespace Sanakan.Modules
 
         private static string MaskKey(string key)
             => string.IsNullOrEmpty(key) || key.Length <= 12 ? "***" : $"{key.Substring(0, 8)}…";
+
+        [Command("heartbeat"), Priority(1), RequireDev]
+        [Summary("wyświetla konfigurację i stan heartbeatu (bot wysyła swój stan na stronę)")]
+        [Remarks("")]
+        public async Task ShowHeartbeatAsync()
+        {
+            var cfg = Config.Get().Heartbeat;
+            var enabled = !string.IsNullOrWhiteSpace(cfg?.Url);
+            var lastSuccess = _heartbeat.LastSuccess;
+
+            var info = $"**Heartbeat:** `{(enabled ? "włączony" : "wyłączony")}`\n"
+                + $"**URL:** `{(enabled ? cfg.Url : "-")}`\n"
+                + $"**Sekret:** `{(string.IsNullOrEmpty(cfg?.Secret) ? "brak" : MaskKey(cfg.Secret))}`\n"
+                + $"**Co ile:** `{Math.Max(cfg?.IntervalSeconds ?? 60, Services.Heartbeat.MinIntervalSeconds)} s`\n"
+                + $"**Ostatnio wysłany:** {(lastSuccess.HasValue ? $"<t:{new DateTimeOffset(lastSuccess.Value).ToUnixTimeSeconds()}:R>" : "`jeszcze nie`")}"
+                + (_heartbeat.LastError != null ? $"\n**Ostatni błąd:** `{_heartbeat.LastError}`" : "");
+
+            await SafeReplyAsync("", embed: info.TrimToLength().ToEmbedMessage(_heartbeat.Failing ? EMType.Warning : EMType.Info).Build());
+        }
+
+        [Command("heartbeat url"), Priority(2), RequireDev]
+        [Summary("ustawia adres, na który bot wysyła swój stan (off - wyłącza)")]
+        [Remarks("https://sanakan.pl/alive/")]
+        public async Task SetHeartbeatUrlAsync([Summary("adres albo off")] string url)
+        {
+            var config = Config.Get();
+            config.Heartbeat ??= new HeartbeatConfig();
+
+            if (url.Equals("off", StringComparison.OrdinalIgnoreCase))
+            {
+                config.Heartbeat.Url = null;
+                Config.Save();
+                await SafeReplyAsync("", embed: "Heartbeat wyłączony.".ToEmbedMessage(EMType.Success).Build());
+                return;
+            }
+
+            if (!Uri.TryCreate(url, UriKind.Absolute, out var uri) || (uri.Scheme != Uri.UriSchemeHttps && uri.Scheme != Uri.UriSchemeHttp))
+            {
+                await SafeReplyAsync("", embed: "Podaj pełny adres http(s).".ToEmbedMessage(EMType.Error).Build());
+                return;
+            }
+
+            config.Heartbeat.Url = uri.ToString();
+            Config.Save();
+
+            var hint = uri.AbsolutePath.EndsWith("/") ? "" : "\nUwaga: adres bez `/` na końcu - przekierowanie zamieni POST na GET.";
+            await SafeReplyAsync("", embed: $"Heartbeat wysyła na `{uri}`.{hint}".ToEmbedMessage(EMType.Success).Build());
+        }
+
+        [Command("heartbeat secret"), Priority(2), RequireDev]
+        [Summary("ustawia sekret heartbeatu; bez wartości generuje nowy i wysyła go na PW")]
+        [Remarks("")]
+        public async Task SetHeartbeatSecretAsync([Summary("sekret (opcjonalnie)")] string secret = null)
+        {
+            var generated = string.IsNullOrWhiteSpace(secret);
+            if (generated)
+            {
+                secret = Convert.ToHexString(System.Security.Cryptography.RandomNumberGenerator.GetBytes(32)).ToLowerInvariant();
+                try
+                {
+                    var dm = await Context.User.CreateDMChannelAsync();
+                    await dm.SendMessageAsync("", embed: $"Sekret heartbeatu (`BOT_HEARTBEAT_SECRET` w `inc/config.php` strony):\n\n`{secret}`".ToEmbedMessage(EMType.Info).Build());
+                }
+                catch (Exception)
+                {
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} nie można wysłać do Ciebie PW, sekret nie został zmieniony!".ToEmbedMessage(EMType.Error).Build());
+                    return;
+                }
+            }
+            else
+            {
+                try { await Context.Message.DeleteAsync(); } catch (Exception) { }
+            }
+
+            var config = Config.Get();
+            config.Heartbeat ??= new HeartbeatConfig();
+            config.Heartbeat.Secret = secret;
+            Config.Save();
+
+            await SafeReplyAsync("", embed: (generated ? "Ustawiono nowy sekret heartbeatu, poszedł na PW." : "Ustawiono sekret heartbeatu.").ToEmbedMessage(EMType.Success).Build());
+        }
+
+        [Command("heartbeat interval"), Priority(2), RequireDev]
+        [Summary("ustawia co ile sekund bot wysyła swój stan")]
+        [Remarks("60")]
+        public async Task SetHeartbeatIntervalAsync([Summary("sekundy")] int seconds)
+        {
+            if (seconds < Services.Heartbeat.MinIntervalSeconds)
+            {
+                await SafeReplyAsync("", embed: $"Najmniej `{Services.Heartbeat.MinIntervalSeconds}` s.".ToEmbedMessage(EMType.Error).Build());
+                return;
+            }
+
+            var config = Config.Get();
+            config.Heartbeat ??= new HeartbeatConfig();
+            config.Heartbeat.IntervalSeconds = seconds;
+            Config.Save();
+
+            await SafeReplyAsync("", embed: $"Heartbeat co `{seconds}` s (od następnego wysłania).".ToEmbedMessage(EMType.Success).Build());
+        }
+
+        [Command("heartbeat test", RunMode = RunMode.Async), Priority(2), RequireDev]
+        [Summary("wysyła stan bota od razu i pokazuje wynik")]
+        [Remarks("")]
+        public async Task TestHeartbeatAsync()
+        {
+            if (string.IsNullOrWhiteSpace(Config.Get().Heartbeat?.Url))
+            {
+                await SafeReplyAsync("", embed: "Heartbeat jest wyłączony, ustaw adres: `dev heartbeat url`.".ToEmbedMessage(EMType.Error).Build());
+                return;
+            }
+
+            var ok = await _heartbeat.SendAsync();
+            await SafeReplyAsync("", embed: (ok ? "Wysłano." : $"Nie udało się: `{_heartbeat.LastError}`").ToEmbedMessage(ok ? EMType.Success : EMType.Error).Build());
+        }
 
         [Command("force clean", RunMode = RunMode.Async), Priority(1), RequireDev]
         [Summary("wymusza czyszczenie obrazków kart")]

@@ -13,6 +13,7 @@ namespace Sanakan.Services
         private long _minMs = -1;
         private long _lastMs = -1;
         private bool _lastFailed;
+        private long _failureMinute = -1;
 
         public RecentLatency(Func<long> clock = null)
         {
@@ -43,9 +44,20 @@ namespace Sanakan.Services
 
         public void Failure()
         {
+            var minute = _clock();
             lock (_lock)
             {
                 _lastFailed = true;
+                _failureMinute = minute;
+            }
+        }
+
+        // ostatnia odpowiedź się nie udała i było to w bieżącej lub jednej z (minutes - 1) poprzednich minut
+        public bool FailedWithin(int minutes)
+        {
+            lock (_lock)
+            {
+                return _lastFailed && _clock() - _failureMinute < minutes;
             }
         }
 

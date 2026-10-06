@@ -34,6 +34,7 @@ namespace Sanakan
         private ImageProcessing _img;
         private DeletedLog _deleted;
         private HealthMonitor _health;
+        private Heartbeat _heartbeat;
         private Daemonizer _daemon;
         private Greeting _greeting;
         private ISystemTime _time;
@@ -70,6 +71,7 @@ namespace Sanakan
             _executor.Initialize(services);
             _sessions.Initialize(services);
             await _handler.InitializeAsync(services, _helper);
+            _heartbeat.Start();
 
             await Task.Delay(-1);
         }
@@ -130,6 +132,7 @@ namespace Sanakan
                 LogLevel.Information, tmpCnf.Shinden.BaseUri, TimeSpan.FromSeconds(10));
 
             _health = new HealthMonitor(_client, _shindenClient, _config);
+            _heartbeat = new Heartbeat(_health.GetAsync, _config, _logger);
             _time = new SystemTime();
             _events = new Events(_time);
             _helper = new Helper(_config, _logger);
@@ -184,6 +187,7 @@ namespace Sanakan
             return new ServiceCollection()
                 .AddSingleton<IExecutor>(_executor)
                 .AddSingleton(_shindenClient)
+                .AddSingleton(_heartbeat)
                 .AddSingleton(_expedition)
                 .AddSingleton(_sessions)
                 .AddSingleton(_eCounter)

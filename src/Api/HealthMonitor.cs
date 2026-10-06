@@ -24,6 +24,8 @@ namespace Sanakan.Api
 
         private const int HighLatencyMs = 1000;
         private const string ShindenProbeUser = "sniku";
+        // po nieudanym zapytaniu do Shindena nie sprawdzamy go przez tyle minut - nie dokładamy mu zapytań, gdy leży
+        private const int ShindenFailureHoldMinutes = 2;
         private static readonly TimeSpan ProbeCacheTime = TimeSpan.FromSeconds(20);
         private static readonly TimeSpan ResponseCacheTime = TimeSpan.FromSeconds(15);
         private static readonly TimeSpan ProbeTimeout = TimeSpan.FromSeconds(5);
@@ -62,7 +64,9 @@ namespace Sanakan.Api
         private async Task<HealthStatus> BuildAsync()
         {
             var shindenActivity = ShindenActivity.Default;
-            var shindenTask = GetRecentOrProbeAsync(shindenActivity.Recent.Get(), _shinden);
+            var shindenTask = shindenActivity.Recent.FailedWithin(ShindenFailureHoldMinutes)
+                ? Task.FromResult(new HealthProbe { Ok = false })
+                : GetRecentOrProbeAsync(shindenActivity.Recent.Get(), _shinden);
             var database = await GetRecentOrProbeAsync(Database.DbActivity.GetRecentLatencyMs(), _database);
             var shinden = await shindenTask;
 
