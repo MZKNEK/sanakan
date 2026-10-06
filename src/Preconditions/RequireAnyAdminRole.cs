@@ -37,7 +37,7 @@ namespace Sanakan.Preconditions
         private PreconditionResult CheckUser(SocketGuildUser user)
         {
             if (user.GuildPermissions.Administrator) return PreconditionResult.FromSuccess();
-            return PreconditionResult.FromError($"|IMAGE|https://i.giphy.com/RX3vhj311HKLe.gif");
+            return PreconditionResult.FromError($"|IMAGE|https://sanakan.pl/i/gif/no_power.gif");
         }
     }
 }

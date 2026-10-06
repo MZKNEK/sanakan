@@ -32,7 +32,7 @@ namespace Sanakan.Preconditions
 
             await Task.CompletedTask;
 
-            return PreconditionResult.FromError($"|IMAGE|https://i.giphy.com/d1E1msx7Yw5Ne1Fe.gif");
+            return PreconditionResult.FromError($"|IMAGE|https://sanakan.pl/i/gif/not_here.gif");
         }
     }
 }
