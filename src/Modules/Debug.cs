@@ -281,7 +281,13 @@ namespace Sanakan.Modules
             using (var db = new Database.DatabaseContext(Config))
             {
                 var bUsers = await db.Users.AsQueryable().Where(x => x.IsBlacklisted).AsNoTracking().ToListAsync();
-                await SafeReplyAsync("", embed: $"**Czarna lista:**\n\n{string.Join("\n", bUsers.Select(x => (Context.Client.GetUserAsync(x.Id).GetAwaiter().GetResult()?.Username ?? "????") + $" {x.Id}"))}".ToEmbedMessage(EMType.Info).Build());
+                var lines = new List<string>();
+                foreach (var bUser in bUsers)
+                {
+                    var discordUser = await Context.Client.GetUserAsync(bUser.Id);
+                    lines.Add((discordUser?.Username ?? "????") + $" {bUser.Id}");
+                }
+                await SafeReplyAsync("", embed: $"**Czarna lista:**\n\n{string.Join("\n", lines)}".ToEmbedMessage(EMType.Info).Build());
             }
         }
 
@@ -297,7 +303,7 @@ namespace Sanakan.Modules
                 targetUser.IsBlacklisted = !targetUser.IsBlacklisted;
                 await db.SaveChangesAsync();
 
-                QueryCacheManager.ExpireTag(new string[] { $"user-{Context.User.Id}", "users" });
+                QueryCacheManager.ExpireTag(new string[] { $"user-{user.Id}", "users" });
 
                 await SafeReplyAsync("", embed: $"{user.Mention} - blacklist: {targetUser.IsBlacklisted}".ToEmbedMessage(EMType.Success).Build());
             }
@@ -315,7 +321,7 @@ namespace Sanakan.Modules
                 targetUser.PoolType = poolType;
                 await db.SaveChangesAsync();
 
-                QueryCacheManager.ExpireTag(new string[] { $"user-{Context.User.Id}", "users" });
+                QueryCacheManager.ExpireTag(new string[] { $"user-{user.Id}", "users" });
 
                 await SafeReplyAsync("", embed: $"{user.Mention}: {targetUser.PoolType}".ToEmbedMessage(EMType.Success).Build());
             }
@@ -411,7 +417,7 @@ namespace Sanakan.Modules
 
                 await db.SaveChangesAsync();
 
-                QueryCacheManager.ExpireTag(new string[] { $"users" });
+                QueryCacheManager.ExpireTag(new string[] { $"user-{user.Id}", "users" });
 
                 await SafeReplyAsync("", embed: $"Zaktualizowano {cards.Count} kart.".ToEmbedMessage(EMType.Success).Build());
             }
@@ -431,6 +437,7 @@ namespace Sanakan.Modules
                     return;
                 }
 
+                var userRelease = new List<string>() { "users" };
                 foreach (var card in cards)
                 {
                     try
@@ -445,11 +452,13 @@ namespace Sanakan.Modules
                     {
                         Logger?.LogError($"dev: aktualizacja karty {card.Id}: {ex.Message}");
                     }
+
+                    userRelease.Add($"user-{card.GameDeckId}");
                 }
 
                 await db.SaveChangesAsync();
 
-                QueryCacheManager.ExpireTag(new string[] { $"users" });
+                QueryCacheManager.ExpireTag(userRelease.ToArray());
 
                 await SafeReplyAsync("", embed: $"Zaktualizowano {cards.Count} kart.".ToEmbedMessage(EMType.Success).Build());
             }
@@ -481,7 +490,7 @@ namespace Sanakan.Modules
 
                 await db.SaveChangesAsync();
 
-                QueryCacheManager.ExpireTag(new string[] { $"users" });
+                QueryCacheManager.ExpireTag(new string[] { $"user-{card.GameDeckId}", "users" });
 
                 await SafeReplyAsync("", embed: $"Zmieniono kartę.".ToEmbedMessage(EMType.Success).Build());
             }
@@ -753,7 +762,7 @@ namespace Sanakan.Modules
                     await db.SaveChangesAsync();
                     await msg.DeleteAsync();
 
-                    QueryCacheManager.ExpireTag(new string[] { $"user-{Context.User.Id}", "users", $"user-{id}" });
+                    QueryCacheManager.ExpireTag(new string[] { $"user-{id}", $"user-{winner.Id}", "users" });
 
                     var msgType = wonSSS ? EMType.Warning : EMType.Success;
                     var embToSend =  $"Loterię wygrywa {winner.Mention} i otrzymuje:\n\n{string.Join("\n", cardsIds.OrderBy(x => x))}".TrimToLength().ToEmbedMessage(msgType);
@@ -855,15 +864,17 @@ namespace Sanakan.Modules
                 string reply = $"Karta {thisCards.First().GetString(false, false, true)} została skasowana.";
                 if (thisCards.Count > 1) reply = $"Skasowano {thisCards.Count} kart.";
 
+                var userRelease = new List<string>() { "users" };
                 foreach (var thisCard in thisCards)
                 {
                     _waifu.DeleteCardImageIfExist(thisCard);
                     db.Cards.Remove(thisCard);
+                    userRelease.Add($"user-{thisCard.GameDeckId}");
                 }
 
                 await db.SaveChangesAsync();
 
-                QueryCacheManager.ExpireTag(new string[] { "users" });
+                QueryCacheManager.ExpireTag(userRelease.ToArray());
 
                 await SafeReplyAsync("", embed: reply.ToEmbedMessage(EMType.Success).Build());
             }
@@ -889,7 +900,7 @@ namespace Sanakan.Modules
 
                 await db.SaveChangesAsync();
 
-                QueryCacheManager.ExpireTag(new string[] { $"user-{Context.User.Id}", "users" });
+                QueryCacheManager.ExpireTag(new string[] { $"user-{user.Id}", "users" });
 
                 await SafeReplyAsync("", embed: $"Zresetowano profil użytkownika: {user.Mention}".ToEmbedMessage(EMType.Success).Build());
             }
@@ -909,7 +920,7 @@ namespace Sanakan.Modules
 
                 await db.SaveChangesAsync();
 
-                QueryCacheManager.ExpireTag(new string[] { $"user-{Context.User.Id}", "users" });
+                QueryCacheManager.ExpireTag(new string[] { $"user-{user.Id}", "users" });
 
                 await SafeReplyAsync("", embed: $"{user.Mention} ustawiono {level} poziom.".ToEmbedMessage(EMType.Success).Build());
             }
@@ -989,7 +1000,7 @@ namespace Sanakan.Modules
 
                 await db.SaveChangesAsync();
 
-                QueryCacheManager.ExpireTag(new string[] { $"user-{Context.User.Id}", "users" });
+                QueryCacheManager.ExpireTag(new string[] { $"user-{user.Id}", "users" });
 
                 await SafeReplyAsync("", embed: reply.ToEmbedMessage(EMType.Success).Build());
             }
@@ -1112,7 +1123,7 @@ namespace Sanakan.Modules
 
                 await db.SaveChangesAsync();
 
-                QueryCacheManager.ExpireTag(new string[] { "users" });
+                QueryCacheManager.ExpireTag(new string[] { $"user-{thisCard.GameDeckId}", "users" });
 
                 await SafeReplyAsync("", embed: $"Nowy tytuł to: `{thisCard.Title}`".ToEmbedMessage(EMType.Success).Build());
             }

@@ -42,7 +42,7 @@ namespace Sanakan.Api.Controllers
         public async Task<IActionResult> UpdateBotAsync()
         {
             await _client.LogoutAsync();
-            System.IO.File.Create("./updateNow");
+            System.IO.File.WriteAllText("./updateNow", string.Empty);
             _logger.Log("Update app from web.");
             await Task.Delay(1500);
             Environment.Exit(200);

@@ -126,7 +126,6 @@ namespace Sanakan.Services.Executor
 
             foreach (var task in toStart)
             {
-                _freeSlots.Release();
                 _ = Task.Run(() => RunAsync(task));
             }
         }
@@ -155,6 +154,8 @@ namespace Sanakan.Services.Executor
                     --_running;
                     _globalRunning = false;
                 }
+
+                _freeSlots.Release();
                 Pump();
             }
         }

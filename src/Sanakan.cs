@@ -55,7 +55,9 @@ namespace Sanakan
         {
             LoadConfig();
             ValidateConfig();
-            EnsureDbIsCreated();
+
+            await EnsureDbIsCreatedAsync();
+
             CreateModules();
             AddSigTermHandler();
 
@@ -65,12 +67,13 @@ namespace Sanakan
             await _client.StartAsync();
 
             var services = BuildServiceProvider();
-            BotWebHost.RunWebHost(_client, _shindenClient, _waifu,
-                _config, _helper, _executor, _logger, _time, _tags, _expedition, _health);
-
             _executor.Initialize(services);
             _sessions.Initialize(services);
             await _handler.InitializeAsync(services, _helper);
+
+            BotWebHost.RunWebHost(_client, _shindenClient, _waifu,
+                _config, _helper, _executor, _logger, _time, _tags, _expedition, _health);
+
             _heartbeat.Start();
 
             await Task.Delay(-1);
@@ -89,12 +92,12 @@ namespace Sanakan
             }
         }
 
-        private void EnsureDbIsCreated()
+        private async Task EnsureDbIsCreatedAsync()
         {
             using (var db = new Database.DatabaseContext(_config))
             {
                 db.Database.EnsureCreated();
-                _tags = new TagHelper(db);
+                _tags = await TagHelper.CreateAsync(db);
             }
         }
 

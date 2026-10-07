@@ -2,6 +2,7 @@
 
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using Sanakan.Database;
 using Sanakan.Database.Models;
 using Sanakan.Extensions;
@@ -17,8 +18,12 @@ namespace Sanakan.Services.PocketWaifu
     {
         private readonly Dictionary<TagType, TagIcon> _baseTags = new Dictionary<TagType, TagIcon>();
 
-        public TagHelper(DatabaseContext db)
+        private TagHelper() { }
+
+        public static async Task<TagHelper> CreateAsync(DatabaseContext db)
         {
+            var helper = new TagHelper();
+
             var setup = new List<(TagType type, string  name, string icon, ulong id)>
             {
                 (TagType.Favorite,    "ulubione",   "💗", 0),
@@ -28,7 +33,7 @@ namespace Sanakan.Services.PocketWaifu
                 (TagType.TrashBin,    "kosz",       "🗑️", 0),
             };
 
-            var botUser = db.GetUserOrCreateAsync(1).GetAwaiter().GetResult();
+            var botUser = await db.GetUserOrCreateAsync(1);
             foreach (var tag in setup)
             {
                 var thisTag = botUser.GameDeck.Tags.FirstOrDefault(x => x.Name.Equals(tag.name, System.StringComparison.CurrentCultureIgnoreCase));
@@ -36,11 +41,13 @@ namespace Sanakan.Services.PocketWaifu
                 {
                     thisTag = new Tag { Name = tag.name };
                     botUser.GameDeck.Tags.Add(thisTag);
-                    db.SaveChanges();
+                    await db.SaveChangesAsync();
                 }
 
-                _baseTags.Add(tag.type, new TagIcon(thisTag.Id, tag.name, tag.icon));
+                helper._baseTags.Add(tag.type, new TagIcon(thisTag.Id, tag.name, tag.icon));
             }
+
+            return helper;
         }
 
         public bool IsSimilar(string tag) => _baseTags.Any(x => x.Value.Name.Contains(tag, System.StringComparison.CurrentCultureIgnoreCase))
