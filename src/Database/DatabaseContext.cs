@@ -100,6 +100,7 @@ namespace Sanakan.Database
             modelBuilder.Entity<User>(entity =>
             {
                 entity.HasKey(e => e.Id);
+                entity.HasIndex(e => e.Shinden);
             });
 
             modelBuilder.Entity<UserStats>(entity =>
@@ -192,6 +193,8 @@ namespace Sanakan.Database
             modelBuilder.Entity<WishlistObject>(entity =>
             {
                 entity.HasKey(e => e.Id);
+
+                entity.HasIndex(e => new { e.ObjectId, e.Type });
 
                 entity.HasOne(e => e.GameDeck)
                     .WithMany(d => d.Wishes);
@@ -339,6 +342,7 @@ namespace Sanakan.Database
             modelBuilder.Entity<PenaltyInfo>(entity =>
             {
                 entity.HasKey(e => e.Id);
+                entity.HasIndex(e => new { e.User, e.Guild, e.Type });
             });
 
             modelBuilder.Entity<OwnedRole>(entity =>
@@ -386,6 +390,7 @@ namespace Sanakan.Database
             modelBuilder.Entity<UserActivity>(entity =>
             {
                 entity.HasKey(e => e.Id);
+                entity.HasIndex(e => e.ShindenId);
             });
 
             modelBuilder.Entity<UserApiKey>(entity =>

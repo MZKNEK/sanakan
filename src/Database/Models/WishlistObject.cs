@@ -6,12 +6,15 @@ namespace Sanakan.Database.Models
 {
     public enum WishlistObjectType
     {
-        Card, Title, Character
+        Card = 0,
+        Title = 1,
+        Character = 2
     }
 
     public enum WishlistEntryType
     {
-        Normal, Persistent
+        Normal = 0,
+        Persistent = 1
     }
 
     public class WishlistObject

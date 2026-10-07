@@ -6,7 +6,8 @@ namespace Sanakan.Database.Models.Analytics
 {
     public enum TransferSource
     {
-        ByShindenId, ByDiscordId
+        ByShindenId = 0,
+        ByDiscordId = 1
     }
 
     public class TransferAnalytics

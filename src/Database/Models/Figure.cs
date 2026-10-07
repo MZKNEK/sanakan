@@ -24,7 +24,15 @@ namespace Sanakan.Database.Models
 
     public enum FigurePart
     {
-        Head, Body, LeftArm, RightArm, LeftLeg, RightLeg, Clothes, All, None
+        Head = 0,
+        Body = 1,
+        LeftArm = 2,
+        RightArm = 3,
+        LeftLeg = 4,
+        RightLeg = 5,
+        Clothes = 6,
+        All = 7,
+        None = 8
     }
 
     public class Figure

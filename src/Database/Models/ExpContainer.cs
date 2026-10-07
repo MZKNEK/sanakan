@@ -6,11 +6,11 @@ namespace Sanakan.Database.Models
 {
     public enum ExpContainerLevel
     {
-        Disabled,
-        Level1,
-        Level2,
-        Level3,
-        Level4
+        Disabled = 0,
+        Level1 = 1,
+        Level2 = 2,
+        Level3 = 3,
+        Level4 = 4
     }
 
     public class ExpContainer

@@ -7,35 +7,44 @@ namespace Sanakan.Database.Models
 {
     public enum ProfileType
     {
-        Stats, Img, StatsWithImg, Cards, CardsOnImg, StatsOnImg, MiniGallery, MiniGalleryOnImg
+        Stats = 0,
+        Img = 1,
+        StatsWithImg = 2,
+        Cards = 3,
+        CardsOnImg = 4,
+        StatsOnImg = 5,
+        MiniGallery = 6,
+        MiniGalleryOnImg = 7
     }
 
     public enum CharacterPoolType
     {
-        Anime, Manga, All
+        Anime = 0,
+        Manga = 1,
+        All = 2
     }
 
     public enum AvatarBorder
     {
-        None,
-        PurpleLeaves,
-        Dzedai,
-        Base,
-        Water,
-        Crows,
-        Bow,
-        Metal,
-        RedThinLeaves,
-        Skull,
-        Fire,
-        Promium,
-        Ice,
-        Gold,
-        Red,
-        Rainbow,
-        Pink,
-        Simple,
-        TurqLeaves
+        None = 0,
+        PurpleLeaves = 1,
+        Dzedai = 2,
+        Base = 3,
+        Water = 4,
+        Crows = 5,
+        Bow = 6,
+        Metal = 7,
+        RedThinLeaves = 8,
+        Skull = 9,
+        Fire = 10,
+        Promium = 11,
+        Ice = 12,
+        Gold = 13,
+        Red = 14,
+        Rainbow = 15,
+        Pink = 16,
+        Simple = 17,
+        TurqLeaves = 18
     }
 
     [Flags]

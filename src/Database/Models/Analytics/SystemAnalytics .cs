@@ -6,7 +6,7 @@ namespace Sanakan.Database.Models.Analytics
 {
     public enum SystemAnalyticsEventType
     {
-        Ram
+        Ram = 0
     }
 
     public class SystemAnalytics

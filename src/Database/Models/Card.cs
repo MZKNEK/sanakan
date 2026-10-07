@@ -10,22 +10,55 @@ namespace Sanakan.Database.Models
 {
     public enum Rarity
     {
-        SSS, SS, S, A, B, C, D, E
+        SSS = 0,
+        SS = 1,
+        S = 2,
+        A = 3,
+        B = 4,
+        C = 5,
+        D = 6,
+        E = 7
     }
 
     public enum Dere
     {
-        Tsundere, Kamidere, Deredere, Yandere, Dandere, Kuudere, Mayadere, Bodere, Yami, Raito, Yato
+        Tsundere = 0,
+        Kamidere = 1,
+        Deredere = 2,
+        Yandere = 3,
+        Dandere = 4,
+        Kuudere = 5,
+        Mayadere = 6,
+        Bodere = 7,
+        Yami = 8,
+        Raito = 9,
+        Yato = 10
     }
 
     public enum CardSource
     {
-        Activity, Safari, Shop, GodIntervention, Api, Other, Migration, PvE, Daily, Crafting, PvpShop, Figure, Expedition, ActivityShop, Lottery, Tinkering
+        Activity = 0,
+        Safari = 1,
+        Shop = 2,
+        GodIntervention = 3,
+        Api = 4,
+        Other = 5,
+        Migration = 6,
+        PvE = 7,
+        Daily = 8,
+        Crafting = 9,
+        PvpShop = 10,
+        Figure = 11,
+        Expedition = 12,
+        ActivityShop = 13,
+        Lottery = 14,
+        Tinkering = 15
     }
 
     public enum StarStyle
     {
-        Full, Empty
+        Full = 0,
+        Empty = 1
     }
 
     public enum MarketValue
@@ -37,18 +70,39 @@ namespace Sanakan.Database.Models
 
     public enum PreAssembledFigure
     {
-        None, Megumin, Asuna, Gintoki
+        None = 0,
+        Megumin = 1,
+        Asuna = 2,
+        Gintoki = 3
     }
 
     public enum CardCurse
     {
-        None, LoweredStats, DereBlockade, BloodBlockade, InvertedItems, ExpeditionBlockade, LoweredExperience, FoodBlockade
+        None = 0,
+        LoweredStats = 1,
+        DereBlockade = 2,
+        BloodBlockade = 3,
+        InvertedItems = 4,
+        ExpeditionBlockade = 5,
+        LoweredExperience = 6,
+        FoodBlockade = 7
     }
 
     public enum CardExpedition
     {
-        None, NormalItemWithExp, ExtremeItemWithExp, DarkExp, DarkItems, DarkItemWithExp, LightExp, LightItems, LightItemWithExp,
-        UltimateEasy, UltimateMedium, UltimateHard, UltimateHardcore
+        None = 0,
+        NormalItemWithExp = 1,
+        ExtremeItemWithExp = 2,
+        DarkExp = 3,
+        DarkItems = 4,
+        DarkItemWithExp = 5,
+        LightExp = 6,
+        LightItems = 7,
+        LightItemWithExp = 8,
+        UltimateEasy = 9,
+        UltimateMedium = 10,
+        UltimateHard = 11,
+        UltimateHardcore = 12
     }
 
     public class Card

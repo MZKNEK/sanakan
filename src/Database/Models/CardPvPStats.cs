@@ -6,12 +6,16 @@ namespace Sanakan.Database.Models
 {
     public enum FightType
     {
-        Versus, BattleRoyale, NewVersus
+        Versus = 0,
+        BattleRoyale = 1,
+        NewVersus = 2
     }
 
     public enum FightResult
     {
-        Win, Lose, Draw
+        Win = 0,
+        Lose = 1,
+        Draw = 2
     }
 
     public class CardPvPStats

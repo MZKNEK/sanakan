@@ -7,7 +7,8 @@ namespace Sanakan.Database.Models.Management
 {
     public enum PenaltyType
     {
-        Mute, Ban
+        Mute = 0,
+        Ban = 1
     }
 
     public class PenaltyInfo

@@ -8,12 +8,15 @@ namespace Sanakan.Database.Models
 {
     public enum ActionAfterExpedition
     {
-        Nothing, Destroy, Release
+        Nothing = 0,
+        Destroy = 1,
+        Release = 2
     }
 
     public enum TagsOrder
     {
-        Id, Alphabetically
+        Id = 0,
+        Alphabetically = 1
     }
 
     public class GameDeck

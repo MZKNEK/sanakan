@@ -4,7 +4,8 @@ namespace Sanakan.Database.Models.Management
 {
     public enum ModifierType
     {
-        Constant, Growing
+        Constant = 0,
+        Growing = 1
     }
 
     public class MuteModifier
