@@ -1,7 +1,9 @@
 ﻿#pragma warning disable 1591
 
+using System;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Drawing;
 using SixLabors.ImageSharp.Drawing.Processing;
@@ -46,7 +48,41 @@ namespace Sanakan.Extensions
                 "gif" => _gifEncoder,
                 _ => _webpEncoder
             };
-            img.Save(path, encoder);
+
+            // Zapis atomowy: piszemy do unikalnego pliku tymczasowego, a następnie podmieniamy go jednym
+            // File.Move. Dzięki temu czytający (np. SendFileAsync) nigdy nie trafi na plik w trakcie zapisu
+            // i nie wystąpi błąd współdzielenia ("being used by another process").
+            var dir = System.IO.Path.GetDirectoryName(path);
+            if (!string.IsNullOrEmpty(dir))
+                Directory.CreateDirectory(dir);
+
+            var tmp = $"{path}.{Guid.NewGuid():N}.tmp";
+            try
+            {
+                img.Save(tmp, encoder);
+
+                // na Windows podmiana może chwilowo kolidować z czytającym - ponawiamy
+                for (int attempt = 0; ; attempt++)
+                {
+                    try
+                    {
+                        File.Move(tmp, path, true);
+                        break;
+                    }
+                    catch (IOException) when (attempt < 25)
+                    {
+                        Thread.Sleep(20);
+                    }
+                }
+            }
+            finally
+            {
+                if (File.Exists(tmp))
+                {
+                    try { File.Delete(tmp); } catch { }
+                }
+            }
+
             return path;
         }
 
