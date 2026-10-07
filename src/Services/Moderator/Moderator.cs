@@ -43,6 +43,7 @@ namespace Sanakan.Services
         private ILogger _logger;
         private IConfig _config;
         private Timer _timer;
+        private volatile bool _disposed;
         private readonly SemaphoreSlim _penaltySweep = new SemaphoreSlim(1, 1);
 
         public Moderator(ILogger logger, IConfig config, DiscordSocketClient client, ISystemTime time, ImageProcessing img)
@@ -55,11 +56,17 @@ namespace Sanakan.Services
 
             _timer = new Timer(async _ =>
             {
+                if (_disposed)
+                    return;
+
                 if (!_penaltySweep.Wait(0))
                     return;
 
                 try
                 {
+                    if (_disposed)
+                        return;
+
                     using (var db = new Database.DatabaseContext(_config))
                     {
                         await CyclicCheckPenalties(db);
@@ -98,18 +105,19 @@ namespace Sanakan.Services
 
                     if ((_time.Now() - penalty.StartDate).TotalHours < penalty.DurationInHours)
                     {
+                        // kara mogła zostać w międzyczasie cofnięta - nie nakładaj jej ponownie (ghost mute)
+                        if (!await db.Penalties.AsQueryable().AnyAsync(x => x.Id == penalty.Id))
+                            continue;
+
                         var muteMod = penalty.Roles.Any(x => gconfig.ModeratorRoles.Any(z => z.Role == x.Role)) ? muteModRole : null;
-                        _ = Task.Run(async () =>
+                        try
                         {
-                            try
-                            {
-                                await MuteUserGuildAsync(user, muteRole, penalty.Roles, muteMod);
-                            }
-                            catch (Exception ex)
-                            {
-                                _logger.LogError($"Moderator: re-mute: {ex}");
-                            }
-                        });
+                            await MuteUserGuildAsync(user, muteRole, penalty.Roles, muteMod);
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogError($"Moderator: re-mute: {ex}");
+                        }
                         continue;
                     }
 
@@ -713,8 +721,10 @@ namespace Sanakan.Services
 
         public void Dispose()
         {
+            // zatrzymaj timer i oznacz jako zamknięty; nie zwalniamy semafora,
+            // aby trwający callback nie rzucił ObjectDisposedException
+            _disposed = true;
             _timer?.Dispose();
-            _penaltySweep.Dispose();
         }
     }
 }

@@ -16,6 +16,9 @@ namespace Sanakan.Services.Executor
         private readonly Priority _priority;
         private readonly List<ulong> _owners;
 
+        /// <summary>Maksymalny czas oczekiwania API na wykonanie zakolejkowanego zadania.</summary>
+        public static readonly TimeSpan ApiMaxWait = TimeSpan.FromSeconds(30);
+
         public Executable(string name, Func<Task> task, ulong owner = 0, Priority priority = Priority.Normal)
         {
             _name = name;
@@ -50,6 +53,23 @@ namespace Sanakan.Services.Executor
             await _internalTask.ConfigureAwait(false);
         }
 
+        /// <summary>
+        /// Czeka na wykonanie zadania nie dłużej niż <paramref name="timeout"/>.
+        /// Zwraca <c>false</c>, gdy przekroczono limit (zadanie nie zostaje przerwane).
+        /// </summary>
+        public async Task<bool> WaitAsync(TimeSpan timeout)
+        {
+            try
+            {
+                await WaitAsync().WaitAsync(timeout).ConfigureAwait(false);
+                return true;
+            }
+            catch (TimeoutException)
+            {
+                return false;
+            }
+        }
+
         public async Task<bool> ExecuteAsync(IServiceProvider provider)
         {
             try
@@ -60,7 +80,7 @@ namespace Sanakan.Services.Executor
                     {
                         _internalTask = _task();
                     }
-                    else
+                    else if (_internalTask.Status == TaskStatus.Created)
                     {
                         _internalTask.Start();
                     }

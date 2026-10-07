@@ -8,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Sanakan.Services.Session
@@ -21,6 +22,7 @@ namespace Sanakan.Services.Session
         private ILogger _logger { get; set; }
         private bool _added { get; set; }
         private volatile bool _disposed;
+        private int _disposeFlag;
 
         public Session(IUser owner)
         {
@@ -82,7 +84,10 @@ namespace Sanakan.Services.Session
 
         public async Task DisposeAsync()
         {
-            if (_disposed) return;
+            // tylko jedno wywołanie może wykonać sprzątanie (wątkowo bezpieczne)
+            if (Interlocked.Exchange(ref _disposeFlag, 1) == 1)
+                return;
+
             _disposed = true;
 
             var onDispose = OnDispose;

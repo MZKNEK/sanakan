@@ -900,7 +900,8 @@ namespace Sanakan.Api.Controllers
                 return "Command queue is full".ToResponse(503);
             }
 
-            await exe.WaitAsync();
+            if (!await exe.WaitAsync(Executable.ApiMaxWait))
+                return "Command timed out".ToResponse(504);
 
             return cards;
         }
@@ -1009,7 +1010,8 @@ namespace Sanakan.Api.Controllers
                         return "Command queue is full".ToResponse(503);
                     }
 
-                    await exe.WaitAsync();
+                    if (!await exe.WaitAsync(Executable.ApiMaxWait))
+                        return "Command timed out".ToResponse(504);
 
                     if (error != null)
                     {
@@ -1082,7 +1084,8 @@ namespace Sanakan.Api.Controllers
                         return "Command queue is full".ToResponse(503);
                     }
 
-                    await exe.WaitAsync();
+                    if (!await exe.WaitAsync(Executable.ApiMaxWait))
+                        return "Command timed out".ToResponse(504);
                     return result;
                 }
             }

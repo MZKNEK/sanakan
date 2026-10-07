@@ -36,7 +36,17 @@ namespace Sanakan.Services
             _client.MessageReceived += HandleMessageAsync;
         }
 
-        public EmotesStats GetEmotesStats() => _stats;
+        public EmotesStats GetEmotesStats()
+        {
+            lock (_lock)
+            {
+                return new EmotesStats
+                {
+                    Counter = new Dictionary<string, long>(_stats.Counter),
+                    Start = _stats.Start,
+                };
+            }
+        }
 
         public void ResetStats()
         {

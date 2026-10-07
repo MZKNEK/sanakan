@@ -404,6 +404,9 @@ namespace Sanakan.Services
         {
             using (var stream = await GetImageFromUrlAsync(url, true))
             {
+                if (stream is null || stream == Stream.Null)
+                    return;
+
                 var detectedFormat = await Image.DetectFormatAsync(stream);
                 using var image = detectedFormat == WebpFormat.Instance ?
                     await LoadWebpFromStreamAsync(stream) : await Image.LoadAsync(stream);
@@ -412,6 +415,21 @@ namespace Sanakan.Services
                     CheckImageSize(image, size, strech);
 
                 image.SaveToPath(path);
+            }
+        }
+
+        /// <summary>
+        /// Ładuje awatar z URL, a gdy obraz jest niedostępny (null / puste dane) zwraca 1x1 placeholder,
+        /// dzięki czemu generowanie profilu nie kończy się wyjątkiem.
+        /// </summary>
+        private async Task<Image> GetAvatarImageOrPlaceholderAsync(string url)
+        {
+            using (var stream = await GetImageFromUrlAsync(url))
+            {
+                if (stream is null || stream == Stream.Null)
+                    return new Image<Rgba32>(1, 1);
+
+                return Image.Load(stream);
             }
         }
 
@@ -877,7 +895,7 @@ namespace Sanakan.Services
             }
 
             var hasAvBorder = botUser.AvatarBorder != AvatarBorder.None;
-            using (var avatar = Image.Load(await GetImageFromUrlAsync(avatarUrl)))
+            using (var avatar = await GetAvatarImageOrPlaceholderAsync(avatarUrl))
             {
                 var hasRoundAvatar = botUser.StatsStyleSettings.HasFlag(ProfileSettings.RoundAvatar) || hasAvBorder;
                 using var webpAvatarStream = avatar.ToWebpStream();
@@ -1007,7 +1025,7 @@ namespace Sanakan.Services
 
             using (var stream = await GetImageFromUrlAsync(avatarUrl))
             {
-                if (stream == null)
+                if (stream is null || stream == Stream.Null)
                     return badge;
 
                 using (var avatar = Image.Load(stream))
@@ -1304,7 +1322,7 @@ namespace Sanakan.Services
 
                 using (var stream = await GetImageFromUrlAsync(avatarUrl))
                 {
-                    if (stream == null)
+                    if (stream is null || stream == Stream.Null)
                         return baseImg;
 
                     using (var avatar = Image.Load(stream))

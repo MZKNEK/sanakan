@@ -85,31 +85,21 @@ namespace Sanakan.Preconditions
             var cmdKey = BuildKey(command.Name, _method, user.Id);
             var now = tService.Now();
 
-            if (_entries.TryGetValue(cmdKey, out var lastUse))
+            // atomowe sprawdzenie i aktualizacja licznika (CAS) - dwa równoległe wywołania nie przejdą jednocześnie
+            while (true)
             {
-                if (lastUse + _time > now)
+                if (_entries.TryGetValue(cmdKey, out var lastUse))
                 {
-                    switch (_responseType)
-                    {
-                        case ResType.Nothing:
-                            return PreconditionResult.FromError($"{context.User.Mention} tego polecenia możesz użyć raz na jakiś czas.");
+                    if (lastUse + _time > now)
+                        return Denied(context, (lastUse + _time) - now);
 
-                        case ResType.HourMin:
-                            var min = (int)(lastUse + _time - now).TotalMinutes;
-                            return PreconditionResult.FromError($"{context.User.Mention} tego polecenia możesz użyć za {min / 60}h {min % 60}m.");
-
-                        default:
-                        case ResType.MinSec:
-                            var sec = (int)(lastUse + _time - now).TotalSeconds;
-                            return PreconditionResult.FromError($"{context.User.Mention} tego polecenia możesz użyć za {sec / 60}m {sec % 60}s.");
-                    }
+                    if (_entries.TryUpdate(cmdKey, now, lastUse))
+                        break;
                 }
-
-                _entries[cmdKey] = now;
-            }
-            else
-            {
-                _entries.TryAdd(cmdKey, now);
+                else if (_entries.TryAdd(cmdKey, now))
+                {
+                    break;
+                }
             }
 
             Cleanup(now);
@@ -118,14 +108,40 @@ namespace Sanakan.Preconditions
 #endif
         }
 
-        private static void Cleanup(DateTime now)
+        private PreconditionResult Denied(ICommandContext context, TimeSpan left)
+        {
+            switch (_responseType)
+            {
+                case ResType.Nothing:
+                    return PreconditionResult.FromError($"{context.User.Mention} tego polecenia możesz użyć raz na jakiś czas.");
+
+                case ResType.HourMin:
+                    var min = (int)left.TotalMinutes;
+                    return PreconditionResult.FromError($"{context.User.Mention} tego polecenia możesz użyć za {min / 60}h {min % 60}m.");
+
+                default:
+                case ResType.MinSec:
+                    var sec = (int)left.TotalSeconds;
+                    return PreconditionResult.FromError($"{context.User.Mention} tego polecenia możesz użyć za {sec / 60}m {sec % 60}s.");
+            }
+        }
+
+        private void Cleanup(DateTime now)
         {
             if (_entries.Count <= MaxEntries)
                 return;
 
+            // najpierw usuń wpisy starsze niż dopuszczalny wiek
             foreach (var entry in _entries)
                 if (now - entry.Value > EntryMaxAge)
                     _entries.TryRemove(entry.Key, out _);
+
+            if (_entries.Count <= MaxEntries)
+                return;
+
+            // twardy limit rozmiaru - usuń najstarsze wpisy, aby słownik nie rósł w nieskończoność
+            foreach (var entry in _entries.OrderBy(x => x.Value).Take(_entries.Count - MaxEntries).ToList())
+                _entries.TryRemove(entry.Key, out _);
         }
 
         // Global dzieli jeden klucz dla wszystkich; PerUser kluczuje po uzytkowniku

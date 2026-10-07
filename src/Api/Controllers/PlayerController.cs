@@ -433,7 +433,8 @@ namespace Sanakan.Api.Controllers
             if (!await _executor.TryAdd(exe, TimeSpan.FromSeconds(1)))
                 return "Command queue is full".ToResponse(503);
 
-            await exe.WaitAsync();
+            if (!await exe.WaitAsync(Executable.ApiMaxWait))
+                return "Command timed out".ToResponse(504);
             return result;
         }
 

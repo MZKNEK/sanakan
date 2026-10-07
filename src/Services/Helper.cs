@@ -388,11 +388,8 @@ namespace Sanakan.Services
 
         public async Task<IMessage> FindMessageInGuildAsync(SocketGuild guild, ulong id)
         {
-            foreach (ITextChannel channel in guild.Channels)
+            foreach (var channel in guild.TextChannels)
             {
-                if (channel == null)
-                    continue;
-
                 IMessage msg = await channel.GetMessageAsync(id);
                 if (msg != null)
                 {

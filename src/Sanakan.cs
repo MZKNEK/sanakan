@@ -179,6 +179,7 @@ namespace Sanakan
                     _logger.Log("SIGTERM Received!");
                     await _client.LogoutAsync();
                     await BotWebHost.StopAsync(TimeSpan.FromSeconds(5));
+                    _executor?.Dispose();
                     await Task.Delay(1000);
                     Environment.Exit(0);
                 });

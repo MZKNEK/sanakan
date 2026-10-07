@@ -24,6 +24,7 @@ namespace Sanakan.Services.Session
         private readonly object _lock = new object();
         private readonly List<ISession> _sessions = new List<ISession>();
         private readonly SemaphoreSlim _autoValidate = new SemaphoreSlim(1, 1);
+        private volatile bool _disposed;
 
         public SessionManager(DiscordSocketClient client, IExecutor executor, ILogger logger)
         {
@@ -38,6 +39,9 @@ namespace Sanakan.Services.Session
 
             _timer = new Timer(async _ =>
             {
+                if (_disposed)
+                    return;
+
                 if (!_autoValidate.Wait(0))
                     return;
 
@@ -267,8 +271,23 @@ namespace Sanakan.Services.Session
 
         public void Dispose()
         {
+            _disposed = true;
+
+            _client.MessageReceived -= HandleMessageAsync;
+            _client.ReactionAdded -= HandleReactionAddedAsync;
+            _client.ReactionRemoved -= HandleReactionRemovedAsync;
+
             _timer?.Dispose();
-            _autoValidate.Dispose();
+
+            List<ISession> sessions;
+            lock (_lock)
+            {
+                sessions = _sessions.ToList();
+                _sessions.Clear();
+            }
+
+            foreach (var session in sessions)
+                _ = session.DisposeAsync();
         }
     }
 }

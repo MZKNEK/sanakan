@@ -10,7 +10,7 @@ using System.Linq;
 
 namespace Sanakan.Services.Executor
 {
-    public class UserBasedExecutor : IExecutor
+    public class UserBasedExecutor : IExecutor, IDisposable
     {
         private const int QueueLength = 100;
         private static readonly TimeSpan DefaultGlobalMaxWait = TimeSpan.FromSeconds(5);
@@ -157,6 +157,12 @@ namespace Sanakan.Services.Executor
                 }
                 Pump();
             }
+        }
+
+        public void Dispose()
+        {
+            _timer?.Dispose();
+            _freeSlots?.Dispose();
         }
     }
 }
