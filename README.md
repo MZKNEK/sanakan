@@ -1,6 +1,6 @@
 # Sanakan
 
-[![Build status](https://img.shields.io/appveyor/build/MrZnake/sanakan)](https://ci.appveyor.com/project/mrznake/sanakan/branch/master)
+[![tests](https://github.com/MZKNEK/sanakan/actions/workflows/tests.yml/badge.svg)](https://github.com/MZKNEK/sanakan/actions/workflows/tests.yml)
 [![CodeFactor](https://www.codefactor.io/repository/github/mzknek/sanakan/badge)](https://www.codefactor.io/repository/github/mzknek/sanakan)
 [![License](https://img.shields.io/github/license/MZKNEK/sanakan)](https://github.com/MZKNEK/sanakan/blob/master/LICENSE)
 
