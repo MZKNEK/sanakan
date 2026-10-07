@@ -82,7 +82,7 @@ namespace Sanakan.Modules
             using (var db = new Database.DatabaseContext(Config))
             {
                 var user = await db.GetCachedFullUserAsync(Context.User.Id);
-                if (user?.GameDeck?.Cards?.Count() < 1)
+                if (user == null || user.GameDeck == null || user.GameDeck.Cards.IsNullOrEmpty())
                 {
                     await SafeReplyAsync("", embed: $"{Context.User.Mention} nie masz żadnych kart.".ToEmbedMessage(EMType.Error).Build());
                     return;
@@ -232,6 +232,12 @@ namespace Sanakan.Modules
             using (var db = new Database.DatabaseContext(Config))
             {
                 var deck = db.GameDecks.Include(x => x.Figures).FirstOrDefault(x => x.Id == Context.User.Id);
+                if (deck == null)
+                {
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} nie odnaleziono profilu.".ToEmbedMessage(EMType.Error).Build());
+                    return;
+                }
+
                 if (id > 0)
                 {
                     var oldFig = deck.Figures.FirstOrDefault(x => x.IsFocus);
@@ -293,6 +299,12 @@ namespace Sanakan.Modules
             using (var db = new Database.DatabaseContext(Config))
             {
                 var deck = db.GameDecks.Include(x => x.Figures).Where(x => x.Id == Context.User.Id).FirstOrDefault();
+                if (deck == null)
+                {
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} nie odnaleziono profilu.".ToEmbedMessage(EMType.Error).Build());
+                    return;
+                }
+
                 var fig = deck.Figures.FirstOrDefault(x => x.IsFocus);
                 if (fig == null)
                 {
@@ -2586,6 +2598,12 @@ namespace Sanakan.Modules
         [Remarks("25"), RequireWaifuCommandChannel]
         public async Task GoToLotteryAsync([Summary("krotność użycia polecenia")] uint count = 1)
         {
+            if (count < 1)
+            {
+                await SafeReplyAsync("", embed: $"{Context.User.Mention} podaj poprawną krotność.".ToEmbedMessage(EMType.Error).Build());
+                return;
+            }
+
             using (var db = new Database.DatabaseContext(Config))
             {
                 var bUser = await db.GetUserOrCreateAsync(Context.User.Id);
@@ -3604,6 +3622,12 @@ namespace Sanakan.Modules
                 var userItems = buser.GetAllItems().ToArray();
                 foreach (var it in items)
                 {
+                    if (it.Item < 1 || it.Item > (uint)userItems.Length)
+                    {
+                        errors.Add($"niepoprawny numer przedmiotu: {it.Item}");
+                        continue;
+                    }
+
                     var thisItem = userItems[it.Item - 1];
                     if (it.Count == 0)
                     {

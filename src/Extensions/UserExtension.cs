@@ -459,7 +459,7 @@ namespace Sanakan.Extensions
 
                 case CurrencyType.PC:
                 {
-                    if (user.GameDeck.PVPCoins >= cost.Cost)
+                    if (user.GameDeck.PVPCoins >= toPay)
                     {
                         user.GameDeck.PVPCoins -= toPay;
                         return true;
@@ -551,7 +551,7 @@ namespace Sanakan.Extensions
 
         public static IEnumerable<Tag> GetOrderedTags(this GameDeck deck) => deck.TagsOrder switch
         {
-            TagsOrder.Alphabetically => deck.Tags.OrderBy(x => x.Name).ThenBy(x => x.Id),
+            TagsOrder.Alphabetically => deck.Tags.OrderBy(x => x.Name, System.StringComparer.Ordinal).ThenBy(x => x.Id),
             _ => deck.Tags.AsEnumerable()
         };
 
@@ -714,7 +714,8 @@ namespace Sanakan.Extensions
                     return $"{u.MessagesCnt - u.MessagesCntAtDate}";
 
                 case TopType.PostsMonthlyCharacter:
-                    return $"{u.CharacterCntFromDate / (u.MessagesCnt - u.MessagesCntAtDate)}";
+                    var monthlyMessages = u.MessagesCnt - u.MessagesCntAtDate;
+                    return monthlyMessages == 0 ? "0" : $"{u.CharacterCntFromDate / monthlyMessages}";
 
                 case TopType.Commands:
                     return $"{u.CommandsCnt}";

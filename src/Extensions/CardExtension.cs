@@ -825,7 +825,10 @@ namespace Sanakan.Extensions
         }
 
         public static bool TryParse(this StarStyle star, string s, out StarStyle type)
-            => _starStyleParsingDic.TryGetValue(s.RemoveDiacritics().ToLower(), out type);
+        {
+            type = default;
+            return s != null && _starStyleParsingDic.TryGetValue(s.RemoveDiacritics().ToLowerInvariant(), out type);
+        }
 
         public static StarStyle Parse(this StarStyle star, string s)
             => star.TryParse(s, out var type) ? type : throw new Exception("Couldn't parse input!");

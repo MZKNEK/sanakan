@@ -56,7 +56,8 @@ namespace Sanakan.Modules
             if (id != 0)
             {
                 var dmsg = await Context.Channel.GetMessageAsync(id);
-                await dmsg.DeleteAsync();
+                if (dmsg != null)
+                    await dmsg.DeleteAsync();
             }
         }
 
@@ -586,6 +587,8 @@ namespace Sanakan.Modules
                     await db.Guilds.AddAsync(config);
 
                     await db.SaveChangesAsync();
+
+                    QueryCacheManager.ExpireTag(new string[] { CacheTags.Guild(Context.Guild.Id) });
                 }
 
                 await SafeReplyAsync("", embed: _moderation.GetConfiguration(config, Context, type).WithTitle($"Konfiguracja {Context.Guild.Name}:").Build());
@@ -1831,7 +1834,13 @@ namespace Sanakan.Modules
             await Task.Delay(TimeSpan.FromMinutes(duration));
             await msg.RemoveReactionAsync(emote, Context.Client.CurrentUser);
 
-            var reactions = await msg.GetReactionUsersAsync(emote, 300).FlattenAsync();
+            var reactions = (await msg.GetReactionUsersAsync(emote, 300).FlattenAsync()).ToList();
+            if (reactions.Count < 1)
+            {
+                await SafeReplyAsync("", embed: "Nikt nie wziął udziału w loterii.".ToEmbedMessage(EMType.Error).Build());
+                return;
+            }
+
             var winner = Services.Fun.GetOneRandomFrom(reactions);
             await msg.DeleteAsync();
 

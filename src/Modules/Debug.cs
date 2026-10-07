@@ -617,7 +617,7 @@ namespace Sanakan.Modules
 
             exe.AddOwner(Context.User.Id);
 
-            if (ids.IsNullOrEmpty())
+            if (!ids.IsNullOrEmpty())
             {
                 foreach(var id in ids)
                     exe.AddOwner(id);

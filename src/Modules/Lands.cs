@@ -31,6 +31,12 @@ namespace Sanakan.Modules
             using (var db = new Database.DatabaseContext(Config))
             {
                 var config = await db.GetCachedGuildFullConfigAsync(Context.Guild.Id);
+                if (config == null)
+                {
+                    await SafeReplyAsync("", embed: "Serwer nie jest skonfigurowany.".ToEmbedMessage(EMType.Error).Build());
+                    return;
+                }
+
                 var land = _manager.DetermineLand(config.Lands, Context.User as SocketGuildUser, name);
                 if (land == null)
                 {
@@ -55,6 +61,12 @@ namespace Sanakan.Modules
             using (var db = new Database.DatabaseContext(Config))
             {
                 var config = await db.GetCachedGuildFullConfigAsync(Context.Guild.Id);
+                if (config == null)
+                {
+                    await SafeReplyAsync("", embed: "Serwer nie jest skonfigurowany.".ToEmbedMessage(EMType.Error).Build());
+                    return;
+                }
+
                 var land = _manager.DetermineLand(config.Lands, Context.User as SocketGuildUser, name);
                 if (land == null)
                 {
@@ -85,6 +97,12 @@ namespace Sanakan.Modules
             using (var db = new Database.DatabaseContext(Config))
             {
                 var config = await db.GetCachedGuildFullConfigAsync(Context.Guild.Id);
+                if (config == null)
+                {
+                    await SafeReplyAsync("", embed: "Serwer nie jest skonfigurowany.".ToEmbedMessage(EMType.Error).Build());
+                    return;
+                }
+
                 var land = _manager.DetermineLand(config.Lands, Context.User as SocketGuildUser, name);
                 if (land == null)
                 {

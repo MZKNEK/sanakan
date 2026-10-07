@@ -388,6 +388,11 @@ namespace Sanakan.Modules
 
             riddles = riddles.Shuffle().ToList();
             var riddle = riddles.FirstOrDefault();
+            if (riddle == null)
+            {
+                await SafeReplyAsync("", embed: $"{Context.User.Mention} brak dostępnych zagadek.".ToEmbedMessage(EMType.Error).Build());
+                return;
+            }
 
             riddle.RandomizeAnswers();
             var msg = await SafeReplyAsync(riddle.Get());

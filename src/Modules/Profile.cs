@@ -75,6 +75,12 @@ namespace Sanakan.Modules
             using (var db = new Database.DatabaseContext(Config))
             {
                 var botuser = await db.GetCachedFullUserAsync(Context.User.Id);
+                if (botuser == null)
+                {
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} nie odnaleziono profilu.".ToEmbedMessage(EMType.Error).Build());
+                    return;
+                }
+
                 var rsubs = botuser.TimeStatuses.Where(x => x.Type.IsSubType());
 
                 string subs = "brak";

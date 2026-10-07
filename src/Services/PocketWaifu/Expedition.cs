@@ -410,7 +410,10 @@ namespace Sanakan.Services.PocketWaifu
 
         public List<string> GetChancesFromExpedition(CardExpedition expedition)
         {
-            var itemDropTypeChances = _itemChanceOfItemTypeOnExpedition[expedition].GetChances();
+            if (!_itemChanceOfItemTypeOnExpedition.TryGetValue(expedition, out var itemChanceList))
+                return new List<string>();
+
+            var itemDropTypeChances = itemChanceList.GetChances();
             var drop = expedition switch
             {
                 CardExpedition.UltimateHardcore     => _ultimateExpeditionHardcoreItems,
