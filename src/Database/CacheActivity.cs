@@ -113,6 +113,14 @@ namespace Sanakan.Database
                         case WaifuCommandChannel wc: waifuIds.Add(wc.WaifuId); break;
                         case WaifuFightChannel wf: waifuIds.Add(wf.WaifuId); break;
                     }
+
+                    // zmiana właściciela (np. wymiana/duel) - czyścimy też cache poprzedniego gracza
+                    if (entry.State == EntityState.Modified
+                        && entry.Metadata.FindProperty(nameof(Card.GameDeckId)) != null
+                        && entry.OriginalValues[nameof(Card.GameDeckId)] is ulong previousOwner)
+                    {
+                        users.Add(previousOwner);
+                    }
                 }
 
                 if (cardIds.Count > 0)
