@@ -79,7 +79,7 @@ namespace Sanakan.Services
                 return ImageCheckResult.From(ImageUrlCheckResult.NotUrl);
 
             var uri = new Uri(url);
-            var host = hosts.FirstOrDefault(x => x.Url.Equals(uri.Host, StringComparison.CurrentCultureIgnoreCase));
+            var host = hosts.FirstOrDefault(x => x.Url.Equals(uri.Host, StringComparison.OrdinalIgnoreCase));
             return host != null;
         }
 
@@ -94,7 +94,7 @@ namespace Sanakan.Services
             var transform = false;
             if (!allowedHosts.IsNullOrEmpty())
             {
-                var host = allowedHosts.FirstOrDefault(x => x.Url.Equals(url.Host, StringComparison.CurrentCultureIgnoreCase));
+                var host = allowedHosts.FirstOrDefault(x => x.Url.Equals(url.Host, StringComparison.OrdinalIgnoreCase));
                 if (host == null)
                     return ImageCheckResult.From(ImageUrlCheckResult.BlacklistedHost);
 

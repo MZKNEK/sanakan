@@ -118,7 +118,7 @@ namespace Sanakan.Services
         }.Shuffle().ToList();
 
         private DiscordSocketClient _client;
-        private bool _isEnabled;
+        private volatile bool _isEnabled;
         private IConfig _config;
         private ILogger _logger;
         private Timer _timer;

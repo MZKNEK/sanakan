@@ -17,6 +17,7 @@ namespace Sanakan.Services
         private ILogger _logger;
         private DiscordSocketClient _client;
         private EmotesStats _stats;
+        private readonly object _lock = new object();
 
         public class EmotesStats
         {
@@ -39,8 +40,11 @@ namespace Sanakan.Services
 
         public void ResetStats()
         {
-            _stats.Counter.Clear();
-            _stats.Start = _time.Now();
+            lock (_lock)
+            {
+                _stats.Counter.Clear();
+                _stats.Start = _time.Now();
+            }
         }
 
         private Task HandleMessageAsync(SocketMessage message)
@@ -51,18 +55,21 @@ namespace Sanakan.Services
             if (msg.Author.IsBot || msg.Author.IsWebhook)
                 return Task.CompletedTask;
 
-            foreach (var tag in msg.Tags)
+            lock (_lock)
             {
-                if (tag.Type == TagType.Emoji)
+                foreach (var tag in msg.Tags)
                 {
-                    if (tag.Value is Emote em)
+                    if (tag.Type == TagType.Emoji)
                     {
-                        if (!_stats.Counter.ContainsKey($"{em}"))
+                        if (tag.Value is Emote em)
                         {
-                            _stats.Counter.Add($"{em}", 1);
-                            continue;
+                            if (!_stats.Counter.ContainsKey($"{em}"))
+                            {
+                                _stats.Counter.Add($"{em}", 1);
+                                continue;
+                            }
+                            _stats.Counter[$"{em}"] += 1;
                         }
-                        _stats.Counter[$"{em}"] += 1;
                     }
                 }
             }
@@ -73,8 +80,11 @@ namespace Sanakan.Services
         {
             try
             {
-                var file = GetReader();
-                file.Save(_stats);
+                lock (_lock)
+                {
+                    var file = GetReader();
+                    file.Save(_stats);
+                }
             }
             catch (Exception ex)
             {

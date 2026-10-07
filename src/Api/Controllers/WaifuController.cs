@@ -1173,7 +1173,8 @@ namespace Sanakan.Api.Controllers
 
         private async Task UpdateWishlistCountAsync(Database.DatabaseContext db, List<Card> cards, User user)
         {
-            var allWWCnt = await db.WishlistCountData.AsQueryable().AsNoTracking().ToListAsync();
+            var ids = cards.Select(x => x.Character).Distinct().ToList();
+            var allWWCnt = await db.WishlistCountData.AsQueryable().AsNoTracking().Where(x => ids.Contains(x.Id)).ToListAsync();
 
             foreach (var card in cards)
             {
