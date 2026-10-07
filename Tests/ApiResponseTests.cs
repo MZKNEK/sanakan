@@ -114,6 +114,18 @@ namespace Artifacts
             await AssertMessage(await _api.Client.PostAsync("/api/token", ApiServer.Json("\"wrong\"")), HttpStatusCode.Forbidden);
         }
 
+        // ochrona przed brute-force: 3 nieudane próby blokują klienta na 24h
+        [Fact]
+        public async Task Token_RepeatedInvalidKeys_AreLockedWith429()
+        {
+            for (int i = 0; i < Sanakan.Api.TokenAttemptGuard.MaxAttempts; i++)
+                Assert.Equal(HttpStatusCode.Forbidden, (await _api.Client.PostAsync("/api/token", ApiServer.Json("\"wrong\""))).StatusCode);
+
+            Assert.Equal(HttpStatusCode.TooManyRequests, (await _api.Client.PostAsync("/api/token", ApiServer.Json("\"wrong\""))).StatusCode);
+            // poprawny klucz też jest odrzucany w czasie blokady
+            Assert.Equal(HttpStatusCode.TooManyRequests, (await _api.Client.PostAsync("/api/token", ApiServer.Json($"\"{ApiServer.SiteKey}\""))).StatusCode);
+        }
+
         [Fact]
         public async Task SiteEndpoint_WithoutToken_Returns401()
         {

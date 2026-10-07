@@ -468,6 +468,15 @@ namespace Sanakan.Modules
                         await SafeReplyAsync("", embed: $"Nie znaleziono serwera o id `{guildId}`".ToEmbedMessage(EMType.Error).Build());
                         return;
                     }
+
+                    // operacja jest destrukcyjna - na obcym serwerze wymagamy uprawnień administratora
+                    var invoker = Context.User as SocketGuildUser;
+                    var isAdminThere = invoker != null && (guild.GetUser(invoker.Id)?.GuildPermissions.Administrator ?? false);
+                    if (!ModerationGuard.CanCleanGuild(guild.Id, Context.Guild.Id, isAdminThere))
+                    {
+                        await SafeReplyAsync("", embed: $"{Context.User.Mention} nie masz uprawnień administratora na serwerze `{guild.Name}`.".ToEmbedMessage(EMType.Error).Build());
+                        return;
+                    }
                 }
 
                 var config = await db.GetGuildConfigOrCreateAsync(guild.Id, true);
@@ -963,6 +972,13 @@ namespace Sanakan.Modules
                 if (name == null)
                 {
                     await SafeReplyAsync("", embed: "Nie podano nazwy roli.".ToEmbedMessage(EMType.Error).Build());
+                    return;
+                }
+
+                if (ModerationGuard.IsProtectedSelfRole(role.Id, role.Position, role.Permissions, config,
+                    Context.Guild?.CurrentUser?.Roles?.OrderByDescending(x => x.Position).FirstOrDefault()?.Position))
+                {
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} nie można dodać roli uprzywilejowanej do automatycznego zarządzania.".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 

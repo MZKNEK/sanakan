@@ -213,7 +213,82 @@ namespace Artifacts
 
     public class TokenControllerTests
     {
-        private static TokenController Controller(FakeConfig config) => new TokenController(config, new FixedTime { Value = System.DateTime.UtcNow });
+        private static TokenController Controller(FakeConfig config, Sanakan.Api.ITokenAttemptGuard guard = null)
+            => new TokenController(config, new FixedTime { Value = System.DateTime.UtcNow },
+                guard ?? new Sanakan.Api.TokenAttemptGuard(new FixedTime { Value = System.DateTime.UtcNow }));
+
+        private static FakeConfig SiteConfig()
+        {
+            var config = new FakeConfig();
+            config.Model.ApiKeys = new List<SanakanApiKey>
+            {
+                new SanakanApiKey { Key = "site-key", Bearer = "site" },
+            };
+            return config;
+        }
+
+        private static int? Status(IActionResult result) => (result as ObjectResult)?.StatusCode;
+
+        [Fact]
+        public void ThreeFailedAttempts_LockClientFor24Hours()
+        {
+            var time = new FixedTime { Value = new System.DateTime(2026, 1, 1, 12, 0, 0) };
+            var guard = new Sanakan.Api.TokenAttemptGuard(time);
+            var controller = new TokenController(SiteConfig(), time, guard);
+
+            for (int i = 0; i < Sanakan.Api.TokenAttemptGuard.MaxAttempts; i++)
+                Assert.Equal(403, Status(controller.CreateToken("wrong")));
+
+            // 4. próba - zablokowana, nawet z poprawnym kluczem
+            Assert.Equal(429, Status(controller.CreateToken("wrong")));
+            Assert.Equal(429, Status(controller.CreateToken("site-key")));
+
+            // po wygaśnięciu blokady poprawny klucz znowu działa
+            time.Value = time.Value.Add(Sanakan.Api.TokenAttemptGuard.LockDuration).AddMinutes(1);
+            Assert.IsType<OkObjectResult>(controller.CreateToken("site-key"));
+        }
+
+        [Fact]
+        public void SuccessfulAttempt_ResetsFailureCounter()
+        {
+            var time = new FixedTime { Value = new System.DateTime(2026, 1, 1, 12, 0, 0) };
+            var guard = new Sanakan.Api.TokenAttemptGuard(time);
+            var controller = new TokenController(SiteConfig(), time, guard);
+
+            Assert.Equal(403, Status(controller.CreateToken("wrong")));
+            Assert.Equal(403, Status(controller.CreateToken("wrong")));
+            Assert.IsType<OkObjectResult>(controller.CreateToken("site-key"));
+
+            // licznik wyzerowany - dwie kolejne pomyłki nie blokują
+            Assert.Equal(403, Status(controller.CreateToken("wrong")));
+            Assert.Equal(403, Status(controller.CreateToken("wrong")));
+            Assert.IsType<OkObjectResult>(controller.CreateToken("site-key"));
+        }
+
+        [Fact]
+        public void DifferentClients_HaveIndependentCounters()
+        {
+            var time = new FixedTime { Value = new System.DateTime(2026, 1, 1, 12, 0, 0) };
+            var guard = new Sanakan.Api.TokenAttemptGuard(time);
+
+            for (int i = 0; i < Sanakan.Api.TokenAttemptGuard.MaxAttempts; i++)
+                guard.RegisterFailure("ip-a");
+
+            Assert.True(guard.IsLocked("ip-a", out _));
+            Assert.False(guard.IsLocked("ip-b", out _));
+
+            guard.RegisterFailure("ip-b");
+            Assert.False(guard.IsLocked("ip-b", out _));
+        }
+
+        [Fact]
+        public void Guard_NullKey_IsSafe()
+        {
+            var guard = new Sanakan.Api.TokenAttemptGuard(new FixedTime());
+            Assert.False(guard.IsLocked(null, out _));
+            guard.RegisterFailure(null);
+            guard.RegisterSuccess(null);
+        }
 
         [Fact]
         public void EntryWithNullKey_DoesNotThrowAndOtherKeysWork()

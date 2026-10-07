@@ -108,6 +108,7 @@ namespace Sanakan.Api
             var tmpCnf = config.Get();
             services.AddMemoryCache();
             services.AddSingleton(config);
+            services.AddSingleton<ITokenAttemptGuard, TokenAttemptGuard>();
             services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(opt =>
             {
                 opt.TokenValidationParameters = new TokenValidationParameters

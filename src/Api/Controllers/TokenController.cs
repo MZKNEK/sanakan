@@ -22,11 +22,13 @@ namespace Sanakan.Api.Controllers
     {
         private readonly ISystemTime _time;
         private readonly IConfig _config;
+        private readonly ITokenAttemptGuard _guard;
 
-        public TokenController(IConfig config, ISystemTime time)
+        public TokenController(IConfig config, ISystemTime time, ITokenAttemptGuard guard)
         {
             _config = config;
             _time = time;
+            _guard = guard;
         }
 
         /// <summary>
@@ -40,16 +42,31 @@ namespace Sanakan.Api.Controllers
         {
             if (apikey == null) return "API Key Not Provided".ToResponse(401);
 
-            IActionResult response = "API Key Is Invalid".ToResponse(403);
-            var user = Authenticate(apikey);
-
-            if (user != null)
+            var clientKey = GetClientKey();
+            if (_guard.IsLocked(clientKey, out var retryAfter))
             {
-                var tokenData = BuildToken(user);
-                response = Ok(new { token = tokenData.Token, expire = tokenData.Expire });
+                var hours = (int)retryAfter.TotalHours;
+                var minutes = retryAfter.Minutes;
+                return $"Zbyt wiele nieudanych prób. Spróbuj ponownie za {hours}h {minutes}m.".ToResponse(429);
             }
 
-            return response;
+            var user = Authenticate(apikey);
+            if (user == null)
+            {
+                _guard.RegisterFailure(clientKey);
+                return "API Key Is Invalid".ToResponse(403);
+            }
+
+            _guard.RegisterSuccess(clientKey);
+
+            var tokenData = BuildToken(user);
+            return Ok(new { token = tokenData.Token, expire = tokenData.Expire });
+        }
+
+        private string GetClientKey()
+        {
+            var ip = HttpContext?.Connection?.RemoteIpAddress;
+            return ip?.ToString() ?? "unknown";
         }
 
         private TokenData BuildToken(string user)
