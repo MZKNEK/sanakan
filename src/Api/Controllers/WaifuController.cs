@@ -30,6 +30,10 @@ namespace Sanakan.Api.Controllers
     {
         private const uint MaxCardsPerRequest = 4000;
         private const uint MaxActivitiesPerRequest = 4000;
+        private const int MaxTopCharacters = 1000;
+
+        /// <summary>Zabezpiecza przesunięcie (uint) przed przepełnieniem rzutowania na int.</summary>
+        private static int ClampOffset(uint offset) => (int)Math.Min(offset, int.MaxValue);
         private const int MaxFilterItems = 1000;
         private const int MaxSearchTextLength = 100;
 
@@ -165,7 +169,7 @@ namespace Sanakan.Api.Controllers
                 query = CardsQueryFilter.Use(filter.OrderBy, query);
                 query = FilterCardsByIds(query, filter);
                 query = FilterCardsByTags(query, filter);
-                var cards = await query.Skip((int)offset).Take((int)Math.Min(count, MaxCardsPerRequest)).ToListAsync();
+                var cards = await query.Skip(ClampOffset(offset)).Take((int)Math.Min(count, MaxCardsPerRequest)).ToListAsync();
 
                 return new FilteredCards{TotalCards = await query.CountAsync(), Cards = await ToViewWithUsernamesAsync(cards)};
             }
@@ -198,7 +202,7 @@ namespace Sanakan.Api.Controllers
                 var expireTime = new MemoryCacheEntryOptions().SetAbsoluteExpiration(_time.Now().AddHours(4));
                 var cached = await FilterCardsByTags(query, filter).FromCacheAsync(expireTime, CacheTags.UltimateCards);
                 var cards = cached.ToList();
-                var page = cards.Skip((int)offset).Take((int)Math.Min(count, MaxCardsPerRequest)).ToList();
+                var page = cards.Skip(ClampOffset(offset)).Take((int)Math.Min(count, MaxCardsPerRequest)).ToList();
 
                 return new FilteredCards{TotalCards = cards.Count, Cards = await ToViewWithUsernamesAsync(page)};
             }
@@ -231,7 +235,7 @@ namespace Sanakan.Api.Controllers
                 var expireTime = new MemoryCacheEntryOptions().SetAbsoluteExpiration(_time.Now().AddHours(8));
                 var cached = await FilterCardsByTags(query, filter).FromCacheAsync(expireTime, CacheTags.UniqueCards);
                 var cards = cached.ToList();
-                var page = cards.Skip((int)offset).Take((int)Math.Min(count, MaxCardsPerRequest)).ToList();
+                var page = cards.Skip(ClampOffset(offset)).Take((int)Math.Min(count, MaxCardsPerRequest)).ToList();
 
                 return new FilteredCards{TotalCards = cards.Count, Cards = await ToViewWithUsernamesAsync(page)};
             }
@@ -277,7 +281,7 @@ namespace Sanakan.Api.Controllers
                 query = FilterCardsByTags(query, filter);
 
                 var username = await GetUsernameAsync(user.Shinden);
-                var cards = await query.Skip((int)offset).Take((int)Math.Min(count, MaxCardsPerRequest)).ToListAsync();
+                var cards = await query.Skip(ClampOffset(offset)).Take((int)Math.Min(count, MaxCardsPerRequest)).ToListAsync();
 
                 return new FilteredCards{TotalCards = query.Count(), Cards = cards.ToView(username, id, _time)};
             }
@@ -308,7 +312,7 @@ namespace Sanakan.Api.Controllers
                     return "User on blacklist".ToResponse(401);
                 }
 
-                var cards = await db.Cards.AsQueryable().AsSplitQuery().Where(x => x.GameDeckId == user.GameDeck.Id).Include(x => x.Tags).Skip((int)offset).Take((int)Math.Min(count, MaxCardsPerRequest)).AsNoTrackingWithIdentityResolution().ToListAsync();
+                var cards = await db.Cards.AsQueryable().AsSplitQuery().Where(x => x.GameDeckId == user.GameDeck.Id).Include(x => x.Tags).Skip(ClampOffset(offset)).Take((int)Math.Min(count, MaxCardsPerRequest)).AsNoTrackingWithIdentityResolution().ToListAsync();
                 var username = await GetUsernameAsync(user.Shinden);
                 return cards.ToView(username, 0, _time);
             }
@@ -383,12 +387,9 @@ namespace Sanakan.Api.Controllers
         {
             using (var db = new Database.DatabaseContext(_config))
             {
-                var top = await db.WishlistCountData.AsQueryable().OrderByDescending(x => x.Count).ToListAsync();
-                if (top == null)
-                {
-                    return "Not found".ToResponse(404);
-                }
-                return Ok(top.Take(count));
+                var limit = Math.Clamp(count, 1, MaxTopCharacters);
+                var top = await db.WishlistCountData.AsQueryable().AsNoTracking().OrderByDescending(x => x.Count).Take(limit).ToListAsync();
+                return Ok(top);
             }
         }
 

@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
@@ -1748,17 +1749,39 @@ namespace Sanakan.Modules
                 {
                     bUser.GameDeck.Karma += 0.01;
 
-                    foreach (var card in cardsInCage)
+                    var cageList = cardsInCage.ToList();
+                    var nick = (user.Nickname ?? user.GlobalName) ?? user.Username;
+
+                    // pobierz dane postaci równolegle (z ograniczeniem), zamiast sekwencyjnych żądań w pętli
+                    var charInfos = new Dictionary<ulong, Sden.Models.ICharacterInfo>();
+                    using (var gate = new SemaphoreSlim(5))
+                    {
+                        var fetches = cageList.Select(async card =>
+                        {
+                            await gate.WaitAsync();
+                            try
+                            {
+                                return (Character: card.Character, Info: await _shinden.GetCharacterInfoAsync(card.Character));
+                            }
+                            finally
+                            {
+                                gate.Release();
+                            }
+                        }).ToList();
+
+                        foreach (var fetched in await Task.WhenAll(fetches))
+                            if (fetched.Info != null) charInfos[fetched.Character] = fetched.Info;
+                    }
+
+                    foreach (var card in cageList)
                     {
                         card.InCage = false;
-                        var charInfo = await _shinden.GetCharacterInfoAsync(card.Character);
-                        if (charInfo != null)
+
+                        if (charInfos.TryGetValue(card.Character, out var charInfo)
+                            && charInfo?.Points != null
+                            && charInfo.Points.Any(x => x.Name.Equals(nick)))
                         {
-                            if (charInfo?.Points != null)
-                            {
-                                if (charInfo.Points.Any(x => x.Name.Equals((user.Nickname ?? user.GlobalName) ?? user.Username)))
-                                    card.Affection += 0.8;
-                            }
+                            card.Affection += 0.8;
                         }
 
                         var span = _time.Now() - card.CreationDate;

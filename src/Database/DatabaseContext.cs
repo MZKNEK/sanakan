@@ -122,6 +122,7 @@ namespace Sanakan.Database
             modelBuilder.Entity<TimeStatus>(entity =>
             {
                 entity.HasKey(e => e.Id);
+                entity.HasIndex(e => e.Guild);
 
                 entity.HasOne(e => e.User)
                     .WithMany(u => u.TimeStatuses);
@@ -180,6 +181,8 @@ namespace Sanakan.Database
             modelBuilder.Entity<TagCardRelation>(entity =>
             {
                 entity.HasKey("TagId", "CardId");
+                // PK pokrywa zapytania po TagId; osobny indeks obsługuje ładowanie tagów po CardId
+                entity.HasIndex(e => e.CardId);
             });
 
             modelBuilder.Entity<Item>(entity =>
@@ -356,27 +359,35 @@ namespace Sanakan.Database
             modelBuilder.Entity<MuteModifier>(entity =>
             {
                 entity.HasKey(e => e.Id);
+                entity.HasIndex(e => new { e.User, e.Guild });
             });
 
             // Analytics
             modelBuilder.Entity<UserAnalytics>(entity =>
             {
                 entity.HasKey(e => e.Id);
+                entity.HasIndex(e => new { e.UserId, e.MeasureDate });
+                entity.HasIndex(e => new { e.GuildId, e.MeasureDate });
             });
 
             modelBuilder.Entity<SystemAnalytics>(entity =>
             {
                 entity.HasKey(e => e.Id);
+                entity.HasIndex(e => e.MeasureDate);
             });
 
             modelBuilder.Entity<TransferAnalytics>(entity =>
             {
                 entity.HasKey(e => e.Id);
+                entity.HasIndex(e => new { e.DiscordId, e.Date });
+                entity.HasIndex(e => e.ShindenId);
             });
 
             modelBuilder.Entity<CommandsAnalytics>(entity =>
             {
                 entity.HasKey(e => e.Id);
+                entity.HasIndex(e => new { e.UserId, e.Date });
+                entity.HasIndex(e => new { e.GuildId, e.Date });
             });
 
             // Other

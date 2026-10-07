@@ -12,6 +12,7 @@ using Sanakan.Extensions;
 using Sanakan.Services.Executor;
 using Sanakan.Services.Time;
 using Shinden.Logger;
+using Z.EntityFramework.Plus;
 
 namespace Sanakan.Services
 {
@@ -291,7 +292,8 @@ namespace Sanakan.Services
                     usr.CommandsCnt += commands;
 
                     var newLevel = CalculateLevel(usr.ExpCnt);
-                    if (newLevel != usr.Level && calculateExp)
+                    bool levelChanged = newLevel != usr.Level && calculateExp;
+                    if (levelChanged)
                     {
                         usr.Level = newLevel;
                         await db.UserActivities.AddAsync(new UserActivityBuilder(_time)
@@ -341,6 +343,10 @@ namespace Sanakan.Services
                     });
 
                     await db.SaveChangesAsync();
+
+                    // poziom zmienia się rzadko, a pełny cache usera trzymamy długo - unieważnij go przy awansie
+                    if (levelChanged)
+                        QueryCacheManager.ExpireTag(new string[] { CacheTags.User(usr.Id) });
                 }
             });
         }

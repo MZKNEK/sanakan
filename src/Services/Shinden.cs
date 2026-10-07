@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Threading;
 using System.Threading.Tasks;
 using Discord.Commands;
 using Discord.WebSocket;
@@ -148,24 +149,36 @@ namespace Sanakan.Services
 
         public async Task<List<CharacterWithTitle>> GetTitlesForCharactersAsync(IEnumerable<IPersonSearch> characters)
         {
-            var list = new List<CharacterWithTitle>();
-            foreach (var ch in characters)
+            // ograniczamy równoległość, aby nie zalać API Shindena
+            using (var gate = new SemaphoreSlim(5))
             {
-                var entity = new CharacterWithTitle
+                var tasks = characters.Select(async ch =>
                 {
-                    Character = ch,
-                    Title = string.Empty
-                };
+                    await gate.WaitAsync().ConfigureAwait(false);
+                    try
+                    {
+                        var entity = new CharacterWithTitle
+                        {
+                            Character = ch,
+                            Title = string.Empty
+                        };
 
-                var info = await GetCharacterInfoAsync(ch.Id);
-                if (info != null)
-                {
-                    entity.Title = info?.Relations?.OrderBy(x => x.Id)?.FirstOrDefault()?.Title ?? string.Empty;
-                }
+                        var info = await GetCharacterInfoAsync(ch.Id).ConfigureAwait(false);
+                        if (info != null)
+                        {
+                            entity.Title = info?.Relations?.OrderBy(x => x.Id)?.FirstOrDefault()?.Title ?? string.Empty;
+                        }
 
-                list.Add(entity);
+                        return entity;
+                    }
+                    finally
+                    {
+                        gate.Release();
+                    }
+                }).ToList();
+
+                return new List<CharacterWithTitle>(await Task.WhenAll(tasks).ConfigureAwait(false));
             }
-            return list;
         }
 
         public string[] GetSearchResponse(IEnumerable<object> list, string title)
@@ -225,11 +238,11 @@ namespace Sanakan.Services
 
         public async Task SendSearchResponseAsync(SocketCommandContext context, string[] toSend, SearchSession session)
         {
-            var msg = new Discord.Rest.RestUserMessage[10];
+            var msg = new List<Discord.Rest.RestUserMessage>();
             for (int index = 0; index < toSend.Length; index++)
-                if (toSend[index] != null) msg[index] = await context.Channel.SendMessageAsync(toSend[index]);
+                if (toSend[index] != null) msg.Add(await context.Channel.SendMessageAsync(toSend[index]));
 
-            session.Messages = msg;
+            session.Messages = msg.ToArray();
             await _session.TryAddSession(session);
         }
 
