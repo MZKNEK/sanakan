@@ -61,7 +61,7 @@ namespace Sanakan.Services.Session.Models
 
                 await db.SaveChangesAsync();
 
-                QueryCacheManager.ExpireTag(new string[] { $"user-{user1.Id}", $"user-{user2.Id}","users" });
+                QueryCacheManager.ExpireTag(new string[] { CacheTags.User(user1.Id), CacheTags.User(user2.Id) });
             }
 
             Dispose();

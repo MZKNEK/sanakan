@@ -426,7 +426,7 @@ namespace Sanakan.Api.Controllers
                     }
 
                     result = await action(db, discordId);
-                    QueryCacheManager.ExpireTag(new string[] { $"user-{discordId}", "users" });
+                    QueryCacheManager.ExpireTag(new string[] { CacheTags.User(discordId) });
                 }
             }), discordId);
 

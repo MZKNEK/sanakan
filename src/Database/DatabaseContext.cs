@@ -17,6 +17,9 @@ namespace Sanakan.Database
     {
         private IConfig _config;
 
+        // Wyłącza unieważnianie cache w CacheActivity dla danego zapisu (np. często zapisywany exp).
+        public bool SuppressCacheInvalidation { get; set; }
+
         public DatabaseContext(IConfig config) : base()
         {
             _config = config;
@@ -73,7 +76,7 @@ namespace Sanakan.Database
             };
             optionsBuilder.UseMySql(_config.Get().ConnectionString,
                 new MySqlServerVersion(new System.Version(8, 0, 43)), opt => opt.EnableRetryOnFailure())
-                .AddInterceptors(DbActivity.Commands, DbActivity.Saves);
+                .AddInterceptors(DbActivity.Commands, DbActivity.Saves, CacheActivity.Interceptor);
         }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)

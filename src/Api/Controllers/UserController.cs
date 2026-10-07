@@ -360,7 +360,7 @@ namespace Sanakan.Api.Controllers
 
                         await dbs.SaveChangesAsync();
 
-                        QueryCacheManager.ExpireTag(new string[] { $"user-{user.Id}", "users" });
+                        QueryCacheManager.ExpireTag(new string[] { CacheTags.User(user.Id) });
                     }
                 }), id.DiscordUserId, Priority.High);
 
@@ -420,7 +420,7 @@ namespace Sanakan.Api.Controllers
 
                         await dbc.SaveChangesAsync();
 
-                        QueryCacheManager.ExpireTag(new string[] { $"user-{user.Id}", "users" });
+                        QueryCacheManager.ExpireTag(new string[] { CacheTags.User(user.Id) });
                     }
                 }), id, Priority.High);
 
@@ -473,7 +473,7 @@ namespace Sanakan.Api.Controllers
 
                         await dbs.SaveChangesAsync();
 
-                        QueryCacheManager.ExpireTag(new string[] { $"user-{user.Id}", "users" });
+                        QueryCacheManager.ExpireTag(new string[] { CacheTags.User(user.Id) });
                     }
                 }), user.Id, Priority.High);
 

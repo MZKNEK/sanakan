@@ -357,7 +357,7 @@ namespace Sanakan.Services.Session.Models
                             await db.SaveChangesAsync();
 
                             State = ExchangeStatus.End;
-                            QueryCacheManager.ExpireTag(new string[] { $"user-{P1.User.Id}", $"user-{P2.User.Id}", "users" });
+                            QueryCacheManager.ExpireTag(new string[] { CacheTags.User(P1.User.Id), CacheTags.User(P2.User.Id) });
                         }
                     }
                 }

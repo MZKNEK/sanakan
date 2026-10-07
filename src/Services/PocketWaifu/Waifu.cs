@@ -1038,7 +1038,7 @@ namespace Sanakan.Services.PocketWaifu
 
                 await db.SaveChangesAsync();
 
-                QueryCacheManager.ExpireTag(new string[] { $"user-{bUser.Id}", "users" });
+                QueryCacheManager.ExpireTag(new string[] { CacheTags.User(bUser.Id) });
 
                 return $"{discordUser.Mention} zakupił: _{thisItem.Item.Name}{boosterPackTitleName}{count}_.".ToEmbedMessage(EMType.Success).Build();
             }

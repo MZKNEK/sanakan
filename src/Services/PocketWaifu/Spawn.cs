@@ -215,7 +215,7 @@ namespace Sanakan.Services.PocketWaifu
 
                     await db.SaveChangesAsync();
 
-                    QueryCacheManager.ExpireTag(new string[] { $"user-{botUser.Id}", "users" });
+                    QueryCacheManager.ExpireTag(new string[] { CacheTags.User(botUser.Id) });
 
                     if (db.AddActivityFromNewCard(newCard, isOnUserWishlist, _time, botUser, winner.GetUserNickInGuild()))
                     {

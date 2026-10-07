@@ -61,7 +61,7 @@ namespace Sanakan.Api.Controllers
                 db.Questions.Add(question);
                 await db.SaveChangesAsync();
 
-                QueryCacheManager.ExpireTag(new string[] { $"quiz" });
+                QueryCacheManager.ExpireTag(new string[] { CacheTags.Quiz });
             }
             return "Question added!".ToResponse(200);
         }
@@ -83,7 +83,7 @@ namespace Sanakan.Api.Controllers
                     db.Questions.Remove(question);
                     await db.SaveChangesAsync();
 
-                    QueryCacheManager.ExpireTag(new string[] { $"quiz" });
+                    QueryCacheManager.ExpireTag(new string[] { CacheTags.Quiz });
 
                     return "Question removed!".ToResponse(200);
                 }

@@ -355,7 +355,7 @@ namespace Sanakan.Modules
                     {
                         await db.SaveChangesAsync();
 
-                        QueryCacheManager.ExpireTag(new string[] { $"user-{botuser.Id}", "users" });
+                        QueryCacheManager.ExpireTag(new string[] { CacheTags.User(botuser.Id) });
 
                         await SafeReplyAsync("", embed: $"**Odebrane nagrody:**\n\n{string.Join("\n", rewards)}".ToEmbedMessage(EMType.Success).WithUser(Context.User).Build());
                         return;
@@ -534,7 +534,7 @@ namespace Sanakan.Modules
 
                 await db.SaveChangesAsync();
 
-                QueryCacheManager.ExpireTag(new string[] { $"user-{botuser.Id}", "users" });
+                QueryCacheManager.ExpireTag(new string[] { CacheTags.User(botuser.Id) });
 
                 await SafeReplyAsync("", embed: $"{Context.User.Mention} {config.What()}".ToEmbedMessage(EMType.Success).Build());
             }
@@ -582,7 +582,7 @@ namespace Sanakan.Modules
 
                 await db.SaveChangesAsync();
 
-                QueryCacheManager.ExpireTag(new string[] { $"user-{botuser.Id}", "users" });
+                QueryCacheManager.ExpireTag(new string[] { CacheTags.User(botuser.Id) });
 
                 await SafeReplyAsync("", embed: $"{user.Mention} wykupił miesiąc globalnych emotek!".ToEmbedMessage(EMType.Success).Build());
             }
@@ -665,7 +665,7 @@ namespace Sanakan.Modules
 
                 await db.SaveChangesAsync();
 
-                QueryCacheManager.ExpireTag(new string[] { $"user-{botuser.Id}", "users" });
+                QueryCacheManager.ExpireTag(new string[] { CacheTags.User(botuser.Id) });
 
                 await user.AddRoleAsync(selectedRole);
             }
@@ -750,7 +750,7 @@ namespace Sanakan.Modules
 
                 await db.SaveChangesAsync();
 
-                QueryCacheManager.ExpireTag(new string[] { $"user-{botuser.Id}", "users" });
+                QueryCacheManager.ExpireTag(new string[] { CacheTags.User(botuser.Id) });
 
                 await SafeReplyAsync("", embed: $"{user.Mention} wykupił kolor!".ToEmbedMessage(EMType.Success).Build());
             }

@@ -229,7 +229,7 @@ namespace Sanakan.Modules
 
                     await db.SaveChangesAsync();
 
-                    QueryCacheManager.ExpireTag(new string[] { $"user-{botuser.Id}" });
+                    QueryCacheManager.ExpireTag(new string[] { CacheTags.User(botuser.Id) });
                 }
 
                 await SafeReplyAsync("", embed: "Konta zostały połączone.".ToEmbedMessage(EMType.Success).Build());

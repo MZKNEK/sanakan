@@ -266,7 +266,7 @@ namespace Sanakan.Services
         {
             return new Func<Task>(async () =>
             {
-                using (var db = new Database.DatabaseContext(_config))
+                using (var db = new Database.DatabaseContext(_config) { SuppressCacheInvalidation = true })
                 {
                     var usr = await db.GetUserOrCreateSimpleAsync(user.Id);
                     if (usr == null) return;
