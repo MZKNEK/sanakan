@@ -58,6 +58,7 @@ namespace Sanakan.Services
         private ITextChannel _channel;
         private ulong _missingChannelId;
         private long _missingChannelRetryAt;
+        private int _disposed;
 
         public DiscordChannelLogger(ConsoleLogger console, IConfig config)
         {
@@ -121,6 +122,24 @@ namespace Sanakan.Services
             {
                 _console.Log($"DiscordLog: {ex.Message}");
             }
+
+            await DisposeRestAsync().ConfigureAwait(false);
+        }
+
+        // DiscordRestClient trzymany przez cala zycie bota - zamykamy go przy zamknieciu
+        private async Task DisposeRestAsync()
+        {
+            if (Interlocked.Exchange(ref _disposed, 1) != 0)
+                return;
+
+            try
+            {
+                if (_rest.LoginState == LoginState.LoggedIn)
+                    await _rest.LogoutAsync().ConfigureAwait(false);
+            }
+            catch { }
+
+            _rest.Dispose();
         }
 
         public static List<string> Pack(Queue<string> pending, string header, int maxMessages, int maxLength = MaxMessageLength)

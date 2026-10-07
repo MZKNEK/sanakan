@@ -165,7 +165,7 @@ namespace Sanakan
 #if !DEBUG
             _config = new ConfigManager("Config.json");
 #else
-            _config = new ConfigManager("ConfigDebug.json");
+            _config = new ConfigManager("ConfigDebug.json", true);
 #endif
         }
 

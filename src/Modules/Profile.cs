@@ -282,25 +282,6 @@ namespace Sanakan.Modules
 
                 var url = Api.Models.CardFinalView.GetProfileUrl(dataUser.Id);
                 var profileUri = $"{Dir.FakeCardsAsProfiles}/{dataUser.Id}.webp";
-                if (File.Exists(profileUri))
-                {
-                    var file = new FileInfo(profileUri);
-                    var mb = file.Length / 1024 / 1024;
-                    var dateToCheck = _time.Now().AddDays(1);
-                    if (file.CreationTime > dateToCheck && mb > 3)
-                    {
-                        if (mb > 9)
-                        {
-                            await Context.Channel.SendMessageAsync(url);
-                        }
-                        else
-                        {
-                            await Context.Channel.SendFileAsync(profileUri);
-                        }
-                        return;
-                    }
-                }
-
                 dataUser.GameDeck.Cards = (await db.GetCachedUserGameDeckAsync(searchId)).Cards;
                 using (var image = await _profile.GetProfileImageAsync(usr, dataUser, rankingPosition))
                 {

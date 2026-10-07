@@ -1730,6 +1730,11 @@ namespace Sanakan.Modules
             using (var db = new Database.DatabaseContext(Config))
             {
                 var guildConfig = await db.GetCachedGuildFullConfigAsync(user.Guild.Id);
+                if (guildConfig == null)
+                {
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} serwer nie jest skonfigurowany.".ToEmbedMessage(EMType.Error).Build());
+                    return;
+                }
 
                 var duser = await db.GetUserOrCreateSimpleAsync(user.Id);
                 var globalRole = user.Guild.GetRole(guildConfig.GlobalEmotesRole);

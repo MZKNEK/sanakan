@@ -9,12 +9,10 @@ namespace Sanakan.Config
         private ConfigModel _config;
         private JsonFileReader _reader;
 
-        public ConfigManager(string path)
+        public ConfigManager(string path, bool isDebug = false)
         {
             _reader = new JsonFileReader(path);
-            _config = path.Contains("debug", System.StringComparison.CurrentCultureIgnoreCase) 
-            ? LoadOrCreateTemplate() 
-            : Load();
+            _config = isDebug ? LoadOrCreateTemplate() : Load();
         }
 
         public ConfigModel Get() => _config;

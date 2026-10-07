@@ -50,13 +50,16 @@ namespace Sanakan.Config
             if (_path != null && path == DEFAULT)
                 path = _path;
 
-            using (StreamWriter sw = File.CreateText(path))
+            var temp = path + ".tmp";
+            using (StreamWriter sw = File.CreateText(temp))
             {
                 using (JsonWriter writer = new JsonTextWriter(sw))
                 {
                     new JsonSerializer().Serialize(writer, obj);
                 }
             }
+
+            File.Move(temp, path, true);
         }
     }
 }
