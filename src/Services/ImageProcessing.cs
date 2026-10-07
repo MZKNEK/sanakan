@@ -322,8 +322,8 @@ namespace Sanakan.Services
             if (height > 0 || width > 0)
                 CheckImageSize(image, new Size(width, height), true);
 
-            var topImage = image.Clone(x => x.Crop(sizeTop.Width, sizeTop.Height));
-            var botImage = image.Clone(x => x.Crop(new Rectangle(0, sizeTop.Height, sizeBot.Width, sizeBot.Height)));
+            using var topImage = image.Clone(x => x.Crop(sizeTop.Width, sizeTop.Height));
+            using var botImage = image.Clone(x => x.Crop(new Rectangle(0, sizeTop.Height, sizeBot.Width, sizeBot.Height)));
 
             topImage.SaveToPath(pathTop);
             botImage.SaveToPath(pathBot);
@@ -2263,7 +2263,7 @@ namespace Sanakan.Services
 
         private async Task<Image> GetAnimatedWaifuCardAsync(Card card, bool noStatsImage = false)
         {
-            var characterImg = card.FromFigure ? new Image<Rgba32>(475, 667) : Image.Load(Dir.GetResource("PW/empty.png"));
+            using var characterImg = card.FromFigure ? new Image<Rgba32>(475, 667) : Image.Load(Dir.GetResource("PW/empty.png"));
             using (var cardImg = await GetImageFromUrlOrLocalAsync(card.GetImage() ?? "http://cdn.shinden.eu/cdn1/other/placeholders/title/225x350.jpg"))
             {
                 using (var image = cardImg is null ? characterImg : cardImg)

@@ -33,14 +33,13 @@ namespace Sanakan.Extensions
 
         public static string TrimToLength(this string s, int length = 3000)
         {
-            if (s == null) return "";
+            if (string.IsNullOrEmpty(s)) return s ?? "";
+            if (length < 1) return "";
             if (s.Length <= length) return s;
 
-            var charAr = s.ToCharArray();
-            for (int i = 1; i < 4; i++) charAr[length - i] = '.';
-            charAr[length] = '\0';
+            if (length <= 3) return s.Substring(0, length);
 
-            return new String(charAr, 0, Array.IndexOf(charAr, '\0'));
+            return s.Substring(0, length - 3) + "...";
         }
 
         public static string ConvertBBCodeToMarkdown(this string s)
@@ -99,11 +98,10 @@ namespace Sanakan.Extensions
 
         public static bool IsCommand(this string message, string prefix)
         {
-            if (string.IsNullOrEmpty(message))
+            if (string.IsNullOrEmpty(message) || string.IsNullOrEmpty(prefix))
                 return false;
 
-            prefix = prefix.Replace(".", @"\.").Replace("?", @"\?");
-            return new Regex($@"^{prefix}\w+", RegexOptions.Compiled | RegexOptions.IgnoreCase).Matches(message).Count > 0;
+            return new Regex($@"^{Regex.Escape(prefix)}\w+", RegexOptions.Compiled | RegexOptions.IgnoreCase).Matches(message).Count > 0;
         }
 
         public static ObjectResult ToResponse(this string str, int Code = 200)

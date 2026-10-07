@@ -74,10 +74,10 @@ namespace Sanakan.Services
             => GetOneRandomFrom(enumerable.ToArray());
 
         public static T GetOneRandomFrom<T>(List<T> list)
-            => list[GetRandomValue(list.Count)];
+            => list.Count < 1 ? default : list[GetRandomValue(list.Count)];
 
         public static T GetOneRandomFrom<T>(T[] arr)
-            => arr[GetRandomValue(arr.Length)];
+            => arr.Length < 1 ? default : arr[GetRandomValue(arr.Length)];
 
         public CoinSide RandomizeSide()
             => (CoinSide) GetRandomValue(2);

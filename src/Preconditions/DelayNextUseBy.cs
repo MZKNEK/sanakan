@@ -6,6 +6,7 @@ using Sanakan.Config;
 using Sanakan.Extensions;
 using Sanakan.Services.Time;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -28,7 +29,9 @@ namespace Sanakan.Preconditions
         private readonly DelayMethod _method;
         private readonly TimeSpan _time;
 
-        private static Dictionary<(string, ulong), DateTime> _entries = new Dictionary<(string, ulong), DateTime>();
+        private static readonly ConcurrentDictionary<(string, ulong), DateTime> _entries = new ConcurrentDictionary<(string, ulong), DateTime>();
+        private const int MaxEntries = 2000;
+        private static readonly TimeSpan EntryMaxAge = TimeSpan.FromHours(24);
 
         public DelayNextUseBy(double time_min, ResType resType = ResType.MinSec, DelayMethod method = DelayMethod.PerUser)
         {
@@ -79,12 +82,12 @@ namespace Sanakan.Preconditions
             }
 
             var tService = (ISystemTime)services.GetService(typeof(ISystemTime));
-            var userId = _method == DelayMethod.PerUser ? user.Id : 1;
-            var cmdKey = (command.Name, context.User.Id);
-            if (_entries.ContainsKey(cmdKey))
+            var cmdKey = BuildKey(command.Name, _method, user.Id);
+            var now = tService.Now();
+
+            if (_entries.TryGetValue(cmdKey, out var lastUse))
             {
-                var lastUse = _entries[cmdKey];
-                if (lastUse + _time > tService.Now())
+                if (lastUse + _time > now)
                 {
                     switch (_responseType)
                     {
@@ -92,25 +95,41 @@ namespace Sanakan.Preconditions
                             return PreconditionResult.FromError($"{context.User.Mention} tego polecenia możesz użyć raz na jakiś czas.");
 
                         case ResType.HourMin:
-                            var min = (int)(lastUse + _time - tService.Now()).TotalMinutes;
+                            var min = (int)(lastUse + _time - now).TotalMinutes;
                             return PreconditionResult.FromError($"{context.User.Mention} tego polecenia możesz użyć za {min / 60}h {min % 60}m.");
 
                         default:
                         case ResType.MinSec:
-                            var sec = (int)(lastUse + _time - tService.Now()).TotalSeconds;
+                            var sec = (int)(lastUse + _time - now).TotalSeconds;
                             return PreconditionResult.FromError($"{context.User.Mention} tego polecenia możesz użyć za {sec / 60}m {sec % 60}s.");
                     }
                 }
 
-                _entries[cmdKey] = tService.Now();
+                _entries[cmdKey] = now;
             }
             else
             {
-                _entries.Add(cmdKey, tService.Now());
+                _entries.TryAdd(cmdKey, now);
             }
+
+            Cleanup(now);
 
             return PreconditionResult.FromSuccess();
 #endif
         }
+
+        private static void Cleanup(DateTime now)
+        {
+            if (_entries.Count <= MaxEntries)
+                return;
+
+            foreach (var entry in _entries)
+                if (now - entry.Value > EntryMaxAge)
+                    _entries.TryRemove(entry.Key, out _);
+        }
+
+        // Global dzieli jeden klucz dla wszystkich; PerUser kluczuje po uzytkowniku
+        public static (string Command, ulong User) BuildKey(string command, DelayMethod method, ulong userId)
+            => (command, method == DelayMethod.PerUser ? userId : 1UL);
     }
 }

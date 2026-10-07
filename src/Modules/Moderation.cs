@@ -70,6 +70,9 @@ namespace Sanakan.Modules
             if (count < 1)
                 return;
 
+            if (count > 300)
+                count = 300;
+
             await Context.Message.DeleteAsync();
             if (Context.Channel is ITextChannel channel)
             {
@@ -1852,6 +1855,9 @@ namespace Sanakan.Modules
         [Remarks("5"), RequireAnyAdminOrModRole]
         public async Task GetRandomPairsAsync([Summary("liczba par")] uint count)
         {
+            if (count > 300)
+                count = 300;
+
             var pairs = new List<Tuple<int, int>>();
             var total = Enumerable.Range(1, (int)count * 2).ToList();
 
