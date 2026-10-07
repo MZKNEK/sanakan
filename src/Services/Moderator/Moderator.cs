@@ -35,7 +35,7 @@ namespace Sanakan.Services
         IgnoredChannels
     }
 
-    public class Moderator
+    public class Moderator : IDisposable
     {
         private DiscordSocketClient _client;
         private ImageProcessing _img;
@@ -43,6 +43,7 @@ namespace Sanakan.Services
         private ILogger _logger;
         private IConfig _config;
         private Timer _timer;
+        private readonly SemaphoreSlim _penaltySweep = new SemaphoreSlim(1, 1);
 
         public Moderator(ILogger logger, IConfig config, DiscordSocketClient client, ISystemTime time, ImageProcessing img)
         {
@@ -54,6 +55,9 @@ namespace Sanakan.Services
 
             _timer = new Timer(async _ =>
             {
+                if (!_penaltySweep.Wait(0))
+                    return;
+
                 try
                 {
                     using (var db = new Database.DatabaseContext(_config))
@@ -64,6 +68,10 @@ namespace Sanakan.Services
                 catch (Exception ex)
                 {
                     _logger.LogError($"in penalty: {ex}");
+                }
+                finally
+                {
+                    _penaltySweep.Release();
                 }
             },
             null,
@@ -82,6 +90,9 @@ namespace Sanakan.Services
                 if (user != null)
                 {
                     var gconfig = await db.GetCachedGuildFullConfigAsync(guild.Id);
+                    if (gconfig == null)
+                        continue;
+
                     var muteModRole = guild.GetRole(gconfig.ModMuteRole);
                     var muteRole = guild.GetRole(gconfig.MuteRole);
 
@@ -688,6 +699,12 @@ namespace Sanakan.Services
             QueryCacheManager.ExpireTag(new string[] { CacheTags.Mute });
 
             return exInfo;
+        }
+
+        public void Dispose()
+        {
+            _timer?.Dispose();
+            _penaltySweep.Dispose();
         }
     }
 }

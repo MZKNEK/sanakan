@@ -20,11 +20,13 @@ namespace Sanakan.Api.Controllers
     {
         private readonly Helper _helper;
         private readonly IConfig _config;
+        private readonly Shinden.Logger.ILogger _logger;
 
-        public InfoController(Helper helper, IConfig config)
+        public InfoController(Helper helper, IConfig config, Shinden.Logger.ILogger logger)
         {
             _helper = helper;
             _config = config;
+            _logger = logger;
         }
 
         /// <summary>
@@ -44,7 +46,8 @@ namespace Sanakan.Api.Controllers
             }
             catch(Exception ex)
             {
-                return ex.Message.ToResponse(500);
+                _logger?.LogError($"Info commands: {ex}");
+                return "Internal Server Error".ToResponse(500);
             }
         }
 
@@ -65,7 +68,8 @@ namespace Sanakan.Api.Controllers
             }
             catch(Exception ex)
             {
-                return ex.Message.ToResponse(500);
+                _logger?.LogError($"Info commands: {ex}");
+                return "Internal Server Error".ToResponse(500);
             }
         }
 

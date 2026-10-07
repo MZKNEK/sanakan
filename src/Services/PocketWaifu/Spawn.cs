@@ -1,6 +1,7 @@
 #pragma warning disable 1591
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -28,8 +29,8 @@ namespace Sanakan.Services.PocketWaifu
         private IConfig _config;
         private Waifu _waifu;
 
-        private Dictionary<ulong, long> ServerCounter;
-        private Dictionary<ulong, long> UserCounter;
+        private ConcurrentDictionary<ulong, long> ServerCounter;
+        private ConcurrentDictionary<ulong, long> UserCounter;
 
         private Emoji ClaimEmote = new Emoji("🖐");
 
@@ -43,8 +44,8 @@ namespace Sanakan.Services.PocketWaifu
             _waifu = waifu;
             _time = time;
 
-            ServerCounter = new Dictionary<ulong, long>();
-            UserCounter = new Dictionary<ulong, long>();
+            ServerCounter = new ConcurrentDictionary<ulong, long>();
+            UserCounter = new ConcurrentDictionary<ulong, long>();
 #if !DEBUG
             _client.MessageReceived += HandleMessageAsync;
             LoadDumpedData();
@@ -91,7 +92,7 @@ namespace Sanakan.Services.PocketWaifu
                     var oldData = file.Load<Dictionary<ulong, long>>();
                     if (oldData != null && oldData?.Count > 0)
                     {
-                        UserCounter = oldData;
+                        UserCounter = new ConcurrentDictionary<ulong, long>(oldData);
                     }
                     file.Delete();
                 }
@@ -106,9 +107,9 @@ namespace Sanakan.Services.PocketWaifu
 
         private void HandleGuildAsync(ITextChannel spawnChannel, ITextChannel trashChannel, long daily, string mention, bool noExp)
         {
-            if (!ServerCounter.Any(x => x.Key == spawnChannel.GuildId))
+            if (!ServerCounter.ContainsKey(spawnChannel.GuildId))
             {
-                ServerCounter.Add(spawnChannel.GuildId, 0);
+                ServerCounter.TryAdd(spawnChannel.GuildId, 0);
                 return;
             }
 
@@ -126,7 +127,7 @@ namespace Sanakan.Services.PocketWaifu
             if (!_config.Get().SafariEnabled) return;
             if (!Fun.TakeATry(chance)) return;
 
-            ServerCounter[spawnChannel.GuildId] += 1;
+            ServerCounter.AddOrUpdate(spawnChannel.GuildId, 1, (_, v) => v + 1);
             _ = Task.Run(async () =>
             {
                 await SpawnCardAsync(spawnChannel, trashChannel, mention);
@@ -280,17 +281,19 @@ namespace Sanakan.Services.PocketWaifu
         private void HandleUser(SocketUserMessage message)
         {
             var author = message.Author;
-            if (!UserCounter.Any(x => x.Key == author.Id))
+
+            var added = GetMessageRealLenght(message);
+            if (!UserCounter.ContainsKey(author.Id))
             {
-                UserCounter.Add(author.Id, GetMessageRealLenght(message));
+                UserCounter.TryAdd(author.Id, added);
                 return;
             }
 
             var charNeeded = _config.Get().CharPerPacket;
             if (charNeeded <= 0) charNeeded = 3250;
 
-            UserCounter[author.Id] += GetMessageRealLenght(message);
-            if (UserCounter[author.Id] > charNeeded)
+            var total = UserCounter.AddOrUpdate(author.Id, added, (_, v) => v + added);
+            if (total > charNeeded)
             {
                 UserCounter[author.Id] = 0;
                 SpawnUserPacket(author, message.Channel);

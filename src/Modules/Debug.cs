@@ -1,6 +1,7 @@
 ﻿#pragma warning disable 1591
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -30,7 +31,7 @@ namespace Sanakan.Modules
     [Name("Debug"), Group("dev"), DontAutoLoad]
     public class Debug : SanakanModuleBase<SocketCommandContext>
     {
-        private static Dictionary<string, CancellationTokenSource>  _lotteries = new Dictionary<string, CancellationTokenSource>();
+        private static ConcurrentDictionary<string, CancellationTokenSource>  _lotteries = new ConcurrentDictionary<string, CancellationTokenSource>();
 
         private Waifu _waifu;
         private Spawn _spawn;
@@ -524,7 +525,7 @@ namespace Sanakan.Modules
 
             var source = new CancellationTokenSource();
             var lid = $"{Context.User.Id}{_time.Now()}-{repeat}".Replace(' ', 'x');
-            _lotteries.Add(lid, source);
+            _lotteries.TryAdd(lid, source);
 
             for (uint i = 0; i < repeat; i++)
             {
@@ -537,7 +538,7 @@ namespace Sanakan.Modules
                 {
                     if (_lotteries.ContainsKey(lid))
                     {
-                        _lotteries.Remove(lid);
+                        _lotteries.TryRemove(lid, out _);
                         source.Dispose();
 
                         await SafeReplyAsync("", embed: $"Laud lama w loterii: {ex.Message}".ToEmbedMessage(EMType.Error).Build());
@@ -555,7 +556,7 @@ namespace Sanakan.Modules
 
             if (_lotteries.ContainsKey(lid))
             {
-                _lotteries.Remove(lid);
+                _lotteries.TryRemove(lid, out _);
                 source.Dispose();
             }
         }
@@ -574,7 +575,7 @@ namespace Sanakan.Modules
             if (_lotteries.ContainsKey(lid))
             {
                 _lotteries[lid].Cancel();
-                _lotteries.Remove(lid);
+                _lotteries.TryRemove(lid, out _);
                 await SafeReplyAsync("", embed: "Rest in pepperoni.".ToEmbedMessage(EMType.Bot).Build());
                 return;
             }
@@ -2018,7 +2019,14 @@ namespace Sanakan.Modules
         [Remarks("")]
         public async Task SendAsEmbedFromAttachment()
         {
-            var url = Context.Message.Attachments.First().Url;
+            var attachment = Context.Message.Attachments.FirstOrDefault();
+            if (attachment == null)
+            {
+                await SafeReplyAsync("", embed: $"{Context.User.Mention} brak załącznika.".ToEmbedMessage(EMType.Error).Build());
+                return;
+            }
+
+            var url = attachment.Url;
             await SafeReplyAsync("", embed: $"Obrazek: {url}".ToEmbedMessage(EMType.Info).WithImageUrl(url).Build());
         }
 
@@ -2030,6 +2038,12 @@ namespace Sanakan.Modules
             using (var db = new Database.DatabaseContext(Config))
             {
                 var card = await db.Cards.AsQueryable().FirstOrDefaultAsync(x => x.Id == wid);
+                if (card == null)
+                {
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} nie odnaleziono karty.".ToEmbedMessage(EMType.Error).Build());
+                    return;
+                }
+
                 await SafeReplyAsync("", embed: $"Fake: {card.Quality.Fake(card.BorderOverflow).ToName()}".ToEmbedMessage(EMType.Info).Build());
             }
         }
