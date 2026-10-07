@@ -276,6 +276,11 @@ namespace Sanakan.TypeReaders
                     case ProfileConfigType.BackgroundAndStyle:
                     case ProfileConfigType.Style:
                     {
+                        if (globalParamIndex >= param.Length)
+                        {
+                            return Task.FromResult(TypeReaderResult.FromError(CommandError.ParseFailed, "Nie rozpoznano stylu profilu!"));
+                        }
+
                         input = strippedInput.ToString();
                         isIndex = uint.TryParse(param[globalParamIndex], out var styleIndex);
                         var selectedStyleType = GetSelectedStyle(input, styleIndex, isIndex);
@@ -352,6 +357,11 @@ namespace Sanakan.TypeReaders
 
                     case ProfileConfigType.AvatarBorder:
                     {
+                        if (globalParamIndex >= param.Length)
+                        {
+                            return Task.FromResult(TypeReaderResult.FromError(CommandError.ParseFailed, "Nie rozpoznano ramki awatara!"));
+                        }
+
                         input = strippedInput.ToString();
                         isIndex = uint.TryParse(param[globalParamIndex], out var avatarIndex);
                         var selectedAvatarType = GetSelectedAvatarBorder(input, avatarIndex, isIndex);

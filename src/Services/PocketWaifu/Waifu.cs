@@ -610,7 +610,7 @@ namespace Sanakan.Services.PocketWaifu
                 new RarityChance(75,   Rarity.A ),
                 new RarityChance(175,  Rarity.B ),
                 new RarityChance(370,  Rarity.C ),
-                new RarityChance(650,  Rarity.D ),
+                new RarityChance(620,  Rarity.D ),
                 new RarityChance(1000, Rarity.E ),
             };
 

@@ -1013,6 +1013,10 @@ namespace Sanakan.Extensions
                 || await target.user.GameDeck.RemoveCharacterFromWishListAsync(card.Character, db);
 
             db.AddActivityFromNewCard(card, isOnUserWishlist, time, target.user, target.username);
+
+            // karta zmieniła właściciela - obie talie muszą mieć spójne liczniki (wpływają na matchmaking PvP)
+            source.user.GameDeck.RecalculateDeck();
+            target.user.GameDeck.RecalculateDeck();
         }
 
         public static int GetMarketBonusFromUltimate(this Card card) => card.Quality.Fake(card.BorderOverflow) switch

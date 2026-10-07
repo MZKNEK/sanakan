@@ -640,7 +640,7 @@ namespace Sanakan.Modules
 
                 var totalCards = new List<Card>();
                 var destroyedCards = new List<Card>();
-                var charactersOnWishlist = new List<string>();
+                var charactersOnWishlist = new HashSet<ulong>();
                 foreach (var pack in packs)
                 {
                     var cards = await _waifu.OpenBoosterPackAsync(Context.User, pack, bUser.PoolType);
@@ -670,11 +670,21 @@ namespace Sanakan.Modules
                 foreach (var card in totalCards)
                 {
                     if (await bUser.GameDeck.RemoveCharacterFromWishListAsync(card.Character, db))
-                        charactersOnWishlist.Add(card.Name);
+                    {
+                        charactersOnWishlist.Add(card.Character);
+
+                        // zaktualizuj lokalny snapshot, aby kolejne karty tej samej postaci widziały nowy licznik
+                        var removed = allWWCnt.FirstOrDefault(x => x.Id == card.Character);
+                        if (removed != null)
+                        {
+                            removed.Count = Math.Max(0, removed.Count - 1);
+                            removed.ACount = Math.Max(0, removed.ACount - 1);
+                        }
+                    }
 
                     if (checkWishlists)
                     {
-                        bool isOnUserWishlist = charactersOnWishlist.Any(x => x == card.Name);
+                        bool isOnUserWishlist = charactersOnWishlist.Contains(card.Character);
                         var thisCardWishlistInfo = allWWCnt.FirstOrDefault(x => x.Id == card.Character);
                         var wishlistsCnt = thisCardWishlistInfo?.Count ?? 0;
                         var awishlistsCnt = thisCardWishlistInfo?.ACount ?? 0;
@@ -719,7 +729,7 @@ namespace Sanakan.Modules
                 {
                     if (checkWishlists)
                     {
-                        bool isOnUserWishlist = charactersOnWishlist.Any(x => x == card.Name);
+                        bool isOnUserWishlist = charactersOnWishlist.Contains(card.Character);
                         if (destroyedCards.Any(x => x.Id == card.Id))
                         {
                             openString += "🖤 ";
@@ -4263,7 +4273,7 @@ namespace Sanakan.Modules
 
                 if (bUser.GameDeck.CanCreateDemon())
                 {
-                    if (thisCard.Dere == Dere.Yami)
+                    if (thisCard.Dere.BlocksDemonTransform())
                     {
                         await SafeReplyAsync("", embed: $"{Context.User.Mention} ta karta została już przeistoczona wcześniej.".ToEmbedMessage(EMType.Error).Build());
                         return;
@@ -4300,7 +4310,7 @@ namespace Sanakan.Modules
                 }
                 else if (bUser.GameDeck.CanCreateAngel())
                 {
-                    if (thisCard.Dere == Dere.Raito)
+                    if (thisCard.Dere.BlocksAngelTransform())
                     {
                         await SafeReplyAsync("", embed: $"{Context.User.Mention} ta karta została już przeistoczona wcześniej.".ToEmbedMessage(EMType.Error).Build());
                         return;

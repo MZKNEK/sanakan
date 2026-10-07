@@ -490,6 +490,19 @@ namespace Sanakan.Extensions
         public static double CalculateDeckPower(this GameDeck deck)
             => deck.Cards.Where(x => x.Active).Sum(x => x.CalculateCardPower());
 
+        /// <summary>
+        /// Przelicza zapisane w bazie pola talii (moc i liczba aktywnych kart) na podstawie kolekcji kart.
+        /// Należy wołać po każdej operacji przenoszącej/zmieniającej własność lub aktywność kart.
+        /// </summary>
+        public static void RecalculateDeck(this GameDeck deck)
+        {
+            if (deck?.Cards == null)
+                return;
+
+            deck.CardsInDeck = deck.Cards.Count(x => x.Active);
+            deck.DeckPower = deck.CalculateDeckPower();
+        }
+
         public static int GetFreeCardCooldownReductionHours(this GameDeck deck)
         {
             var ultimateCards = deck.Cards.Where(x => x.FromFigure).ToList();

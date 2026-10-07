@@ -154,7 +154,7 @@ namespace Sanakan.Services.PocketWaifu
                     await Task.Delay(TimeSpan.FromMinutes(5));
 
                     var usersReacted = await msg.GetReactionUsersAsync(ClaimEmote, 300).FlattenAsync();
-                    var users = usersReacted.ToList();
+                    var users = usersReacted.Where(u => !u.IsBot && u.Id != _client.CurrentUser.Id).ToList();
 
                     IUser winner = null;
                     using (var db = new Database.DatabaseContext(_config))

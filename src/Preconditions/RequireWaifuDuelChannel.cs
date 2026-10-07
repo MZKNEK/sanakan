@@ -24,7 +24,7 @@ namespace Sanakan.Preconditions
                 var gConfig = await db.GetCachedGuildFullConfigAsync(context.Guild.Id);
                 if (gConfig == null) return PreconditionResult.FromSuccess();
 
-                if (gConfig?.WaifuConfig?.DuelChannel != null)
+                if (gConfig?.WaifuConfig?.DuelChannel is > 0)
                 {
                     if (gConfig.WaifuConfig.DuelChannel == context.Channel.Id)
                         return PreconditionResult.FromSuccess();
