@@ -73,6 +73,9 @@ namespace Sanakan.Api.Controllers
         [HttpPost("find"), AllowAnonymous]
         public async Task<ActionResult<IEnumerable<Shinden.Models.IUserSearch>>> GetUserIdByNameAsync([FromBody, Required]string name)
         {
+            if (string.IsNullOrWhiteSpace(name) || name.Length > 256)
+                return "Invalid name!".ToResponse(400);
+
             var res = await _shClient.Search.UserAsync(name);
             if (!res.IsSuccessStatusCode())
             {

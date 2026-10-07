@@ -5,6 +5,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
 using Sanakan.Database.Models;
@@ -40,11 +41,13 @@ namespace Sanakan.Services
         private ConcurrentDictionary<(FontFamily, float), Font> _fonts;
         private readonly List<DomainData> _imageServices;
         private readonly string[] _extensions = new[] { "png", "jpg", "jpeg", "gif", "webp" };
+        private readonly bool _allowPrivateHosts;
 
-        public ImageProcessing(ShindenClient shinden, TagIcon gallery)
+        public ImageProcessing(ShindenClient shinden, TagIcon gallery, bool allowPrivateHosts = false)
         {
             _shclient = shinden;
             _galleryTag = gallery;
+            _allowPrivateHosts = allowPrivateHosts;
             _httpClient = new HttpClient { Timeout = TimeSpan.FromSeconds(30) };
             _fonts = new ConcurrentDictionary<(FontFamily, float), Font>();
             _colors = new ConcurrentDictionary<string, Color>();
@@ -128,9 +131,51 @@ namespace Sanakan.Services
             return true;
         }
 
+        // Prosta ochrona SSRF: dopuszczamy tylko http(s) i publiczne adresy IP (bez rozwiazywania DNS)
+        public static bool IsPublicHttpUrl(string url)
+        {
+            if (!Uri.TryCreate(url, UriKind.Absolute, out var uri))
+                return false;
+
+            if (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps)
+                return false;
+
+            var host = uri.DnsSafeHost;
+            if (string.IsNullOrEmpty(host))
+                return false;
+
+            if (host.Equals("localhost", StringComparison.OrdinalIgnoreCase) || host.EndsWith(".local", StringComparison.OrdinalIgnoreCase))
+                return false;
+
+            if (!IPAddress.TryParse(host, out var ip))
+                return true;
+
+            if (ip.IsIPv4MappedToIPv6)
+                ip = ip.MapToIPv4();
+
+            if (IPAddress.IsLoopback(ip) || ip.IsIPv6LinkLocal)
+                return false;
+
+            var b = ip.GetAddressBytes();
+            if (b.Length == 4)
+            {
+                if (b[0] == 0 || b[0] == 10 || b[0] == 127) return false;
+                if (b[0] == 169 && b[1] == 254) return false;
+                if (b[0] == 172 && b[1] >= 16 && b[1] <= 31) return false;
+                if (b[0] == 192 && b[1] == 168) return false;
+                if (b[0] >= 224) return false;
+            }
+            else if (b[0] == 0xfc || b[0] == 0xfd)
+            {
+                return false; // unique local fc00::/7
+            }
+
+            return true;
+        }
+
         public async Task<(bool, string)> IsUrlToImageAsync(string url)
         {
-            if (!Uri.IsWellFormedUriString(url, UriKind.Absolute))
+            if (!_allowPrivateHosts && !IsPublicHttpUrl(url))
                 return (false, string.Empty);
 
             try
@@ -183,6 +228,9 @@ namespace Sanakan.Services
 
         private async Task<Stream> DownloadImageAsync(string url)
         {
+            if (!_allowPrivateHosts && !IsPublicHttpUrl(url))
+                return null;
+
             using var res = await _httpClient.GetAsync(url, HttpCompletionOption.ResponseHeadersRead);
             if (!res.IsSuccessStatusCode)
                 return null;

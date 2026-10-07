@@ -725,7 +725,6 @@ namespace Sanakan.Api.Controllers
                     return "Card not found!".ToResponse(404);
                 }
 
-                _waifu.DeleteCardImageIfExist(card);
                 var cardImage = await _waifu.GenerateAndSaveCardAsync(card, CardImageType.Normal, true);
                 if (!System.IO.File.Exists(cardImage))
                 {
