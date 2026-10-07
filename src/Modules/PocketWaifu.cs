@@ -922,7 +922,7 @@ namespace Sanakan.Modules
                 if (card.Quality != Quality.Broken)
                 {
                     var cardOverflowPower = (int)card.Quality + card.BorderOverflow;
-                    if (card.Quality == Quality.Omega || cardOverflowPower >= (int)Quality.Omega)
+                    if (card.Quality == Quality.Omega || card.Quality.Fake(card.BorderOverflow) == Quality.Omega)
                     {
                         await SafeReplyAsync("", embed: $"{Context.User.Mention} tej karty nie można już ulepszyć.".ToEmbedMessage(EMType.Error).Build());
                         return;
@@ -998,10 +998,6 @@ namespace Sanakan.Modules
                     }
                     else
                     {
-                        var cq = card.BorderOverflow > 0
-                            ? card.Quality.Fake(card.BorderOverflow)
-                            : card.Quality;
-
                         card.Quality = card.Quality.Fake(card.BorderOverflow).Next();
                         card.BorderOverflow = 0;
                         card.BorderVariant = 0;

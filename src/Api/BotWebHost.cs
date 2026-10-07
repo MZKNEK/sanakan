@@ -8,6 +8,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.AspNetCore.HttpOverrides;
 using System.IO;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.Extensions.Logging;
@@ -123,6 +124,11 @@ namespace Sanakan.Api
               .AddScheme<AuthenticationSchemeOptions, AppKeyAuthenticationHandler>(AppKeyAuthenticationHandler.SchemeName, null);
             services.AddAuthorization(op =>
             {
+                // deny-by-default: endpointy bez jawnej polityki/anonymous wymagają zalogowania
+                op.FallbackPolicy = new AuthorizationPolicyBuilder()
+                    .RequireAuthenticatedUser()
+                    .Build();
+
                 op.AddPolicy("Player", policy =>
                 {
                     policy.AddAuthenticationSchemes(JwtBearerDefaults.AuthenticationScheme, UserKeyAuthenticationHandler.SchemeName);

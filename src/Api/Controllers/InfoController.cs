@@ -31,7 +31,7 @@ namespace Sanakan.Api.Controllers
         /// Pobiera publiczną listę poleceń bota
         /// </summary>
         /// <response code="500">Internal Server Error</response>
-        [HttpGet("commands")]
+        [HttpGet("commands"), AllowAnonymous]
         public async Task<ActionResult<Commands>> GetCommansInfoAsync()
         {
             try

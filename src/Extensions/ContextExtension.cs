@@ -36,9 +36,9 @@ namespace Sanakan.Extensions
 
         public static async Task<GuildOptions> GetCachedGuildFullConfigAsync(this Database.DatabaseContext context, ulong guildId)
         {
-            return (await context.Guilds.AsQueryable().Include(x => x.IgnoredChannels).Include(x => x.ChannelsWithoutExp).Include(x => x.ChannelsWithoutSupervision).Include(x => x.CommandChannels).Include(x => x.SelfRoles)
+            return (await context.Guilds.AsQueryable().Where(x => x.Id == guildId).Include(x => x.IgnoredChannels).Include(x => x.ChannelsWithoutExp).Include(x => x.ChannelsWithoutSupervision).Include(x => x.CommandChannels).Include(x => x.SelfRoles)
                 .Include(x => x.Lands).Include(x => x.ModeratorRoles).Include(x => x.RolesPerLevel).Include(x => x.WaifuConfig).ThenInclude(x => x.CommandChannels).Include(x => x.Raports)
-                .Include(x => x.WaifuConfig).ThenInclude(x => x.FightChannels).AsNoTracking().AsSplitQuery().FromCacheAsync(new string[] { CacheTags.Guild(guildId) })).FirstOrDefault(x => x.Id == guildId);
+                .Include(x => x.WaifuConfig).ThenInclude(x => x.FightChannels).AsNoTracking().AsSplitQuery().FromCacheAsync(new string[] { CacheTags.Guild(guildId) })).FirstOrDefault();
         }
 
         public static async Task<IEnumerable<PenaltyInfo>> GetCachedFullPenalties(this Database.DatabaseContext context)
@@ -172,7 +172,7 @@ namespace Sanakan.Extensions
 
         public static async Task<Question> GetCachedQuestionAsync(this Database.DatabaseContext context, ulong id)
         {
-            return (await context.Questions.AsQueryable().Include(x => x.Answers).AsNoTracking().AsSplitQuery().FromCacheAsync(new string[] { CacheTags.Quiz })).FirstOrDefault(x => x.Id == id);
+            return (await context.Questions.AsQueryable().Where(x => x.Id == id).Include(x => x.Answers).AsNoTracking().AsSplitQuery().FromCacheAsync(new string[] { CacheTags.Quiz })).FirstOrDefault();
         }
 
         public static Database.Models.Analytics.WishlistCount CreateOrChangeWishlistCountBy(this Database.DatabaseContext context, ulong id, string name, int by = 1, int aBy = 1)

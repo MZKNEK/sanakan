@@ -8,6 +8,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System;
 using System.Text;
 using System.Security.Claims;
+using System.Security.Cryptography;
 using Sanakan.Config;
 using Sanakan.Extensions;
 using Sanakan.Api.Models;
@@ -78,7 +79,24 @@ namespace Sanakan.Api.Controllers
 
         private string Authenticate(string apikey)
         {
-            return _config.Get().ApiKeys?.FirstOrDefault(x => x.Key != null && x.Key.Equals(apikey))?.Bearer;
+            if (string.IsNullOrEmpty(apikey))
+                return null;
+
+            var keys = _config.Get().ApiKeys;
+            if (keys == null)
+                return null;
+
+            var provided = Encoding.UTF8.GetBytes(apikey);
+            foreach (var key in keys)
+            {
+                if (key?.Key == null)
+                    continue;
+
+                if (CryptographicOperations.FixedTimeEquals(Encoding.UTF8.GetBytes(key.Key), provided))
+                    return key.Bearer;
+            }
+
+            return null;
         }
     }
 }

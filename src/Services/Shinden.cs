@@ -109,7 +109,7 @@ namespace Sanakan.Services
                 if (res.IsSuccessStatusCode())
                 {
                      info = res.Body;
-                    _titleRelationCache.Set(titleId, info, new MemoryCacheEntryOptions()
+                    _titleCache.Set(titleId, info, new MemoryCacheEntryOptions()
                         .SetAbsoluteExpiration(TimeSpan.FromHours(8)));
                 }
             }

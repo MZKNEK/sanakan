@@ -70,7 +70,7 @@ namespace Sanakan.Api.Controllers
         /// </summary>
         /// <param name="name">nazwa użytkownika</param>
         /// <returns>id użytkownika</returns>
-        [HttpPost("find")]
+        [HttpPost("find"), AllowAnonymous]
         public async Task<ActionResult<IEnumerable<Shinden.Models.IUserSearch>>> GetUserIdByNameAsync([FromBody, Required]string name)
         {
             var res = await _shClient.Search.UserAsync(name);
@@ -86,7 +86,7 @@ namespace Sanakan.Api.Controllers
         /// </summary>
         /// <param name="id">id użytkownika shindena</param>
         /// <returns>nazwa użytkownika</returns>
-        [HttpGet("shinden/{id}/username")]
+        [HttpGet("shinden/{id}/username"), AllowAnonymous]
         public async Task<ActionResult<string>> GetShindenUsernameByShindenId(ulong id)
         {
             if (_nameCache.TryGetValue(id, out string username))
