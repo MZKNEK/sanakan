@@ -34,7 +34,7 @@ namespace Sanakan.Api.Controllers
         /// </summary>
         /// <response code="500">Internal Server Error</response>
         [HttpGet("commands"), AllowAnonymous]
-        public async Task<ActionResult<Commands>> GetCommansInfoAsync()
+        public ActionResult<Commands> GetCommansInfoAsync()
         {
             try
             {
@@ -56,7 +56,7 @@ namespace Sanakan.Api.Controllers
         /// </summary>
         /// <response code="500">Internal Server Error</response>
         [HttpGet("commands/private"), Authorize(Policy = "Info")]
-        public async Task<ActionResult<Commands>> GetPrivateCommandsInfoAsync()
+        public ActionResult<Commands> GetPrivateCommandsInfoAsync()
         {
             try
             {
