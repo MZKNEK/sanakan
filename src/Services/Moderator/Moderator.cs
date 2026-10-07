@@ -99,7 +99,17 @@ namespace Sanakan.Services
                     if ((_time.Now() - penalty.StartDate).TotalHours < penalty.DurationInHours)
                     {
                         var muteMod = penalty.Roles.Any(x => gconfig.ModeratorRoles.Any(z => z.Role == x.Role)) ? muteModRole : null;
-                        _ = Task.Run(async () => { await MuteUserGuildAsync(user, muteRole, penalty.Roles, muteMod); });
+                        _ = Task.Run(async () =>
+                        {
+                            try
+                            {
+                                await MuteUserGuildAsync(user, muteRole, penalty.Roles, muteMod);
+                            }
+                            catch (Exception ex)
+                            {
+                                _logger.LogError($"Moderator: re-mute: {ex}");
+                            }
+                        });
                         continue;
                     }
 

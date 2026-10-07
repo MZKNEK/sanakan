@@ -8,6 +8,7 @@ using Discord;
 using Discord.WebSocket;
 using Sanakan.Config;
 using Sanakan.Extensions;
+using Shinden.Logger;
 
 namespace Sanakan.Services
 {
@@ -15,16 +16,18 @@ namespace Sanakan.Services
     {
         private DiscordSocketClient _client;
         private IConfig _config;
+        private ILogger _logger;
 
         private enum VoiceActionType
         {
             Join, Left, Changed
         }
 
-        public DeletedLog(DiscordSocketClient client, IConfig config)
+        public DeletedLog(DiscordSocketClient client, IConfig config, ILogger logger)
         {
             _client = client;
             _config = config;
+            _logger = logger;
 
             _client.MessageDeleted += HandleDeletedMsgAsync;
             _client.MessageUpdated += HandleUpdatedMsgAsync;
@@ -42,7 +45,14 @@ namespace Sanakan.Services
 
             _ = Task.Run(async () =>
             {
-                await LogVoiceChange(user, action, oldState.VoiceChannel, newState.VoiceChannel);
+                try
+                {
+                    await LogVoiceChange(user, action, oldState.VoiceChannel, newState.VoiceChannel);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError($"DeletedLog: voice: {ex}");
+                }
             });
 
             return Task.CompletedTask;
@@ -63,7 +73,14 @@ namespace Sanakan.Services
 
                 _ = Task.Run(async () =>
                 {
-                    await LogMessageAsync(gChannel, oldMessage.Value, newMessage);
+                    try
+                    {
+                        await LogMessageAsync(gChannel, oldMessage.Value, newMessage);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError($"DeletedLog: updated: {ex}");
+                    }
                 });
             }
 
@@ -85,7 +102,14 @@ namespace Sanakan.Services
 
                 _ = Task.Run(async () =>
                 {
-                    await LogMessageAsync(gChannel, message.Value);
+                    try
+                    {
+                        await LogMessageAsync(gChannel, message.Value);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError($"DeletedLog: deleted: {ex}");
+                    }
                 });
             }
 

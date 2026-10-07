@@ -72,10 +72,17 @@ namespace Sanakan.Services.Supervisor
 
             _timer = new Timer(async _ =>
             {
-                using (await _semaphore.LockAsync().ConfigureAwait(false))
-                using (await _semaphoreJoin.LockAsync().ConfigureAwait(false))
+                try
                 {
-                    AutoValidate();
+                    using (await _semaphore.LockAsync().ConfigureAwait(false))
+                    using (await _semaphoreJoin.LockAsync().ConfigureAwait(false))
+                    {
+                        AutoValidate();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError($"Supervisor: autovalidate: {ex}");
                 }
             },
             null,
@@ -105,9 +112,16 @@ namespace Sanakan.Services.Supervisor
 
             _ = Task.Run(async () =>
             {
-                using (await _semaphoreUser.LockAsync(user.Id).ConfigureAwait(false))
+                try
                 {
-                    await Analize(user, msg);
+                    using (await _semaphoreUser.LockAsync(user.Id).ConfigureAwait(false))
+                    {
+                        await Analize(user, msg);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError($"Supervisor: analize: {ex}");
                 }
             });
 
@@ -471,9 +485,16 @@ namespace Sanakan.Services.Supervisor
 
             _ = Task.Run(async () =>
             {
-                using (await _semaphoreUser.LockAsync(usr.Id).ConfigureAwait(false))
+                try
                 {
-                    await AnalizeJoin(usr);
+                    using (await _semaphoreUser.LockAsync(usr.Id).ConfigureAwait(false))
+                    {
+                        await AnalizeJoin(usr);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError($"Supervisor: analize join: {ex}");
                 }
             });
 

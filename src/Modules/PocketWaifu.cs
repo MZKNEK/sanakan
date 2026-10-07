@@ -3753,7 +3753,14 @@ namespace Sanakan.Modules
 
                 _ = Task.Run(async () =>
                 {
-                    await SafeReplyAsync("", embed: $"Karta {thisCard.GetString(false, false, true)} wróciła z {oldName.GetName("ej")} wyprawy!\n\n{message}{action}".ToEmbedMessage(EMType.Success).WithUser(Context.User).Build());
+                    try
+                    {
+                        await SafeReplyAsync("", embed: $"Karta {thisCard.GetString(false, false, true)} wróciła z {oldName.GetName("ej")} wyprawy!\n\n{message}{action}".ToEmbedMessage(EMType.Success).WithUser(Context.User).Build());
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger?.LogError($"Expedition return reply: {ex}");
+                    }
                 });
             }
         }
@@ -3838,15 +3845,22 @@ namespace Sanakan.Modules
 
                 _ = Task.Run(async () =>
                 {
-                    if (cardsSelected.Count == 1)
+                    try
                     {
-                        var thisCard = cardsSelected.FirstOrDefault();
-                        var max = _expedition.GetMaxPossibleLengthOfExpedition(botUser, thisCard, expedition).ToString("F");
-                        await SafeReplyAsync("", embed: $"{thisCard.GetString(false, false, true)} udała się na {expedition.GetName("ą")} wyprawę!\nZmęczy się za {max} min.".ToEmbedMessage(EMType.Success).WithUser(Context.User).Build());
+                        if (cardsSelected.Count == 1)
+                        {
+                            var thisCard = cardsSelected.FirstOrDefault();
+                            var max = _expedition.GetMaxPossibleLengthOfExpedition(botUser, thisCard, expedition).ToString("F");
+                            await SafeReplyAsync("", embed: $"{thisCard.GetString(false, false, true)} udała się na {expedition.GetName("ą")} wyprawę!\nZmęczy się za {max} min.".ToEmbedMessage(EMType.Success).WithUser(Context.User).Build());
+                        }
+                        else
+                        {
+                            await SafeReplyAsync("", embed: $"Wysłano **{cardsSelected.Count}** kart na {expedition.GetName("ą")} wyprawę!".ToEmbedMessage(EMType.Success).WithUser(Context.User).Build());
+                        }
                     }
-                    else
+                    catch (Exception ex)
                     {
-                        await SafeReplyAsync("", embed: $"Wysłano **{cardsSelected.Count}** kart na {expedition.GetName("ą")} wyprawę!".ToEmbedMessage(EMType.Success).WithUser(Context.User).Build());
+                        Logger?.LogError($"Expedition send reply: {ex}");
                     }
                 });
             }
@@ -4069,8 +4083,15 @@ namespace Sanakan.Modules
 
                 _ = Task.Run(async () =>
                 {
-                    string wStr = fight.Winner == null ? "Remis!" : $"Zwycięża {fight.Winner.User.Mention}!";
-                    await SafeReplyAsync("", embed: $"⚔️ **Pojedynek**:\n{Context.User.Mention} vs. {euser.Mention}\n\n{deathLog.TrimToLength(2000)}\n{wStr}\n{info}".ToEmbedMessage(EMType.Bot).Build());
+                    try
+                    {
+                        string wStr = fight.Winner == null ? "Remis!" : $"Zwycięża {fight.Winner.User.Mention}!";
+                        await SafeReplyAsync("", embed: $"⚔️ **Pojedynek**:\n{Context.User.Mention} vs. {euser.Mention}\n\n{deathLog.TrimToLength(2000)}\n{wStr}\n{info}".ToEmbedMessage(EMType.Bot).Build());
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger?.LogError($"Duel reply: {ex}");
+                    }
                 });
             }
         }

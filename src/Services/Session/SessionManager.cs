@@ -144,8 +144,15 @@ namespace Sanakan.Services.Session
                     case RunMode.Async:
                         _ = Task.Run(async () =>
                         {
-                            if (await session.GetExecutable(context).ExecuteAsync(_provider).ConfigureAwait(false))
-                                await DisposeAsync(session).ConfigureAwait(false);
+                            try
+                            {
+                                if (await session.GetExecutable(context).ExecuteAsync(_provider).ConfigureAwait(false))
+                                    await DisposeAsync(session).ConfigureAwait(false);
+                            }
+                            catch (Exception ex)
+                            {
+                                _logger.LogError($"Sessions: {session.GetEventType()}-{session.GetOwner().Id}: {ex}");
+                            }
                         });
                         break;
 

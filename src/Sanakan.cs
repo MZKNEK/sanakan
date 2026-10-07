@@ -142,7 +142,7 @@ namespace Sanakan
             _expedition = new Expedition(_time);
             _img = new ImageProcessing(_shindenClient,
                 _tags.GetTag(Services.PocketWaifu.TagType.Gallery));
-            _deleted = new DeletedLog(_client, _config);
+            _deleted = new DeletedLog(_client, _config, _logger);
             _chaos = new Chaos(_client, _config, _logger);
             _executor = new UserBasedExecutor(_logger);
             _eCounter = new EmoteCounter(_client, _time, _logger);
@@ -154,7 +154,7 @@ namespace Sanakan
                  _expedition, _client, _helper, _time, _shinden, _tags, _config);
             _supervisor = new Supervisor(_client, _config, _logger, _mod, _time);
             _greeting = new Greeting(_client, _logger, _config, _executor, _time);
-            _exp = new ExperienceManager(_client, _executor, _config, _img, _time);
+            _exp = new ExperienceManager(_client, _executor, _config, _img, _time, _logger);
             _spawn = new Spawn(_client, _executor, _waifu, _config, _logger, _time);
             _handler = new CommandHandler(_client, _config, _logger, _executor, _time);
             _profile = new Profile(_client, _shindenClient, _img, _logger, _config, _time, _executor);

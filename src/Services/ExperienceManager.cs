@@ -11,6 +11,7 @@ using Sanakan.Config;
 using Sanakan.Extensions;
 using Sanakan.Services.Executor;
 using Sanakan.Services.Time;
+using Shinden.Logger;
 
 namespace Sanakan.Services
 {
@@ -30,15 +31,17 @@ namespace Sanakan.Services
         private IExecutor _executor;
         private ISystemTime _time;
         private IConfig _config;
+        private ILogger _logger;
 
         public ExperienceManager(DiscordSocketClient client, IExecutor executor, IConfig config,
-            ImageProcessing img, ISystemTime time)
+            ImageProcessing img, ISystemTime time, ILogger logger)
         {
             _executor = executor;
             _client = client;
             _config = config;
             _time = time;
             _img = img;
+            _logger = logger;
 
             _exp = new Dictionary<ulong, double>();
             _saved = new Dictionary<ulong, DateTime>();
@@ -293,30 +296,47 @@ namespace Sanakan.Services
                         usr.Level = newLevel;
                         await db.UserActivities.AddAsync(new UserActivityBuilder(_time)
                             .WithUser(usr, user).WithType(Database.Models.ActivityType.LevelUp, (ulong)newLevel).Build());
-                        _ = Task.Run(async () => { await NotifyAboutLevelAsync(user, channel, newLevel); });
+                        _ = Task.Run(async () =>
+                        {
+                            try
+                            {
+                                await NotifyAboutLevelAsync(user, channel, newLevel);
+                            }
+                            catch (Exception ex)
+                            {
+                                _logger.LogError($"Experience: level notify: {ex}");
+                            }
+                        });
                     }
 
                     var config = await db.GetCachedGuildFullConfigAsync(user.Guild.Id);
                     _ = Task.Run(async () =>
                     {
-                        if (config == null) return;
-                        if (!calculateExp) return;
-
-                        foreach (var lvlRole in config.RolesPerLevel)
+                        try
                         {
-                            var role = user.Guild.GetRole(lvlRole.Role);
-                            if (role == null) continue;
+                            if (config == null) return;
+                            if (!calculateExp) return;
 
-                            bool hasRole = user.Roles.Any(x => x.Id == role.Id);
-                            if (newLevel >= (long)lvlRole.Level)
+                            foreach (var lvlRole in config.RolesPerLevel)
                             {
-                                if (!hasRole)
-                                    await user.AddRoleAsync(role);
+                                var role = user.Guild.GetRole(lvlRole.Role);
+                                if (role == null) continue;
+
+                                bool hasRole = user.Roles.Any(x => x.Id == role.Id);
+                                if (newLevel >= (long)lvlRole.Level)
+                                {
+                                    if (!hasRole)
+                                        await user.AddRoleAsync(role);
+                                }
+                                else if (hasRole)
+                                {
+                                    await user.RemoveRoleAsync(role);
+                                }
                             }
-                            else if (hasRole)
-                            {
-                                await user.RemoveRoleAsync(role);
-                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogError($"Experience: level roles: {ex}");
                         }
                     });
 

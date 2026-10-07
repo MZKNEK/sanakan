@@ -31,6 +31,7 @@ namespace Sanakan.Services.PocketWaifu
 
         private ConcurrentDictionary<ulong, long> ServerCounter;
         private ConcurrentDictionary<ulong, long> UserCounter;
+        private readonly ConcurrentDictionary<ulong, DateTime> _serverReset = new ConcurrentDictionary<ulong, DateTime>();
 
         private Emoji ClaimEmote = new Emoji("🖐");
 
@@ -76,11 +77,27 @@ namespace Sanakan.Services.PocketWaifu
 
         public void ForceSpawnCard(ITextChannel spawnChannel, ITextChannel trashChannel, string mention)
         {
+            FireAndForget("Spawn: force", () => SpawnCardAsync(spawnChannel, trashChannel, mention));
+        }
+
+        private void FireAndForget(string what, Func<Task> action)
+        {
             _ = Task.Run(async () =>
             {
-                await SpawnCardAsync(spawnChannel, trashChannel, mention);
+                try
+                {
+                    await action();
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError($"{what}: {ex}");
+                }
             });
         }
+
+        // Dzienny reset licznika spawnu liczony z czasu, bez tworzenia zadania na kazda wiadomosc
+        public static bool ShouldResetServerCounter(DateTime? nextReset, DateTime now)
+            => nextReset == null || now >= nextReset;
 
         private void LoadDumpedData()
         {
@@ -107,19 +124,15 @@ namespace Sanakan.Services.PocketWaifu
 
         private void HandleGuildAsync(ITextChannel spawnChannel, ITextChannel trashChannel, long daily, string mention, bool noExp)
         {
-            if (!ServerCounter.ContainsKey(spawnChannel.GuildId))
-            {
-                ServerCounter.TryAdd(spawnChannel.GuildId, 0);
-                return;
-            }
+            var now = _time.Now();
 
-            if (ServerCounter[spawnChannel.GuildId] == 0)
+            if (!ServerCounter.ContainsKey(spawnChannel.GuildId))
+                ServerCounter.TryAdd(spawnChannel.GuildId, 0);
+
+            if (ShouldResetServerCounter(_serverReset.TryGetValue(spawnChannel.GuildId, out var next) ? next : (DateTime?)null, now))
             {
-                _ = Task.Run(async () =>
-                {
-                    await Task.Delay(TimeSpan.FromDays(1));
-                    ServerCounter[spawnChannel.GuildId] = 0;
-                });
+                _serverReset[spawnChannel.GuildId] = now.AddDays(1);
+                ServerCounter[spawnChannel.GuildId] = 0;
             }
 
             var chance = noExp ? 0.3d : 1.5d;
@@ -128,10 +141,7 @@ namespace Sanakan.Services.PocketWaifu
             if (!Fun.TakeATry(chance)) return;
 
             ServerCounter.AddOrUpdate(spawnChannel.GuildId, 1, (_, v) => v + 1);
-            _ = Task.Run(async () =>
-            {
-                await SpawnCardAsync(spawnChannel, trashChannel, mention);
-            });
+            FireAndForget("Spawn: karta", () => SpawnCardAsync(spawnChannel, trashChannel, mention));
         }
 
         private void RunSafari(EmbedBuilder embed, IUserMessage msg, Card newCard,
@@ -337,10 +347,7 @@ namespace Sanakan.Services.PocketWaifu
                     });
                     await db.SaveChangesAsync();
 
-                    _ = Task.Run(async () =>
-                    {
-                        await channel.SendMessageAsync("", embed: $"{user.Mention} otrzymał pakiet losowych kart.".ToEmbedMessage(EMType.Bot).Build());
-                    });
+                    FireAndForget("Spawn: pakiet", () => channel.SendMessageAsync("", embed: $"{user.Mention} otrzymał pakiet losowych kart.".ToEmbedMessage(EMType.Bot).Build()));
                 }
             }), user.Id);
 

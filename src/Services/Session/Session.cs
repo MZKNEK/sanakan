@@ -110,10 +110,17 @@ namespace Sanakan.Services.Session
                     if (res && RunMode == RunMode.Sync && onSyncEnd != null)
                     {
                         _ = Task.Run(async () =>
-                       {
-                           await Task.Delay(500);
-                           await onSyncEnd(this);
-                       });
+                        {
+                            try
+                            {
+                                await Task.Delay(500);
+                                await onSyncEnd(this);
+                            }
+                            catch (Exception ex)
+                            {
+                                _logger?.LogError($"Session: onSyncEnd: {ex}");
+                            }
+                        });
                     }
 
                     return res;
