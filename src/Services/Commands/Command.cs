@@ -29,7 +29,9 @@ namespace Sanakan.Services.Commands
         public IEnumerable<ulong> GetOwners()
         {
             var owners = new List<ulong>() { Context.User.Id };
-            var users = Result.ArgValues.Where(x => x.Values.Any(c => c.Value is Discord.IUser)).SelectMany(x => x.Values);
+            var users = Result.ArgValues.Concat(Result.ParamValues)
+                .Where(x => x.Values.Any(c => c.Value is Discord.IUser)).SelectMany(x => x.Values);
+
             foreach (var user in users)
             {
                 if (user.Value is Discord.IUser s)

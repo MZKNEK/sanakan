@@ -54,7 +54,7 @@ namespace Sanakan.Api.Controllers
         /// <returns>pakiety, numer odpowiada numerowi w api/waifu/boosterpack/open/{numer}</returns>
         [HttpGet("boosterpacks"), ProducesResponseType(typeof(List<UserBoosterPack>), 200)]
         public Task<IActionResult> GetUserBoosterPacksAsync()
-            => WithCachedPlayerAsync(user => user.GameDeck.BoosterPacks.Select((x, i) => UserBoosterPack.From(x, i + 1)).ToList());
+            => WithCachedPlayerAsync(user => user.GameDeck.BoosterPacks.OrderBy(x => x.Id).Select((x, i) => UserBoosterPack.From(x, i + 1)).ToList());
 
         /// <summary>
         /// Pobiera listę przedmiotów użytkownika

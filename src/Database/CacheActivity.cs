@@ -15,7 +15,8 @@ namespace Sanakan.Database
 {
     // Centralne unieważnianie cache na podstawie faktycznie zmienionych encji (ChangeTracker),
     // zamiast ręcznych ExpireTag w każdym miejscu. Ręczne wywołania mogą zostać jako wsparcie.
-    // Tagi: user-{id}, character-{id}, config-{id} oraz mute/quiz.
+    // Tagi: user-{id}, character-{id}, config-{id}, user-profile-{shinden}, mute/quiz
+    // oraz ultimate-cards/unique-cards (unieważniane tylko przy zmianach strukturalnych).
     public static class CacheActivity
     {
         public static readonly SaveChangesInterceptor Interceptor = new CacheInterceptor();
@@ -24,22 +25,59 @@ namespace Sanakan.Database
         {
             public override InterceptionResult<int> SavingChanges(DbContextEventData eventData, InterceptionResult<int> result)
             {
-                Expire(eventData.Context);
+                Capture(eventData.Context);
                 return base.SavingChanges(eventData, result);
             }
 
             public override ValueTask<InterceptionResult<int>> SavingChangesAsync(DbContextEventData eventData,
                 InterceptionResult<int> result, CancellationToken cancellationToken = default)
             {
-                Expire(eventData.Context);
+                Capture(eventData.Context);
                 return base.SavingChangesAsync(eventData, result, cancellationToken);
             }
 
-            private static void Expire(DbContext context)
+            public override int SavedChanges(SaveChangesCompletedEventData eventData, int result)
+            {
+                Expire(eventData.Context);
+                return base.SavedChanges(eventData, result);
+            }
+
+            public override ValueTask<int> SavedChangesAsync(SaveChangesCompletedEventData eventData, int result,
+                CancellationToken cancellationToken = default)
+            {
+                Expire(eventData.Context);
+                return base.SavedChangesAsync(eventData, result, cancellationToken);
+            }
+
+            // Wylicza tagi PRZED zapisem (ChangeTracker ma jeszcze stany Added/Modified/Deleted)
+            // i zapamiętuje je na kontekście - właściwe unieważnienie robimy po commicie.
+            private static void Capture(DbContext context)
             {
                 if (context == null) return;
                 if (context is DatabaseContext db && db.SuppressCacheInvalidation) return;
 
+                var tags = BuildTags(context);
+                if (context is DatabaseContext dbc)
+                    dbc.PendingCacheTags = tags;
+                else if (tags.Count > 0)
+                    QueryCacheManager.ExpireTag(tags.ToArray());
+            }
+
+            // Unieważnia cache PO udanym commicie (bez okna wyścigu z odczytami).
+            private static void Expire(DbContext context)
+            {
+                if (context is DatabaseContext db)
+                {
+                    var tags = db.PendingCacheTags;
+                    db.PendingCacheTags = null;
+
+                    if (tags != null && tags.Count > 0)
+                        QueryCacheManager.ExpireTag(tags.ToArray());
+                }
+            }
+
+            private static List<string> BuildTags(DbContext context)
+            {
                 var users = new HashSet<ulong>();
                 var characters = new HashSet<ulong>();
                 var guilds = new HashSet<ulong>();
@@ -47,8 +85,11 @@ namespace Sanakan.Database
                 var tagIds = new HashSet<ulong>();
                 var waifuIds = new HashSet<ulong>();
                 var packIds = new HashSet<ulong>();
+                var userProfiles = new HashSet<ulong>();
                 var mute = false;
                 var quiz = false;
+                var ultimateCards = false;
+                var uniqueCards = false;
 
                 foreach (var entry in context.ChangeTracker.Entries())
                 {
@@ -62,6 +103,15 @@ namespace Sanakan.Database
                             users.Add(card.GameDeckId);
                             if (entry.State == EntityState.Modified)
                                 characters.Add(entry.OriginalValues.GetValue<ulong>(nameof(Card.Character)));
+
+                            // listy ultimate/unikalne zależą od struktury - nie od częstych pól typu moc/relacja
+                            if (entry.State == EntityState.Added || entry.State == EntityState.Deleted
+                                || entry.Property(nameof(Card.FromFigure)).IsModified)
+                                ultimateCards = true;
+
+                            if (entry.State == EntityState.Added || entry.State == EntityState.Deleted
+                                || entry.Property(nameof(Card.Unique)).IsModified)
+                                uniqueCards = true;
                             break;
 
                         case TagCardRelation relation:
@@ -91,7 +141,13 @@ namespace Sanakan.Database
                         case TimeStatus time: users.Add(time.UserId); break;
                         case SlotMachineConfig sm: users.Add(sm.UserId); break;
                         case GameDeck deck: users.Add(deck.UserId); break;
-                        case User user: users.Add(user.Id); break;
+
+                        case User user:
+                            users.Add(user.Id);
+                            if (user.Shinden != 0)
+                                userProfiles.Add(user.Shinden);
+                            break;
+
                         case PenaltyInfo _: mute = true; break;
                         case MuteModifier _: mute = true; break;
                         case OwnedRole _: mute = true; break;
@@ -165,11 +221,13 @@ namespace Sanakan.Database
                 tags.AddRange(users.Select(CacheTags.User));
                 tags.AddRange(characters.Select(CacheTags.Character));
                 tags.AddRange(guilds.Select(CacheTags.Guild));
+                tags.AddRange(userProfiles.Select(CacheTags.UserProfile));
                 if (mute) tags.Add(CacheTags.Mute);
                 if (quiz) tags.Add(CacheTags.Quiz);
+                if (ultimateCards) tags.Add(CacheTags.UltimateCards);
+                if (uniqueCards) tags.Add(CacheTags.UniqueCards);
 
-                if (tags.Count > 0)
-                    QueryCacheManager.ExpireTag(tags.ToArray());
+                return tags;
             }
         }
     }

@@ -369,8 +369,9 @@ namespace Sanakan.Extensions
                     sRank = (long)(40 * (1 - sChan));
                     gRank = (long)(20 * (1 - gChan));
 
-                    mmrChange = 1 * (1 - chanceD1);
-                    mmreChange = 1 * (1 - chanceD2);
+                    // remis musi być zero-sum, inaczej rating obu graczy rośnie
+                    mmrChange = 1 * (0.5 - chanceD1);
+                    mmreChange = 1 * (0.5 - chanceD2);
                     break;
             }
 
@@ -379,12 +380,20 @@ namespace Sanakan.Extensions
 
             d1.GlobalPVPRank += gRank;
             d1.SeasonalPVPRank += sRank;
+            d2.GlobalPVPRank -= gRank;
+            d2.SeasonalPVPRank -= sRank;
 
             if (d1.GlobalPVPRank < 0)
                 d1.GlobalPVPRank = 0;
 
             if (d1.SeasonalPVPRank < 0)
                 d1.SeasonalPVPRank = 0;
+
+            if (d2.GlobalPVPRank < 0)
+                d2.GlobalPVPRank = 0;
+
+            if (d2.SeasonalPVPRank < 0)
+                d2.SeasonalPVPRank = 0;
 
             var coins = d1.GetPVPCoinsFromDuel(res);
             d1.PVPCoins += coins;

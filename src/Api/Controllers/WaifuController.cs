@@ -866,7 +866,7 @@ namespace Sanakan.Api.Controllers
                 {
                     return "User not found".ToResponse(404);
                 }
-                if (bUser.GameDeck.Cards.Count + packs.Sum(x => x.CardCnt) > bUser.GameDeck.MaxNumberOfCards)
+                if (bUser.GameDeck.Cards.Count + packs.Sum(x => (long)x.CardCnt) > bUser.GameDeck.MaxNumberOfCards)
                 {
                     return "User has no space left in deck".ToResponse(406);
                 }
@@ -934,7 +934,7 @@ namespace Sanakan.Api.Controllers
                             return "User not found!".ToResponse(404);
                         }
 
-                        var packs = botUserCh.GameDeck.BoosterPacks.ToList();
+                        var packs = botUserCh.GameDeck.BoosterPacks.OrderBy(x => x.Id).ToList();
                         if (packs.Count < packNumber || packNumber <= 0)
                         {
                             return "Boosterpack not found!".ToResponse(404);
@@ -1139,6 +1139,9 @@ namespace Sanakan.Api.Controllers
 
             foreach (var pack in boosterPacks)
             {
+                if (pack == null || pack.Count < 1 || pack.Count > MaxCardsPerRequest)
+                    return "Model is Invalid".ToResponse(500);
+
                 var rPack = pack.ToRealPack();
                 if (rPack != null) packs.Add(rPack);
             }

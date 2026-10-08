@@ -12,7 +12,7 @@ namespace Sanakan.Extensions
         public static bool CheckAnswer(this Question q, int ans) => q.Answer == ans;
 
         public static string GetRightAnswer(this Question q)
-            =>  $"Prawidłowa odpowiedź to: **{q.Answer}** - {q.Answers.First(x => x.Number == q.Answer).Content}";
+            =>  $"Prawidłowa odpowiedź to: **{q.Answer}** - {q.Answers?.FirstOrDefault(x => x.Number == q.Answer)?.Content ?? "?"}";
 
         private static Discord.IEmote GetEmote(int i)
         {
@@ -30,6 +30,9 @@ namespace Sanakan.Extensions
 
         public static void RandomizeAnswers(this Question q)
         {
+            if (q.Answers == null || q.Answers.Count < 1)
+                return;
+
             var numbersColeration = new List<Tuple<int, int>>();
             var possibleAnswers = q.Answers.Select(x => x.Number).ToList();
 
@@ -42,7 +45,10 @@ namespace Sanakan.Extensions
                 answer.Number = num;
             }
 
-            q.Answer = numbersColeration.First(x => x.Item2 == q.Answer).Item1;
+            var match = numbersColeration.FirstOrDefault(x => x.Item2 == q.Answer);
+            if (match != null)
+                q.Answer = match.Item1;
+
             q.Answers = q.Answers.OrderBy(x => x.Number).ToList();
         }
 

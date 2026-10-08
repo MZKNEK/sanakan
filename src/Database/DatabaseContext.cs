@@ -9,6 +9,7 @@ using Sanakan.Database.Models.Analytics;
 using Sanakan.Database.Models.Configuration;
 using Sanakan.Database.Models.Management;
 using System;
+using System.Collections.Generic;
 using Z.EntityFramework.Plus;
 
 namespace Sanakan.Database
@@ -19,6 +20,9 @@ namespace Sanakan.Database
 
         // Wyłącza unieważnianie cache w CacheActivity dla danego zapisu (np. często zapisywany exp).
         public bool SuppressCacheInvalidation { get; set; }
+
+        // Tagi cache wyliczone przed zapisem, unieważniane po commicie (używa CacheActivity).
+        public List<string> PendingCacheTags { get; set; }
 
         public DatabaseContext(IConfig config) : base()
         {

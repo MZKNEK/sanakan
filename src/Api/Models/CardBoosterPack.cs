@@ -17,7 +17,7 @@ namespace Sanakan.Api.Models
         /// <summary>
         /// Gwarantowana jakość jednej z kart, E - 100% losowanie
         /// </summary>
-        public Rarity Rarity { get; set; }
+        public Rarity Rarity { get; set; } = Rarity.E;
         /// <summary>
         /// Wykluczone jakości z losowania, Gwarantowana ma wyższy priorytet
         /// </summary>

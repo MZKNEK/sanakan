@@ -160,6 +160,9 @@ namespace Sanakan.Services
                         save = true;
                         sub.BValue = false;
                         var guild = _client.GetGuild(sub.Guild);
+                        if (guild == null)
+                            continue;
+
                         switch (sub.Type)
                         {
                             case StatusType.Globals:
@@ -254,6 +257,8 @@ namespace Sanakan.Services
 
         public async Task RemoveUserRainbowColorAsync(SocketGuildUser user, string roleNameStart)
         {
+            if (user == null) return;
+
             var allRoles = user.Roles.Where(x => x.Name.StartsWith(roleNameStart)).ToList();
             foreach (var role in allRoles)
             {
