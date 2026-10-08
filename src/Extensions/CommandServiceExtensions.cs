@@ -51,8 +51,8 @@ namespace Sanakan.Extensions
                 if (parseResult.Error == CommandError.MultipleMatches)
                 {
                     IReadOnlyList<TypeReaderValue> argList, paramList;
-                    argList = parseResult.ArgValues.Select(x => x.Values.OrderByDescending(y => y.Score).First()).ToImmutableArray();
-                    paramList = parseResult.ParamValues.Select(x => x.Values.OrderByDescending(y => y.Score).First()).ToImmutableArray();
+                    argList = parseResult.ArgValues.Select(x => x.Values.OrderByDescending(y => y.Score).FirstOrDefault()).ToImmutableArray();
+                    paramList = parseResult.ParamValues.Select(x => x.Values.OrderByDescending(y => y.Score).FirstOrDefault()).ToImmutableArray();
                     parseResult = ParseResult.FromSuccess(argList, paramList);
                 }
 

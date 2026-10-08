@@ -36,6 +36,9 @@ namespace Sanakan.Services
 
         private Task HandleVoiceStateUpdatedAsync(SocketUser user, SocketVoiceState oldState, SocketVoiceState newState)
         {
+            if (user == null || user.IsBot || user.IsWebhook)
+                return Task.CompletedTask;
+
             bool userJoined = oldState.VoiceChannel == null && newState.VoiceChannel != null;
             bool userLeft = newState.VoiceChannel == null && oldState.VoiceChannel != null;
 

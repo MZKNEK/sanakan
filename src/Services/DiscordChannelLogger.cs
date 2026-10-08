@@ -187,12 +187,12 @@ namespace Sanakan.Services
             if (cfg == null || cfg.GuildId == 0 || cfg.ChannelId == 0)
                 return false;
 
-            if (cfg.ChannelId == _missingChannelId)
+            if (cfg.ChannelId == Volatile.Read(ref _missingChannelId))
             {
                 if (Environment.TickCount64 < Volatile.Read(ref _missingChannelRetryAt))
                     return false;
 
-                _missingChannelId = 0;
+                Volatile.Write(ref _missingChannelId, 0);
             }
 
             return true;
@@ -263,7 +263,7 @@ namespace Sanakan.Services
 
             if (channel == null || channel.GuildId != cfg.GuildId)
             {
-                _missingChannelId = cfg.ChannelId;
+                Volatile.Write(ref _missingChannelId, cfg.ChannelId);
                 Volatile.Write(ref _missingChannelRetryAt, Environment.TickCount64 + (long)MissingChannelRetry.TotalMilliseconds);
                 lock (_lock)
                 {

@@ -62,13 +62,16 @@ namespace Sanakan.Services.Session.Models
             return Embed.Build();
         }
 
-        private int MaxPage() => (((ListItems.Count % 10) == 0) ? (ListItems.Count / 10) : ((ListItems.Count / 10) + 1));
+        private int MaxPage() => ListItems.Count <= 0 ? 1 : (((ListItems.Count - 1) / ItemsPerPage) + 1);
 
         private int MaxPageReal() => MaxPage() - 1;
 
         private async Task<bool> ExecuteAction(SessionContext context, Session session)
         {
-            if (context.Message.Id != Message.Id)
+            if (Message == null || context.Message?.Id != Message.Id)
+                return false;
+
+            if (ListItems == null || ListItems.Count == 0)
                 return false;
 
             if (await Message.Channel.GetMessageAsync(Message.Id) is IUserMessage msg)

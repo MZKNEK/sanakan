@@ -95,7 +95,7 @@ namespace Sanakan.Extensions
                 int index = 0;
                 foreach (var field in msg.Fields)
                 {
-                    if (++index >= EmbedBuilder.MaxFieldCount) break;
+                    if (index++ >= EmbedBuilder.MaxFieldCount) break;
 
                     embed.AddField(new EmbedFieldBuilder
                     {

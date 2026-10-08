@@ -423,6 +423,11 @@ namespace Sanakan.Services.Supervisor
         {
             try
             {
+                // usuń wpisy dla gildii, na których bota już nie ma (słownik rósłby w nieskończoność)
+                foreach (var guildId in _temporarySupervisionChannels.Keys.ToList())
+                    if (_client.GetGuild(guildId) == null)
+                        _temporarySupervisionChannels.Remove(guildId);
+
                 var toClean = new Dictionary<ulong, List<ulong>>();
                 foreach (var guild in _guilds)
                 {

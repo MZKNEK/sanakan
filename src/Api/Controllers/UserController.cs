@@ -276,6 +276,11 @@ namespace Sanakan.Api.Controllers
                     return "User not found!".ToResponse(404);
                 }
 
+                if (string.IsNullOrWhiteSpace(nickname) || nickname.Length > 32)
+                {
+                    return "Invalid nickname!".ToResponse(400);
+                }
+
                 await userOnGuild.ModifyAsync(x => x.Nickname = nickname);
             }
 
@@ -293,6 +298,11 @@ namespace Sanakan.Api.Controllers
         public async Task<IActionResult> RegisterUserAsync([FromBody, Required]UserRegistration id)
         {
             if (id == null)
+            {
+                return "Model is Invalid!".ToResponse(500);
+            }
+
+            if (string.IsNullOrWhiteSpace(id.Username) || id.Username.Length > 256)
             {
                 return "Model is Invalid!".ToResponse(500);
             }

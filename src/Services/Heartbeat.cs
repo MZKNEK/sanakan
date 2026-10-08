@@ -75,10 +75,14 @@ namespace Sanakan.Services
             {
                 await SendAsync().ConfigureAwait(false);
             }
+            catch (Exception ex)
+            {
+                Failed($"heartbeat: {ex.Message}");
+            }
             finally
             {
                 var next = Interval - watch.Elapsed;
-                _timer.Change(next > TimeSpan.FromSeconds(1) ? next : TimeSpan.FromSeconds(1), Timeout.InfiniteTimeSpan);
+                _timer?.Change(next > TimeSpan.FromSeconds(1) ? next : TimeSpan.FromSeconds(1), Timeout.InfiniteTimeSpan);
             }
         }
 

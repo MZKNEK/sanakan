@@ -23,7 +23,7 @@ namespace Sanakan.Extensions
         public const double MIN_DECK_POWER = 200;
 
         public static bool SendAnyMsgInMonth(this User u)
-            => (u.MessagesCnt - u.MessagesCntAtDate) > 0;
+            => u.MessagesCnt > u.MessagesCntAtDate;
 
         public static bool IsCharCounterActive(this User u, DateTime currentTime)
             => currentTime.Month == u.MeasureDate.Month && currentTime.Year == u.MeasureDate.Year;
@@ -733,10 +733,10 @@ namespace Sanakan.Extensions
                     return $"{u.MessagesCnt}";
 
                 case TopType.PostsMonthly:
-                    return $"{u.MessagesCnt - u.MessagesCntAtDate}";
+                    return u.MessagesCnt > u.MessagesCntAtDate ? $"{u.MessagesCnt - u.MessagesCntAtDate}" : "0";
 
                 case TopType.PostsMonthlyCharacter:
-                    var monthlyMessages = u.MessagesCnt - u.MessagesCntAtDate;
+                    var monthlyMessages = u.MessagesCnt > u.MessagesCntAtDate ? u.MessagesCnt - u.MessagesCntAtDate : 0;
                     return monthlyMessages == 0 ? "0" : $"{u.CharacterCntFromDate / monthlyMessages}";
 
                 case TopType.Commands:

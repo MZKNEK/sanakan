@@ -110,6 +110,12 @@ namespace Sanakan.Modules
             }
 
             var list = response.Body;
+            if (list == null || list.Count < 1)
+            {
+                await SafeReplyAsync("", embed: "Brak wyników!".ToEmbedMessage(EMType.Error).Build());
+                return;
+            }
+
             if (list.Count == 1)
             {
                 var info = await _shinden.GetCharacterInfoAsync(list.First().Id);

@@ -314,7 +314,7 @@ namespace Sanakan.Api.Controllers
 
                 var cards = await db.Cards.AsQueryable().AsSplitQuery().Where(x => x.GameDeckId == user.GameDeck.Id).Include(x => x.Tags).Skip(ClampOffset(offset)).Take((int)Math.Min(count, MaxCardsPerRequest)).AsNoTrackingWithIdentityResolution().ToListAsync();
                 var username = await GetUsernameAsync(user.Shinden);
-                return cards.ToView(username, 0, _time);
+                return cards.ToView(username, user.Shinden, _time);
             }
         }
 
@@ -578,6 +578,9 @@ namespace Sanakan.Api.Controllers
 
                         if (newData?.CharacterName != null)
                             card.Name = newData.CharacterName;
+
+                        if (newData?.CardSeriesTitle != null)
+                            card.Title = newData.CardSeriesTitle;
 
                         try
                         {

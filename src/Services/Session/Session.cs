@@ -78,8 +78,11 @@ namespace Sanakan.Services.Session
         public bool IsValid()
         {
             if (_disposed) return false;
-            if (_timer == null) return true;
-            return _timer.ElapsedMilliseconds <= TimeoutMs;
+
+            var timer = _timer;
+            if (timer == null) return true;
+
+            return timer.ElapsedMilliseconds <= TimeoutMs;
         }
 
         public async Task DisposeAsync()

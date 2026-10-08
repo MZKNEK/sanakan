@@ -296,13 +296,13 @@ namespace Sanakan.Services
                 new EmbedFieldBuilder
                 {
                     Name = "Utworzono",
-                    Value = user.CreatedAt.ToString("dd.MM.yyyy HH:mm:ss"),
+                    Value = user.CreatedAt.LocalDateTime.ToShortDateTime(),
                     IsInline = false
                 },
                 new EmbedFieldBuilder
                 {
                     Name = "Dołączono",
-                    Value = user.JoinedAt?.ToString("dd.MM.yyyy HH:mm:ss") ?? "Nieznane",
+                    Value = user.JoinedAt?.LocalDateTime.ToShortDateTime() ?? "Nieznane",
                     IsInline = false
                 },
                 new EmbedFieldBuilder
@@ -356,7 +356,7 @@ namespace Sanakan.Services
                 new EmbedFieldBuilder
                 {
                     Name = "Utworzono",
-                    Value = guild.CreatedAt.ToString("dd.MM.yyyy HH:mm:ss"),
+                    Value = guild.CreatedAt.LocalDateTime.ToShortDateTime(),
                     IsInline = true
                 },
                 new EmbedFieldBuilder
