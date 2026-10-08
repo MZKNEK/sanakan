@@ -977,18 +977,6 @@ namespace Sanakan.Api.Controllers
                                 return;
                             }
 
-                            var mission = botUser.TimeStatuses.FirstOrDefault(x => x.Type == StatusType.DPacket);
-                            if (mission == null)
-                            {
-                                mission = StatusType.DPacket.NewTimeStatus();
-                                botUser.TimeStatuses.Add(mission);
-                            }
-
-                            if (pack.CardSourceFromPack != CardSource.Api)
-                                mission.Count(_time.Now());
-
-                            botUser.MarkActivity(_time.Now());
-
                             if (pack.CardSourceFromPack == CardSource.Activity || pack.CardSourceFromPack == CardSource.Migration)
                             {
                                 botUser.Stats.OpenedBoosterPacksActivity += 1;
