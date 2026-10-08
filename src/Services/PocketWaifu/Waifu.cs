@@ -1599,23 +1599,24 @@ namespace Sanakan.Services.PocketWaifu
             IReadOnlyDictionary<ulong, IUser> userCache = null)
         {
             var count = card.GetIconsCount(_tags) * 4;
+            var mark = card.GameDeck.GetActiveMark(_time.Now());
             if (mention)
             {
                 var userId = card.GameDeckId == 1 ? (guild?.CurrentUser?.Id ?? 1) : card.GameDeckId;
-                if (tldr) return new MessageEntry($"{userId}: {card.Id} {card.GetCardRealRarity()} {card.GetStatusIcons(_tags)} {card.GetPocketUrl()}\n", count);
-                return new MessageEntry($"<@{userId}>: {card.GetIdWithUrl()} **{card.GetCardRealRarity()}** {card.GetStatusIcons(_tags)}\n", count);
+                if (tldr) return new MessageEntry($"{userId}{mark}: {card.Id} {card.GetCardRealRarity()} {card.GetStatusIcons(_tags)} {card.GetPocketUrl()}\n", count);
+                return new MessageEntry($"<@{userId}>{mark}: {card.GetIdWithUrl()} **{card.GetCardRealRarity()}** {card.GetStatusIcons(_tags)}\n", count);
             }
 
             IUser user = guild?.GetUser(card.GameDeckId);
             if (user == null && userCache != null)
                 userCache.TryGetValue(card.GameDeckId, out user);
             user ??= await _client.GetUserAsync(card.GameDeckId);
-            if (tldr) return new MessageEntry($"{user?.GetUserNickInGuild()}: {card.Id} {card.GetCardRealRarity()} {card.GetStatusIcons(_tags)} {card.GetPocketUrl()}\n", count);
+            if (tldr) return new MessageEntry($"{user?.GetUserNickInGuild()}{mark}: {card.Id} {card.GetCardRealRarity()} {card.GetStatusIcons(_tags)} {card.GetPocketUrl()}\n", count);
 
             if (!shindenUrls || card?.GameDeck?.User?.Shinden == 0 || card?.GameDeckId == 1)
-                return new MessageEntry($"{user?.GetUserNickInGuild() ?? "????"}: {card.GetIdWithUrl()} **{card.GetCardRealRarity()}** {card.GetStatusIcons(_tags)}\n", count);
+                return new MessageEntry($"{user?.GetUserNickInGuild() ?? "????"}{mark}: {card.GetIdWithUrl()} **{card.GetCardRealRarity()}** {card.GetStatusIcons(_tags)}\n", count);
 
-            return new MessageEntry($"[{user?.GetUserNickInGuild() ?? "????"}](https://shinden.pl/user/{card.GameDeck.User.Shinden}): {card.GetIdWithUrl()} **{card.GetCardRealRarity()}** {card.GetStatusIcons(_tags)}\n", count);
+            return new MessageEntry($"[{user?.GetUserNickInGuild() ?? "????"}](https://shinden.pl/user/{card.GameDeck.User.Shinden}){mark}: {card.GetIdWithUrl()} **{card.GetCardRealRarity()}** {card.GetStatusIcons(_tags)}\n", count);
         }
 
         private void AppendMessage(List<Embed> embeds, MessageContent currentContent, MessageEntry nextPart) =>
@@ -2900,7 +2901,7 @@ namespace Sanakan.Services.PocketWaifu
 
         public async Task<ExecutionResult> CheckWishlistAndSendToDMAsync(Database.DatabaseContext db, IUser discordUser, User user,
             bool hideFavs = true, bool hideBlocked = true, bool hideNames = true, bool showShindenUrl = false, SocketGuild guild = null,
-            bool showContentOnly = false, ulong filrerById = 0, bool ignoreTitles = false, bool tldr = false)
+            bool showContentOnly = false, ulong filrerById = 0, bool ignoreTitles = false, bool tldr = false, bool hideInactive = false)
         {
             if (user == null)
                 return ExecutionResult.FromError("ta osoba nie ma profilu bota.");
@@ -2933,6 +2934,9 @@ namespace Sanakan.Services.PocketWaifu
 
             if (hideBlocked)
                 cards = cards.Where(x => x.IsTradable);
+
+            if (hideInactive)
+                cards = cards.Where(x => x.GameDeck.IsUserActive(_time.Now()));
 
             if (cards.IsNullOrEmpty())
                 return ExecutionResult.FromError("nie odnaleziono kart.");

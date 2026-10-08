@@ -2089,7 +2089,8 @@ namespace Sanakan.Modules
             [Summary("czy zamienić oznaczenia na nicki?")] bool showNames = false,
             [Summary("czy dodać linki do profili?")] bool showShindenUrl = false,
             [Summary("czy ignorować anime?")] bool ignoreTitles = false,
-            [Summary("czy wysłać jako plik tekstowy?")] bool tldr = false)
+            [Summary("czy wysłać jako plik tekstowy?")] bool tldr = false,
+            [Summary("czy ukryć nieaktywnych użytkowników?")] bool hideInactive = false)
         {
             var user = (usr ?? Context.User) as SocketGuildUser;
             if (user == null) return;
@@ -2098,7 +2099,7 @@ namespace Sanakan.Modules
             {
                 var bUser = await db.GetCachedFullUserAsync(user.Id);
                 var res = await _waifu.CheckWishlistAndSendToDMAsync(db, Context.User, bUser, !showFavs,
-                    !showBlocked, !showNames, showShindenUrl, Context.Guild, false, 0, ignoreTitles, tldr);
+                    !showBlocked, !showNames, showShindenUrl, Context.Guild, false, 0, ignoreTitles, tldr, hideInactive);
 
                 await SafeReplyAsync("", embed: res.ToEmbedMessage($"{Context.User.Mention} ").Build());
             }
@@ -2115,7 +2116,8 @@ namespace Sanakan.Modules
             [Summary("czy zamienić oznaczenia na nicki?")] bool showNames = false,
             [Summary("czy dodać linki do profili?")] bool showShindenUrl = false,
             [Summary("czy ignorować anime?")] bool ignoreTitles = false,
-            [Summary("czy wysłać jako plik tekstowy?")] bool tldr = false)
+            [Summary("czy wysłać jako plik tekstowy?")] bool tldr = false,
+            [Summary("czy ukryć nieaktywnych użytkowników?")] bool hideInactive = false)
         {
             var userf = (usrf ?? Context.User) as SocketGuildUser;
             if (userf == null) return;
@@ -2131,7 +2133,7 @@ namespace Sanakan.Modules
                 var bUser = await db.GetCachedFullUserAsync(user.Id);
                 ulong searchId = userf.Id == Context.Client.CurrentUser.Id ? 1 : userf.Id;
                 var res = await _waifu.CheckWishlistAndSendToDMAsync(db, Context.User, bUser, !showFavs,
-                    !showBlocked, !showNames, showShindenUrl, Context.Guild, false, searchId, ignoreTitles, tldr);
+                    !showBlocked, !showNames, showShindenUrl, Context.Guild, false, searchId, ignoreTitles, tldr, hideInactive);
 
                 await SafeReplyAsync("", embed: res.ToEmbedMessage($"{Context.User.Mention} ").Build());
             }
@@ -3361,7 +3363,7 @@ namespace Sanakan.Modules
         [Alias("who")]
         [Summary("pozwala wyszukać użytkowników posiadających kartę danej postaci")]
         [Remarks("51 tak tak"), RequireWaifuCommandChannel]
-        public async Task SearchCharacterCardsAsync([Summary("id postaci na shinden")] ulong id, [Summary("czy zamienić oznaczenia na nicki?")] bool showNames = false, [Summary("czy dodać linki do profili?")] bool showShindenUrl = false, [Summary("czy wyświetlić tylko karty ze skalpelem/kamerą?")] bool onlyScalpels = false, [Summary("czy sortować po użytkowniku?")] bool groupByUser = false)
+        public async Task SearchCharacterCardsAsync([Summary("id postaci na shinden")] ulong id, [Summary("czy zamienić oznaczenia na nicki?")] bool showNames = false, [Summary("czy dodać linki do profili?")] bool showShindenUrl = false, [Summary("czy wyświetlić tylko karty ze skalpelem/kamerą?")] bool onlyScalpels = false, [Summary("czy sortować po użytkowniku?")] bool groupByUser = false, [Summary("czy ukryć nieaktywnych użytkowników?")] bool hideInactive = false)
         {
             var charInfo = await _shinden.GetCharacterInfoAsync(id);
             if (charInfo == null)
@@ -3373,6 +3375,9 @@ namespace Sanakan.Modules
             using (var db = new Database.DatabaseContext(Config))
             {
                 var cards = await db.Cards.Include(x => x.Tags).Include(x => x.GameDeck).ThenInclude(x => x.User).Where(x => x.Character == id).AsNoTracking().FromCacheAsync(new MemoryCacheEntryOptions { AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(1) }, CacheTags.Character(id));
+
+                if (hideInactive)
+                    cards = cards.Where(x => x.GameDeck.IsUserActive(_time.Now()));
 
                 if (onlyScalpels)
                     cards = cards.Where(x => !string.IsNullOrEmpty(x.CustomImage));
@@ -3404,7 +3409,8 @@ namespace Sanakan.Modules
         [Remarks("tak tak"), RequireWaifuCommandChannel]
         public async Task SearchCharacterCardsFromFavListAsync([Summary("czy pokazać ulubione domyślnie ukryte? (true/false)")] bool showFavs = false,
             [Summary("czy zamienić oznaczenia na nicki?")] bool showNames = false,
-            [Summary("czy dodać linki do profili?")] bool showShindenUrl = false)
+            [Summary("czy dodać linki do profili?")] bool showShindenUrl = false,
+            [Summary("czy ukryć nieaktywnych użytkowników?")] bool hideInactive = false)
         {
             using (var db = new Database.DatabaseContext(Config))
             {
@@ -3430,6 +3436,9 @@ namespace Sanakan.Modules
                     var tid = _tags.GetTagId(Services.PocketWaifu.TagType.Favorite);
                     cards = cards.Where(x => !x.Tags.Any(t => t.Id == tid)).ToList();
                 }
+
+                if (hideInactive)
+                    cards = cards.Where(x => x.GameDeck.IsUserActive(_time.Now())).ToList();
 
                 if (cards.Count < 1)
                 {
@@ -3501,7 +3510,7 @@ namespace Sanakan.Modules
         [Alias("which")]
         [Summary("pozwala wyszukać użytkowników posiadających karty z danego tytułu")]
         [Remarks("1 tak nie"), RequireWaifuCommandChannel]
-        public async Task SearchCharacterCardsFromTitleAsync([Summary("id serii na shinden")] ulong id, [Summary("czy zamienić oznaczenia na nicki?")] bool showNames = false, [Summary("ukryć posiadane?")] bool hiddeOwned = false)
+        public async Task SearchCharacterCardsFromTitleAsync([Summary("id serii na shinden")] ulong id, [Summary("czy zamienić oznaczenia na nicki?")] bool showNames = false, [Summary("ukryć posiadane?")] bool hiddeOwned = false, [Summary("czy ukryć nieaktywnych użytkowników?")] bool hideInactive = false)
         {
             var response = await _shclient.Title.GetCharactersAsync(id);
             if (!response.IsSuccessStatusCode())
@@ -3535,7 +3544,10 @@ namespace Sanakan.Modules
                     }
                 }
 
-                var cards = await db.Cards.AsQueryable().Include(x => x.Tags).Include(x => x.GameDeck).AsSplitQuery().Where(x => characterIds.Contains(x.Character)).AsNoTracking().FromCacheAsync(new MemoryCacheEntryOptions { AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(1) }, characterIds.Where(x => x.HasValue).Select(x => CacheTags.Character(x.Value)).Distinct().ToArray());
+                var cards = await db.Cards.AsQueryable().Include(x => x.Tags).Include(x => x.GameDeck).ThenInclude(x => x.User).AsSplitQuery().Where(x => characterIds.Contains(x.Character)).AsNoTracking().FromCacheAsync(new MemoryCacheEntryOptions { AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(1) }, characterIds.Where(x => x.HasValue).Select(x => CacheTags.Character(x.Value)).Distinct().ToArray());
+                if (hideInactive)
+                    cards = cards.Where(x => x.GameDeck.IsUserActive(_time.Now()));
+
                 if (cards.Count() < 1)
                 {
                     await SafeReplyAsync("", embed: $"Nie odnaleziono kart.".ToEmbedMessage(EMType.Error).Build());
