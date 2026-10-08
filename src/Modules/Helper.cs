@@ -87,7 +87,7 @@ namespace Sanakan.Modules
                             if (gConfig?.Prefix != null) prefix = gConfig.Prefix;
 
                             admin = (gUser.Roles.Any(x => x.Id == gConfig?.AdminRole) || gUser.GuildPermissions.Administrator);
-                            dev = _config.Get().Dev.Any(x => x == gUser.Id);
+                            dev = _config.Get().Dev?.Any(x => x == gUser.Id) ?? false;
                         }
                     }
 

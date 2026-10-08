@@ -19,7 +19,7 @@ namespace Sanakan.Database.Models.Configuration
         [JsonIgnore]
         public virtual GuildOptions GuildOptions { get; set; }
 
-        public virtual ICollection<WaifuCommandChannel> CommandChannels { get; set; }
-        public virtual ICollection<WaifuFightChannel> FightChannels { get; set; }
+        public virtual ICollection<WaifuCommandChannel> CommandChannels { get; set; } = new List<WaifuCommandChannel>();
+        public virtual ICollection<WaifuFightChannel> FightChannels { get; set; } = new List<WaifuFightChannel>();
     }
 }

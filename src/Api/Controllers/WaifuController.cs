@@ -93,7 +93,7 @@ namespace Sanakan.Api.Controllers
         {
             using (var db = new Database.DatabaseContext(_config))
             {
-                var user = await db.Users.AsQueryable().Where(x => x.Shinden == id)
+                var user = await db.Users.AsQueryable().Where(x => id != 0 && x.Shinden == id)
                     .Include(x => x.GameDeck).ThenInclude(x => x.Cards).ThenInclude(x => x.Tags).AsNoTracking().AsSplitQuery().FirstOrDefaultAsync();
 
                 if (user == null)
@@ -258,7 +258,7 @@ namespace Sanakan.Api.Controllers
 
             using (var db = new Database.DatabaseContext(_config))
             {
-                var user = await db.Users.AsQueryable().Where(x => x.Shinden == id).Include(x => x.GameDeck).AsNoTracking().AsSplitQuery().FirstOrDefaultAsync();
+                var user = await db.Users.AsQueryable().Where(x => id != 0 && x.Shinden == id).Include(x => x.GameDeck).AsNoTracking().AsSplitQuery().FirstOrDefaultAsync();
 
                 if (user == null)
                 {
@@ -300,7 +300,7 @@ namespace Sanakan.Api.Controllers
         {
             using (var db = new Database.DatabaseContext(_config))
             {
-                var user = await db.Users.AsQueryable().AsSplitQuery().Where(x => x.Shinden == id).Include(x => x.GameDeck).AsNoTracking().FirstOrDefaultAsync();
+                var user = await db.Users.AsQueryable().AsSplitQuery().Where(x => id != 0 && x.Shinden == id).Include(x => x.GameDeck).AsNoTracking().FirstOrDefaultAsync();
 
                 if (user == null)
                 {
@@ -355,7 +355,7 @@ namespace Sanakan.Api.Controllers
         {
             using (var db = new Database.DatabaseContext(_config))
             {
-                var user = await db.Users.AsQueryable().AsSplitQuery().Where(x => x.Shinden == id).Include(x => x.GameDeck).ThenInclude(x => x.Wishes).AsNoTracking().FirstOrDefaultAsync();
+                var user = await db.Users.AsQueryable().AsSplitQuery().Where(x => id != 0 && x.Shinden == id).Include(x => x.GameDeck).ThenInclude(x => x.Wishes).AsNoTracking().FirstOrDefaultAsync();
 
                 if (user == null)
                 {
@@ -406,7 +406,7 @@ namespace Sanakan.Api.Controllers
             {
                 var countingTimer = System.Diagnostics.Stopwatch.StartNew();
                 var expireTime = new MemoryCacheEntryOptions().SetAbsoluteExpiration(_time.Now().AddMinutes(15));
-                var cached = await db.Users.AsQueryable().AsSplitQuery().Where(x => x.Shinden == id).Include(x => x.GameDeck).ThenInclude(x => x.Tags).Include(x => x.GameDeck)
+                var cached = await db.Users.AsQueryable().AsSplitQuery().Where(x => id != 0 && x.Shinden == id).Include(x => x.GameDeck).ThenInclude(x => x.Tags).Include(x => x.GameDeck)
                     .ThenInclude(x => x.PvPStats).Include(x => x.GameDeck).ThenInclude(x => x.Cards).ThenInclude(x => x.Tags).Include(x => x.Stats).AsNoTracking()
                     .FromCacheAsync(expireTime, CacheTags.UserProfile(id));
                 var user = cached.FirstOrDefault();
@@ -861,7 +861,7 @@ namespace Sanakan.Api.Controllers
             CharacterPoolType poolType = CharacterPoolType.Anime;
             using (var db = new Database.DatabaseContext(_config))
             {
-                var bUser = await db.Users.AsQueryable().Where(x => x.Shinden == id).Include(x => x.GameDeck).ThenInclude(x => x.Cards).AsNoTracking().AsSplitQuery().FirstOrDefaultAsync();
+                var bUser = await db.Users.AsQueryable().Where(x => id != 0 && x.Shinden == id).Include(x => x.GameDeck).ThenInclude(x => x.Cards).AsNoTracking().AsSplitQuery().FirstOrDefaultAsync();
                 if (bUser == null)
                 {
                     return "User not found".ToResponse(404);

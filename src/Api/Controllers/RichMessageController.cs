@@ -132,7 +132,7 @@ namespace Sanakan.Api.Controllers
             if (!mention.HasValue) mention = false;
 
             var msgList = new List<ulong>();
-            var rmcs = config.RMConfig.Where(x => x.Type == message.MessageType);
+            var rmcs = (config.RMConfig ?? new List<RichMessageConfig>()).Where(x => x.Type == message.MessageType);
             foreach (var rmc in rmcs)
             {
                 if (!string.IsNullOrEmpty(rmc.WebHookUrl))

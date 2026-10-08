@@ -291,8 +291,13 @@ namespace Sanakan.Api.Controllers
 
             return RunAsPlayerAsync("gallery-order", async (db, discordId) =>
             {
+                var unique = wids.Distinct().ToList();
+                var owned = await db.Cards.AsQueryable().Where(x => x.GameDeckId == discordId && unique.Contains(x.Id)).Select(x => x.Id).ToListAsync();
+                if (owned.Count != unique.Count)
+                    return "Some cards are not yours!".ToResponse(400);
+
                 var buser = await db.GetUserOrCreateSimpleAsync(discordId);
-                buser.GameDeck.GalleryOrderedIds = string.Join(" ", wids);
+                buser.GameDeck.GalleryOrderedIds = string.Join(" ", unique);
                 await db.SaveChangesAsync();
 
                 return "Gallery order changed!".ToResponse(200);

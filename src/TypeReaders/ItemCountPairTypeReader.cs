@@ -20,8 +20,13 @@ namespace Sanakan.TypeReaders
                 var spr = input.Split(':');
                 if (spr.Length > 0 && uint.TryParse(spr[0].AsSpan().Slice(ret.Force ? 1 : 0), out ret.Item))
                 {
-                    if (spr.Length > 1 && uint.TryParse(spr[1], out var ic))
+                    if (spr.Length > 1)
+                    {
+                        if (!uint.TryParse(spr[1], out var ic) || ic < 1)
+                            return Task.FromResult(TypeReaderResult.FromError(CommandError.ParseFailed, "Nie rozpoznano liczby przedmiotów!"));
+
                         ret.Count = ic;
+                    }
 
                     return Task.FromResult(TypeReaderResult.FromSuccess(ret));
                 }

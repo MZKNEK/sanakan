@@ -57,15 +57,15 @@ namespace Sanakan.Api.Models
                 }
             }
 
-            switch (Pool.Type)
+            switch (Pool?.Type ?? CardsPoolType.Random)
             {
                 case CardsPoolType.Title:
-                    pack.Title = Pool.TitleId;
+                    pack.Title = Pool?.TitleId ?? 0;
                 break;
 
                 case CardsPoolType.List:
                     pack.Title = 0;
-                    foreach (var id in Pool.Character)
+                    foreach (var id in Pool?.Character ?? new List<ulong>())
                         pack.Characters.Add(new BoosterPackCharacter() { Character = id });
                 break;
 

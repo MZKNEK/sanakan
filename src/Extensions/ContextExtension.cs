@@ -64,7 +64,7 @@ namespace Sanakan.Extensions
         public static async Task<User> GetCachedFullUserByShindenIdAsync(this Database.DatabaseContext context, ulong shindenId)
         {
             var userId = await context.Users.AsQueryable().AsNoTracking()
-                .Where(x => x.Shinden == shindenId).Select(x => x.Id).FirstOrDefaultAsync();
+                .Where(x => shindenId != 0 && x.Shinden == shindenId).Select(x => x.Id).FirstOrDefaultAsync();
 
             return userId == 0 ? null : await context.GetCachedFullUserAsync(userId);
         }

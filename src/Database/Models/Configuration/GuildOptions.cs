@@ -34,14 +34,14 @@ namespace Sanakan.Database.Models.Configuration
 
         public virtual Waifu WaifuConfig { get; set; }
 
-        public virtual ICollection<WithoutSupervisionChannel> ChannelsWithoutSupervision { get; set; }
-        public virtual ICollection<WithoutMsgCntChannel> IgnoredChannels { get; set; }
-        public virtual ICollection<WithoutExpChannel> ChannelsWithoutExp { get; set; }
-        public virtual ICollection<CommandChannel> CommandChannels { get; set; }
-        public virtual ICollection<ModeratorRoles> ModeratorRoles { get; set; }
-        public virtual ICollection<LevelRole> RolesPerLevel { get; set; }
-        public virtual ICollection<SelfRole> SelfRoles { get; set; }
-        public virtual ICollection<Raport> Raports { get; set; }
-        public virtual ICollection<MyLand> Lands { get; set; }
+        public virtual ICollection<WithoutSupervisionChannel> ChannelsWithoutSupervision { get; set; } = new List<WithoutSupervisionChannel>();
+        public virtual ICollection<WithoutMsgCntChannel> IgnoredChannels { get; set; } = new List<WithoutMsgCntChannel>();
+        public virtual ICollection<WithoutExpChannel> ChannelsWithoutExp { get; set; } = new List<WithoutExpChannel>();
+        public virtual ICollection<CommandChannel> CommandChannels { get; set; } = new List<CommandChannel>();
+        public virtual ICollection<ModeratorRoles> ModeratorRoles { get; set; } = new List<ModeratorRoles>();
+        public virtual ICollection<LevelRole> RolesPerLevel { get; set; } = new List<LevelRole>();
+        public virtual ICollection<SelfRole> SelfRoles { get; set; } = new List<SelfRole>();
+        public virtual ICollection<Raport> Raports { get; set; } = new List<Raport>();
+        public virtual ICollection<MyLand> Lands { get; set; } = new List<MyLand>();
     }
 }

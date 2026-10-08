@@ -266,10 +266,10 @@ namespace Sanakan.Modules
         [Remarks("")]
         public async Task GenerateMissingUsersListAsync()
         {
-            var allUsers = Context.Client.Guilds.SelectMany(x => x.Users).Distinct();
+            var allUserIds = Context.Client.Guilds.SelectMany(x => x.Users).Select(x => x.Id).Distinct().ToList();
             using (var db = new Database.DatabaseContext(Config))
             {
-                var nonExistingIds = db.Users.AsQueryable().AsSplitQuery().Where(x => !allUsers.Any(u => u.Id == x.Id)).Select(x => x.Id).ToList();
+                var nonExistingIds = db.Users.AsQueryable().AsSplitQuery().Where(x => !allUserIds.Contains(x.Id)).Select(x => x.Id).ToList();
                 await SafeReplyAsync("", embed: string.Join("\n", nonExistingIds).ToEmbedMessage(EMType.Bot).Build());
             }
         }
@@ -1012,10 +1012,10 @@ namespace Sanakan.Modules
         [Remarks("true")]
         public async Task GenerateMissingUsersCardListAsync([Summary("czy wypisać id'ki?")]bool ids = false)
         {
-            var allUsers = Context.Client.Guilds.SelectMany(x => x.Users).Distinct();
+            var allUserIds = Context.Client.Guilds.SelectMany(x => x.Users).Select(x => x.Id).Distinct().ToList();
             using (var db = new Database.DatabaseContext(Config))
             {
-                var nonExistingIds = db.Cards.AsQueryable().AsSplitQuery().Where(x => !allUsers.Any(u => u.Id == x.GameDeckId)).Select(x => x.Id).ToList();
+                var nonExistingIds = db.Cards.AsQueryable().AsSplitQuery().Where(x => !allUserIds.Contains(x.GameDeckId)).Select(x => x.Id).ToList();
                 await SafeReplyAsync("", embed: $"Kart: {nonExistingIds.Count}".ToEmbedMessage(EMType.Bot).Build());
 
                 if (ids)

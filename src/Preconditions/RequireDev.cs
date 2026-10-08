@@ -13,7 +13,7 @@ namespace Sanakan.Preconditions
         public async override Task<PreconditionResult> CheckPermissionsAsync(ICommandContext context, CommandInfo command, IServiceProvider services)
         {
             var config = (IConfig)services.GetService(typeof(IConfig));
-            if (config.Get().Dev.Any(x => x == context.User.Id))
+            if ((config.Get().Dev ?? Enumerable.Empty<ulong>()).Any(x => x == context.User.Id))
                 return PreconditionResult.FromSuccess();
 
             await Task.CompletedTask;
