@@ -288,26 +288,25 @@ namespace Sanakan.Services.PocketWaifu
             await msg.AddReactionAsync(ClaimEmote);
         }
 
+        // Atomowo dolicza długość wiadomości i sprawdza próg pakietu. Przy przekroczeniu
+        // odejmuje tylko charNeeded (nadmiar zostaje na kolejny pakiet), a TryUpdate
+        // gwarantuje, że spawn wywoła tylko jeden wątek.
+        public static bool ShouldSpawnUserPacket(ConcurrentDictionary<ulong, long> counter, ulong userId, long added, long charNeeded)
+        {
+            var total = counter.AddOrUpdate(userId, added, (_, v) => v + added);
+            return total > charNeeded && counter.TryUpdate(userId, total - charNeeded, total);
+        }
+
         private void HandleUser(SocketUserMessage message)
         {
             var author = message.Author;
-
             var added = GetMessageRealLenght(message);
-            if (!UserCounter.ContainsKey(author.Id))
-            {
-                UserCounter.TryAdd(author.Id, added);
-                return;
-            }
 
             var charNeeded = _config.Get().CharPerPacket;
             if (charNeeded <= 0) charNeeded = 3250;
 
-            var total = UserCounter.AddOrUpdate(author.Id, added, (_, v) => v + added);
-            if (total > charNeeded)
-            {
-                UserCounter[author.Id] = 0;
+            if (ShouldSpawnUserPacket(UserCounter, author.Id, added, charNeeded))
                 SpawnUserPacket(author, message.Channel);
-            }
         }
 
         private void SpawnUserPacket(SocketUser user, ISocketMessageChannel channel)
