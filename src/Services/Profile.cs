@@ -157,30 +157,43 @@ namespace Sanakan.Services
                         if (sub.IsActive(_time.Now()))
                             continue;
 
+                        var guild = _client.GetGuild(sub.Guild);
+                        if (guild != null)
+                        {
+                            try
+                            {
+                                switch (sub.Type)
+                                {
+                                    case StatusType.Globals:
+                                        var guildConfig = await db.GetCachedGuildFullConfigAsync(sub.Guild);
+                                        await RemoveRoleAsync(guild, guildConfig?.GlobalEmotesRole ?? 0, sub.UserId);
+                                        break;
+
+                                    case StatusType.Color:
+                                        await RomoveUserColorAsync(guild.GetUser(sub.UserId));
+                                        break;
+
+                                    case StatusType.RainbowColor:
+                                        await RemoveUserRainbowColorAsync(guild.GetUser(sub.UserId), GetRainbowColorNameStart());
+                                        break;
+
+                                    default:
+                                        break;
+                                }
+                            }
+                            catch (Discord.Net.HttpException ex) when (ex.DiscordCode == DiscordErrorCode.UnknownMember)
+                            {
+                                // stale member cache - the user is no longer in the guild
+                            }
+                            catch (Exception ex)
+                            {
+                                _logger.LogError($"Profile: subs check {sub.Id}: {ex}");
+                                continue;
+                            }
+                        }
+
                         save = true;
                         sub.BValue = false;
-                        var guild = _client.GetGuild(sub.Guild);
-                        if (guild == null)
-                            continue;
-
-                        switch (sub.Type)
-                        {
-                            case StatusType.Globals:
-                                var guildConfig = await db.GetCachedGuildFullConfigAsync(sub.Guild);
-                                await RemoveRoleAsync(guild, guildConfig?.GlobalEmotesRole ?? 0, sub.UserId);
-                                break;
-
-                            case StatusType.Color:
-                                await RomoveUserColorAsync(guild.GetUser(sub.UserId));
-                                break;
-
-                            case StatusType.RainbowColor:
-                                await RemoveUserRainbowColorAsync(guild.GetUser(sub.UserId), GetRainbowColorNameStart());
-                                break;
-
-                            default:
-                                break;
-                        }
                     }
 
                     if (save)

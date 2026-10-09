@@ -93,6 +93,25 @@ namespace Sanakan.Services
                 var guild = _client.GetGuild(penalty.Guild);
                 if (guild == null) continue;
 
+                if (penalty.Type == PenaltyType.Ban)
+                {
+                    if ((_time.Now() - penalty.StartDate).TotalHours > penalty.DurationInHours)
+                    {
+                        try
+                        {
+                            var ban = await guild.GetBanAsync(penalty.User);
+                            if (ban != null) await guild.RemoveBanAsync(penalty.User);
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogError($"Moderator: unban: {ex}");
+                            continue;
+                        }
+                        await RemovePenaltyFromDb(db, penalty);
+                    }
+                    continue;
+                }
+
                 var user = guild.GetUser(penalty.User);
                 if (user != null)
                 {
@@ -114,6 +133,10 @@ namespace Sanakan.Services
                         {
                             await MuteUserGuildAsync(user, muteRole, penalty.Roles, muteMod);
                         }
+                        catch (Discord.Net.HttpException ex) when (ex.DiscordCode == DiscordErrorCode.UnknownMember)
+                        {
+                            // stale member cache - the user is no longer in the guild
+                        }
                         catch (Exception ex)
                         {
                             _logger.LogError($"Moderator: re-mute: {ex}");
@@ -121,23 +144,24 @@ namespace Sanakan.Services
                         continue;
                     }
 
-                    if (penalty.Type == PenaltyType.Mute)
+                    try
                     {
                         await UnmuteUserGuildAsync(user, muteRole, muteModRole, penalty.Roles);
-                        await RemovePenaltyFromDb(db, penalty);
                     }
+                    catch (Discord.Net.HttpException ex) when (ex.DiscordCode == DiscordErrorCode.UnknownMember)
+                    {
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError($"Moderator: unmute: {ex}");
+                        continue;
+                    }
+                    await RemovePenaltyFromDb(db, penalty);
                 }
                 else
                 {
                     if ((_time.Now() - penalty.StartDate).TotalHours > penalty.DurationInHours)
-                    {
-                        if (penalty.Type == PenaltyType.Ban)
-                        {
-                            var ban = await guild.GetBanAsync(penalty.User);
-                            if (ban != null) await guild.RemoveBanAsync(penalty.User);
-                        }
                         await RemovePenaltyFromDb(db, penalty);
-                    }
                 }
             }
         }

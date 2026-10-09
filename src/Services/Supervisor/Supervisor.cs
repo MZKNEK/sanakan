@@ -644,10 +644,15 @@ namespace Sanakan.Services.Supervisor
 
             foreach (var toBan in usersToBan)
             {
-                var thisUser = user.Guild.GetUser(toBan);
-                if (thisUser != null)
-                    await user.Guild.AddBanAsync(thisUser, 1,
+                try
+                {
+                    await user.Guild.AddBanAsync(toBan, 1,
                         $"Automatyczny ban: raid - wykryto {usersToBan.Count} kont, które dołączyły w ciągu 2 minut z tą samą nazwą użytkownika ({user.Username}).");
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError($"Supervisor: raid ban {toBan}: {ex}");
+                }
             }
         }
     }
