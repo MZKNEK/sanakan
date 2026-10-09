@@ -238,6 +238,12 @@ namespace Sanakan.Services
             }
         }
 
+        public async Task<Stream> TryGetImageStreamAsync(string url)
+        {
+            var stream = await GetImageFromUrlAsync(url);
+            return stream ?? Stream.Null;
+        }
+
         private static bool IsTooLarge(HttpResponseMessage res)
             => res.Content.Headers.ContentLength > MaxImageBytes;
 

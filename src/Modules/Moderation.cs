@@ -30,9 +30,13 @@ namespace Sanakan.Modules
         private ShindenClient _shClient;
         private Services.Profile _profile;
         private Services.Moderator _moderation;
+        private Services.ScamImages.ScamImageScanner _scamImages;
+
+        private static readonly string[] _scamImageExtensions = { ".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp" };
 
         public Moderation(Services.Helper helper, Services.Moderator moderation, Services.Profile prof,
-            ShindenClient sh, IConfig config, ISystemTime time)
+            ShindenClient sh, IConfig config, ISystemTime time,
+            Services.ScamImages.ScamImageScanner scamImages)
         {
             _time = time;
             _shClient = sh;
@@ -40,6 +44,7 @@ namespace Sanakan.Modules
             _config = config;
             _helper = helper;
             _moderation = moderation;
+            _scamImages = scamImages;
         }
 
         [Command("kasujs", RunMode = RunMode.Async)]
@@ -1608,6 +1613,51 @@ namespace Sanakan.Modules
             await SafeReplyAsync("", embed: $"Ustawiono `{Context.Channel.Name}` jako kanał bez nadzoru.".ToEmbedMessage(EMType.Success).Build());
         }
 
+        [Command("alwaysban")]
+        [Alias("banch")]
+        [Summary("ustawia kanał always-ban (banuje, a modów/adminów tylko wycisza); 0 wyłącza")]
+        [Remarks("0 | 123456789012345678 | (puste = ten kanał)"), RequireAdminRole]
+        public async Task SetAlwaysBanChannelAsync([Remainder] string arg = null)
+        {
+            using (var db = new Database.DatabaseContext(Config))
+            {
+                var config = await db.GetGuildConfigOrCreateAsync(Context.Guild.Id);
+
+                if (!string.IsNullOrWhiteSpace(arg))
+                {
+                    var text = arg.Trim();
+                    if (text == "0" || text.Equals("off", StringComparison.OrdinalIgnoreCase) || text.Equals("wyłącz", StringComparison.OrdinalIgnoreCase))
+                    {
+                        config.AlwaysBanChannel = 0;
+                    }
+                    else if (ulong.TryParse(text, out var channelId))
+                    {
+                        config.AlwaysBanChannel = channelId;
+                    }
+                    else
+                    {
+                        await SafeReplyAsync("", embed: "Podaj id kanału, 0 aby wyłączyć, albo nic aby ustawić bieżący kanał.".ToEmbedMessage(EMType.Error).Build());
+                        return;
+                    }
+                }
+                else
+                {
+                    config.AlwaysBanChannel = config.AlwaysBanChannel == Context.Channel.Id ? 0 : Context.Channel.Id;
+                }
+
+                await db.SaveChangesAsync();
+
+                QueryCacheManager.ExpireTag(new string[] { CacheTags.Guild(Context.Guild.Id) });
+
+                var channel = config.AlwaysBanChannel == 0 ? null : Context.Guild.GetTextChannel(config.AlwaysBanChannel);
+                var desc = config.AlwaysBanChannel == 0
+                    ? "Always-ban został wyłączony."
+                    : $"Always-ban ustawiony na {channel?.Mention ?? $"`{config.AlwaysBanChannel}`"}.";
+
+                await SafeReplyAsync("", embed: desc.ToEmbedMessage(EMType.Success).Build());
+            }
+        }
+
         [Command("todo", RunMode = RunMode.Async)]
         [Summary("dodaje wiadomość do todo")]
         [Remarks("2342123444212"), RequireAnyAdminOrModRole]
@@ -2056,6 +2106,77 @@ namespace Sanakan.Modules
 
                 await SafeReplyAsync("", embed: $"{user.Mention} został wyciszony.".ToEmbedMessage(EMType.Success).Build());
             }
+        }
+
+        [Command("scamhash")]
+        [Summary("wyświetla liczbę zapisanych sygnatur scamowych obrazków")]
+        [Remarks(""), RequireAnyAdminRoleOrChannelPermission(ChannelPermission.ManageMessages)]
+        public async Task ShowScamHashesAsync()
+        {
+            await SafeReplyAsync("", embed: $"Zapisanych sygnatur scamowych obrazków: **{_scamImages.SignatureCount}**.".ToEmbedMessage(EMType.Bot).Build());
+        }
+
+        [Command("scamhash add")]
+        [Alias("scamhash dodaj")]
+        [Summary("dodaje sygnatury scamowych obrazków z załącznika lub z wiadomości, na którą odpowiadasz")]
+        [Remarks(""), RequireAnyAdminRoleOrChannelPermission(ChannelPermission.ManageMessages)]
+        public async Task AddScamHashAsync()
+        {
+            IReadOnlyCollection<IAttachment> attachments = Context.Message.Attachments;
+            if (attachments.Count == 0 && (Context.Message.Reference?.MessageId.IsSpecified ?? false))
+            {
+                var referenced = await Context.Channel.GetMessageAsync(Context.Message.Reference.MessageId.Value);
+                if (referenced != null)
+                    attachments = referenced.Attachments;
+            }
+
+            var images = attachments.Where(x => x != null &&
+                _scamImageExtensions.Any(e => x.Filename.EndsWith(e, StringComparison.OrdinalIgnoreCase))).ToList();
+            if (images.Count == 0)
+            {
+                await SafeReplyAsync("", embed: "Dołącz obrazek jako załącznik albo odpowiedz na wiadomość z obrazkami.".ToEmbedMessage(EMType.Error).Build());
+                return;
+            }
+
+            var added = await _scamImages.AddFromAttachmentsAsync(images);
+            await SafeReplyAsync("", embed: $"Dodano **{added}** nowych sygnatur scamowych obrazków.".ToEmbedMessage(added > 0 ? EMType.Success : EMType.Info).Build());
+        }
+
+        [Command("scamhash remove")]
+        [Alias("scamhash usun")]
+        [Summary("usuwa sygnaturę scamowego obrazka")]
+        [Remarks("a1b2c3d4e5f60718"), RequireAnyAdminRoleOrChannelPermission(ChannelPermission.ManageMessages)]
+        public async Task RemoveScamHashAsync([Summary("hash (16 znaków hex)")] string hash)
+        {
+            if (!Services.ScamImages.ScamImageStore.TryParseHash(hash, out var parsed))
+            {
+                await SafeReplyAsync("", embed: "Nieprawidłowy hash. Podaj 16 znaków hex.".ToEmbedMessage(EMType.Error).Build());
+                return;
+            }
+
+            var removed = _scamImages.Remove(parsed);
+            if (removed)
+                await SafeReplyAsync("", embed: "Usunięto sygnaturę.".ToEmbedMessage(EMType.Success).Build());
+            else
+                await SafeReplyAsync("", embed: "Nie znaleziono takiej sygnatury.".ToEmbedMessage(EMType.Info).Build());
+        }
+
+        [Command("scamhash list")]
+        [Alias("scamhash lista")]
+        [Summary("wyświetla zapisane sygnatury scamowych obrazków")]
+        [Remarks(""), RequireAnyAdminRoleOrChannelPermission(ChannelPermission.ManageMessages)]
+        public async Task ListScamHashesAsync()
+        {
+            var hashes = _scamImages.Store.Snapshot();
+            if (hashes.Length == 0)
+            {
+                await SafeReplyAsync("", embed: "Brak zapisanych sygnatur.".ToEmbedMessage(EMType.Info).Build());
+                return;
+            }
+
+            var text = string.Join("\n", hashes.Take(50).Select(Services.ScamImages.ScamImageStore.FormatHash));
+            var more = hashes.Length > 50 ? $"\n... i {hashes.Length - 50} więcej." : "";
+            await SafeReplyAsync("", embed: $"**Sygnatury ({hashes.Length}):**\n{text}{more}".ToEmbedMessage(EMType.Bot).Build());
         }
 
         [Command("pomoc", RunMode = RunMode.Async)]

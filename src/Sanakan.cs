@@ -9,6 +9,7 @@ using Sanakan.Services;
 using Sanakan.Services.Commands;
 using Sanakan.Services.Executor;
 using Sanakan.Services.PocketWaifu;
+using Sanakan.Services.ScamImages;
 using Sanakan.Services.Session;
 using Sanakan.Services.Supervisor;
 using Sanakan.Services.Time;
@@ -32,6 +33,7 @@ namespace Sanakan
         private Expedition _expedition;
         private EmoteCounter _eCounter;
         private ImageProcessing _img;
+        private ScamImageScanner _scamImages;
         private DeletedLog _deleted;
         private HealthMonitor _health;
         private Heartbeat _heartbeat;
@@ -142,6 +144,8 @@ namespace Sanakan
             _expedition = new Expedition(_time);
             _img = new ImageProcessing(_shindenClient,
                 _tags.GetTag(Services.PocketWaifu.TagType.Gallery));
+            _scamImages = new ScamImageScanner(_img,
+                new ScamImageStore(Services.Dir.GetResource("ScamHashes.txt")), _logger);
             _deleted = new DeletedLog(_client, _config, _logger);
             _chaos = new Chaos(_client, _config, _logger);
             _executor = new UserBasedExecutor(_logger);
@@ -152,7 +156,7 @@ namespace Sanakan
             _shinden = new Services.Shinden(_shindenClient, _sessions, _img, _logger);
             _waifu = new Waifu(_img, _shindenClient, _events, _logger,
                  _expedition, _client, _helper, _time, _shinden, _tags, _config);
-            _supervisor = new Supervisor(_client, _config, _logger, _mod, _time);
+            _supervisor = new Supervisor(_client, _config, _logger, _mod, _time, _scamImages);
             _greeting = new Greeting(_client, _logger, _config, _executor, _time);
             _exp = new ExperienceManager(_client, _executor, _config, _img, _time, _logger);
             _spawn = new Spawn(_client, _executor, _waifu, _config, _logger, _time);
@@ -210,6 +214,7 @@ namespace Sanakan
                 .AddSingleton(_mod)
                 .AddSingleton(_exp)
                 .AddSingleton(_img)
+                .AddSingleton(_scamImages)
                 .AddSingleton<Services.Fun>()
                 .AddSingleton<Services.LandManager>()
                 .AddSingleton<Services.PocketWaifu.Lottery>()

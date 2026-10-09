@@ -12,6 +12,7 @@ using Discord;
 using Discord.WebSocket;
 using Sanakan.Config;
 using Sanakan.Extensions;
+using Sanakan.Services.ScamImages;
 using Sanakan.Services.Time;
 using Shinden.Logger;
 
@@ -53,18 +54,21 @@ namespace Sanakan.Services.Supervisor
 
         private DiscordSocketClient _client;
         private Moderator _moderator;
+        private ScamImageScanner _scamImages;
         private ISystemTime _time;
         private ILogger _logger;
         private IConfig _config;
         private Timer _timer;
 
-        public Supervisor(DiscordSocketClient client, IConfig config, ILogger logger, Moderator moderator, ISystemTime time)
+        public Supervisor(DiscordSocketClient client, IConfig config, ILogger logger, Moderator moderator, ISystemTime time,
+            ScamImageScanner scamImages)
         {
             _moderator = moderator;
             _client = client;
             _config = config;
             _logger = logger;
             _time = time;
+            _scamImages = scamImages;
 
             _guilds = new Dictionary<ulong, Dictionary<ulong, SupervisorEntity>>();
             _guildsJoin = new Dictionary<ulong, Dictionary<string, SupervisorJoinEntity>>();
@@ -212,6 +216,56 @@ namespace Sanakan.Services.Supervisor
                 var gConfig = await db.GetCachedGuildFullConfigAsync(user.Guild.Id);
                 if (gConfig == null) return;
 
+                if (gConfig.AlwaysBanChannel != 0 && message.Channel.Id == gConfig.AlwaysBanChannel)
+                {
+                    var isStaff = IsAlwaysBanProtected(user.Id == user.Guild.OwnerId, user.GuildPermissions.Administrator,
+                        gConfig.AdminRole, gConfig.SemiAdminRole,
+                        user.Roles.Select(x => x.Id),
+                        gConfig.ModeratorRoles?.Select(x => x.Role) ?? Enumerable.Empty<ulong>());
+
+                    muteRole = user.Guild.GetRole(gConfig.MuteRole);
+                    userRole = user.Guild.GetRole(gConfig.UserRole);
+                    notifChannel = user.Guild.GetTextChannel(gConfig.NotificationChannel);
+
+                    try
+                    {
+                        await message.DeleteAsync();
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError($"Supervisor: unable to delete always-ban message {message.Id}: {ex}");
+                    }
+
+                    var alwaysBanReason = isStaff
+                        ? "Automatyczny mute: wiadomość na kanale objętym always-ban (rola uprzywilejowana)."
+                        : "Automatyczny ban: wiadomość na kanale objętym always-ban.";
+
+                    try
+                    {
+                        await MakeActionAsync(isStaff ? Action.Mute : Action.Ban, user, message, userRole, muteRole, notifChannel, false, alwaysBanReason);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError($"Supervisor: always-ban action failed for {user.Id} on channel {message.Channel.Id}: {ex}");
+                    }
+
+                    try
+                    {
+                        var farewell = isStaff
+                            ? $"{user.Mention} opuszcza nas na chwilę."
+                            : $"{user.Mention} opuszcza nas na zawsze.";
+
+                        await message.Channel.SendMessageAsync("", embed: farewell.ToEmbedMessage(EMType.Bot)
+                            .WithImageUrl(Fun.GetRandomMuteReactionGif()).Build());
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError($"Supervisor: unable to send always-ban farewell on {message.Channel.Id}: {ex}");
+                    }
+
+                    return;
+                }
+
                 var isTemporary = await IsTemporarySupervisionActiveAsync(user.Guild.Id, message.Channel.Id);
                 if (!gConfig.Supervision && !isTemporary) return;
 
@@ -220,6 +274,14 @@ namespace Sanakan.Services.Supervisor
 
                 if (!isTemporary && gConfig.ChannelsWithoutSupervision.Any(x => x.Channel == message.Channel.Id))
                     return;
+
+                var scamMatch = hasTooManyImages ? null : await FindScamImageAsync(message);
+                var hasScamImage = scamMatch != null;
+                if (scamMatch != null)
+                {
+                    _logger.Log($"ScamImage: hit msg={message.GetJumpUrl()} author={user.Id} url={scamMatch.Url} " +
+                        $"hash={ScamImageStore.FormatHash(scamMatch.Hash)} known={ScamImageStore.FormatHash(scamMatch.KnownHash)} distance={scamMatch.Distance}");
+                }
 
                 var messageContent = GetMessageContent(message);
                 muteRole = user.Guild.GetRole(gConfig.MuteRole);
@@ -258,7 +320,7 @@ namespace Sanakan.Services.Supervisor
                     bool isBannable = hasSuspiciousUrl || hasNonWhitelistedUrl;
                     action = MakeDecision(messageContent, susspect.Inc(), thisMessage.Inc(), hasRole && !isBannable);
                     var imageSpamCount = 0;
-                    if (hasTooManyImages)
+                    if (hasTooManyImages || hasScamImage)
                     {
                         deleteMessage = true;
                         imageSpamCount = susspect.IncImageSpam();
@@ -270,7 +332,8 @@ namespace Sanakan.Services.Supervisor
                     if (action == Action.Mute || action == Action.Ban)
                     {
                         penaltyReason = GetPenaltyReason(action, messageContent, hasSuspiciousUrl,
-                            hasNonWhitelistedUrl, imageSpamCount, susspect.TotalMessages, thisMessage.Count);
+                            hasNonWhitelistedUrl, imageSpamCount, susspect.TotalMessages, thisMessage.Count,
+                            hasScamImage && !hasTooManyImages);
                     }
                 }
             }
@@ -335,9 +398,12 @@ namespace Sanakan.Services.Supervisor
         }
 
         private string GetPenaltyReason(Action action, string messageContent, bool hasSuspiciousUrl,
-            bool hasNonWhitelistedUrl, int imageSpamCount, int totalMessages, int specifiedMessages)
+            bool hasNonWhitelistedUrl, int imageSpamCount, int totalMessages, int specifiedMessages, bool scamImage)
         {
             var penalty = action == Action.Ban ? "ban" : "mute";
+
+            if (imageSpamCount >= 2 && scamImage)
+                return $"Automatyczny {penalty}: scamowe obrazki - wysłano {imageSpamCount} wiadomości z rozpoznanymi scamowymi obrazkami w ciągu 2 minut.";
 
             if (imageSpamCount >= 3)
                 return $"Automatyczny {penalty}: spam obrazkami - wysłano {imageSpamCount} wiadomości zawierających więcej niż trzy obrazki w ciągu 2 minut.";
@@ -402,6 +468,40 @@ namespace Sanakan.Services.Supervisor
         private bool HasMoreThanThreeImages(SocketUserMessage message)
         {
             return message.Attachments.Count(IsImageAttachment) > 3;
+        }
+
+        private async Task<ScamImageMatch> FindScamImageAsync(SocketUserMessage message)
+        {
+            if (_scamImages.SignatureCount == 0)
+                return null;
+
+            var images = message.Attachments.Where(IsImageAttachment).ToList();
+            if (images.Count == 0)
+                return null;
+
+            return await _scamImages.FindMatchAsync(images);
+        }
+
+        public static bool IsAlwaysBanProtected(bool isOwner, bool isAdministrator, ulong adminRole, ulong semiAdminRole,
+            IEnumerable<ulong> userRoles, IEnumerable<ulong> moderatorRoles)
+        {
+            return isOwner || isAdministrator ||
+                IsAlwaysBanStaff(adminRole, semiAdminRole, userRoles, moderatorRoles);
+        }
+
+        public static bool IsAlwaysBanStaff(ulong adminRole, ulong semiAdminRole, IEnumerable<ulong> userRoles,
+            IEnumerable<ulong> moderatorRoles)
+        {
+            if (userRoles == null)
+                return false;
+
+            if (adminRole != 0 && userRoles.Contains(adminRole))
+                return true;
+
+            if (semiAdminRole != 0 && userRoles.Contains(semiAdminRole))
+                return true;
+
+            return moderatorRoles != null && userRoles.Any(x => moderatorRoles.Contains(x));
         }
 
         private bool IsImageSpamExempt(SocketUserMessage message)

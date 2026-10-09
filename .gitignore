@@ -19,6 +19,7 @@ src/dump.json
 src/dumpEmotes.json
 src/Config.json
 src/ConfigDebug.json
+src/Pictures/ScamHashes.txt
 src/sanakan_key
 src/sanakan_key.pub
 /UnitTestProject1/obj

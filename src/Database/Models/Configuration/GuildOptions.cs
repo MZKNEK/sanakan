@@ -23,6 +23,7 @@ namespace Sanakan.Database.Models.Configuration
         public ulong LogChannel { get; set; }
         public ulong GreetingChannel { get; set; }
         public ulong NitroRole { get; set; }
+        public ulong AlwaysBanChannel { get; set; }
         public string WelcomeMessage { get; set; }
         public string WelcomeMessagePW { get; set; }
         public string GoodbyeMessage { get; set; }
