@@ -199,7 +199,17 @@ namespace Sanakan.Modules
                     break;
             }
 
-            var response = await _shclient.User.GetAsync(shindenId);
+            Shden.API.IResponse<Shden.Models.IUserInfo> response;
+            try
+            {
+                response = await _shclient.User.GetAsync(shindenId);
+            }
+            catch (Exception ex)
+            {
+                await SafeReplyAsync("", embed: $"Brak połączenia z Shindenem! ({ex.Message})".ToEmbedMessage(EMType.Error).Build());
+                return;
+            }
+
             if (response.IsSuccessStatusCode())
             {
                 var user = response.Body;

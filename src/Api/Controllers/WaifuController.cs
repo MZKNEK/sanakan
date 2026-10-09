@@ -47,6 +47,9 @@ namespace Sanakan.Api.Controllers
         private readonly IMemoryCache _nameCache;
         private readonly DiscordSocketClient _client;
 
+        private const int MaxShindenFailures = 2;
+        private int _shindenFailures;
+
         public WaifuController(ShindenClient shClient, Waifu waifu, IExecutor executor, TagHelper tags,
             IConfig config, ISystemTime time, IMemoryCache cache, DiscordSocketClient client, Expedition expedition)
         {
@@ -1108,13 +1111,26 @@ namespace Sanakan.Api.Controllers
                     return username;
                 }
 
-                var res = await _shClient.User.GetAsync(shindenId);
-                if (res.IsSuccessStatusCode())
+                // controllers are per request - after repeated failures skip further lookups so a card list does not wait for every owner
+                if (_shindenFailures >= MaxShindenFailures)
                 {
-                    _nameCache.Set(shindenId, res.Body.Name, new MemoryCacheEntryOptions()
-                        .SetAbsoluteExpiration(TimeSpan.FromHours(24)));
+                    return string.Empty;
+                }
 
-                    return res.Body.Name;
+                try
+                {
+                    var res = await _shClient.User.GetAsync(shindenId);
+                    if (res.IsSuccessStatusCode())
+                    {
+                        _nameCache.Set(shindenId, res.Body.Name, new MemoryCacheEntryOptions()
+                            .SetAbsoluteExpiration(TimeSpan.FromHours(24)));
+
+                        return res.Body.Name;
+                    }
+                }
+                catch (Exception)
+                {
+                    _shindenFailures++;
                 }
             }
             return string.Empty;

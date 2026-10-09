@@ -1866,25 +1866,32 @@ namespace Sanakan.Modules
                         if (user.Roles.Contains(userRole))
                         {
                             var realNick = (user.Nickname ?? user.GlobalName) ?? user.Username;
-                            if (duser.Shinden != 0)
+                            try
                             {
-                                var res = await _shClient.User.GetAsync(duser.Shinden);
-                                if (res.IsSuccessStatusCode())
+                                if (duser.Shinden != 0)
                                 {
-                                    if (res.Body.Name != realNick)
-                                        nickRep = $"**Nick:** ❗ {res.Body.Name}";
+                                    var res = await _shClient.User.GetAsync(duser.Shinden);
+                                    if (res.IsSuccessStatusCode())
+                                    {
+                                        if (res.Body.Name != realNick)
+                                            nickRep = $"**Nick:** ❗ {res.Body.Name}";
+                                    }
+                                    else nickRep = $"**Nick:** ❗ D: {duser.Shinden}";
                                 }
-                                else nickRep = $"**Nick:** ❗ D: {duser.Shinden}";
+                                else
+                                {
+                                    var res = await _shClient.Search.UserAsync(realNick);
+                                    if (res.IsSuccessStatusCode())
+                                    {
+                                        if (!res.Body.Any(x => x.Name.Equals(realNick, StringComparison.Ordinal)))
+                                            nickRep = $"**Nick:** ⚠";
+                                    }
+                                    else nickRep = $"**Nick:** ⚠";
+                                }
                             }
-                            else
+                            catch (Exception)
                             {
-                                var res = await _shClient.Search.UserAsync(realNick);
-                                if (res.IsSuccessStatusCode())
-                                {
-                                    if (!res.Body.Any(x => x.Name.Equals(realNick, StringComparison.Ordinal)))
-                                        nickRep = $"**Nick:** ⚠";
-                                }
-                                else nickRep = $"**Nick:** ⚠";
+                                nickRep = $"**Nick:** ❔ brak połączenia z Shindenem";
                             }
                         }
                     }

@@ -77,7 +77,16 @@ namespace Sanakan.Api.Controllers
             if (string.IsNullOrWhiteSpace(name) || name.Length > 256)
                 return "Invalid name!".ToResponse(400);
 
-            var res = await _shClient.Search.UserAsync(name);
+            Shinden.API.IResponse<List<Shinden.Models.IUserSearch>> res;
+            try
+            {
+                res = await _shClient.Search.UserAsync(name);
+            }
+            catch (Exception)
+            {
+                return "Can't connect to shinden!".ToResponse(503);
+            }
+
             if (!res.IsSuccessStatusCode())
             {
                 return "User not found!".ToResponse(404);
@@ -98,7 +107,16 @@ namespace Sanakan.Api.Controllers
                 return username;
             }
 
-            var res = await _shClient.User.GetAsync(id);
+            Shinden.API.IResponse<Shinden.Models.IUserInfo> res;
+            try
+            {
+                res = await _shClient.User.GetAsync(id);
+            }
+            catch (Exception)
+            {
+                return "Can't connect to shinden!".ToResponse(503);
+            }
+
             if (!res.IsSuccessStatusCode())
             {
                 return "User not found!".ToResponse(404);
@@ -324,7 +342,16 @@ namespace Sanakan.Api.Controllers
                     }
                 }
 
-                var response = await _shClient.Search.UserAsync(id.Username);
+                Shinden.API.IResponse<List<Shinden.Models.IUserSearch>> response;
+                try
+                {
+                    response = await _shClient.Search.UserAsync(id.Username);
+                }
+                catch (Exception)
+                {
+                    return "Can't connect to shinden!".ToResponse(503);
+                }
+
                 if (!response.IsSuccessStatusCode())
                 {
                     return "Can't connect to shinden!".ToResponse(403);
@@ -336,7 +363,16 @@ namespace Sanakan.Api.Controllers
                     return "User not found on shinden!".ToResponse(404);
                 }
 
-                var sResponse = await _shClient.User.GetAsync(found);
+                Shinden.API.IResponse<Shinden.Models.IUserInfo> sResponse;
+                try
+                {
+                    sResponse = await _shClient.User.GetAsync(found);
+                }
+                catch (Exception)
+                {
+                    return "Can't connect to shinden!".ToResponse(503);
+                }
+
                 var sUser = sResponse.IsSuccessStatusCode() ? sResponse.Body : null;
                 if (sUser?.ForumId == null || sUser.ForumId.Value != id.ForumUserId)
                 {

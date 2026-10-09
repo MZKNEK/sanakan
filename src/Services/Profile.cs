@@ -362,10 +362,22 @@ namespace Sanakan.Services
 
         public async Task<SixLabors.ImageSharp.Image> GetProfileImageAsync(SocketGuildUser user, Database.Models.User botUser, long topPosition)
         {
-            bool isConnected = botUser.Shinden != 0;
-            var response = _shClient.User.GetAsync(botUser.Shinden);
+            global::Shinden.Models.IUserInfo shindenUser = null;
+            if (botUser.Shinden != 0)
+            {
+                try
+                {
+                    var response = await _shClient.User.GetAsync(botUser.Shinden);
+                    if (response.IsSuccessStatusCode())
+                        shindenUser = response.Body;
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError($"Profile: shinden user {botUser.Shinden}: {ex.Message}");
+                }
+            }
 
-            return await _img.GetUserProfileAsync(isConnected ? (await response).Body : null, botUser, user.GetUserOrDefaultAvatarUrl(true),
+            return await _img.GetUserProfileAsync(shindenUser, botUser, user.GetUserOrDefaultAvatarUrl(true),
                 topPosition, user.GetUserNickInGuild(), user.Roles.OrderByDescending(x => x.Position).FirstOrDefault()?.Color ?? Discord.Color.DarkerGrey);
         }
 
