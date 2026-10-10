@@ -1,18 +1,11 @@
-# 1.4.10.16
+# 1.4.10.17
 
-Data: 2026-10-09
+Data: 2026-10-10
 
-- Naprawiono błąd, przez który wyciszeni gracze mogli nie zostać odciszeni po upływie kary.
-- Naprawiono błąd, przez który bany czasowe mogły nie wygasać.
-- Naprawiono błąd, przez który bot próbował wyciszać zbanowanych graczy.
-- Naprawiono błąd, przez który kolory i globalne emotki mogły zostawać po wygaśnięciu subskrypcji.
-- Naprawiono automatyczne banowanie przy rajdach, które mogło pomijać część kont.
-- Naprawiono wyświetlanie profilu, gdy Shinden nie odpowiada — profil pokazuje się bez danych ze strony zamiast nie pokazywać się wcale.
-- Naprawiono komendę łączenia konta z Shindenem, która przy braku odpowiedzi strony nie odpowiadała wcale.
-- Naprawiono sprawdzanie gracza przez moderację, które przy braku odpowiedzi Shindena nie wyświetlało raportu.
+- Zmieniono karanie za rozpoznane scamowe obrazki — kara pojawia się już przy drugim takim obrazku w ciągu 2 minut zamiast przy trzecim.
+- Zmieniono liczenie scamowych obrazków — każdy rozpoznany obrazek w wiadomości liczy się osobno, więc wiadomość z kilkoma takimi obrazkami może od razu skończyć się karą.
+- Usunięto ostrzeżenie o scamie wysyłane razem z karą, gdy pierwsza wiadomość od razu kończy się mutem lub banem.
 
 ## Techniczne
 
-- Bot nie zapycha już logów powtarzającymi się błędami przy graczach, którzy opuścili serwer.
-- Profil gracza bez połączonego konta nie wysyła już zbędnych zapytań do Shindena.
-- Strona otrzymuje czytelny komunikat zamiast ogólnego błędu, gdy Shinden nie odpowiada, a listy kart nie zawieszają się przy jego awarii.
+- Przy mucie lub banie bot zapisuje w logach odciski obrazków z wiadomości, które nie pasowały do znanych scamów, co ułatwia dodawanie nowych.
