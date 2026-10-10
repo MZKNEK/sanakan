@@ -275,9 +275,9 @@ namespace Sanakan.Services.Supervisor
                 if (!isTemporary && gConfig.ChannelsWithoutSupervision.Any(x => x.Channel == message.Channel.Id))
                     return;
 
-                var scamMatch = hasTooManyImages ? null : await FindScamImageAsync(message);
-                var hasScamImage = scamMatch != null;
-                if (scamMatch != null)
+                var scan = hasTooManyImages ? new ScamImageScanResult() : await ScanImagesAsync(message);
+                var hasScamImage = scan.Matches.Count > 0;
+                foreach (var scamMatch in scan.Matches)
                 {
                     _logger.Log($"ScamImage: hit msg={message.GetJumpUrl()} author={user.Id} url={scamMatch.Url} " +
                         $"hash={ScamImageStore.FormatHash(scamMatch.Hash)} known={ScamImageStore.FormatHash(scamMatch.KnownHash)} distance={scamMatch.Distance}");
@@ -323,10 +323,12 @@ namespace Sanakan.Services.Supervisor
                     if (hasTooManyImages || hasScamImage)
                     {
                         deleteMessage = true;
-                        imageSpamCount = susspect.IncImageSpam();
-                        sendImageScamWarning = imageSpamCount == 1;
-                        if (imageSpamCount >= 3)
+                        var hits = hasScamImage ? scan.Matches.Count : 1;
+                        imageSpamCount = susspect.IncImageSpam(hits);
+                        if (ShouldPunishImageSpam(imageSpamCount, hasScamImage))
                             action = hasRole ? Action.Mute : Action.Ban;
+                        else
+                            sendImageScamWarning = imageSpamCount == hits;
                     }
 
                     if (action == Action.Mute || action == Action.Ban)
@@ -335,6 +337,13 @@ namespace Sanakan.Services.Supervisor
                             hasNonWhitelistedUrl, imageSpamCount, susspect.TotalMessages, thisMessage.Count,
                             hasScamImage && !hasTooManyImages);
                     }
+                }
+
+                if (action == Action.Mute || action == Action.Ban)
+                {
+                    foreach (var image in scan.Unmatched)
+                        _logger.Log($"ScamImage: unmatched image in penalized message msg={message.GetJumpUrl()} author={user.Id} " +
+                            $"action={action} url={image.Url} hash={ScamImageStore.FormatHash(image.Hash)}");
                 }
             }
 
@@ -403,7 +412,7 @@ namespace Sanakan.Services.Supervisor
             var penalty = action == Action.Ban ? "ban" : "mute";
 
             if (imageSpamCount >= 2 && scamImage)
-                return $"Automatyczny {penalty}: scamowe obrazki - wysłano {imageSpamCount} wiadomości z rozpoznanymi scamowymi obrazkami w ciągu 2 minut.";
+                return $"Automatyczny {penalty}: scamowe obrazki - rozpoznano {imageSpamCount} scamowych obrazków w ciągu 2 minut.";
 
             if (imageSpamCount >= 3)
                 return $"Automatyczny {penalty}: spam obrazkami - wysłano {imageSpamCount} wiadomości zawierających więcej niż trzy obrazki w ciągu 2 minut.";
@@ -470,16 +479,13 @@ namespace Sanakan.Services.Supervisor
             return message.Attachments.Count(IsImageAttachment) > 3;
         }
 
-        private async Task<ScamImageMatch> FindScamImageAsync(SocketUserMessage message)
+        private async Task<ScamImageScanResult> ScanImagesAsync(SocketUserMessage message)
         {
-            if (_scamImages.SignatureCount == 0)
-                return null;
-
             var images = message.Attachments.Where(IsImageAttachment).ToList();
-            if (images.Count == 0)
-                return null;
+            if (_scamImages.SignatureCount == 0 || images.Count == 0)
+                return new ScamImageScanResult();
 
-            return await _scamImages.FindMatchAsync(images);
+            return await _scamImages.ScanAsync(images);
         }
 
         public static bool IsAlwaysBanProtected(bool isOwner, bool isAdministrator, ulong adminRole, ulong semiAdminRole,
@@ -488,6 +494,9 @@ namespace Sanakan.Services.Supervisor
             return isOwner || isAdministrator ||
                 IsAlwaysBanStaff(adminRole, semiAdminRole, userRoles, moderatorRoles);
         }
+
+        public static bool ShouldPunishImageSpam(int imageSpamCount, bool scamImage)
+            => imageSpamCount >= (scamImage ? 2 : 3);
 
         public static bool IsAlwaysBanStaff(ulong adminRole, ulong semiAdminRole, IEnumerable<ulong> userRoles,
             IEnumerable<ulong> moderatorRoles)

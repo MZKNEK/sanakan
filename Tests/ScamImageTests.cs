@@ -1,6 +1,9 @@
 using System;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
+using IAttachment = Discord.IAttachment;
+using Moq;
 using Sanakan.Services;
 using Sanakan.Services.ScamImages;
 using SixLabors.ImageSharp;
@@ -276,6 +279,48 @@ namespace Artifacts
                 Assert.Equal(1, distance);
             }
             finally { Cleanup(path); }
+        }
+
+        [Fact]
+        public async Task Scanner_ScanAsync_ReturnsEveryMatchAndUnmatchedHashes()
+        {
+            var path = TempFile();
+            var scam = Png(200, 200, Textured);
+            var clean = Png(200, 200, RadialBlob);
+            using var server = new LocalHttpServer(async ctx =>
+            {
+                var body = ctx.Request.Url.AbsolutePath.Contains("clean") ? clean : scam;
+                ctx.Response.ContentType = "image/png";
+                ctx.Response.ContentLength64 = body.Length;
+                await ctx.Response.OutputStream.WriteAsync(body);
+            });
+            try
+            {
+                var store = new ScamImageStore(path);
+                store.Add(PerceptualHash.FromStream(new MemoryStream(scam)));
+                var scanner = new ScamImageScanner(new ImageProcessing(null, null, true), store, null);
+
+                var result = await scanner.ScanAsync(new[]
+                {
+                    Attachment(server.BaseUrl + "scam1.png"),
+                    Attachment(server.BaseUrl + "clean.png"),
+                    Attachment(server.BaseUrl + "scam2.png"),
+                });
+
+                Assert.Equal(new[] { server.BaseUrl + "scam1.png", server.BaseUrl + "scam2.png" },
+                    result.Matches.Select(x => x.Url));
+                var unmatched = Assert.Single(result.Unmatched);
+                Assert.Equal(server.BaseUrl + "clean.png", unmatched.Url);
+                Assert.Equal(PerceptualHash.FromStream(new MemoryStream(clean)), unmatched.Hash);
+            }
+            finally { Cleanup(path); }
+        }
+
+        private static IAttachment Attachment(string url)
+        {
+            var attachment = new Mock<IAttachment>();
+            attachment.SetupGet(x => x.Url).Returns(url);
+            return attachment.Object;
         }
 
         [Fact]

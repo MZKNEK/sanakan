@@ -71,14 +71,15 @@ namespace Sanakan.Services.Supervisor
             return ++TotalMessages;
         }
 
-        public int IncImageSpam()
+        public int IncImageSpam(int amount = 1)
         {
             var now = _timeProvider.Now();
             if ((now - LastImageSpamMessage).TotalMinutes > 2)
                 ImageSpamMessages = 0;
 
             LastImageSpamMessage = now;
-            return ++ImageSpamMessages;
+            ImageSpamMessages += amount;
+            return ImageSpamMessages;
         }
     }
 }

@@ -26,6 +26,24 @@ namespace Sanakan.Services.ScamImages
         public string Url { get; }
     }
 
+    public sealed class ScannedImage
+    {
+        public ScannedImage(ulong hash, string url)
+        {
+            Hash = hash;
+            Url = url;
+        }
+
+        public ulong Hash { get; }
+        public string Url { get; }
+    }
+
+    public sealed class ScamImageScanResult
+    {
+        public List<ScamImageMatch> Matches { get; } = new List<ScamImageMatch>();
+        public List<ScannedImage> Unmatched { get; } = new List<ScannedImage>();
+    }
+
     // Downloads message attachments and matches them against the known scam signatures.
     public sealed class ScamImageScanner
     {
@@ -47,10 +65,11 @@ namespace Sanakan.Services.ScamImages
         public int SignatureCount => _store.Count;
         public ScamImageStore Store => _store;
 
-        public async Task<ScamImageMatch> FindMatchAsync(IEnumerable<IAttachment> attachments)
+        public async Task<ScamImageScanResult> ScanAsync(IEnumerable<IAttachment> attachments)
         {
+            var result = new ScamImageScanResult();
             if (_store.Count == 0 || attachments == null)
-                return null;
+                return result;
 
             foreach (var attachment in attachments)
             {
@@ -64,9 +83,12 @@ namespace Sanakan.Services.ScamImages
                     if (stream == null || ReferenceEquals(stream, Stream.Null))
                         continue;
 
-                    var match = MatchStream(stream, url);
+                    var hashes = HashStream(stream);
+                    var match = Match(hashes, url);
                     if (match != null)
-                        return match;
+                        result.Matches.Add(match);
+                    else
+                        result.Unmatched.Add(new ScannedImage(hashes[0], url));
                 }
                 catch (Exception ex)
                 {
@@ -74,7 +96,7 @@ namespace Sanakan.Services.ScamImages
                 }
             }
 
-            return null;
+            return result;
         }
 
         public bool IsScamStream(Stream stream) => MatchStream(stream, null) != null;
@@ -84,10 +106,20 @@ namespace Sanakan.Services.ScamImages
             if (_store.Count == 0 || stream == null)
                 return null;
 
+            return Match(HashStream(stream), url);
+        }
+
+        private static ulong[] HashStream(Stream stream)
+        {
             if (stream.CanSeek)
                 stream.Position = 0;
 
-            foreach (var hash in PerceptualHash.FromStreamOrientations(stream))
+            return PerceptualHash.FromStreamOrientations(stream);
+        }
+
+        private ScamImageMatch Match(ulong[] hashes, string url)
+        {
+            foreach (var hash in hashes)
                 if (_store.TryFind(hash, MaxDistance, out var known, out var distance))
                     return new ScamImageMatch(hash, known, distance, url);
 
