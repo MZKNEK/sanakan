@@ -305,13 +305,33 @@ namespace Artifacts
                     Attachment(server.BaseUrl + "scam1.png"),
                     Attachment(server.BaseUrl + "clean.png"),
                     Attachment(server.BaseUrl + "scam2.png"),
+                    Attachment(server.BaseUrl + "clean2.png"),
                 });
 
                 Assert.Equal(new[] { server.BaseUrl + "scam1.png", server.BaseUrl + "scam2.png" },
                     result.Matches.Select(x => x.Url));
-                var unmatched = Assert.Single(result.Unmatched);
-                Assert.Equal(server.BaseUrl + "clean.png", unmatched.Url);
-                Assert.Equal(PerceptualHash.FromStream(new MemoryStream(clean)), unmatched.Hash);
+                Assert.Equal(new[] { server.BaseUrl + "clean.png", server.BaseUrl + "clean2.png" },
+                    result.Unmatched.Select(x => x.Url));
+                var cleanHash = PerceptualHash.FromStream(new MemoryStream(clean));
+                Assert.All(result.Unmatched, image => Assert.Equal(cleanHash, image.Hash));
+            }
+            finally { Cleanup(path); }
+        }
+
+        [Fact]
+        public async Task Scanner_ScanAsync_WithoutSignatures_DoesNotReadAttachments()
+        {
+            var path = TempFile();
+            try
+            {
+                var scanner = new ScamImageScanner(new ImageProcessing(null, null, true), new ScamImageStore(path), null);
+                var attachments = Enumerable.Range(1, 4).Select(_ => new Mock<IAttachment>(MockBehavior.Strict)).ToArray();
+
+                var result = await scanner.ScanAsync(attachments.Select(x => x.Object));
+
+                Assert.Empty(result.Matches);
+                Assert.Empty(result.Unmatched);
+                Assert.All(attachments, attachment => attachment.VerifyGet(x => x.Url, Times.Never()));
             }
             finally { Cleanup(path); }
         }

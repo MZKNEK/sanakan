@@ -275,8 +275,8 @@ namespace Sanakan.Services.Supervisor
                 if (!isTemporary && gConfig.ChannelsWithoutSupervision.Any(x => x.Channel == message.Channel.Id))
                     return;
 
-                var scan = hasTooManyImages ? new ScamImageScanResult() : await ScanImagesAsync(message);
-                var hasScamImage = scan.Matches.Count > 0;
+                var scan = await ScanImagesAsync(message);
+                var hasScamImage = !hasTooManyImages && scan.Matches.Count > 0;
                 foreach (var scamMatch in scan.Matches)
                 {
                     _logger.Log($"ScamImage: hit msg={message.GetJumpUrl()} author={user.Id} url={scamMatch.Url} " +
