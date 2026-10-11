@@ -2125,10 +2125,23 @@ namespace Sanakan.Modules
 
         [Command("scamhash add")]
         [Alias("scamhash dodaj")]
-        [Summary("dodaje sygnatury scamowych obrazków z załącznika lub z wiadomości, na którą odpowiadasz")]
-        [Remarks(""), RequireAnyAdminRoleOrChannelPermission(ChannelPermission.ManageMessages)]
-        public async Task AddScamHashAsync()
+        [Summary("dodaje podany hash albo sygnatury scamowych obrazków z załącznika lub z wiadomości, na którą odpowiadasz")]
+        [Remarks("a1b2c3d4e5f60718"), RequireAnyAdminRoleOrChannelPermission(ChannelPermission.ManageMessages)]
+        public async Task AddScamHashAsync([Summary("hash (16 znaków hex, opcjonalny)")] string hash = null)
         {
+            if (hash != null)
+            {
+                if (!Services.ScamImages.ScamImageStore.TryParseHash(hash, out var parsed))
+                {
+                    await SafeReplyAsync("", embed: "Nieprawidłowy hash. Podaj 16 znaków hex.".ToEmbedMessage(EMType.Error).Build());
+                    return;
+                }
+
+                var addedHash = _scamImages.Store.Add(parsed);
+                await SafeReplyAsync("", embed: (addedHash ? "Dodano sygnaturę scamowego obrazka." : "Taka sygnatura jest już zapisana.").ToEmbedMessage(addedHash ? EMType.Success : EMType.Info).Build());
+                return;
+            }
+
             IReadOnlyCollection<IAttachment> attachments = Context.Message.Attachments;
             if (attachments.Count == 0 && (Context.Message.Reference?.MessageId.IsSpecified ?? false))
             {
@@ -2141,7 +2154,7 @@ namespace Sanakan.Modules
                 _scamImageExtensions.Any(e => x.Filename.EndsWith(e, StringComparison.OrdinalIgnoreCase))).ToList();
             if (images.Count == 0)
             {
-                await SafeReplyAsync("", embed: "Dołącz obrazek jako załącznik albo odpowiedz na wiadomość z obrazkami.".ToEmbedMessage(EMType.Error).Build());
+                await SafeReplyAsync("", embed: "Podaj hash (16 znaków hex), dołącz obrazek jako załącznik albo odpowiedz na wiadomość z obrazkami.".ToEmbedMessage(EMType.Error).Build());
                 return;
             }
 
