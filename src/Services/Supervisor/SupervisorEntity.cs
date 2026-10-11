@@ -11,12 +11,12 @@ namespace Sanakan.Services.Supervisor
     {
         private const int MAX_TRACKED_MESSAGES = 100;
         private readonly ISystemTime _timeProvider;
+        private readonly Queue<DateTime> _imageSpamMessages = new Queue<DateTime>();
+        private readonly Queue<(DateTime Time, int Count)> _scamImages = new Queue<(DateTime, int)>();
 
         public List<SupervisorMessage> Messages { get; private set; }
         public DateTime LastMessage { get; private set; }
         public int TotalMessages { get; private set; }
-        private DateTime LastImageSpamMessage { get; set; }
-        private int ImageSpamMessages { get; set; }
 
         public SupervisorEntity(string contentOfFirstMessage, ISystemTime timeProvider) : this(timeProvider)
         {
@@ -30,9 +30,7 @@ namespace Sanakan.Services.Supervisor
 
             Messages = new List<SupervisorMessage>();
             LastMessage = _timeProvider.Now();
-            LastImageSpamMessage = LastMessage;
             TotalMessages = 0;
-            ImageSpamMessages = 0;
         }
 
         public SupervisorMessage Get(string content)
@@ -51,7 +49,12 @@ namespace Sanakan.Services.Supervisor
             return msg;
         }
 
-        public bool IsValid() => (_timeProvider.Now() - LastMessage).TotalMinutes <= 2;
+        public bool IsValid()
+        {
+            var now = _timeProvider.Now();
+            return (now - LastMessage).TotalMinutes <= 2 ||
+                _scamImages.Any(x => (now - x.Time).TotalMinutes <= ImageSpamDecision.ScamWindowMinutes);
+        }
         public void Add(SupervisorMessage message)
         {
             Messages.RemoveAll(x => !x.IsValid());
@@ -71,15 +74,26 @@ namespace Sanakan.Services.Supervisor
             return ++TotalMessages;
         }
 
-        public int IncImageSpam(int amount = 1)
+        public ImageSpamDecision TrackImageSpam(bool hasTooManyImages, int matchedScamImages)
         {
             var now = _timeProvider.Now();
-            if ((now - LastImageSpamMessage).TotalMinutes > 2)
-                ImageSpamMessages = 0;
+            while (_imageSpamMessages.Count > 0 &&
+                (now - _imageSpamMessages.Peek()).TotalMinutes > ImageSpamDecision.SpamWindowMinutes)
+                _imageSpamMessages.Dequeue();
 
-            LastImageSpamMessage = now;
-            ImageSpamMessages += amount;
-            return ImageSpamMessages;
+            while (_scamImages.Count > 0 &&
+                (now - _scamImages.Peek().Time).TotalMinutes > ImageSpamDecision.ScamWindowMinutes)
+                _scamImages.Dequeue();
+
+            if (hasTooManyImages)
+                _imageSpamMessages.Enqueue(now);
+
+            if (matchedScamImages > 0)
+                _scamImages.Enqueue((now, matchedScamImages));
+
+            return new ImageSpamDecision(
+                hasTooManyImages ? _imageSpamMessages.Count : 0,
+                matchedScamImages > 0 ? _scamImages.Sum(x => x.Count) : 0);
         }
     }
 }

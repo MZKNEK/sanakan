@@ -276,7 +276,6 @@ namespace Sanakan.Services.Supervisor
                     return;
 
                 var scan = await ScanImagesAsync(message);
-                var hasScamImage = !hasTooManyImages && scan.Matches.Count > 0;
                 foreach (var scamMatch in scan.Matches)
                 {
                     _logger.Log($"ScamImage: hit msg={message.GetJumpUrl()} author={user.Id} url={scamMatch.Url} " +
@@ -319,23 +318,17 @@ namespace Sanakan.Services.Supervisor
 
                     bool isBannable = hasSuspiciousUrl || hasNonWhitelistedUrl;
                     action = MakeDecision(messageContent, susspect.Inc(), thisMessage.Inc(), hasRole && !isBannable);
-                    var imageSpamCount = 0;
-                    if (hasTooManyImages || hasScamImage)
-                    {
-                        deleteMessage = true;
-                        var hits = hasScamImage ? scan.Matches.Count : 1;
-                        imageSpamCount = susspect.IncImageSpam(hits);
-                        if (ShouldPunishImageSpam(imageSpamCount, hasScamImage))
-                            action = hasRole ? Action.Mute : Action.Ban;
-                        else
-                            sendImageScamWarning = imageSpamCount == hits;
-                    }
+                    var imageSpam = susspect.TrackImageSpam(hasTooManyImages, scan.Matches.Count);
+                    deleteMessage = imageSpam.ShouldDelete;
+                    if (imageSpam.ShouldPunish)
+                        action = hasRole ? Action.Mute : Action.Ban;
+                    sendImageScamWarning = imageSpam.ShouldWarn && action != Action.Mute && action != Action.Ban;
 
                     if (action == Action.Mute || action == Action.Ban)
                     {
-                        penaltyReason = GetPenaltyReason(action, messageContent, hasSuspiciousUrl,
-                            hasNonWhitelistedUrl, imageSpamCount, susspect.TotalMessages, thisMessage.Count,
-                            hasScamImage && !hasTooManyImages);
+                        penaltyReason = imageSpam.GetPenaltyReason(action == Action.Ban) ??
+                            GetPenaltyReason(action, messageContent, hasSuspiciousUrl,
+                                hasNonWhitelistedUrl, susspect.TotalMessages, thisMessage.Count);
                     }
                 }
 
@@ -407,15 +400,9 @@ namespace Sanakan.Services.Supervisor
         }
 
         private string GetPenaltyReason(Action action, string messageContent, bool hasSuspiciousUrl,
-            bool hasNonWhitelistedUrl, int imageSpamCount, int totalMessages, int specifiedMessages, bool scamImage)
+            bool hasNonWhitelistedUrl, int totalMessages, int specifiedMessages)
         {
             var penalty = action == Action.Ban ? "ban" : "mute";
-
-            if (imageSpamCount >= 2 && scamImage)
-                return $"Automatyczny {penalty}: scamowe obrazki - rozpoznano {imageSpamCount} scamowych obrazków w ciągu 2 minut.";
-
-            if (imageSpamCount >= 3)
-                return $"Automatyczny {penalty}: spam obrazkami - wysłano {imageSpamCount} wiadomości zawierających więcej niż trzy obrazki w ciągu 2 minut.";
 
             if (hasSuspiciousUrl)
                 return $"Automatyczny ban: wykryto podejrzany link lub wzorzec phishingowy. Adresy: {GetUrlsDescription(messageContent)}";
@@ -494,9 +481,6 @@ namespace Sanakan.Services.Supervisor
             return isOwner || isAdministrator ||
                 IsAlwaysBanStaff(adminRole, semiAdminRole, userRoles, moderatorRoles);
         }
-
-        public static bool ShouldPunishImageSpam(int imageSpamCount, bool scamImage)
-            => imageSpamCount >= (scamImage ? 2 : 3);
 
         public static bool IsAlwaysBanStaff(ulong adminRole, ulong semiAdminRole, IEnumerable<ulong> userRoles,
             IEnumerable<ulong> moderatorRoles)
