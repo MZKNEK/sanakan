@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using AsyncKeyedLock;
 using Discord;
 using Discord.WebSocket;
 using Microsoft.EntityFrameworkCore;
@@ -21,6 +22,7 @@ namespace Sanakan.Services
         private const double SAVE_AT = 5;
         private const double LM = 0.35;
 
+        private readonly AsyncNonKeyedLocker _messageLock = new AsyncNonKeyedLocker(1);
         private Dictionary<ulong, double> _exp;
         private Dictionary<ulong, ulong> _messages;
         private Dictionary<ulong, ulong> _commands;
@@ -80,6 +82,14 @@ namespace Sanakan.Services
             if (_config.Get().BlacklistedGuilds.Any(x => x == user.Guild.Id))
                 return;
 
+            using (await _messageLock.LockAsync().ConfigureAwait(false))
+            {
+                await HandleUserMessageAsync(user, message);
+            }
+        }
+
+        private async Task HandleUserMessageAsync(SocketGuildUser user, SocketMessage message)
+        {
             ulong parentId = 0;
             bool countMsg = true;
             bool calculateExp = false;
@@ -126,6 +136,9 @@ namespace Sanakan.Services
                     }
                 }
 
+                if (!countMsg)
+                    return;
+
                 if (!_messages.Any(x => x.Key == user.Id))
                 {
                     if (!db.Users.AsNoTracking().Any(x => x.Id == user.Id))
@@ -136,11 +149,8 @@ namespace Sanakan.Services
                 }
             }
 
-            if (countMsg)
-            {
-                CountMessage(user.Id, message.Content.IsCommand(_config.Get().Prefix));
-            }
-            CalculateExpAndCreateTask(user, message, calculateExp);
+            CountMessage(user.Id, message.Content.IsCommand(_config.Get().Prefix));
+            await CalculateExpAndCreateTaskAsync(user, message, calculateExp);
         }
 
         private bool CheckLastSave(ulong userId)
@@ -176,34 +186,31 @@ namespace Sanakan.Services
                 _characters[userId] += characters;
         }
 
-        private void CalculateExpAndCreateTask(SocketGuildUser user, SocketMessage message, bool calculateExp)
+        private async Task CalculateExpAndCreateTaskAsync(SocketGuildUser user, SocketMessage message, bool calculateExp)
         {
             var exp = GetPointsFromMsg(message);
             if (!calculateExp) exp = 0;
 
-            if (!_exp.Any(x => x.Key == user.Id))
-            {
-                _exp.Add(message.Author.Id, exp);
-                return;
-            }
-
-            _exp[user.Id] += exp;
-
-            var saved = _exp[user.Id];
-            if (saved < SAVE_AT && !CheckLastSave(user.Id)) return;
+            _exp.TryGetValue(user.Id, out var saved);
+            saved += exp;
+            _exp[user.Id] = saved;
+            var saveDue = CheckLastSave(user.Id);
+            if (saved < SAVE_AT && !saveDue) return;
 
             var fullP = (long) Math.Floor(saved);
-            if (fullP < 1) return;
+            var messages = _messages[user.Id];
+            var commands = _commands[user.Id];
+            var characters = _characters[user.Id];
+            var task = CreateTask(user, message.Channel, fullP, messages, commands, characters, calculateExp);
 
-            _exp[message.Author.Id] -= fullP;
+            if (!await _executor.TryAdd(new Executable("add exp", task, user.Id), TimeSpan.FromSeconds(1)))
+                return;
+
+            _exp[user.Id] -= fullP;
+            _characters[user.Id] -= characters;
+            _messages[user.Id] -= messages;
+            _commands[user.Id] -= commands;
             _saved[user.Id] = _time.Now();
-
-            var task = CreateTask(user, message.Channel, fullP, _messages[user.Id], _commands[user.Id], _characters[user.Id], calculateExp);
-            _characters[user.Id] = 0;
-            _messages[user.Id] = 0;
-            _commands[user.Id] = 0;
-
-            _executor.TryAdd(new Executable("add exp", task, user.Id), TimeSpan.FromSeconds(1));
         }
 
         private double GetPointsFromMsg(SocketMessage message)
@@ -266,6 +273,24 @@ namespace Sanakan.Services
             });
         }
 
+        private void ApplyProgress(Database.Models.User user, long exp, ulong messages, ulong commands, ulong characters)
+        {
+            if ((_time.Now() - user.MeasureDate.AddMonths(1)).TotalSeconds > 1)
+            {
+                user.MeasureDate = new DateTime(_time.Now().Year, _time.Now().Month, 1);
+                user.MessagesCntAtDate = user.MessagesCnt;
+                user.CharacterCntFromDate = characters;
+            }
+            else
+                user.CharacterCntFromDate += characters;
+
+            if (exp > 0)
+                user.ExpCnt += Math.Max(CheckFloodAndReturnExp(exp, user), 1);
+
+            user.MessagesCnt += messages;
+            user.CommandsCnt += commands;
+        }
+
         private Func<Task> CreateTask(SocketGuildUser user, ISocketMessageChannel channel, long exp, ulong messages, ulong commands, ulong characters, bool calculateExp)
         {
             return new Func<Task>(async () =>
@@ -275,24 +300,10 @@ namespace Sanakan.Services
                     var usr = await db.GetUserOrCreateSimpleAsync(user.Id);
                     if (usr == null) return;
 
-                    if ((_time.Now() - usr.MeasureDate.AddMonths(1)).TotalSeconds > 1)
-                    {
-                        usr.MeasureDate = new DateTime(_time.Now().Year, _time.Now().Month, 1);
-                        usr.MessagesCntAtDate = usr.MessagesCnt;
-                        usr.CharacterCntFromDate = characters;
-                    }
-                    else
-                        usr.CharacterCntFromDate += characters;
-
-                    exp = CheckFloodAndReturnExp(exp, usr);
-                    if (exp < 1) exp = 1;
-
-                    usr.ExpCnt += exp;
-                    usr.MessagesCnt += messages;
-                    usr.CommandsCnt += commands;
+                    ApplyProgress(usr, exp, messages, commands, characters);
 
                     var newLevel = CalculateLevel(usr.ExpCnt);
-                    bool levelChanged = newLevel != usr.Level && calculateExp;
+                    bool levelChanged = newLevel != usr.Level && calculateExp && exp > 0;
                     if (levelChanged)
                     {
                         usr.Level = newLevel;
