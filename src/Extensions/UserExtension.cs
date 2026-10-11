@@ -208,7 +208,7 @@ namespace Sanakan.Extensions
             var f = deck.MaxNumberOfCards % 1000;
             var b = deck.MaxNumberOfCards / 1000;
             var maxOldPriceCnt = 10 - (f / 100);
-            var bExp = (b - 1) * 0.2;
+            var bExp = (b - 1) * 0.2m;
             var oldPriceCnt = count;
 
             if (count >= maxOldPriceCnt)
@@ -222,14 +222,14 @@ namespace Sanakan.Extensions
             var rmCnt = count / 10;
             for (var i = 1; i < rmCnt + 1; i++)
             {
-                bExp = (++b - 1) * 0.2;
+                bExp = (++b - 1) * 0.2m;
                 price += (long)((10 * basePrice) * ((b + bExp) * b));
             }
 
             if (count > 0)
             {
-                bExp = (++b - 1) * 0.2;
-                price += (long)(((count - (rmCnt * 10)) * basePrice) * ((b + rmCnt + bExp) * b));
+                bExp = (++b - 1) * 0.2m;
+                price += (long)(((count - (rmCnt * 10)) * basePrice) * ((b + bExp) * b));
             }
 
             return price;
