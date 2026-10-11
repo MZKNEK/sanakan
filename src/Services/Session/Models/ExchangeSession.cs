@@ -8,6 +8,7 @@ using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
 using Sanakan.Config;
+using Sanakan.Database.Models;
 using Sanakan.Extensions;
 using Sanakan.Services.PocketWaifu;
 using Sanakan.Services.Time;
@@ -321,44 +322,19 @@ namespace Sanakan.Services.Session.Models
                     }
                     else if (State == ExchangeStatus.AcceptP2)
                     {
-                        Tips = $"Wymiana zakończona!";
+                        string error = null;
+                        if (P1.Cards.Count > 0 || P2.Cards.Count > 0)
+                        {
+                            using (var db = new Database.DatabaseContext(_config))
+                            {
+                                error = await FinalizeExchangeAsync(db);
+                            }
+                        }
+
+                        Tips = error ?? "Wymiana zakończona!";
+                        State = ExchangeStatus.End;
                         msgCh = true;
                         end = true;
-
-                        if (P1.Cards.Count == 0 && P2.Cards.Count == 0)
-                            return end;
-
-                        using (var db = new Database.DatabaseContext(_config))
-                        {
-                            var user1 = await db.GetUserOrCreateAsync(P1.User.Id);
-                            var user2 = await db.GetUserOrCreateAsync(P2.User.Id);
-
-                            var u1Data = (user1, P1.Cards.Count > 0 ? P1.Cards.Count : 1, await db.GetTagAsync(_tags, P1.Tag, P1.User.Id), P1.User.GetUserNickInGuild());
-                            var u2Data = (user2, P2.Cards.Count > 0 ? P2.Cards.Count : 1, await db.GetTagAsync(_tags, P2.Tag, P2.User.Id), P2.User.GetUserNickInGuild());
-
-                            foreach (var c in P1.Cards)
-                            {
-                                var card = user1.GetCard(c.Id);
-                                if (card != null)
-                                {
-                                    await card.ExchangeWithAsync(u1Data, u2Data, db, _time);
-                                }
-                            }
-
-                            foreach (var c in P2.Cards)
-                            {
-                                var card = user2.GetCard(c.Id);
-                                if (card != null)
-                                {
-                                    await card.ExchangeWithAsync(u2Data, u1Data, db, _time);
-                                }
-                            }
-
-                            await db.SaveChangesAsync();
-
-                            State = ExchangeStatus.End;
-                            QueryCacheManager.ExpireTag(new string[] { CacheTags.User(P1.User.Id), CacheTags.User(P2.User.Id) });
-                        }
                     }
                 }
                 else if (reaction.Emote.Equals(DeclineEmote) && State != ExchangeStatus.End)
@@ -372,6 +348,48 @@ namespace Sanakan.Services.Session.Models
                 if (msg != null && msgCh) await msg.ModifyAsync(x => x.Embed = BuildEmbed());
             }
             return end;
+        }
+
+        private bool CanTransfer(Card card, User target)
+        {
+            if (card == null)
+                return false;
+
+            _ = card.RecoverFatigue(_time);
+            return !card.IsDisallowedToExchange()
+                && !(card.Dere == Dere.Yami && target.GameDeck.IsGood())
+                && !(card.Dere == Dere.Raito && target.GameDeck.IsEvil());
+        }
+
+        private async Task<string> FinalizeExchangeAsync(Database.DatabaseContext db)
+        {
+            var user1 = await db.GetUserOrCreateAsync(P1.User.Id);
+            var user2 = await db.GetUserOrCreateAsync(P2.User.Id);
+            var cards1 = P1.Cards.Select(c => user1.GetCard(c.Id)).ToList();
+            var cards2 = P2.Cards.Select(c => user2.GetCard(c.Id)).ToList();
+
+            if (user1.IsBlacklisted || user2.IsBlacklisted)
+                return "Wymiana anulowana: jeden z graczy znajduje się na czarnej liście.";
+
+            if (cards1.Any(c => !CanTransfer(c, user2)) || cards2.Any(c => !CanTransfer(c, user1)))
+                return "Wymiana anulowana: co najmniej jedna z oferowanych kart nie może już zostać wymieniona.";
+
+            if ((long)user1.GameDeck.Cards.Count - cards1.Count + cards2.Count > user1.GameDeck.MaxNumberOfCards
+                || (long)user2.GameDeck.Cards.Count - cards2.Count + cards1.Count > user2.GameDeck.MaxNumberOfCards)
+                return "Wymiana anulowana: jeden z graczy nie ma wystarczająco miejsca na otrzymywane karty.";
+
+            var u1Data = (user1, Math.Max(cards1.Count, 1), await db.GetTagAsync(_tags, P1.Tag, P1.User.Id), P1.User.GetUserNickInGuild());
+            var u2Data = (user2, Math.Max(cards2.Count, 1), await db.GetTagAsync(_tags, P2.Tag, P2.User.Id), P2.User.GetUserNickInGuild());
+
+            foreach (var card in cards1)
+                await card.ExchangeWithAsync(u1Data, u2Data, db, _time);
+
+            foreach (var card in cards2)
+                await card.ExchangeWithAsync(u2Data, u1Data, db, _time);
+
+            await db.SaveChangesAsync();
+            QueryCacheManager.ExpireTag(new string[] { CacheTags.User(P1.User.Id), CacheTags.User(P2.User.Id) });
+            return null;
         }
 
         private async Task DisposeAction()

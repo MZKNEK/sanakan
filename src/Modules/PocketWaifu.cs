@@ -65,6 +65,15 @@ namespace Sanakan.Modules
             _expedition = expedition;
         }
 
+        private async Task<bool> BlockDuringExchangeAsync()
+        {
+            if (!_session.SessionExist(Context.User, typeof(ExchangeSession)))
+                return false;
+
+            await SafeReplyAsync("", embed: $"{Context.User.Mention} znajdujesz się obecnie w trakcie wymiany.".ToEmbedMessage(EMType.Error).Build());
+            return true;
+        }
+
         [Command("harem", RunMode = RunMode.Async)]
         [Alias("cards", "karty")]
         [Summary("wyświetla wszystkie posiadane karty")]
@@ -497,6 +506,8 @@ namespace Sanakan.Modules
         [Remarks("1 4212 2"), RequireWaifuCommandChannel]
         public async Task UseItemOnCardAsync([Summary("nr przedmiotu")] int itemNumber, [Summary("WID")] ulong wid = 0, [Summary("liczba przedmiotów/link do obrazka/typ gwiazdki")] string detail = "1", [Hidden] bool itemToExp = false)
         {
+            if (wid != 0 && await BlockDuringExchangeAsync()) return;
+
             string attachmentUrl = Context.Message.Attachments.FirstOrDefault()?.Url ?? "";
             if (detail.Equals("att", StringComparison.CurrentCultureIgnoreCase))
             {
@@ -763,6 +774,8 @@ namespace Sanakan.Modules
         [Remarks("5412"), RequireWaifuCommandChannel]
         public async Task ResetCardAsync([Summary("WID")] ulong id)
         {
+            if (await BlockDuringExchangeAsync()) return;
+
             using (var db = new Database.DatabaseContext(Config))
             {
                 var bUser = await db.GetUserOrCreateAsync(Context.User.Id);
@@ -833,6 +846,8 @@ namespace Sanakan.Modules
         [Remarks("5412 nie"), RequireWaifuCommandChannel]
         public async Task UpdateCardAsync([Summary("WID")] ulong id, [Summary("czy przywrócić obrazek ze strony?")] bool defaultImage = false)
         {
+            if (await BlockDuringExchangeAsync()) return;
+
             using (var db = new Database.DatabaseContext(Config))
             {
                 var bUser = await db.GetUserOrCreateAsync(Context.User.Id);
@@ -1075,6 +1090,8 @@ namespace Sanakan.Modules
         [Remarks("5412 5413"), RequireWaifuCommandChannel]
         public async Task ReleaseCardAsync([Summary("WIDs")] params ulong[] ids)
         {
+            if (await BlockDuringExchangeAsync()) return;
+
             using (var db = new Database.DatabaseContext(Config))
             {
                 var bUser = await db.GetUserOrCreateAsync(Context.User.Id);
@@ -1100,6 +1117,8 @@ namespace Sanakan.Modules
         [Remarks("5412"), RequireWaifuCommandChannel]
         public async Task DestroyCardAsync([Summary("WIDs")] params ulong[] ids)
         {
+            if (await BlockDuringExchangeAsync()) return;
+
             using (var db = new Database.DatabaseContext(Config))
             {
                 var bUser = await db.GetUserOrCreateAsync(Context.User.Id);
@@ -1125,6 +1144,8 @@ namespace Sanakan.Modules
         [Remarks("2154 10"), RequireWaifuCommandChannel]
         public async Task TransferExpFromChestAsync([Summary("WID")] ulong id, [Summary("ilość doświadczenia")] uint exp)
         {
+            if (id != 0 && await BlockDuringExchangeAsync()) return;
+
             using (var db = new Database.DatabaseContext(Config))
             {
                 var bUser = await db.GetUserOrCreateAsync(Context.User.Id);
@@ -1204,6 +1225,8 @@ namespace Sanakan.Modules
         [Remarks("2154"), RequireWaifuCommandChannel]
         public async Task CreateChestAsync([Summary("WIDs")] params ulong[] ids)
         {
+            if (await BlockDuringExchangeAsync()) return;
+
             using (var db = new Database.DatabaseContext(Config))
             {
                 var bUser = await db.GetUserOrCreateAsync(Context.User.Id);
@@ -1416,6 +1439,8 @@ namespace Sanakan.Modules
         [Remarks("2145"), RequireWaifuCommandChannel]
         public async Task GoToMarketAsync([Summary("WID")] ulong wid)
         {
+            if (await BlockDuringExchangeAsync()) return;
+
             using (var db = new Database.DatabaseContext(Config))
             {
                 var botuser = await db.GetUserOrCreateAsync(Context.User.Id);
@@ -1544,6 +1569,8 @@ namespace Sanakan.Modules
         [Remarks("2145"), RequireWaifuCommandChannel]
         public async Task GoToBlackMarketAsync([Summary("WID")] ulong wid)
         {
+            if (await BlockDuringExchangeAsync()) return;
+
             using (var db = new Database.DatabaseContext(Config))
             {
                 var botuser = await db.GetUserOrCreateAsync(Context.User.Id);
@@ -1652,6 +1679,8 @@ namespace Sanakan.Modules
         [Remarks("5412 5411 5410"), RequireWaifuCommandChannel]
         public async Task SacraficeCardMultiAsync([Summary("WID (do ulepszenia)")] ulong idToUp, [Summary("WIDs (do poświęcenia)")] params ulong[] idsToSac)
         {
+            if (await BlockDuringExchangeAsync()) return;
+
             if (idsToSac.Any(x => x == idToUp))
             {
                 await SafeReplyAsync("", embed: $"{Context.User.Mention} podałeś ten sam WID do ulepszenia i zniszczenia.".ToEmbedMessage(EMType.Error).Build());
@@ -2299,6 +2328,8 @@ namespace Sanakan.Modules
         [Remarks("8651"), RequireWaifuCommandChannel]
         public async Task UnleashCardAsync([Summary("WID")] ulong wid)
         {
+            if (await BlockDuringExchangeAsync()) return;
+
             int cost = 200;
             using (var db = new Database.DatabaseContext(Config))
             {
@@ -2635,6 +2666,8 @@ namespace Sanakan.Modules
         [Remarks("25"), RequireWaifuCommandChannel]
         public async Task GoToLotteryAsync([Summary("krotność użycia polecenia")] uint count = 1)
         {
+            if (await BlockDuringExchangeAsync()) return;
+
             if (count < 1)
             {
                 await SafeReplyAsync("", embed: $"{Context.User.Mention} podaj poprawną krotność.".ToEmbedMessage(EMType.Error).Build());
@@ -3297,6 +3330,8 @@ namespace Sanakan.Modules
         [Remarks("1"), RequireWaifuCommandChannel]
         public async Task ChangeDeckCardStatusAsync([Summary("WID")] ulong wid = 0)
         {
+            if (wid != 0 && await BlockDuringExchangeAsync()) return;
+
             using (var db = new Database.DatabaseContext(Config))
             {
                 var active = db.Cards.AsQueryable().AsNoTracking().Where(x => x.Active && x.GameDeckId == Context.User.Id).ToList();
@@ -3602,12 +3637,6 @@ namespace Sanakan.Modules
                 if (duser1.IsBlacklisted || duser2.IsBlacklisted)
                 {
                     await SafeReplyAsync("", embed: "Jeden z graczy znajduje się na czarnej liście!".ToEmbedMessage(EMType.Error).Build());
-                    return;
-                }
-
-                if (duser1.GameDeck.MaxNumberOfCards <= duser1.GameDeck.Cards.Count || duser2.GameDeck.MaxNumberOfCards <= duser2.GameDeck.Cards.Count)
-                {
-                    await SafeReplyAsync("", embed: "Jeden z graczy nie posiada już miejsca na karty!".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
@@ -4149,6 +4178,8 @@ namespace Sanakan.Modules
         [Remarks("12321"), RequireWaifuCommandChannel]
         public async Task SetCardAsPremiumWaifuAsync([Summary("WID karty")] ulong wid)
         {
+            if (await BlockDuringExchangeAsync()) return;
+
             var tcCost = 1000;
             using (var db = new Database.DatabaseContext(Config))
             {
@@ -4199,6 +4230,8 @@ namespace Sanakan.Modules
         [Remarks("451"), RequireWaifuCommandChannel]
         public async Task SetProfileWaifuAsync([Summary("WID")] ulong wid)
         {
+            if (await BlockDuringExchangeAsync()) return;
+
             using (var db = new Database.DatabaseContext(Config))
             {
                 var bUser = await db.GetUserOrCreateAsync(Context.User.Id);
