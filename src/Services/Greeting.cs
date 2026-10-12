@@ -170,10 +170,8 @@ namespace Sanakan.Services
                             card.GameDeckId = fakeu.GameDeck.Id;
                         }
 
-                        foreach (var w in duser.GameDeck.Wishes.Where(x => x.AffectsWishlistCount()))
-                        {
-                            await db.WishlistCountData.CreateOrChangeWishlistCountByAsync(w.ObjectId, w.ObjectName, -1, -1);
-                        }
+                        if (!duser.GameDeck.WishlistIsPrivate)
+                            await db.ChangeWishlistCountsAsync(duser.GameDeck.Wishes, -1);
 
                         db.Users.Remove(duser);
 

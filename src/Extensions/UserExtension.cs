@@ -640,7 +640,8 @@ namespace Sanakan.Extensions
             {
                 if (en.Entry == WishlistEntryType.Normal)
                 {
-                    db.CreateOrChangeWishlistCountBy(en.ObjectId, en.ObjectName, -1, -1);
+                    if (!deck.WishlistIsPrivate)
+                        db.CreateOrChangeWishlistCountBy(en.ObjectId, en.ObjectName, -1, -1);
                     deck.Wishes.Remove(en);
                 }
                 return true;
@@ -655,7 +656,8 @@ namespace Sanakan.Extensions
             {
                 if (en.Entry == WishlistEntryType.Normal)
                 {
-                    await db.WishlistCountData.CreateOrChangeWishlistCountByAsync(en.ObjectId, en.ObjectName, -1, -1);
+                    if (!deck.WishlistIsPrivate)
+                        await db.WishlistCountData.CreateOrChangeWishlistCountByAsync(en.ObjectId, en.ObjectName, -1, -1);
                     deck.Wishes.Remove(en);
                 }
                 return true;

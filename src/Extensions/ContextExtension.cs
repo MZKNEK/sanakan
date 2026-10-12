@@ -175,6 +175,56 @@ namespace Sanakan.Extensions
             return (await context.Questions.AsQueryable().Where(x => x.Id == id).Include(x => x.Answers).AsNoTracking().AsSplitQuery().FromCacheAsync(new string[] { CacheTags.Quiz })).FirstOrDefault();
         }
 
+        public static async Task<int> RecalculateWishlistCountsAsync(this Database.DatabaseContext context, DateTime now)
+        {
+            var counts = await context.WishlistCountData.ToListAsync();
+            var wishlists = await context.GameDecks.AsQueryable().AsSplitQuery().Include(x => x.User).Include(x => x.Wishes).AsNoTracking()
+                .Where(x => !x.WishlistIsPrivate).ToListAsync();
+
+            var decksByCharacter = wishlists.SelectMany(x => x.Wishes.Where(c => c.Type == WishlistObjectType.Character),
+                (deck, wish) => (deck, wish.ObjectId)).ToLookup(x => x.ObjectId, x => x.deck);
+
+            int updated = 0;
+            foreach (var w in counts)
+            {
+                var decks = decksByCharacter[w.Id].ToList();
+                var count = decks.Count;
+                var aCount = decks.Count(x => x.IsUserActive(now));
+                if (w.Count == count && w.ACount == aCount)
+                    continue;
+
+                w.Count = count;
+                w.ACount = aCount;
+                updated++;
+            }
+
+            if (updated > 0)
+                await context.SaveChangesAsync();
+
+            return updated;
+        }
+
+        public static async Task ChangeWishlistCountsAsync(this Database.DatabaseContext context, IEnumerable<WishlistObject> wishes, int by)
+        {
+            var characters = wishes.Where(x => x.AffectsWishlistCount()).ToList();
+            if (characters.Count == 0) return;
+
+            var ids = characters.Select(x => x.ObjectId).Distinct().ToList();
+            var counts = await context.WishlistCountData.AsQueryable().Where(x => ids.Contains(x.Id)).ToDictionaryAsync(x => x.Id);
+            foreach (var wish in characters)
+            {
+                if (!counts.TryGetValue(wish.ObjectId, out var ww))
+                {
+                    ww = new Database.Models.Analytics.WishlistCount { Id = wish.ObjectId, Name = wish.ObjectName };
+                    await context.WishlistCountData.AddAsync(ww);
+                    counts.Add(ww.Id, ww);
+                }
+
+                ww.Count = Math.Max(0, ww.Count + by);
+                ww.ACount = Math.Max(0, ww.ACount + by);
+            }
+        }
+
         public static Database.Models.Analytics.WishlistCount CreateOrChangeWishlistCountBy(this Database.DatabaseContext context, ulong id, string name, int by = 1, int aBy = 1)
         {
             var ww = context.WishlistCountData.AsQueryable().FirstOrDefault(x => x.Id == id);

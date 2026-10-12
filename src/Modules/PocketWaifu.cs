@@ -687,7 +687,7 @@ namespace Sanakan.Modules
 
                         // zaktualizuj lokalny snapshot, aby kolejne karty tej samej postaci widziały nowy licznik
                         var removed = allWWCnt.FirstOrDefault(x => x.Id == card.Character);
-                        if (removed != null)
+                        if (removed != null && !bUser.GameDeck.WishlistIsPrivate)
                         {
                             removed.Count = Math.Max(0, removed.Count - 1);
                             removed.ACount = Math.Max(0, removed.ACount - 1);
@@ -1874,7 +1874,7 @@ namespace Sanakan.Modules
 
                 foreach (var obj in objs)
                 {
-                    if (obj.AffectsWishlistCount())
+                    if (obj.AffectsWishlistCount() && !bUser.GameDeck.WishlistIsPrivate)
                         await db.CreateOrChangeWishlistCountByAsync(obj.ObjectId, obj.ObjectName, -1, -1);
 
                     bUser.GameDeck.Wishes.Remove(obj);
@@ -1962,9 +1962,9 @@ namespace Sanakan.Modules
                                 }
                                 response = charInfo.ToString();
                                 obj.ObjectName = response;
-                                await db.CreateOrChangeWishlistCountByAsync(obj.ObjectId, obj.ObjectName);
                                 if (!bUser.GameDeck.WishlistIsPrivate)
                                 {
+                                    await db.CreateOrChangeWishlistCountByAsync(obj.ObjectId, obj.ObjectName);
                                     await db.UserActivities.AddAsync(new Services.UserActivityBuilder(_time).AddMisc($"c:{response.ToString().Trim()}")
                                     .WithUser(bUser, Context.User).WithType(Database.Models.ActivityType.AddedToWishlistCharacter, obj.ObjectId).Build());
                                 }
@@ -2050,9 +2050,9 @@ namespace Sanakan.Modules
                         }
                         response = charInfo.ToString();
                         obj.ObjectName = response;
-                        await db.CreateOrChangeWishlistCountByAsync(obj.ObjectId, obj.ObjectName);
                         if (!bUser.GameDeck.WishlistIsPrivate)
                         {
+                            await db.CreateOrChangeWishlistCountByAsync(obj.ObjectId, obj.ObjectName);
                             await db.UserActivities.AddAsync(new Services.UserActivityBuilder(_time).AddMisc($"c:{response.ToString().Trim()}")
                                .WithUser(bUser, Context.User).WithType(Database.Models.ActivityType.AddedToWishlistCharacter, id).Build());
                         }
@@ -2079,7 +2079,11 @@ namespace Sanakan.Modules
             using (var db = new Database.DatabaseContext(Config))
             {
                 var bUser = await db.GetUserOrCreateAsync(Context.User.Id);
-                bUser.GameDeck.WishlistIsPrivate = !view;
+                if (bUser.GameDeck.WishlistIsPrivate == view)
+                {
+                    await db.ChangeWishlistCountsAsync(bUser.GameDeck.Wishes, view ? 1 : -1);
+                    bUser.GameDeck.WishlistIsPrivate = !view;
+                }
 
                 await db.SaveChangesAsync();
 

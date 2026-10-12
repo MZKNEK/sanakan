@@ -197,62 +197,9 @@ namespace Sanakan.Modules
             {
                 using (var db = new Database.DatabaseContext(Config))
                 {
-                    var wishlistCount = await db.WishlistCountData.ToListAsync();
-                    await SafeReplyAsync("", embed: $"Przeliczanie KC dla {wishlistCount.Count} postaci...".ToEmbedMessage(EMType.Bot).Build());
-
-                    long time = 0;
-                    int batchCount = 5000;
-                    long updateCounter = 0;
-                    var st = Stopwatch.StartNew();
-                    var updatedList = new List<(ulong Id, int Count, int ACount)>();
-
-                    var allWishlists = await db.GameDecks.AsQueryable().AsSplitQuery().Include(x => x.User).Include(x => x.Wishes).AsNoTracking()
-                        .Where(x => !x.WishlistIsPrivate).ToListAsync();
-
-                    await SafeReplyAsync("", embed: $"Załadowano wszystkie wishlisty. Przetwarzanie...".ToEmbedMessage(EMType.Bot).Build());
-
-                    var filtered = allWishlists.SelectMany(x => x.Wishes
-                        .Where(c => c.Type == WishlistObjectType.Character),
-                        (deck, wish) => new
-                        {
-                            Deck = deck,
-                            Wish = wish
-                        })
-                        .GroupBy(x => x.Wish.ObjectId)
-                        .Select(g => new
-                        {
-                            ObjectId = g.Key,
-                            Decks = g.Select(x => x.Deck).ToList()
-                        }).ToList();
-
-                    foreach (var w in wishlistCount)
-                    {
-                        var wish = filtered.FirstOrDefault(x => x.ObjectId == w.Id);
-                        var aCount = wish?.Decks?.Count(x => x.IsUserActive(_time.Now())) ?? 0;
-                        var wCount = wish?.Decks?.Count ?? 0;
-
-                        if (w.ACount != aCount || w.Count != wCount)
-                        {
-                            w.ACount = aCount;
-                            w.Count = wCount;
-                            updatedList.Add((w.Id, w.Count, w.ACount));
-                        }
-
-                        if (updateCounter++ % batchCount == 0)
-                        {
-                            time = st.ElapsedMilliseconds;
-                            st = Stopwatch.StartNew();
-                            await SafeReplyAsync("", embed: $"Przybliżony czas: {TimeSpan.FromMilliseconds(time * ((wishlistCount.Count - updateCounter) / batchCount)):g}".ToEmbedMessage(EMType.Bot).Build());
-                        }
-                    }
-
-                    if (updatedList.Count > 0)
-                    {
-                        await SafeReplyAsync("", embed: $"Przeliczono KC dla {updatedList.Count} postaci. Aktualizowanie kart...".ToEmbedMessage(EMType.Bot).Build());
-                        await db.SaveChangesAsync();
-                    }
-
-                    await SafeReplyAsync("", embed: $"Gotowe.".ToEmbedMessage(EMType.Success).Build());
+                    await SafeReplyAsync("", embed: $"Przeliczanie KC...".ToEmbedMessage(EMType.Bot).Build());
+                    var updated = await db.RecalculateWishlistCountsAsync(_time.Now());
+                    await SafeReplyAsync("", embed: $"Gotowe, przeliczono KC dla {updated} postaci.".ToEmbedMessage(EMType.Success).Build());
                 }
             }
             catch (Exception ex)
@@ -1081,10 +1028,8 @@ namespace Sanakan.Modules
                     }
                 }
 
-                foreach (var w in user.GameDeck.Wishes.Where(x => x.Type == Database.Models.WishlistObjectType.Character))
-                {
-                    await db.WishlistCountData.CreateOrChangeWishlistCountByAsync(w.ObjectId, w.ObjectName, -1, -1);
-                }
+                if (!user.GameDeck.WishlistIsPrivate)
+                    await db.ChangeWishlistCountsAsync(user.GameDeck.Wishes, -1);
 
                 db.Users.Remove(user);
                 await db.SaveChangesAsync();
