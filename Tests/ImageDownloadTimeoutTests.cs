@@ -12,6 +12,9 @@ namespace Artifacts
 {
     public class ImageDownloadTimeoutTests
     {
+        // Only a guard against hangs; the tested deadline is 200 ms, but a busy CI runner can delay continuations.
+        private static readonly TimeSpan MaxWait = TimeSpan.FromSeconds(30);
+
         private sealed class Handler : HttpMessageHandler
         {
             private readonly Stream _body;
@@ -42,7 +45,8 @@ namespace Artifacts
                 Started.TrySetResult();
                 if (_trickle)
                 {
-                    await Task.WhenAny(Task.Delay(25, token), _release.Task);
+                    if (Reads > 1)
+                        await Task.WhenAny(Task.Delay(25, token), _release.Task);
                     token.ThrowIfCancellationRequested();
                     buffer[offset] = 1;
                     return _release.Task.IsCompleted ? 0 : 1;
@@ -77,8 +81,8 @@ namespace Artifacts
             var download = Images(client).TryGetImageStreamAsync("https://example.com/slow.png");
             try
             {
-                await body.Started.Task.WaitAsync(TimeSpan.FromSeconds(3));
-                Assert.Same(Stream.Null, await download.WaitAsync(TimeSpan.FromSeconds(3)));
+                await body.Started.Task.WaitAsync(MaxWait);
+                Assert.Same(Stream.Null, await download.WaitAsync(MaxWait));
                 Assert.True(body.ReadToken.IsCancellationRequested);
                 Assert.True(body.Disposed);
                 if (trickle) Assert.True(body.Reads > 1);
@@ -86,7 +90,7 @@ namespace Artifacts
             finally
             {
                 body.Release();
-                using var result = await download.WaitAsync(TimeSpan.FromSeconds(3));
+                using var result = await download.WaitAsync(MaxWait);
             }
         }
     }

@@ -27,6 +27,8 @@ namespace Artifacts
         private readonly SqliteConnection _connection = new SqliteConnection("Data Source=:memory:");
         private readonly DiscordSocketClient _client = new DiscordSocketClient();
         private readonly FixedTime _time = new FixedTime();
+        // Only a guard against hangs; a busy CI runner can delay queued jobs.
+        private static readonly TimeSpan MaxWait = TimeSpan.FromSeconds(30);
 
         private sealed class TestDatabase : DatabaseContext
         {
@@ -119,27 +121,27 @@ namespace Artifacts
                 await db.SaveChangesAsync();
             }, 63);
             Assert.True(await executor.TryAdd(blocker, TimeSpan.FromSeconds(1)));
-            await blockerStarted.Task.WaitAsync(TimeSpan.FromSeconds(3));
+            await blockerStarted.Task.WaitAsync(MaxWait);
             try
             {
                 var selectFirst = new Executable("select first", () => Queue(first), 61);
                 var selectSecond = new Executable("select second", () => Queue(second), 62);
                 Assert.True(await executor.TryAdd(selectFirst, TimeSpan.FromSeconds(1)));
                 Assert.True(await executor.TryAdd(selectSecond, TimeSpan.FromSeconds(1)));
-                Assert.True(await selectFirst.WaitAsync(TimeSpan.FromSeconds(3)));
-                Assert.True(await selectSecond.WaitAsync(TimeSpan.FromSeconds(3)));
+                Assert.True(await selectFirst.WaitAsync(MaxWait));
+                Assert.True(await selectSecond.WaitAsync(MaxWait));
                 Assert.Equal(2, jobs.Count);
                 Assert.Contains(jobs, x => x.GetOwners().SequenceEqual(new ulong[] { 61, 63 }));
                 Assert.Contains(jobs, x => x.GetOwners().SequenceEqual(new ulong[] { 62, 63 }));
                 var unrelated = new Executable("unrelated", () => Task.CompletedTask, 64);
                 Assert.True(await executor.TryAdd(unrelated, TimeSpan.FromSeconds(1)));
-                Assert.True(await unrelated.WaitAsync(TimeSpan.FromSeconds(3)));
+                Assert.True(await unrelated.WaitAsync(MaxWait));
                 Assert.Equal(0, first.ContextsCreated);
                 Assert.Equal(0, second.ContextsCreated);
             }
             finally { releaseBlocker.TrySetResult(); }
 
-            foreach (var job in jobs) Assert.True(await job.WaitAsync(TimeSpan.FromSeconds(5)));
+            foreach (var job in jobs) Assert.True(await job.WaitAsync(MaxWait));
             var expectedEnemy = new GameDeck { MatachMakingRatio = 1100, GlobalPVPRank = 1100, SeasonalPVPRank = 1100 };
             foreach (var _ in new[] { 1, 2 })
                 new GameDeck { MatachMakingRatio = 1000, GlobalPVPRank = 1000, SeasonalPVPRank = 1000 }
