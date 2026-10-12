@@ -60,6 +60,8 @@ namespace Sanakan.Services
         public static long CalculateExpForLevel(long level, double lm = LM) => (level <= 0) ? 0 : Convert.ToInt64(Math.Floor(Math.Pow(level / lm, 2)) + 1);
         public static long CalculateLevel(long exp, double lm = LM) => Convert.ToInt64(Math.Floor(lm * Math.Sqrt(exp)));
 
+        protected virtual Database.DatabaseContext CreateDatabaseContext() => new Database.DatabaseContext(_config);
+
         public async Task NotifyAboutLevelAsync(SocketGuildUser user, ISocketMessageChannel channel, long level)
         {
             using (var badge = await _img.GetLevelUpBadgeAsync(user.GetUserNickInGuild(),
@@ -293,73 +295,97 @@ namespace Sanakan.Services
 
         private Func<Task> CreateTask(SocketGuildUser user, ISocketMessageChannel channel, long exp, ulong messages, ulong commands, ulong characters, bool calculateExp)
         {
-            return new Func<Task>(async () =>
+            return async () =>
             {
-                using (var db = new Database.DatabaseContext(_config) { SuppressCacheInvalidation = true })
+                try
                 {
-                    var usr = await db.GetUserOrCreateSimpleAsync(user.Id);
-                    if (usr == null) return;
-
-                    ApplyProgress(usr, exp, messages, commands, characters);
-
-                    var newLevel = CalculateLevel(usr.ExpCnt);
-                    bool levelChanged = newLevel != usr.Level && calculateExp && exp > 0;
-                    if (levelChanged)
+                    await SaveProgressAsync(user, channel, exp, messages, commands, characters, calculateExp);
+                }
+                catch
+                {
+                    // Return the progress, so the next save includes it.
+                    using (await _messageLock.LockAsync().ConfigureAwait(false))
                     {
-                        usr.Level = newLevel;
-                        await db.UserActivities.AddAsync(new UserActivityBuilder(_time)
-                            .WithUser(usr, user).WithType(Database.Models.ActivityType.LevelUp, (ulong)newLevel).Build());
-                        _ = Task.Run(async () =>
-                        {
-                            try
-                            {
-                                await NotifyAboutLevelAsync(user, channel, newLevel);
-                            }
-                            catch (Exception ex)
-                            {
-                                _logger.LogError($"Experience: level notify: {ex}");
-                            }
-                        });
+                        _exp[user.Id] += exp;
+                        _messages[user.Id] += messages;
+                        _commands[user.Id] += commands;
+                        _characters[user.Id] += characters;
                     }
+                    throw;
+                }
+            };
+        }
 
-                    var config = await db.GetCachedGuildFullConfigAsync(user.Guild.Id);
+        private async Task SaveProgressAsync(SocketGuildUser user, ISocketMessageChannel channel, long exp, ulong messages, ulong commands, ulong characters, bool calculateExp)
+        {
+            using (var db = CreateDatabaseContext())
+            {
+                db.SuppressCacheInvalidation = true;
+                var usr = await db.GetUserOrCreateSimpleAsync(user.Id);
+                if (usr == null) throw new InvalidOperationException("Experience user was not loaded.");
+
+                ApplyProgress(usr, exp, messages, commands, characters);
+
+                var newLevel = CalculateLevel(usr.ExpCnt);
+                bool levelChanged = newLevel != usr.Level && calculateExp && exp > 0;
+                if (levelChanged)
+                {
+                    usr.Level = newLevel;
+                    await db.UserActivities.AddAsync(new UserActivityBuilder(_time)
+                        .WithUser(usr, user).WithType(Database.Models.ActivityType.LevelUp, (ulong)newLevel).Build());
+                }
+
+                await db.SaveChangesAsync();
+
+                if (levelChanged)
+                {
                     _ = Task.Run(async () =>
                     {
                         try
                         {
-                            if (config == null) return;
-                            if (!calculateExp) return;
-
-                            foreach (var lvlRole in config.RolesPerLevel)
-                            {
-                                var role = user.Guild.GetRole(lvlRole.Role);
-                                if (role == null) continue;
-
-                                bool hasRole = user.Roles.Any(x => x.Id == role.Id);
-                                if (newLevel >= (long)lvlRole.Level)
-                                {
-                                    if (!hasRole)
-                                        await user.AddRoleAsync(role);
-                                }
-                                else if (hasRole)
-                                {
-                                    await user.RemoveRoleAsync(role);
-                                }
-                            }
+                            // poziom zmienia się rzadko, a pełny cache usera trzymamy długo - unieważnij go przy awansie
+                            QueryCacheManager.ExpireTag(new string[] { CacheTags.User(usr.Id) });
+                            await NotifyAboutLevelAsync(user, channel, newLevel);
                         }
                         catch (Exception ex)
                         {
-                            _logger.LogError($"Experience: level roles: {ex}");
+                            _logger.LogError($"Experience: level notify: {ex}");
                         }
                     });
-
-                    await db.SaveChangesAsync();
-
-                    // poziom zmienia się rzadko, a pełny cache usera trzymamy długo - unieważnij go przy awansie
-                    if (levelChanged)
-                        QueryCacheManager.ExpireTag(new string[] { CacheTags.User(usr.Id) });
                 }
-            });
+
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        if (!calculateExp) return;
+                        using var configDb = CreateDatabaseContext();
+                        var config = await configDb.GetCachedGuildFullConfigAsync(user.Guild.Id);
+                        if (config == null) return;
+
+                        foreach (var lvlRole in config.RolesPerLevel)
+                        {
+                            var role = user.Guild.GetRole(lvlRole.Role);
+                            if (role == null) continue;
+
+                            bool hasRole = user.Roles.Any(x => x.Id == role.Id);
+                            if (newLevel >= (long)lvlRole.Level)
+                            {
+                                if (!hasRole)
+                                    await user.AddRoleAsync(role);
+                            }
+                            else if (hasRole)
+                            {
+                                await user.RemoveRoleAsync(role);
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError($"Experience: level roles: {ex}");
+                    }
+                });
+            }
         }
     }
 }
