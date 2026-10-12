@@ -7,6 +7,7 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Threading;
 using System.Threading.Tasks;
 using Sanakan.Database.Models;
 using Sanakan.Extensions;
@@ -281,7 +282,8 @@ namespace Sanakan.Services
             if (!_allowPrivateHosts && !IsPublicHttpUrl(url))
                 return null;
 
-            using var res = await _httpClient.GetAsync(url, HttpCompletionOption.ResponseHeadersRead);
+            using var timeout = new CancellationTokenSource(_httpClient.Timeout);
+            using var res = await _httpClient.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, timeout.Token);
             if (!res.IsSuccessStatusCode)
                 return null;
 
@@ -289,11 +291,12 @@ namespace Sanakan.Services
                 return Stream.Null;
 
             var buffer = new MemoryStream();
-            using (var source = await res.Content.ReadAsStreamAsync())
+            try
             {
+                using var source = await res.Content.ReadAsStreamAsync(timeout.Token);
                 var chunk = new byte[81920];
                 int read;
-                while ((read = await source.ReadAsync(chunk)) > 0)
+                while ((read = await source.ReadAsync(chunk, timeout.Token)) > 0)
                 {
                     if (buffer.Length + read > MaxImageBytes)
                     {
@@ -302,24 +305,28 @@ namespace Sanakan.Services
                     }
                     buffer.Write(chunk, 0, read);
                 }
-            }
+                buffer.Position = 0;
+                if (!await HasAllowedImageSignatureAsync(buffer))
+                {
+                    buffer.Dispose();
+                    return Stream.Null;
+                }
 
-            buffer.Position = 0;
-            if (!await HasAllowedImageSignatureAsync(buffer))
+                buffer.Position = 0;
+                if (!await HasAcceptableDimensionsAsync(buffer))
+                {
+                    buffer.Dispose();
+                    return Stream.Null;
+                }
+
+                buffer.Position = 0;
+                return buffer;
+            }
+            catch
             {
                 buffer.Dispose();
-                return Stream.Null;
+                throw;
             }
-
-            buffer.Position = 0;
-            if (!await HasAcceptableDimensionsAsync(buffer))
-            {
-                buffer.Dispose();
-                return Stream.Null;
-            }
-
-            buffer.Position = 0;
-            return buffer;
         }
 
         private static async Task<bool> HasAcceptableDimensionsAsync(Stream stream)
