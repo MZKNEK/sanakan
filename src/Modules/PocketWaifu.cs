@@ -4031,85 +4031,109 @@ namespace Sanakan.Modules
         [Remarks(""), RequireWaifuDuelChannel]
         public async Task MakeADuelAsync()
         {
-            using (var db = new Database.DatabaseContext(Config))
+            using var db = CreateDuelDatabaseContext();
+            var duser = await db.GetUserOrCreateSimpleAsync(Context.User.Id);
+            duser.GameDeck.Cards = await db.Entry(duser.GameDeck).Collection(x => x.Cards).Query().Where(x => x.Active).ToListAsync();
+            if (!await PrepareDuelAsync(duser)) return;
+
+            var allPvpPlayers = await db.GetCachedPlayersForPVP(duser.Id);
+            if (allPvpPlayers.Count < 10)
+            {
+                await SafeReplyAsync("", embed: $"{Context.User.Mention} zbyt mała liczba graczy ma utworzoną poprawną talię!".ToEmbedMessage(EMType.Error).Build());
+                return;
+            }
+
+            double toLong = 1;
+            var pvpPlayersInRange = allPvpPlayers.Where(x => x.IsNearMMR(duser.GameDeck)).ToList();
+            for (double mmr = 0.5; pvpPlayersInRange.Count < 10; mmr += (0.5 * toLong))
+            {
+                pvpPlayersInRange = allPvpPlayers.Where(x => x.IsNearMMR(duser.GameDeck, mmr)).ToList();
+                toLong += 0.5;
+            }
+
+            foreach (var candidate in pvpPlayersInRange.Shuffle())
+            {
+                var enemy = Context.Client.GetUser(candidate.UserId);
+                if (enemy == null) continue;
+                if (!await db.Cards.AsQueryable().AnyAsync(x => x.GameDeckId == enemy.Id && x.Active))
+                    continue;
+
+                await QueueDuelAsync(enemy);
+                return;
+            }
+
+            await SafeReplyAsync("", embed: $"{Context.User.Mention} nie udało się znaleźć przeciwnika, spróbuj później.".ToEmbedMessage(EMType.Error).Build());
+        }
+
+        protected virtual Database.DatabaseContext CreateDuelDatabaseContext() => new Database.DatabaseContext(Config);
+
+        private async Task<bool> PrepareDuelAsync(User duser)
+        {
+            if (duser.GameDeck.NeedToSetDeckAgain())
+            {
+                await SafeReplyAsync("", embed: $"{Context.User.Mention} musisz na nowo ustawić swoją talię!".ToEmbedMessage(EMType.Error).Build());
+                return false;
+            }
+
+            var canFight = duser.GameDeck.CanFightPvP();
+            if (canFight != DeckPowerStatus.Ok)
+            {
+                var err = canFight switch
+                {
+                    DeckPowerStatus.TooLow => "słabą",
+                    DeckPowerStatus.TooHigh => "silną",
+                    DeckPowerStatus.TooManyCards => "dużą",
+                    _ => "małą"
+                };
+
+                await SafeReplyAsync("", embed: $"{Context.User.Mention} masz zbyt {err} talię ({duser.GameDeck.GetDeckPower():F}).".ToEmbedMessage(EMType.Error).Build());
+                return false;
+            }
+
+            var pvpDailyMax = duser.TimeStatuses.FirstOrDefault(x => x.Type == StatusType.Pvp);
+            if (pvpDailyMax == null)
+            {
+                pvpDailyMax = StatusType.Pvp.NewTimeStatus();
+                duser.TimeStatuses.Add(pvpDailyMax);
+            }
+
+            if (!pvpDailyMax.IsActive(_time.Now()))
+            {
+                pvpDailyMax.EndsAt = _time.Now().Date.AddHours(3).AddDays(1);
+                duser.GameDeck.PVPDailyGamesPlayed = 0;
+            }
+
+            if (duser.GameDeck.ReachedDailyMaxPVPCount())
+            {
+                await SafeReplyAsync("", embed: $"{Context.User.Mention} dziś już nie możesz rozegrać pojedynku.".ToEmbedMessage(EMType.Error).Build());
+                return false;
+            }
+
+            if ((_time.Now() - duser.GameDeck.PVPSeasonBeginDate.AddMonths(1)).TotalSeconds > 1)
+            {
+                duser.GameDeck.PVPSeasonBeginDate = new DateTime(_time.Now().Year, _time.Now().Month, 1);
+                duser.GameDeck.SeasonalPVPRank = 0;
+            }
+            return true;
+        }
+
+        private async Task QueueDuelAsync(SocketUser enemy)
+        {
+            var duel = new Executable("pvp duel", () => ExecuteDuelAsync(enemy), Context.User.Id);
+            duel.AddOwner(enemy.Id);
+            if (!await _executor.TryAdd(duel, TimeSpan.FromSeconds(1)))
+                await SafeReplyAsync("", embed: $"{Context.User.Mention} kolejka pojedynków jest pełna, spróbuj później.".ToEmbedMessage(EMType.Error).Build());
+        }
+
+        private async Task ExecuteDuelAsync(SocketUser euser)
+        {
+            using (var db = CreateDuelDatabaseContext())
             {
                 var duser = await db.GetUserOrCreateAsync(Context.User.Id);
-                if (duser.GameDeck.NeedToSetDeckAgain())
-                {
-                    await SafeReplyAsync("", embed: $"{Context.User.Mention} musisz na nowo ustawić swoją talię!".ToEmbedMessage(EMType.Error).Build());
-                    return;
-                }
+                if (!await PrepareDuelAsync(duser)) return;
 
-                var canFight = duser.GameDeck.CanFightPvP();
-                if (canFight != DeckPowerStatus.Ok)
-                {
-                    var err = canFight switch
-                    {
-                        DeckPowerStatus.TooLow => "słabą",
-                        DeckPowerStatus.TooHigh => "silną",
-                        DeckPowerStatus.TooManyCards => "dużą",
-                        _ => "małą"
-                    };
-
-                    await SafeReplyAsync("", embed: $"{Context.User.Mention} masz zbyt {err} talię ({duser.GameDeck.GetDeckPower():F}).".ToEmbedMessage(EMType.Error).Build());
-                    return;
-                }
-
-                var pvpDailyMax = duser.TimeStatuses.FirstOrDefault(x => x.Type == StatusType.Pvp);
-                if (pvpDailyMax == null)
-                {
-                    pvpDailyMax = StatusType.Pvp.NewTimeStatus();
-                    duser.TimeStatuses.Add(pvpDailyMax);
-                }
-
-                if (!pvpDailyMax.IsActive(_time.Now()))
-                {
-                    pvpDailyMax.EndsAt = _time.Now().Date.AddHours(3).AddDays(1);
-                    duser.GameDeck.PVPDailyGamesPlayed = 0;
-                }
-
-                if (duser.GameDeck.ReachedDailyMaxPVPCount())
-                {
-                    await SafeReplyAsync("", embed: $"{Context.User.Mention} dziś już nie możesz rozegrać pojedynku.".ToEmbedMessage(EMType.Error).Build());
-                    return;
-                }
-
-                if ((_time.Now() - duser.GameDeck.PVPSeasonBeginDate.AddMonths(1)).TotalSeconds > 1)
-                {
-                    duser.GameDeck.PVPSeasonBeginDate = new DateTime(_time.Now().Year, _time.Now().Month, 1);
-                    duser.GameDeck.SeasonalPVPRank = 0;
-                }
-
-                var allPvpPlayers = await db.GetCachedPlayersForPVP(duser.Id);
-                if (allPvpPlayers.Count < 10)
-                {
-                    await SafeReplyAsync("", embed: $"{Context.User.Mention} zbyt mała liczba graczy ma utworzoną poprawną talię!".ToEmbedMessage(EMType.Error).Build());
-                    return;
-                }
-
-                double toLong = 1;
-                var pvpPlayersInRange = allPvpPlayers.Where(x => x.IsNearMMR(duser.GameDeck)).ToList();
-                for (double mrr = 0.5; pvpPlayersInRange.Count < 10; mrr += (0.5 * toLong))
-                {
-                    pvpPlayersInRange = allPvpPlayers.Where(x => x.IsNearMMR(duser.GameDeck, mrr)).ToList();
-                    toLong += 0.5;
-                }
-
-                User denemy = null;
-                SocketUser euser = null;
-                foreach (var candidate in pvpPlayersInRange.Shuffle())
-                {
-                    euser = Context.Client.GetUser(candidate.UserId);
-                    if (euser == null) continue;
-
-                    if (!await db.Cards.AsQueryable().AnyAsync(x => x.GameDeckId == candidate.UserId && x.Active))
-                        continue;
-
-                    denemy = await db.GetUserOrCreateAsync(candidate.UserId);
-                    break;
-                }
-
-                if (denemy == null)
+                var denemy = await db.GetUserOrCreateAsync(euser.Id);
+                if (!denemy.GameDeck.Cards.Any(x => x.Active))
                 {
                     await SafeReplyAsync("", embed: $"{Context.User.Mention} nie udało się znaleźć przeciwnika, spróbuj później.".ToEmbedMessage(EMType.Error).Build());
                     return;
