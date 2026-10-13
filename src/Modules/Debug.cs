@@ -1932,6 +1932,47 @@ namespace Sanakan.Modules
             Environment.Exit(200);
         }
 
+        [Command("bavatar", RunMode = RunMode.Async), RequireDev]
+        [Summary("zmienia avatar bota")]
+        [Remarks("link")]
+        public async Task ChangeBotAvatarAsync([Summary("adres obrazka")][Remainder]string url = null)
+        {
+            var imgUrl = Context.Message.Attachments.FirstOrDefault()?.Url ?? url;
+            if (string.IsNullOrWhiteSpace(imgUrl))
+            {
+                await SafeReplyAsync("", embed: $"{Context.User.Mention} brak adresu obrazka lub załącznika.".ToEmbedMessage(EMType.Error).Build());
+                return;
+            }
+
+            var imgCheck = await _img.CheckImageUrlAsync(imgUrl);
+            if (imgCheck.IsError())
+            {
+                await SafeReplyAsync("", embed: ExecutionResult.From(imgCheck).ToEmbedMessage($"{Context.User.Mention} ").Build());
+                return;
+            }
+
+            using (var stream = await _img.TryGetImageStreamAsync(imgCheck.Url))
+            {
+                if (stream == null || stream == Stream.Null)
+                {
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} nie udało się pobrać obrazka.".ToEmbedMessage(EMType.Error).Build());
+                    return;
+                }
+
+                try
+                {
+                    await Context.Client.CurrentUser.ModifyAsync(x => x.Avatar = new Discord.Image(stream));
+                }
+                catch (Exception ex)
+                {
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} nie udało się zmienić avatara! ({ex.Message})".ToEmbedMessage(EMType.Error).Build());
+                    return;
+                }
+            }
+
+            await SafeReplyAsync("", embed: "Avatar bota został zmieniony!".ToEmbedMessage(EMType.Success).Build());
+        }
+
         [Command("spawncof", RunMode = RunMode.Async), RequireDev]
         [Summary("tworzy nowe polowanie na kartę")]
         [Remarks("")]
