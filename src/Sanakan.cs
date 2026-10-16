@@ -56,6 +56,7 @@ namespace Sanakan
         public async Task MainAsync()
         {
             LoadConfig();
+            MigrateConfig();
             ValidateConfig();
 
             await EnsureDbIsCreatedAsync();
@@ -79,6 +80,15 @@ namespace Sanakan
             _heartbeat.Start();
 
             await Task.Delay(-1);
+        }
+
+        private void MigrateConfig()
+        {
+            var migrated = LegacySiteKeys.Migrate(_config.Get());
+            if (migrated == null) return;
+
+            _config.Save();
+            Console.WriteLine($"Przeniesiono ApiKeys do UserKeyApps z uprawnieniem Site: {string.Join(", ", migrated)}");
         }
 
         private void ValidateConfig()

@@ -4,7 +4,7 @@
 
   Przykład:
     pwsh ./smoke.ps1 -AppKey snka_... -DiscordId 123456789012345678
-    pwsh ./smoke.ps1 -AppKey snka_... -DiscordId 123456789012345678 -SiteKey <ApiKeys.Key> -WithPacks
+    pwsh ./smoke.ps1 -AppKey snka_... -DiscordId 123456789012345678 -SiteKey <klucz aplikacji z uprawnieniem Site> -WithPacks
 
   -WithPacks MODYFIKUJE dane: daje użytkownikowi pakiet, otwiera go (nowa karta) i przełącza kartę w talii (2x, wraca do stanu).
 #>
@@ -116,7 +116,7 @@ Check "total/cards zwraca max 4000 kart" ($cards.Json.Cards.Count -le 4000) "(zw
 Write-Host "      $($cards.Json.Cards.Count) kart z $($cards.Json.TotalCards) w $($watch.ElapsedMilliseconds) ms"
 
 if ($WithPacks) {
-    if (-not $SiteKey) { throw "-WithPacks wymaga -SiteKey (klucz z ApiKeys)" }
+    if (-not $SiteKey) { throw "-WithPacks wymaga -SiteKey (klucz aplikacji z uprawnieniem Site)" }
 
     Write-Host "== Pakiety i talia przez klucz użytkownika ==" -ForegroundColor Cyan
 

@@ -8,8 +8,8 @@ using System.IdentityModel.Tokens.Jwt;
 using System;
 using System.Text;
 using System.Security.Claims;
-using System.Security.Cryptography;
 using Sanakan.Config;
+using Sanakan.Config.Model;
 using Sanakan.Extensions;
 using Sanakan.Api.Models;
 using Sanakan.Services.Time;
@@ -34,7 +34,7 @@ namespace Sanakan.Api.Controllers
         /// <summary>
         /// Zwraca token ważny jeden dzień
         /// </summary>
-        /// <param name="apikey">Key aplikacji</param>
+        /// <param name="apikey">Klucz aplikacji z uprawnieniem Site</param>
         /// <response code="401">API Key Not Provided</response>
         /// <response code="403">API Key Is Invalid</response>
         [HttpPost, AllowAnonymous]
@@ -96,24 +96,8 @@ namespace Sanakan.Api.Controllers
 
         private string Authenticate(string apikey)
         {
-            if (string.IsNullOrEmpty(apikey))
-                return null;
-
-            var keys = _config.Get().ApiKeys;
-            if (keys == null)
-                return null;
-
-            var provided = Encoding.UTF8.GetBytes(apikey);
-            foreach (var key in keys)
-            {
-                if (key?.Key == null)
-                    continue;
-
-                if (CryptographicOperations.FixedTimeEquals(Encoding.UTF8.GetBytes(key.Key), provided))
-                    return key.Bearer;
-            }
-
-            return null;
+            var app = AppKeyAuthenticationHandler.FindApp(_config, apikey);
+            return app != null && app.Has(ApiAppPermission.Site) ? app.Bearer : null;
         }
     }
 }

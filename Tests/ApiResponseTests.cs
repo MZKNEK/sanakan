@@ -37,7 +37,7 @@ namespace Artifacts
 
         public ApiServer()
         {
-            Config.Model.ApiKeys = new List<SanakanApiKey> { new SanakanApiKey { Key = SiteKey, Bearer = "Shinden" } };
+            Config.Model.UserKeyApps.Add(new ApiApp { Key = SiteKey, Bearer = "Shinden", Permissions = ApiAppPermission.Site });
             Config.Model.RMConfig = new List<RichMessageConfig>();
 
             var logger = new ListLogger();

@@ -13,6 +13,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.Extensions.Logging;
 using System.Text;
+using System.Security.Cryptography;
 using Sanakan.Config;
 using Sanakan.Services.Executor;
 using Discord.WebSocket;
@@ -76,6 +77,11 @@ namespace Sanakan.Api
                 throw new InvalidOperationException("Jwt.Issuer musi być ustawiony");
         }
 
+        public static SymmetricSecurityKey SigningKey(IConfig config)
+            => new SymmetricSecurityKey(Encoding.UTF8.GetBytes(config.Get().Jwt.Key));
+
+        public static string GenerateJwtKey() => Convert.ToBase64String(RandomNumberGenerator.GetBytes(48));
+
         public static async Task StopAsync(TimeSpan timeout)
         {
             if (_host == null) return;
@@ -119,7 +125,8 @@ namespace Sanakan.Api
                     ValidateIssuerSigningKey = true,
                     ValidIssuer = tmpCnf.Jwt.Issuer,
                     ValidAudience = tmpCnf.Jwt.Issuer,
-                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(tmpCnf.Jwt.Key))
+                    // read on every request so the key can be rotated without a restart
+                    IssuerSigningKeyResolver = (token, securityToken, kid, parameters) => new[] { SigningKey(config) }
                 };
             }).AddScheme<AuthenticationSchemeOptions, UserKeyAuthenticationHandler>(UserKeyAuthenticationHandler.SchemeName, null)
               .AddScheme<AuthenticationSchemeOptions, AppKeyAuthenticationHandler>(AppKeyAuthenticationHandler.SchemeName, null);
@@ -178,7 +185,7 @@ namespace Sanakan.Api
                 {
                     Title = "Sanakan API",
                     Version = "1.0",
-                    Description = "Autentykacja następuje poprzez dopasowanie tokenu przesłanego w ciele zapytania `api/token`, a następnie wysyłania w nagłówku `Authorization` z przedrostkiem `Bearer` otrzymanego w zwrocie tokena."
+                    Description = "Autentykacja następuje poprzez dopasowanie klucza aplikacji z uprawnieniem `Site` przesłanego w ciele zapytania `api/token`, a następnie wysyłania w nagłówku `Authorization` z przedrostkiem `Bearer` otrzymanego w zwrocie tokena."
                         + "\n\nEndpointy wymagające użytkownika (`Player`) akceptują również klucz użytkownika przesłany w nagłówku `x-user-key`. Klucze generuje aplikacja z uprawnieniem `UserKeys` przez `api/userkey`, podając swój klucz w nagłówku `x-app-key`."
                         + "\n\nEndpointy z polityką `Info` (polecenia moderatorskie, uprawnienia użytkowników) akceptują poza tokenem strony również klucz aplikacji z uprawnieniem `Info` przesłany w nagłówku `x-app-key`. Klucz aplikacji z uprawnieniem `Site` daje dostęp do wszystkich endpointów strony (`Site` i `Info`)."
                         + "\n\nDocelowa wersja api powinna zostać przesłana pod nagłówkiem `x-api-version`, w przypadku jej niepodania zapytania są interpretowane jako wysłane do wersji `1.0`.",

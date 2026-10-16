@@ -220,10 +220,7 @@ namespace Artifacts
         private static FakeConfig SiteConfig()
         {
             var config = new FakeConfig();
-            config.Model.ApiKeys = new List<SanakanApiKey>
-            {
-                new SanakanApiKey { Key = "site-key", Bearer = "site" },
-            };
+            config.Model.UserKeyApps.Add(new ApiApp { Key = "site-key", Bearer = "site", Permissions = ApiAppPermission.Site });
             return config;
         }
 
@@ -293,24 +290,53 @@ namespace Artifacts
         [Fact]
         public void EntryWithNullKey_DoesNotThrowAndOtherKeysWork()
         {
-            var config = new FakeConfig();
-            config.Model.ApiKeys = new List<SanakanApiKey>
-            {
-                new SanakanApiKey { Key = null, Bearer = "broken" },
-                new SanakanApiKey { Key = "site-key", Bearer = "site" },
-            };
+            var config = SiteConfig();
+            config.Model.UserKeyApps.Insert(0, new ApiApp { Key = null, Bearer = "broken", Permissions = ApiAppPermission.Site });
 
             Assert.IsType<OkObjectResult>(Controller(config).CreateToken("site-key"));
             Assert.Equal(403, (Controller(config).CreateToken("wrong") as ObjectResult)?.StatusCode);
         }
 
         [Fact]
-        public void NullApiKeysSection_Returns403()
+        public void NullUserKeyAppsSection_Returns403()
         {
             var config = new FakeConfig();
-            config.Model.ApiKeys = null;
+            config.Model.UserKeyApps = null;
 
             Assert.Equal(403, (Controller(config).CreateToken("x") as ObjectResult)?.StatusCode);
+        }
+
+        [Theory]
+        [InlineData(ApiAppPermission.None)]
+        [InlineData(ApiAppPermission.UserKeys)]
+        [InlineData(ApiAppPermission.Info)]
+        [InlineData(ApiAppPermission.UserKeys | ApiAppPermission.Info)]
+        public void AppWithoutSite_Returns403(ApiAppPermission permissions)
+        {
+            var config = new FakeConfig();
+            config.Model.UserKeyApps.Add(new ApiApp { Key = "app-key", Bearer = "app", Permissions = permissions });
+
+            Assert.Equal(403, (Controller(config).CreateToken("app-key") as ObjectResult)?.StatusCode);
+        }
+
+        [Fact]
+        public void SiteApp_TokenCarriesAppName()
+        {
+            var result = Controller(SiteConfig()).CreateToken("site-key") as OkObjectResult;
+
+            var token = Newtonsoft.Json.Linq.JObject.FromObject(result.Value)["token"].ToString();
+            var jwt = new System.IdentityModel.Tokens.Jwt.JwtSecurityTokenHandler().ReadJwtToken(token);
+            Assert.Contains(jwt.Claims, x => x.Type == "website" && x.Value == "site");
+        }
+
+        // unmigrated entries must not grant access
+        [Fact]
+        public void LegacyApiKeysEntry_IsNotAccepted()
+        {
+            var config = new FakeConfig();
+            config.Model.ApiKeys.Add(new SanakanApiKey { Key = "legacy-key", Bearer = "site" });
+
+            Assert.Equal(403, (Controller(config).CreateToken("legacy-key") as ObjectResult)?.StatusCode);
         }
 
         [Fact]

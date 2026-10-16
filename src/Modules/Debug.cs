@@ -1288,7 +1288,7 @@ namespace Sanakan.Modules
         }
 
         [Command("ukapp perm"), Priority(1), RequireDev]
-        [Summary("przełącza uprawnienie aplikacji (UserKeys - generowanie i używanie kluczy użytkowników, Info - polecenia moderatorskie i uprawnienia użytkowników, Site - wszystko co strona)")]
+        [Summary("przełącza uprawnienie aplikacji (UserKeys - generowanie i używanie kluczy użytkowników, Info - polecenia moderatorskie i uprawnienia użytkowników, Site - wszystko co strona, także token z api/token)")]
         [Remarks("strona Info")]
         public async Task ToggleUserKeyAppPermissionAsync([Summary("nazwa aplikacji")] string name, [Summary("uprawnienie")] ApiAppPermission permission)
         {
@@ -1309,6 +1309,17 @@ namespace Sanakan.Modules
             Config.Save();
 
             await SafeReplyAsync("", embed: $"Uprawnienia aplikacji **{name}**: `{app.Permissions}`".ToEmbedMessage(EMType.Success).Build());
+        }
+
+        [Command("jwt rotate"), Priority(1), RequireDev]
+        [Summary("zmienia klucz podpisu JWT - natychmiast unieważnia wszystkie tokeny stron i graczy")]
+        [Remarks("")]
+        public async Task RotateJwtKeyAsync()
+        {
+            Config.Get().Jwt.Key = Api.BotWebHost.GenerateJwtKey();
+            Config.Save();
+
+            await SafeReplyAsync("", embed: "Zmieniono klucz JWT, wszystkie wydane tokeny przestały działać.".ToEmbedMessage(EMType.Success).Build());
         }
 
         private static string MaskKey(string key)

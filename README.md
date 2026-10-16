@@ -57,13 +57,12 @@ comments to it.
     "Issuer": "your-issuer"
   },
   "GiveBanForUrlSpam": false,
-  "ApiKeys": [
-    {
-      "Key": "your-api-key",
-      "Bearer": "your-bearer-name"
-    }
-  ],
   "UserKeyApps": [
+    {
+      "Key": "your-site-key",
+      "Bearer": "your-site-name",
+      "Permissions": "Site"
+    },
     {
       "Key": "your-app-key",
       "Bearer": "your-app-name"
