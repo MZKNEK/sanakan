@@ -283,12 +283,6 @@ namespace Sanakan.Services
                 },
                 new EmbedFieldBuilder
                 {
-                    Name = "Status",
-                    Value = user.Status.ToString(),
-                    IsInline = true
-                },
-                new EmbedFieldBuilder
-                {
                     Name = "Bot",
                     Value = user.IsBot ? "Tak" : "Nie",
                     IsInline = true

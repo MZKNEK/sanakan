@@ -126,7 +126,7 @@ namespace Sanakan
 
             _client = new DiscordSocketClient(new DiscordSocketConfig()
             {
-                GatewayIntents = GatewayIntents.All,
+                GatewayIntents = GatewayIntents.All & ~GatewayIntents.GuildPresences,
                 LogLevel = LogSeverity.Error,
                 AlwaysDownloadUsers = true,
                 MessageCacheSize = 600
