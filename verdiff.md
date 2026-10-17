@@ -1,10 +1,9 @@
-# 1.4.10.23
+# 1.4.10.24
 
-Data: 2026-10-16
+Data: 2026-10-17
 
-- Ta wersja zawiera tylko zmiany wewnętrzne.
+- Usunięto pole „Status” z informacji o użytkowniku w komendzie `ktoto`.
 
 ## Techniczne
 
-- Zmieniono sposób zarządzania kluczami dostępu strony, teraz można je wymieniać i usuwać komendami bez restartu bota.
-- Dodano możliwość natychmiastowego unieważnienia wszystkich wydanych tokenów dostępu bez restartu bota.
+- Bot nie pobiera już z Discorda informacji o statusie i aktywności użytkowników, co zmniejsza ilość przetwarzanych danych.
