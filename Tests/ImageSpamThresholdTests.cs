@@ -227,6 +227,34 @@ namespace Artifacts
         }
 
         [Fact]
+        public void OversizedWindow_KeepsEntityValidWithoutRegularMessages()
+        {
+            var time = new FixedTime();
+            var start = time.Value;
+            var entity = new SupervisorEntity(time);
+            entity.TrackImageSpam(true, 0);
+            time.Value = start.AddSeconds(90);
+            entity.TrackImageSpam(true, 0);
+
+            time.Value = start.AddSeconds(150);
+            Assert.True(entity.IsValid());
+            Assert.Equal(2, entity.TrackImageSpam(true, 0).OversizedMessages);
+
+            time.Value = start.AddSeconds(271);
+            Assert.False(entity.IsValid());
+        }
+
+        [Theory]
+        [InlineData(true, false, true)]
+        [InlineData(false, false, false)]
+        [InlineData(true, true, true)]
+        [InlineData(false, true, true)]
+        public void ImageSpamPenalty_IsMuteOnUnsupervisedChannels(bool hasRole, bool unsupervised, bool mute)
+        {
+            Assert.Equal(mute, Supervisor.ShouldMuteForImageSpam(hasRole, unsupervised));
+        }
+
+        [Fact]
         public void CleanMessage_AfterPenalty_DoesNotTriggerImageModeration()
         {
             var entity = new SupervisorEntity(new FixedTime());

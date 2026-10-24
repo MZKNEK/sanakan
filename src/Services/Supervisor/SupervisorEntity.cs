@@ -53,6 +53,7 @@ namespace Sanakan.Services.Supervisor
         {
             var now = _timeProvider.Now();
             return (now - LastMessage).TotalMinutes <= 2 ||
+                _imageSpamMessages.Any(x => (now - x).TotalMinutes <= ImageSpamDecision.SpamWindowMinutes) ||
                 _scamImages.Any(x => (now - x.Time).TotalMinutes <= ImageSpamDecision.ScamWindowMinutes);
         }
         public void Add(SupervisorMessage message)

@@ -272,7 +272,8 @@ namespace Sanakan.Services.Supervisor
                 if (gConfig.AdminRole != 0 && user.Roles.Any(x => x.Id == gConfig.AdminRole))
                     return;
 
-                if (!isTemporary && gConfig.ChannelsWithoutSupervision.Any(x => x.Channel == message.Channel.Id))
+                var isUnsupervisedChannel = !isTemporary && gConfig.ChannelsWithoutSupervision.Any(x => x.Channel == message.Channel.Id);
+                if (isUnsupervisedChannel && !message.Attachments.Any(IsImageAttachment))
                     return;
 
                 var scan = await ScanImagesAsync(message);
@@ -303,40 +304,50 @@ namespace Sanakan.Services.Supervisor
                         guild[user.Id] = susspect;
                     }
 
-                    var trackedContent = string.IsNullOrEmpty(message.Content)
-                        ? $"attachment:{message.Id}"
-                        : messageContent;
-                    var thisMessage = susspect.Get(trackedContent);
-
                     bool hasRole = user.Roles.Any(x => x.Id == gConfig.UserRole || x.Id == gConfig.MuteRole) || gConfig.UserRole == 0;
-                    bool hasSuspiciousUrl = thisMessage.IsBannable();
+                    bool hasSuspiciousUrl = false;
                     bool hasNonWhitelistedUrl = false;
-                    if (_config.Get().GiveBanForUrlSpam)
+                    int specifiedMessages = 0;
+                    action = Action.None;
+
+                    if (!isUnsupervisedChannel)
                     {
-                        hasNonWhitelistedUrl = thisMessage.AnyUrl();
+                        var trackedContent = string.IsNullOrEmpty(message.Content)
+                            ? $"attachment:{message.Id}"
+                            : messageContent;
+                        var thisMessage = susspect.Get(trackedContent);
+
+                        hasSuspiciousUrl = thisMessage.IsBannable();
+                        if (_config.Get().GiveBanForUrlSpam)
+                        {
+                            hasNonWhitelistedUrl = thisMessage.AnyUrl();
+                        }
+
+                        bool isBannable = hasSuspiciousUrl || hasNonWhitelistedUrl;
+                        action = MakeDecision(messageContent, susspect.Inc(), thisMessage.Inc(), hasRole && !isBannable);
+                        specifiedMessages = thisMessage.Count;
                     }
 
-                    bool isBannable = hasSuspiciousUrl || hasNonWhitelistedUrl;
-                    action = MakeDecision(messageContent, susspect.Inc(), thisMessage.Inc(), hasRole && !isBannable);
                     var imageSpam = susspect.TrackImageSpam(hasTooManyImages, scan.Matches.Count);
                     deleteMessage = imageSpam.ShouldDelete;
                     if (imageSpam.ShouldPunish)
-                        action = hasRole ? Action.Mute : Action.Ban;
+                        action = ShouldMuteForImageSpam(hasRole, isUnsupervisedChannel) ? Action.Mute : Action.Ban;
                     sendImageScamWarning = imageSpam.ShouldWarn && action != Action.Mute && action != Action.Ban;
 
                     if (action == Action.Mute || action == Action.Ban)
                     {
                         penaltyReason = imageSpam.GetPenaltyReason(action == Action.Ban) ??
                             GetPenaltyReason(action, messageContent, hasSuspiciousUrl,
-                                hasNonWhitelistedUrl, susspect.TotalMessages, thisMessage.Count);
+                                hasNonWhitelistedUrl, susspect.TotalMessages, specifiedMessages);
                     }
                 }
 
-                if (action == Action.Mute || action == Action.Ban)
+                if (deleteMessage || action == Action.Mute || action == Action.Ban)
                 {
                     foreach (var image in scan.Unmatched)
-                        _logger.Log($"ScamImage: unmatched image in penalized message msg={message.GetJumpUrl()} author={user.Id} " +
-                            $"action={action} url={image.Url} hash={ScamImageStore.FormatHash(image.Hash)}");
+                        _logger.Log($"ScamImage: unmatched image in moderated message msg={message.GetJumpUrl()} author={user.Id} " +
+                            $"action={action} deleted={deleteMessage} url={image.Url} hash={ScamImageStore.FormatHash(image.Hash)} " +
+                            $"closest={ScamImageStore.FormatHash(image.ClosestHash)} distance={image.Distance}");
                 }
             }
 
@@ -473,6 +484,11 @@ namespace Sanakan.Services.Supervisor
                 return new ScamImageScanResult();
 
             return await _scamImages.ScanAsync(images);
+        }
+
+        public static bool ShouldMuteForImageSpam(bool hasRole, bool isUnsupervisedChannel)
+        {
+            return hasRole || isUnsupervisedChannel;
         }
 
         public static bool IsAlwaysBanProtected(bool isOwner, bool isAdministrator, ulong adminRole, ulong semiAdminRole,

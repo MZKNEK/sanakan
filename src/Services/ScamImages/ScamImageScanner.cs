@@ -28,14 +28,18 @@ namespace Sanakan.Services.ScamImages
 
     public sealed class ScannedImage
     {
-        public ScannedImage(ulong hash, string url)
+        public ScannedImage(ulong hash, string url, ulong closestHash, int distance)
         {
             Hash = hash;
             Url = url;
+            ClosestHash = closestHash;
+            Distance = distance;
         }
 
         public ulong Hash { get; }
         public string Url { get; }
+        public ulong ClosestHash { get; }
+        public int Distance { get; }
     }
 
     public sealed class ScamImageScanResult
@@ -88,7 +92,7 @@ namespace Sanakan.Services.ScamImages
                     if (match != null)
                         result.Matches.Add(match);
                     else
-                        result.Unmatched.Add(new ScannedImage(hashes[0], url));
+                        result.Unmatched.Add(FindClosest(hashes, url));
                 }
                 catch (Exception ex)
                 {
@@ -124,6 +128,22 @@ namespace Sanakan.Services.ScamImages
                     return new ScamImageMatch(hash, known, distance, url);
 
             return null;
+        }
+
+        private ScannedImage FindClosest(ulong[] hashes, string url)
+        {
+            ulong closest = 0;
+            int bestDistance = int.MaxValue;
+            foreach (var hash in hashes)
+            {
+                if (_store.TryFind(hash, PerceptualHash.HashBits, out var known, out var distance) && distance < bestDistance)
+                {
+                    closest = known;
+                    bestDistance = distance;
+                }
+            }
+
+            return new ScannedImage(hashes[0], url, closest, bestDistance == int.MaxValue ? -1 : bestDistance);
         }
 
         public async Task<int> AddFromAttachmentsAsync(IEnumerable<IAttachment> attachments)

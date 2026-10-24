@@ -313,7 +313,16 @@ namespace Artifacts
                 Assert.Equal(new[] { server.BaseUrl + "clean.png", server.BaseUrl + "clean2.png" },
                     result.Unmatched.Select(x => x.Url));
                 var cleanHash = PerceptualHash.FromStream(new MemoryStream(clean));
-                Assert.All(result.Unmatched, image => Assert.Equal(cleanHash, image.Hash));
+                var scamHash = PerceptualHash.FromStream(new MemoryStream(scam));
+                var cleanOrientations = PerceptualHash.FromStreamOrientations(new MemoryStream(clean));
+                var expectedDistance = cleanOrientations.Min(x => PerceptualHash.Distance(x, scamHash));
+                Assert.All(result.Unmatched, image =>
+                {
+                    Assert.Equal(cleanHash, image.Hash);
+                    Assert.Equal(scamHash, image.ClosestHash);
+                    Assert.Equal(expectedDistance, image.Distance);
+                    Assert.True(image.Distance > scanner.MaxDistance);
+                });
             }
             finally { Cleanup(path); }
         }
