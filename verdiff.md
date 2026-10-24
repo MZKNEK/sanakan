@@ -1,9 +1,10 @@
-# 1.4.10.24
+# 1.4.10.25
 
-Data: 2026-10-17
+Data: 2026-10-24
 
-- Usunięto pole „Status” z informacji o użytkowniku w komendzie `ktoto`.
+- Zmieniono nadzór, tak że scamowe obrazki i wiadomości z więcej niż trzema obrazkami są wykrywane i kasowane również na kanałach bez nadzoru, gdzie zamiast bana nakładany jest wyłącznie mute.
 
 ## Techniczne
 
-- Bot nie pobiera już z Discorda informacji o statusie i aktywności użytkowników, co zmniejsza ilość przetwarzanych danych.
+- Naprawiono gubienie wcześniejszych wiadomości z nadmiarem obrazków przy liczeniu ich przez nadzór.
+- Dodano do dziennika bota informację, jak bardzo skasowany obrazek przypomina najbliższy znany scam, co ułatwia dostrajanie wykrywania.
