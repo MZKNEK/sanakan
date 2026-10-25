@@ -43,10 +43,13 @@ namespace Sanakan.Modules
         private ShindenClient _shClient;
         private Services.ImageProcessing _img;
         private Services.Heartbeat _heartbeat;
+        private Services.ScamImages.ScamImageScanner _scamImages;
 
         public Debug(Waifu waifu, ShindenClient shClient, Services.Helper helper, Services.ImageProcessing img,
-            IConfig config, IExecutor executor, Spawn spawn, ISystemTime time, EmoteCounter counter, Services.Heartbeat heartbeat)
+            IConfig config, IExecutor executor, Spawn spawn, ISystemTime time, EmoteCounter counter, Services.Heartbeat heartbeat,
+            Services.ScamImages.ScamImageScanner scamImages)
         {
+            _scamImages = scamImages;
             _heartbeat = heartbeat;
             _shClient = shClient;
             _executor = executor;
@@ -1202,6 +1205,99 @@ namespace Sanakan.Modules
             Config.Save();
 
             await SafeReplyAsync("", embed: $"AutoClean: `{config.AutoCleanCards.GetYesNo()}`".ToEmbedMessage(EMType.Success).Build());
+        }
+
+        [Command("scamdist"), Priority(1), RequireDev]
+        [Summary("wyświetla lub ustawia maksymalny dystans, przy którym obrazek uznawany jest za scam")]
+        [Remarks("8")]
+        public async Task SetScamImageMaxDistanceAsync([Summary("dystans (0-16)")]int? distance = null)
+        {
+            if (distance == null)
+            {
+                await SafeReplyAsync("", embed: $"Próg dystansu scamowych obrazków: `{_scamImages.MaxDistance}`".ToEmbedMessage(EMType.Info).Build());
+                return;
+            }
+
+            if (distance < 0 || distance > 16)
+            {
+                await SafeReplyAsync("", embed: "Dystans musi być w zakresie 0-16.".ToEmbedMessage(EMType.Error).Build());
+                return;
+            }
+
+            var config = Config.Get();
+            config.ScamImageMaxDistance = distance.Value;
+            Config.Save();
+
+            await SafeReplyAsync("", embed: $"Ustawiono próg dystansu scamowych obrazków na `{distance}`.".ToEmbedMessage(EMType.Success).Build());
+        }
+
+        [Command("phash", RunMode = RunMode.Async), Priority(1), RequireDevOrTester]
+        [Summary("liczy dystans obrazków z załącznika lub wiadomości, na którą odpowiadasz, do znanych scamów oraz między sobą")]
+        [Remarks("")]
+        public async Task ComputeImageDistanceAsync()
+        {
+            var attachments = new List<IAttachment>();
+            if (Context.Message.Reference?.MessageId.IsSpecified ?? false)
+            {
+                var referenced = await Context.Channel.GetMessageAsync(Context.Message.Reference.MessageId.Value);
+                if (referenced != null)
+                    attachments.AddRange(referenced.Attachments);
+            }
+            attachments.AddRange(Context.Message.Attachments);
+
+            if (attachments.Count == 0)
+            {
+                await SafeReplyAsync("", embed: $"{Context.User.Mention} dołącz obrazek lub odpowiedz na wiadomość z obrazkiem.".ToEmbedMessage(EMType.Error).Build());
+                return;
+            }
+
+            var lines = new List<string> { $"Próg: **{_scamImages.MaxDistance}**, sygnatur: **{_scamImages.SignatureCount}**\n" };
+            var hashed = new List<(int Index, ulong[] Hashes)>();
+            int index = 0;
+            foreach (var attachment in attachments.Take(4))
+            {
+                ++index;
+                try
+                {
+                    using var stream = await _img.TryGetImageStreamAsync(attachment.Url);
+                    if (stream == null || stream == Stream.Null)
+                    {
+                        lines.Add($"**{index}.** nie udało się pobrać obrazka");
+                        continue;
+                    }
+
+                    var hashes = Services.ScamImages.PerceptualHash.FromStreamOrientations(stream);
+                    hashed.Add((index, hashes));
+
+                    var closest = _scamImages.FindClosest(hashes, attachment.Url);
+                    var info = closest.Distance < 0 ? "brak sygnatur"
+                        : $"najbliższy `{Services.ScamImages.ScamImageStore.FormatHash(closest.ClosestHash)}`, dystans **{closest.Distance}**"
+                            + (closest.Distance <= _scamImages.MaxDistance ? " - **scam**" : "");
+
+                    lines.Add($"**{index}.** `{Services.ScamImages.ScamImageStore.FormatHash(hashes[0])}` {info}");
+                }
+                catch (Exception ex)
+                {
+                    lines.Add($"**{index}.** nie udało się wczytać obrazka ({ex.Message})");
+                }
+            }
+
+            if (hashed.Count > 1)
+                lines.Add("");
+
+            for (int i = 0; i < hashed.Count; i++)
+            {
+                for (int j = i + 1; j < hashed.Count; j++)
+                {
+                    var left = hashed[i].Hashes[0];
+                    var right = hashed[j].Hashes;
+                    var straight = Services.ScamImages.PerceptualHash.Distance(left, right[0]);
+                    var rotated = right.Min(x => Services.ScamImages.PerceptualHash.Distance(left, x));
+                    lines.Add($"**{hashed[i].Index} ↔ {hashed[j].Index}:** dystans **{straight}** (z obrotami: **{rotated}**)");
+                }
+            }
+
+            await SafeReplyAsync("", embed: string.Join("\n", lines).TrimToLength().ToEmbedMessage(EMType.Info).Build());
         }
 
         [Command("ukapps"), Priority(1), RequireDev]

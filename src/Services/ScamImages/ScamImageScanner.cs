@@ -56,16 +56,17 @@ namespace Sanakan.Services.ScamImages
         private readonly ImageProcessing _images;
         private readonly ScamImageStore _store;
         private readonly ILogger _logger;
+        private readonly Func<int> _maxDistance;
 
-        public ScamImageScanner(ImageProcessing images, ScamImageStore store, ILogger logger, int maxDistance = DefaultMaxDistance)
+        public ScamImageScanner(ImageProcessing images, ScamImageStore store, ILogger logger, Func<int> maxDistance = null)
         {
             _images = images;
             _store = store;
             _logger = logger;
-            MaxDistance = maxDistance;
+            _maxDistance = maxDistance;
         }
 
-        public int MaxDistance { get; }
+        public int MaxDistance => _maxDistance?.Invoke() ?? DefaultMaxDistance;
         public int SignatureCount => _store.Count;
         public ScamImageStore Store => _store;
 
@@ -123,14 +124,15 @@ namespace Sanakan.Services.ScamImages
 
         private ScamImageMatch Match(ulong[] hashes, string url)
         {
+            int maxDistance = MaxDistance;
             foreach (var hash in hashes)
-                if (_store.TryFind(hash, MaxDistance, out var known, out var distance))
+                if (_store.TryFind(hash, maxDistance, out var known, out var distance))
                     return new ScamImageMatch(hash, known, distance, url);
 
             return null;
         }
 
-        private ScannedImage FindClosest(ulong[] hashes, string url)
+        public ScannedImage FindClosest(ulong[] hashes, string url)
         {
             ulong closest = 0;
             int bestDistance = int.MaxValue;

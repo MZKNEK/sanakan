@@ -373,6 +373,42 @@ namespace Artifacts
             finally { Cleanup(path); }
         }
 
+        [Fact]
+        public void Scanner_UsesCurrentMaxDistance()
+        {
+            var path = TempFile();
+            try
+            {
+                var scam = PerceptualHash.FromStream(new MemoryStream(Png(200, 200, Textured)));
+                var clean = PerceptualHash.FromStreamOrientations(new MemoryStream(Png(200, 200, RadialBlob)));
+                var distance = clean.Min(x => PerceptualHash.Distance(x, scam));
+                var store = new ScamImageStore(path);
+                store.Add(scam);
+
+                int maxDistance = distance - 1;
+                var scanner = new ScamImageScanner(new ImageProcessing(null, null, true), store, null, () => maxDistance);
+                Assert.False(scanner.IsScamStream(new MemoryStream(Png(200, 200, RadialBlob))));
+
+                maxDistance = distance;
+                Assert.Equal(distance, scanner.MaxDistance);
+                Assert.True(scanner.IsScamStream(new MemoryStream(Png(200, 200, RadialBlob))));
+            }
+            finally { Cleanup(path); }
+        }
+
+        [Fact]
+        public void Scanner_DefaultMaxDistance_WithoutProvider()
+        {
+            var path = TempFile();
+            try
+            {
+                var scanner = new ScamImageScanner(new ImageProcessing(null, null, true), new ScamImageStore(path), null);
+                Assert.Equal(ScamImageScanner.DefaultMaxDistance, scanner.MaxDistance);
+                Assert.Equal(ScamImageScanner.DefaultMaxDistance, new Sanakan.Config.Model.ConfigModel().ScamImageMaxDistance);
+            }
+            finally { Cleanup(path); }
+        }
+
         private static string TempFile()
         {
             var dir = Path.Combine(Path.GetTempPath(), $"sanakan-scam-{Guid.NewGuid():N}");

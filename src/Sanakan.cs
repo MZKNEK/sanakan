@@ -155,7 +155,8 @@ namespace Sanakan
             _img = new ImageProcessing(_shindenClient,
                 _tags.GetTag(Services.PocketWaifu.TagType.Gallery));
             _scamImages = new ScamImageScanner(_img,
-                new ScamImageStore(Services.Dir.GetResource("ScamHashes.txt")), _logger);
+                new ScamImageStore(Services.Dir.GetResource("ScamHashes.txt")), _logger,
+                () => _config.Get().ScamImageMaxDistance);
             _deleted = new DeletedLog(_client, _config, _logger);
             _chaos = new Chaos(_client, _config, _logger);
             _executor = new UserBasedExecutor(_logger);
