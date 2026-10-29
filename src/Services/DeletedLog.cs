@@ -1,6 +1,7 @@
 ﻿#pragma warning disable 1591
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -14,6 +15,8 @@ namespace Sanakan.Services
 {
     public class DeletedLog
     {
+        private static readonly ConcurrentDictionary<ulong, byte> _skipped = new ConcurrentDictionary<ulong, byte>();
+
         private DiscordSocketClient _client;
         private IConfig _config;
         private ILogger _logger;
@@ -33,6 +36,11 @@ namespace Sanakan.Services
             _client.MessageUpdated += HandleUpdatedMsgAsync;
             _client.UserVoiceStateUpdated += HandleVoiceStateUpdatedAsync;
         }
+
+        // The bot deletes messages containing secrets; their content must not be reposted to the log channel.
+        public static void Skip(ulong messageId) => _skipped.TryAdd(messageId, 0);
+
+        public static bool ConsumeSkip(ulong messageId) => _skipped.TryRemove(messageId, out _);
 
         private Task HandleVoiceStateUpdatedAsync(SocketUser user, SocketVoiceState oldState, SocketVoiceState newState)
         {
@@ -92,6 +100,8 @@ namespace Sanakan.Services
 
         private Task HandleDeletedMsgAsync(Cacheable<IMessage, ulong> message, Cacheable<IMessageChannel, ulong> channel)
         {
+            if (ConsumeSkip(message.Id)) return Task.CompletedTask;
+
             if (!message.HasValue) return Task.CompletedTask;
 
             if (message.Value.Author.IsBot || message.Value.Author.IsWebhook) return Task.CompletedTask;

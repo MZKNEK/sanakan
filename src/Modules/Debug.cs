@@ -1137,6 +1137,60 @@ namespace Sanakan.Modules
             await SafeReplyAsync("", embed: $"Ustawiono URI na `{uri}`".ToEmbedMessage(EMType.Success).Build());
         }
 
+        [Command("shtoken"), Priority(1), RequireDev]
+        [Summary("ustawia token api shindena (tylko na PW z botem); działa po restarcie bota")]
+        [Remarks("token")]
+        public async Task SetShindenTokenAsync([Summary("token")] string token)
+        {
+            if (!await RequireDmForSecretAsync())
+                return;
+
+            var config = Config.Get();
+            config.Shinden ??= new ConfigShinden();
+            config.Shinden.Token = token;
+            Config.Save();
+
+            await SafeReplyAsync("", embed: "Ustawiono token Shindena, zacznie działać po restarcie bota.".ToEmbedMessage(EMType.Success).Build());
+        }
+
+        [Command("dbconn", RunMode = RunMode.Async), Priority(1), RequireDev]
+        [Summary("ustawia connection string bazy (tylko na PW z botem); przed zapisem sprawdza połączenie, działa od razu")]
+        [Remarks("Server=host;Port=3306;Database=db;User=user;Password=haslo")]
+        public async Task SetConnectionStringAsync([Summary("connection string")][Remainder] string connectionString)
+        {
+            if (!await RequireDmForSecretAsync())
+                return;
+
+            try
+            {
+                await using var connection = new MySqlConnector.MySqlConnection(connectionString);
+                await connection.OpenAsync();
+            }
+            catch (Exception ex)
+            {
+                await SafeReplyAsync("", embed: $"Nie udało się połączyć, nic nie zmieniono: `{ex.Message}`".TrimToLength().ToEmbedMessage(EMType.Error).Build());
+                return;
+            }
+
+            Config.Get().ConnectionString = connectionString;
+            Config.Save();
+
+            await SafeReplyAsync("", embed: "Połączenie działa, ustawiono connection string - nowe połączenia z bazą używają go od razu.".ToEmbedMessage(EMType.Success).Build());
+        }
+
+        // A secret typed on a server channel would stay visible there, so it is accepted only in DM.
+        private async Task<bool> RequireDmForSecretAsync()
+        {
+            if (Context.Guild == null)
+                return true;
+
+            DeletedLog.Skip(Context.Message.Id);
+            try { await Context.Message.DeleteAsync(); } catch (Exception) { }
+
+            await SafeReplyAsync("", embed: "Tę komendę wpisuje się tylko na PW z botem. Wiadomość usunięto, ale wartość była widoczna na kanale - uznaj ją za ujawnioną.".ToEmbedMessage(EMType.Error).Build());
+            return false;
+        }
+
         [Command("ppd"), Priority(1), RequireDev]
         [Summary("ustawia liczbę pakietów na dzień")]
         [Remarks("true")]
@@ -1493,6 +1547,7 @@ namespace Sanakan.Modules
             }
             else
             {
+                DeletedLog.Skip(Context.Message.Id);
                 try { await Context.Message.DeleteAsync(); } catch (Exception) { }
             }
 
@@ -1591,6 +1646,7 @@ namespace Sanakan.Modules
             }
             else
             {
+                DeletedLog.Skip(Context.Message.Id);
                 try { await Context.Message.DeleteAsync(); } catch (Exception) { }
 
                 if (secret.Length < 48)
