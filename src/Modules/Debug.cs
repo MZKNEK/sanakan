@@ -1393,7 +1393,7 @@ namespace Sanakan.Modules
             try
             {
                 var dm = await Context.User.CreateDMChannelAsync();
-                await dm.SendMessageAsync("", embed: $"Klucz aplikacji **{name}** (nagłówek `x-app-key`):\n\n`{key}`".ToEmbedMessage(EMType.Info).Build());
+                await dm.SendMessageAsync("", embed: $"Klucz aplikacji **{name}** (nagłówek `x-app-key`):\n\n`{key}`\n\nZareaguj 🗑️, żeby skasować tę wiadomość.".ToEmbedMessage(EMType.Info).Build());
             }
             catch (Exception)
             {
@@ -1537,7 +1537,7 @@ namespace Sanakan.Modules
                 try
                 {
                     var dm = await Context.User.CreateDMChannelAsync();
-                    await dm.SendMessageAsync("", embed: $"Sekret heartbeatu (`BOT_HEARTBEAT_SECRET` w `inc/config.php` strony):\n\n`{secret}`".ToEmbedMessage(EMType.Info).Build());
+                    await dm.SendMessageAsync("", embed: $"Sekret heartbeatu (`BOT_HEARTBEAT_SECRET` w `inc/config.php` strony):\n\n`{secret}`\n\nZareaguj 🗑️, żeby skasować tę wiadomość.".ToEmbedMessage(EMType.Info).Build());
                 }
                 catch (Exception)
                 {
@@ -1636,7 +1636,7 @@ namespace Sanakan.Modules
                 try
                 {
                     var dm = await Context.User.CreateDMChannelAsync();
-                    await dm.SendMessageAsync("", embed: $"Sekret ingestu (przekaż go Shindenowi prywatnie, poza Discordem):\n\n`{secret}`".ToEmbedMessage(EMType.Info).Build());
+                    await dm.SendMessageAsync("", embed: $"Sekret ingestu (przekaż go Shindenowi prywatnie, poza Discordem):\n\n`{secret}`\n\nZareaguj 🗑️, żeby skasować tę wiadomość.".ToEmbedMessage(EMType.Info).Build());
                 }
                 catch (Exception)
                 {

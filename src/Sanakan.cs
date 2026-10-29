@@ -35,6 +35,7 @@ namespace Sanakan
         private ImageProcessing _img;
         private ScamImageScanner _scamImages;
         private DeletedLog _deleted;
+        private DmTrash _dmTrash;
         private HealthMonitor _health;
         private Heartbeat _heartbeat;
         private DiscordIngest _ingest;
@@ -161,6 +162,7 @@ namespace Sanakan
                 new ScamImageStore(Services.Dir.GetResource("ScamHashes.txt")), _logger,
                 () => _config.Get().ScamImageMaxDistance);
             _deleted = new DeletedLog(_client, _config, _logger);
+            _dmTrash = new DmTrash(_client, _logger);
             _chaos = new Chaos(_client, _config, _logger);
             _executor = new UserBasedExecutor(_logger);
             _eCounter = new EmoteCounter(_client, _time, _logger);
