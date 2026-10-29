@@ -167,7 +167,7 @@ namespace Sanakan.Api
             return new HealthProbe { Ok = ok, LatencyMs = watch.ElapsedMilliseconds };
         }
 
-        private static string GetVersion()
+        internal static string GetVersion()
         {
             var assembly = Assembly.GetEntryAssembly();
             var version = assembly?.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion

@@ -43,14 +43,16 @@ namespace Sanakan.Modules
         private ShindenClient _shClient;
         private Services.ImageProcessing _img;
         private Services.Heartbeat _heartbeat;
+        private Services.DiscordIngest _ingest;
         private Services.ScamImages.ScamImageScanner _scamImages;
 
         public Debug(Waifu waifu, ShindenClient shClient, Services.Helper helper, Services.ImageProcessing img,
             IConfig config, IExecutor executor, Spawn spawn, ISystemTime time, EmoteCounter counter, Services.Heartbeat heartbeat,
-            Services.ScamImages.ScamImageScanner scamImages)
+            Services.ScamImages.ScamImageScanner scamImages, Services.DiscordIngest ingest)
         {
             _scamImages = scamImages;
             _heartbeat = heartbeat;
+            _ingest = ingest;
             _shClient = shClient;
             _executor = executor;
             _eCounter = counter;
@@ -1515,6 +1517,148 @@ namespace Sanakan.Modules
 
             var ok = await _heartbeat.SendAsync();
             await SafeReplyAsync("", embed: (ok ? "Wysłano." : $"Nie udało się: `{_heartbeat.LastError}`").ToEmbedMessage(ok ? EMType.Success : EMType.Error).Build());
+        }
+
+        [Command("ingest"), Priority(1), RequireDev]
+        [Summary("wyświetla konfigurację i stan przekazywania wiadomości z wybranych kanałów na Shinden")]
+        [Remarks("")]
+        public async Task ShowIngestAsync()
+        {
+            var cfg = Config.Get().Ingest;
+            var lastSuccess = _ingest.LastSuccess;
+            var channels = cfg?.Channels?.Count > 0
+                ? string.Join(", ", cfg.Channels.Select(x => Context.Client.GetChannel(x) is SocketGuildChannel ch ? $"`#{ch.Name}` ({ch.Guild.Name})" : $"`{x}` (nie znaleziono)"))
+                : "`brak`";
+
+            var info = $"**Ingest:** `{(_ingest.Enabled ? "włączony" : "wyłączony")}`\n"
+                + $"**URL:** `{(string.IsNullOrWhiteSpace(cfg?.Url) ? "-" : cfg.Url)}`\n"
+                + $"**Sekret:** `{(string.IsNullOrEmpty(cfg?.Secret) ? "brak" : MaskKey(cfg.Secret))}`\n"
+                + $"**Kanały:** {channels}\n"
+                + $"**W kolejce:** `{_ingest.Queued}`\n"
+                + $"**Ostatnio wysłane:** {(lastSuccess.HasValue ? $"<t:{new DateTimeOffset(lastSuccess.Value).ToUnixTimeSeconds()}:R>" : "`jeszcze nie`")}"
+                + (_ingest.LastError != null ? $"\n**Ostatni błąd:** `{_ingest.LastError}`" : "");
+
+            await SafeReplyAsync("", embed: info.TrimToLength().ToEmbedMessage(_ingest.Failing ? EMType.Warning : EMType.Info).Build());
+        }
+
+        [Command("ingest url"), Priority(2), RequireDev]
+        [Summary("ustawia adres, na który bot przekazuje wiadomości (off - wyłącza)")]
+        [Remarks("https://shinden.pl/gosana/ingest/discord")]
+        public async Task SetIngestUrlAsync([Summary("adres albo off")] string url)
+        {
+            var config = Config.Get();
+            config.Ingest ??= new IngestConfig();
+
+            if (url.Equals("off", StringComparison.OrdinalIgnoreCase))
+            {
+                config.Ingest.Url = null;
+                Config.Save();
+                await SafeReplyAsync("", embed: "Ingest wyłączony.".ToEmbedMessage(EMType.Success).Build());
+                return;
+            }
+
+            if (!Uri.TryCreate(url, UriKind.Absolute, out var uri) || (uri.Scheme != Uri.UriSchemeHttps && uri.Scheme != Uri.UriSchemeHttp))
+            {
+                await SafeReplyAsync("", embed: "Podaj pełny adres http(s).".ToEmbedMessage(EMType.Error).Build());
+                return;
+            }
+
+            config.Ingest.Url = uri.ToString();
+            Config.Save();
+
+            await SafeReplyAsync("", embed: $"Ingest wysyła na `{uri}`.".ToEmbedMessage(EMType.Success).Build());
+        }
+
+        [Command("ingest secret"), Priority(2), RequireDev]
+        [Summary("ustawia sekret do podpisywania wiadomości; bez wartości generuje nowy i wysyła go na PW")]
+        [Remarks("")]
+        public async Task SetIngestSecretAsync([Summary("sekret (opcjonalnie, min. 48 znaków)")] string secret = null)
+        {
+            var generated = string.IsNullOrWhiteSpace(secret);
+            if (generated)
+            {
+                secret = Convert.ToHexString(System.Security.Cryptography.RandomNumberGenerator.GetBytes(32)).ToLowerInvariant();
+                try
+                {
+                    var dm = await Context.User.CreateDMChannelAsync();
+                    await dm.SendMessageAsync("", embed: $"Sekret ingestu (przekaż go Shindenowi prywatnie, poza Discordem):\n\n`{secret}`".ToEmbedMessage(EMType.Info).Build());
+                }
+                catch (Exception)
+                {
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} nie można wysłać do Ciebie PW, sekret nie został zmieniony!".ToEmbedMessage(EMType.Error).Build());
+                    return;
+                }
+            }
+            else
+            {
+                try { await Context.Message.DeleteAsync(); } catch (Exception) { }
+
+                if (secret.Length < 48)
+                {
+                    await SafeReplyAsync("", embed: "Sekret musi mieć co najmniej 48 znaków.".ToEmbedMessage(EMType.Error).Build());
+                    return;
+                }
+            }
+
+            var config = Config.Get();
+            config.Ingest ??= new IngestConfig();
+            config.Ingest.Secret = secret;
+            Config.Save();
+
+            await SafeReplyAsync("", embed: (generated ? "Ustawiono nowy sekret ingestu, poszedł na PW." : "Ustawiono sekret ingestu.").ToEmbedMessage(EMType.Success).Build());
+        }
+
+        [Command("ingest ch", RunMode = RunMode.Async), Priority(2), RequireDev]
+        [Summary("dodaje lub usuwa kanał (bieżący albo podany) z listy przekazywanych na Shinden")]
+        [Remarks("1565336313962565713")]
+        public async Task ToggleIngestChannelAsync([Summary("id kanału (opcjonalnie)")] ulong channelId = 0)
+        {
+            var id = channelId == 0 ? Context.Channel.Id : channelId;
+            var config = Config.Get();
+            config.Ingest ??= new IngestConfig();
+            var channels = config.Ingest.Channels ?? new List<ulong>();
+
+            // the list is replaced, not mutated, because the message handler reads it concurrently
+            if (channels.Contains(id))
+            {
+                config.Ingest.Channels = channels.Where(x => x != id).ToList();
+                Config.Save();
+                await SafeReplyAsync("", embed: $"Usunięto kanał `{id}` z ingestu.".ToEmbedMessage(EMType.Success).Build());
+                return;
+            }
+
+            if (Context.Client.GetChannel(id) is not SocketTextChannel channel || channel is SocketThreadChannel)
+            {
+                await SafeReplyAsync("", embed: "Nie znaleziono kanału tekstowego o tym id (wątki nie są obsługiwane).".ToEmbedMessage(EMType.Error).Build());
+                return;
+            }
+
+            config.Ingest.Channels = channels.Append(id).ToList();
+            Config.Save();
+
+            if (!_ingest.Enabled)
+            {
+                await SafeReplyAsync("", embed: $"Dodano `#{channel.Name}` do ingestu. Ingest jest wyłączony - ustaw `dev ingest url` i `dev ingest secret`.".ToEmbedMessage(EMType.Warning).Build());
+                return;
+            }
+
+            var queued = await _ingest.BackfillAsync(id);
+            await SafeReplyAsync("", embed: $"Dodano `#{channel.Name}` do ingestu, w kolejce {queued} ostatnich wiadomości.".ToEmbedMessage(EMType.Success).Build());
+        }
+
+        [Command("ingest resend", RunMode = RunMode.Async), Priority(2), RequireDev]
+        [Summary("wysyła ponownie ostatnie wiadomości ze wszystkich kanałów ingestu")]
+        [Remarks("")]
+        public async Task ResendIngestAsync()
+        {
+            if (!_ingest.Enabled)
+            {
+                await SafeReplyAsync("", embed: "Ingest jest wyłączony, ustaw `dev ingest url` i `dev ingest secret`.".ToEmbedMessage(EMType.Error).Build());
+                return;
+            }
+
+            var queued = await _ingest.BackfillAllAsync();
+            await SafeReplyAsync("", embed: $"W kolejce {queued} wiadomości, wynik w `dev ingest`.".ToEmbedMessage(EMType.Success).Build());
         }
 
         [Command("force clean", RunMode = RunMode.Async), Priority(1), RequireDev]

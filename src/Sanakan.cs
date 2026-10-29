@@ -37,6 +37,7 @@ namespace Sanakan
         private DeletedLog _deleted;
         private HealthMonitor _health;
         private Heartbeat _heartbeat;
+        private DiscordIngest _ingest;
         private Daemonizer _daemon;
         private Greeting _greeting;
         private ISystemTime _time;
@@ -78,6 +79,7 @@ namespace Sanakan
                 _config, _helper, _executor, _logger, _time, _tags, _expedition, _health);
 
             _heartbeat.Start();
+            _ingest.Start();
 
             await Task.Delay(-1);
         }
@@ -148,6 +150,7 @@ namespace Sanakan
 
             _health = new HealthMonitor(_client, _shindenClient, _config);
             _heartbeat = new Heartbeat(_health.GetAsync, _config, _logger);
+            _ingest = new DiscordIngest(_client, _config, _logger);
             _time = new SystemTime();
             _events = new Events(_time);
             _helper = new Helper(_config, _logger);
@@ -208,6 +211,7 @@ namespace Sanakan
                 .AddSingleton<IExecutor>(_executor)
                 .AddSingleton(_shindenClient)
                 .AddSingleton(_heartbeat)
+                .AddSingleton(_ingest)
                 .AddSingleton(_expedition)
                 .AddSingleton(_sessions)
                 .AddSingleton(_eCounter)
