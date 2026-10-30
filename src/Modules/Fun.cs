@@ -373,52 +373,5 @@ namespace Sanakan.Modules
                 await SafeReplyAsync("", embed: $"{Context.User.Mention} podarował {user.Mention} {newScCnt} SC".ToEmbedMessage(EMType.Success).Build());
             }
         }
-
-        [Command("zagadka", RunMode = RunMode.Async)]
-        [Alias("riddle")]
-        [Summary("wypisuje losową zagadkę i podaje odpowiedź po 15 sekundach")]
-        [Remarks(""), RequireCommandChannel]
-        public async Task ShowRiddleAsync()
-        {
-            var riddles = new List<Question>();
-            using (var db = new Database.DatabaseContext(Config))
-            {
-                riddles = await db.GetCachedAllQuestionsAsync();
-            }
-
-            riddles = riddles.Shuffle().ToList();
-            var riddle = riddles.FirstOrDefault();
-            if (riddle == null)
-            {
-                await SafeReplyAsync("", embed: $"{Context.User.Mention} brak dostępnych zagadek.".ToEmbedMessage(EMType.Error).Build());
-                return;
-            }
-
-            riddle.RandomizeAnswers();
-            var msg = await SafeReplyAsync(riddle.Get());
-            await msg.AddReactionsAsync(riddle.GetEmotes());
-
-            await Task.Delay(15000);
-
-            int answers = 0;
-            var react = await msg.GetReactionUsersAsync(riddle.GetRightEmote(), 100).FlattenAsync();
-            foreach (var addR in riddle.GetEmotes())
-            {
-                var re = await msg.GetReactionUsersAsync(addR, 100).FlattenAsync();
-                if (re.Any(x => x.Id == Context.User.Id)) answers++;
-            }
-
-            await msg.RemoveAllReactionsAsync();
-
-            if (react.Any(x => x.Id == Context.User.Id) && answers < 2)
-            {
-                await SafeReplyAsync("", false, $"{Context.User.Mention} zgadłeś!".ToEmbedMessage(EMType.Success).Build());
-            }
-            else if (answers > 1)
-            {
-                await SafeReplyAsync("", false, $"{Context.User.Mention} wybrałeś więcej niż jedną odpowiedź!".ToEmbedMessage(EMType.Error).Build());
-            }
-            else await SafeReplyAsync("", false, $"{Context.User.Mention} pudło!".ToEmbedMessage(EMType.Error).Build());
-        }
     }
 }

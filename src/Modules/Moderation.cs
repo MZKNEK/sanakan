@@ -1150,29 +1150,6 @@ namespace Sanakan.Modules
             await SafeReplyAsync("", embed: $"Ustawiono `{Context.Channel.Name}` jako kanał raportów.".ToEmbedMessage(EMType.Success).Build());
         }
 
-        [Command("quizch")]
-        [Summary("ustawia kanał quizów")]
-        [Remarks(""), RequireAdminRole]
-        public async Task SetQuizChannelAsync()
-        {
-            using (var db = new Database.DatabaseContext(Config))
-            {
-                var config = await db.GetGuildConfigOrCreateAsync(Context.Guild.Id);
-                if (config.QuizChannel == Context.Channel.Id)
-                {
-                    await SafeReplyAsync("", embed: $"Kanał `{Context.Channel.Name}` już jest ustawiony jako kanał quizów.".ToEmbedMessage(EMType.Bot).Build());
-                    return;
-                }
-
-                config.QuizChannel = Context.Channel.Id;
-                await db.SaveChangesAsync();
-
-                QueryCacheManager.ExpireTag(new string[] { CacheTags.Guild(Context.Guild.Id) });
-            }
-
-            await SafeReplyAsync("", embed: $"Ustawiono `{Context.Channel.Name}` jako kanał quizów.".ToEmbedMessage(EMType.Success).Build());
-        }
-
         [Command("todoch")]
         [Summary("ustawia kanał todo")]
         [Remarks(""), RequireAdminRole]

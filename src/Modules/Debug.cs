@@ -1060,51 +1060,6 @@ namespace Sanakan.Modules
             }
         }
 
-        [Command("delq"), Priority(1), RequireDev]
-        [Summary("kasuje zagadkę o podanym id")]
-        [Remarks("20")]
-        public async Task RemoveQuizAsync([Summary("id zagadki")]ulong id)
-        {
-            using (var db = new Database.DatabaseContext(Config))
-            {
-                var question = db.Questions.FirstOrDefault(x => x.Id == id);
-                if (question == null)
-                {
-                    await SafeReplyAsync("", embed: $"Zagadka o ID: `{id}` nie istnieje!".ToEmbedMessage(EMType.Error).Build());
-                    return;
-                }
-
-                db.Questions.Remove(question);
-                await db.SaveChangesAsync();
-
-                QueryCacheManager.ExpireTag(new string[] { CacheTags.Quiz });
-                await SafeReplyAsync("", embed: $"Zagadka o ID: `{id}` została skasowana!".ToEmbedMessage(EMType.Success).Build());
-            }
-        }
-
-        [Command("addq"), Priority(1), RequireDev]
-        [Summary("dodaje nową zagadkę")]
-        [Remarks("{...}")]
-        public async Task AddNewQuizAsync([Summary("zagadka w formie jsona")][Remainder]string json)
-        {
-            try
-            {
-                var question = JsonConvert.DeserializeObject<Question>(json);
-                using (var db = new Database.DatabaseContext(Config))
-                {
-                    db.Questions.Add(question);
-                    await db.SaveChangesAsync();
-
-                    QueryCacheManager.ExpireTag(new string[] { CacheTags.Quiz });
-                    await SafeReplyAsync("", embed: $"Nowa zagadka dodana, jej ID to: `{question.Id}`".ToEmbedMessage(EMType.Success).Build());
-                }
-            }
-            catch (Exception)
-            {
-                await SafeReplyAsync("", embed: $"Coś poszło nie tak przy parsowaniu jsona!".ToEmbedMessage(EMType.Error).Build());
-            }
-        }
-
         [Command("shuri"), Priority(1), RequireDev]
         [Summary("ustawia bazowe uri do api shindena")]
         [Remarks("")]

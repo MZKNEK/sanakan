@@ -42,8 +42,6 @@ namespace Sanakan.Database
         public DbSet<BoosterPackCharacter> BoosterPackCharacters { get; set; }
         public DbSet<WishlistObject> Wishes { get; set; }
         public DbSet<Figure> Figures { get; set; }
-        public DbSet<Question> Questions { get; set; }
-        public DbSet<Answer> Answers { get; set; }
         public DbSet<RarityExcluded> RaritysExcludedFromPacks { get; set; }
         public DbSet<SelfRole> SelfRoles { get; set; }
         public DbSet<GuildOptions> Guilds { get; set; }
@@ -89,19 +87,6 @@ namespace Sanakan.Database
             base.OnModelCreating(modelBuilder);
 
             // User
-            modelBuilder.Entity<Question>(entity =>
-            {
-                entity.HasKey(e => e.Id);
-            });
-
-            modelBuilder.Entity<Answer>(entity =>
-            {
-                entity.HasKey(e => e.Id);
-
-                entity.HasOne(e => e.Question)
-                    .WithMany(u => u.Answers);
-            });
-
             modelBuilder.Entity<User>(entity =>
             {
                 entity.HasKey(e => e.Id);

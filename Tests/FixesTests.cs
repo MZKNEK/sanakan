@@ -354,28 +354,6 @@ namespace Artifacts
         }
     }
 
-    public class QuizQueryTests
-    {
-        [Fact]
-        public void QuestionWithAnswers_IsValidQuery()
-        {
-            var config = new FakeConfig();
-            config.Model.ConnectionString = "Server=127.0.0.1;Database=test;Uid=test;Pwd=test;";
-
-            using var db = new Sanakan.Database.DatabaseContext(config);
-            var sql = db.Questions.Include(x => x.Answers).Where(x => x.Id == 1).ToQueryString();
-
-            Assert.Contains("Answers", sql);
-        }
-
-        [Fact]
-        public void QuizController_DoesNotIncludeScalarAnswer()
-        {
-            var source = File.ReadAllText(Path.Combine(RepoPaths.Src, "Api", "Controllers", "QuizController.cs"));
-            Assert.DoesNotMatch(new Regex(@"Include\(x => x\.Answer\)"), source);
-        }
-    }
-
     public class UpgradeSacrificeTests
     {
         private static Card Target() => new Card { Id = 1, Tags = new List<Tag>() };

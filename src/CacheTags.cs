@@ -7,7 +7,6 @@ namespace Sanakan
     public static class CacheTags
     {
         public const string Mute = "mute";
-        public const string Quiz = "quiz";
         public const string UltimateCards = "ultimate-cards";
         public const string UniqueCards = "unique-cards";
 

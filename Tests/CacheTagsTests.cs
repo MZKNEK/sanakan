@@ -23,7 +23,6 @@ namespace Artifacts
         public void Constants_HaveExpectedValues()
         {
             Assert.Equal("mute", CacheTags.Mute);
-            Assert.Equal("quiz", CacheTags.Quiz);
             Assert.Equal("ultimate-cards", CacheTags.UltimateCards);
             Assert.Equal("unique-cards", CacheTags.UniqueCards);
         }

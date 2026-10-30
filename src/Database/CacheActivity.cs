@@ -15,7 +15,7 @@ namespace Sanakan.Database
 {
     // Centralne unieważnianie cache na podstawie faktycznie zmienionych encji (ChangeTracker),
     // zamiast ręcznych ExpireTag w każdym miejscu. Ręczne wywołania mogą zostać jako wsparcie.
-    // Tagi: user-{id}, character-{id}, config-{id}, user-profile-{shinden}, mute/quiz
+    // Tagi: user-{id}, character-{id}, config-{id}, user-profile-{shinden}, mute
     // oraz ultimate-cards/unique-cards (unieważniane tylko przy zmianach strukturalnych).
     public static class CacheActivity
     {
@@ -88,7 +88,6 @@ namespace Sanakan.Database
                 var packIds = new HashSet<ulong>();
                 var userProfiles = new HashSet<ulong>();
                 var mute = false;
-                var quiz = false;
                 var ultimateCards = false;
                 var uniqueCards = false;
 
@@ -152,9 +151,6 @@ namespace Sanakan.Database
                         case PenaltyInfo _: mute = true; break;
                         case MuteModifier _: mute = true; break;
                         case OwnedRole _: mute = true; break;
-
-                        case Question _: quiz = true; break;
-                        case Answer _: quiz = true; break;
 
                         case GuildOptions guild: guilds.Add(guild.Id); break;
                         case Waifu waifu: guilds.Add(waifu.GuildOptionsId); break;
@@ -228,7 +224,6 @@ namespace Sanakan.Database
                 tags.AddRange(guilds.Select(CacheTags.Guild));
                 tags.AddRange(userProfiles.Select(CacheTags.UserProfile));
                 if (mute) tags.Add(CacheTags.Mute);
-                if (quiz) tags.Add(CacheTags.Quiz);
                 if (ultimateCards) tags.Add(CacheTags.UltimateCards);
                 if (uniqueCards) tags.Add(CacheTags.UniqueCards);
 

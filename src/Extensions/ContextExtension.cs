@@ -224,16 +224,6 @@ namespace Sanakan.Extensions
                 .Include(x => x.GameDeck).ThenInclude(x => x.Figures).AsNoTracking().AsSplitQuery().FirstOrDefaultAsync(x => x.Id == userId);
         }
 
-        public static async Task<List<Question>> GetCachedAllQuestionsAsync(this Database.DatabaseContext context)
-        {
-            return (await context.Questions.AsQueryable().Include(x => x.Answers).AsNoTracking().AsSplitQuery().FromCacheAsync(new string[] { CacheTags.Quiz })).ToList();
-        }
-
-        public static async Task<Question> GetCachedQuestionAsync(this Database.DatabaseContext context, ulong id)
-        {
-            return (await context.Questions.AsQueryable().Where(x => x.Id == id).Include(x => x.Answers).AsNoTracking().AsSplitQuery().FromCacheAsync(new string[] { CacheTags.Quiz })).FirstOrDefault();
-        }
-
         public static async Task<int> RecalculateWishlistCountsAsync(this Database.DatabaseContext context, DateTime now)
         {
             var counts = await context.WishlistCountData.ToListAsync();

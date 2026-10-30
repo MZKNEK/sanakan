@@ -17,7 +17,6 @@ namespace Sanakan.Database.Models.Configuration
         public ulong WaifuRole { get; set; }
         public ulong NotificationChannel { get; set; }
         public ulong RaportChannel { get; set; }
-        public ulong QuizChannel { get; set; }
         public ulong ToDoChannel { get; set; }
         public ulong NsfwChannel { get; set; }
         public ulong LogChannel { get; set; }

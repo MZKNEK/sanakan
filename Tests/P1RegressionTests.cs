@@ -54,45 +54,6 @@ namespace Artifacts
         }
     }
 
-    public class QuestionRobustnessTests
-    {
-        [Fact]
-        public void RandomizeAnswers_KeepsCorrectAnswerMapping()
-        {
-            var q = new Question
-            {
-                Answer = 2,
-                Answers = new List<Answer>
-                {
-                    new Answer { Number = 1, Content = "a" },
-                    new Answer { Number = 2, Content = "b" },
-                    new Answer { Number = 3, Content = "c" },
-                },
-            };
-
-            q.RandomizeAnswers();
-
-            Assert.Equal("b", q.Answers.First(x => x.Number == q.Answer).Content);
-        }
-
-        [Fact]
-        public void RandomizeAnswers_EmptyAnswers_DoesNotThrow()
-        {
-            var q = new Question { Answer = 1, Answers = new List<Answer>() };
-            q.RandomizeAnswers();
-        }
-
-        [Fact]
-        public void GetRightAnswer_MissingAnswer_DoesNotThrow()
-        {
-            var q = new Question { Answer = 5, Answers = new List<Answer>() };
-
-            var result = q.GetRightAnswer();
-
-            Assert.Contains("?", result);
-        }
-    }
-
     public class ExpeditionAffectionGateTests
     {
         private static Expedition Exp() => new Expedition(new FixedTime());

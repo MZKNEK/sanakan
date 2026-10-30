@@ -52,13 +52,6 @@ namespace Artifacts
             return list.Count();
         }
 
-        private static async Task<int> CachedQuestionCountAsync(string db)
-        {
-            using var ctx = await OpenAsync(db);
-            var list = await ctx.Questions.AsQueryable().AsNoTracking().FromCacheAsync(new[] { CacheTags.Quiz });
-            return list.Count();
-        }
-
         private static async Task<int> CachedPenaltyCountAsync(string db)
         {
             using var ctx = await OpenAsync(db);
@@ -147,26 +140,6 @@ namespace Artifacts
 
             // brak unieważnienia -> cache nadal zwraca stary stan
             Assert.Equal(1, await CachedCardCountAsync(db, byCharacter, CacheTags.Character(character)));
-        }
-
-        [Fact]
-        public async Task QuizCache_IsInvalidatedWhenQuestionAdded()
-        {
-            var db = NewDb();
-
-            using (var ctx = await OpenAsync(db))
-            {
-                ctx.Questions.Add(new Question { Id = 1 });
-                await ctx.SaveChangesAsync();
-            }
-            Assert.Equal(1, await CachedQuestionCountAsync(db));
-
-            using (var ctx = await OpenAsync(db))
-            {
-                ctx.Questions.Add(new Question { Id = 2 });
-                await ctx.SaveChangesAsync();
-            }
-            Assert.Equal(2, await CachedQuestionCountAsync(db));
         }
 
         [Fact]
