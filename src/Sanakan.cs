@@ -72,13 +72,13 @@ namespace Sanakan
             await _client.SetGameAsync(tmpCnf.Prefix + "pomoc");
             await _client.StartAsync();
 
-            var services = BuildServiceProvider();
+            var serviceCollection = CreateServices();
+            var services = serviceCollection.BuildServiceProvider();
             _executor.Initialize(services);
             _sessions.Initialize(services);
             await _handler.InitializeAsync(services, _helper);
 
-            BotWebHost.RunWebHost(_client, _shindenClient, _waifu,
-                _config, _helper, _executor, _logger, _time, _tags, _expedition, _health);
+            await BotWebHost.StartAsync(_config, serviceCollection, _logger);
 
             _heartbeat.Start();
             _ingest.Start();
@@ -216,12 +216,13 @@ namespace Sanakan
             };
         }
 
-        private IServiceProvider BuildServiceProvider()
+        private IServiceCollection CreateServices()
         {
             return new ServiceCollection()
                 .AddSingleton<IExecutor>(_executor)
                 .AddSingleton(_shindenClient)
                 .AddSingleton(_heartbeat)
+                .AddSingleton(_health)
                 .AddSingleton(_ingest)
                 .AddSingleton(_expedition)
                 .AddSingleton(_sessions)
@@ -244,8 +245,7 @@ namespace Sanakan
                 .AddSingleton(_scamImages)
                 .AddSingleton<Services.Fun>()
                 .AddSingleton<Services.LandManager>()
-                .AddSingleton<Services.PocketWaifu.Lottery>()
-                .BuildServiceProvider();
+                .AddSingleton<Services.PocketWaifu.Lottery>();
         }
     }
 }

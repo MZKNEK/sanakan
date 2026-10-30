@@ -4,7 +4,6 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using System.Threading;
 using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.AspNetCore.HttpOverrides;
 using System.IO;
@@ -12,18 +11,14 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using System.Text;
 using System.Security.Cryptography;
 using Sanakan.Config;
-using Sanakan.Services.Executor;
-using Discord.WebSocket;
-using Shinden;
-using Sanakan.Services.PocketWaifu;
 using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Serialization;
 using Microsoft.OpenApi.Models;
-using Sanakan.Services.Time;
 using Asp.Versioning;
 using System;
 using System.Collections.Generic;
@@ -38,38 +33,61 @@ namespace Sanakan.Api
         private const int MinJwtKeyBytes = 32;
         public const int MinAppKeyLength = 32;
 
-        private static IWebHost _host;
+#if DEBUG
+        public const string Url = "http://*:5005";
+#else
+        public const string Url = "http://localhost:5000";
+#endif
 
-        public static void RunWebHost(DiscordSocketClient client, ShindenClient shinden, Waifu waifu, IConfig config, Services.Helper helper,
-            IExecutor executor, Shinden.Logger.ILogger logger, ISystemTime time, TagHelper tags, Expedition expedition, HealthMonitor health)
+        private static IHost _host;
+
+        public static async Task StartAsync(IConfig config, IServiceCollection botServices, Shinden.Logger.ILogger logger)
         {
-            var host = CreateWebHostBuilder(config).ConfigureServices(services =>
+            var host = CreateHost(config, botServices, Url);
+            try
             {
-                services.AddSingleton(tags);
-                services.AddSingleton(time);
-                services.AddSingleton(waifu);
-                services.AddSingleton(logger);
-                services.AddSingleton(client);
-                services.AddSingleton(helper);
-                services.AddSingleton(shinden);
-                services.AddSingleton(executor);
-                services.AddSingleton(expedition);
-                services.AddSingleton(health);
-            }).Build();
+                await host.StartAsync();
+            }
+            catch (Exception ex)
+            {
+                logger.LogError($"API nie wystartowało: {ex}");
+                Environment.Exit(1);
+            }
 
             _host = host;
-            new Thread(() =>
+        }
+
+        public static IHost CreateHost(IConfig config, IServiceCollection botServices, string url) =>
+            Host.CreateDefaultBuilder()
+            .ConfigureLogging(logging =>
             {
-                try
+                logging.ClearProviders();
+                logging.AddSimpleConsole(x => x.ColorBehavior = Microsoft.Extensions.Logging.Console.LoggerColorBehavior.Disabled);
+                logging.SetMinimumLevel(LogLevel.Warning);
+            })
+            .ConfigureWebHostDefaults(web => web
+                .ConfigureServices(services =>
                 {
-                    host.Run();
-                }
-                catch (Exception ex)
-                {
-                    logger.LogError($"API przestało działać: {ex}");
-                    Environment.Exit(1);
-                }
-            }) { IsBackground = true }.Start();
+                    AddApiServices(services, config);
+                    AddBotInstances(services, botServices);
+                    // the bot handles Ctrl+C and stops the API itself
+                    services.AddSingleton<IHostLifetime, BotLifetime>();
+                })
+                .Configure(UseApi)
+                .UseUrls(url))
+            .Build();
+
+        // only ready instances are shared; type registrations would create a second copy in the API container
+        public static void AddBotInstances(IServiceCollection services, IServiceCollection botServices)
+        {
+            foreach (var service in botServices.Where(x => x.ImplementationInstance != null))
+                services.Add(service);
+        }
+
+        private sealed class BotLifetime : IHostLifetime
+        {
+            public Task WaitForStartAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+            public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
         }
 
         public static void ValidateConfig(ConfigModel config)
@@ -101,21 +119,6 @@ namespace Sanakan.Api
             }
             catch (OperationCanceledException) { }
         }
-
-        private static IWebHostBuilder CreateWebHostBuilder(IConfig config) =>
-            WebHost.CreateDefaultBuilder().ConfigureServices(services => AddApiServices(services, config))
-            .ConfigureLogging(logging =>
-            {
-                logging.ClearProviders();
-                logging.AddSimpleConsole(x => x.ColorBehavior = Microsoft.Extensions.Logging.Console.LoggerColorBehavior.Disabled);
-                logging.SetMinimumLevel(LogLevel.Warning);
-            })
-            .Configure(UseApi)
-#if !DEBUG
-            ;
-#else
-            .UseUrls("http://*:5005");
-#endif
 
         public static void AddApiServices(IServiceCollection services, IConfig config)
         {
