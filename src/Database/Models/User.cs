@@ -94,6 +94,7 @@ namespace Sanakan.Database.Models
         public string CustomProfileOverlayUrl { get; set; }
         public string PremiumCustomProfileOverlayUrl { get; set; }
         public float ProfileShadowsOpacity { get; set; }
+        public DateTime? LeftAt { get; set; }
 
         public virtual UserStats Stats { get; set; }
         public virtual GameDeck GameDeck { get; set; }

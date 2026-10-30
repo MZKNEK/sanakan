@@ -1019,27 +1019,7 @@ namespace Sanakan.Modules
         {
             using (var db = new Database.DatabaseContext(Config))
             {
-                var fakeu = await db.GetUserOrCreateAsync(1);
-                var user = await db.GetUserOrCreateAsync(id);
-
-                if (!cards)
-                {
-                    foreach (var card in user.GameDeck.Cards)
-                    {
-                        card.InCage = false;
-                        card.Tags.Clear();
-                        card.LastIdOwner = id;
-                        card.GameDeckId = fakeu.GameDeck.Id;
-                    }
-                }
-
-                if (!user.GameDeck.WishlistIsPrivate)
-                    await db.ChangeWishlistCountsAsync(user.GameDeck.Wishes, -1);
-
-                db.Users.Remove(user);
-                await db.SaveChangesAsync();
-
-                QueryCacheManager.ExpireTag(new string[] { CacheTags.User(id) });
+                await db.RemoveUserAsync(id, cards);
             }
 
             await SafeReplyAsync("", embed: $"Użytkownik o id: `{id}` został wymazany.".ToEmbedMessage(EMType.Success).Build());

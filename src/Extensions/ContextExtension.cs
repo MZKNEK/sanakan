@@ -145,6 +145,65 @@ namespace Sanakan.Extensions
             return user;
         }
 
+        public static async Task RemoveUserAsync(this Database.DatabaseContext context, ulong userId, bool removeCards = false)
+        {
+            var fakeu = await context.GetUserOrCreateAsync(1);
+            var user = await context.GetUserOrCreateAsync(userId);
+
+            if (!removeCards)
+            {
+                foreach (var card in user.GameDeck.Cards)
+                {
+                    card.InCage = false;
+                    card.Tags.Clear();
+                    card.LastIdOwner = userId;
+                    card.GameDeckId = fakeu.GameDeck.Id;
+                }
+            }
+
+            if (!user.GameDeck.WishlistIsPrivate)
+                await context.ChangeWishlistCountsAsync(user.GameDeck.Wishes, -1);
+
+            context.Users.Remove(user);
+            await context.SaveChangesAsync();
+
+            QueryCacheManager.ExpireTag(new string[] { CacheTags.User(userId) });
+        }
+
+        public static async Task MarkUserLeftAsync(this Database.DatabaseContext context, ulong userId, DateTime now)
+        {
+            var user = await context.Users.AsQueryable().FirstOrDefaultAsync(x => x.Id == userId);
+            if (user == null) return;
+
+            user.LeftAt = now;
+            await context.SaveChangesAsync();
+        }
+
+        public static async Task<bool> ClearUserLeftAsync(this Database.DatabaseContext context, ulong userId)
+        {
+            var user = await context.Users.AsQueryable().FirstOrDefaultAsync(x => x.Id == userId && x.LeftAt != null);
+            if (user == null) return false;
+
+            user.LeftAt = null;
+            await context.SaveChangesAsync();
+            return true;
+        }
+
+        public static Task<List<ulong>> GetUsersLeftBeforeAsync(this Database.DatabaseContext context, DateTime cutoff)
+        {
+            return context.Users.AsQueryable().AsNoTracking().Where(x => x.LeftAt != null && x.LeftAt <= cutoff).Select(x => x.Id).ToListAsync();
+        }
+
+        // checked again right before removal, the user could have come back since the scan
+        public static async Task<bool> RemoveUserLeftBeforeAsync(this Database.DatabaseContext context, ulong userId, DateTime cutoff)
+        {
+            if (!await context.Users.AsQueryable().AnyAsync(x => x.Id == userId && x.LeftAt != null && x.LeftAt <= cutoff))
+                return false;
+
+            await context.RemoveUserAsync(userId);
+            return true;
+        }
+
         public static async Task<bool> IsUserMutedOnGuildAsync(this Database.DatabaseContext context, ulong userId, ulong guildId)
         {
             return await context.Penalties.AsQueryable().AsNoTracking().AnyAsync(x => x.User == userId && x.Guild == guildId && x.Type == PenaltyType.Mute);

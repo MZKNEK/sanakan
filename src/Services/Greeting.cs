@@ -1,7 +1,9 @@
 ﻿#pragma warning disable 1591
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Discord;
 using Discord.WebSocket;
@@ -22,6 +24,10 @@ namespace Sanakan.Services
         private ISystemTime _time { get; set; }
         private ILogger _logger { get; set; }
         private IConfig _config { get; set; }
+        private Timer _cleanupTimer;
+
+        public static readonly TimeSpan LeftUserGracePeriod = TimeSpan.FromDays(30);
+        private static readonly TimeSpan CleanupAt = TimeSpan.FromHours(5);
 
         public Greeting(DiscordSocketClient client, ILogger logger, IConfig config, IExecutor exe, ISystemTime time)
         {
@@ -36,6 +42,7 @@ namespace Sanakan.Services
             _client.UserJoined += UserJoinedAsync;
             _client.UserBanned += UserBannedAsync;
             _client.UserLeft += UserLeftAsync;
+            _cleanupTimer = new Timer(_ => _ = RemoveLeftUsersAsync(), null, UntilNextCleanup(time.Now()), Timeout.InfiniteTimeSpan);
 #endif
         }
 
@@ -100,6 +107,18 @@ namespace Sanakan.Services
         {
             if (user.IsBot || user.IsWebhook) return;
 
+            try
+            {
+                using (var db = new Database.DatabaseContext(_config))
+                {
+                    await db.ClearUserLeftAsync(user.Id);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"In user join u{user.Id}: {ex}");
+            }
+
             if (_config.Get().BlacklistedGuilds.Any(x => x == user.Guild.Id))
                 return;
 
@@ -153,41 +172,79 @@ namespace Sanakan.Services
             if (await IsStillOnAnyGuildAsync(guild.Id, user.Id))
                 return;
 
-            var moveTask = new Func<Task>(async () =>
+            try
             {
-                try
+                using (var db = new Database.DatabaseContext(_config))
                 {
-                    using (var db = new Database.DatabaseContext(_config))
+                    await db.MarkUserLeftAsync(user.Id, _time.Now());
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("In user leave:" + ex.ToString());
+                await SendMessageAsync($"**ERR:** `{user.Id}` {guild.GetRole(adminRoleId)?.Mention}", guild.GetTextChannel(channelId));
+            }
+        }
+
+        private async Task RemoveLeftUsersAsync()
+        {
+            try
+            {
+                // without a full guild list everyone would look absent
+                if (_client.ConnectionState != ConnectionState.Connected || _client.Guilds.Count == 0)
+                    return;
+
+                var cutoff = _time.Now() - LeftUserGracePeriod;
+                List<ulong> users;
+                using (var db = new Database.DatabaseContext(_config))
+                {
+                    users = await db.GetUsersLeftBeforeAsync(cutoff);
+                }
+
+                foreach (var userId in users)
+                {
+                    if (await IsStillOnAnyGuildAsync(0, userId))
                     {
-                        var duser = await db.GetUserOrCreateAsync(user.Id);
-                        var fakeu = await db.GetUserOrCreateAsync(1);
-
-                        foreach (var card in duser.GameDeck.Cards)
+                        using (var db = new Database.DatabaseContext(_config))
                         {
-                            card.InCage = false;
-                            card.Tags.Clear();
-                            card.LastIdOwner = user.Id;
-                            card.GameDeckId = fakeu.GameDeck.Id;
+                            await db.ClearUserLeftAsync(userId);
                         }
-
-                        if (!duser.GameDeck.WishlistIsPrivate)
-                            await db.ChangeWishlistCountsAsync(duser.GameDeck.Wishes, -1);
-
-                        db.Users.Remove(duser);
-
-                        await db.SaveChangesAsync();
-
-                        QueryCacheManager.ExpireTag(new string[] { CacheTags.User(user.Id) });
+                        continue;
                     }
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError("In user leave:" + ex.ToString());
-                    await SendMessageAsync($"**ERR:** `{user.Id}` {guild.GetRole(adminRoleId)?.Mention}", guild.GetTextChannel(channelId));
-                }
-            });
 
-            await _executor.TryAdd(new Executable("delete user", moveTask, user.Id, Priority.High), TimeSpan.FromSeconds(1));
+                    var removeTask = new Func<Task>(async () =>
+                    {
+                        try
+                        {
+                            using (var db = new Database.DatabaseContext(_config))
+                            {
+                                await db.RemoveUserLeftBeforeAsync(userId, cutoff);
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogError($"In left user removal u{userId}: {ex}");
+                        }
+                    });
+
+                    await _executor.TryAdd(new Executable("delete user", removeTask, userId, Priority.High), TimeSpan.FromSeconds(1));
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"In left users cleanup: {ex}");
+            }
+            finally
+            {
+                _cleanupTimer.Change(UntilNextCleanup(_time.Now()), Timeout.InfiniteTimeSpan);
+            }
+        }
+
+        public static TimeSpan UntilNextCleanup(DateTime now)
+        {
+            var next = now.Date + CleanupAt;
+            if (next <= now) next = next.AddDays(1);
+            return next - now;
         }
 
         private async Task<bool> IsStillOnAnyGuildAsync(ulong leftGuildId, ulong userId)
