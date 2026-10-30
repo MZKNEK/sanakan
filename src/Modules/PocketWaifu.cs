@@ -1894,6 +1894,7 @@ namespace Sanakan.Modules
         [Remarks("karta 4212 1234"), RequireWaifuCommandChannel]
         public async Task AddToWishlistAsync([Summary("typ (p - postać, t - tytuł)")] WishlistObjectType type, [Summary("IDs/WIDs")] params ulong[] ids)
         {
+            ids = ids.Distinct().ToArray();
             try
             {
                 using (var db = new Database.DatabaseContext(Config))
@@ -2091,6 +2092,96 @@ namespace Sanakan.Modules
 
                 string response = (!view) ? $"ukrył" : $"udostępnił";
                 await SafeReplyAsync("", embed: $"{Context.User.Mention} {response} swoją listę życzeń!".ToEmbedMessage(EMType.Success).Build());
+            }
+        }
+
+        [Command("życzenia napraw", RunMode = RunMode.Async)]
+        [Alias("wishlist fix", "zyczenia napraw", "wlfix")]
+        [Summary("usuwa z listy życzeń duplikaty oraz pozycje, które nie istnieją już na Shindenie")]
+        [Remarks(""), RequireWaifuCommandChannel, DelayNextUseBy(24 * 60, DelayNextUseBy.ResType.HourMin)]
+        public async Task FixWishlistAsync()
+        {
+            List<WishlistObject> wishes;
+            HashSet<ulong> existingCards;
+            using (var db = new Database.DatabaseContext(Config))
+            {
+                wishes = await db.Wishes.AsQueryable().AsNoTracking().Where(x => x.GameDeckId == Context.User.Id).ToListAsync();
+
+                var cardIds = wishes.Where(x => x.Type == WishlistObjectType.Card).Select(x => x.ObjectId).Distinct().ToList();
+                existingCards = (await db.Cards.AsQueryable().AsNoTracking().Where(x => cardIds.Contains(x.Id)).Select(x => x.Id).ToListAsync()).ToHashSet();
+            }
+
+            if (wishes.Count < 1)
+            {
+                await SafeReplyAsync("", embed: $"{Context.User.Mention} twoja lista życzeń jest pusta.".ToEmbedMessage(EMType.Info).Build());
+                return;
+            }
+
+            var duplicates = WishlistCleanup.Duplicates(wishes);
+            var duplicateIds = duplicates.Select(x => x.Id).ToHashSet();
+            var (missing, unknown) = await WishlistCleanup.FindMissingAsync(wishes.Where(x => !duplicateIds.Contains(x.Id)),
+                wish => CheckWishOnShindenAsync(wish, existingCards));
+
+            var toRemove = duplicateIds.Concat(missing.Select(x => x.Id)).ToHashSet();
+            int removedDuplicates = 0, removedMissing = 0;
+            if (toRemove.Count > 0)
+            {
+                using (var db = new Database.DatabaseContext(Config))
+                {
+                    var bUser = await db.GetUserOrCreateSimpleAsync(Context.User.Id);
+                    var removed = bUser.GameDeck.Wishes.Where(x => toRemove.Contains(x.Id)).ToList();
+
+                    if (!bUser.GameDeck.WishlistIsPrivate)
+                        await db.ChangeWishlistCountsAsync(removed, -1);
+
+                    foreach (var wish in removed)
+                        bUser.GameDeck.Wishes.Remove(wish);
+
+                    await db.SaveChangesAsync();
+
+                    QueryCacheManager.ExpireTag(new string[] { CacheTags.User(bUser.Id) });
+
+                    removedDuplicates = removed.Count(x => duplicateIds.Contains(x.Id));
+                    removedMissing = removed.Count - removedDuplicates;
+                }
+            }
+
+            var response = $"{Context.User.Mention} usunięto z listy życzeń duplikaty: **{removedDuplicates}** oraz nieistniejące pozycje: **{removedMissing}**.";
+            if (removedMissing > 0)
+            {
+                var names = missing.Take(15).Select(x => $"\n- {x.ObjectName ?? x.ObjectId.ToString()} ({x.ObjectId})");
+                response += string.Join("", names);
+                if (missing.Count > 15) response += $"\n- ...i {missing.Count - 15} więcej";
+            }
+            if (unknown > 0)
+                response += $"\n\nNie udało się sprawdzić **{unknown}** pozycji (brak połączenia z Shindenem), spróbuj ponownie jutro.";
+
+            await SafeReplyAsync("", embed: response.ToEmbedMessage(unknown > 0 ? EMType.Warning : EMType.Success).Build());
+        }
+
+        private async Task<WishCheck> CheckWishOnShindenAsync(WishlistObject wish, HashSet<ulong> existingCards)
+        {
+            switch (wish.Type)
+            {
+                case WishlistObjectType.Card:
+                    return existingCards.Contains(wish.ObjectId) ? WishCheck.Exists : WishCheck.Missing;
+
+                case WishlistObjectType.Title:
+                {
+                    var res = await _shclient.Title.GetInfoAsync(wish.ObjectId);
+                    if (res.IsSuccessStatusCode()) return WishCheck.Exists;
+                    return res.Code == System.Net.HttpStatusCode.NotFound ? WishCheck.Missing : WishCheck.Unknown;
+                }
+
+                case WishlistObjectType.Character:
+                {
+                    var res = await _shclient.GetCharacterInfoAsync(wish.ObjectId);
+                    if (res.IsSuccessStatusCode()) return WishCheck.Exists;
+                    return res.Code == System.Net.HttpStatusCode.NotFound ? WishCheck.Missing : WishCheck.Unknown;
+                }
+
+                default:
+                    return WishCheck.Unknown;
             }
         }
 
