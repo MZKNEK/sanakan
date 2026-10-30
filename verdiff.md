@@ -1,6 +1,14 @@
-# 1.4.10.29
+# 1.4.10.30
 
 Data: 2026-10-30
 
-- Dodano przyznawanie kart z nagród na Shindenie bezpośrednio do talii, tak że przy problemach z połączeniem karty nie zostaną dodane dwa razy ani nie przepadną, a strona i tak pokaże wylosowane karty ... prosił @laudemort
-- Naprawiono błąd, przez który przy problemach z połączeniem z Shindenem gracz mógł dostać mniej kart z pakietu otwieranego przez stronę.
+- Naprawiono błąd, przez który przy przeglądaniu kart gracza na stronie część kart mogła się powtarzać na kolejnych stronach albo nie pojawić się wcale.
+- Przyspieszono otwieranie i odbieranie pakietów przez stronę u graczy z dużą kolekcją kart.
+
+## Techniczne
+
+- Naprawiono możliwość zapchania pamięci bota przez masowe wyszukiwanie kart ultimate i unikatowych na stronie.
+- Przyspieszono obsługę zapytań ze strony dzięki mniejszemu blokowaniu bota przy pracy z bazą danych.
+- Dodano zapisywanie w logach nieoczekiwanych błędów w komunikacji ze stroną, a strona dostaje wtedy czytelną odpowiedź.
+- Dodano ostrzeżenie przy starcie bota o zbyt krótkich kluczach aplikacji.
+- Zmieniono sposób uruchamiania serwera dla strony, dzięki czemu problemy przy starcie są zgłaszane od razu.
