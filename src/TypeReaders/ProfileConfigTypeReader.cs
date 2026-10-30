@@ -392,6 +392,12 @@ namespace Sanakan.TypeReaders
                             return Task.FromResult(TypeReaderResult.FromError(CommandError.ParseFailed, "Podano za dużo parametrów do wybranej opcji!"));
                         }
 
+                        if (args.Count == 1 && (args[0].Equals("obrazki", StringComparison.OrdinalIgnoreCase) || args[0].Equals("images", StringComparison.OrdinalIgnoreCase)))
+                        {
+                            config.WithImages = true;
+                            return Task.FromResult(TypeReaderResult.FromSuccess(config));
+                        }
+
                         config.Code = args.FirstOrDefault();
                         var url = args.Count == 2 ? args[1] : null;
                         if (url == null && config.Code != null && !context.Message.Attachments.IsNullOrEmpty())

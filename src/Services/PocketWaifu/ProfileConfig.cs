@@ -103,17 +103,19 @@ namespace Sanakan.Services.PocketWaifu
             new OptionInfo("widoczność nakładki", "Pozwala zmienić widoczność nakładki."),
             new OptionInfo("widoczność ultra nakładki", "Pozwala zmienić widoczność ultra nakładki."),
 
-            new OptionInfo("kod", "Bez kodu wyświetla kod obecnych ustawień profilu: stylu, ramki awatara, przeźroczystości cieni i wszystkich przełączanych opcji. "
-                + "Z kodem ustawia je wszystkie naraz po potwierdzeniu. Płatne są tylko zmieniane styl i ramka awatara. "
-                + "Obrazki tła i nakładek nie są częścią kodu, ale do stylu wymagającego obrazka można dołączyć nowy obrazek o wymiarach 750 x 340px.",
-                "konfiguracja profilu kod AQUOgAhG", "`kod (opcjonalne)` `bezpośredni link do obrazka stylu (opcjonalne)`",
-                "jak przy zmianie stylu i ramki awatara, tylko za zmieniane elementy"),
+            new OptionInfo("kod", "Bez kodu wyświetla kod obecnych ustawień profilu: stylu, ramki awatara, przeźroczystości cieni i wszystkich przełączanych opcji, "
+                + "a z `obrazki` także z linkami do obecnych obrazków (działa przez 24 godziny). "
+                + "Z kodem ustawia je wszystkie naraz po potwierdzeniu. Płatne są zmieniane styl i ramka awatara oraz każdy obrazek z kodu. "
+                + "Do stylu wymagającego obrazka można dołączyć nowy obrazek o wymiarach 750 x 340px, jeśli kod go nie ma. Kody z obrazkami tworzy też Profilator na sanakan.pl.",
+                "konfiguracja profilu kod AQUOgAhG", "`kod lub obrazki (opcjonalne)` `bezpośredni link do obrazka stylu (opcjonalne)`",
+                "jak przy zmianie stylu, ramki awatara, tła i nakładek, tylko za zmieniane elementy i obrazki z kodu"),
         };
 
         public ProfileConfigType Type;
         public bool ToggleCurentValue;
         public string Url;
         public string Code;
+        public bool WithImages;
         public int Value;
 
         public ProfileType Style;

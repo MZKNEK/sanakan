@@ -546,8 +546,7 @@ namespace Sanakan.Modules
                 var botuser = await db.GetUserOrCreateSimpleAsync(Context.User.Id);
                 if (config.Code == null)
                 {
-                    var current = ProfileCode.FromUser(botuser).Encode();
-                    await SafeReplyAsync("", embed: $"{Context.User.Mention} kod twojego profilu: `{current}`\n\n*Ustawisz go poleceniem* `konfiguracja profilu kod {current}`".ToEmbedMessage(EMType.Info).Build());
+                    await ShowProfileCodeAsync(db, botuser, config.WithImages);
                     return;
                 }
 
@@ -558,21 +557,21 @@ namespace Sanakan.Modules
                     return;
                 }
 
-                var newImage = config.Url != null;
-                var error = code.Validate(botuser, newImage, TypeReaders.ProfileConfigTypeReader.IsSelectableBorder);
+                var styleAttachment = config.Url != null;
+                var error = code.Validate(botuser, styleAttachment, TypeReaders.ProfileConfigTypeReader.IsSelectableBorder);
                 if (error != null)
                 {
                     await SafeReplyAsync("", embed: $"{Context.User.Mention} {error}".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
-                if (!code.ChangesAnything(botuser, newImage))
+                if (!code.ChangesAnything(botuser, styleAttachment))
                 {
                     await SafeReplyAsync("", embed: $"{Context.User.Mention} twój profil ma już te ustawienia.".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
-                var costs = code.GetCosts(botuser, newImage, config.Currency);
+                var costs = code.GetCosts(botuser, styleAttachment, config.Currency);
                 var total = costs.Sum(x => x.Cost.Cost);
 
                 // the context is never saved here, Pay only checks the balance
@@ -585,35 +584,155 @@ namespace Sanakan.Modules
                 var session = new AcceptSession(Context.User, null, Context.Client.CurrentUser);
                 await _session.KillSessionIfExistAsync(session);
 
-                string pendingImage = null;
-                if (newImage)
+                var actions = new AcceptProfileCode(Config)
                 {
-                    pendingImage = $"{Dir.SavedData}/SR{botuser.Id}.code.webp";
-                    var res = await _profile.SaveProfileImageAsync(config.Url, pendingImage, 750, 340);
-                    if (res != SaveResult.Success)
-                    {
-                        await SafeReplyAsync("", embed: $"{Context.User.Mention} nie wykryto obrazka! Upewnij się, że podałeś poprawny adres!".ToEmbedMessage(EMType.Error).Build());
-                        return;
-                    }
-                }
-
-                var price = costs.Count == 0 ? "bez opłat"
-                    : string.Join("\n", costs.Select(x => $"{x.What}: {x.Cost}")) + $"\n**Razem:** {total} {config.Currency}";
-
-                var msg = await SafeReplyAsync("", embed: $"{Context.User.Mention} ustawić profil z kodu `{code.Encode()}`{(newImage ? " z nowym obrazkiem stylu" : "")}?\n\n**Koszt:**\n{price}".ToEmbedMessage(EMType.Bot).Build());
-                await msg.AddReactionsAsync(session.StartReactions);
-                session.Actions = new AcceptProfileCode(Config)
-                {
-                    Message = msg,
                     User = Context.User,
                     Code = code,
                     Currency = config.Currency,
                     Total = total,
-                    PendingImage = pendingImage,
+                    StyleAttachment = styleAttachment,
                 };
+
+                var failed = await DownloadCodeImagesAsync(actions, code, config.Url, botuser.Id);
+                if (failed != null)
+                {
+                    actions.DeletePending();
+                    var why = failed == AttachmentName ? "nie wykryto obrazka w załączniku! Upewnij się, że podałeś poprawny adres!"
+                        : $"nie udało się pobrać obrazka z kodu ({failed}), link mógł wygasnąć.";
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} {why}".ToEmbedMessage(EMType.Error).Build());
+                    return;
+                }
+
+                var withImages = code.Images.Keys.OrderBy(x => x).Select(x => ImageNames[x]).ToList();
+                if (styleAttachment)
+                    withImages.Add("obrazek stylu z załącznika");
+
+                var price = costs.Count == 0 ? "bez opłat"
+                    : string.Join("\n", costs.Select(x => $"{x.What}: {x.Cost}")) + $"\n**Razem:** {total} {config.Currency}";
+
+                var msg = await SafeReplyAsync("", embed: $"{Context.User.Mention} ustawić profil z kodu{(withImages.Count > 0 ? " z obrazkami: " + string.Join(", ", withImages) : "")}?\n\n**Koszt:**\n{price}".ToEmbedMessage(EMType.Bot).Build());
+                await msg.AddReactionsAsync(session.StartReactions);
+                actions.Message = msg;
+                session.Actions = actions;
                 session.Message = msg;
 
                 await _session.TryAddSession(session);
+            }
+        }
+
+        private static readonly Dictionary<ProfileImage, string> ImageNames = new Dictionary<ProfileImage, string>
+        {
+            { ProfileImage.Background, "tło" },
+            { ProfileImage.Style, "obrazek stylu" },
+            { ProfileImage.Overlay, "nakładka" },
+            { ProfileImage.Premium, "ultra nakładka" },
+            { ProfileImage.BackgroundAndStyle, "tło i styl" },
+        };
+
+        private const string AttachmentName = "załącznik";
+
+        // every image of the code downloaded before the price is shown, as the commands for each image do;
+        // null when all came, otherwise the name of the one that did not
+        private async Task<string> DownloadCodeImagesAsync(AcceptProfileCode actions, ProfileCode code, string attachment, ulong userId)
+        {
+            async Task<bool> Save(ProfileImage image, string url, int width, int height, bool stretch = false)
+            {
+                var path = AcceptProfileCode.PendingPath(image, userId);
+                actions.PendingImages[image] = path;
+                return await _profile.SaveProfileImageAsync(url, path, width, height, stretch) == SaveResult.Success;
+            }
+
+            if (attachment != null && !await Save(ProfileImage.Style, attachment, 750, 340))
+                return AttachmentName;
+
+            foreach (var (image, url) in code.Images.OrderBy(x => x.Key))
+            {
+                var ok = image switch
+                {
+                    ProfileImage.Background => await Save(ProfileImage.Background, url, 750, 160, true),
+                    ProfileImage.Style => await Save(ProfileImage.Style, url, 750, 340),
+                    ProfileImage.Overlay => await Save(ProfileImage.Overlay, url, 750, 402),
+                    ProfileImage.Premium => await Save(ProfileImage.Premium, url, 750, 500),
+                    _ => await SaveBackgroundAndStyleAsync(actions, url, userId),
+                };
+                if (!ok)
+                    return ImageNames[image];
+            }
+            return null;
+        }
+
+        private async Task<bool> SaveBackgroundAndStyleAsync(AcceptProfileCode actions, string url, ulong userId)
+        {
+            var background = AcceptProfileCode.PendingPath(ProfileImage.Background, userId);
+            var style = AcceptProfileCode.PendingPath(ProfileImage.Style, userId);
+            actions.PendingImages[ProfileImage.Background] = background;
+            actions.PendingImages[ProfileImage.Style] = style;
+            return await _profile.SaveProfileAndStyleImageAsync(url, background, 750, 160, style, 750, 340) == SaveResult.Success;
+        }
+
+        // the code of the profile, with images links to the account's pictures sent to the trash channel
+        private async Task ShowProfileCodeAsync(Database.DatabaseContext db, User botuser, bool withImages)
+        {
+            var code = ProfileCode.FromUser(botuser);
+            var note = "";
+            if (withImages)
+            {
+                var gConfig = await db.GetCachedGuildFullConfigAsync(Context.Guild.Id);
+                var trash = Context.Guild.GetTextChannel(gConfig?.WaifuConfig?.TrashCommandsChannel ?? 0);
+                if (trash == null)
+                {
+                    note = "\n\nNa tym serwerze nie ma kanału na obrazki, więc kod jest bez obrazków.";
+                }
+                else
+                {
+                    var current = new List<(ProfileImage Image, string Uri)>
+                    {
+                        (ProfileImage.Background, botuser.BackgroundProfileUri),
+                        (ProfileImage.Overlay, botuser.CustomProfileOverlayUrl),
+                        (ProfileImage.Premium, botuser.PremiumCustomProfileOverlayUrl),
+                    };
+                    if (ProfileConfig.StyleNeedsImage(botuser.ProfileType))
+                        current.Add((ProfileImage.Style, botuser.StatsReplacementProfileUri));
+
+                    foreach (var (image, uri) in current)
+                    {
+                        var link = await ImageLinkAsync(trash, uri);
+                        if (link != null)
+                            code.Images[image] = link;
+                    }
+
+                    note = code.Images.Count > 0 ? "\n\nKod z obrazkami działa przez 24 godziny, potem linki do obrazków wygasną. Każdy obrazek z kodu jest płatny przy ustawianiu."
+                        : "\n\nNie masz własnych obrazków, więc kod jest bez nich.";
+                }
+            }
+
+            var text = code.Encode();
+            var how = code.Images.Count > 0 ? $"```{text}```\n*Ustawisz go poleceniem* `konfiguracja profilu kod <kod>`"
+                : $"`{text}`\n\n*Ustawisz go poleceniem* `konfiguracja profilu kod {text}`";
+            await SafeReplyAsync("", embed: $"{Context.User.Mention} kod twojego profilu: {how}{note}".ToEmbedMessage(EMType.Info).Build());
+        }
+
+        // a link to an image of the profile: a picture saved by the bot goes to the trash channel and its link is taken from there,
+        // a link stays as it is, the bot's own pictures (the default background) are no image of the account
+        private static async Task<string> ImageLinkAsync(ITextChannel trash, string uri)
+        {
+            if (string.IsNullOrEmpty(uri) || uri.StartsWith(Dir.GetResource(""), StringComparison.Ordinal))
+                return null;
+
+            if (!Dir.IsLocal(uri))
+                return Uri.TryCreate(uri, UriKind.Absolute, out _) ? uri : null;
+
+            if (!File.Exists(uri))
+                return null;
+
+            try
+            {
+                var message = await trash.SendFileAsync(uri);
+                return message.Attachments.FirstOrDefault()?.Url;
+            }
+            catch (Exception)
+            {
+                return null;
             }
         }
 

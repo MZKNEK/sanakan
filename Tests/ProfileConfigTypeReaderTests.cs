@@ -237,6 +237,31 @@ namespace Artifacts
 
         // --- kod ---
 
+        [Theory]
+        [InlineData("kod obrazki")]
+        [InlineData("code images")]
+        [InlineData("kod Obrazki TC")]
+        public void Code_Images_AsksForCodeWithImages(string input)
+        {
+            var result = Read(input);
+
+            Assert.True(result.IsSuccess);
+            Assert.True(Value(result).WithImages);
+            Assert.Null(Value(result).Code);
+        }
+
+        [Fact]
+        public void Code_LongCodeWithImages_IsOneParameter()
+        {
+            var code = "AgUOgAhGAREiEPR96YEVEgqHHMACAAEIQkcyLndlYnBnJKGyZyNQMgEjRWeJq83vASNFZ4mrze8BI0VniavN7wEjRWeJq83vEitpL3UvYWJjMTIzL1Byb2ZpbGF0b3IvMGYxZTJkM2M0YjVhNjk3OC53ZWJwIB9odHRwczovL2kuaW1ndXIuY29tL0FiQ2RFZjEucG5n";
+            var result = Read("kod " + code + " TC");
+
+            Assert.True(result.IsSuccess);
+            Assert.Equal(code, Value(result).Code);
+            Assert.Equal(CurrencyType.TC, Value(result).Currency);
+            Assert.False(Value(result).WithImages);
+        }
+
         [Fact]
         public void Code_WithoutArguments_ShowsCurrentCode()
         {
