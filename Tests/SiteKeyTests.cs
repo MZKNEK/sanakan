@@ -133,6 +133,24 @@ namespace Artifacts
             BotWebHost.ValidateConfig(config);
             Assert.NotEqual(config.Jwt.Key, BotWebHost.GenerateJwtKey());
         }
+
+        [Fact]
+        public void WeakAppKeys_ListsOnlyShortKeys()
+        {
+            var config = new ConfigModel
+            {
+                UserKeyApps = new List<ApiApp>
+                {
+                    new ApiApp { Bearer = "old", Key = "short-key" },
+                    new ApiApp { Bearer = "generated", Key = UserKeyAuthenticationHandler.GenerateKey(UserKeyAuthenticationHandler.AppKeyPrefix) },
+                    new ApiApp { Bearer = "empty", Key = null },
+                    null,
+                },
+            };
+
+            Assert.Equal(new[] { "old" }, BotWebHost.WeakAppKeys(config));
+            Assert.Empty(BotWebHost.WeakAppKeys(new ConfigModel()));
+        }
     }
 
     // key management on the real pipeline: changes in config must apply without a restart

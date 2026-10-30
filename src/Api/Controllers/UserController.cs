@@ -333,7 +333,7 @@ namespace Sanakan.Api.Controllers
 
             using (var db = new Database.DatabaseContext(_config))
             {
-                var botUser = db.Users.FirstOrDefault(x => x.Id == id.DiscordUserId);
+                var botUser = await db.Users.AsQueryable().FirstOrDefaultAsync(x => x.Id == id.DiscordUserId);
                 if (botUser != null)
                 {
                     if (botUser.Shinden != 0)
@@ -379,7 +379,7 @@ namespace Sanakan.Api.Controllers
                     return "Something went wrong!".ToResponse(500);
                 }
 
-                if (db.Users.Any(x => x.Shinden == sUser.Id))
+                if (await db.Users.AsQueryable().AnyAsync(x => x.Shinden == sUser.Id))
                 {
                     var oldUsers = await db.Users.AsQueryable().Where(x => x.Shinden == sUser.Id && x.Id != id.DiscordUserId).ToListAsync();
 
@@ -443,7 +443,7 @@ namespace Sanakan.Api.Controllers
         {
             using (var db = new Database.DatabaseContext(_config))
             {
-                var user = db.Users.FirstOrDefault(x => x.Id == id);
+                var user = await db.Users.AsQueryable().FirstOrDefaultAsync(x => x.Id == id);
                 if (user == null)
                 {
                     return "User not found!".ToResponse(404);
@@ -494,7 +494,7 @@ namespace Sanakan.Api.Controllers
         {
             using (var db = new Database.DatabaseContext(_config))
             {
-                var user = db.Users.FirstOrDefault(x => id != 0 && x.Shinden == id);
+                var user = await db.Users.AsQueryable().FirstOrDefaultAsync(x => id != 0 && x.Shinden == id);
                 if (user == null)
                 {
                     return "User not found!".ToResponse(404);

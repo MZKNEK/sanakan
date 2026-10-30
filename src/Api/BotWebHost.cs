@@ -1,6 +1,7 @@
 #pragma warning disable 1591
 
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using System.Threading;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore;
@@ -25,6 +26,8 @@ using Microsoft.OpenApi.Models;
 using Sanakan.Services.Time;
 using Asp.Versioning;
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Sanakan.Config.Model;
 
@@ -33,6 +36,7 @@ namespace Sanakan.Api
     public static class BotWebHost
     {
         private const int MinJwtKeyBytes = 32;
+        public const int MinAppKeyLength = 32;
 
         private static IWebHost _host;
 
@@ -76,6 +80,10 @@ namespace Sanakan.Api
             if (string.IsNullOrWhiteSpace(config.Jwt.Issuer))
                 throw new InvalidOperationException("Jwt.Issuer musi być ustawiony");
         }
+
+        public static List<string> WeakAppKeys(ConfigModel config)
+            => config.UserKeyApps?.Where(x => !string.IsNullOrEmpty(x?.Key) && x.Key.Length < MinAppKeyLength).Select(x => x.Bearer).ToList()
+                ?? new List<string>();
 
         public static SymmetricSecurityKey SigningKey(IConfig config)
             => new SymmetricSecurityKey(Encoding.UTF8.GetBytes(config.Get().Jwt.Key));
@@ -213,13 +221,29 @@ namespace Sanakan.Api
             app.Use(async (context, next) =>
             {
                 var watch = System.Diagnostics.Stopwatch.StartNew();
-                await next();
-                if (context.Request.Path.StartsWithSegments("/api/health") || context.Request.Path.StartsWithSegments("/api/alive")) return;
+                try
+                {
+                    await next();
+                }
+                catch (Exception ex)
+                {
+                    auditLogger?.LogError($"API: {context.Request.Method} {context.Request.Path} - {ex}");
+                    if (context.Response.HasStarted) throw;
 
-                ApiStats.Add(context);
-                var entry = ApiAudit.Describe(context, watch.ElapsedMilliseconds);
-                if (entry != null) auditLogger?.Log(entry);
-                else traffic.Add(context);
+                    context.Response.Clear();
+                    context.Response.StatusCode = StatusCodes.Status500InternalServerError;
+                    await context.Response.WriteAsJsonAsync(new { message = "Internal server error", success = false });
+                }
+                finally
+                {
+                    if (!context.Request.Path.StartsWithSegments("/api/health") && !context.Request.Path.StartsWithSegments("/api/alive"))
+                    {
+                        ApiStats.Add(context);
+                        var entry = ApiAudit.Describe(context, watch.ElapsedMilliseconds);
+                        if (entry != null) auditLogger?.Log(entry);
+                        else traffic.Add(context);
+                    }
+                }
             });
             app.UseEndpoints(endpoints =>
             {

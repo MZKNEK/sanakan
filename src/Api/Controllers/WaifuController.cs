@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
@@ -196,23 +197,13 @@ namespace Sanakan.Api.Controllers
             var invalid = ValidateFilter(filter);
             if (invalid != null) return invalid;
 
-            using (var db = new Database.DatabaseContext(_config))
+            using (var db = CreateDatabaseContext())
             {
-                var query = db.Cards.AsQueryable().AsSplitQuery().Where(x => x.FromFigure).Include(x => x.GameDeck).ThenInclude(x => x.User).Include(x => x.Tags).AsNoTrackingWithIdentityResolution();
-                if (!string.IsNullOrEmpty(filter.SearchText))
-                {
-                    query = query.Where(x => x.Name.Contains(filter.SearchText) || x.Title.Contains(filter.SearchText));
-                }
-
-                query = CardsQueryFilter.Use(filter.OrderBy, query);
-                query = FilterCardsByIds(query, filter);
-
                 var expireTime = new MemoryCacheEntryOptions().SetAbsoluteExpiration(_time.Now().AddHours(4));
-                var cached = await FilterCardsByTags(query, filter).FromCacheAsync(expireTime, CacheTags.UltimateCards);
-                var cards = cached.ToList();
-                var page = cards.Skip(ClampOffset(offset)).Take((int)Math.Min(count, MaxCardsPerRequest)).ToList();
+                var all = await db.Cards.AsQueryable().AsSplitQuery().Where(x => x.FromFigure).Include(x => x.GameDeck).ThenInclude(x => x.User).Include(x => x.Tags)
+                    .AsNoTrackingWithIdentityResolution().FromCacheAsync(expireTime, CacheTags.UltimateCards);
 
-                return new FilteredCards{TotalCards = cards.Count, Cards = await ToViewWithUsernamesAsync(page)};
+                return await FilterCachedCardsAsync(all, filter, offset, count);
             }
         }
 
@@ -229,23 +220,13 @@ namespace Sanakan.Api.Controllers
             var invalid = ValidateFilter(filter);
             if (invalid != null) return invalid;
 
-            using (var db = new Database.DatabaseContext(_config))
+            using (var db = CreateDatabaseContext())
             {
-                var query = db.Cards.AsQueryable().AsSplitQuery().Where(x => x.Unique).Include(x => x.GameDeck).ThenInclude(x => x.User).Include(x => x.Tags).AsNoTrackingWithIdentityResolution();
-                if (!string.IsNullOrEmpty(filter.SearchText))
-                {
-                    query = query.Where(x => x.Name.Contains(filter.SearchText) || x.Title.Contains(filter.SearchText));
-                }
-
-                query = CardsQueryFilter.Use(filter.OrderBy, query);
-                query = FilterCardsByIds(query, filter);
-
                 var expireTime = new MemoryCacheEntryOptions().SetAbsoluteExpiration(_time.Now().AddHours(8));
-                var cached = await FilterCardsByTags(query, filter).FromCacheAsync(expireTime, CacheTags.UniqueCards);
-                var cards = cached.ToList();
-                var page = cards.Skip(ClampOffset(offset)).Take((int)Math.Min(count, MaxCardsPerRequest)).ToList();
+                var all = await db.Cards.AsQueryable().AsSplitQuery().Where(x => x.Unique).Include(x => x.GameDeck).ThenInclude(x => x.User).Include(x => x.Tags)
+                    .AsNoTrackingWithIdentityResolution().FromCacheAsync(expireTime, CacheTags.UniqueCards);
 
-                return new FilteredCards{TotalCards = cards.Count, Cards = await ToViewWithUsernamesAsync(page)};
+                return await FilterCachedCardsAsync(all, filter, offset, count);
             }
         }
 
@@ -291,7 +272,7 @@ namespace Sanakan.Api.Controllers
                 var username = await GetUsernameAsync(user.Shinden);
                 var cards = await query.Skip(ClampOffset(offset)).Take((int)Math.Min(count, MaxCardsPerRequest)).ToListAsync();
 
-                return new FilteredCards{TotalCards = query.Count(), Cards = cards.ToView(username, id, _time)};
+                return new FilteredCards{TotalCards = await query.CountAsync(), Cards = cards.ToView(username, id, _time)};
             }
         }
 
@@ -320,7 +301,7 @@ namespace Sanakan.Api.Controllers
                     return "User on blacklist".ToResponse(401);
                 }
 
-                var cards = await db.Cards.AsQueryable().AsSplitQuery().Where(x => x.GameDeckId == user.GameDeck.Id).Include(x => x.Tags).Skip(ClampOffset(offset)).Take((int)Math.Min(count, MaxCardsPerRequest)).AsNoTrackingWithIdentityResolution().ToListAsync();
+                var cards = await db.Cards.AsQueryable().AsSplitQuery().Where(x => x.GameDeckId == user.GameDeck.Id).Include(x => x.Tags).OrderBy(x => x.Id).Skip(ClampOffset(offset)).Take((int)Math.Min(count, MaxCardsPerRequest)).AsNoTrackingWithIdentityResolution().ToListAsync();
                 var username = await GetUsernameAsync(user.Shinden);
                 return cards.ToView(username, user.Shinden, _time);
             }
@@ -542,7 +523,7 @@ namespace Sanakan.Api.Controllers
                 using (var db = new Database.DatabaseContext(_config))
                 {
                     var userRelease = new List<string>();
-                    var cards = db.Cards.AsQueryable().AsSplitQuery().Where(x => x.Character == oldId);
+                    var cards = await db.Cards.AsQueryable().Where(x => x.Character == oldId).ToListAsync();
 
                     foreach (var card in cards)
                     {
@@ -577,7 +558,7 @@ namespace Sanakan.Api.Controllers
                 using (var db = new Database.DatabaseContext(_config))
                 {
                     var userRelease = new List<string>();
-                    var cards = db.Cards.AsQueryable().AsSplitQuery().Where(x => x.Character == id);
+                    var cards = await db.Cards.AsQueryable().Where(x => x.Character == id).ToListAsync();
 
                     foreach (var card in cards)
                     {
@@ -638,7 +619,7 @@ namespace Sanakan.Api.Controllers
                     using (var db = new Database.DatabaseContext(_config))
                     {
                         var userRelease = new List<string>();
-                        var cards = db.Cards.AsQueryable().AsSplitQuery().Where(x => x.Character == id);
+                        var cards = await db.Cards.AsQueryable().Where(x => x.Character == id).ToListAsync();
 
                         foreach (var card in cards)
                         {
@@ -773,10 +754,8 @@ namespace Sanakan.Api.Controllers
                 {
                     using (var dbs = new Database.DatabaseContext(_config))
                     {
-                        var botUser = await dbs.GetUserOrCreateAsync(id);
-
-                        foreach (var pack in packs)
-                            botUser.GameDeck.BoosterPacks.Add(pack);
+                        var botUser = await dbs.GetUserOrCreateSimpleAsync(id);
+                        AddBoosterPacks(dbs, botUser, packs);
 
                         await dbs.SaveChangesAsync();
 
@@ -837,10 +816,8 @@ namespace Sanakan.Api.Controllers
                 {
                     using (var dbs = CreateDatabaseContext())
                     {
-                        var botUser = await dbs.GetUserOrCreateAsync(discordId);
-
-                        foreach (var pack in packs)
-                            botUser.GameDeck.BoosterPacks.Add(pack);
+                        var botUser = await dbs.GetUserOrCreateSimpleAsync(discordId);
+                        AddBoosterPacks(dbs, botUser, packs);
 
                         await dbs.SaveChangesAsync();
 
@@ -907,10 +884,8 @@ namespace Sanakan.Api.Controllers
                         {
                             using (var dbs = CreateDatabaseContext())
                             {
-                                var botUser = await dbs.GetUserOrCreateAsync(discordId);
-
-                                foreach (var pack in packs)
-                                    botUser.GameDeck.BoosterPacks.Add(pack);
+                                var botUser = await dbs.GetUserOrCreateSimpleAsync(discordId);
+                                AddBoosterPacks(dbs, botUser, packs);
 
                                 dbs.IdempotencyRecords.Add(record);
 
@@ -1034,7 +1009,7 @@ namespace Sanakan.Api.Controllers
             {
                 using (var db = CreateDatabaseContext())
                 {
-                    var botUser = await db.GetUserOrCreateAsync(discordId);
+                    var botUser = await db.GetUserOrCreateSimpleAsync(discordId);
 
                     botUser.Stats.OpenedBoosterPacks += packs.Count;
 
@@ -1157,8 +1132,8 @@ namespace Sanakan.Api.Controllers
 
                         using (var db = CreateDatabaseContext())
                         {
-                            var botUser = await db.GetUserOrCreateAsync(discordId);
-                            if (botUser.GameDeck.Cards.Count + cards.Count > botUser.GameDeck.MaxNumberOfCards)
+                            var botUser = await db.GetUserOrCreateSimpleAsync(discordId);
+                            if (await CountCardsAsync(db, discordId) + cards.Count > botUser.GameDeck.MaxNumberOfCards)
                             {
                                 Services.Idempotency.Fail(record, BoosterPackOpenStatus.NoSpace);
                                 return;
@@ -1287,15 +1262,16 @@ namespace Sanakan.Api.Controllers
                     {
                         using (var db = new Database.DatabaseContext(_config))
                         {
-                            var botUser = await db.GetUserOrCreateAsync(discordId);
-                            var pack = botUser.GameDeck.BoosterPacks.FirstOrDefault(x => x.Id == packId);
+                            var botUser = await db.GetUserOrCreateSimpleAsync(discordId);
+                            var pack = await db.BoosterPacks.AsQueryable().Where(x => x.Id == packId && x.GameDeckId == discordId)
+                                .Include(x => x.Characters).Include(x => x.RarityExcludedFromPack).AsSplitQuery().FirstOrDefaultAsync();
                             if (pack == null)
                             {
                                 error = "Boosterpack already opened!".ToResponse(409);
                                 return;
                             }
 
-                            if (botUser.GameDeck.Cards.Count + opened.Count > botUser.GameDeck.MaxNumberOfCards)
+                            if (await CountCardsAsync(db, discordId) + opened.Count > botUser.GameDeck.MaxNumberOfCards)
                             {
                                 error = "User has no space left in deck!".ToResponse(406);
                                 return;
@@ -1310,7 +1286,7 @@ namespace Sanakan.Api.Controllers
                                 botUser.Stats.OpenedBoosterPacks += 1;
                             }
 
-                            botUser.GameDeck.BoosterPacks.Remove(pack);
+                            db.BoosterPacks.Remove(pack);
 
                             await UpdateWishlistCountAsync(db, opened, botUser);
 
@@ -1407,6 +1383,28 @@ namespace Sanakan.Api.Controllers
             }
             return "The appropriate claim was not found".ToResponse(403);
         }
+
+        // one cached list serves every filter, so anonymous callers cannot fill the cache with filter variants
+        private async Task<FilteredCards> FilterCachedCardsAsync(IEnumerable<Card> all, CardsQueryFilter filter, uint offset, uint count)
+        {
+            var query = all.AsQueryable();
+            if (!string.IsNullOrEmpty(filter.SearchText))
+            {
+                query = query.Where(x => ContainsText(x.Name, filter.SearchText) || ContainsText(x.Title, filter.SearchText));
+            }
+
+            query = CardsQueryFilter.Use(filter.OrderBy, query);
+            query = FilterCardsByIds(query, filter);
+
+            var cards = FilterCardsByTags(query, filter).ToList();
+            var page = cards.Skip(ClampOffset(offset)).Take((int)Math.Min(count, MaxCardsPerRequest)).ToList();
+
+            return new FilteredCards{TotalCards = cards.Count, Cards = await ToViewWithUsernamesAsync(page)};
+        }
+
+        // mirrors the case and accent insensitive LIKE of the database collation
+        private static bool ContainsText(string value, string text)
+            => value != null && CultureInfo.InvariantCulture.CompareInfo.IndexOf(value, text, CompareOptions.IgnoreCase | CompareOptions.IgnoreNonSpace) >= 0;
 
         private async Task<List<CardFinalView>> ToViewWithUsernamesAsync(List<Card> cards)
         {
@@ -1506,6 +1504,19 @@ namespace Sanakan.Api.Controllers
         private static string GetImageContentType(string path)
             => new FileExtensionContentTypeProvider().TryGetContentType(path, out var type) ? type : "application/octet-stream";
 
+        // the deck is loaded without its cards and packs, so new ones go through the sets
+        private static void AddBoosterPacks(Database.DatabaseContext db, User user, List<BoosterPack> packs)
+        {
+            foreach (var pack in packs)
+            {
+                pack.GameDeck = user.GameDeck;
+                db.BoosterPacks.Add(pack);
+            }
+        }
+
+        private static Task<int> CountCardsAsync(Database.DatabaseContext db, ulong discordId)
+            => db.Cards.AsQueryable().CountAsync(x => x.GameDeckId == discordId);
+
         private async Task UpdateWishlistCountAsync(Database.DatabaseContext db, List<Card> cards, User user)
         {
             var ids = cards.Select(x => x.Character).Distinct().ToList();
@@ -1520,7 +1531,8 @@ namespace Sanakan.Api.Controllers
                 card.AWhoWantsCount = wwc?.ACount ?? 0;
                 card.WhoWantsCount = wwc?.Count ?? 0;
 
-                user.GameDeck.Cards.Add(card);
+                card.GameDeck = user.GameDeck;
+                db.Cards.Add(card);
                 await user.GameDeck.RemoveCharacterFromWishListAsync(card.Character, db);
             }
         }

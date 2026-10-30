@@ -25,15 +25,15 @@ namespace Sanakan.Database
         {
             public override InterceptionResult<int> SavingChanges(DbContextEventData eventData, InterceptionResult<int> result)
             {
-                Capture(eventData.Context);
+                CaptureAsync(eventData.Context, false, default).GetAwaiter().GetResult();
                 return base.SavingChanges(eventData, result);
             }
 
-            public override ValueTask<InterceptionResult<int>> SavingChangesAsync(DbContextEventData eventData,
+            public override async ValueTask<InterceptionResult<int>> SavingChangesAsync(DbContextEventData eventData,
                 InterceptionResult<int> result, CancellationToken cancellationToken = default)
             {
-                Capture(eventData.Context);
-                return base.SavingChangesAsync(eventData, result, cancellationToken);
+                await CaptureAsync(eventData.Context, true, cancellationToken);
+                return await base.SavingChangesAsync(eventData, result, cancellationToken);
             }
 
             public override int SavedChanges(SaveChangesCompletedEventData eventData, int result)
@@ -51,12 +51,12 @@ namespace Sanakan.Database
 
             // Wylicza tagi PRZED zapisem (ChangeTracker ma jeszcze stany Added/Modified/Deleted)
             // i zapamiętuje je na kontekście - właściwe unieważnienie robimy po commicie.
-            private static void Capture(DbContext context)
+            private static async ValueTask CaptureAsync(DbContext context, bool async, CancellationToken cancellationToken)
             {
                 if (context == null) return;
                 if (context is DatabaseContext db && db.SuppressCacheInvalidation) return;
 
-                var tags = BuildTags(context);
+                var tags = await BuildTagsAsync(context, async, cancellationToken);
                 if (context is DatabaseContext dbc)
                     dbc.PendingCacheTags = tags;
                 else if (tags.Count > 0)
@@ -76,7 +76,8 @@ namespace Sanakan.Database
                 }
             }
 
-            private static List<string> BuildTags(DbContext context)
+            // async=false never awaits anything incomplete, so the sync SaveChanges path can block on it safely
+            private static async ValueTask<List<string>> BuildTagsAsync(DbContext context, bool async, CancellationToken cancellationToken)
             {
                 var users = new HashSet<ulong>();
                 var characters = new HashSet<ulong>();
@@ -182,8 +183,9 @@ namespace Sanakan.Database
                 if (cardIds.Count > 0)
                 {
                     var ids = cardIds.ToList();
-                    foreach (var card in context.Set<Card>().AsNoTracking()
-                        .Where(x => ids.Contains(x.Id)).Select(x => new { x.Character, x.GameDeckId }).ToList())
+                    var query = context.Set<Card>().AsNoTracking()
+                        .Where(x => ids.Contains(x.Id)).Select(x => new { x.Character, x.GameDeckId });
+                    foreach (var card in async ? await query.ToListAsync(cancellationToken) : query.ToList())
                     {
                         characters.Add(card.Character);
                         users.Add(card.GameDeckId);
@@ -193,8 +195,9 @@ namespace Sanakan.Database
                 if (tagIds.Count > 0)
                 {
                     var ids = tagIds.ToList();
-                    foreach (var card in context.Set<Card>().AsNoTracking()
-                        .Where(x => x.Tags.Any(t => ids.Contains(t.Id))).Select(x => new { x.Character, x.GameDeckId }).ToList())
+                    var query = context.Set<Card>().AsNoTracking()
+                        .Where(x => x.Tags.Any(t => ids.Contains(t.Id))).Select(x => new { x.Character, x.GameDeckId });
+                    foreach (var card in async ? await query.ToListAsync(cancellationToken) : query.ToList())
                     {
                         characters.Add(card.Character);
                         users.Add(card.GameDeckId);
@@ -204,16 +207,18 @@ namespace Sanakan.Database
                 if (waifuIds.Count > 0)
                 {
                     var ids = waifuIds.ToList();
-                    foreach (var guildId in context.Set<Waifu>().AsNoTracking()
-                        .Where(x => ids.Contains(x.Id)).Select(x => x.GuildOptionsId).Distinct().ToList())
+                    var query = context.Set<Waifu>().AsNoTracking()
+                        .Where(x => ids.Contains(x.Id)).Select(x => x.GuildOptionsId).Distinct();
+                    foreach (var guildId in async ? await query.ToListAsync(cancellationToken) : query.ToList())
                         guilds.Add(guildId);
                 }
 
                 if (packIds.Count > 0)
                 {
                     var ids = packIds.ToList();
-                    foreach (var deckId in context.Set<BoosterPack>().AsNoTracking()
-                        .Where(x => ids.Contains(x.Id)).Select(x => x.GameDeckId).Distinct().ToList())
+                    var query = context.Set<BoosterPack>().AsNoTracking()
+                        .Where(x => ids.Contains(x.Id)).Select(x => x.GameDeckId).Distinct();
+                    foreach (var deckId in async ? await query.ToListAsync(cancellationToken) : query.ToList())
                         users.Add(deckId);
                 }
 

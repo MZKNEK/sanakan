@@ -453,6 +453,65 @@ namespace Artifacts
             Assert.Equal(1, PackCount(DiscordId));
         }
 
+        private void AddCards(ulong discordId, int count)
+        {
+            using var db = Open();
+            for (int i = 0; i < count; i++)
+                db.Cards.Add(new Card { Character = 900, Name = "Owned", GameDeckId = discordId, Tags = new List<Tag>() });
+            db.SaveChanges();
+        }
+
+        [Fact]
+        public async Task Open_SpaceCheckInBackground_CountsCardsAlreadyOwned()
+        {
+            AddCards(DiscordId, 2);
+            SetMaxCards(DiscordId, cards => cards + 1);
+            var key = NewKey();
+            await SendOpen(key);
+            AddCards(DiscordId, 1);
+            await RunQueuedAsync();
+
+            Assert.Equal(BoosterPackOpenStatus.NoSpace, (await StatusOf(key)).Reason);
+            Assert.Equal(3, CardCount(DiscordId));
+        }
+
+        [Fact]
+        public async Task Open_KeepsOwnedCards_AndRemovesDrawnCharacterFromWishlist()
+        {
+            AddCards(DiscordId, 2);
+            using (var db = Open())
+            {
+                db.Wishes.Add(new WishlistObject { GameDeckId = DiscordId, Type = WishlistObjectType.Character, ObjectId = 700, ObjectName = "Character", Entry = WishlistEntryType.Normal });
+                db.SaveChanges();
+            }
+
+            var key = NewKey();
+            await SendOpen(key);
+            await RunQueuedAsync();
+
+            Assert.Equal(BoosterPackOpenStatus.Done, (await StatusOf(key)).Status);
+            Assert.Equal(3, CardCount(DiscordId));
+            using var read = Open();
+            Assert.False(read.Wishes.AsQueryable().Any(x => x.GameDeckId == DiscordId && x.ObjectId == 700));
+        }
+
+        [Fact]
+        public async Task Grant_KeepsPacksAlreadyOwned()
+        {
+            int Total()
+            {
+                using var db = Open();
+                return db.BoosterPacks.AsQueryable().Count(x => x.GameDeckId == DiscordId);
+            }
+
+            _executor.RunImmediately = true;
+            var before = Total();
+            await Send(NewKey());
+            await Send(null);
+
+            Assert.Equal(before + 2, Total());
+        }
+
         [Fact]
         public async Task Open_FailedSave_FailsWithError_NothingSaved()
         {

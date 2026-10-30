@@ -64,6 +64,7 @@ namespace Sanakan
             await EnsureDbIsCreatedAsync();
 
             CreateModules();
+            WarnAboutWeakAppKeys();
             AddSigTermHandler();
 
             var tmpCnf = _config.Get();
@@ -105,6 +106,14 @@ namespace Sanakan
                 Console.Error.WriteLine($"Błąd konfiguracji: {ex.Message}");
                 Environment.Exit(1);
             }
+        }
+
+        private void WarnAboutWeakAppKeys()
+        {
+            var weak = BotWebHost.WeakAppKeys(_config.Get());
+            if (weak.Count == 0) return;
+
+            _logger.Log($"Klucze x-app-key krótsze niż {BotWebHost.MinAppKeyLength} znaki, przegeneruj je przez ukapp add: {string.Join(", ", weak)}");
         }
 
         private async Task EnsureDbIsCreatedAsync()

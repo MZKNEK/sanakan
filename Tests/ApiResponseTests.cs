@@ -31,6 +31,7 @@ namespace Artifacts
 
         public FakeConfig Config { get; } = new FakeConfig();
         public FakeExecutor Executor { get; } = new FakeExecutor();
+        public ListLogger Logger { get; } = new ListLogger();
         public HttpClient Client { get; }
         private readonly IHost _host;
         private readonly LocalHttpServer _shindenServer;
@@ -40,7 +41,7 @@ namespace Artifacts
             Config.Model.UserKeyApps.Add(new ApiApp { Key = SiteKey, Bearer = "Shinden", Permissions = ApiAppPermission.Site });
             Config.Model.RMConfig = new List<RichMessageConfig>();
 
-            var logger = new ListLogger();
+            var logger = Logger;
             // JWT jest sprawdzany względem prawdziwego zegara, więc token musi być wystawiony "teraz"
             var time = new SystemTime();
             // lokalny "shinden", który na wszystko odpowiada 404
@@ -124,6 +125,15 @@ namespace Artifacts
             Assert.Equal(HttpStatusCode.TooManyRequests, (await _api.Client.PostAsync("/api/token", ApiServer.Json("\"wrong\""))).StatusCode);
             // poprawny klucz też jest odrzucany w czasie blokady
             Assert.Equal(HttpStatusCode.TooManyRequests, (await _api.Client.PostAsync("/api/token", ApiServer.Json($"\"{ApiServer.SiteKey}\""))).StatusCode);
+        }
+
+        // the test config has no connection string, so the database access throws
+        [Fact]
+        public async Task UnhandledException_Returns500Json_AndIsLogged()
+        {
+            await AssertMessage(await _api.Client.GetAsync("/api/waifu/card/5/view"), HttpStatusCode.InternalServerError);
+
+            Assert.Contains(_api.Logger.Messages, x => x.StartsWith(Sanakan.LoggerExtensions.ErrorPrefix + "API: GET /api/waifu/card/5/view"));
         }
 
         [Fact]

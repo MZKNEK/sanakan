@@ -240,6 +240,31 @@ namespace Artifacts
         }
 
         [Fact]
+        public async Task CharacterCache_IsInvalidatedWhenTagIsRenamed_WithSyncSave()
+        {
+            var db = NewDb();
+            const ulong character = 70031;
+            const ulong tagId = 501;
+
+            using (var ctx = await OpenAsync(db))
+            {
+                var tag = new Tag { Id = tagId, Name = "stara", GameDeckId = 1 };
+                ctx.Cards.Add(new Card { Id = 1, Character = character, GameDeckId = 1, Tags = new List<Tag> { tag } });
+                ctx.SaveChanges();
+            }
+
+            Assert.Equal("stara", await CachedTagNameAsync(db, character));
+
+            using (var ctx = await OpenAsync(db))
+            {
+                ctx.Tags.First(x => x.Id == tagId).Name = "nowa";
+                ctx.SaveChanges();
+            }
+
+            Assert.Equal("nowa", await CachedTagNameAsync(db, character));
+        }
+
+        [Fact]
         public async Task GuildCache_IsPerGuild_NotSharedAcrossGuilds()
         {
             var db = NewDb();
