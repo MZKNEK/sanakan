@@ -68,6 +68,8 @@ namespace Sanakan.TypeReaders
             new NamePair<ProfileConfigType>("overlay visibility", ProfileConfigType.OverlayVisibility, 19),
             new NamePair<ProfileConfigType>("widoczność ultra nakładki", ProfileConfigType.PremiumOverlayVisibility, 20),
             new NamePair<ProfileConfigType>("ultra overlay visibility", ProfileConfigType.PremiumOverlayVisibility, 20),
+            new NamePair<ProfileConfigType>("kod", ProfileConfigType.Code, 21),
+            new NamePair<ProfileConfigType>("code", ProfileConfigType.Code, 21),
         };
 
         private static readonly List<NamePair<ProfileType>> _profileStyleTypes = new List<NamePair<ProfileType>>
@@ -159,8 +161,11 @@ namespace Sanakan.TypeReaders
             ProfileConfigType.CustomBarOpacity         => false,
             ProfileConfigType.OverlayVisibility        => false,
             ProfileConfigType.PremiumOverlayVisibility => false,
+            ProfileConfigType.Code                     => false,
             _ => true
         };
+
+        public static bool IsSelectableBorder(AvatarBorder border) => _avatarBorderTypes.Any(x => x.Type == border);
 
         private static ProfileSettings ProfileConfigTypeToProfileSettings(ProfileConfigType type) => type switch
         {
@@ -375,6 +380,42 @@ namespace Sanakan.TypeReaders
                         globalParamIndex += isIndex ? 1 : (selectedAvatarType.Name.Count(x => Char.IsSeparator(x)) + 1);
                     }
                     break;
+
+                    case ProfileConfigType.Code:
+                    {
+                        var args = strippedInput.ToString().Split(' ', StringSplitOptions.RemoveEmptyEntries).ToList();
+                        if (args.Count > 1 && ParseCurrency(args[^1], out config.Currency))
+                            args.RemoveAt(args.Count - 1);
+
+                        if (args.Count > 2)
+                        {
+                            return Task.FromResult(TypeReaderResult.FromError(CommandError.ParseFailed, "Podano za dużo parametrów do wybranej opcji!"));
+                        }
+
+                        config.Code = args.FirstOrDefault();
+                        var url = args.Count == 2 ? args[1] : null;
+                        if (url == null && config.Code != null && !context.Message.Attachments.IsNullOrEmpty())
+                            url = "att";
+
+                        if (url != null)
+                        {
+                            if (url.Equals("att", StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (context.Message.Attachments.IsNullOrEmpty())
+                                {
+                                    return Task.FromResult(TypeReaderResult.FromError(CommandError.ParseFailed, "Nie wykryto załącznika!"));
+                                }
+                                url = context.Message.Attachments.FirstOrDefault()?.Url ?? "";
+                            }
+
+                            if (!Uri.IsWellFormedUriString(url, UriKind.Absolute))
+                            {
+                                return Task.FromResult(TypeReaderResult.FromError(CommandError.ParseFailed, "Nie rozpoznano linku!"));
+                            }
+                            config.Url = url;
+                        }
+                    }
+                    return Task.FromResult(TypeReaderResult.FromSuccess(config));
 
                     default:
                         return Task.FromResult(TypeReaderResult.FromError(CommandError.ParseFailed, "Nie rozpoznano typu konfiguracji!"));

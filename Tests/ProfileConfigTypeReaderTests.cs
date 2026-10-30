@@ -235,6 +235,79 @@ namespace Artifacts
             Assert.Equal(CommandError.ParseFailed, result.Error);
         }
 
+        // --- kod ---
+
+        [Fact]
+        public void Code_WithoutArguments_ShowsCurrentCode()
+        {
+            var attachment = new Mock<IAttachment>();
+            attachment.SetupGet(x => x.Url).Returns("https://cdn.example.com/x.png");
+
+            var result = Read("kod", attachment.Object);
+
+            Assert.True(result.IsSuccess);
+            Assert.Equal(ProfileConfigType.Code, Value(result).Type);
+            Assert.Null(Value(result).Code);
+            Assert.Null(Value(result).Url);
+        }
+
+        [Theory]
+        [InlineData("kod AQUOgAhG", CurrencyType.SC)]
+        [InlineData("code AQUOgAhG tc", CurrencyType.TC)]
+        [InlineData("21 AQUOgAhG SC", CurrencyType.SC)]
+        public void Code_WithCode_ParsesCodeAndCurrency(string input, CurrencyType currency)
+        {
+            var result = Read(input);
+
+            Assert.True(result.IsSuccess);
+            Assert.Equal("AQUOgAhG", Value(result).Code);
+            Assert.Equal(currency, Value(result).Currency);
+            Assert.Null(Value(result).Url);
+        }
+
+        [Fact]
+        public void Code_WithLinkAndCurrency_ParsesAll()
+        {
+            var result = Read("kod AQUOgAhG https://example.com/a.png TC");
+
+            Assert.True(result.IsSuccess);
+            Assert.Equal("AQUOgAhG", Value(result).Code);
+            Assert.Equal("https://example.com/a.png", Value(result).Url);
+            Assert.Equal(CurrencyType.TC, Value(result).Currency);
+        }
+
+        [Fact]
+        public void Code_WithAttachment_UsesAttachmentAsStyleImage()
+        {
+            var attachment = new Mock<IAttachment>();
+            attachment.SetupGet(x => x.Url).Returns("https://cdn.example.com/x.png");
+
+            var result = Read("kod AQUOgAhG", attachment.Object);
+
+            Assert.True(result.IsSuccess);
+            Assert.Equal("https://cdn.example.com/x.png", Value(result).Url);
+        }
+
+        [Theory]
+        [InlineData("kod AQUOgAhG nie-link")]
+        [InlineData("kod AQUOgAhG https://example.com/a.png TC nadmiar")]
+        [InlineData("kod AQUOgAhG att")]
+        public void Code_InvalidParameters_ReturnsParseFailed(string input)
+        {
+            var result = Read(input);
+
+            Assert.False(result.IsSuccess);
+            Assert.Equal(CommandError.ParseFailed, result.Error);
+        }
+
+        [Fact]
+        public void IsSelectableBorder_OnlyBordersListedInCommand()
+        {
+            Assert.True(ProfileConfigTypeReader.IsSelectableBorder(AvatarBorder.Gold));
+            Assert.True(ProfileConfigTypeReader.IsSelectableBorder(AvatarBorder.None));
+            Assert.False(ProfileConfigTypeReader.IsSelectableBorder(AvatarBorder.TurqLeaves));
+        }
+
         [Fact]
         public void EmptyInput_ReturnsDefaultConfig()
         {

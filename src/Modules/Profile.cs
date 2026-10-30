@@ -373,12 +373,24 @@ namespace Sanakan.Modules
                 return;
             }
 
+            if (config.Type == ProfileConfigType.Code)
+            {
+                await ConfigureProfileFromCodeAsync(config);
+                return;
+            }
+
             using (var db = new Database.DatabaseContext(Config))
             {
                 var botuser = await db.GetUserOrCreateSimpleAsync(Context.User.Id);
 
+                if (config.ChangesNothing(botuser))
+                {
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} masz już to ustawione.".ToEmbedMessage(EMType.Error).Build());
+                    return;
+                }
+
                 var toPay = config.ToPay();
-                if (config.NeedPay() && !botuser.Pay(toPay))
+                if (config.NeedPay(botuser) && !botuser.Pay(toPay))
                 {
                     await SafeReplyAsync("", embed: $"{Context.User.Mention} nie masz wystarczającej liczby **{toPay.Type}**, potrzebujesz {toPay.Cost}.".ToEmbedMessage(EMType.Error).Build());
                     return;
@@ -524,6 +536,84 @@ namespace Sanakan.Modules
                 QueryCacheManager.ExpireTag(new string[] { CacheTags.User(botuser.Id) });
 
                 await SafeReplyAsync("", embed: $"{Context.User.Mention} {config.What()}".ToEmbedMessage(EMType.Success).Build());
+            }
+        }
+
+        private async Task ConfigureProfileFromCodeAsync(ProfileConfig config)
+        {
+            using (var db = new Database.DatabaseContext(Config))
+            {
+                var botuser = await db.GetUserOrCreateSimpleAsync(Context.User.Id);
+                if (config.Code == null)
+                {
+                    var current = ProfileCode.FromUser(botuser).Encode();
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} kod twojego profilu: `{current}`\n\n*Ustawisz go poleceniem* `konfiguracja profilu kod {current}`".ToEmbedMessage(EMType.Info).Build());
+                    return;
+                }
+
+                var code = ProfileCode.Decode(config.Code);
+                if (code == null)
+                {
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} podany kod jest niepoprawny.".ToEmbedMessage(EMType.Error).Build());
+                    return;
+                }
+
+                var newImage = config.Url != null;
+                var error = code.Validate(botuser, newImage, TypeReaders.ProfileConfigTypeReader.IsSelectableBorder);
+                if (error != null)
+                {
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} {error}".ToEmbedMessage(EMType.Error).Build());
+                    return;
+                }
+
+                if (!code.ChangesAnything(botuser, newImage))
+                {
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} twój profil ma już te ustawienia.".ToEmbedMessage(EMType.Error).Build());
+                    return;
+                }
+
+                var costs = code.GetCosts(botuser, newImage, config.Currency);
+                var total = costs.Sum(x => x.Cost.Cost);
+
+                // the context is never saved here, Pay only checks the balance
+                if (total > 0 && !botuser.Pay(new CurrencyCost((int)total, config.Currency)))
+                {
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} nie masz wystarczającej liczby **{config.Currency}**, potrzebujesz {total}.".ToEmbedMessage(EMType.Error).Build());
+                    return;
+                }
+
+                var session = new AcceptSession(Context.User, null, Context.Client.CurrentUser);
+                await _session.KillSessionIfExistAsync(session);
+
+                string pendingImage = null;
+                if (newImage)
+                {
+                    pendingImage = $"{Dir.SavedData}/SR{botuser.Id}.code.webp";
+                    var res = await _profile.SaveProfileImageAsync(config.Url, pendingImage, 750, 340);
+                    if (res != SaveResult.Success)
+                    {
+                        await SafeReplyAsync("", embed: $"{Context.User.Mention} nie wykryto obrazka! Upewnij się, że podałeś poprawny adres!".ToEmbedMessage(EMType.Error).Build());
+                        return;
+                    }
+                }
+
+                var price = costs.Count == 0 ? "bez opłat"
+                    : string.Join("\n", costs.Select(x => $"{x.What}: {x.Cost}")) + $"\n**Razem:** {total} {config.Currency}";
+
+                var msg = await SafeReplyAsync("", embed: $"{Context.User.Mention} ustawić profil z kodu `{code.Encode()}`{(newImage ? " z nowym obrazkiem stylu" : "")}?\n\n**Koszt:**\n{price}".ToEmbedMessage(EMType.Bot).Build());
+                await msg.AddReactionsAsync(session.StartReactions);
+                session.Actions = new AcceptProfileCode(Config)
+                {
+                    Message = msg,
+                    User = Context.User,
+                    Code = code,
+                    Currency = config.Currency,
+                    Total = total,
+                    PendingImage = pendingImage,
+                };
+                session.Message = msg;
+
+                await _session.TryAddSession(session);
             }
         }
 

@@ -31,6 +31,7 @@ namespace Sanakan.Services.PocketWaifu
         CustomBarOpacity,
         OverlayVisibility,
         PremiumOverlayVisibility,
+        Code,
     }
 
     public class ProfileConfig
@@ -101,11 +102,18 @@ namespace Sanakan.Services.PocketWaifu
             new OptionInfo("przeźroczysty pasek", "Pozwala aktywować ustawiony stopień przeźroczystości cieni dla paska."),
             new OptionInfo("widoczność nakładki", "Pozwala zmienić widoczność nakładki."),
             new OptionInfo("widoczność ultra nakładki", "Pozwala zmienić widoczność ultra nakładki."),
+
+            new OptionInfo("kod", "Bez kodu wyświetla kod obecnych ustawień profilu: stylu, ramki awatara, przeźroczystości cieni i wszystkich przełączanych opcji. "
+                + "Z kodem ustawia je wszystkie naraz po potwierdzeniu. Płatne są tylko zmieniane styl i ramka awatara. "
+                + "Obrazki tła i nakładek nie są częścią kodu, ale do stylu wymagającego obrazka można dołączyć nowy obrazek o wymiarach 750 x 340px.",
+                "konfiguracja profilu kod AQUOgAhG", "`kod (opcjonalne)` `bezpośredni link do obrazka stylu (opcjonalne)`",
+                "jak przy zmianie stylu i ramki awatara, tylko za zmieniane elementy"),
         };
 
         public ProfileConfigType Type;
         public bool ToggleCurentValue;
         public string Url;
+        public string Code;
         public int Value;
 
         public ProfileType Style;
@@ -113,18 +121,28 @@ namespace Sanakan.Services.PocketWaifu
         public ProfileSettings Settings;
         public CurrencyType Currency;
 
-        public bool NeedPay() => Type switch
+        // a new image is always paid, the same style or border set again is free
+        public bool NeedPay(User user) => Type switch
         {
-            ProfileConfigType.Style => true,
+            ProfileConfigType.Style => StyleNeedUrl() || user.ProfileType != Style,
             ProfileConfigType.Overlay => true,
             ProfileConfigType.Background => true,
             ProfileConfigType.PremiumOverlay => true,
             ProfileConfigType.BackgroundAndStyle => true,
-            ProfileConfigType.AvatarBorder => Border != AvatarBorder.None && Border != AvatarBorder.Base,
+            ProfileConfigType.AvatarBorder => IsPaidBorder(Border) && user.AvatarBorder != Border,
             _ => false
         };
 
-        private static CurrencyCost ToPay(ProfileConfigType type, CurrencyType currency) => type switch
+        public bool ChangesNothing(User user) => Type switch
+        {
+            ProfileConfigType.Style => !StyleNeedUrl() && user.ProfileType == Style,
+            ProfileConfigType.AvatarBorder => user.AvatarBorder == Border,
+            _ => false
+        };
+
+        public static bool IsPaidBorder(AvatarBorder border) => border != AvatarBorder.None && border != AvatarBorder.Base;
+
+        public static CurrencyCost ToPay(ProfileConfigType type, CurrencyType currency) => type switch
         {
             ProfileConfigType.Style => new CurrencyCost(currency == CurrencyType.SC ? 3000 : 1000, currency),
             ProfileConfigType.Overlay => new CurrencyCost(currency == CurrencyType.SC ? 4000 : 1800, currency),
@@ -137,7 +155,9 @@ namespace Sanakan.Services.PocketWaifu
 
         public CurrencyCost ToPay() => ToPay(Type, Currency);
 
-        public bool StyleNeedUrl() => Style switch
+        public bool StyleNeedUrl() => StyleNeedsImage(Style);
+
+        public static bool StyleNeedsImage(ProfileType style) => style switch
         {
             ProfileType.Stats       => false,
             ProfileType.Cards       => false,
@@ -210,6 +230,7 @@ namespace Sanakan.Services.PocketWaifu
             ProfileConfigType.CustomBarOpacity => "przełączono przeźroczystość pasków profilu.",
             ProfileConfigType.OverlayVisibility => "przełączono widoczność nakładki profilu.",
             ProfileConfigType.PremiumOverlayVisibility => "przełączono widoczność ultra nakładki profilu.",
+            ProfileConfigType.Code => "ustawiono profil z kodu.",
             _ => "????"
         };
     }
