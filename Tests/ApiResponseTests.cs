@@ -167,6 +167,22 @@ namespace Artifacts
         }
 
         [Fact]
+        public async Task OpenShindenPacks_InvalidIdempotencyKey_Returns400Json()
+        {
+            var client = await _api.AsSiteAsync();
+            var req = new HttpRequestMessage(HttpMethod.Post, "/api/waifu/shinden/5/boosterpack/open") { Content = ApiServer.Json("[]") };
+            req.Headers.Add("Idempotency-Key", "zażółć");
+            await AssertMessage(await client.SendAsync(req), HttpStatusCode.BadRequest);
+        }
+
+        [Fact]
+        public async Task OpenShindenPacksStatus_InvalidKey_Returns400Json()
+        {
+            var client = await _api.AsSiteAsync();
+            await AssertMessage(await client.GetAsync("/api/waifu/shinden/5/boosterpack/open/" + new string('a', 65)), HttpStatusCode.BadRequest);
+        }
+
+        [Fact]
         public async Task GiveDiscordPacks_EmptyList_Returns500Json()
         {
             var client = await _api.AsSiteAsync();

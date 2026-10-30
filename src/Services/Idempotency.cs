@@ -23,10 +23,15 @@ namespace Sanakan.Services
 
         public static readonly TimeSpan Retention = TimeSpan.FromHours(48);
         private static readonly TimeSpan CleanupInterval = TimeSpan.FromHours(1);
+        private static readonly TimeSpan FailureRetention = TimeSpan.FromHours(1);
 
         // Requests still running; a record reaches the database only together with the change it guards.
         private static readonly ConcurrentDictionary<(string Scope, string Key), IdempotencyRecord> _inFlight
             = new ConcurrentDictionary<(string Scope, string Key), IdempotencyRecord>();
+
+        // Background attempts that saved nothing, kept only to tell the caller why.
+        private static readonly ConcurrentDictionary<(string Scope, string Key), (IdempotencyRecord Record, string Reason)> _failed
+            = new ConcurrentDictionary<(string Scope, string Key), (IdempotencyRecord Record, string Reason)>();
 
         private static long _lastCleanupTicks;
 
@@ -43,11 +48,34 @@ namespace Sanakan.Services
         public static IdempotencyRecord TryBegin(IdempotencyRecord record)
         {
             var current = _inFlight.GetOrAdd((record.Scope, record.Key), record);
-            return ReferenceEquals(current, record) ? null : current;
+            if (!ReferenceEquals(current, record))
+                return current;
+
+            _failed.TryRemove((record.Scope, record.Key), out _);
+            return null;
         }
 
         public static void End(IdempotencyRecord record)
             => _inFlight.TryRemove(new KeyValuePair<(string Scope, string Key), IdempotencyRecord>((record.Scope, record.Key), record));
+
+        public static IdempotencyRecord Running(string scope, string key)
+            => _inFlight.TryGetValue((scope, key), out var record) ? record : null;
+
+        public static void Fail(IdempotencyRecord record, string reason)
+        {
+            foreach (var old in _failed.Where(x => x.Value.Record.CreatedAt < record.CreatedAt - FailureRetention).ToList())
+                _failed.TryRemove(old);
+
+            _failed[(record.Scope, record.Key)] = (record, reason);
+        }
+
+        public static (IdempotencyRecord Record, string Reason)? Failure(string scope, string key)
+            => _failed.TryGetValue((scope, key), out var failure) ? failure : null;
+
+        public static string ToResult(object value) => JsonConvert.SerializeObject(value);
+
+        public static T ReadResult<T>(IdempotencyRecord record)
+            => string.IsNullOrEmpty(record.Result) ? default : JsonConvert.DeserializeObject<T>(record.Result);
 
         public static async Task<IdempotencyRecord> FindAsync(DatabaseContext db, string scope, string key, DateTime now)
         {

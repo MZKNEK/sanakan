@@ -12,5 +12,6 @@ namespace Sanakan.Database.Models
         public ulong OwnerId { get; set; }
         public string RequestHash { get; set; }
         public DateTime CreatedAt { get; set; }
+        public string Result { get; set; }
     }
 }
