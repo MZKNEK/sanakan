@@ -70,6 +70,7 @@ namespace Sanakan.Database
         public DbSet<TagCardRelation> TagCardRelations { get; set; }
         public DbSet<Tag> Tags { get; set; }
         public DbSet<UserApiKey> UserApiKeys { get; set; }
+        public DbSet<IdempotencyRecord> IdempotencyRecords { get; set; }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
@@ -420,6 +421,16 @@ namespace Sanakan.Database
                     .WithMany()
                     .HasForeignKey(e => e.UserId)
                     .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            modelBuilder.Entity<IdempotencyRecord>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Scope).HasMaxLength(32).IsRequired();
+                entity.Property(e => e.Key).HasMaxLength(64).IsRequired();
+                entity.Property(e => e.RequestHash).HasMaxLength(64).IsRequired();
+                entity.HasIndex(e => new { e.Scope, e.Key }).IsUnique();
+                entity.HasIndex(e => e.CreatedAt);
             });
         }
     }

@@ -50,6 +50,8 @@ namespace Sanakan.Api.Controllers
         private const int MaxShindenFailures = 2;
         private int _shindenFailures;
 
+        private const string ShindenPacksIdempotencyScope = "shinden-boosterpack";
+
         public WaifuController(ShindenClient shClient, Waifu waifu, IExecutor executor, TagHelper tags,
             IConfig config, ISystemTime time, IMemoryCache cache, DiscordSocketClient client, Expedition expedition)
         {
@@ -63,6 +65,8 @@ namespace Sanakan.Api.Controllers
             _shClient = shClient;
             _expedition = expedition;
         }
+
+        protected virtual Database.DatabaseContext CreateDatabaseContext() => new Database.DatabaseContext(_config);
 
         /// <summary>
         /// Pobiera użytkowników posiadających kartę postaci
@@ -791,18 +795,35 @@ namespace Sanakan.Api.Controllers
         /// <summary>
         /// Daje użytkownikowi pakiety kart
         /// </summary>
+        /// <remarks>
+        /// Z nagłówkiem Idempotency-Key odpowiedź przychodzi dopiero po zapisie pakietów, a powtórka z tym samym kluczem
+        /// w ciągu 48 h nie dodaje ich ponownie (nagłówek Idempotent-Replayed: true). Zapamiętywany jest tylko sukces.
+        /// </remarks>
         /// <param name="id">id użytkownika shindena</param>
         /// <param name="boosterPacks">model pakietu</param>
+        /// <param name="idempotencyKey">unikalny klucz odbioru (do 64 znaków ASCII)</param>
         /// <returns>użytkownik bota</returns>
+        /// <response code="400">Invalid Idempotency-Key</response>
         /// <response code="404">User not found</response>
+        /// <response code="409">Request with this Idempotency-Key is in progress</response>
+        /// <response code="422">Idempotency-Key was used with a different request</response>
         /// <response code="500">Model is Invalid</response>
+        /// <response code="503">Command queue is full</response>
+        /// <response code="504">Command timed out, boosterpacks will still be added</response>
         [HttpPost("shinden/{id}/boosterpack"), Authorize(Policy = "Site")]
-        public async Task<ActionResult<UserWithToken>> GiveShindenUserAPacksAsync(ulong id, [FromBody]List<Models.CardBoosterPack> boosterPacks)
+        public async Task<ActionResult<UserWithToken>> GiveShindenUserAPacksAsync(ulong id, [FromBody]List<Models.CardBoosterPack> boosterPacks,
+            [FromHeader(Name = Services.Idempotency.KeyHeader)] string idempotencyKey = null)
         {
+            if (idempotencyKey != null && !Services.Idempotency.IsValidKey(idempotencyKey))
+                return "Invalid Idempotency-Key".ToResponse(400);
+
             var invalid = TryGetBoosterPacks(boosterPacks, out var packs);
             if (invalid != null) return invalid;
 
-            using (var db = new Database.DatabaseContext(_config))
+            if (idempotencyKey != null)
+                return await GiveShindenUserAPacksOnceAsync(id, boosterPacks, packs, idempotencyKey);
+
+            using (var db = CreateDatabaseContext())
             {
                 var user = await db.GetCachedFullUserByShindenIdAsync(id);
                 if (user == null)
@@ -813,7 +834,7 @@ namespace Sanakan.Api.Controllers
                 var discordId = user.Id;
                 var exe = new Executable($"api-packet u{discordId}", new Func<Task>(async () =>
                 {
-                    using (var dbs = new Database.DatabaseContext(_config))
+                    using (var dbs = CreateDatabaseContext())
                     {
                         var botUser = await dbs.GetUserOrCreateAsync(discordId);
 
@@ -831,20 +852,125 @@ namespace Sanakan.Api.Controllers
                     return "Command queue is full".ToResponse(503);
                 }
 
-                TokenData tokenData = null;
-                var currUser = ControllerContext.HttpContext.User;
-                if (currUser.HasClaim(x => x.Type == ClaimTypes.Webpage))
-                {
-                    tokenData = UserTokenBuilder.BuildUserToken(_config, user, _time);
-                }
-
-                return new UserWithToken()
-                {
-                    Expire = tokenData?.Expire,
-                    Token = tokenData?.Token,
-                    User = user,
-                };
+                return ShindenPacksResponse(user);
             }
+        }
+
+        // Any error response means nothing was saved, so only a success is remembered under the key.
+        private async Task<ActionResult<UserWithToken>> GiveShindenUserAPacksOnceAsync(ulong id, List<Models.CardBoosterPack> request,
+            List<BoosterPack> packs, string key)
+        {
+            var record = new IdempotencyRecord
+            {
+                Scope = ShindenPacksIdempotencyScope,
+                Key = key,
+                OwnerId = id,
+                RequestHash = Services.Idempotency.Hash(request),
+                CreatedAt = _time.Now(),
+            };
+
+            var running = Services.Idempotency.TryBegin(record);
+            if (running != null)
+            {
+                return Services.Idempotency.SameRequest(running, record)
+                    ? "Request with this Idempotency-Key is in progress".ToResponse(409)
+                    : IdempotencyKeyReused();
+            }
+
+            var handedOff = false;
+            try
+            {
+                using (var db = CreateDatabaseContext())
+                {
+                    var done = await Services.Idempotency.FindAsync(db, record.Scope, key, record.CreatedAt);
+                    if (done != null)
+                    {
+                        if (!Services.Idempotency.SameRequest(done, record))
+                            return IdempotencyKeyReused();
+
+                        Response.Headers[Services.Idempotency.ReplayedHeader] = "true";
+                        return ShindenPacksResponse(await db.GetCachedFullUserByShindenIdAsync(id));
+                    }
+
+                    var user = await db.GetCachedFullUserByShindenIdAsync(id);
+                    if (user == null)
+                    {
+                        return "User not found!".ToResponse(404);
+                    }
+
+                    var committed = false;
+                    var discordId = user.Id;
+                    var exe = new Executable($"api-packet u{discordId}", new Func<Task>(async () =>
+                    {
+                        try
+                        {
+                            using (var dbs = CreateDatabaseContext())
+                            {
+                                var botUser = await dbs.GetUserOrCreateAsync(discordId);
+
+                                foreach (var pack in packs)
+                                    botUser.GameDeck.BoosterPacks.Add(pack);
+
+                                dbs.IdempotencyRecords.Add(record);
+
+                                await dbs.SaveChangesAsync();
+                                committed = true;
+
+                                QueryCacheManager.ExpireTag(new string[] { CacheTags.User(botUser.Id) });
+                                await Services.Idempotency.CleanupIfDueAsync(dbs, record.CreatedAt);
+                            }
+                        }
+                        finally
+                        {
+                            Services.Idempotency.End(record);
+                        }
+                    }), discordId);
+
+                    if (!await _executor.TryAdd(exe, TimeSpan.FromSeconds(1)))
+                    {
+                        return "Command queue is full".ToResponse(503);
+                    }
+                    handedOff = true;
+
+                    try
+                    {
+                        if (!await exe.WaitAsync(Executable.ApiMaxWait))
+                            return "Command timed out".ToResponse(504);
+                    }
+                    catch (Exception)
+                    {
+                        if (!committed)
+                            return "Boosterpack not added".ToResponse(500);
+                    }
+
+                    return ShindenPacksResponse(user);
+                }
+            }
+            finally
+            {
+                if (!handedOff)
+                    Services.Idempotency.End(record);
+            }
+        }
+
+        private static ObjectResult IdempotencyKeyReused()
+            => "Idempotency-Key was used with a different request".ToResponse(422);
+
+        private UserWithToken ShindenPacksResponse(User user)
+        {
+            TokenData tokenData = null;
+            var currUser = ControllerContext.HttpContext.User;
+            if (user != null && currUser.HasClaim(x => x.Type == ClaimTypes.Webpage))
+            {
+                tokenData = UserTokenBuilder.BuildUserToken(_config, user, _time);
+            }
+
+            return new UserWithToken()
+            {
+                Expire = tokenData?.Expire,
+                Token = tokenData?.Token,
+                User = user,
+            };
         }
 
         /// <summary>
