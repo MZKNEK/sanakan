@@ -53,7 +53,7 @@ namespace Artifacts
         [Fact]
         public void GetSearchResponse_ManyPages_DoesNotThrow()
         {
-            var shinden = new Sanakan.Services.Shinden(null, null, null, new ListLogger());
+            var shinden = new Sanakan.Services.Shinden(null, null, null, new ListLogger(), new FixedTime());
             var items = Enumerable.Range(0, 300).Select(_ => (object)new string('x', 200)).ToList();
 
             var pages = shinden.GetSearchResponse(items, "title");

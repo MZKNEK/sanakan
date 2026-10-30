@@ -9,7 +9,6 @@ using System.Threading.Tasks;
 using Discord;
 using Discord.WebSocket;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Caching.Memory;
 using Moq;
 using Sanakan.Api.Controllers;
 using Sanakan.Config.Model;
@@ -82,7 +81,7 @@ namespace Artifacts
         {
             var executor = new FakeExecutor { Accept = false };
             var controller = ControllerHarness.Attach(new WaifuController(null, null, executor, null, new FakeConfig(), new FixedTime(),
-                new MemoryCache(new MemoryCacheOptions()), null, null));
+                new Sanakan.Services.Shinden(null, null, null, new ListLogger(), new FixedTime()), null, null));
 
             var result = await controller.UpdateCardInfoAsync(5, new Sanakan.Api.Models.CharacterCardInfoUpdate());
 
@@ -390,7 +389,7 @@ namespace Artifacts
     {
         private static WaifuController NewController(FakeExecutor executor)
             => ControllerHarness.Attach(new WaifuController(null, null, executor, null, new FakeConfig(), new FixedTime(),
-                new MemoryCache(new MemoryCacheOptions()), null, null));
+                new Sanakan.Services.Shinden(null, null, null, new ListLogger(), new FixedTime()), null, null));
 
         [Fact]
         public async Task GivePacks_NullBody_Returns500WithoutException()
@@ -449,7 +448,7 @@ namespace Artifacts
         public async Task Register_NullModel_Returns500()
         {
             var controller = ControllerHarness.Attach(new UserController(null, null, new ListLogger(), new FakeExecutor(),
-                new FakeConfig(), new FixedTime(), new MemoryCache(new MemoryCacheOptions())));
+                new FakeConfig(), new FixedTime(), new Sanakan.Services.Shinden(null, null, null, new ListLogger(), new FixedTime())));
 
             var result = await controller.RegisterUserAsync(null);
 

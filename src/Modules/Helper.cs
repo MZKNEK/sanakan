@@ -196,7 +196,7 @@ namespace Sanakan.Modules
             using (var db = new Database.DatabaseContext(Config))
             {
                 var botuser = await db.GetUserOrCreateSimpleAsync(Context.User.Id);
-                var charInfo = _waifu.IsInPool(botuser.PoolType, id);
+                var charInfo = await _waifu.IsInPoolAsync(botuser.PoolType, id);
 
                 string moreInfo = charInfo is null ? $"{id} nie znajduje się w puli."
                  : $"{charInfo} znajduje się w puli.";

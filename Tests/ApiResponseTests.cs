@@ -52,7 +52,8 @@ namespace Artifacts
             });
             var shinden = new Shinden.ShindenClient(new Shinden.Auth("token", "tests", "marmolade"), logger, Shinden.Logger.LogLevel.Information,
                 _shindenServer.BaseUrl, TimeSpan.FromSeconds(5));
-            var waifu = new Waifu(null, shinden, null, logger, null, null, null, time, null, null, Config);
+            var shindenCache = new Sanakan.Services.Shinden(shinden, null, null, logger, time);
+            var waifu = new Waifu(null, shinden, null, logger, null, null, null, time, shindenCache, null, Config);
 
             _host = new HostBuilder().ConfigureWebHost(web => web
                 .UseTestServer()
@@ -66,6 +67,7 @@ namespace Artifacts
                     services.AddSingleton(new DiscordSocketClient());
                     services.AddSingleton(new Sanakan.Services.Helper(Config, logger));
                     services.AddSingleton(shinden);
+                    services.AddSingleton(shindenCache);
                     services.AddSingleton<IExecutor>(Executor);
                     services.AddSingleton(new Expedition(time));
                 })

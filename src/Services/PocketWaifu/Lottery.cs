@@ -6,8 +6,6 @@ using System.Linq;
 using System.Threading.Tasks;
 using Sanakan.Database.Models;
 using Sanakan.Extensions;
-using Sanakan.Services.Time;
-using Shinden;
 
 namespace Sanakan.Services.PocketWaifu
 {
@@ -25,7 +23,6 @@ namespace Sanakan.Services.PocketWaifu
 
     public class Lottery
     {
-        private static CharacterPool<ulong> _currentSeason = new CharacterPool<ulong>();
 
         private static List<Quality> _figurePartsQuality = new List<(Quality, int)>
         {
@@ -118,13 +115,11 @@ namespace Sanakan.Services.PocketWaifu
             public int Count;
         };
 
-        private ShindenClient _shClient;
-        private ISystemTime _time;
+        private Shinden _shinden;
 
-        public Lottery(ShindenClient client, ISystemTime time)
+        public Lottery(Shinden shinden)
         {
-            _shClient = client;
-            _time = time;
+            _shinden = shinden;
         }
 
         public static List<LotteryRewardInfo> Simplify(List<LotteryRewardInfo> rewards)
@@ -149,26 +144,6 @@ namespace Sanakan.Services.PocketWaifu
         public static List<(ItemType, float)> GetPillsChances() => _pills.GetChances();
         public static List<(ItemType, float)> GetFoodChances() => _food.GetChances();
 
-        public async Task<ulong> GetRandomTitleAsync()
-        {
-            if (_currentSeason.IsNeedForUpdate(_time.Now()))
-            {
-                try
-                {
-                    var res = await _shClient.Ex.GetAnimeFromSeasonAsync();
-                    if (!res.IsSuccessStatusCode()) return 0;
-
-                    _currentSeason.Update(res.Body, _time.Now());
-                }
-                catch (Exception)
-                {
-                    return 0;
-                }
-            }
-
-            return _currentSeason.GetOneRandom();
-        }
-
         public async Task<LotteryRewardInfo> GetAndApplyRewardAsync(User user)
         {
             var reward = Fun.GetOneRandomFrom(_rewardsPool);
@@ -183,7 +158,7 @@ namespace Sanakan.Services.PocketWaifu
                     ulong randomTitle = 0;
                     if (reward == LotteryReward.CardsFromSeason)
                     {
-                        randomTitle = await GetRandomTitleAsync();
+                        randomTitle = await _shinden.GetRandomSeasonTitleAsync();
                         if (randomTitle == 0)
                         {
                             reward = LotteryReward.CardsBig;

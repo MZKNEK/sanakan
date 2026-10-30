@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Discord.WebSocket;
-using Microsoft.Extensions.Caching.Memory;
 using Sanakan.Api.Controllers;
 using Sanakan.Database.Models;
 using Sanakan.Extensions;
@@ -321,7 +320,7 @@ namespace Artifacts
     {
         private static WaifuController NewWaifuController(FakeExecutor executor)
             => ControllerHarness.Attach(new WaifuController(null, null, executor, null, new FakeConfig(), new FixedTime(),
-                new MemoryCache(new MemoryCacheOptions()), null, null));
+                new Sanakan.Services.Shinden(null, null, null, new ListLogger(), new FixedTime()), null, null));
 
         [Fact]
         public async Task UpdateCardInfo_EnqueuesTaskAndReturnsOk()

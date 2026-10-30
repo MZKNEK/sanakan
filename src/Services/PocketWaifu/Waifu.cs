@@ -59,12 +59,7 @@ namespace Sanakan.Services.PocketWaifu
         public const string AnimatedCardExtension = "webp";
         public const string NormalCardExtension = "webp";
 
-        private AsyncNonKeyedLocker _semaphoreChars = new AsyncNonKeyedLocker(1);
-
         private const int DERE_TAB_SIZE = ((int)Dere.Yato) + 1;
-        private static CharacterPool<ICharacterInfoTitle> _charIdAnime = new CharacterPool<ICharacterInfoTitle>();
-        private static CharacterPool<ICharacterInfoTitle> _charIdManga = new CharacterPool<ICharacterInfoTitle>();
-        private static CharacterPool<ICharacterInfoTitle> _charIdAll = new CharacterPool<ICharacterInfoTitle>();
         private DateTime _hiddeScalpelBeforeDate = new DateTime(2023, 5, 1);
 
         private static List<string> _qualityNamesList = Enum.GetNames(typeof(Quality)).ToList();
@@ -1450,62 +1445,11 @@ namespace Sanakan.Services.PocketWaifu
             return msg;
         }
 
-        public ICharacterInfoTitle IsInPool(CharacterPoolType type, ulong id)
-        {
-            var idPool = type switch
-            {
-                CharacterPoolType.Anime => _charIdAnime,
-                CharacterPoolType.Manga => _charIdManga,
-                _ => _charIdAll,
-            };
+        public Task<ICharacterInfoTitle> IsInPoolAsync(CharacterPoolType type, ulong id)
+            => _shinden.FindInPoolAsync(type, id);
 
-            if (idPool.Pool.IsNullOrEmpty())
-                return null;
-
-            return idPool.Pool.FirstOrDefault(x => x.Id == id);
-        }
-
-        public async Task<(ICharacterInfoTitle CharInfo, string Code)> GetRandomCharacterAsync(CharacterPoolType type)
-        {
-            var idPool = type switch
-            {
-                CharacterPoolType.Anime => _charIdAnime,
-                CharacterPoolType.Manga => _charIdManga,
-                _ => _charIdAll,
-            };
-
-            if (idPool.IsNeedForUpdate(_time.Now()))
-            {
-                using (await _semaphoreChars.LockAsync().ConfigureAwait(false))
-                {
-                    if (idPool.IsNeedForUpdate(_time.Now()))
-                    {
-                        try
-                        {
-                            var characters = type switch
-                            {
-                                CharacterPoolType.Anime => await _shClient.Ex.GetAllCharactersFromAnimeFatAsync(),
-                                CharacterPoolType.Manga => await _shClient.Ex.GetAllCharactersFromMangaFatAsync(),
-                                _ => await _shClient.Ex.GetAllCharactersFatAsync(),
-                            };
-
-                            if (!characters.IsSuccessStatusCode())
-                            {
-                                return (null, characters.Code.ToString());
-                            }
-
-                            idPool.Update(characters.Body, _time.Now());
-                        }
-                        catch (Exception ex)
-                        {
-                            return (null, $"laud lama: {ex.Message}");
-                        }
-                    }
-                }
-            }
-
-            return (idPool.GetOneRandom(), HttpStatusCode.OK.ToString());
-        }
+        public Task<(ICharacterInfoTitle CharInfo, string Code)> GetRandomCharacterAsync(CharacterPoolType type)
+            => _shinden.GetRandomCharacterAsync(type);
 
         private bool FileIsTooBigToSend(string file)
         {
@@ -1692,10 +1636,7 @@ namespace Sanakan.Services.PocketWaifu
             return pages;
         }
 
-        public async Task<List<ulong>> GetCharactersFromSeasonAsync()
-        {
-            return await _shClient.Ex.GetAnimeFromSeasonAsync(true);
-        }
+        public Task<List<ulong>> GetCharactersFromSeasonAsync() => _shinden.GetSeasonCharactersAsync();
 
         public async Task<List<Card>> OpenBoosterPackAsync(IUser user, BoosterPack pack, CharacterPoolType poolType)
         {

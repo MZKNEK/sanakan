@@ -12,7 +12,6 @@ using Discord.WebSocket;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Caching.Memory;
 using Microsoft.IdentityModel.Tokens;
 using Sanakan.Api.Models;
 using Sanakan.Config;
@@ -37,17 +36,17 @@ namespace Sanakan.Api.Controllers
         private readonly ISystemTime _time;
         private readonly IExecutor _executor;
         private readonly ShindenClient _shClient;
-        private readonly IMemoryCache _nameCache;
+        private readonly Services.Shinden _shinden;
         private readonly DiscordSocketClient _client;
 
         public UserController(DiscordSocketClient client, ShindenClient shClient, ILogger logger,
-            IExecutor executor, IConfig config, ISystemTime time, IMemoryCache cache)
+            IExecutor executor, IConfig config, ISystemTime time, Services.Shinden shinden)
         {
             _time = time;
             _config = config;
             _client = client;
             _logger = logger;
-            _nameCache = cache;
+            _shinden = shinden;
             _executor = executor;
             _shClient = shClient;
         }
@@ -102,30 +101,22 @@ namespace Sanakan.Api.Controllers
         [HttpGet("shinden/{id}/username"), AllowAnonymous]
         public async Task<ActionResult<string>> GetShindenUsernameByShindenId(ulong id)
         {
-            if (_nameCache.TryGetValue(id, out string username))
-            {
-                return username;
-            }
-
-            Shinden.API.IResponse<Shinden.Models.IUserInfo> res;
+            string username;
             try
             {
-                res = await _shClient.User.GetAsync(id);
+                username = await _shinden.GetUserNameAsync(id);
             }
             catch (Exception)
             {
                 return "Can't connect to shinden!".ToResponse(503);
             }
 
-            if (!res.IsSuccessStatusCode())
+            if (username == null)
             {
                 return "User not found!".ToResponse(404);
             }
 
-            _nameCache.Set(id, res.Body.Name, new MemoryCacheEntryOptions()
-                .SetAbsoluteExpiration(TimeSpan.FromHours(12)));
-
-            return res.Body.Name;
+            return username;
         }
 
         /// <summary>

@@ -45,7 +45,7 @@ namespace Sanakan.Api.Controllers
         private readonly IExecutor _executor;
         private readonly Expedition _expedition;
         private readonly ShindenClient _shClient;
-        private readonly IMemoryCache _nameCache;
+        private readonly Services.Shinden _shinden;
         private readonly DiscordSocketClient _client;
 
         private const int MaxShindenFailures = 2;
@@ -55,14 +55,14 @@ namespace Sanakan.Api.Controllers
         private const string ShindenOpenIdempotencyScope = "shinden-boosterpack-open";
 
         public WaifuController(ShindenClient shClient, Waifu waifu, IExecutor executor, TagHelper tags,
-            IConfig config, ISystemTime time, IMemoryCache cache, DiscordSocketClient client, Expedition expedition)
+            IConfig config, ISystemTime time, Services.Shinden shinden, DiscordSocketClient client, Expedition expedition)
         {
             _time = time;
             _tags = tags;
             _waifu = waifu;
             _client = client;
             _config = config;
-            _nameCache = cache;
+            _shinden = shinden;
             _executor = executor;
             _shClient = shClient;
             _expedition = expedition;
@@ -1425,27 +1425,15 @@ namespace Sanakan.Api.Controllers
                     return _client.CurrentUser.GetUserNickInGuild();
                 }
 
-                if (_nameCache.TryGetValue(shindenId, out string username))
-                {
-                    return username;
-                }
-
                 // controllers are per request - after repeated failures skip further lookups so a card list does not wait for every owner
                 if (_shindenFailures >= MaxShindenFailures)
                 {
-                    return string.Empty;
+                    return _shinden.GetCachedUserName(shindenId) ?? string.Empty;
                 }
 
                 try
                 {
-                    var res = await _shClient.User.GetAsync(shindenId);
-                    if (res.IsSuccessStatusCode())
-                    {
-                        _nameCache.Set(shindenId, res.Body.Name, new MemoryCacheEntryOptions()
-                            .SetAbsoluteExpiration(TimeSpan.FromHours(24)));
-
-                        return res.Body.Name;
-                    }
+                    return await _shinden.GetUserNameAsync(shindenId) ?? string.Empty;
                 }
                 catch (Exception)
                 {

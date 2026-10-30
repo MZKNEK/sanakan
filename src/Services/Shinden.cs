@@ -9,11 +9,13 @@ using System.Threading;
 using System.Threading.Tasks;
 using Discord.Commands;
 using Discord.WebSocket;
-using Microsoft.Extensions.Caching.Memory;
+using Sanakan.Database.Models;
 using Sanakan.Extensions;
+using Sanakan.Services.Cache;
 using Sanakan.Services.PocketWaifu;
 using Sanakan.Services.Session;
 using Sanakan.Services.Session.Models;
+using Sanakan.Services.Time;
 using Shinden;
 using Shinden.Logger;
 using Shinden.Models;
@@ -27,9 +29,22 @@ namespace Sanakan.Services
 
     public class Shinden
     {
-        private static MemoryCache _titleRelationCache = new MemoryCache(new MemoryCacheOptions());
-        private static MemoryCache _characterCache = new MemoryCache(new MemoryCacheOptions());
-        private static MemoryCache _titleCache = new MemoryCache(new MemoryCacheOptions());
+        private static readonly TimeSpan RetryAfter = TimeSpan.FromMinutes(5);
+        private static readonly TimeSpan InfoMaxAge = TimeSpan.FromHours(8);
+        private static readonly TimeSpan InfoKeepFor = TimeSpan.FromDays(1);
+        private static readonly TimeSpan PoolMaxAge = TimeSpan.FromDays(1);
+        private static readonly TimeSpan UserNameMaxAge = TimeSpan.FromHours(24);
+        private static readonly TimeSpan UserNameKeepFor = TimeSpan.FromDays(30);
+
+        private readonly KeyedCache<ulong, ICharacterInfo> _characters;
+        private readonly KeyedCache<ulong, List<IRelation>> _titleCharacters;
+        private readonly KeyedCache<ulong, ITitleInfo> _titles;
+        private readonly KeyedCache<ulong, string> _userNames;
+        private readonly CachedValue<List<PoolCharacter>> _animePool;
+        private readonly CachedValue<List<PoolCharacter>> _mangaPool;
+        private readonly CachedValue<List<PoolCharacter>> _allPool;
+        private readonly CachedValue<List<ulong>> _seasonTitles;
+        private readonly CachedValue<List<ulong>> _seasonCharacters;
 
         private Dictionary<string, string> _customNames = new Dictionary<string, string>
         {
@@ -42,83 +57,152 @@ namespace Sanakan.Services
         private ShindenClient _shClient;
         private SessionManager _session;
         private ImageProcessing _img;
+        private ISystemTime _time;
         private ILogger _logger;
 
-        public Shinden(ShindenClient client, SessionManager session, ImageProcessing img, ILogger logger)
+        // without cacheDir nothing is kept between restarts
+        public Shinden(ShindenClient client, SessionManager session, ImageProcessing img, ILogger logger, ISystemTime time, string cacheDir = null)
         {
             _logger = logger;
             _shClient = client;
             _session = session;
+            _time = time;
             _img = img;
+
+            string PathOf(string name) => cacheDir == null ? null : Path.Combine(cacheDir, name);
+
+            _characters = new KeyedCache<ulong, ICharacterInfo>(InfoMaxAge, RetryAfter, InfoKeepFor);
+            _titleCharacters = new KeyedCache<ulong, List<IRelation>>(InfoMaxAge, RetryAfter, InfoKeepFor);
+            _titles = new KeyedCache<ulong, ITitleInfo>(InfoMaxAge, RetryAfter, InfoKeepFor);
+            _userNames = new KeyedCache<ulong, string>(UserNameMaxAge, RetryAfter, UserNameKeepFor, PathOf("usernames.json"), logger);
+            _animePool = new CachedValue<List<PoolCharacter>>(PoolMaxAge, RetryAfter, PathOf("pool-anime.json"), logger);
+            _mangaPool = new CachedValue<List<PoolCharacter>>(PoolMaxAge, RetryAfter, PathOf("pool-manga.json"), logger);
+            _allPool = new CachedValue<List<PoolCharacter>>(PoolMaxAge, RetryAfter, PathOf("pool-all.json"), logger);
+            _seasonTitles = new CachedValue<List<ulong>>(PoolMaxAge, RetryAfter, PathOf("season-titles.json"), logger);
+            _seasonCharacters = new CachedValue<List<ulong>>(PoolMaxAge, RetryAfter, PathOf("season-characters.json"), logger);
         }
+
+        public Task SaveCacheAsync() => _userNames.SaveAsync(_time.Now());
 
         public async Task<ICharacterInfo> GetCharacterInfoAsync(ulong characterId)
         {
-            ICharacterInfo character = null;
             try
             {
-                if (_characterCache.TryGetValue(characterId, out character))
-                    return character;
-
-                var res = await _shClient.GetCharacterInfoAsync(characterId);
-                if (res.IsSuccessStatusCode())
+                return await _characters.GetAsync(characterId, async () =>
                 {
-                    character = res.Body;
-                    _characterCache.Set(characterId, character, new MemoryCacheEntryOptions()
-                        .SetAbsoluteExpiration(TimeSpan.FromHours(8)));
-                }
+                    var res = await _shClient.GetCharacterInfoAsync(characterId);
+                    return res.IsSuccessStatusCode() ? res.Body : null;
+                }, _time.Now());
             }
             catch (Exception ex)
             {
                 _logger.LogError($"Shinden: GetCharacterInfo {characterId}: {ex.Message}");
+                return null;
             }
-            return character;
         }
 
         public async Task<List<IRelation>> GetCharactersFromTitleAsync(ulong titleId)
         {
-            List<IRelation> characaters = null;
             try
             {
-                if (_titleRelationCache.TryGetValue(titleId, out characaters))
-                    return characaters;
-
-                var res = await _shClient.Title.GetCharactersAsync(titleId);
-                if (res.IsSuccessStatusCode())
+                return await _titleCharacters.GetAsync(titleId, async () =>
                 {
-                    characaters = res.Body;
-                    _titleRelationCache.Set(titleId, characaters, new MemoryCacheEntryOptions()
-                        .SetAbsoluteExpiration(TimeSpan.FromHours(8)));
-                }
+                    var res = await _shClient.Title.GetCharactersAsync(titleId);
+                    return res.IsSuccessStatusCode() ? res.Body : null;
+                }, _time.Now());
             }
             catch (Exception ex)
             {
                 _logger.LogError($"Shinden: GetCharactersFromTitle {titleId}: {ex.Message}");
+                return null;
             }
-            return characaters;
         }
 
         public async Task<ITitleInfo> GetInfoFromTitleAsync(ulong titleId)
         {
-            ITitleInfo info = null;
             try
             {
-                if (_titleCache.TryGetValue(titleId, out info))
-                    return info;
-
-                var res = await _shClient.Title.GetInfoAsync(titleId);
-                if (res.IsSuccessStatusCode())
+                return await _titles.GetAsync(titleId, async () =>
                 {
-                     info = res.Body;
-                    _titleCache.Set(titleId, info, new MemoryCacheEntryOptions()
-                        .SetAbsoluteExpiration(TimeSpan.FromHours(8)));
-                }
+                    var res = await _shClient.Title.GetInfoAsync(titleId);
+                    return res.IsSuccessStatusCode() ? res.Body : null;
+                }, _time.Now());
             }
             catch (Exception ex)
             {
                 _logger.LogError($"Shinden: GetInfoFromTitle {titleId}: {ex.Message}");
+                return null;
             }
-            return info;
+        }
+
+        // null when the user does not exist, throws when shinden is unreachable and the name was never seen
+        public Task<string> GetUserNameAsync(ulong shindenId)
+        {
+            return _userNames.GetAsync(shindenId, async () =>
+            {
+                var res = await _shClient.User.GetAsync(shindenId);
+                return res.IsSuccessStatusCode() ? res.Body.Name : null;
+            }, _time.Now());
+        }
+
+        public string GetCachedUserName(ulong shindenId) => _userNames.Peek(shindenId);
+
+        private CachedValue<List<PoolCharacter>> GetPool(CharacterPoolType type) => type switch
+        {
+            CharacterPoolType.Anime => _animePool,
+            CharacterPoolType.Manga => _mangaPool,
+            _ => _allPool,
+        };
+
+        private Task<List<PoolCharacter>> GetPoolCharactersAsync(CharacterPoolType type)
+        {
+            return GetPool(type).GetAsync(async () =>
+            {
+                var res = type switch
+                {
+                    CharacterPoolType.Anime => await _shClient.Ex.GetAllCharactersFromAnimeFatAsync(),
+                    CharacterPoolType.Manga => await _shClient.Ex.GetAllCharactersFromMangaFatAsync(),
+                    _ => await _shClient.Ex.GetAllCharactersFatAsync(),
+                };
+
+                if (!res.IsSuccessStatusCode())
+                    throw new Exception(res.Code.ToString());
+
+                return res.Body.IsNullOrEmpty() ? null : res.Body.Select(x => new PoolCharacter(x)).ToList();
+            }, _time.Now());
+        }
+
+        public async Task<(ICharacterInfoTitle CharInfo, string Code)> GetRandomCharacterAsync(CharacterPoolType type)
+        {
+            var characters = await GetPoolCharactersAsync(type);
+            if (characters.IsNullOrEmpty())
+                return (null, GetPool(type).LastError);
+
+            return (Fun.GetOneRandomFrom(characters), HttpStatusCode.OK.ToString());
+        }
+
+        public async Task<ICharacterInfoTitle> FindInPoolAsync(CharacterPoolType type, ulong id)
+        {
+            var characters = await GetPoolCharactersAsync(type);
+            return characters?.FirstOrDefault(x => x.Id == id);
+        }
+
+        public async Task<ulong> GetRandomSeasonTitleAsync()
+        {
+            var titles = await _seasonTitles.GetAsync(() => GetSeasonAsync(false), _time.Now());
+            return titles.IsNullOrEmpty() ? 0 : Fun.GetOneRandomFrom(titles);
+        }
+
+        public Task<List<ulong>> GetSeasonCharactersAsync()
+            => _seasonCharacters.GetAsync(() => GetSeasonAsync(true), _time.Now());
+
+        private async Task<List<ulong>> GetSeasonAsync(bool characters)
+        {
+            var res = await _shClient.Ex.GetAnimeFromSeasonAsync(characters);
+            if (!res.IsSuccessStatusCode())
+                throw new Exception(res.Code.ToString());
+
+            return res.Body.IsNullOrEmpty() ? null : res.Body;
         }
 
         public UrlParsingError ParseUrlToShindenId(string url, out ulong shindenId)

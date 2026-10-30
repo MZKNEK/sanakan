@@ -3,7 +3,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.Extensions.Caching.Memory;
 using Sanakan.Api.Controllers;
 using Sanakan.Api.Models;
 using Xunit;
@@ -14,7 +13,7 @@ namespace Artifacts
     {
         private static WaifuController NewController()
             => ControllerHarness.Attach(new WaifuController(null, null, new FakeExecutor(), null, new FakeConfig(), new FixedTime(),
-                new MemoryCache(new MemoryCacheOptions()), null, null));
+                new Sanakan.Services.Shinden(null, null, null, new ListLogger(), new FixedTime()), null, null));
 
         [Fact]
         public async Task TotalCards_NullFilter_Returns400()
