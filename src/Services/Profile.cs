@@ -403,33 +403,47 @@ namespace Sanakan.Services
 
             foreach (var (image, uri) in current)
             {
-                var link = await ImageLinkAsync(trash, uri, reuse);
+                var link = await ImageLinkAsync(trash, uri, image, reuse);
                 if (link != null)
                     code.Images[image] = link;
             }
             return code;
         }
 
-        // a link stays as it is, the bot's own pictures (the default background) are no image of the account
-        private async Task<string> ImageLinkAsync(ITextChannel trash, string uri, bool reuse)
+        // the bot's own pictures (the default background) are no image of the account; a picture still kept
+        // as a link of another site (set before the bot saved them) goes to the trash channel too, as Profilator
+        // shows only Discord's pictures, and is left out once the link is dead
+        private async Task<string> ImageLinkAsync(ITextChannel trash, string uri, ProfileImage image, bool reuse)
         {
             if (string.IsNullOrEmpty(uri) || uri.StartsWith(Dir.GetResource(""), StringComparison.Ordinal))
                 return null;
 
-            if (!Dir.IsLocal(uri))
-                return Uri.TryCreate(uri, UriKind.Absolute, out _) ? uri : null;
-
-            if (!File.Exists(uri))
+            var local = Dir.IsLocal(uri);
+            if (local ? !File.Exists(uri) : !Uri.TryCreate(uri, UriKind.Absolute, out _))
                 return null;
 
-            var written = File.GetLastWriteTimeUtc(uri);
+            var written = local ? File.GetLastWriteTimeUtc(uri) : DateTime.MinValue;
             var now = _time.Now();
             if (reuse && _sentImages.TryGetValue(uri, out var sent) && sent.Written == written && now - sent.Sent < ReuseSentImage)
                 return sent.Link;
 
+            var path = local ? uri : Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid():N}.webp");
             try
             {
-                var message = await trash.SendFileAsync(uri);
+                if (!local)
+                {
+                    var (width, height, stretch) = image switch
+                    {
+                        ProfileImage.Background => (750, 160, true),
+                        ProfileImage.Style => (750, 340, false),
+                        ProfileImage.Overlay => (750, 402, false),
+                        _ => (750, 500, false),
+                    };
+                    if (await SaveProfileImageAsync(uri, path, width, height, stretch) != SaveResult.Success || !File.Exists(path))
+                        return null;
+                }
+
+                var message = await trash.SendFileAsync(path);
                 var link = message.Attachments.FirstOrDefault()?.Url;
                 if (link != null)
                     _sentImages[uri] = (written, link, now);
@@ -438,6 +452,11 @@ namespace Sanakan.Services
             catch (Exception)
             {
                 return null;
+            }
+            finally
+            {
+                if (!local && File.Exists(path))
+                    File.Delete(path);
             }
         }
 
