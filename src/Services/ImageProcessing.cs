@@ -608,36 +608,7 @@ namespace Sanakan.Services
         }
 
         private IEnumerable<Card> GetOrdertedCardsForGallery(User user, int count)
-        {
-            if (user.Id == 1)
-                return user.GameDeck.Cards.OrderBy(x => x.Rarity).Take(count);
-
-            if (string.IsNullOrEmpty(user.GameDeck.GalleryOrderedIds))
-            {
-                return user.GameDeck.GetOrderedGalleryCards(_galleryTag.Id).Take(count);
-            }
-
-            var ids = user.GameDeck.GalleryOrderedIds.Split(" ")
-                .Select(x => Api.Models.UserSiteProfile.TryParseIds(x)).Distinct();
-
-            var cards = new List<Card>();
-            var cardsInGallery = user.GameDeck.GetOrderedGalleryCards(_galleryTag.Id).ToList();
-            foreach (var id in ids)
-            {
-                if (id == 0)
-                    continue;
-
-                var card = cardsInGallery.FirstOrDefault(x => x.Id == id);
-                if (card != null)
-                {
-                    cards.Add(card);
-                    cardsInGallery.Remove(card);
-                }
-            }
-
-            cards.AddRange(cardsInGallery);
-            return cards.Take(count);
-        }
+            => user.GetProfileGalleryCards(_galleryTag.Id, count);
 
         private async Task<Image> GetUserNewProfileStyleAsync(IUserInfo shindenUser, User botUser)
         {

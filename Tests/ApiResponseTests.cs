@@ -61,6 +61,7 @@ namespace Artifacts
                 {
                     BotWebHost.AddApiServices(services, Config);
                     services.AddSingleton((TagHelper)RuntimeHelpers.GetUninitializedObject(typeof(TagHelper)));
+                    services.AddSingleton((Sanakan.Services.Profile)RuntimeHelpers.GetUninitializedObject(typeof(Sanakan.Services.Profile)));
                     services.AddSingleton<ISystemTime>(time);
                     services.AddSingleton(waifu);
                     services.AddSingleton<Shinden.Logger.ILogger>(logger);

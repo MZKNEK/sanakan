@@ -2,6 +2,7 @@
 #pragma warning disable 0169
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -14,6 +15,7 @@ using Sanakan.Config;
 using Sanakan.Database.Models;
 using Sanakan.Extensions;
 using Sanakan.Services.Executor;
+using Sanakan.Services.PocketWaifu;
 using Sanakan.Services.Time;
 using Shinden;
 using Shinden.Logger;
@@ -379,6 +381,64 @@ namespace Sanakan.Services
 
             return await _img.GetUserProfileAsync(shindenUser, botUser, user.GetUserOrDefaultAvatarUrl(true),
                 topPosition, user.GetUserNickInGuild(), user.Roles.OrderByDescending(x => x.Position).FirstOrDefault()?.Color ?? Discord.Color.DarkerGrey);
+        }
+
+        private static readonly TimeSpan ReuseSentImage = TimeSpan.FromHours(12);
+        private readonly ConcurrentDictionary<string, (DateTime Written, string Link, DateTime Sent)> _sentImages
+            = new ConcurrentDictionary<string, (DateTime, string, DateTime)>();
+
+        // the code of the profile with links to its own pictures, each one the bot saved sent to the trash channel;
+        // with reuse a picture sent in the last 12 hours and not changed since keeps its link (Discord's last 24 hours)
+        public async Task<ProfileCode> GetProfileCodeWithImagesAsync(Database.Models.User user, ITextChannel trash, bool reuse)
+        {
+            var code = ProfileCode.FromUser(user);
+            var current = new List<(ProfileImage Image, string Uri)>
+            {
+                (ProfileImage.Background, user.BackgroundProfileUri),
+                (ProfileImage.Overlay, user.CustomProfileOverlayUrl),
+                (ProfileImage.Premium, user.PremiumCustomProfileOverlayUrl),
+            };
+            if (ProfileConfig.StyleNeedsImage(user.ProfileType))
+                current.Add((ProfileImage.Style, user.StatsReplacementProfileUri));
+
+            foreach (var (image, uri) in current)
+            {
+                var link = await ImageLinkAsync(trash, uri, reuse);
+                if (link != null)
+                    code.Images[image] = link;
+            }
+            return code;
+        }
+
+        // a link stays as it is, the bot's own pictures (the default background) are no image of the account
+        private async Task<string> ImageLinkAsync(ITextChannel trash, string uri, bool reuse)
+        {
+            if (string.IsNullOrEmpty(uri) || uri.StartsWith(Dir.GetResource(""), StringComparison.Ordinal))
+                return null;
+
+            if (!Dir.IsLocal(uri))
+                return Uri.TryCreate(uri, UriKind.Absolute, out _) ? uri : null;
+
+            if (!File.Exists(uri))
+                return null;
+
+            var written = File.GetLastWriteTimeUtc(uri);
+            var now = _time.Now();
+            if (reuse && _sentImages.TryGetValue(uri, out var sent) && sent.Written == written && now - sent.Sent < ReuseSentImage)
+                return sent.Link;
+
+            try
+            {
+                var message = await trash.SendFileAsync(uri);
+                var link = message.Attachments.FirstOrDefault()?.Url;
+                if (link != null)
+                    _sentImages[uri] = (written, link, now);
+                return link;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
         }
 
         public async Task<SaveResult> SaveProfileAndStyleImageAsync(string imgUrl, string pathTop, int widthTop, int heightTop, string pathBot, int widthBot, int heightBot)

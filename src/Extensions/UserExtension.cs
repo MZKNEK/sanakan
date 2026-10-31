@@ -587,6 +587,39 @@ namespace Sanakan.Extensions
         public static IEnumerable<Card> GetOrderedGalleryCards(this GameDeck deck, ulong galleryTagId)
             => deck.GetOrderedGalleryCardsUnlimited(galleryTagId).Take(deck.CardsInGallery);
 
+        // the cards the profile shows in its gallery, in the order the player set
+        public static IEnumerable<Card> GetProfileGalleryCards(this User user, ulong galleryTagId, int count)
+        {
+            if (user.Id == 1)
+                return user.GameDeck.Cards.OrderBy(x => x.Rarity).Take(count);
+
+            if (string.IsNullOrEmpty(user.GameDeck.GalleryOrderedIds))
+            {
+                return user.GameDeck.GetOrderedGalleryCards(galleryTagId).Take(count);
+            }
+
+            var ids = user.GameDeck.GalleryOrderedIds.Split(" ")
+                .Select(x => Api.Models.UserSiteProfile.TryParseIds(x)).Distinct();
+
+            var cards = new List<Card>();
+            var cardsInGallery = user.GameDeck.GetOrderedGalleryCards(galleryTagId).ToList();
+            foreach (var id in ids)
+            {
+                if (id == 0)
+                    continue;
+
+                var card = cardsInGallery.FirstOrDefault(x => x.Id == id);
+                if (card != null)
+                {
+                    cards.Add(card);
+                    cardsInGallery.Remove(card);
+                }
+            }
+
+            cards.AddRange(cardsInGallery);
+            return cards.Take(count);
+        }
+
         public static bool IsSupaBad(this GameDeck deck) => deck.Karma <= -5000;
         public static bool CanCreateDemon(this GameDeck deck) => deck.Karma <= -2000;
 

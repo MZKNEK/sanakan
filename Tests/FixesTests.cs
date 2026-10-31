@@ -448,7 +448,7 @@ namespace Artifacts
         public async Task Register_NullModel_Returns500()
         {
             var controller = ControllerHarness.Attach(new UserController(null, null, new ListLogger(), new FakeExecutor(),
-                new FakeConfig(), new FixedTime(), new Sanakan.Services.Shinden(null, null, null, new ListLogger(), new FixedTime())));
+                new FakeConfig(), new FixedTime(), new Sanakan.Services.Shinden(null, null, null, new ListLogger(), new FixedTime()), null, null));
 
             var result = await controller.RegisterUserAsync(null);
 

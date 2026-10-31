@@ -685,22 +685,7 @@ namespace Sanakan.Modules
                 }
                 else
                 {
-                    var current = new List<(ProfileImage Image, string Uri)>
-                    {
-                        (ProfileImage.Background, botuser.BackgroundProfileUri),
-                        (ProfileImage.Overlay, botuser.CustomProfileOverlayUrl),
-                        (ProfileImage.Premium, botuser.PremiumCustomProfileOverlayUrl),
-                    };
-                    if (ProfileConfig.StyleNeedsImage(botuser.ProfileType))
-                        current.Add((ProfileImage.Style, botuser.StatsReplacementProfileUri));
-
-                    foreach (var (image, uri) in current)
-                    {
-                        var link = await ImageLinkAsync(trash, uri);
-                        if (link != null)
-                            code.Images[image] = link;
-                    }
-
+                    code = await _profile.GetProfileCodeWithImagesAsync(botuser, trash, false);
                     note = code.Images.Count > 0 ? "\n\nKod z obrazkami działa przez 24 godziny, potem linki do obrazków wygasną. Każdy obrazek z kodu jest płatny przy ustawianiu."
                         : "\n\nNie masz własnych obrazków, więc kod jest bez nich.";
                 }
@@ -709,32 +694,25 @@ namespace Sanakan.Modules
             var text = code.Encode();
             var how = code.Images.Count > 0 ? $"```{text}```\n*Ustawisz go poleceniem* `konfiguracja profilu kod <kod>`"
                 : $"`{text}`\n\n*Ustawisz go poleceniem* `konfiguracja profilu kod {text}`";
-            await SafeReplyAsync("", embed: $"{Context.User.Mention} kod twojego profilu: {how}{note}".ToEmbedMessage(EMType.Info).Build());
+            var embed = $"{Context.User.Mention} kod twojego profilu: {how}{note}".ToEmbedMessage(EMType.Info).Build();
+
+            // a link button takes at most 512 characters, a longer code goes as a link in a message of its own
+            var profilator = ProfilatorUrl + text;
+            if (profilator.Length <= MaxButtonUrl)
+            {
+                var button = new ComponentBuilder().WithButton(ProfilatorLabel, style: ButtonStyle.Link, url: profilator).Build();
+                await SafeReplyAsync("", embed: embed, components: button);
+                return;
+            }
+
+            await SafeReplyAsync("", embed: embed);
+            await SafeReplyAsync("", embed: $"[{ProfilatorLabel}]({profilator})".ToEmbedMessage(EMType.Info).Build());
         }
 
-        // a link to an image of the profile: a picture saved by the bot goes to the trash channel and its link is taken from there,
-        // a link stays as it is, the bot's own pictures (the default background) are no image of the account
-        private static async Task<string> ImageLinkAsync(ITextChannel trash, string uri)
-        {
-            if (string.IsNullOrEmpty(uri) || uri.StartsWith(Dir.GetResource(""), StringComparison.Ordinal))
-                return null;
+        private const string ProfilatorUrl = "https://sanakan.pl/profilator/#";
+        private const string ProfilatorLabel = "Kliknij tutaj, by przejść do Profilatora";
+        private const int MaxButtonUrl = 512;
 
-            if (!Dir.IsLocal(uri))
-                return Uri.TryCreate(uri, UriKind.Absolute, out _) ? uri : null;
-
-            if (!File.Exists(uri))
-                return null;
-
-            try
-            {
-                var message = await trash.SendFileAsync(uri);
-                return message.Attachments.FirstOrDefault()?.Url;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
 
         [Command("globalki")]
         [Alias("global")]

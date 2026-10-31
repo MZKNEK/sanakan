@@ -18,9 +18,11 @@ using Sanakan.Config;
 using Sanakan.Config.Model;
 using Sanakan.Extensions;
 using Sanakan.Services.Executor;
+using Sanakan.Services.PocketWaifu;
 using Sanakan.Services.Time;
 using Shinden;
 using Shinden.Logger;
+using Shinden.Models;
 using Z.EntityFramework.Plus;
 
 namespace Sanakan.Api.Controllers
@@ -37,11 +39,15 @@ namespace Sanakan.Api.Controllers
         private readonly IExecutor _executor;
         private readonly ShindenClient _shClient;
         private readonly Services.Shinden _shinden;
+        private readonly TagHelper _tags;
+        private readonly Services.Profile _profile;
         private readonly DiscordSocketClient _client;
 
         public UserController(DiscordSocketClient client, ShindenClient shClient, ILogger logger,
-            IExecutor executor, IConfig config, ISystemTime time, Services.Shinden shinden)
+            IExecutor executor, IConfig config, ISystemTime time, Services.Shinden shinden, TagHelper tags, Services.Profile profile)
         {
+            _tags = tags;
+            _profile = profile;
             _time = time;
             _config = config;
             _client = client;
@@ -214,6 +220,114 @@ namespace Sanakan.Api.Controllers
 
                 return await GetUserPermissionsAsync(discordId.Value, guildId ?? MainGuildId);
             }
+        }
+
+        /// <summary>
+        /// Pobiera dane do podglądu profilu w Profilatorze: kod wyglądu z obrazkami (wysłanymi na kanał śmieci głównego serwera), liczby, karty i statystyki z Shindena (nagłówek x-app-key z uprawnieniem Info)
+        /// </summary>
+        /// <param name="id">id użytkownika discorda</param>
+        /// <response code="404">User not found</response>
+        [HttpGet("discord/{id}/profile"), Authorize(Policy = "Info")]
+        public async Task<ActionResult<ProfilePreview>> GetProfilePreviewAsync(ulong id)
+        {
+            using (var db = new Database.DatabaseContext(_config))
+            {
+                var user = await db.GetCachedFullUserAsync(id);
+                if (user == null)
+                {
+                    return "User not found!".ToResponse(404);
+                }
+
+                var ranking = await db.GetCachedAllUsersLiteAsync(1);
+                var top = ranking.OrderByDescending(x => x.ExpCnt).Select(x => x.Id).ToList().IndexOf(id) + 1;
+
+                // as the profile is drawn: the colour of the highest role, grey without one
+                var member = _client.GetGuild(MainGuildId)?.GetUser(id);
+                var account = (Discord.IUser)member ?? _client.GetUser(id);
+                var color = member?.Roles.OrderByDescending(x => x.Position).FirstOrDefault()?.Color ?? Discord.Color.Default;
+                if (color == Discord.Color.Default)
+                    color = Discord.Color.DarkerGrey;
+
+                // the code with the account's own pictures, sent to the trash channel of the main server
+                var gConfig = await db.GetCachedGuildFullConfigAsync(MainGuildId);
+                var trash = _client.GetGuild(MainGuildId)?.GetTextChannel(gConfig?.WaifuConfig?.TrashCommandsChannel ?? 0);
+                var code = trash == null ? ProfileCode.FromUser(user) : await _profile.GetProfileCodeWithImagesAsync(user, trash, true);
+
+                var shinden = await GetShindenUserAsync(user.Shinden);
+                var stats = shinden?.ListStats;
+                var cards = user.GameDeck.Cards;
+                var waifu = user.GameDeck.Waifu != 0 ? user.GameDeck.GetWaifuCard() : null;
+
+                return new ProfilePreview
+                {
+                    Code = code.Encode(),
+                    Nick = account?.GetUserNickInGuild() ?? "",
+                    Avatar = account?.GetUserOrDefaultAvatarUrl(true) ?? "",
+                    Color = "#" + color.RawValue.ToString("x6"),
+                    Rank = shinden?.Rank ?? "",
+                    Level = user.Level,
+                    Exp = user.ExpCnt,
+                    Top = top,
+                    Messages = user.MessagesCnt,
+                    Sc = user.ScCnt,
+                    Tc = user.TcCnt,
+                    Ac = user.AcCnt,
+                    Ct = user.GameDeck.CTCnt,
+                    Pc = user.GameDeck.PVPCoins,
+                    Cards = cards.Count,
+                    Limit = user.GameDeck.MaxNumberOfCards,
+                    Karma = user.GameDeck.Karma,
+                    Rarities = cards.Where(x => !x.FromFigure).GroupBy(x => x.Rarity).ToDictionary(x => x.Key.ToString(), x => x.Count()),
+                    Scalpels = cards.Count(x => !string.IsNullOrEmpty(x.CustomImage)),
+                    Scissors = cards.Count(x => !string.IsNullOrEmpty(x.CustomBorder)),
+                    Ultimates = cards.Count(x => x.FromFigure),
+                    Waifu = waifu == null ? null : CardFinalView.GetCardProfileInShindenUrl(waifu),
+                    Gallery = user.GetProfileGalleryCards(_tags.GetTag(TagType.Gallery).Id, 12).Select(CardFinalView.GetCardProfileInShindenUrl).ToList(),
+                    Anime = ToListStats(stats?.AnimeStatus, stats?.AnimeMeanScore, stats?.EpisodesCount, stats?.AnimeTime),
+                    Manga = ToListStats(stats?.MangaStatus, stats?.MangaMeanScore, stats?.ChaptersCount, stats?.MangaTime),
+                };
+            }
+        }
+
+        private async Task<IUserInfo> GetShindenUserAsync(ulong shindenId)
+        {
+            if (shindenId == 0)
+                return null;
+
+            try
+            {
+                var res = await _shClient.User.GetAsync(shindenId);
+                return res.IsSuccessStatusCode() ? res.Body : null;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Profile preview: shinden user {shindenId}: {ex.Message}");
+                return null;
+            }
+        }
+
+        private static ProfileListStats ToListStats(ISeriesStatus status, IMeanScore score, ulong? count, IDedicatedTime time)
+        {
+            if (status == null)
+                return null;
+
+            return new ProfileListStats
+            {
+                InProgress = status.InProgress ?? 0,
+                Completed = status.Completed ?? 0,
+                Skipped = status.Skipped ?? 0,
+                OnHold = status.OnHold ?? 0,
+                Dropped = status.Dropped ?? 0,
+                InPlan = status.InPlan ?? 0,
+                Total = status.Total ?? 0,
+                Rating = score?.Rating ?? 0,
+                Count = count ?? 0,
+                Years = time?.Years ?? 0,
+                Months = time?.Months ?? 0,
+                Days = time?.Days ?? 0,
+                Hours = time?.Hours ?? 0,
+                Minutes = time?.Minutes ?? 0,
+            };
         }
 
         private async Task<ActionResult<UserPermissions>> GetUserPermissionsAsync(ulong userId, ulong guildId)
