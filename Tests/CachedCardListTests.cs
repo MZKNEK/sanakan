@@ -15,6 +15,11 @@ using Z.EntityFramework.Plus;
 
 namespace Artifacts
 {
+    // Card writes in parallel tests expire the global ultimate/unique card cache tags.
+    [CollectionDefinition(nameof(CachedCardListTests), DisableParallelization = true)]
+    public class CachedCardListCollection { }
+
+    [Collection(nameof(CachedCardListTests))]
     public class CachedCardListTests : IDisposable
     {
         private const ulong DiscordId = 93001;
