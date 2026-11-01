@@ -250,6 +250,10 @@ namespace Artifacts
             var users = await client.Search.UserAsync("Sniku");
             Assert.Equal("/v1/search/users", _stub.Requests.Last().RequestUri.AbsolutePath);
             Assert.Equal(42ul, users.Body.Single().Id);
+            Assert.Equal("http://cdn.shinden.eu/cdn1/avatars/225x350/42.jpg", users.Body.Single().AvatarUrl);
+
+            Respond(@"[ { ""user_id"": 43, ""name"": ""Bez"", ""rank"": ""User"", ""avatar"": false } ]");
+            Assert.Equal("http://cdn.shinden.eu/cdn1/other/placeholders/user/100x100.jpg", (await client.Search.UserAsync("Bez")).Body.Single().AvatarUrl);
 
             Respond(@"[ { ""character_id"": 15, ""first_name"": ""Lelouch"", ""last_name"": ""Lamperouge"", ""picture"": 1234 } ]");
             var characters = await client.Search.CharacterAsync("Lelouch");

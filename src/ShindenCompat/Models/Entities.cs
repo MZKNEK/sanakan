@@ -179,6 +179,7 @@ namespace Sanakan.ShindenCompat.Models.Entities
     {
         public ulong Id { get; set; }
         public string Name { get; set; }
+        public string AvatarUrl { get; set; }
         public string Rank { get; set; }
 
         public override string ToString() => Name;

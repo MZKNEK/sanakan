@@ -194,6 +194,7 @@ namespace Sanakan.ShindenCompat
         {
             Id = user.Id,
             Name = user.Name,
+            AvatarUrl = Url.GetUserAvatarURL(user.HasAvatar, user.Id),
             Rank = user.Rank,
         };
 

@@ -14,6 +14,9 @@ namespace Sanakan.ShindenCompat
         public static string GetUserAvatarURL(ulong? imageId, ulong userId)
             => imageId.GetValueOrDefault() == 0 ? GetPlaceholderUserImageURL() : $"{ImageServerUrl}cdn1/avatars/225x350/{userId}.jpg?v{imageId}";
 
+        public static string GetUserAvatarURL(bool hasAvatar, ulong userId)
+            => hasAvatar ? $"{ImageServerUrl}cdn1/avatars/225x350/{userId}.jpg" : GetPlaceholderUserImageURL();
+
         public static string GetPersonPictureURL(ulong? imageId) => GetBigImageURL(imageId);
 
         public static string GetPlaceholderImageURL() => $"{ImageServerUrl}cdn1/other/placeholders/title/225x350.jpg";

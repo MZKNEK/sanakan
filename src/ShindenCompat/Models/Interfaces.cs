@@ -137,6 +137,7 @@ namespace Sanakan.ShindenCompat.Models
     public interface IUserSearch : IIndexable
     {
         string Name { get; }
+        string AvatarUrl { get; }
         string Rank { get; }
     }
 
