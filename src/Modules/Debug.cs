@@ -43,13 +43,15 @@ namespace Sanakan.Modules
         private ShindenClient _shClient;
         private Services.ImageProcessing _img;
         private Services.Heartbeat _heartbeat;
+        private Services.Shinden _shinden;
         private Services.DiscordIngest _ingest;
         private Services.ScamImages.ScamImageScanner _scamImages;
 
         public Debug(Waifu waifu, ShindenClient shClient, Services.Helper helper, Services.ImageProcessing img,
             IConfig config, IExecutor executor, Spawn spawn, ISystemTime time, EmoteCounter counter, Services.Heartbeat heartbeat,
-            Services.ScamImages.ScamImageScanner scamImages, Services.DiscordIngest ingest)
+            Services.ScamImages.ScamImageScanner scamImages, Services.DiscordIngest ingest, Services.Shinden shinden)
         {
+            _shinden = shinden;
             _scamImages = scamImages;
             _heartbeat = heartbeat;
             _ingest = ingest;
@@ -1717,6 +1719,40 @@ namespace Sanakan.Modules
                 using (var badgeStream = badge.ToWebpStream())
                 {
                     await Context.Channel.SendFileAsync(badgeStream, $"{usr.Id}.webp");
+                }
+            }
+        }
+
+        [Command("ile", RunMode = RunMode.Async), RequireDevOrTester]
+        [Summary("generuje wszystkie warianty obrazka statystyk ze strony")]
+        [Remarks("")]
+        public async Task GenerateSiteStatisticVariantsAsync([Summary("użytkownik(opcjonalne)")]SocketGuildUser user = null)
+        {
+            var usr = user ?? Context.User as SocketGuildUser;
+            if (usr == null) return;
+
+            using (var db = new Database.DatabaseContext(Config))
+            {
+                var botUser = await db.GetCachedFullUserAsync(usr.Id);
+                if (botUser == null || botUser.Shinden == 0)
+                {
+                    await SafeReplyAsync("", embed: "Ta osoba nie połączyła konta bota z kontem na stronie.".ToEmbedMessage(EMType.Error).Build());
+                    return;
+                }
+
+                List<(string Name, Stream Image)> images = null;
+                try
+                {
+                    images = await _shinden.GetSiteStatisticVariantsAsync(botUser.Shinden, usr);
+                    await Context.Channel.SendFilesAsync(images.Select(x => new FileAttachment(x.Image, $"ile-{x.Name}.webp")));
+                }
+                catch (Exception ex)
+                {
+                    await SafeReplyAsync("", embed: $"Brak połączenia z Shindenem! ({ex.Message})".ToEmbedMessage(EMType.Error).Build());
+                }
+                finally
+                {
+                    images?.ForEach(x => x.Image.Dispose());
                 }
             }
         }

@@ -349,12 +349,63 @@ namespace Sanakan.Services
             var resLR = await GetUserLastReadedAsync(shindenId);
             var resLW = await GetUserLastWatchedAsync(shindenId);
 
-            using (var image = await _img.GetSiteStatisticAsync(userInfo.Info,
-                user.Roles.OrderByDescending(x => x.Position).FirstOrDefault()?.Color ?? Discord.Color.DarkerGrey,
-                resLR, resLW))
+            using (var image = await _img.GetSiteStatisticAsync(userInfo.Info, GetSiteStatisticColor(user), resLR, resLW))
             {
                 return image.ToWebpStream();
             }
+        }
+
+        public async Task<List<(string Name, Stream Image)>> GetSiteStatisticVariantsAsync(ulong shindenId, SocketGuildUser user)
+        {
+            var userInfo = await GetUserInfoAsync(shindenId);
+            if (userInfo.Info is null) throw new Exception(userInfo.Code.ToString());
+
+            var resLR = await GetUserLastReadedAsync(shindenId);
+            var resLW = await GetUserLastWatchedAsync(shindenId);
+            var color = GetSiteStatisticColor(user);
+
+            var variants = new[] { ("pelny", true, true), ("anime", true, false), ("manga", false, true), ("pusty", false, false) };
+            var images = new List<(string Name, Stream Image)>();
+            foreach (var (name, anime, manga) in variants)
+            {
+                using var image = await _img.GetSiteStatisticAsync(new PartialUserInfo(userInfo.Info, anime, manga),
+                    color, manga ? resLR : null, anime ? resLW : null);
+
+                images.Add((name, image.ToWebpStream()));
+            }
+            return images;
+        }
+
+        private static Discord.Color GetSiteStatisticColor(SocketGuildUser user)
+            => user.Roles.OrderByDescending(x => x.Position).FirstOrDefault()?.Color ?? Discord.Color.DarkerGrey;
+
+        private sealed class PartialUserInfo : IUserInfo
+        {
+            private readonly IUserInfo _info;
+
+            public PartialUserInfo(IUserInfo info, bool anime, bool manga)
+            {
+                _info = info;
+                var stats = info.ListStats;
+                ListStats = new ShindenCompat.Models.Entities.ListStats
+                {
+                    AnimeStatus = anime ? stats?.AnimeStatus : null,
+                    AnimeTime = anime ? stats?.AnimeTime : null,
+                    AnimeMeanScore = anime ? stats?.AnimeMeanScore : null,
+                    EpisodesCount = anime ? stats?.EpisodesCount : null,
+                    MangaStatus = manga ? stats?.MangaStatus : null,
+                    MangaTime = manga ? stats?.MangaTime : null,
+                    MangaMeanScore = manga ? stats?.MangaMeanScore : null,
+                    ChaptersCount = manga ? stats?.ChaptersCount : null,
+                };
+            }
+
+            public ulong Id => _info.Id;
+            public string Name => _info.Name;
+            public string AvatarUrl => _info.AvatarUrl;
+            public string Rank => _info.Rank;
+            public ulong? ForumId => _info.ForumId;
+            public IListStats ListStats { get; }
         }
 
         private async Task<List<ILastWatched>> GetUserLastWatchedAsync(ulong shindenId)
@@ -362,7 +413,7 @@ namespace Sanakan.Services
             List<ILastWatched> lw = null;
             try
             {
-                var response = await _shClient.User.GetLastWatchedAsync(shindenId);
+                var response = await _shClient.User.GetLastWatchedAsync(shindenId, 50);
                 if (response.IsSuccessStatusCode()) lw = response.Body;
             }
             catch (Exception ex)
@@ -377,7 +428,7 @@ namespace Sanakan.Services
             List<ILastReaded> lr = null;
             try
             {
-                var response = await _shClient.User.GetLastReadedAsync(shindenId);
+                var response = await _shClient.User.GetLastReadedAsync(shindenId, 50);
                 if (response.IsSuccessStatusCode()) lr = response.Body;
             }
             catch (Exception ex)

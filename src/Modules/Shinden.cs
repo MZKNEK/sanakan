@@ -169,7 +169,13 @@ namespace Sanakan.Modules
                 try
                 {
                     using var stream = await _shinden.GetSiteStatisticAsync(botUser.Shinden, usr);
-                    await Context.Channel.SendFileAsync(stream, $"{usr.Id}.webp", $"<{Shden.Url.GetProfileURL(botUser.Shinden)}>");
+                    var link = new Discord.ComponentBuilder()
+                        .WithButton("Profil na Shindenie", style: Discord.ButtonStyle.Link, url: Shden.Url.GetProfileURL(botUser.Shinden))
+                        .WithButton("Lista anime", style: Discord.ButtonStyle.Link, url: Shden.Url.GetAnimeListURL(botUser.Shinden))
+                        .WithButton("Lista mangi", style: Discord.ButtonStyle.Link, url: Shden.Url.GetMangaListURL(botUser.Shinden))
+                        .Build();
+
+                    await Context.Channel.SendFileAsync(stream, $"{usr.Id}.webp", components: link);
                 }
                 catch(Exception ex)
                 {

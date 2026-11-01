@@ -24,7 +24,7 @@ using SixLabors.ImageSharp.Formats.Webp;
 
 namespace Sanakan.Services
 {
-    public class ImageProcessing
+    public partial class ImageProcessing
     {
         private const long MaxImageBytes = 40 * 1024 * 1024;
         private const int MaxImageDimension = 8192;
@@ -1045,46 +1045,6 @@ namespace Sanakan.Services
             return selected > 0 ? $"{dir}{selected}.png": string.Empty;
         }
 
-        private async Task<Image<Rgba32>> GetSiteStatisticUserBadge(string avatarUrl, string name, string color)
-        {
-            var font = GetFontSize(_latoBold, 32, name, 360);
-
-            var badge = new Image<Rgba32>(450, 65);
-            badge.Mutate(x => x.DrawText(name, font, GetOrCreateColor("#A4A4A4"), new Point(72, 3 + (int)((58 - font.Size) / 2))));
-
-            using (var border = new Image<Rgba32>(3, 57))
-            {
-                border.Mutate(x => x.BackgroundColor(GetOrCreateColor(color)));
-                badge.Mutate(x => x.DrawImage(border, new Point(63, 5), 1));
-            }
-
-            using (var stream = await GetImageFromUrlAsync(avatarUrl))
-            {
-                if (stream is null || stream == Stream.Null)
-                    return badge;
-
-                using (var avatar = Image.Load(stream))
-                {
-                    avatar.Mutate(x => x.Resize(new ResizeOptions
-                    {
-                        Mode = ResizeMode.Crop,
-                        Size = new Size(57, 57)
-                    }));
-
-                    if (avatar.Frames.Count > 1)
-                    {
-                        Animate(badge, avatar, new Point(6, 5));
-                    }
-                    else
-                    {
-                        badge.Mutate(x => x.DrawImage(avatar, new Point(6, 5), 1));
-                    }
-                }
-            }
-
-            return badge;
-        }
-
         private Image GetRWStats(ISeriesStatus status, string path, MoreSeriesStatus more)
         {
             int startPointX = 7;
@@ -1203,122 +1163,6 @@ namespace Sanakan.Services
             }
 
             return bar;
-        }
-
-        private Image GetLastRWListCover(Stream imageStream)
-        {
-            if (imageStream == null) return null;
-
-            var cover = Image.Load(imageStream);
-            cover.Mutate(x => x.Resize(new ResizeOptions
-            {
-                Mode = ResizeMode.Max,
-                Size = new Size(20, 50)
-            }));
-
-            return cover;
-        }
-
-        private async Task<Image<Rgba32>> GetLastRWList(List<ILastReaded> lastRead, List<ILastWatched> lastWatch)
-        {
-            var titleFont = GetOrCreateFont(_latoBold, 10);
-            var nameFont = GetOrCreateFont(_latoBold, 16);
-            var fColor = GetOrCreateColor("#9A9A9A");
-            int startY = 24;
-
-            var image = new Image<Rgba32>(175, 250);
-            image.Mutate(x => x.DrawText($"Ostatnio obejrzane:", nameFont, fColor, new Point(0, 4)));
-            if (lastWatch != null)
-            {
-                int max = -1;
-                foreach (var last in lastWatch)
-                {
-                    if (++max >= 3) break;
-                    using (var stream = await GetImageFromUrlAsync(last.AnimeCoverUrl, true))
-                    {
-                        using (var cover = GetLastRWListCover(stream))
-                        {
-                            if (cover != null)
-                                image.Mutate(x => x.DrawImage(cover, new Point(0, startY + (35 * max)), 1));
-                        }
-                    }
-
-                    image.Mutate(x => x.DrawText($"{last.AnimeTitle.TrimToLength(29)}", titleFont, fColor, new Point(25, startY + (35 * max))));
-                    image.Mutate(x => x.DrawText($"{last.EpisodeNo} / {last.EpisodesCnt}", titleFont, fColor, new Point(25, startY + 11 + (35 * max))));
-                }
-            }
-
-            startY += 128;
-            image.Mutate(x => x.DrawText($"Ostatnio przeczytane:", nameFont, fColor, new Point(0, 131)));
-            if (lastRead != null)
-            {
-                int max = -1;
-                foreach (var last in lastRead)
-                {
-                    if (++max >= 3) break;
-                    using (var stream = await GetImageFromUrlAsync(last.MangaCoverUrl, true))
-                    {
-                        using (var cover = GetLastRWListCover(stream))
-                        {
-                            if (cover != null)
-                                image.Mutate(x => x.DrawImage(cover, new Point(0, startY + (35 * max)), 1));
-                        }
-                    }
-
-                    image.Mutate(x => x.DrawText($"{last.MangaTitle.TrimToLength(29)}", titleFont, fColor, new Point(25, startY + (35 * max))));
-                    image.Mutate(x => x.DrawText($"{last.ChapterNo.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)} / {last.ChaptersCnt}", titleFont, fColor, new Point(25, startY + 11 + (35 * max))));
-                }
-            }
-
-            return image;
-        }
-
-        public async Task<Image<Rgba32>> GetSiteStatisticAsync(IUserInfo shindenInfo, Discord.Color color, List<ILastReaded> lastRead = null, List<ILastWatched> lastWatch = null)
-        {
-            if (color == Discord.Color.Default)
-                color = Discord.Color.DarkerGrey;
-
-            var baseImg = new Image<Rgba32>(500, 320);
-            baseImg.Mutate(x => x.BackgroundColor(GetOrCreateColor("#313338")));
-
-            using (var template = Image.Load(Dir.GetResource("siteStatsBody.png")))
-            {
-                baseImg.Mutate(x => x.DrawImage(template, new Point(0, 0), 1));
-            }
-
-            using (var image = new Image<Rgba32>(325, 248))
-            {
-                if (shindenInfo?.ListStats?.AnimeStatus != null)
-                {
-                    using var stats = GetRWStats(shindenInfo?.ListStats?.AnimeStatus, Dir.GetResource("statsAnime.png"), shindenInfo.GetMoreSeriesStats(false));
-                    image.Mutate(x => x.DrawImage(stats, new Point(0, 0), 1));
-                }
-                if (shindenInfo?.ListStats?.MangaStatus != null)
-                {
-                    using var stats = GetRWStats(shindenInfo?.ListStats?.MangaStatus, Dir.GetResource("statsManga.png"), shindenInfo.GetMoreSeriesStats(true));
-                    image.Mutate(x => x.DrawImage(stats, new Point(0, 128), 1));
-                }
-                baseImg.Mutate(x => x.DrawImage(image, new Point(5, 65), 1));
-            }
-
-            using (var image = await GetLastRWList(lastRead, lastWatch))
-            {
-                baseImg.Mutate(x => x.DrawImage(image, new Point(330, 63), 1));
-            }
-
-            using (var avatar = await GetSiteStatisticUserBadge(shindenInfo.AvatarUrl, shindenInfo.Name, color.RawValue.ToString("X6")))
-            {
-                if (avatar.Frames.Count > 1)
-                {
-                    Animate(baseImg, avatar, new Point(0, 0));
-                }
-                else
-                {
-                    baseImg.Mutate(x => x.DrawImage(avatar, new Point(0, 0), 1));
-                }
-            }
-
-            return baseImg;
         }
 
         public async Task<Image<Rgba32>> GetLevelUpBadgeAsync(string name, long ulvl, string avatarUrl, Discord.Color color)

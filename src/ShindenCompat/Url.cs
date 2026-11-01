@@ -6,6 +6,7 @@ namespace Sanakan.ShindenCompat
     public static class Url
     {
         private const string SiteUrl = "https://shinden.pl/";
+        private const string ListUrl = "https://lista.shinden.pl/";
         private const string ImageServerUrl = "http://cdn.shinden.eu/";
 
         public static string GetBigImageURL(ulong? imageId)
@@ -32,5 +33,9 @@ namespace Sanakan.ShindenCompat
         public static string GetCharacterURL(ulong id) => $"{SiteUrl}character/{id}";
 
         public static string GetProfileURL(ulong id) => $"{SiteUrl}user/{id}";
+
+        public static string GetAnimeListURL(ulong id) => $"{ListUrl}animelist/{id}";
+
+        public static string GetMangaListURL(ulong id) => $"{ListUrl}mangalist/{id}";
     }
 }
