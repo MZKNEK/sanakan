@@ -61,10 +61,25 @@ namespace Sanakan.Services
 
         protected virtual Database.DatabaseContext CreateDatabaseContext() => new Database.DatabaseContext(_config);
 
+        public static Discord.Color? GetLevelRoleColor(Database.Models.Configuration.GuildOptions config, SocketGuild guild, long level)
+        {
+            if (config?.RolesPerLevel == null || level <= 0)
+                return null;
+
+            return config.RolesPerLevel.Where(x => x.Level == (ulong)level).Select(x => guild.GetRole(x.Role))
+                .Where(x => x != null).OrderByDescending(x => x.Position).FirstOrDefault()?.Color;
+        }
+
         public async Task NotifyAboutLevelAsync(SocketGuildUser user, ISocketMessageChannel channel, long level)
         {
+            Discord.Color? highlight;
+            using (var db = CreateDatabaseContext())
+            {
+                highlight = GetLevelRoleColor(await db.GetCachedGuildFullConfigAsync(user.Guild.Id), user.Guild, level);
+            }
+
             using (var badge = await _img.GetLevelUpBadgeAsync(user.GetUserNickInGuild(),
-                level, user.GetUserOrDefaultAvatarUrl(true), user.Roles.OrderByDescending(x => x.Position).First().Color))
+                level, user.GetUserOrDefaultAvatarUrl(true), user.Roles.OrderByDescending(x => x.Position).First().Color, highlight))
             {
                 using (var badgeStream = badge.ToWebpStream())
                 {

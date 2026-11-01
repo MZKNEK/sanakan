@@ -1707,14 +1707,21 @@ namespace Sanakan.Modules
 
         [Command("lvlbadge", RunMode = RunMode.Async), RequireDevOrTester]
         [Summary("generuje przykładowy obrazek otrzymania poziomu")]
-        [Remarks("")]
-        public async Task GenerateLevelUpBadgeAsync([Summary("użytkownik(opcjonalne)")]SocketGuildUser user = null)
+        [Remarks("2150 \"Krótki nick\"")]
+        public async Task GenerateLevelUpBadgeAsync([Summary("poziom(opcjonalne)")]long level = 2154, [Summary("nick(opcjonalne)")]string nickname = null,
+            [Summary("użytkownik(opcjonalne)")]SocketGuildUser user = null)
         {
             var usr = user ?? Context.User as SocketGuildUser;
             if (usr == null) return;
 
-            using (var badge = await _img.GetLevelUpBadgeAsync("Very very long nickname of trolly user",
-                2154, usr.GetUserOrDefaultAvatarUrl(), usr.Roles.OrderByDescending(x => x.Position).First().Color))
+            Discord.Color? highlight;
+            using (var db = new Database.DatabaseContext(Config))
+            {
+                highlight = ExperienceManager.GetLevelRoleColor(await db.GetCachedGuildFullConfigAsync(Context.Guild.Id), Context.Guild, level);
+            }
+
+            using (var badge = await _img.GetLevelUpBadgeAsync(nickname ?? "Very very long nickname of trolly user",
+                level, usr.GetUserOrDefaultAvatarUrl(), usr.Roles.OrderByDescending(x => x.Position).First().Color, highlight))
             {
                 using (var badgeStream = badge.ToWebpStream())
                 {

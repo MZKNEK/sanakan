@@ -1165,68 +1165,6 @@ namespace Sanakan.Services
             return bar;
         }
 
-        public async Task<Image<Rgba32>> GetLevelUpBadgeAsync(string name, long ulvl, string avatarUrl, Discord.Color color)
-        {
-            if (color == Discord.Color.Default)
-                color = Discord.Color.DarkerGrey;
-
-            var msgText1 = "POZIOM";
-            var msgText2 = "Awansuje na:";
-
-            var textFont = GetOrCreateFont(_latoRegular, 16);
-            var nickNameFont = GetOrCreateFont(_latoBold, 22);
-            var lvlFont = GetOrCreateFont(_latoBold, 36);
-
-            var msgText1Length = TextMeasurer.MeasureSize(msgText1, new TextOptions(textFont));
-            var msgText2Length = TextMeasurer.MeasureSize(msgText2, new TextOptions(textFont));
-            var nameLength = TextMeasurer.MeasureSize(name, new TextOptions(nickNameFont));
-            var lvlLength = TextMeasurer.MeasureSize($"{ulvl}", new TextOptions(lvlFont));
-
-            var textLength = lvlLength.Width + msgText1Length.Width > nameLength.Width ? lvlLength.Width + msgText1Length.Width : nameLength.Width;
-            var estimatedLength = 106 + (int)(textLength > msgText2Length.Width ? textLength : msgText2Length.Width);
-
-            var nickNameColor = color.RawValue.ToString("X6");
-            var baseImg = new Image<Rgba32>((int)estimatedLength, 100);
-
-            baseImg.Mutate(x => x.BackgroundColor(GetOrCreateColor("#313338")));
-            baseImg.Mutate(x => x.DrawText(msgText1, textFont, Color.Gray, new PointF(98 + lvlLength.Width + 4, 76)));
-            baseImg.Mutate(x => x.DrawText(name, nickNameFont, GetOrCreateColor(nickNameColor), new Point(98, 7)));
-            baseImg.Mutate(x => x.DrawText(msgText2, textFont, Color.Gray, new Point(98, 31)));
-            baseImg.Mutate(x => x.DrawText($"{ulvl}", lvlFont, Color.Gray, new Point(96, 58)));
-
-            using (var colorRec = new Image<Rgba32>(82, 82))
-            {
-                colorRec.Mutate(x => x.BackgroundColor(GetOrCreateColor(nickNameColor)));
-                baseImg.Mutate(x => x.DrawImage(colorRec, new Point(9, 9), 1));
-
-                using (var stream = await GetImageFromUrlAsync(avatarUrl))
-                {
-                    if (stream is null || stream == Stream.Null)
-                        return baseImg;
-
-                    using (var avatar = Image.Load(stream))
-                    {
-                        avatar.Mutate(x => x.Resize(new ResizeOptions
-                        {
-                            Mode = ResizeMode.Crop,
-                            Size = new Size(80, 80)
-                        }));
-
-                        if (avatar.Frames.Count > 1)
-                        {
-                            Animate(baseImg, avatar, new Point(10, 10));
-                        }
-                        else
-                        {
-                            baseImg.Mutate(x => x.DrawImage(avatar, new Point(10, 10), 1));
-                        }
-                    }
-                }
-            }
-
-            return baseImg;
-        }
-
         private bool Animate(Image staleImage, Image animation, Point point)
         {
             staleImage.Metadata.GetWebpMetadata().RepeatCount = 0;
