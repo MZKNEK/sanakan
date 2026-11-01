@@ -489,13 +489,12 @@ namespace Sanakan.Api.Controllers
 
                     if (oldUsers.Count > 0)
                     {
-                        var rmcs = (_config.Get().RMConfig ?? Enumerable.Empty<RichMessageConfig>()).Where(x => x.Type == RichMessageType.AdminNotify);
-                        foreach (var rmc in rmcs)
+                        foreach (var anc in _config.Get().AdminNotifyChannels ?? Enumerable.Empty<LogChannelConfig>())
                         {
-                            var guild = _client.GetGuild(rmc.GuildId);
+                            var guild = _client.GetGuild(anc.GuildId);
                             if (guild == null) continue;
 
-                            var channel = guild.GetTextChannel(rmc.ChannelId);
+                            var channel = guild.GetTextChannel(anc.ChannelId);
                             if (channel == null) continue;
 
                             await channel.SendMessageAsync("", embed: ($"Potencjalne multikonto:\nDID: {id.DiscordUserId} <@{id.DiscordUserId}>\nSID: {sUser.Id}\n"

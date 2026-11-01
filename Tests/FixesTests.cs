@@ -456,58 +456,6 @@ namespace Artifacts
         }
     }
 
-    public class RichMessageTests
-    {
-        private static RichMessageController NewController(params RichMessageConfig[] configs)
-        {
-            var config = new FakeConfig();
-            config.Model.RMConfig = configs.ToList();
-            return ControllerHarness.Attach(new RichMessageController(new DiscordSocketClient(), config, new ListLogger()));
-        }
-
-        [Fact]
-        public async Task Delete_UnknownMessage_Returns404()
-        {
-            var controller = NewController(new RichMessageConfig { GuildId = 1, ChannelId = 2 });
-
-            var result = await controller.DeleteRichMessageAsync(123);
-
-            Assert.Equal(404, result.StatusOf());
-        }
-
-        [Fact]
-        public async Task Delete_BrokenWebhook_DoesNotStopOtherTargets()
-        {
-            var controller = NewController(
-                new RichMessageConfig { WebHookUrl = "not-a-webhook" },
-                new RichMessageConfig { GuildId = 1, ChannelId = 2 });
-
-            var result = await controller.DeleteRichMessageAsync(123);
-
-            Assert.Equal(404, result.StatusOf());
-        }
-
-        [Fact]
-        public async Task Modify_UnknownMessage_Returns404()
-        {
-            var controller = NewController(new RichMessageConfig { WebHookUrl = "not-a-webhook" });
-
-            var result = await controller.ModifyeRichMessageAsync(123, new Sanakan.Api.Models.RichMessage().Example());
-
-            Assert.Equal(404, result.StatusOf());
-        }
-
-        [Fact]
-        public async Task Delete_WithoutConfig_Returns404()
-        {
-            var controller = NewController();
-
-            var result = await controller.DeleteRichMessageAsync(123);
-
-            Assert.Equal(404, result.StatusOf());
-        }
-    }
-
     public class DaemonizerTests
     {
         private static readonly TimeSpan Short = TimeSpan.FromMilliseconds(50);

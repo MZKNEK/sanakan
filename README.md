@@ -70,12 +70,10 @@ comments to it.
       "Bearer": "your-app-name"
     }
   ],
-  "RMConfig": [
+  "AdminNotifyChannels": [
     {
-      "RoleId": 123456789012345678,
       "GuildId": 123456789012345678,
-      "ChannelId": 123456789012345678,
-      "Type": "News"
+      "ChannelId": 123456789012345678
     }
   ],
   "BlacklistedGuilds": [

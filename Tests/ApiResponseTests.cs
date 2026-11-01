@@ -39,7 +39,6 @@ namespace Artifacts
         public ApiServer()
         {
             Config.Model.UserKeyApps.Add(new ApiApp { Key = SiteKey, Bearer = "Shinden", Permissions = ApiAppPermission.Site });
-            Config.Model.RMConfig = new List<RichMessageConfig>();
 
             var logger = Logger;
             // JWT jest sprawdzany względem prawdziwego zegara, więc token musi być wystawiony "teraz"
@@ -87,6 +86,9 @@ namespace Artifacts
         }
 
         public static StringContent Json(string body) => new StringContent(body, Encoding.UTF8, "application/json");
+
+        public static Task<HttpResponseMessage> PostSiteEndpointAsync(HttpClient client)
+            => client.PostAsync("/api/waifu/cards/character/5/update", Json("{}"));
 
         public void Dispose()
         {
@@ -236,29 +238,13 @@ namespace Artifacts
             await AssertMessage(await client.PostAsync("/api/waifu/cards/character/5/update", ApiServer.Json("{}")), HttpStatusCode.OK);
             Assert.Single(_api.Executor.Added);
         }
-
-        [Fact]
-        public async Task RichMessageDelete_Unknown_Returns404Json()
-        {
-            var client = await _api.AsSiteAsync();
-            await AssertMessage(await client.DeleteAsync("/api/richmessage/123"), HttpStatusCode.NotFound);
-        }
-
-        [Fact]
-        public async Task RichMessageExample_Returns200()
-        {
-            var client = await _api.AsSiteAsync();
-            var res = await client.GetAsync("/api/richmessage");
-            Assert.Equal(HttpStatusCode.OK, res.StatusCode);
-            Assert.NotNull(JObject.Parse(await res.Content.ReadAsStringAsync()));
-        }
     }
 
     public class CardImageFileTests
     {
         private static async Task<(int status, string type, byte[] body)> ExecuteAsync(IActionResult result)
         {
-            var controller = ControllerHarness.Attach(new Sanakan.Api.Controllers.RichMessageController(null, new FakeConfig(), new ListLogger()));
+            var controller = ControllerHarness.Attach(new Sanakan.Api.Controllers.DebugController(null, new ListLogger()));
             await result.ExecuteResultAsync(controller.ControllerContext);
 
             var response = controller.HttpContext.Response;

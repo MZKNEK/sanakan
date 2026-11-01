@@ -2346,92 +2346,6 @@ namespace Sanakan.Modules
             }
         }
 
-        [Command("rmconfig", RunMode = RunMode.Async), RequireDev]
-        [Summary("wyświetla konfigurację powiadomień na obecnym serwerze")]
-        [Remarks("")]
-        public async Task ShowRMConfigAsync()
-        {
-            var serverConfig = Config.Get().RMConfig.Where(x => x.GuildId == Context.Guild.Id || x.GuildId == 0).ToList();
-            if (serverConfig.Count > 0)
-            {
-                await SafeReplyAsync("", embed: $"**RMC:**\n{string.Join("\n\n", serverConfig)}".TrimToLength().ToEmbedMessage(EMType.Bot).Build());
-                return;
-            }
-            await SafeReplyAsync("", embed: $"**RMC:**\n\nBrak.".ToEmbedMessage(EMType.Bot).Build());
-        }
-
-        [Command("mrmconfig"), RequireDev]
-        [Summary("zmienia istniejący wpis w konfiguracji powiadomień w odniesieniu do serwera, lub tworzy nowy gdy go nie ma")]
-        [Remarks("News 1232321314 1232412323 tak")]
-        public async Task ChangeRMConfigAsync([Summary("typ wpisu")]Api.Models.RichMessageType type, [Summary("id kanału")]ulong channelId, [Summary("id roli")]ulong roleId, [Summary("czy zapisać?")]bool save = false)
-        {
-            var config = Config.Get();
-            var thisRM = config.RMConfig.FirstOrDefault(x => x.Type == type && x.GuildId == Context.Guild.Id);
-            if (thisRM == null)
-            {
-                thisRM = new Config.Model.RichMessageConfig
-                {
-                    GuildId = Context.Guild.Id,
-                    Type = type
-                };
-                config.RMConfig.Add(thisRM);
-            }
-
-            thisRM.ChannelId = channelId;
-            thisRM.RoleId = roleId;
-
-            if (save) Config.Save();
-
-            await SafeReplyAsync("", embed: "Wpis został zmodyfikowany!".ToEmbedMessage(EMType.Success).Build());
-        }
-
-        [Command("addwebrmconfig"), Priority(1), RequireDev]
-        [Summary("dodaje nowy wpis w konfiguracji powiadomień oparty o webhook")]
-        [Remarks("News http://twojweebhook.com/1232412323")]
-        public async Task AddWebRMConfigAsync([Summary("typ wpisu")]Api.Models.RichMessageType type, [Summary("url")][Remainder] string url)
-        {
-            var config = Config.Get();
-            var thisRM = config.RMConfig.FirstOrDefault(x => x.Type == type && x.WebHookUrl == url);
-            if (thisRM == null)
-            {
-                thisRM = new Config.Model.RichMessageConfig
-                {
-                    WebHookUrl = url,
-                    Type = type
-                };
-                config.RMConfig.Add(thisRM);
-                Config.Save();
-            }
-            else
-            {
-                await SafeReplyAsync("", embed: "Taki wpis już istnieje!".ToEmbedMessage(EMType.Error).Build());
-                return;
-            }
-
-            await SafeReplyAsync("", embed: "Wpis został dodany!".ToEmbedMessage(EMType.Success).Build());
-        }
-
-        [Command("removewebrmconfig"), Priority(1), RequireDev]
-        [Summary("kasuje wpis w konfiguracji powiadomień oparty o webhook")]
-        [Remarks("News http://twojweebhook.com/1232412323")]
-        public async Task RemoveWebRMConfigAsync([Summary("typ wpisu")]Api.Models.RichMessageType type, [Summary("url")][Remainder] string url)
-        {
-            var config = Config.Get();
-            var thisRM = config.RMConfig.FirstOrDefault(x => x.Type == type && x.WebHookUrl == url);
-            if (thisRM == null)
-            {
-                await SafeReplyAsync("", embed: "Taki wpis nie istnieje!".ToEmbedMessage(EMType.Error).Build());
-                return;
-            }
-            else
-            {
-                config.RMConfig.Remove(thisRM);
-                Config.Save();
-            }
-
-            await SafeReplyAsync("", embed: "Wpis został skasowany!".ToEmbedMessage(EMType.Success).Build());
-        }
-
         [Command("ignore"), Priority(1), RequireDev]
         [Summary("dodaje serwer do ignorowanych lub usuwa go z listy")]
         [Remarks("News 1232321314 1232412323 tak")]
@@ -2447,6 +2361,38 @@ namespace Sanakan.Modules
             {
                 config.BlacklistedGuilds.Add(Context.Guild.Id);
                 await SafeReplyAsync("", embed: "Serwer został dodany do czarnej listy.".ToEmbedMessage(EMType.Success).Build());
+            }
+            Config.Save();
+        }
+
+        [Command("adminnotify"), Priority(1), RequireDev]
+        [Summary("dodaje obecny kanał do powiadomień o multikontach lub usuwa go z listy, na PW wyświetla listę")]
+        [Remarks("")]
+        public async Task ToggleAdminNotifyChannelAsync()
+        {
+            var config = Config.Get();
+            config.AdminNotifyChannels ??= new List<Config.Model.LogChannelConfig>();
+
+            if (Context.Guild == null)
+            {
+                var list = config.AdminNotifyChannels.Count > 0
+                    ? string.Join("\n", config.AdminNotifyChannels.Select(x => $"<#{x.ChannelId}> ({x.GuildId}/{x.ChannelId})"))
+                    : "Brak.";
+
+                await SafeReplyAsync("", embed: $"**Kanały powiadomień o multikontach:**\n{list}".TrimToLength().ToEmbedMessage(EMType.Bot).Build());
+                return;
+            }
+
+            var thisCh = config.AdminNotifyChannels.FirstOrDefault(x => x.GuildId == Context.Guild.Id && x.ChannelId == Context.Channel.Id);
+            if (thisCh != null)
+            {
+                config.AdminNotifyChannels.Remove(thisCh);
+                await SafeReplyAsync("", embed: "Kanał został usunięty z powiadomień o multikontach.".ToEmbedMessage(EMType.Success).Build());
+            }
+            else
+            {
+                config.AdminNotifyChannels.Add(new Config.Model.LogChannelConfig { GuildId = Context.Guild.Id, ChannelId = Context.Channel.Id });
+                await SafeReplyAsync("", embed: "Kanał został dodany do powiadomień o multikontach.".ToEmbedMessage(EMType.Success).Build());
             }
             Config.Save();
         }

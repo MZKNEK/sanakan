@@ -196,14 +196,14 @@ namespace Artifacts
         public async Task JwtRotation_InvalidatesIssuedSiteTokens()
         {
             var client = await _api.AsSiteAsync();
-            Assert.Equal(HttpStatusCode.OK, (await client.GetAsync("/api/richmessage")).StatusCode);
+            Assert.Equal(HttpStatusCode.OK, (await ApiServer.PostSiteEndpointAsync(client)).StatusCode);
 
             _api.Config.Model.Jwt.Key = BotWebHost.GenerateJwtKey();
 
-            Assert.Equal(HttpStatusCode.Unauthorized, (await client.GetAsync("/api/richmessage")).StatusCode);
+            Assert.Equal(HttpStatusCode.Unauthorized, (await ApiServer.PostSiteEndpointAsync(client)).StatusCode);
 
             await _api.AsSiteAsync();
-            Assert.Equal(HttpStatusCode.OK, (await client.GetAsync("/api/richmessage")).StatusCode);
+            Assert.Equal(HttpStatusCode.OK, (await ApiServer.PostSiteEndpointAsync(client)).StatusCode);
         }
 
         [Fact]
@@ -213,11 +213,11 @@ namespace Artifacts
             _api.Client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token.Token);
 
             // 403 instead of 401 means the token was accepted and only the policy rejected it
-            Assert.Equal(HttpStatusCode.Forbidden, (await _api.Client.GetAsync("/api/richmessage")).StatusCode);
+            Assert.Equal(HttpStatusCode.Forbidden, (await ApiServer.PostSiteEndpointAsync(_api.Client)).StatusCode);
 
             _api.Config.Model.Jwt.Key = BotWebHost.GenerateJwtKey();
 
-            Assert.Equal(HttpStatusCode.Unauthorized, (await _api.Client.GetAsync("/api/richmessage")).StatusCode);
+            Assert.Equal(HttpStatusCode.Unauthorized, (await ApiServer.PostSiteEndpointAsync(_api.Client)).StatusCode);
         }
     }
 }

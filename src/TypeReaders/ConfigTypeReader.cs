@@ -63,12 +63,6 @@ namespace Sanakan.TypeReaders
                 case "selfroles":
                     return Task.FromResult(TypeReaderResult.FromSuccess(ConfigType.SelfRoles));
 
-                case "rmessage":
-                case "rmessages":
-                case "richmessage":
-                case "richmessages":
-                    return Task.FromResult(TypeReaderResult.FromSuccess(ConfigType.RichMessages));
-
                 case "all":
                 case "full":
                 case "global":

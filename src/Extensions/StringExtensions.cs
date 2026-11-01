@@ -108,15 +108,5 @@ namespace Sanakan.Extensions
         {
             return new ObjectResult(new { message = str, success = (Code >= 200 && Code < 300) }) { StatusCode = Code };
         }
-
-        public static ObjectResult ToResponseRich(this string str, ulong msgId)
-        {
-            return new ObjectResult(new { message = str, success = true, id = msgId }) { StatusCode = 200 };
-        }
-
-        public static ObjectResult ToResponseRich(this string str, List<ulong> msgId)
-        {
-            return new ObjectResult(new { message = str, success = true, ids = msgId }) { StatusCode = 200 };
-        }
     }
 }

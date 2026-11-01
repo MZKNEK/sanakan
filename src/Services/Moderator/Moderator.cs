@@ -29,7 +29,6 @@ namespace Sanakan.Services
         NonSupChannels,
         WaifuCmdChannels,
         WaifuFightChannels,
-        RichMessages,
         ModeratorRoles,
         IgnoredChannels
     }

@@ -33,20 +33,5 @@ namespace Artifacts
         [InlineData("https://example.com/x")]
         public void IsPublicHttpUrl_AllowsPublicHosts(string url)
             => Assert.True(ImageProcessing.IsPublicHttpUrl(url));
-
-        [Fact]
-        public void RichMessageConfig_ToString_MasksWebhookSecret()
-        {
-            var config = new RichMessageConfig
-            {
-                WebHookUrl = "https://discord.com/api/webhooks/123456/VERYSECRETTOKEN",
-                Type = RichMessageType.None,
-            };
-
-            var text = config.ToString();
-
-            Assert.DoesNotContain("VERYSECRETTOKEN", text);
-            Assert.Contains("discord.com", text);
-        }
     }
 }

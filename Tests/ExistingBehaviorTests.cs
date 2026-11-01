@@ -355,12 +355,5 @@ namespace Artifacts
             Assert.Null(result.Value);
             Assert.Equal(500, result.StatusOf());
         }
-
-        [Fact]
-        public void RichMessage_ExampleIsAvailable()
-        {
-            var controller = ControllerHarness.Attach(new RichMessageController(null, new FakeConfig(), new ListLogger()));
-            Assert.NotNull(controller.GetExampleMsg().Value);
-        }
     }
 }

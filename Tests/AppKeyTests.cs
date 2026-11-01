@@ -347,7 +347,7 @@ namespace Artifacts
         {
             await _api.AsSiteAsync();
             Assert.Equal(HttpStatusCode.OK, (await WithAppKey(key).GetAsync(PrivateCommands)).StatusCode);
-            Assert.Equal(HttpStatusCode.OK, (await _api.Client.GetAsync("/api/richmessage")).StatusCode);
+            Assert.Equal(HttpStatusCode.OK, (await ApiServer.PostSiteEndpointAsync(_api.Client)).StatusCode);
         }
 
         // bot nie jest połączony z Discordem, więc 404 o serwerze oznacza, że polityka przepuściła zapytanie
@@ -379,7 +379,6 @@ namespace Artifacts
         {
             var client = WithAppKey("site-app");
 
-            Assert.Equal(HttpStatusCode.OK, (await client.GetAsync("/api/richmessage")).StatusCode);
             Assert.Equal(HttpStatusCode.OK, (await client.PostAsync("/api/waifu/cards/character/5/update", ApiServer.Json("{}"))).StatusCode);
             Assert.Single(_api.Executor.Added);
         }
@@ -391,7 +390,6 @@ namespace Artifacts
         {
             var client = WithAppKey(key);
 
-            Assert.Equal(HttpStatusCode.Forbidden, (await client.GetAsync("/api/richmessage")).StatusCode);
             Assert.Equal(HttpStatusCode.Forbidden, (await client.PostAsync("/api/waifu/cards/character/5/update", ApiServer.Json("{}"))).StatusCode);
             Assert.Empty(_api.Executor.Added);
         }
@@ -399,7 +397,7 @@ namespace Artifacts
         [Fact]
         public async Task SiteEndpoint_InvalidAppKey_Returns401()
         {
-            Assert.Equal(HttpStatusCode.Unauthorized, (await WithAppKey("wrong").GetAsync("/api/richmessage")).StatusCode);
+            Assert.Equal(HttpStatusCode.Unauthorized, (await ApiServer.PostSiteEndpointAsync(WithAppKey("wrong"))).StatusCode);
         }
 
         [Fact]
