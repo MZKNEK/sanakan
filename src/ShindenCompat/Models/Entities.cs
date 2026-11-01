@@ -274,11 +274,11 @@ namespace Sanakan.ShindenCompat.Models.Entities
     {
         public ulong TitleId { get; set; }
         public ulong? CoverId { get; set; }
-        public long ChapterNo { get; set; }
+        public decimal ChapterNo { get; set; }
         public long ChaptersCnt { get; set; }
         public string MangaTitle { get; set; }
         public string MangaCoverUrl => Url.GetBigImageURL(CoverId);
 
-        public override string ToString() => $"{MangaTitle}: {ChapterNo}/{ChaptersCnt}";
+        public override string ToString() => $"{MangaTitle}: {ChapterNo.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)}/{ChaptersCnt}";
     }
 }

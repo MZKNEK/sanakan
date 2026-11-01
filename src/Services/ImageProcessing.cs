@@ -1266,7 +1266,7 @@ namespace Sanakan.Services
                     }
 
                     image.Mutate(x => x.DrawText($"{last.MangaTitle.TrimToLength(29)}", titleFont, fColor, new Point(25, startY + (35 * max))));
-                    image.Mutate(x => x.DrawText($"{last.ChapterNo} / {last.ChaptersCnt}", titleFont, fColor, new Point(25, startY + 11 + (35 * max))));
+                    image.Mutate(x => x.DrawText($"{last.ChapterNo.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)} / {last.ChaptersCnt}", titleFont, fColor, new Point(25, startY + 11 + (35 * max))));
                 }
             }
 

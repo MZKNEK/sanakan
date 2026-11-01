@@ -213,7 +213,7 @@ namespace Sanakan.ShindenCompat.Models
     public interface ILastReaded
     {
         ulong TitleId { get; }
-        long ChapterNo { get; }
+        decimal ChapterNo { get; }
         long ChaptersCnt { get; }
         string MangaTitle { get; }
         string MangaCoverUrl { get; }
