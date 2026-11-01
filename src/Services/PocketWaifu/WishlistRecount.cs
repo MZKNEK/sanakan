@@ -6,7 +6,6 @@ using System.Threading.Tasks;
 using Sanakan.Config;
 using Sanakan.Extensions;
 using Sanakan.Services.Time;
-using Shinden.Logger;
 
 namespace Sanakan.Services.PocketWaifu
 {

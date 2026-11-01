@@ -15,7 +15,6 @@ using Discord;
 using Discord.WebSocket;
 using Sanakan.Config;
 using Sanakan.Config.Model;
-using Shinden.Logger;
 
 namespace Sanakan.Services
 {

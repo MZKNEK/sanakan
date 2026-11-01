@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore;
 using Sanakan.Api.Models;
 using Sanakan.Config;
 using Sanakan.Services;
-using Shinden;
+using Sanakan.ShindenCompat;
 
 namespace Sanakan.Api
 {
@@ -23,7 +23,6 @@ namespace Sanakan.Api
         public const string Down = "down";
 
         private const int HighLatencyMs = 1000;
-        private const string ShindenProbeUser = "sniku";
         // po nieudanym zapytaniu do Shindena nie sprawdzamy go przez tyle minut - nie dokładamy mu zapytań, gdy leży
         private const int ShindenFailureHoldMinutes = 2;
         private static readonly TimeSpan ProbeCacheTime = TimeSpan.FromSeconds(20);
@@ -52,7 +51,7 @@ namespace Sanakan.Api
                 return true;
             }), ProbeCacheTime);
             _shinden = new Cached<HealthProbe>(() => ProbeAsync(async _
-                => (await shinden.Search.UserAsync(ShindenProbeUser)).IsSuccessStatusCode()), ProbeCacheTime);
+                => (await shinden.GetHealthAsync()).IsSuccessStatusCode()), ProbeCacheTime);
             _response = new Cached<HealthStatus>(BuildAsync, ResponseCacheTime);
 
             client.Connected += () => { Volatile.Write(ref _connectedAtTicks, DateTime.UtcNow.Ticks); return Task.CompletedTask; };

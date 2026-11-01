@@ -416,9 +416,9 @@ namespace Artifacts
 
     public class RegisterUserTests
     {
-        private static Shinden.Models.IUserSearch Found(ulong id, string name)
+        private static Sanakan.ShindenCompat.Models.IUserSearch Found(ulong id, string name)
         {
-            var mock = new Mock<Shinden.Models.IUserSearch>();
+            var mock = new Mock<Sanakan.ShindenCompat.Models.IUserSearch>();
             mock.SetupGet(x => x.Id).Returns(id);
             mock.SetupGet(x => x.Name).Returns(name);
             return mock.Object;
@@ -440,7 +440,7 @@ namespace Artifacts
         [Fact]
         public void PickUser_EmptyOrNull_ReturnsNull()
         {
-            Assert.Null(UserController.PickShindenUser(new Shinden.Models.IUserSearch[0], "Karna"));
+            Assert.Null(UserController.PickShindenUser(new Sanakan.ShindenCompat.Models.IUserSearch[0], "Karna"));
             Assert.Null(UserController.PickShindenUser(null, "Karna"));
         }
 

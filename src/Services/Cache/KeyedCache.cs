@@ -8,7 +8,6 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
-using Shinden.Logger;
 
 namespace Sanakan.Services.Cache
 {

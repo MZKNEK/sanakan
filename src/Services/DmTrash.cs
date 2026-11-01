@@ -4,7 +4,6 @@ using System;
 using System.Threading.Tasks;
 using Discord;
 using Discord.WebSocket;
-using Shinden.Logger;
 
 namespace Sanakan.Services
 {

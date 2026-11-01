@@ -13,7 +13,7 @@ using Sanakan.Services.Session;
 using Sanakan.Services.Session.Models;
 using Sanakan.Services.Time;
 using Z.EntityFramework.Plus;
-using Shden = Shinden;
+using Shden = Sanakan.ShindenCompat;
 
 namespace Sanakan.Modules
 {
@@ -105,7 +105,7 @@ namespace Sanakan.Modules
             var response = await _shclient.Search.CharacterAsync(name);
             if (!response.IsSuccessStatusCode())
             {
-                await SafeReplyAsync("", embed: _shinden.GetResponseFromSearchCode(response).ToEmbedMessage(EMType.Error).Build());
+                await SafeReplyAsync("", embed: _shinden.GetResponseFromSearchCode(response.Code).ToEmbedMessage(EMType.Error).Build());
                 return;
             }
 
@@ -169,7 +169,7 @@ namespace Sanakan.Modules
                 try
                 {
                     using var stream = await _shinden.GetSiteStatisticAsync(botUser.Shinden, usr);
-                    await Context.Channel.SendFileAsync(stream, $"{usr.Id}.webp", $"<{Shden.API.Url.GetProfileURL(botUser.Shinden)}>");
+                    await Context.Channel.SendFileAsync(stream, $"{usr.Id}.webp", $"<{Shden.Url.GetProfileURL(botUser.Shinden)}>");
                 }
                 catch(Exception ex)
                 {
@@ -199,7 +199,7 @@ namespace Sanakan.Modules
                     break;
             }
 
-            Shden.API.IResponse<Shden.Models.IUserInfo> response;
+            Shden.Response<Shden.Models.IUserInfo> response;
             try
             {
                 response = await _shclient.User.GetAsync(shindenId);

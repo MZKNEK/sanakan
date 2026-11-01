@@ -50,8 +50,8 @@ namespace Artifacts
                 ctx.Response.StatusCode = 404;
                 return Task.CompletedTask;
             });
-            var shinden = new Shinden.ShindenClient(new Shinden.Auth("token", "tests", "marmolade"), logger, Shinden.Logger.LogLevel.Information,
-                _shindenServer.BaseUrl, TimeSpan.FromSeconds(5));
+            var shinden = Sanakan.ShindenCompat.ShindenClient.Create(new ConfigShinden { Token = "token", UserAgent = "tests",
+                Marmolade = "marmolade", BaseUri = _shindenServer.BaseUrl }, null, null, TimeSpan.FromSeconds(5));
             var shindenCache = new Sanakan.Services.Shinden(shinden, null, null, logger, time);
             var waifu = new Waifu(null, shinden, null, logger, null, null, null, time, shindenCache, null, Config);
 
@@ -64,7 +64,7 @@ namespace Artifacts
                     services.AddSingleton((Sanakan.Services.Profile)RuntimeHelpers.GetUninitializedObject(typeof(Sanakan.Services.Profile)));
                     services.AddSingleton<ISystemTime>(time);
                     services.AddSingleton(waifu);
-                    services.AddSingleton<Shinden.Logger.ILogger>(logger);
+                    services.AddSingleton<Sanakan.ILogger>(logger);
                     services.AddSingleton(new DiscordSocketClient());
                     services.AddSingleton(new Sanakan.Services.Helper(Config, logger));
                     services.AddSingleton(shinden);

@@ -22,9 +22,8 @@ using Sanakan.Services.PocketWaifu;
 using Sanakan.Services.Session;
 using Sanakan.Services.Session.Models;
 using Sanakan.Services.Time;
-using Shinden.Logger;
 using Z.EntityFramework.Plus;
-using Sden = Shinden;
+using Sden = Sanakan.ShindenCompat;
 
 namespace Sanakan.Modules
 {

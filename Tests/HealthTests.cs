@@ -1,6 +1,12 @@
+using System;
+using System.Net;
+using System.Net.Http;
+using System.Threading;
+using System.Threading.Tasks;
 using Discord;
 using Sanakan.Api;
 using Sanakan.Services;
+using Sanakan.ShindenCompat;
 using Xunit;
 
 namespace Artifacts
@@ -173,69 +179,41 @@ namespace Artifacts
 
     public class ShindenActivityTests
     {
-        private long _now = 1_000_000;
         private long _minute = 1000;
-        private ShindenActivity Create() => new ShindenActivity(() => _now, () => _minute);
-
-        private void Request(ShindenActivity activity, long durationMs, string response = "Response code: OK")
-        {
-            activity.Track("Processing request: [GET] https://shinden/api");
-            _now += durationMs;
-            activity.Track(response);
-            activity.Track("Request successful.");
-        }
+        private ShindenActivity Create() => new ShindenActivity(() => _minute);
 
         [Fact]
-        public void MeasuresSoloRequest()
+        public void MeasuresRequest()
         {
             var activity = Create();
-            Request(activity, 120);
+            activity.RequestCompleted(HttpStatusCode.OK, 120);
 
             Assert.Equal(120, activity.Recent.Get());
             Assert.Equal(1, activity.Requests.Get(5).Total);
             Assert.Equal(0, activity.Requests.Get(5).Errors);
         }
 
-        [Fact]
-        public void OverlappingRequestsAreNotMeasured()
-        {
-            var activity = Create();
-            activity.Track("Processing request: [GET] a");
-            _now += 10;
-            activity.Track("Processing request: [GET] b");
-            _now += 300;
-            activity.Track("Response code: OK");
-            activity.Track("Response code: OK");
-
-            Assert.Null(activity.Recent.Get());
-            Assert.Equal(2, activity.Requests.Get(5).Total);
-
-            Request(activity, 90);
-            Assert.Equal(90, activity.Recent.Get());
-        }
-
         [Theory]
-        [InlineData("Response code: InternalServerError")]
-        [InlineData("Response code: 503")]
-        [InlineData("Response code: Unauthorized")]
-        [InlineData("Response code: TooManyRequests")]
-        public void FailedStatusCodeIsError(string response)
+        [InlineData(HttpStatusCode.InternalServerError)]
+        [InlineData(HttpStatusCode.ServiceUnavailable)]
+        [InlineData(HttpStatusCode.Unauthorized)]
+        [InlineData(HttpStatusCode.TooManyRequests)]
+        public void FailedStatusCodeIsError(HttpStatusCode code)
         {
             var activity = Create();
-            Request(activity, 50, response);
+            activity.RequestCompleted(code, 50);
 
             Assert.Equal(1, activity.Requests.Get(5).Errors);
             Assert.Null(activity.Recent.Get());
         }
 
         [Theory]
-        [InlineData("Response code: NotFound")]
-        [InlineData("Response code: 404")]
-        [InlineData("Response code: BadRequest")]
-        public void ClientStatusCodeIsNotError(string response)
+        [InlineData(HttpStatusCode.NotFound)]
+        [InlineData(HttpStatusCode.BadRequest)]
+        public void ClientStatusCodeIsNotError(HttpStatusCode code)
         {
             var activity = Create();
-            Request(activity, 50, response);
+            activity.RequestCompleted(code, 50);
 
             Assert.Equal(0, activity.Requests.Get(5).Errors);
             Assert.Equal(50, activity.Recent.Get());
@@ -245,10 +223,8 @@ namespace Artifacts
         public void TimeoutIsCountedAsErrorAndTimeout()
         {
             var activity = Create();
-            Request(activity, 40);
-            activity.Track("Processing request: [GET] https://shinden/api");
-            _now += 10_000;
-            activity.Track("Timeout while sending request: [GET] https://shinden/api");
+            activity.RequestCompleted(HttpStatusCode.OK, 40);
+            activity.RequestFailed(true);
 
             var snap = activity.Requests.Get(5);
             Assert.Equal(2, snap.Total);
@@ -262,8 +238,7 @@ namespace Artifacts
         public void ConnectionErrorIsError()
         {
             var activity = Create();
-            activity.Track("Processing request: [GET] https://shinden/api");
-            activity.Track("Error while sending request: connection refused");
+            activity.RequestFailed(false);
 
             Assert.Equal(1, activity.Requests.Get(5).Errors);
             Assert.Equal(0, activity.Timeouts.Get(5).Total);
@@ -274,34 +249,64 @@ namespace Artifacts
         public void ParsingErrorAfterSuccessfulResponseIsError()
         {
             var activity = Create();
-            Request(activity, 40);
-            activity.Track("In parsing: Unexpected character");
+            activity.RequestCompleted(HttpStatusCode.OK, 40);
+            activity.ParsingFailed();
 
+            Assert.Equal(1, activity.Requests.Get(5).Total);
             Assert.Equal(1, activity.Requests.Get(5).Errors);
             Assert.Null(activity.Recent.Get());
         }
+    }
 
-        [Fact]
-        public void LostCompletionIsForgottenAfterStaleTimeout()
+    public class ShindenActivityHandlerTests
+    {
+        private class StubHandler : HttpMessageHandler
         {
-            var activity = Create();
-            activity.Track("Processing request: [GET] lost");
-            _now += 31_000;
+            public Func<HttpResponseMessage> Respond { get; set; } = () => new HttpResponseMessage(HttpStatusCode.OK);
 
-            Request(activity, 60);
-            Assert.Equal(60, activity.Recent.Get());
+            protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+                => Task.FromResult(Respond());
+        }
+
+        private readonly ShindenActivity _activity = new ShindenActivity(() => 1000);
+        private readonly StubHandler _stub = new StubHandler();
+
+        private Task<HttpResponseMessage> SendAsync()
+        {
+            using var client = new HttpClient(new ShindenActivityHandler(_activity, _stub), false);
+            return client.GetAsync("http://shinden.test/api");
         }
 
         [Fact]
-        public void IgnoresUnrelatedMessages()
+        public async Task TracksResponseCode()
         {
-            var activity = Create();
-            activity.Track(null);
-            activity.Track("Parsing response.");
-            activity.Track("Response body: {}");
+            await SendAsync();
+            _stub.Respond = () => new HttpResponseMessage(HttpStatusCode.BadGateway);
+            await SendAsync();
 
-            Assert.Equal(0, activity.Requests.Get(5).Total);
-            Assert.Null(activity.Recent.Get());
+            var snap = _activity.Requests.Get(5);
+            Assert.Equal(2, snap.Total);
+            Assert.Equal(1, snap.Errors);
+        }
+
+        [Fact]
+        public async Task CancellationIsTimeout()
+        {
+            _stub.Respond = () => throw new TaskCanceledException();
+
+            await Assert.ThrowsAsync<TaskCanceledException>(SendAsync);
+            Assert.Equal(1, _activity.Timeouts.Get(5).Total);
+            Assert.Equal(1, _activity.Requests.Get(5).Errors);
+        }
+
+        [Fact]
+        public async Task TransportErrorIsNotTimeout()
+        {
+            _stub.Respond = () => throw new HttpRequestException("connection refused");
+
+            await Assert.ThrowsAsync<HttpRequestException>(SendAsync);
+            Assert.Equal(0, _activity.Timeouts.Get(5).Total);
+            Assert.Equal(1, _activity.Requests.Get(5).Errors);
         }
     }
 

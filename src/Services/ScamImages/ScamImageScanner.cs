@@ -6,7 +6,6 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Discord;
-using Shinden.Logger;
 
 namespace Sanakan.Services.ScamImages
 {

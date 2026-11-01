@@ -7,7 +7,7 @@ using Sanakan.Services.Time;
 
 namespace Artifacts
 {
-    public class ListLogger : Shinden.Logger.ILogger
+    public class ListLogger : Sanakan.ILogger
     {
         public ConcurrentQueue<string> Messages { get; } = new ConcurrentQueue<string>();
         public void Log(string message) => Messages.Enqueue(message);

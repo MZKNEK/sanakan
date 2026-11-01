@@ -41,7 +41,7 @@ namespace Sanakan.Api
 
         private static IHost _host;
 
-        public static async Task StartAsync(IConfig config, IServiceCollection botServices, Shinden.Logger.ILogger logger)
+        public static async Task StartAsync(IConfig config, IServiceCollection botServices, ILogger logger)
         {
             var host = CreateHost(config, botServices, Url);
             try
@@ -219,7 +219,7 @@ namespace Sanakan.Api
             app.UseAuthentication();
             app.UseAuthorization();
 
-            var auditLogger = app.ApplicationServices.GetService<Shinden.Logger.ILogger>();
+            var auditLogger = app.ApplicationServices.GetService<ILogger>();
             var traffic = new ApiTraffic(x => auditLogger?.Log(x), System.TimeSpan.FromHours(1));
             app.Use(async (context, next) =>
             {

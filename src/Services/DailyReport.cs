@@ -3,7 +3,6 @@
 using System;
 using System.Linq;
 using System.Threading;
-using Shinden.Logger;
 
 namespace Sanakan.Services
 {

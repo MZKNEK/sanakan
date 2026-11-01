@@ -4,7 +4,6 @@ using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
 using Sanakan.Services.Executor;
-using Shinden.Logger;
 using System;
 using System.Collections.Generic;
 using System.Linq;

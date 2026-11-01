@@ -11,7 +11,6 @@ using Sanakan.Services.Commands;
 using Sanakan.Services.Session;
 using Sanakan.Services.Session.Models;
 using Sanakan.Services.Time;
-using Shinden.Logger;
 using System;
 using System.Linq;
 using System.Threading.Tasks;

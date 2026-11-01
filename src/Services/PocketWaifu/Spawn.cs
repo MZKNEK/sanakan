@@ -14,8 +14,7 @@ using Sanakan.Database.Models;
 using Sanakan.Extensions;
 using Sanakan.Services.Executor;
 using Sanakan.Services.Time;
-using Shinden.Logger;
-using Shinden.Models;
+using Sanakan.ShindenCompat.Models;
 using Z.EntityFramework.Plus;
 
 namespace Sanakan.Services.PocketWaifu

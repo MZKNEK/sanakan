@@ -17,8 +17,7 @@ using Sanakan.Extensions;
 using Sanakan.Services.Executor;
 using Sanakan.Services.PocketWaifu;
 using Sanakan.Services.Time;
-using Shinden;
-using Shinden.Logger;
+using Sanakan.ShindenCompat;
 using Z.EntityFramework.Plus;
 
 namespace Sanakan.Services
@@ -364,7 +363,7 @@ namespace Sanakan.Services
 
         public async Task<SixLabors.ImageSharp.Image> GetProfileImageAsync(SocketGuildUser user, Database.Models.User botUser, long topPosition)
         {
-            global::Shinden.Models.IUserInfo shindenUser = null;
+            global::Sanakan.ShindenCompat.Models.IUserInfo shindenUser = null;
             if (botUser.Shinden != 0)
             {
                 try

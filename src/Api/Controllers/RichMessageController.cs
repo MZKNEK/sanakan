@@ -21,9 +21,9 @@ namespace Sanakan.Api.Controllers
     {
         private readonly IConfig _config;
         private readonly DiscordSocketClient _client;
-        private readonly Shinden.Logger.ILogger _logger;
+        private readonly ILogger _logger;
 
-        public RichMessageController(DiscordSocketClient client, IConfig config, Shinden.Logger.ILogger logger)
+        public RichMessageController(DiscordSocketClient client, IConfig config, ILogger logger)
         {
             _logger = logger;
             _client = client;

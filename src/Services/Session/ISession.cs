@@ -3,7 +3,6 @@
 using Discord;
 using Discord.Commands;
 using Sanakan.Services.Executor;
-using Shinden.Logger;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;

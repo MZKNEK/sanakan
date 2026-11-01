@@ -14,7 +14,6 @@ using Sanakan.Database.Models.Configuration;
 using Sanakan.Database.Models.Management;
 using Sanakan.Extensions;
 using Sanakan.Services.Time;
-using Shinden.Logger;
 using Z.EntityFramework.Plus;
 
 namespace Sanakan.Services

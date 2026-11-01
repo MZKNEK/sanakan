@@ -12,7 +12,6 @@ using Sanakan.Config;
 using Sanakan.Extensions;
 using Sanakan.Services.Executor;
 using Sanakan.Services.Time;
-using Shinden.Logger;
 using Z.EntityFramework.Plus;
 
 namespace Sanakan.Services

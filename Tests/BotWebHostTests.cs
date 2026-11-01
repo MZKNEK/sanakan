@@ -21,7 +21,7 @@ namespace Artifacts
 
         private IServiceCollection BotServices() => new ServiceCollection()
             .AddSingleton<IConfig>(_config)
-            .AddSingleton<Shinden.Logger.ILogger>(_logger)
+            .AddSingleton<Sanakan.ILogger>(_logger)
             .AddSingleton(new Sanakan.Services.Helper(_config, _logger))
             .AddSingleton<Sanakan.Services.Fun>();
 
@@ -46,7 +46,7 @@ namespace Artifacts
             try
             {
                 Assert.IsNotType<ConsoleLifetime>(host.Services.GetRequiredService<IHostLifetime>());
-                Assert.Same(_logger, host.Services.GetRequiredService<Shinden.Logger.ILogger>());
+                Assert.Same(_logger, host.Services.GetRequiredService<Sanakan.ILogger>());
 
                 var address = host.Services.GetRequiredService<IServer>().Features.Get<IServerAddressesFeature>().Addresses.Single();
                 using var client = new HttpClient { BaseAddress = new Uri(address) };

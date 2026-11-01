@@ -2,7 +2,7 @@
 
 using System.Collections.Generic;
 using Discord;
-using Shinden.Models;
+using Sanakan.ShindenCompat.Models;
 
 namespace Sanakan.Extensions
 {

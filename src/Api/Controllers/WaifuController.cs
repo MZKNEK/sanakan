@@ -20,7 +20,7 @@ using Sanakan.Extensions;
 using Sanakan.Services.Executor;
 using Sanakan.Services.PocketWaifu;
 using Sanakan.Services.Time;
-using Shinden;
+using Sanakan.ShindenCompat;
 using Z.EntityFramework.Plus;
 
 namespace Sanakan.Api.Controllers

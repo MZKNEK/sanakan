@@ -20,9 +20,9 @@ namespace Sanakan.Api.Controllers
     {
         private readonly Helper _helper;
         private readonly IConfig _config;
-        private readonly Shinden.Logger.ILogger _logger;
+        private readonly ILogger _logger;
 
-        public InfoController(Helper helper, IConfig config, Shinden.Logger.ILogger logger)
+        public InfoController(Helper helper, IConfig config, ILogger logger)
         {
             _helper = helper;
             _config = config;

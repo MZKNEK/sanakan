@@ -1,7 +1,7 @@
 ﻿#pragma warning disable 1591
 
 using System.Collections.Generic;
-using Shinden.Models;
+using Sanakan.ShindenCompat.Models;
 
 namespace Sanakan.Extensions
 {
@@ -12,7 +12,7 @@ namespace Sanakan.Extensions
             if (p == null || p.Is18Plus)
                 return null;
 
-            return Shinden.API.Url.GetPersonPictureURL(p.PictureId);
+            return ShindenCompat.Url.GetPersonPictureURL(p.PictureId);
         }
 
         public static List<string> GetPicList(this List<IPicture> ps)

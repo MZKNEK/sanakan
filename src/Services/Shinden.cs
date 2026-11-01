@@ -16,9 +16,8 @@ using Sanakan.Services.PocketWaifu;
 using Sanakan.Services.Session;
 using Sanakan.Services.Session.Models;
 using Sanakan.Services.Time;
-using Shinden;
-using Shinden.Logger;
-using Shinden.Models;
+using Sanakan.ShindenCompat;
+using Sanakan.ShindenCompat.Models;
 
 namespace Sanakan.Services
 {

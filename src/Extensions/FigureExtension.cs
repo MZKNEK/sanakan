@@ -315,7 +315,7 @@ namespace Sanakan.Extensions
         public static List<Embed> GetFiguresList(this GameDeck deck, SocketUser user)
         {
             var pages = new List<Embed>();
-            var list = deck.Figures.Select(x => $"{x.GetStatus()} **[{x.Id}]** *{x.SkeletonQuality.ToName("??")}* [{x.Name}]({Shinden.API.Url.GetCharacterURL(x.Character)}) {x.IsActive()}").SplitList(30);
+            var list = deck.Figures.Select(x => $"{x.GetStatus()} **[{x.Id}]** *{x.SkeletonQuality.ToName("??")}* [{x.Name}]({ShindenCompat.Url.GetCharacterURL(x.Character)}) {x.IsActive()}").SplitList(30);
 
             for (int i = 0; i < list.Count; i++)
             {
@@ -334,7 +334,7 @@ namespace Sanakan.Extensions
         {
             var widUrl = CardExtension._UseAlterUrl ? $"[{fig.CreatedCardId}](https://alter.sanakan.pl/card/{fig.CreatedCardId})" : $"[{fig.CreatedCardId}](https://waifu.sanakan.pl/#/card/{fig.CreatedCardId})";
             var selectedPart = $"**Aktywna część:**\n{fig.FocusedPart.ToName()} *{fig.PartExp:F} pk*\n\n";
-            var name =  $"[{fig.Name}]({Shinden.API.Url.GetCharacterURL(fig.Character)})";
+            var name =  $"[{fig.Name}]({ShindenCompat.Url.GetCharacterURL(fig.Character)})";
             var desc = fig.IsComplete
                 ? $"**Ukończona**: {fig.CompletionDate.ToShortDateTime()}\n**WID**: {widUrl}"
                 : $"*{fig.ExpCnt:F} / {CardExtension.ExpToUpgrade(Rarity.SSS, true, fig.SkeletonQuality)} exp*\n\n"

@@ -5,7 +5,6 @@ using System.Threading.Tasks;
 using Discord.WebSocket;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Shinden.Logger;
 
 namespace Sanakan.Api.Controllers
 {

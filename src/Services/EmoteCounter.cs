@@ -7,7 +7,6 @@ using Discord;
 using Discord.WebSocket;
 using Sanakan.Config;
 using Sanakan.Services.Time;
-using Shinden.Logger;
 
 namespace Sanakan.Services
 {

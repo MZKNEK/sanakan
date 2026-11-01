@@ -13,7 +13,6 @@ using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Serialization;
 using Sanakan.Api.Models;
 using Sanakan.Config;
-using Shinden.Logger;
 
 namespace Sanakan.Services
 {

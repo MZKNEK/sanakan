@@ -1,7 +1,7 @@
 ﻿#pragma warning disable 1591
 
 using System.Collections.Generic;
-using Shinden.Models;
+using Sanakan.ShindenCompat.Models;
 using Discord;
 
 namespace Sanakan.Extensions

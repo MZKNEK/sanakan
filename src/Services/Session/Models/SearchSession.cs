@@ -5,8 +5,8 @@ using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
 using Sanakan.Extensions;
-using Shinden;
-using Shinden.Models;
+using Sanakan.ShindenCompat;
+using Sanakan.ShindenCompat.Models;
 
 namespace Sanakan.Services.Session.Models
 {

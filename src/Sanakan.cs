@@ -13,8 +13,7 @@ using Sanakan.Services.ScamImages;
 using Sanakan.Services.Session;
 using Sanakan.Services.Supervisor;
 using Sanakan.Services.Time;
-using Shinden;
-using Shinden.Logger;
+using Sanakan.ShindenCompat;
 using System;
 using System.Threading.Tasks;
 
@@ -154,9 +153,8 @@ namespace Sanakan
             };
 
             var tmpCnf = _config.Get();
-            _shindenClient = new ShindenClient(new Auth(tmpCnf.Shinden.Token,
-                tmpCnf.Shinden.UserAgent, tmpCnf.Shinden.Marmolade), discordLogger.Shinden,
-                LogLevel.Information, tmpCnf.Shinden.BaseUri, TimeSpan.FromSeconds(10));
+            _shindenClient = ShindenClient.Create(tmpCnf.Shinden, discordLogger.Shinden,
+                new ShindenActivityHandler(ShindenActivity.Default), TimeSpan.FromSeconds(10));
 
             _health = new HealthMonitor(_client, _shindenClient, _config);
             _heartbeat = new Heartbeat(_health.GetAsync, _config, _logger);

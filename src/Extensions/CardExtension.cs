@@ -63,7 +63,7 @@ namespace Sanakan.Extensions
 
         public static string GetNameWithUrl(this Card card) => $"[{card.Name}]({card.GetCharacterUrl()})";
 
-        public static string GetCharacterUrl(this Card card) => Shinden.API.Url.GetCharacterURL(card.Character);
+        public static string GetCharacterUrl(this Card card) => ShindenCompat.Url.GetCharacterURL(card.Character);
 
         public static int GetValue(this Card card)
         {
@@ -797,7 +797,7 @@ namespace Sanakan.Extensions
 
         public static string GetImage(this Card card) => card.CustomImage ?? card.Image;
 
-        public static async Task Update(this Card card, IUser user, Shinden.ShindenClient client, bool updateTitle = false)
+        public static async Task Update(this Card card, IUser user, ShindenCompat.ShindenClient client, bool updateTitle = false)
         {
             var response = await client.GetCharacterInfoAsync(card.Character);
             if (!response.IsSuccessStatusCode())

@@ -13,7 +13,6 @@ using Discord.Commands;
 using Discord.WebSocket;
 using Sanakan.Config;
 using Sanakan.Extensions;
-using Shinden.Logger;
 
 namespace Sanakan.Services
 {

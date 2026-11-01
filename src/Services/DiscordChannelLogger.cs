@@ -3,8 +3,8 @@
 using Discord;
 using Discord.Net;
 using Discord.Rest;
+using Microsoft.Extensions.Logging;
 using Sanakan.Config;
-using Shinden.Logger;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -36,13 +36,6 @@ namespace Sanakan.Services
             "Run cmd: ",
             "mem usage: ",
             "Reconnected!",
-            // Shinden.NET
-            "Processing request: ",
-            "Request successful.",
-            "Parsing response.",
-            "Response code: ",
-            "Response body: ",
-            "Request body: ",
         };
 
         private readonly ConsoleLogger _console;
@@ -68,7 +61,7 @@ namespace Sanakan.Services
             Shinden = new ShindenLogger(this);
         }
 
-        public ILogger Shinden { get; }
+        public ILogger<ShindenAPI.Shinden> Shinden { get; }
 
         public void Log(string message) => Log(message, false);
 
@@ -278,17 +271,32 @@ namespace Sanakan.Services
             return channel;
         }
 
-        private class ShindenLogger : ILogger
+        private class ShindenLogger : ILogger<ShindenAPI.Shinden>
         {
             private readonly DiscordChannelLogger _parent;
 
             public ShindenLogger(DiscordChannelLogger parent) => _parent = parent;
 
-            public void Log(string message)
+            public IDisposable BeginScope<TState>(TState state) where TState : notnull => null;
+
+            public bool IsEnabled(LogLevel logLevel) => logLevel >= LogLevel.Information && logLevel != LogLevel.None;
+
+            public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception exception, Func<TState, Exception, string> formatter)
             {
-                ShindenActivity.Default.Track(message);
-                _parent.Log(message, true);
+                if (!IsEnabled(logLevel))
+                    return;
+
+                var message = $"Shinden {formatter(state, exception)}";
+                // missing users or titles are routine, the library still reports them as errors
+                if (logLevel < LogLevel.Warning || IsNotFound(state))
+                    _parent._console.Log(message);
+                else
+                    _parent.Log(message, true);
             }
+
+            private static bool IsNotFound<TState>(TState state)
+                => state is IEnumerable<KeyValuePair<string, object>> values
+                    && values.Any(x => x.Key == "code" && x.Value is int code && code == 404);
         }
     }
 }

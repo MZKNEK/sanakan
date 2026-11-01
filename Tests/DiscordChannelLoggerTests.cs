@@ -70,8 +70,6 @@ namespace Artifacts
         [InlineData("Run cmd: u1 profil")]
         [InlineData("mem usage: 512 MiB")]
         [InlineData("Reconnected!")]
-        [InlineData("Processing request: [GET] http://api.shinden.pl/api/character/1")]
-        [InlineData("Request successful.")]
         [InlineData("")]
         public void ShouldSend_RoutineEntriesAreFiltered(string message)
         {

@@ -23,7 +23,7 @@ using Sanakan.Services.Commands;
 using Sanakan.Services.Executor;
 using Sanakan.Services.PocketWaifu;
 using Sanakan.Services.Time;
-using Shinden;
+using Sanakan.ShindenCompat;
 using Z.EntityFramework.Plus;
 
 namespace Sanakan.Modules
@@ -1073,7 +1073,7 @@ namespace Sanakan.Modules
         }
 
         [Command("shtoken"), Priority(1), RequireDev]
-        [Summary("ustawia token api shindena (tylko na PW z botem); działa po restarcie bota")]
+        [Summary("ustawia stary klucz api shindena (PHP, tylko na PW z botem); działa po restarcie bota")]
         [Remarks("token")]
         public async Task SetShindenTokenAsync([Summary("token")] string token)
         {
@@ -1086,6 +1086,40 @@ namespace Sanakan.Modules
             Config.Save();
 
             await SafeReplyAsync("", embed: "Ustawiono token Shindena, zacznie działać po restarcie bota.".ToEmbedMessage(EMType.Success).Build());
+        }
+
+        [Command("shapitoken"), Priority(1), RequireDev]
+        [Summary("ustawia token aplikacji nowego api shindena (shk_…, tylko na PW z botem); działa po restarcie bota")]
+        [Remarks("shk_token")]
+        public async Task SetShindenApiTokenAsync([Summary("token")] string token)
+        {
+            if (!await RequireDmForSecretAsync())
+                return;
+
+            var config = Config.Get();
+            config.Shinden ??= new ConfigShinden();
+            config.Shinden.ApiToken = token;
+            Config.Save();
+
+            await SafeReplyAsync("", embed: "Ustawiono token nowego API Shindena, zacznie działać po restarcie bota.".ToEmbedMessage(EMType.Success).Build());
+        }
+
+        [Command("shconfig"), Priority(1), RequireDev]
+        [Summary("wyświetla konfigurację api shindena z ukrytymi tokenami; zmiany działają po restarcie bota")]
+        [Remarks("")]
+        public async Task ShowShindenConfigAsync()
+        {
+            var cfg = Config.Get().Shinden ?? new ConfigShinden();
+            string Secret(string value) => string.IsNullOrEmpty(value) ? "brak" : MaskKey(value);
+
+            var info = $"**Nowe API:** `{ShindenClient.GetUri(cfg)}`\n"
+                + $"**Stare API (PHP):** `{ShindenClient.GetLegacyUri(cfg)}`\n"
+                + $"**Token aplikacji:** `{(string.IsNullOrEmpty(cfg.ApiToken) ? "brak - używany stary klucz" : MaskKey(cfg.ApiToken))}`\n"
+                + $"**Stary klucz:** `{Secret(cfg.Token)}`\n"
+                + $"**Marmolade:** `{Secret(cfg.Marmolade)}`\n"
+                + $"**User agent:** `{(string.IsNullOrEmpty(cfg.UserAgent) ? "brak" : cfg.UserAgent)}`";
+
+            await SafeReplyAsync("", embed: info.TrimToLength().ToEmbedMessage(EMType.Info).Build());
         }
 
         [Command("dbconn", RunMode = RunMode.Async), Priority(1), RequireDev]

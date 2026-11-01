@@ -10,7 +10,8 @@ Sanakan is a Discord bot and web API built with [.NET 6](https://dotnet.microsof
 
 - [.NET 6 SDK](https://dotnet.microsoft.com/download/dotnet/6.0)
 - MySQL-compatible database
-- A Shinden API key
+- A Shinden API application token (`shk_…`) and, for operations not yet
+  moved to the new API, the legacy Shinden API key
 - A Discord bot token
 - `make` for the Makefile commands
 
@@ -41,7 +42,8 @@ comments to it.
   "CharPerPacket": 20000,
   "PacksPerDay": 0,
   "Shinden": {
-    "Token": "your-shinden-api-key",
+    "ApiToken": "your-shinden-application-token",
+    "Token": "your-shinden-legacy-api-key",
     "UserAgent": "your-user-agent"
   },
   "Exp": {

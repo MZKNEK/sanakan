@@ -1,7 +1,5 @@
 #pragma warning disable 1591
 
-using Shinden.Logger;
-
 namespace Sanakan
 {
     public static class LoggerExtensions

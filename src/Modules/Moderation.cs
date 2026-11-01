@@ -16,7 +16,7 @@ using Sanakan.Preconditions;
 using Sanakan.Services;
 using Sanakan.Services.Commands;
 using Sanakan.Services.Time;
-using Shinden;
+using Sanakan.ShindenCompat;
 using Z.EntityFramework.Plus;
 
 namespace Sanakan.Modules

@@ -20,9 +20,8 @@ using Sanakan.Extensions;
 using Sanakan.Services.Executor;
 using Sanakan.Services.PocketWaifu;
 using Sanakan.Services.Time;
-using Shinden;
-using Shinden.Logger;
-using Shinden.Models;
+using Sanakan.ShindenCompat;
+using Sanakan.ShindenCompat.Models;
 using Z.EntityFramework.Plus;
 
 namespace Sanakan.Api.Controllers
@@ -77,12 +76,12 @@ namespace Sanakan.Api.Controllers
         /// <param name="name">nazwa użytkownika</param>
         /// <returns>id użytkownika</returns>
         [HttpPost("find"), AllowAnonymous]
-        public async Task<ActionResult<IEnumerable<Shinden.Models.IUserSearch>>> GetUserIdByNameAsync([FromBody, Required]string name)
+        public async Task<ActionResult<IEnumerable<ShindenCompat.Models.IUserSearch>>> GetUserIdByNameAsync([FromBody, Required]string name)
         {
             if (string.IsNullOrWhiteSpace(name) || name.Length > 256)
                 return "Invalid name!".ToResponse(400);
 
-            Shinden.API.IResponse<List<Shinden.Models.IUserSearch>> res;
+            ShindenCompat.Response<List<ShindenCompat.Models.IUserSearch>> res;
             try
             {
                 res = await _shClient.Search.UserAsync(name);
@@ -447,7 +446,7 @@ namespace Sanakan.Api.Controllers
                     }
                 }
 
-                Shinden.API.IResponse<List<Shinden.Models.IUserSearch>> response;
+                ShindenCompat.Response<List<ShindenCompat.Models.IUserSearch>> response;
                 try
                 {
                     response = await _shClient.Search.UserAsync(id.Username);
@@ -468,10 +467,10 @@ namespace Sanakan.Api.Controllers
                     return "User not found on shinden!".ToResponse(404);
                 }
 
-                Shinden.API.IResponse<Shinden.Models.IUserInfo> sResponse;
+                ShindenCompat.Response<ShindenCompat.Models.IUserInfo> sResponse;
                 try
                 {
-                    sResponse = await _shClient.User.GetAsync(found);
+                    sResponse = await _shClient.User.GetAsync(found.Id);
                 }
                 catch (Exception)
                 {
@@ -528,7 +527,7 @@ namespace Sanakan.Api.Controllers
             }
         }
 
-        public static Shinden.Models.IUserSearch PickShindenUser(IEnumerable<Shinden.Models.IUserSearch> results, string username)
+        public static ShindenCompat.Models.IUserSearch PickShindenUser(IEnumerable<ShindenCompat.Models.IUserSearch> results, string username)
         {
             if (results == null) return null;
 

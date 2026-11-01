@@ -14,7 +14,7 @@ namespace Sanakan.Services.Commands
         private const int DELAY_MS = 75;
 
         public IConfig Config { get; set; }
-        public global::Shinden.Logger.ILogger Logger { get; set; }
+        public ILogger Logger { get; set; }
 
         public async Task<IUserMessage> SafeReplyAsync(string message = null, bool isTTS = false, Embed embed = null, RequestOptions options = null, AllowedMentions allowedMentions = null, MessageReference messageReference = null, MessageComponent components = null, ISticker[] stickers = null, Embed[] embeds = null, MessageFlags flags = MessageFlags.None)
         {

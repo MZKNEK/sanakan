@@ -10,7 +10,6 @@ using Sanakan.Extensions;
 using Sanakan.Services.Executor;
 using Sanakan.Services.PocketWaifu;
 using Sanakan.Services.Time;
-using Shinden.Logger;
 using System;
 using System.Linq;
 using System.Reflection;

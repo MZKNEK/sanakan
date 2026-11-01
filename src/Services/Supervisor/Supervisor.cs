@@ -14,7 +14,6 @@ using Sanakan.Config;
 using Sanakan.Extensions;
 using Sanakan.Services.ScamImages;
 using Sanakan.Services.Time;
-using Shinden.Logger;
 
 namespace Sanakan.Services.Supervisor
 {

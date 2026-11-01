@@ -234,7 +234,7 @@ namespace Artifacts
         [Fact]
         public void PoolCharacter_KeepsDataAfterSerialization()
         {
-            var original = new Shinden.Models.Entities.CharacterInfoTitle(15, "Lamperouge", "Lelouch", 1234, "Code Geass");
+            var original = new Sanakan.ShindenCompat.Models.Entities.CharacterInfoTitle(15, "Lamperouge", "Lelouch", 1234, "Code Geass");
 
             var copy = JsonConvert.DeserializeObject<PoolCharacter>(JsonConvert.SerializeObject(new PoolCharacter(original)));
 
@@ -249,7 +249,7 @@ namespace Artifacts
         [Fact]
         public async Task ShindenService_UsesSavedPoolWhenShindenIsUnavailable()
         {
-            var character = new PoolCharacter(new Shinden.Models.Entities.CharacterInfoTitle(15, "Lamperouge", "Lelouch", 1234, "Code Geass"));
+            var character = new PoolCharacter(new Sanakan.ShindenCompat.Models.Entities.CharacterInfoTitle(15, "Lamperouge", "Lelouch", 1234, "Code Geass"));
             await CacheFile.WriteAsync(FileIn("pool-anime.json"), new { UpdatedAt = _now.AddDays(-3), Value = new List<PoolCharacter> { character } });
 
             var time = new FixedTime();
