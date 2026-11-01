@@ -1,11 +1,9 @@
-# 1.4.10.36
+# 1.4.10.37
 
 Data: 2026-11-01
 
-- Naprawiono pole „Historyczna” w opisie postaci, które zawsze pokazywało „Nie”.
-- Zmieniono listę obrazków postaci, która nie pokazuje już obrazków oznaczonych jako 18+.
+- Usunięto ogłoszenia wysyłane przez stronę na kanały Discorda i w prywatnych wiadomościach (np. newsy, recenzje i nowe odcinki).
 
 ## Techniczne
 
-- Bot korzysta teraz z nowego API Shindena, a do operacji, których jeszcze tam nie ma, nadal używa starego.
-- Statystyki dostępności Shindena są teraz liczone dokładniej, dla każdego zapytania osobno.
+- Zmieniono sposób ustawiania kanału, na który trafiają ostrzeżenia o możliwych multikontach — ustawia się go teraz osobnym poleceniem.
