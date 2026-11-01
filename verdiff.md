@@ -1,5 +1,11 @@
-# 1.4.10.35
+# 1.4.10.36
 
-Data: 2026-10-31
+Data: 2026-11-01
 
-- Naprawiono brak starszych obrazków profilu, np. nakładki, w Profilatorze i w kodzie profilu z obrazkami, prosił @tomoro02
+- Naprawiono pole „Historyczna” w opisie postaci, które zawsze pokazywało „Nie”.
+- Zmieniono listę obrazków postaci, która nie pokazuje już obrazków oznaczonych jako 18+.
+
+## Techniczne
+
+- Bot korzysta teraz z nowego API Shindena, a do operacji, których jeszcze tam nie ma, nadal używa starego.
+- Statystyki dostępności Shindena są teraz liczone dokładniej, dla każdego zapytania osobno.
