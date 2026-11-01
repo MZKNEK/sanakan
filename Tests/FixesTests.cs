@@ -81,7 +81,7 @@ namespace Artifacts
         {
             var executor = new FakeExecutor { Accept = false };
             var controller = ControllerHarness.Attach(new WaifuController(null, null, executor, null, new FakeConfig(), new FixedTime(),
-                new Sanakan.Services.Shinden(null, null, null, new ListLogger(), new FixedTime()), null, null));
+                new Sanakan.Services.Shinden(null, null, null, new ListLogger(), new FixedTime()), null, null, null));
 
             var result = await controller.UpdateCardInfoAsync(5, new Sanakan.Api.Models.CharacterCardInfoUpdate());
 
@@ -389,7 +389,7 @@ namespace Artifacts
     {
         private static WaifuController NewController(FakeExecutor executor)
             => ControllerHarness.Attach(new WaifuController(null, null, executor, null, new FakeConfig(), new FixedTime(),
-                new Sanakan.Services.Shinden(null, null, null, new ListLogger(), new FixedTime()), null, null));
+                new Sanakan.Services.Shinden(null, null, null, new ListLogger(), new FixedTime()), null, null, null));
 
         [Fact]
         public async Task GivePacks_NullBody_Returns500WithoutException()

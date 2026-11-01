@@ -39,7 +39,7 @@ namespace Artifacts
         private sealed class TestController : WaifuController
         {
             private readonly string _path;
-            public TestController(string path, FixedTime time) : base(null, null, new FakeExecutor(), null, new FakeConfig(), time, null, null, null)
+            public TestController(string path, FixedTime time) : base(null, null, new FakeExecutor(), null, new FakeConfig(), time, null, null, null, null)
                 => _path = path;
             protected override DatabaseContext CreateDatabaseContext() => new TestDatabase(_path);
         }

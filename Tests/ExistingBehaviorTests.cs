@@ -320,7 +320,7 @@ namespace Artifacts
     {
         private static WaifuController NewWaifuController(FakeExecutor executor)
             => ControllerHarness.Attach(new WaifuController(null, null, executor, null, new FakeConfig(), new FixedTime(),
-                new Sanakan.Services.Shinden(null, null, null, new ListLogger(), new FixedTime()), null, null));
+                new Sanakan.Services.Shinden(null, null, null, new ListLogger(), new FixedTime()), null, null, null));
 
         [Fact]
         public async Task UpdateCardInfo_EnqueuesTaskAndReturnsOk()

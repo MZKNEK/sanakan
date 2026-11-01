@@ -47,6 +47,7 @@ namespace Sanakan.Api.Controllers
         private readonly ShindenClient _shClient;
         private readonly Services.Shinden _shinden;
         private readonly DiscordSocketClient _client;
+        private readonly ILogger _logger;
 
         private const int MaxShindenFailures = 2;
         private int _shindenFailures;
@@ -55,9 +56,11 @@ namespace Sanakan.Api.Controllers
         private const string ShindenOpenIdempotencyScope = "shinden-boosterpack-open";
 
         public WaifuController(ShindenClient shClient, Waifu waifu, IExecutor executor, TagHelper tags,
-            IConfig config, ISystemTime time, Services.Shinden shinden, DiscordSocketClient client, Expedition expedition)
+            IConfig config, ISystemTime time, Services.Shinden shinden, DiscordSocketClient client, Expedition expedition,
+            ILogger logger)
         {
             _time = time;
+            _logger = logger;
             _tags = tags;
             _waifu = waifu;
             _client = client;
@@ -973,6 +976,7 @@ namespace Sanakan.Api.Controllers
         public async Task<ActionResult<List<Card>>> GiveShindenUserAPacksAndOpenAsync(ulong id, [FromBody]List<Models.CardBoosterPack> boosterPacks,
             [FromHeader(Name = Services.Idempotency.KeyHeader)] string idempotencyKey = null)
         {
+            var timer = System.Diagnostics.Stopwatch.StartNew();
             if (idempotencyKey != null && !Services.Idempotency.IsValidKey(idempotencyKey))
                 return "Invalid Idempotency-Key".ToResponse(400);
 
@@ -980,7 +984,7 @@ namespace Sanakan.Api.Controllers
             if (invalid != null) return invalid;
 
             if (idempotencyKey != null)
-                return await OpenShindenUserPacksOnceAsync(id, boosterPacks, packs, idempotencyKey);
+                return await OpenShindenUserPacksOnceAsync(id, boosterPacks, packs, idempotencyKey, timer);
 
             ulong discordId = 0;
             CharacterPoolType poolType = CharacterPoolType.Anime;
@@ -999,11 +1003,13 @@ namespace Sanakan.Api.Controllers
                 poolType = bUser.PoolType;
             }
 
+            var drawStart = timer.ElapsedMilliseconds;
             var cards = await DrawCardsAsync(packs, poolType);
             if (cards == null)
             {
                 return "Can't connect to shinden!".ToResponse(503);
             }
+            var drawMs = timer.ElapsedMilliseconds - drawStart;
 
             var exe = new Executable($"api-packet-open u{discordId}", new Func<Task>(async () =>
             {
@@ -1029,6 +1035,7 @@ namespace Sanakan.Api.Controllers
             if (!await exe.WaitAsync(Executable.ApiMaxWait))
                 return "Command timed out".ToResponse(504);
 
+            _logger?.Log($"API: opened {packs.Count} packs ({cards.Count} cards) s{id} u{discordId} in {timer.ElapsedMilliseconds}ms (draw {drawMs}ms)");
             return cards;
         }
 
@@ -1052,9 +1059,13 @@ namespace Sanakan.Api.Controllers
 
             using (var db = CreateDatabaseContext())
             {
-                var done = await Services.Idempotency.FindAsync(db, ShindenOpenIdempotencyScope, key, _time.Now());
+                var now = _time.Now();
+                var done = await Services.Idempotency.FindAsync(db, ShindenOpenIdempotencyScope, key, now);
                 if (done != null && done.OwnerId == id)
+                {
+                    _logger?.Log($"API: opened packs result picked up s{id} key {key} {(long)(now - done.CreatedAt).TotalMilliseconds}ms after request");
                     return await OpenDoneStatusAsync(db, done);
+                }
             }
 
             var failure = Services.Idempotency.Failure(ShindenOpenIdempotencyScope, key);
@@ -1066,7 +1077,7 @@ namespace Sanakan.Api.Controllers
 
         // Cards are drawn and saved in the background; under the key only a complete grant is ever stored.
         private async Task<ActionResult<List<Card>>> OpenShindenUserPacksOnceAsync(ulong id, List<Models.CardBoosterPack> request,
-            List<BoosterPack> packs, string key)
+            List<BoosterPack> packs, string key, System.Diagnostics.Stopwatch timer)
         {
             var record = new IdempotencyRecord
             {
@@ -1123,12 +1134,14 @@ namespace Sanakan.Api.Controllers
                     var committed = false;
                     try
                     {
+                        var drawStart = timer.ElapsedMilliseconds;
                         var cards = await DrawCardsAsync(packs, poolType);
                         if (cards == null)
                         {
                             Services.Idempotency.Fail(record, BoosterPackOpenStatus.ShindenUnavailable);
                             return;
                         }
+                        var drawMs = timer.ElapsedMilliseconds - drawStart;
 
                         using (var db = CreateDatabaseContext())
                         {
@@ -1153,6 +1166,8 @@ namespace Sanakan.Api.Controllers
                             // card ids exist only after the first save; if this one fails the cards are still granted once
                             record.Result = Services.Idempotency.ToResult(cards.Select(x => x.Id).ToList());
                             await db.SaveChangesAsync();
+
+                            _logger?.Log($"API: opened {packs.Count} packs ({cards.Count} cards) s{id} u{discordId} key {key} in {timer.ElapsedMilliseconds}ms (draw {drawMs}ms)");
 
                             await Services.Idempotency.CleanupIfDueAsync(db, record.CreatedAt);
                         }
@@ -1221,12 +1236,14 @@ namespace Sanakan.Api.Controllers
         [HttpPost("boosterpack/open/{packNumber}"), Authorize(Policy = "Player")]
         public async Task<ActionResult<List<Card>>> OpenAPackAsync(int packNumber)
         {
+            var timer = System.Diagnostics.Stopwatch.StartNew();
             var currUser = ControllerContext.HttpContext.User;
             if (currUser.HasClaim(x => x.Type == "DiscordId"))
             {
                 if (ulong.TryParse(currUser.Claims.First(x => x.Type == "DiscordId").Value, out var discordId))
                 {
                     ulong packId = 0;
+                    long drawMs = 0;
                     var opened = new List<Card>();
                     using (var db = new Database.DatabaseContext(_config))
                     {
@@ -1248,11 +1265,13 @@ namespace Sanakan.Api.Controllers
                             return "User has no space left in deck!".ToResponse(406);
                         }
 
+                        var drawStart = timer.ElapsedMilliseconds;
                         opened = await _waifu.OpenBoosterPackAsync(null, packCh, botUserCh.PoolType);
                         if (opened.Count < packCh.CardCnt)
                         {
                             return "Can't connect to shinden!".ToResponse(503);
                         }
+                        drawMs = timer.ElapsedMilliseconds - drawStart;
                         packId = packCh.Id;
                     }
 
@@ -1310,6 +1329,7 @@ namespace Sanakan.Api.Controllers
                         return error;
                     }
 
+                    _logger?.Log($"API: opened pack {packNumber} ({cards.Count} cards) u{discordId} in {timer.ElapsedMilliseconds}ms (draw {drawMs}ms)");
                     return cards;
                 }
             }

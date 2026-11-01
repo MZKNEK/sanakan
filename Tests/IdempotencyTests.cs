@@ -56,7 +56,7 @@ namespace Artifacts
             private readonly Func<DatabaseContext> _factory;
             private readonly Func<List<BoosterPack>, List<Card>> _draw;
             public TestController(IExecutor executor, ISystemTime time, Func<DatabaseContext> factory, Func<List<BoosterPack>, List<Card>> draw)
-                : base(null, null, executor, null, new FakeConfig(), time, null, null, null)
+                : base(null, null, executor, null, new FakeConfig(), time, null, null, null, null)
             {
                 _factory = factory;
                 _draw = draw;
