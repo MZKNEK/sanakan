@@ -1,11 +1,11 @@
-# 1.4.11.0
+# 1.4.11.1
 
 Data: 2026-11-02
 
-- Zmieniono wygląd statystyk ze strony (polecenie ile) na nowy, czytelniejszy obrazek z liczbą tytułów, odcinków lub rozdziałów, czasem oglądania i czytania oraz średnią oceną.
-- Zmieniono listę ostatnio oglądanych i czytanych tytułów w statystykach ze strony, tak aby każdy tytuł pojawiał się tylko raz i pokazywał pasek postępu.
-- Dodano rangę ze strony w nagłówku statystyk ze strony.
-- Zmieniono układ statystyk ze strony, gdy lista anime lub mangi jest pusta, tak aby nie pokazywał pustego panelu.
-- Zmieniono link do profilu pod statystykami ze strony na przyciski prowadzące do profilu, listy anime i listy mangi.
-- Zmieniono wygląd obrazka awansu na nowy poziom.
-- Dodano wyróżnienie obrazka awansu kolorem roli, gdy na osiągniętym poziomie serwer przyznaje rolę.
+- Dodano możliwość pobierania ofert wszystkich sklepików wraz z cenami, walutami i opisami przedmiotów przez strony i aplikacje.
+- Zmieniono łączenie kont Discord i Shinden, aby automatycznie tworzyło brakującego gracza i pozwalało bez błędu ponowić połączenie tej samej pary kont.
+- Dodano dane już połączonych kont Discord, w tym nazwę, pseudonim z głównego serwera i awatar, aby można było wyświetlić przyczynę konfliktu połączenia.
+- Dodano możliwość rozłączania kont Discord i Shinden bez utraty kart i postępu gracza, z ochroną przed przypadkowym usunięciem innego powiązania.
+- Dodano ochronę przed ponownym naliczeniem TC przy powtórzeniu w ciągu 48 godzin operacji oznaczonej tym samym identyfikatorem transakcji.
+- Przyspieszono łączenie kont przez wykorzystanie danych przekazanych przez stronę bez ponownego wyszukiwania użytkownika na Shindenie.
+- Usunięto możliwość zmiany pseudonimu Discord przez zewnętrzne aplikacje.
