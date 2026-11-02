@@ -39,13 +39,44 @@ namespace Sanakan.Api.Controllers
         private readonly ISystemTime _time;
         private readonly IExecutor _executor;
         private readonly TagHelper _tags;
+        private readonly Waifu _waifu;
 
-        public PlayerController(IConfig config, ISystemTime time, IExecutor executor, TagHelper tags)
+        public PlayerController(IConfig config, ISystemTime time, IExecutor executor, TagHelper tags, Waifu waifu)
         {
             _config = config;
             _time = time;
             _executor = executor;
             _tags = tags;
+            _waifu = waifu;
+        }
+
+        /// <summary>
+        /// Pobiera wszystkie sklepiki z ofertami, opisami, cenami i walutami zgodnymi z komendami bota.
+        /// </summary>
+        [HttpGet("shops"), ProducesResponseType(typeof(List<Shop>), 200)]
+        public IActionResult GetShopList()
+        {
+            if (!TryGetDiscordId(out _))
+                return NoClaim();
+
+            return Ok(Enum.GetValues<ShopType>().Select(type => Shop.From(_waifu, type)).ToList());
+        }
+
+        /// <summary>
+        /// Pobiera ofertę wybranego sklepiku z opisami przedmiotów, cenami i walutą.
+        /// </summary>
+        /// <param name="type">normal (0) — Sklepik za TC; pvp (1) — Koszary za PC; activity (2) — Kiosk za AC.</param>
+        /// <response code="400">Nieznany typ sklepiku.</response>
+        [HttpGet("shops/{type}"), ProducesResponseType(typeof(Shop), 200)]
+        public IActionResult GetShop(ShopType type)
+        {
+            if (!TryGetDiscordId(out _))
+                return NoClaim();
+
+            if (!Enum.IsDefined(typeof(ShopType), type))
+                return "Unknown shop type!".ToResponse(400);
+
+            return Ok(Shop.From(_waifu, type));
         }
 
         /// <summary>

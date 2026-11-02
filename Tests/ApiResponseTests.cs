@@ -181,6 +181,21 @@ namespace Artifacts
             await AssertMessage(await client.SendAsync(req), HttpStatusCode.BadRequest);
         }
 
+        [Theory]
+        [InlineData("discord", " ")]
+        [InlineData("shinden", " ")]
+        [InlineData("discord", "invalid key")]
+        [InlineData("shinden", "invalid key")]
+        public async Task ModifyTc_InvalidIdempotencyHeader_Returns400Json(string identifier, string key)
+        {
+            var client = await _api.AsSiteAsync();
+            var request = new HttpRequestMessage(HttpMethod.Put, $"/api/user/{identifier}/5/tc") { Content = ApiServer.Json("100") };
+            request.Headers.TryAddWithoutValidation("Idempotency-Key", new[] { key });
+
+            await AssertMessage(await client.SendAsync(request), HttpStatusCode.BadRequest);
+            Assert.Empty(_api.Executor.Added);
+        }
+
         [Fact]
         public async Task OpenShindenPacks_InvalidIdempotencyKey_Returns400Json()
         {

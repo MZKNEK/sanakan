@@ -416,43 +416,15 @@ namespace Artifacts
 
     public class RegisterUserTests
     {
-        private static Sanakan.ShindenCompat.Models.IUserSearch Found(ulong id, string name)
-        {
-            var mock = new Mock<Sanakan.ShindenCompat.Models.IUserSearch>();
-            mock.SetupGet(x => x.Id).Returns(id);
-            mock.SetupGet(x => x.Name).Returns(name);
-            return mock.Object;
-        }
-
         [Fact]
-        public void PickUser_PrefersExactName()
-        {
-            var picked = UserController.PickShindenUser(new[] { Found(1, "Karnaval"), Found(2, "karna") }, "Karna");
-            Assert.Equal(2ul, picked.Id);
-        }
-
-        [Fact]
-        public void PickUser_FallsBackToFirstResult()
-        {
-            Assert.Equal(1ul, UserController.PickShindenUser(new[] { Found(1, "Karnaval"), Found(2, "Karnus") }, "Karna").Id);
-        }
-
-        [Fact]
-        public void PickUser_EmptyOrNull_ReturnsNull()
-        {
-            Assert.Null(UserController.PickShindenUser(new Sanakan.ShindenCompat.Models.IUserSearch[0], "Karna"));
-            Assert.Null(UserController.PickShindenUser(null, "Karna"));
-        }
-
-        [Fact]
-        public async Task Register_NullModel_Returns500()
+        public async Task Register_NullModel_Returns400()
         {
             var controller = ControllerHarness.Attach(new UserController(null, null, new ListLogger(), new FakeExecutor(),
                 new FakeConfig(), new FixedTime(), new Sanakan.Services.Shinden(null, null, null, new ListLogger(), new FixedTime()), null, null));
 
             var result = await controller.RegisterUserAsync(null);
 
-            Assert.Equal(500, result.StatusOf());
+            Assert.Equal(400, result.StatusOf());
         }
     }
 

@@ -405,5 +405,32 @@ namespace Artifacts
         {
             Assert.Equal(HttpStatusCode.Unauthorized, (await WithAppKey("site-app").GetAsync("/api/userkey/me")).StatusCode);
         }
+
+        [Theory]
+        [InlineData(null, HttpStatusCode.Unauthorized)]
+        [InlineData("info-app", HttpStatusCode.Forbidden)]
+        [InlineData("userkeys-app", HttpStatusCode.Forbidden)]
+        [InlineData("site-app", HttpStatusCode.BadRequest)]
+        public async Task Disconnect_RequiresSitePermission(string key, HttpStatusCode expected)
+        {
+            var client = key == null ? _api.Client : WithAppKey(key);
+
+            Assert.Equal(expected, (await client.DeleteAsync("/api/user/discord/0/shinden/42")).StatusCode);
+            Assert.Empty(_api.Executor.Added);
+        }
+
+        [Fact]
+        public async Task Disconnect_PlayerToken_Returns403()
+        {
+            Assert.Equal(HttpStatusCode.Forbidden,
+                (await AsPlayer().DeleteAsync("/api/user/discord/0/shinden/42")).StatusCode);
+        }
+
+        [Fact]
+        public async Task Disconnect_SiteToken_PassesPolicy()
+        {
+            Assert.Equal(HttpStatusCode.BadRequest,
+                (await (await _api.AsSiteAsync()).DeleteAsync("/api/user/discord/0/shinden/42")).StatusCode);
+        }
     }
 }
