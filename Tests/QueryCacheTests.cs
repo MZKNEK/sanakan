@@ -19,7 +19,7 @@ namespace Artifacts
             protected override void OnConfiguring(DbContextOptionsBuilder builder) => builder.UseSqlite($"Data Source={_path};Foreign Keys=False");
         }
 
-        private static string NewDb()
+        internal static string NewDb()
         {
             var path = Path.Combine(Path.GetTempPath(), $"sanakan-qcache-{Guid.NewGuid():N}.db");
             using var db = new TestDatabase(path);
@@ -27,20 +27,20 @@ namespace Artifacts
             return path;
         }
 
-        private static void AddCard(string path, ulong id, ulong character)
+        internal static void AddCard(string path, ulong id, ulong character)
         {
             using var db = new TestDatabase(path);
             db.Cards.Add(new Card { Id = id, Character = character, GameDeckId = 1 });
             db.SaveChanges();
         }
 
-        private static async Task<int> CountAsync(string path, string key, params string[] tags)
+        internal static async Task<int> CountAsync(string path, string key, params string[] tags)
         {
             using var db = new TestDatabase(path);
             return (await db.Cards.AsNoTracking().FromCacheAsync(db, key, tags)).Count();
         }
 
-        private static string NewTag() => $"test-{Guid.NewGuid():N}";
+        internal static string NewTag() => $"test-{Guid.NewGuid():N}";
 
         [Fact]
         public async Task ReturnsCachedResult_UntilTagExpires()
@@ -99,6 +99,16 @@ namespace Artifacts
             Assert.Equal(0, await CountAsync(second, key));
         }
 
+        [Theory]
+        [InlineData("user-full-123", "user-full")]
+        [InlineData("characters-cards-1,2,3", "characters-cards")]
+        [InlineData("characters-cards-,5", "characters-cards")]
+        [InlineData("characters-cards-", "characters-cards")]
+        [InlineData("top-users-Level", "top-users-Level")]
+        [InlineData("ultimate-cards", "ultimate-cards")]
+        public void KindOf_DropsTheIdPart(string key, string kind)
+            => Assert.Equal(kind, QueryCache.KindOf(key));
+
         [Fact]
         public async Task TagExpiredBeforeAnyRead_StillCachesNextRead()
         {
@@ -110,6 +120,90 @@ namespace Artifacts
             Assert.Equal(1, await CountAsync(path, tag, tag));
             AddCard(path, 2, 10);
             Assert.Equal(1, await CountAsync(path, tag, tag));
+        }
+    }
+
+    // stats are global, so other tests must not record into them meanwhile
+    [CollectionDefinition(nameof(QueryCacheStatsTests), DisableParallelization = true)]
+    public class QueryCacheStatsCollection { }
+
+    [Collection(nameof(QueryCacheStatsTests))]
+    public class QueryCacheStatsTests
+    {
+        [Fact]
+        public async Task Report_CountsHitsAndLoadsPerKind()
+        {
+            var path = QueryCacheTests.NewDb();
+            var tag = QueryCacheTests.NewTag();
+            QueryCacheTests.AddCard(path, 1, 10);
+            QueryCacheStats.Flush();
+
+            await QueryCacheTests.CountAsync(path, "statshit-1", tag);
+            await QueryCacheTests.CountAsync(path, "statshit-1", tag);
+
+            var report = QueryCacheStats.Flush();
+            Assert.Contains("- statshit: trafienia 50% z 2, ładowania 1 (", report);
+            Assert.Contains("śr. 1 wyników", report);
+        }
+
+        [Fact]
+        public async Task Report_CountsInvalidatedEntries()
+        {
+            var path = QueryCacheTests.NewDb();
+            var tag = QueryCacheTests.NewTag();
+            QueryCacheTests.AddCard(path, 1, 10);
+            QueryCacheStats.Flush();
+
+            await QueryCacheTests.CountAsync(path, "statsexpire-1", tag);
+            QueryCache.ExpireTag(tag);
+
+            // eviction callbacks run on the thread pool
+            var reports = "";
+            for (int i = 0; i < 100 && !reports.Contains("unieważnione 1 (śr. po"); i++)
+            {
+                await Task.Delay(20);
+                reports += QueryCacheStats.Flush();
+            }
+
+            Assert.Contains("- statsexpire:", reports);
+            Assert.Contains("unieważnione 1 (śr. po", reports);
+        }
+
+        [Fact]
+        public async Task Report_ShowsWhatIsHeldInMemory_UntilEvicted()
+        {
+            var path = QueryCacheTests.NewDb();
+            var tag = QueryCacheTests.NewTag();
+            QueryCacheTests.AddCard(path, 1, 10);
+            QueryCacheTests.AddCard(path, 2, 10);
+
+            await QueryCacheTests.CountAsync(path, "statslive-1", tag);
+            Assert.Equal((1, 2), QueryCacheStats.GetLive("statslive"));
+            Assert.Contains("W pamięci: wpisów ", QueryCacheStats.Flush());
+
+            QueryCache.ExpireTag(tag);
+            for (int i = 0; i < 100 && QueryCacheStats.GetLive("statslive").Entries > 0; i++)
+                await Task.Delay(20);
+
+            Assert.Equal((0, 0), QueryCacheStats.GetLive("statslive"));
+        }
+
+        [Fact]
+        public void Report_StaysWithinDiscordLimit()
+        {
+            QueryCacheStats.Flush();
+            for (int i = 0; i < 50; i++)
+            {
+                var kind = $"statslong{new string((char)('a' + i % 26), 40)}{i}";
+                QueryCacheStats.Load(kind, 123456, 99999, true);
+                QueryCacheStats.Stored(kind, 0);
+                QueryCacheStats.Evicted(kind, Microsoft.Extensions.Caching.Memory.EvictionReason.TokenExpired, 123456, 0);
+            }
+
+            var report = QueryCacheStats.Flush();
+            Assert.True(report.Length < 1600, $"report has {report.Length} chars");
+            Assert.Contains("innych)", report);
+            Assert.Contains("W pamięci: wpisów ", report);
         }
     }
 }

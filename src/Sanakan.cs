@@ -131,7 +131,8 @@ namespace Sanakan
             var discordLogger = new DiscordChannelLogger(new ConsoleLogger(_config), _config);
             _logger = discordLogger;
             Database.DbActivity.Start(_logger, TimeSpan.FromHours(1));
-            DailyReport.Start(_logger, Api.ApiStats.FlushDaily, Database.DbActivity.FlushDaily);
+            QueryCacheStats.Start(_logger, TimeSpan.FromHours(1));
+            DailyReport.Start(_logger, Api.ApiStats.FlushDaily, Database.DbActivity.FlushDaily, QueryCacheStats.FlushDaily);
 
             AppDomain.CurrentDomain.ProcessExit += (_, _) => discordLogger.FlushAllAsync(TimeSpan.FromSeconds(5)).GetAwaiter().GetResult();
 
