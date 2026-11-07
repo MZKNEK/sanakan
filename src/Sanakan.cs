@@ -133,7 +133,10 @@ namespace Sanakan
             _logger = discordLogger;
             Database.DbActivity.Start(_logger, TimeSpan.FromHours(1));
             QueryCacheStats.Start(_logger, TimeSpan.FromHours(1));
-            DailyReport.Start(_logger, Api.ApiStats.FlushDaily, Database.DbActivity.FlushDaily, QueryCacheStats.FlushDaily);
+            Func<string> discordMemory = () => MemoryReport.DescribeDiscord(_client);
+            MemoryReport.Start(_logger, discordMemory, TimeSpan.FromHours(1));
+            DailyReport.Start(_logger, Api.ApiStats.FlushDaily, Database.DbActivity.FlushDaily, QueryCacheStats.FlushDaily,
+                () => MemoryReport.FlushDaily(discordMemory));
 
             AppDomain.CurrentDomain.ProcessExit += (_, _) => discordLogger.FlushAllAsync(TimeSpan.FromSeconds(5)).GetAwaiter().GetResult();
 

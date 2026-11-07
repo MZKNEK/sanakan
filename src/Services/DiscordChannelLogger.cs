@@ -28,6 +28,7 @@ namespace Sanakan.Services
         private const string ColorDefault = "\u001b[0m";
         private const string ColorRed = "\u001b[0;31m";
         private const string ColorYellow = "\u001b[0;33m";
+        private const string ColorReport = "\u001b[1;36m";
 
         private static readonly string[] _routinePrefixes =
         {
@@ -46,6 +47,7 @@ namespace Sanakan.Services
 
         private readonly object _lock = new object();
         private readonly Queue<string> _pending = new Queue<string>();
+        private readonly ErrorPingLimiter _errorPing = new ErrorPingLimiter();
         private int _dropped = 0;
 
         private ITextChannel _channel;
@@ -72,13 +74,15 @@ namespace Sanakan.Services
             if (!IsEnabled() || !ShouldSend(message))
                 return;
 
-            var isError = message.StartsWith(LoggerExtensions.ErrorPrefix, StringComparison.Ordinal);
-            var text = isError ? message.Substring(LoggerExtensions.ErrorPrefix.Length) : message;
-            var entry = $"[{DateTime.Now:HH:mm:ss}] {(isError ? "ERROR " : "")}{_console.MaskSecrets(text)}";
-            entry = PrefixLines(entry, isError ? ColorRed : fromShinden ? ColorYellow : ColorDefault);
+            if (message.StartsWith(LoggerExtensions.ErrorPrefix, StringComparison.Ordinal))
+                _errorPing.Record(DateTime.Now);
+
+            var entries = Format(_console.MaskSecrets(message), fromShinden, DateTime.Now);
             lock (_lock)
             {
-                _pending.Enqueue(entry);
+                foreach (var entry in entries)
+                    _pending.Enqueue(entry);
+
                 while (_pending.Count > MaxPending)
                 {
                     _pending.Dequeue();
@@ -86,6 +90,47 @@ namespace Sanakan.Services
                 }
             }
         }
+
+        public static List<string> Format(string message, bool fromShinden, DateTime now)
+        {
+            var isError = message.StartsWith(LoggerExtensions.ErrorPrefix, StringComparison.Ordinal);
+            var isReport = message.StartsWith(LoggerExtensions.ReportPrefix, StringComparison.Ordinal);
+            var text = isError ? message.Substring(LoggerExtensions.ErrorPrefix.Length)
+                : isReport ? message.Substring(LoggerExtensions.ReportPrefix.Length) : message;
+            var label = isError ? "ERROR " : isReport ? "📊 RAPORT " : "";
+
+            var entry = PrefixLines($"[{now:HH:mm:ss}] {label}{text}",
+                isError ? ColorRed : isReport ? ColorReport : fromShinden ? ColorYellow : ColorDefault);
+
+            // a long report is split between messages instead of being cut off
+            return isReport ? SplitByLines(entry, BodyLimit) : new List<string> { entry };
+        }
+
+        private static int BodyLimit => MaxMessageLength - BlockStart.Length - BlockEnd.Length;
+
+        private static List<string> SplitByLines(string entry, int limit)
+        {
+            var parts = new List<string>();
+            var part = new StringBuilder();
+            foreach (var line in entry.Split('\n'))
+            {
+                if (part.Length > 0 && part.Length + 1 + line.Length > limit)
+                {
+                    parts.Add(part.ToString());
+                    part.Clear();
+                }
+
+                if (part.Length > 0)
+                    part.Append('\n');
+                part.Append(line);
+            }
+
+            if (part.Length > 0)
+                parts.Add(part.ToString());
+            return parts;
+        }
+
+        private static bool IsReport(string entry) => entry.StartsWith(ColorReport, StringComparison.Ordinal);
 
         private static string PrefixLines(string entry, string prefix)
             => string.Join("\n", entry.Replace("\r", "").Split('\n').Select(x => prefix + x));
@@ -140,6 +185,7 @@ namespace Sanakan.Services
             var bodyLimit = maxLength - BlockStart.Length - BlockEnd.Length;
             var messages = new List<string>();
             var body = new StringBuilder();
+            var bodyIsReport = false;
 
             if (!string.IsNullOrEmpty(header))
                 body.Append(Sanitize(header, bodyLimit));
@@ -147,8 +193,10 @@ namespace Sanakan.Services
             while (messages.Count < maxMessages && pending.Count > 0)
             {
                 var line = Sanitize(pending.Peek(), bodyLimit);
+                var lineIsReport = IsReport(line);
+                // reports never share a message with ordinary logs, so they are easy to spot
                 var needed = body.Length == 0 ? line.Length : body.Length + 1 + line.Length;
-                if (needed > bodyLimit)
+                if (body.Length > 0 && (needed > bodyLimit || lineIsReport != bodyIsReport))
                 {
                     messages.Add(BlockStart + body + BlockEnd);
                     body.Clear();
@@ -159,6 +207,7 @@ namespace Sanakan.Services
                     body.Append('\n');
 
                 body.Append(line);
+                bodyIsReport = lineIsReport;
                 pending.Dequeue();
             }
 
@@ -224,15 +273,28 @@ namespace Sanakan.Services
                 messages = Pack(_pending, header, MaxMessagesPerFlush);
             }
 
-            if (messages.Count == 0)
-                return false;
-
             var options = new RequestOptions { CancelToken = token };
             foreach (var msg in messages)
                 await channel.SendMessageAsync(msg, allowedMentions: AllowedMentions.None, options: options).ConfigureAwait(false);
 
-            return true;
+            // also checked without new logs, so a ping held back during an error flood still goes out later
+            await PingAboutErrorsAsync(channel, options).ConfigureAwait(false);
+            return messages.Count > 0;
         }
+
+        private async Task PingAboutErrorsAsync(ITextChannel channel, RequestOptions options)
+        {
+            var roleId = _config.Get().LogChannel?.ErrorRoleId ?? 0;
+            if (roleId == 0 || !_errorPing.TryTake(DateTime.Now, out var errors, out var flood))
+                return;
+
+            var mentions = new AllowedMentions { RoleIds = new List<ulong> { roleId } };
+            await channel.SendMessageAsync(ErrorPingText(roleId, errors, flood), allowedMentions: mentions, options: options).ConfigureAwait(false);
+        }
+
+        public static string ErrorPingText(ulong roleId, int errors, bool flood)
+            => $"<@&{roleId}> ⚠️ Błędy w logach: {errors}"
+                + (flood ? $" (dużo błędów, kolejne oznaczenie najwcześniej za {ErrorPingLimiter.FloodPingInterval.TotalMinutes:0} min)" : "");
 
         private async Task<ITextChannel> GetChannelAsync(CancellationToken token)
         {

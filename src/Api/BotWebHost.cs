@@ -222,7 +222,7 @@ namespace Sanakan.Api
             app.UseAuthorization();
 
             var auditLogger = app.ApplicationServices.GetService<ILogger>();
-            var traffic = new ApiTraffic(x => auditLogger?.Log(x), System.TimeSpan.FromHours(1));
+            var traffic = new ApiTraffic(x => auditLogger?.LogReport(x),System.TimeSpan.FromHours(1));
             app.Use(async (context, next) =>
             {
                 var watch = System.Diagnostics.Stopwatch.StartNew();

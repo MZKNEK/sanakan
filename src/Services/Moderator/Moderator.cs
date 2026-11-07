@@ -34,6 +34,16 @@ namespace Sanakan.Services
 
     public class Moderator : IDisposable
     {
+        public const string AutoAuthor = "automat";
+        // every penalty reason given by the supervisor starts with this
+        public const string AutoReasonPrefix = "Automatyczny ";
+
+        public static bool IsAutomaticReason(string reason)
+            => reason?.StartsWith(AutoReasonPrefix, StringComparison.Ordinal) ?? false;
+
+        public static string AutoPenaltyLabel(PenaltyType type)
+            => $"🤖 Automatyczny {(type == PenaltyType.Ban ? "ban" : "mute")}";
+
         private DiscordSocketClient _client;
         private ImageProcessing _img;
         private ISystemTime _time;
@@ -425,11 +435,13 @@ namespace Sanakan.Services
         }
 
         public async Task NotifyAboutPenaltyAsync(SocketGuildUser user, ITextChannel channel,
-            ExtendedPenaltyInfo exInfo, string byWho = "automat")
+            ExtendedPenaltyInfo exInfo, string byWho = AutoAuthor)
         {
+            var automatic = byWho == AutoAuthor;
             var embed = new EmbedBuilder
             {
-                Color = exInfo.GetColor(),
+                Title = automatic ? AutoPenaltyLabel(exInfo.Info.Type) : null,
+                Color = automatic ? EMType.Bot.Color() : exInfo.GetColor(),
                 Footer = new EmbedFooterBuilder().WithText($"Przez: {byWho}"),
                 Description = $"Powód: {exInfo.Info.Reason}".TrimToLength(2500),
                 Author = new EmbedAuthorBuilder().WithUser(user),
@@ -472,8 +484,9 @@ namespace Sanakan.Services
                     });
             }
 
+            // plain text too, because Discord search does not look inside embeds
             if (channel != null)
-                await channel.SendMessageAsync("", embed: embed.Build());
+                await channel.SendMessageAsync(automatic ? $"**{AutoPenaltyLabel(exInfo.Info.Type)}**" : "", embed: embed.Build());
 
             try
             {

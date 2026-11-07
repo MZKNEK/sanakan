@@ -2079,7 +2079,7 @@ namespace Sanakan.Modules
                         multiplier = 2;
                     }
 
-                    byWho = "automat";
+                    byWho = Moderator.AutoAuthor;
                     duration = 24 * multiplier;
                     reason = $"przekroczono maksymalną liczbę ostrzeżeń ({dbUser.Warnings})";
                 }

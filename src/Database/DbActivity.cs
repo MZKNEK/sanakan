@@ -37,7 +37,7 @@ namespace Sanakan.Database
             _timer = new Timer(_ =>
             {
                 var report = Flush();
-                if (report != null) logger.Log(report);
+                if (report != null) logger.LogReport(report);
             }, null, interval, interval);
         }
 

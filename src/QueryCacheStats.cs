@@ -2,7 +2,6 @@
 
 using System;
 using System.Collections.Concurrent;
-using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -39,7 +38,7 @@ namespace Sanakan
             _timer = new Timer(_ =>
             {
                 var report = Flush();
-                if (report != null) logger.Log(report);
+                if (report != null) logger.LogReport(report);
             }, null, interval, interval);
         }
 
@@ -188,14 +187,9 @@ namespace Sanakan
             var live = _live.Select(x => (Kind: x.Key, Entries: Interlocked.Read(ref x.Value.Entries), Results: Interlocked.Read(ref x.Value.Results)))
                 .Where(x => x.Entries > 0).ToList();
 
-            long workingSet;
-            using (var process = Process.GetCurrentProcess())
-                workingSet = process.WorkingSet64;
-
             var sb = new StringBuilder();
             sb.Append($"\nW pamięci: wpisów {QueryCache.EntryCount}, wyników {live.Sum(x => x.Results)}, tagów {QueryCache.TagCount}, ")
-              .Append($"rozmiar {QueryCache.CurrentSize}/{QueryCache.SizeLimit}; ")
-              .Append($"sterta GC {GC.GetGCMemoryInfo().HeapSizeBytes / 1048576} MiB, proces {workingSet / 1048576} MiB");
+              .Append($"rozmiar {QueryCache.CurrentSize}/{QueryCache.SizeLimit}");
 
             var biggest = live.OrderByDescending(x => x.Results).Take(MaxKindsInReport).Select(x => $"{x.Kind} {x.Entries} ({x.Results} wyn.)");
             if (live.Count > 0)

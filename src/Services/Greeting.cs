@@ -75,7 +75,15 @@ namespace Sanakan.Services
                     ? "Poleciał, szczegółów raczej brak."
                     : $"Poleciał. Powód: {banReason}";
 
-                await notifCh.SendMessageAsync("", embed: banMessage.ToEmbedMessage(EMType.Error).WithUser(user, true).Build());
+                if (!Moderator.IsAutomaticReason(banReason))
+                {
+                    await notifCh.SendMessageAsync("", embed: banMessage.ToEmbedMessage(EMType.Error).WithUser(user, true).Build());
+                    return;
+                }
+
+                var label = Moderator.AutoPenaltyLabel(Database.Models.Management.PenaltyType.Ban);
+                await notifCh.SendMessageAsync($"**{label}**",
+                    embed: banMessage.ToEmbedMessage(EMType.Bot).WithTitle(label).WithUser(user, true).Build());
             }
         }
 

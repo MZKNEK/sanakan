@@ -6,5 +6,6 @@ namespace Sanakan.Config.Model
     {
         public ulong GuildId { get; set; }
         public ulong ChannelId { get; set; }
+        public ulong ErrorRoleId { get; set; }
     }
 }
