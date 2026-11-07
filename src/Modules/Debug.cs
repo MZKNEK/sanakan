@@ -1149,8 +1149,7 @@ namespace Sanakan.Modules
 
             try
             {
-                await using var connection = new MySqlConnector.MySqlConnection(connectionString);
-                await connection.OpenAsync();
+                await Database.DatabaseContext.TestConnectionAsync(Config.Get().DatabaseProvider, connectionString);
             }
             catch (Exception ex)
             {

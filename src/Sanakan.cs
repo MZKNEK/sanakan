@@ -119,7 +119,7 @@ namespace Sanakan
         {
             using (var db = new Database.DatabaseContext(_config))
             {
-                db.Database.EnsureCreated();
+                db.EnsureReady();
                 _tags = await TagHelper.CreateAsync(db);
             }
         }

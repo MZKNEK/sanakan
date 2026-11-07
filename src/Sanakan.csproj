@@ -35,6 +35,7 @@
     <PackageReference Include="Swashbuckle.AspNetCore.SwaggerGen" Version="7.3.2" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
     <PackageReference Include="Pomelo.EntityFrameworkCore.MySql" Version="6.0.3" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="6.0.36" />
     <PackageReference Include="Shinden.NET" Version="0.7.4" />
     <PackageReference Include="SixLabors.ImageSharp" Version="3.1.12" />
     <PackageReference Include="SixLabors.Fonts " Version="2.1.3" />

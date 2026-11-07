@@ -1,6 +1,8 @@
 ﻿#pragma warning disable 1591
 
 using System.Collections.Generic;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
 
 namespace Sanakan.Config.Model
 {
@@ -12,6 +14,8 @@ namespace Sanakan.Config.Model
         public bool Demonization { get; set; }
         public bool SafariEnabled { get; set; }
         public bool AutoCleanCards { get; set; }
+        [JsonConverter(typeof(StringEnumConverter))]
+        public DatabaseProvider DatabaseProvider { get; set; } = DatabaseProvider.MySql;
         public string ConnectionString { get; set; }
         public long CharPerPacket { get; set; }
         public long PacksPerDay { get; set; }

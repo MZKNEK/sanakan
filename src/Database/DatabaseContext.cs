@@ -7,8 +7,12 @@ using Sanakan.Database.Models;
 using Sanakan.Database.Models.Analytics;
 using Sanakan.Database.Models.Configuration;
 using Sanakan.Database.Models.Management;
+using Microsoft.Data.Sqlite;
 using System;
 using System.Collections.Generic;
+using System.Data.Common;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace Sanakan.Database
 {
@@ -70,9 +74,33 @@ namespace Sanakan.Database
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
-            optionsBuilder.UseMySql(_config.Get().ConnectionString,
-                new MySqlServerVersion(new System.Version(8, 0, 43)), opt => opt.EnableRetryOnFailure())
-                .AddInterceptors(DbActivity.Commands, DbActivity.Saves, CacheActivity.Interceptor);
+            var config = _config.Get();
+            var builder = config.DatabaseProvider == global::Sanakan.Config.Model.DatabaseProvider.Sqlite
+                ? optionsBuilder.UseSqlite(config.ConnectionString)
+                : optionsBuilder.UseMySql(config.ConnectionString,
+                    new MySqlServerVersion(new System.Version(8, 0, 43)), opt => opt.EnableRetryOnFailure());
+
+            builder.AddInterceptors(DbActivity.Commands, DbActivity.Saves, CacheActivity.Interceptor);
+            if (config.DatabaseProvider == global::Sanakan.Config.Model.DatabaseProvider.Sqlite)
+                builder.AddInterceptors(SqliteText.Interceptor);
+        }
+
+        public static async Task TestConnectionAsync(global::Sanakan.Config.Model.DatabaseProvider provider, string connectionString)
+        {
+            // ReadWrite: a mistyped SQLite path must fail instead of creating an empty database
+            await using DbConnection connection = provider == global::Sanakan.Config.Model.DatabaseProvider.Sqlite
+                ? new SqliteConnection(new SqliteConnectionStringBuilder(connectionString) { Mode = SqliteOpenMode.ReadWrite }.ToString())
+                : new MySqlConnector.MySqlConnection(connectionString);
+            await connection.OpenAsync();
+        }
+
+        public void EnsureReady()
+        {
+            Database.EnsureCreated();
+
+            // WAL lets reads run while a write is in progress; the mode is stored in the database file
+            if (Database.IsSqlite())
+                Database.ExecuteSqlRaw("PRAGMA journal_mode=WAL;");
         }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -411,6 +439,12 @@ namespace Sanakan.Database
                 entity.HasIndex(e => new { e.Scope, e.Key }).IsUnique();
                 entity.HasIndex(e => e.CreatedAt);
             });
+
+            if (Database.IsSqlite())
+            {
+                foreach (var property in modelBuilder.Model.GetEntityTypes().SelectMany(x => x.GetProperties()).Where(x => x.ClrType == typeof(string)))
+                    property.SetCollation(SqliteText.Collation);
+            }
         }
     }
 }
