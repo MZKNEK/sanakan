@@ -1,11 +1,18 @@
-# 1.4.11.5
+# 1.4.11.6
 
-Data: 2026-11-07
+Data: 2026-11-08
 
-- Naprawiono rzadki błąd, przez który po zmianie danych gracza, kart lub ustawień serwera bot mógł jeszcze długo pokazywać ich stary stan.
+- Przyspieszono budowanie topki graczy, zwłaszcza rankingów liczby i mocy kart.
+- Naprawiono listy kart ultimate i unikatowych na stronie, które po przekazaniu karty mogły jeszcze długo pokazywać poprzedniego właściciela.
+- Dodano wyróżnienie automatycznych banów i wyciszeń na kanale powiadomień (osobny kolor i podpis), aby łatwo je odnaleźć i wyszukać.
+- Zmieniono zapisywanie usuniętych i edytowanych wiadomości: bot zapamiętuje teraz ostatnie 250 wiadomości na kanale zamiast 600, więc zmiany w starszych wiadomościach nie trafią do logu.
 
 ## Techniczne
 
-- Zmieniono sposób przechowywania często używanych danych w pamięci bota, aby nie zależał od zewnętrznego dodatku, co ułatwi przejście na nowszą wersję platformy.
-- Dodano godzinne i dobowe raporty o tym, jak często bot korzysta z zapamiętanych danych, ile kosztuje ich ponowne wczytanie i ile miejsca zajmują w pamięci.
-- Dodano możliwość uruchomienia bota na bazie danych zapisanej w jednym pliku, bez osobnego serwera bazy danych, z takim samym wyszukiwaniem i sortowaniem tekstu jak dotychczas.
+- Zmniejszono zużycie pamięci przez bota: zmieniono sposób jej zwalniania i ograniczono zapas pamięci trzymany na obróbkę obrazków.
+- Dodano limit pamięci na zapamiętane dane z bazy.
+- Przyspieszono usuwanie graczy, którzy opuścili serwer, oraz uruchamianie bota, które niepotrzebnie wczytywały wszystkie karty usuniętych graczy.
+- Przyspieszono wczytywanie list kart ultimate i unikatowych, które nie są już odświeżane po każdym otwarciu pakietu.
+- Dodano godzinny i dobowy raport zużycia pamięci.
+- Zmieniono wygląd raportów na kanale logów: są wyróżnione kolorem i nie mieszają się z innymi wpisami.
+- Dodano oznaczanie wybranej roli przy błędach w logach, a przy bardzo dużej liczbie błędów najwyżej raz na 30 minut.
