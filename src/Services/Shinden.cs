@@ -213,6 +213,28 @@ namespace Sanakan.Services
         public Task<SeasonSnapshot> RefreshSeasonNowAsync()
             => _seasons.GetCurrentAsync(FetchSeasonAsync, _time.Now(), force: true);
 
+        public Task<(SeasonSnapshot Season, string Error)> FillSeasonAsync(int year, AnimeSeason season)
+        {
+            return _seasons.FillAsync(async () =>
+            {
+                var res = await _shClient.Ex.GetSeasonAsync(year, season);
+                if (!res.IsSuccessStatusCode())
+                    throw new Exception(res.Code.ToString());
+
+                var value = res.Body;
+                if (!value.Year.HasValue || !value.Season.HasValue)
+                {
+                    value.Year = year;
+                    value.Season = season;
+                }
+                else if (value.Year != year || value.Season != season)
+                {
+                    throw new Exception($"Shinden returned {SeasonSnapshot.KeyOf(value.Year.Value, value.Season.Value)}");
+                }
+                return value;
+            }, _time.Now());
+        }
+
         private async Task<ShindenCompat.Models.Entities.CurrentSeason> FetchSeasonAsync()
         {
             var res = await _shClient.Ex.GetCurrentSeasonAsync();

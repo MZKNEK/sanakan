@@ -23,9 +23,17 @@ namespace Sanakan.ShindenCompat.Models.Entities
         public List<ulong> Titles { get; set; } = new List<ulong>();
         public List<ulong> Characters { get; set; } = new List<ulong>();
 
-        // empty until Shinden reports which season the lists belong to
+        // empty when Shinden does not report which season the lists belong to
         public int? Year { get; set; }
         public AnimeSeason? Season { get; set; }
+        public DateTime? UpdatedAt { get; set; }
+        public List<SeasonCharacterTitle> CharacterTitles { get; set; } = new List<SeasonCharacterTitle>();
+    }
+
+    public class SeasonCharacterTitle
+    {
+        public ulong CharacterId { get; set; }
+        public ulong TitleId { get; set; }
     }
 
     public class CharacterInfoTitle : CharacterInfoShort, ICharacterInfoTitle

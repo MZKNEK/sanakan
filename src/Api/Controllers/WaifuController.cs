@@ -1499,6 +1499,8 @@ namespace Sanakan.Api.Controllers
                 if (pool?.Type != CardsPoolType.Season) continue;
 
                 var key = pool.Season?.Trim().ToLowerInvariant();
+                if (Services.Cache.SeasonSnapshot.TryParseKey(key, out var year, out var name))
+                    key = Services.Cache.SeasonSnapshot.KeyOf(year, name);
                 var current = string.IsNullOrEmpty(key);
                 var season = current ? await _shinden.GetCurrentSeasonAsync() : _shinden.GetSeason(key);
                 if (season == null || season.Characters.Count == 0)

@@ -2450,7 +2450,7 @@ namespace Sanakan.Modules
 
             if (key != null)
             {
-                var season = store.Get(key.Trim().ToLowerInvariant());
+                var season = store.Get(NormalizeSeasonKey(key));
                 if (season == null)
                 {
                     await SafeReplyAsync("", embed: $"Nie znaleziono sezonu `{key}`.".ToEmbedMessage(EMType.Error).Build());
@@ -2480,11 +2480,19 @@ namespace Sanakan.Modules
         }
 
         [Command("season raw", RunMode = RunMode.Async), Priority(2), RequireDevOrTester]
-        [Summary("pobiera bieżący sezon z shindena bez zapisywania i pokazuje, co bot by z nim zrobił")]
-        [Remarks("")]
-        public async Task ShowRawSeasonAsync()
+        [Summary("pobiera sezon z shindena bez zapisywania i pokazuje, co bot by z nim zrobił (niepodanie - bieżący)")]
+        [Remarks("2026-fall")]
+        public async Task ShowRawSeasonAsync([Summary("klucz sezonu")]string key = null)
         {
-            var res = await _shClient.Ex.GetCurrentSeasonAsync();
+            int year = 0;
+            ShindenCompat.Models.AnimeSeason season = default;
+            if (key != null && !Services.Cache.SeasonSnapshot.TryParseKey(key, out year, out season))
+            {
+                await SafeReplyAsync("", embed: $"Niepoprawny klucz sezonu `{key}`, np. `2026-fall`.".ToEmbedMessage(EMType.Error).Build());
+                return;
+            }
+
+            var res = key == null ? await _shClient.Ex.GetCurrentSeasonAsync() : await _shClient.Ex.GetSeasonAsync(year, season);
             if (!res.IsSuccessStatusCode())
             {
                 await SafeReplyAsync("", embed: $"Shinden zwrócił `{(int)res.Code} {res.Code}`.".ToEmbedMessage(EMType.Error).Build());
@@ -2493,8 +2501,9 @@ namespace Sanakan.Modules
 
             var value = res.Body;
             var current = _shinden.Seasons.Current;
-            var target = Services.Cache.SeasonStore.Target(current, value, _time.Now());
-            var targetKey = Services.Cache.SeasonSnapshot.KeyOf(target.Year, target.Season);
+            var tagged = value.Year.HasValue && value.Season.HasValue;
+            var target = key != null && !tagged ? (year, season) : Services.Cache.SeasonStore.Target(current, value, _time.Now());
+            var targetKey = Services.Cache.SeasonSnapshot.KeyOf(target.Item1, target.Item2);
             var existing = _shinden.Seasons.Get(targetKey);
 
             var knownTitles = current == null ? 0 : value.Titles.Count(current.Titles.Contains);
@@ -2502,15 +2511,48 @@ namespace Sanakan.Modules
             var newCharacters = existing == null ? value.Characters.Count : value.Characters.Count(x => !existing.Characters.Contains(x));
 
             var decision = existing == null ? $"nowy sezon `{targetKey}`" : $"dopisanie do `{targetKey}`";
-            var tag = value.Year.HasValue && value.Season.HasValue ? $"`{value.Year}-{value.Season.ToString().ToLower()}`" : "`brak`";
+            if (key == null && current != null && current.Key != targetKey) decision += " (zmiana bieżącego)";
+            var tag = tagged ? $"`{Services.Cache.SeasonSnapshot.KeyOf(value.Year.Value, value.Season.Value)}`" : "`brak`";
 
-            var info = $"**Tytuły:** {value.Titles.Count}\n**Postacie:** {value.Characters.Count}\n**Znacznik sezonu od shindena:** {tag}\n\n"
+            var linked = new HashSet<ulong>(value.CharacterTitles.Select(x => x.CharacterId));
+            var perTitle = value.CharacterTitles.GroupBy(x => x.TitleId).Select(x => x.Count()).DefaultIfEmpty(0).ToList();
+
+            var info = $"**Tytuły:** {value.Titles.Count}\n**Postacie:** {value.Characters.Count}\n"
+                + $"**Znacznik sezonu od shindena:** {tag}\n"
+                + $"**Lista zmieniona na shindenie:** {(value.UpdatedAt.HasValue ? value.UpdatedAt.Value.ToShortDateTime() : "`brak`")}\n"
+                + $"**Powiązania postać-tytuł:** {value.CharacterTitles.Count} (postacie bez tytułu: {value.Characters.Count(x => !linked.Contains(x))}, postaci na tytuł: {perTitle.Min()}-{perTitle.Max()})\n\n"
                 + $"**Bieżący sezon bota:** `{current?.Key ?? "brak"}`\n"
-                + $"**Znane tytuły:** {knownTitles}/{value.Titles.Count} (zmiana sezonu poniżej {Services.Cache.SeasonStore.SwitchOverlap:P0})\n"
+                + (tagged ? "" : $"**Znane tytuły:** {knownTitles}/{value.Titles.Count} (zmiana sezonu poniżej {Services.Cache.SeasonStore.SwitchOverlap:P0})\n")
                 + $"**Decyzja:** {decision}\n**Nowe tytuły:** {newTitles}\n**Nowe postacie:** {newCharacters}";
 
             await SafeReplyAsync("", embed: info.TrimToLength().ToEmbedMessage(EMType.Info).Build());
-            await SendJsonAsync(value, "current-season.json");
+            await SendJsonAsync(value, $"{(key == null ? "current-season" : targetKey)}.json");
+        }
+
+        [Command("season fetch", RunMode = RunMode.Async), Priority(2), RequireDev]
+        [Summary("pobiera wskazany sezon z shindena i dopisuje go do zapisanych, bez zmiany bieżącego sezonu")]
+        [Remarks("2026-summer")]
+        public async Task FetchSeasonAsync([Summary("klucz sezonu")]string key)
+        {
+            if (!Services.Cache.SeasonSnapshot.TryParseKey(key, out var year, out var season))
+            {
+                await SafeReplyAsync("", embed: $"Niepoprawny klucz sezonu `{key}`, np. `2026-summer`.".ToEmbedMessage(EMType.Error).Build());
+                return;
+            }
+
+            var before = _shinden.Seasons.Get(Services.Cache.SeasonSnapshot.KeyOf(year, season));
+            var (filled, error) = await _shinden.FillSeasonAsync(year, season);
+            if (filled == null)
+            {
+                await SafeReplyAsync("", embed: $"Nie udało się pobrać sezonu: `{error}`.".ToEmbedMessage(EMType.Error).Build());
+                return;
+            }
+
+            var info = before == null
+                ? $"Zapisano nowy sezon `{filled.Key}`.\n**Tytuły:** {filled.Titles.Count}\n**Postacie:** {filled.Characters.Count}"
+                : $"Uzupełniono `{filled.Key}`.\n**Tytuły:** {before.Titles.Count} → {filled.Titles.Count}\n**Postacie:** {before.Characters.Count} → {filled.Characters.Count}";
+
+            await SafeReplyAsync("", embed: $"{info}\n**Bieżący sezon:** `{_shinden.Seasons.Current?.Key ?? "brak"}`".ToEmbedMessage(EMType.Success).Build());
         }
 
         [Command("season dump", RunMode = RunMode.Async), Priority(2), RequireDevOrTester]
@@ -2518,7 +2560,7 @@ namespace Sanakan.Modules
         [Remarks("2026-autumn")]
         public async Task DumpSeasonAsync([Summary("klucz sezonu")]string key = null)
         {
-            var season = key == null ? _shinden.Seasons.Current : _shinden.Seasons.Get(key.Trim().ToLowerInvariant());
+            var season = key == null ? _shinden.Seasons.Current : _shinden.Seasons.Get(NormalizeSeasonKey(key));
             if (season == null)
             {
                 await SafeReplyAsync("", embed: $"Nie znaleziono sezonu `{key ?? "bieżący"}`.".ToEmbedMessage(EMType.Error).Build());
@@ -2551,6 +2593,10 @@ namespace Sanakan.Modules
 
             await SafeReplyAsync("", embed: info.ToEmbedMessage(EMType.Success).Build());
         }
+
+        private static string NormalizeSeasonKey(string key)
+            => Services.Cache.SeasonSnapshot.TryParseKey(key, out var year, out var season)
+                ? Services.Cache.SeasonSnapshot.KeyOf(year, season) : key.Trim().ToLowerInvariant();
 
         private async Task SendJsonAsync(object value, string name)
         {

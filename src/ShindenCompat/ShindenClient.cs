@@ -199,11 +199,43 @@ namespace Sanakan.ShindenCompat
                 => Wrap(await _api.Characters.MangaFlatListAsync().ConfigureAwait(false), ToPool);
 
             public async Task<Response<Models.Entities.CurrentSeason>> GetCurrentSeasonAsync()
-                => Wrap(await _api.Episodes.CurrentSeasonAsync().ConfigureAwait(false), x => new Models.Entities.CurrentSeason
+                => Wrap(await _api.Episodes.CurrentSeasonAsync().ConfigureAwait(false), ToSeason);
+
+            public async Task<Response<Models.Entities.CurrentSeason>> GetSeasonAsync(int year, AnimeSeason season)
+                => Wrap(await _api.Episodes.CurrentSeasonAsync(year, ToApi(season)).ConfigureAwait(false), ToSeason);
+
+            private static Models.Entities.CurrentSeason ToSeason(ShindenAPI.Models.SeasonalAnimeInfo x)
+            {
+                var season = FromApi(x.Season?.Value);
+                return new Models.Entities.CurrentSeason
                 {
                     Titles = x.TitleIds ?? new List<ulong>(),
                     Characters = x.CharacterIds ?? new List<ulong>(),
-                });
+                    Year = season.HasValue && x.Season.Year > 0 ? (int)x.Season.Year : null,
+                    Season = season.HasValue && x.Season.Year > 0 ? season : null,
+                    UpdatedAt = x.UpdatedAt,
+                    CharacterTitles = x.CharacterTitles?.Where(c => c != null)
+                        .Select(c => new Models.Entities.SeasonCharacterTitle { CharacterId = c.CharacterId, TitleId = c.TitleId }).ToList()
+                        ?? new List<Models.Entities.SeasonCharacterTitle>(),
+                };
+            }
+
+            private static AnimeSeason? FromApi(ShindenAPI.Queries.V1.Season? season) => season switch
+            {
+                ShindenAPI.Queries.V1.Season.Winter => AnimeSeason.Winter,
+                ShindenAPI.Queries.V1.Season.Spring => AnimeSeason.Spring,
+                ShindenAPI.Queries.V1.Season.Summer => AnimeSeason.Summer,
+                ShindenAPI.Queries.V1.Season.Fall => AnimeSeason.Autumn,
+                _ => null,
+            };
+
+            private static ShindenAPI.Queries.V1.Season ToApi(AnimeSeason season) => season switch
+            {
+                AnimeSeason.Winter => ShindenAPI.Queries.V1.Season.Winter,
+                AnimeSeason.Spring => ShindenAPI.Queries.V1.Season.Spring,
+                AnimeSeason.Summer => ShindenAPI.Queries.V1.Season.Summer,
+                _ => ShindenAPI.Queries.V1.Season.Fall,
+            };
 
             private static List<ICharacterInfoTitle> ToPool(List<ShindenAPI.Models.CharacterFlat> list)
                 => list.Where(x => x != null).Select(x => x.ToModel()).ToList();

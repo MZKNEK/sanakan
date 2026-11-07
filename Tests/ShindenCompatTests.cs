@@ -316,6 +316,54 @@ namespace Artifacts
             Assert.Equal(new ulong[] { 3 }, season.Characters);
             Assert.Single(_stub.Requests);
             Assert.Equal("/compat/php-api/anime/current-season", _stub.Requests.Last().RequestUri.AbsolutePath);
+            Assert.Null(season.Year);
+            Assert.Null(season.Season);
+            Assert.Null(season.UpdatedAt);
+            Assert.Empty(season.CharacterTitles);
+        }
+
+        [Fact]
+        public async Task CurrentSeasonTagIsMappedAndFallBecomesAutumn()
+        {
+            Respond(@"{ ""season"": { ""year"": 2026, ""season"": ""fall"" }, ""updated_at"": ""2026-11-07 12:00:00"",
+                ""titles"": [ 1 ], ""characters"": [ 3, 4 ], ""character_titles"": [ { ""character_id"": 3, ""title_id"": 1 } ] }");
+
+            var season = (await Create().Ex.GetCurrentSeasonAsync()).Body;
+
+            Assert.Equal(2026, season.Year);
+            Assert.Equal(AnimeSeason.Autumn, season.Season);
+            Assert.NotNull(season.UpdatedAt);
+            var link = Assert.Single(season.CharacterTitles);
+            Assert.Equal(3ul, link.CharacterId);
+            Assert.Equal(1ul, link.TitleId);
+        }
+
+        [Fact]
+        public async Task CurrentSeasonWithUnknownSeasonName_HasNoTag()
+        {
+            Respond(@"{ ""season"": { ""year"": 2026, ""season"": ""monsoon"" }, ""titles"": [ 1 ], ""characters"": [ 3 ] }");
+
+            var season = (await Create().Ex.GetCurrentSeasonAsync()).Body;
+
+            Assert.Null(season.Year);
+            Assert.Null(season.Season);
+            Assert.Equal(new ulong[] { 1 }, season.Titles);
+        }
+
+        [Theory]
+        [InlineData(AnimeSeason.Summer, "summer")]
+        [InlineData(AnimeSeason.Autumn, "fall")]
+        public async Task SeasonByNameAsksForThatSeason(AnimeSeason requested, string name)
+        {
+            Respond($@"{{ ""season"": {{ ""year"": 2026, ""season"": ""{name}"" }}, ""titles"": [ 1 ], ""characters"": [ 3 ] }}");
+
+            var season = (await Create().Ex.GetSeasonAsync(2026, requested)).Body;
+
+            var uri = _stub.Requests.Single().RequestUri;
+            Assert.Equal("/compat/php-api/anime/current-season", uri.AbsolutePath);
+            Assert.Contains("2026", uri.Query);
+            Assert.Contains(name, uri.Query);
+            Assert.Equal(requested, season.Season);
         }
 
         [Fact]

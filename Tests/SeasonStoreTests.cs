@@ -74,6 +74,84 @@ namespace Artifacts
             Assert.Equal(expected, SeasonSnapshot.Of(new DateTime(2026, month, 15)).Season);
         }
 
+        [Theory]
+        [InlineData("2026-autumn", 2026, AnimeSeason.Autumn)]
+        [InlineData("2026-fall", 2026, AnimeSeason.Autumn)]
+        [InlineData(" 2026-FALL ", 2026, AnimeSeason.Autumn)]
+        [InlineData("2027-winter", 2027, AnimeSeason.Winter)]
+        [InlineData("2027-Spring", 2027, AnimeSeason.Spring)]
+        public void Key_IsParsed(string key, int year, AnimeSeason season)
+        {
+            Assert.True(SeasonSnapshot.TryParseKey(key, out var y, out var s));
+            Assert.Equal(year, y);
+            Assert.Equal(season, s);
+        }
+
+        [Theory]
+        [InlineData(null)]
+        [InlineData("")]
+        [InlineData("2026")]
+        [InlineData("2026-3")]
+        [InlineData("2026-monsoon")]
+        [InlineData("abc-fall")]
+        [InlineData("2026-fall-x")]
+        [InlineData("99999-fall")]
+        public void InvalidKey_IsRejected(string key)
+        {
+            Assert.False(SeasonSnapshot.TryParseKey(key, out _, out _));
+        }
+
+        [Fact]
+        public async Task Fill_AddsTaggedSeasonWithoutChangingCurrent()
+        {
+            var store = new SeasonStore(Day, Retry, _dir);
+            await store.GetCurrentAsync(Returns(Ids(1), Ids(10)), Autumn);
+
+            var (filled, error) = await store.FillAsync(Returns(Data(Ids(5), Ids(50), 2026, AnimeSeason.Summer)), Autumn.AddHours(1));
+
+            Assert.Null(error);
+            Assert.Equal("2026-summer", filled.Key);
+            Assert.Equal("2026-autumn", store.Current.Key);
+            Assert.Equal(Ids(50), store.Get("2026-summer").Characters);
+
+            var restored = new SeasonStore(Day, Retry, _dir);
+            Assert.Equal("2026-autumn", restored.Current.Key);
+            Assert.Equal(Ids(50), restored.Get("2026-summer").Characters);
+        }
+
+        [Fact]
+        public async Task Fill_CurrentSeason_UpdatesCurrent()
+        {
+            var store = new SeasonStore(Day, Retry);
+            await store.GetCurrentAsync(Returns(Ids(1), Ids(10)), Autumn);
+
+            await store.FillAsync(Returns(Data(Ids(2), Ids(11), 2026, AnimeSeason.Autumn)), Autumn.AddHours(1));
+
+            Assert.Equal(Ids(10, 11), store.Current.Characters);
+        }
+
+        [Fact]
+        public async Task Fill_WithoutTagOrData_IsRejected()
+        {
+            var store = new SeasonStore(Day, Retry);
+
+            Assert.Equal("Response without season", (await store.FillAsync(Returns(Ids(1), Ids(10)), Autumn)).Error);
+            Assert.Equal("Empty response", (await store.FillAsync(Returns(Data(Ids(), Ids(), 2026, AnimeSeason.Summer)), Autumn)).Error);
+            Assert.Equal("NotFound", (await store.FillAsync(Throws(), Autumn)).Error);
+            Assert.Empty(store.All());
+        }
+
+        [Fact]
+        public async Task Restart_WithoutPointerFile_UsesLastWrittenSeason()
+        {
+            var store = new SeasonStore(Day, Retry, _dir);
+            await store.GetCurrentAsync(Returns(Ids(1), Ids(10)), Autumn);
+            await store.GetCurrentAsync(Returns(Ids(7), Ids(20)), Winter);
+            File.Delete(Path.Combine(_dir, "current.txt"));
+
+            Assert.Equal("2027-winter", new SeasonStore(Day, Retry, _dir).Current.Key);
+        }
+
         [Fact]
         public void Season_HasStableKeyAndPolishName()
         {
@@ -379,6 +457,39 @@ namespace Artifacts
 
             Assert.Equal(2, cards.Count);
             Assert.All(cards, x => Assert.Equal(15ul, x.Character));
+        }
+
+        [Fact]
+        public async Task FillSeason_UntaggedResponse_IsSavedAsRequestedSeason()
+        {
+            _stub.Season = @"{ ""titles"": [ 300 ], ""characters"": [ ""30"" ] }";
+
+            var (season, error) = await _shinden.FillSeasonAsync(2026, AnimeSeason.Summer);
+
+            Assert.Null(error);
+            Assert.Equal("2026-summer", season.Key);
+            Assert.Null(_shinden.Seasons.Current);
+            Assert.Contains(_stub.Paths, x => x.EndsWith("current-season"));
+        }
+
+        [Fact]
+        public async Task FillSeason_OtherSeasonReturned_IsRejected()
+        {
+            _stub.Season = @"{ ""season"": { ""year"": 2026, ""season"": ""spring"" }, ""titles"": [ 300 ], ""characters"": [ ""30"" ] }";
+
+            var (season, error) = await _shinden.FillSeasonAsync(2026, AnimeSeason.Summer);
+
+            Assert.Null(season);
+            Assert.Contains("2026-spring", error);
+            Assert.Empty(_shinden.Seasons.All());
+        }
+
+        [Fact]
+        public async Task CurrentSeason_TaggedByShinden_UsesTagInsteadOfCalendar()
+        {
+            _stub.Season = @"{ ""season"": { ""year"": 2026, ""season"": ""summer"" }, ""titles"": [ 100 ], ""characters"": [ ""15"" ] }";
+
+            Assert.Equal("2026-summer", (await _shinden.GetCurrentSeasonAsync()).Key);
         }
 
         [Fact]
