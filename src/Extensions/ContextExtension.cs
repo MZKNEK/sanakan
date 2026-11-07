@@ -87,19 +87,6 @@ namespace Sanakan.Extensions
                 .FromCacheAsync(context, "users-all-full", new MemoryCacheEntryOptions{ AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(6) })).ToList();
         }
 
-        public static IQueryable<User> GetQueryableAllUsers(this Database.DatabaseContext context)
-        {
-            return context.Users.AsQueryable().Include(x => x.Stats).Include(x => x.SMConfig).Include(x => x.TimeStatuses).Include(x => x.GameDeck).ThenInclude(x => x.PvPStats).Include(x => x.GameDeck).ThenInclude(x => x.Wishes)
-                .Include(x => x.GameDeck).ThenInclude(x => x.Items).Include(x => x.GameDeck).ThenInclude(x => x.ExpContainer).Include(x => x.GameDeck).ThenInclude(x => x.Cards).ThenInclude(x => x.Tags)
-                .Include(x => x.GameDeck).ThenInclude(x => x.BoosterPacks).ThenInclude(x => x.Characters).Include(x => x.GameDeck).ThenInclude(x => x.BoosterPacks).ThenInclude(x => x.RarityExcludedFromPack)
-                .Include(x => x.GameDeck).ThenInclude(x => x.Figures).AsNoTracking().AsSplitQuery();
-        }
-
-        public static Task<IEnumerable<User>> QFromCacheAsync(this IQueryable<User> list, Database.DatabaseContext context, string key)
-        {
-            return list.FromCacheAsync(context, key, new MemoryCacheEntryOptions{ AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(6) });
-        }
-
         public static async Task<List<GameDeck>> GetCachedPlayersForPVP(this Database.DatabaseContext context, ulong ignore = 1)
         {
             return (await context.GameDecks.AsQueryable().Where(x => x.DeckPower > UserExtension.MIN_DECK_POWER && x.DeckPower < UserExtension.MAX_DECK_POWER && x.UserId != ignore && x.CardsInDeck <= UserExtension.MAX_CARDS_IN_DECK && x.CardsInDeck > 0).AsNoTracking().AsSplitQuery().FromCacheAsync(context, $"pvp-players-{ignore}", new MemoryCacheEntryOptions{ AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(2) })).ToList();
@@ -146,7 +133,8 @@ namespace Sanakan.Extensions
 
         public static async Task RemoveUserAsync(this Database.DatabaseContext context, ulong userId, bool removeCards = false)
         {
-            var fakeu = await context.GetUserOrCreateAsync(1);
+            // cards of removed users go to this account; its own cards are not needed here
+            var fakeu = await context.GetUserOrCreateSimpleAsync(1);
             var user = await context.GetUserOrCreateAsync(userId);
 
             if (!removeCards)

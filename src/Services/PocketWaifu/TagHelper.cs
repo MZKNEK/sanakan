@@ -33,7 +33,7 @@ namespace Sanakan.Services.PocketWaifu
                 (TagType.TrashBin,    "kosz",       "🗑️", 0),
             };
 
-            var botUser = await db.GetUserOrCreateAsync(1);
+            var botUser = await db.GetUserOrCreateSimpleAsync(1);
             foreach (var tag in setup)
             {
                 var thisTag = botUser.GameDeck.Tags.FirstOrDefault(x => x.Name.Equals(tag.name, System.StringComparison.CurrentCultureIgnoreCase));

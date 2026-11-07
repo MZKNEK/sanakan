@@ -178,6 +178,8 @@ namespace Sanakan.Database
                 entity.HasKey(e => e.Id);
                 entity.HasIndex(e => e.Active);
                 entity.HasIndex(e => e.Character);
+                entity.HasIndex(e => e.FromFigure);
+                entity.HasIndex(e => e.Unique);
 
                 entity.HasOne(e => e.GameDeck)
                     .WithMany(d => d.Cards);

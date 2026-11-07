@@ -10,13 +10,18 @@ using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Primitives;
+using Sanakan.Database.Models;
 
 namespace Sanakan
 {
     public static class QueryCache
     {
-        private static readonly MemoryCache Cache = new MemoryCache(new MemoryCacheOptions());
+        // in rows, a user or deck counts its cards too; ~1 KB per card, so roughly 2 GB
+        public const long SizeLimit = 2_000_000;
+
+        private static readonly MemoryCache Cache = new MemoryCache(new MemoryCacheOptions { SizeLimit = SizeLimit });
         private static readonly ConcurrentDictionary<string, CancellationTokenSource> Tags = new ConcurrentDictionary<string, CancellationTokenSource>();
+        private static long _currentSize;
 
         public static MemoryCacheEntryOptions DefaultOptions { get; } = new MemoryCacheEntryOptions
         {
@@ -28,6 +33,9 @@ namespace Sanakan
             => query.FromCacheAsync(db, key, null, tags);
 
         public static async Task<IEnumerable<T>> FromCacheAsync<T>(this IQueryable<T> query, DbContext db, string key, MemoryCacheEntryOptions options, params string[] tags)
+            => await GetOrLoadAsync(db, key, () => query.ToListAsync(), options, tags);
+
+        public static async Task<List<T>> GetOrLoadAsync<T>(DbContext db, string key, Func<Task<List<T>>> load, MemoryCacheEntryOptions options, params string[] tags)
         {
             var kind = KindOf(key);
             var fullKey = $"{db.Database.GetConnectionString()}|{key}";
@@ -40,21 +48,39 @@ namespace Sanakan
             // tokens are taken before the query runs, so an expire that lands during the query discards its result
             var tokens = tags.Select(tag => Tags.GetOrAdd(tag, _ => new CancellationTokenSource()).Token).ToList();
             var timer = Stopwatch.StartNew();
-            var result = await query.ToListAsync();
+            var result = await load();
             timer.Stop();
 
             var discarded = tokens.Any(x => x.IsCancellationRequested);
             QueryCacheStats.Load(kind, timer.ElapsedMilliseconds, result.Count, discarded);
             if (discarded) return result;
 
+            var size = SizeOf(result);
             var entry = Copy(options ?? DefaultOptions);
+            entry.Size = size;
             foreach (var token in tokens)
                 entry.AddExpirationToken(new CancellationChangeToken(token));
 
-            entry.RegisterPostEvictionCallback(OnEvicted, new EntryInfo(kind, Environment.TickCount64, result.Count));
+            entry.RegisterPostEvictionCallback(OnEvicted, new EntryInfo(kind, Environment.TickCount64, result.Count, size));
             QueryCacheStats.Stored(kind, result.Count);
+            Interlocked.Add(ref _currentSize, size);
             Cache.Set(fullKey, result, entry);
             return result;
+        }
+
+        public static long SizeOf<T>(List<T> result)
+        {
+            long size = 0;
+            foreach (var item in result)
+            {
+                size += item switch
+                {
+                    User user => 1 + (user.GameDeck?.Cards?.Count ?? 0),
+                    GameDeck deck => 1 + (deck.Cards?.Count ?? 0),
+                    _ => 1
+                };
+            }
+            return Math.Max(1, size);
         }
 
         // "user-full-123" -> "user-full", so stats are grouped per query type instead of per id
@@ -70,13 +96,17 @@ namespace Sanakan
 
         public static int EntryCount => Cache.Count;
         public static int TagCount => Tags.Count;
+        public static long CurrentSize => Interlocked.Read(ref _currentSize);
 
-        private sealed record EntryInfo(string Kind, long LoadedAt, int Results);
+        private sealed record EntryInfo(string Kind, long LoadedAt, int Results, long Size);
 
         private static void OnEvicted(object key, object value, EvictionReason reason, object state)
         {
             if (state is EntryInfo info)
+            {
+                Interlocked.Add(ref _currentSize, -info.Size);
                 QueryCacheStats.Evicted(info.Kind, reason, Environment.TickCount64 - info.LoadedAt, info.Results);
+            }
         }
 
         public static void ExpireTag(params string[] tags)
@@ -94,8 +124,7 @@ namespace Sanakan
             AbsoluteExpiration = options.AbsoluteExpiration,
             AbsoluteExpirationRelativeToNow = options.AbsoluteExpirationRelativeToNow,
             SlidingExpiration = options.SlidingExpiration,
-            Priority = options.Priority,
-            Size = options.Size
+            Priority = options.Priority
         };
     }
 }

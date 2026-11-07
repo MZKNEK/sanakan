@@ -18,7 +18,7 @@ namespace Sanakan
 
         private sealed class Counters
         {
-            public long Hits, Loads, Discarded, Invalidated, Expired, LoadMs, MaxLoadMs, Results, InvalidatedAgeMs;
+            public long Hits, Loads, Discarded, Invalidated, Expired, OverLimit, LoadMs, MaxLoadMs, Results, InvalidatedAgeMs;
         }
 
         private sealed class LiveCounters
@@ -82,7 +82,7 @@ namespace Sanakan
             Interlocked.Decrement(ref live.Entries);
             Interlocked.Add(ref live.Results, -results);
 
-            if (reason != EvictionReason.TokenExpired && reason != EvictionReason.Expired)
+            if (reason != EvictionReason.TokenExpired && reason != EvictionReason.Expired && reason != EvictionReason.Capacity)
                 return;
 
             Evicted(Hour(kind), reason, ageMs);
@@ -114,6 +114,12 @@ namespace Sanakan
             if (reason == EvictionReason.Expired)
             {
                 Interlocked.Increment(ref c.Expired);
+                return;
+            }
+
+            if (reason == EvictionReason.Capacity)
+            {
+                Interlocked.Increment(ref c.OverLimit);
                 return;
             }
 
@@ -169,6 +175,8 @@ namespace Sanakan
                 sb.Append($", wygasłe {c.Expired}");
             if (c.Discarded > 0)
                 sb.Append($", odrzucone {c.Discarded}");
+            if (c.OverLimit > 0)
+                sb.Append($", ponad limit {c.OverLimit}");
             return sb.ToString();
         }
 
@@ -185,7 +193,8 @@ namespace Sanakan
                 workingSet = process.WorkingSet64;
 
             var sb = new StringBuilder();
-            sb.Append($"\nW pamięci: wpisów {QueryCache.EntryCount}, wyników {live.Sum(x => x.Results)}, tagów {QueryCache.TagCount}; ")
+            sb.Append($"\nW pamięci: wpisów {QueryCache.EntryCount}, wyników {live.Sum(x => x.Results)}, tagów {QueryCache.TagCount}, ")
+              .Append($"rozmiar {QueryCache.CurrentSize}/{QueryCache.SizeLimit}; ")
               .Append($"sterta GC {GC.GetGCMemoryInfo().HeapSizeBytes / 1048576} MiB, proces {workingSet / 1048576} MiB");
 
             var biggest = live.OrderByDescending(x => x.Results).Take(MaxKindsInReport).Select(x => $"{x.Kind} {x.Entries} ({x.Results} wyn.)");

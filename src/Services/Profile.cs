@@ -26,6 +26,8 @@ namespace Sanakan.Services
         Level, ScCnt, TcCnt, Posts, PostsMonthly, PostsMonthlyCharacter, Commands, Cards, CardsPower, Card, Karma, KarmaNegative, Pvp, PvpSeason, PcCnt, AcCnt
     }
 
+    public sealed record TopEntry(ulong UserId, string Value);
+
     public enum SaveResult
     {
         Error,
@@ -279,8 +281,49 @@ namespace Sanakan.Services
             }
         }
 
-        public Task<IEnumerable<User>> GetTopUsers(Database.DatabaseContext db, TopType type)
-            => OrderUsersByTop(db.GetQueryableAllUsers(), type).Take(50).QFromCacheAsync(db, $"top-users-{type}");
+        private const int TopSize = 50;
+        // cards of removed users are kept on this account, it is never shown in the top
+        private const ulong FakeUserId = 1;
+
+        private static readonly Microsoft.Extensions.Caching.Memory.MemoryCacheEntryOptions TopCacheOptions
+            = new Microsoft.Extensions.Caching.Memory.MemoryCacheEntryOptions { AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(6) };
+
+        public Task<List<TopEntry>> GetTopUsers(Database.DatabaseContext db, TopType type)
+            => QueryCache.GetOrLoadAsync(db, $"top-users-{type}", () => LoadTopUsersAsync(db, type), TopCacheOptions);
+
+        private async Task<List<TopEntry>> LoadTopUsersAsync(Database.DatabaseContext db, TopType type)
+        {
+            var users = await OrderUsersByTop(db.Users.AsQueryable().Include(x => x.GameDeck).Where(x => x.Id != FakeUserId).AsNoTracking(), type)
+                .Take(TopSize).ToListAsync();
+
+            var ids = users.Select(x => x.Id).ToList();
+            var cards = db.Cards.AsQueryable().AsNoTracking();
+
+            switch (type)
+            {
+                case TopType.Cards:
+                    var counts = await cards.Where(x => ids.Contains(x.GameDeckId)).GroupBy(x => x.GameDeckId)
+                        .Select(x => new { x.Key, Count = x.Count() }).ToDictionaryAsync(x => x.Key, x => x.Count);
+                    return users.Select(x => new TopEntry(x.Id, $"{counts.GetValueOrDefault(x.Id)}")).ToList();
+
+                case TopType.CardsPower:
+                    var rarities = (await cards.Where(x => ids.Contains(x.GameDeckId)).GroupBy(x => new { x.GameDeckId, x.Rarity })
+                        .Select(x => new { x.Key.GameDeckId, x.Key.Rarity, Count = x.Count() }).ToListAsync()).ToLookup(x => x.GameDeckId);
+                    return users.Select(x => new TopEntry(x.Id, UserExtension.FormatCardCountStats(rarities[x.Id].ToDictionary(r => r.Rarity, r => r.Count)))).ToList();
+
+                case TopType.Card:
+                    var entries = new List<TopEntry>();
+                    foreach (var user in users)
+                    {
+                        var best = await cards.Where(x => x.GameDeckId == user.Id).OrderByDescending(x => x.CardPower).FirstOrDefaultAsync();
+                        entries.Add(new TopEntry(user.Id, best?.GetString(false, false, true) ?? "---"));
+                    }
+                    return entries;
+
+                default:
+                    return users.Select(x => new TopEntry(x.Id, x.GetViewValueForTop(type))).ToList();
+            }
+        }
 
         private IOrderedQueryable<User> OrderUsersByTop(IQueryable<User> list, TopType type)
         {
@@ -337,16 +380,16 @@ namespace Sanakan.Services
             }
         }
 
-        public List<string> BuildListView(IEnumerable<User> list, TopType type, SocketGuild guild)
+        public List<string> BuildListView(IEnumerable<TopEntry> list, SocketGuild guild)
         {
             var view = new List<string>();
 
-            foreach (var user in list)
+            foreach (var entry in list)
             {
-                var bUsr = guild.GetUser(user.Id);
+                var bUsr = guild.GetUser(entry.UserId);
                 if (bUsr == null) continue;
 
-                view.Add($"{bUsr.Mention}: {user.GetViewValueForTop(type)}");
+                view.Add($"{bUsr.Mention}: {entry.Value}");
             }
 
             return view;

@@ -799,13 +799,16 @@ namespace Sanakan.Extensions
         }
 
         public static string GetCardCountStats(this GameDeck deck)
+            => FormatCardCountStats(deck.Cards.GroupBy(x => x.Rarity).ToDictionary(x => x.Key, x => x.Count()));
+
+        public static string FormatCardCountStats(IReadOnlyDictionary<Rarity, int> counts)
         {
             string stats = "";
 
             foreach (Rarity rarity in (Rarity[])Enum.GetValues(typeof(Rarity)))
             {
-                var count = deck.Cards.Count(x => x.Rarity == rarity);
-                if (count > 0) stats += $"**{rarity.ToString().ToUpper()}**: {count} ";
+                if (counts.TryGetValue(rarity, out var count) && count > 0)
+                    stats += $"**{rarity.ToString().ToUpper()}**: {count} ";
             }
 
             return stats;

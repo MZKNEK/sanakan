@@ -103,13 +103,11 @@ namespace Sanakan.Database
                             if (entry.State == EntityState.Modified)
                                 characters.Add(entry.OriginalValues.GetValue<ulong>(nameof(Card.Character)));
 
-                            // listy ultimate/unikalne zależą od struktury - nie od częstych pól typu moc/relacja
-                            if (entry.State == EntityState.Added || entry.State == EntityState.Deleted
-                                || entry.Property(nameof(Card.FromFigure)).IsModified)
+                            // the ultimate/unique lists show current card data and owner, so any change of a listed card refreshes them
+                            if (card.FromFigure || entry.Property(nameof(Card.FromFigure)).IsModified)
                                 ultimateCards = true;
 
-                            if (entry.State == EntityState.Added || entry.State == EntityState.Deleted
-                                || entry.Property(nameof(Card.Unique)).IsModified)
+                            if (card.Unique || entry.Property(nameof(Card.Unique)).IsModified)
                                 uniqueCards = true;
                             break;
 

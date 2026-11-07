@@ -232,7 +232,7 @@ namespace Sanakan.Modules
             var building = await SafeReplyAsync("", embed: $"🔨 Trwa budowanie topki...".ToEmbedMessage(EMType.Bot).Build());
             using (var db = new Database.DatabaseContext(Config))
             {
-                session.ListItems = _profile.BuildListView(await _profile.GetTopUsers(db, type), type, Context.Guild);
+                session.ListItems = _profile.BuildListView(await _profile.GetTopUsers(db, type), Context.Guild);
             }
 
             session.Event = ExecuteOn.ReactionAdded;
