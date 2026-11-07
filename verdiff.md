@@ -1,11 +1,15 @@
-# 1.4.11.1
+# 1.4.11.2
 
-Data: 2026-11-02
+Data: 2026-11-07
 
-- Dodano możliwość pobierania ofert wszystkich sklepików wraz z cenami, walutami i opisami przedmiotów przez strony i aplikacje.
-- Zmieniono łączenie kont Discord i Shinden, aby automatycznie tworzyło brakującego gracza i pozwalało bez błędu ponowić połączenie tej samej pary kont.
-- Dodano dane już połączonych kont Discord, w tym nazwę, pseudonim z głównego serwera i awatar, aby można było wyświetlić przyczynę konfliktu połączenia.
-- Dodano możliwość rozłączania kont Discord i Shinden bez utraty kart i postępu gracza, z ochroną przed przypadkowym usunięciem innego powiązania.
-- Dodano ochronę przed ponownym naliczeniem TC przy powtórzeniu w ciągu 48 godzin operacji oznaczonej tym samym identyfikatorem transakcji.
-- Przyspieszono łączenie kont przez wykorzystanie danych przekazanych przez stronę bez ponownego wyszukiwania użytkownika na Shindenie.
-- Usunięto możliwość zmiany pseudonimu Discord przez zewnętrzne aplikacje.
+- Zmieniono pakiety sezonowe z loterii, aby losowały postacie z całego sezonu anime zamiast z jednego przypadkowego tytułu.
+- Zmieniono pakiety sezonowe odłożone na później, aby zawsze dawały postacie z sezonu, w którym zostały zdobyte.
+- Dodano nazwę sezonu do pakietów sezonowych z loterii, np. „Sezon: jesień 2026”.
+- Dodano możliwość przyznawania pakietów sezonowych z bieżącego lub wskazanego sezonu przez strony i aplikacje.
+- Dodano oznaczenie pakietów sezonowych na liście pakietów udostępnianej stronom i aplikacjom.
+
+## Techniczne
+
+- Bot codziennie uzupełnia listę tytułów i postaci sezonu zamiast pobierać ją od nowa i sam rozpoznaje początek nowego sezonu.
+- Zmniejszono liczbę zapytań do Shindena o bieżący sezon z dwóch do jednego.
+- Dodano polecenia dla twórców bota do podglądu i ręcznego odświeżania danych sezonów.
