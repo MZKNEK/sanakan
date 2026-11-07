@@ -12,7 +12,6 @@ using Sanakan.Config;
 using Sanakan.Extensions;
 using Sanakan.Services.Executor;
 using Sanakan.Services.Time;
-using Z.EntityFramework.Plus;
 
 namespace Sanakan.Services
 {
@@ -358,7 +357,7 @@ namespace Sanakan.Services
                         try
                         {
                             // poziom zmienia się rzadko, a pełny cache usera trzymamy długo - unieważnij go przy awansie
-                            QueryCacheManager.ExpireTag(new string[] { CacheTags.User(usr.Id) });
+                            QueryCache.ExpireTag(new string[] { CacheTags.User(usr.Id) });
                             await NotifyAboutLevelAsync(user, channel, newLevel);
                         }
                         catch (Exception ex)

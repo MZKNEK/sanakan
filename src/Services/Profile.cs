@@ -18,7 +18,6 @@ using Sanakan.Services.Executor;
 using Sanakan.Services.PocketWaifu;
 using Sanakan.Services.Time;
 using Sanakan.ShindenCompat;
-using Z.EntityFramework.Plus;
 
 namespace Sanakan.Services
 {
@@ -280,8 +279,8 @@ namespace Sanakan.Services
             }
         }
 
-        public Task<IEnumerable<User>> GetTopUsers(IQueryable<User> list, TopType type)
-            => OrderUsersByTop(list, type).Take(50).QFromCacheAsync();
+        public Task<IEnumerable<User>> GetTopUsers(Database.DatabaseContext db, TopType type)
+            => OrderUsersByTop(db.GetQueryableAllUsers(), type).Take(50).QFromCacheAsync(db, $"top-users-{type}");
 
         private IOrderedQueryable<User> OrderUsersByTop(IQueryable<User> list, TopType type)
         {

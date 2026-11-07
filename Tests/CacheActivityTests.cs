@@ -13,7 +13,6 @@ using Sanakan.Database.Models.Configuration;
 using Sanakan.Database.Models.Management;
 using Sanakan.Extensions;
 using Xunit;
-using Z.EntityFramework.Plus;
 
 namespace Artifacts
 {
@@ -48,14 +47,14 @@ namespace Artifacts
         private static async Task<int> CachedCardCountAsync(string db, Func<IQueryable<Card>, IQueryable<Card>> filter, string tag)
         {
             using var ctx = await OpenAsync(db);
-            var list = await filter(ctx.Cards.AsQueryable().AsNoTracking()).FromCacheAsync(new[] { tag });
+            var list = await filter(ctx.Cards.AsQueryable().AsNoTracking()).FromCacheAsync(ctx, $"cards-{tag}", tag);
             return list.Count();
         }
 
         private static async Task<int> CachedPenaltyCountAsync(string db)
         {
             using var ctx = await OpenAsync(db);
-            var list = await ctx.Penalties.AsQueryable().AsNoTracking().FromCacheAsync(new[] { CacheTags.Mute });
+            var list = await ctx.Penalties.AsQueryable().AsNoTracking().FromCacheAsync(ctx, "penalties", CacheTags.Mute);
             return list.Count();
         }
 
@@ -270,7 +269,7 @@ namespace Artifacts
         {
             using var ctx = await OpenAsync(db);
             var cards = await ctx.Cards.AsQueryable().Include(x => x.Tags).AsNoTracking()
-                .Where(x => x.Character == character).FromCacheAsync(new[] { CacheTags.Character(character) });
+                .Where(x => x.Character == character).FromCacheAsync(ctx, $"tagged-cards-{character}", CacheTags.Character(character));
             return cards.First().Tags.First().Name;
         }
     }

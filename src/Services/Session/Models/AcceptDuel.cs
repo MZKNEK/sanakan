@@ -7,7 +7,6 @@ using Sanakan.Extensions;
 using Sanakan.Services.PocketWaifu;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using Z.EntityFramework.Plus;
 
 namespace Sanakan.Services.Session.Models
 {
@@ -61,7 +60,7 @@ namespace Sanakan.Services.Session.Models
 
                 await db.SaveChangesAsync();
 
-                QueryCacheManager.ExpireTag(new string[] { CacheTags.User(user1.Id), CacheTags.User(user2.Id) });
+                QueryCache.ExpireTag(new string[] { CacheTags.User(user1.Id), CacheTags.User(user2.Id) });
             }
 
             Dispose();

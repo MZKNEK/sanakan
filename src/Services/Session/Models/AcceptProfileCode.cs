@@ -9,7 +9,6 @@ using Sanakan.Config;
 using Sanakan.Extensions;
 using Sanakan.Services.PocketWaifu;
 using Sanakan.TypeReaders;
-using Z.EntityFramework.Plus;
 
 namespace Sanakan.Services.Session.Models
 {
@@ -82,7 +81,7 @@ namespace Sanakan.Services.Session.Models
                 Code.ApplyTo(botuser);
                 await db.SaveChangesAsync();
 
-                QueryCacheManager.ExpireTag(new string[] { CacheTags.User(botuser.Id) });
+                QueryCache.ExpireTag(new string[] { CacheTags.User(botuser.Id) });
 
                 await Message.Channel.SendMessageAsync("", embed: $"{User.Mention} ustawiono profil z kodu.".ToEmbedMessage(EMType.Success).Build());
             }

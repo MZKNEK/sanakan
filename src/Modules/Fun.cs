@@ -15,7 +15,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Z.EntityFramework.Plus;
 using Sanakan.Services.Time;
 
 namespace Sanakan.Modules
@@ -74,7 +73,7 @@ namespace Sanakan.Modules
 
                 await db.SaveChangesAsync();
 
-                QueryCacheManager.ExpireTag(new string[] { CacheTags.User(botuser.Id) });
+                QueryCache.ExpireTag(new string[] { CacheTags.User(botuser.Id) });
 
                 await SafeReplyAsync("", embed: $"{Context.User.Mention} łap drobne na waciki!".ToEmbedMessage(EMType.Success).Build());
             }
@@ -186,7 +185,7 @@ namespace Sanakan.Modules
 
                 await db.SaveChangesAsync();
 
-                QueryCacheManager.ExpireTag(new string[] { CacheTags.User(botuser.Id) });
+                QueryCache.ExpireTag(new string[] { CacheTags.User(botuser.Id) });
 
                 await SafeReplyAsync("", embed: $"{Context.User.Mention} łap piątaka!".ToEmbedMessage(EMType.Success).Build());
             }
@@ -256,7 +255,7 @@ namespace Sanakan.Modules
 
                 await db.SaveChangesAsync();
 
-                QueryCacheManager.ExpireTag(new string[] { CacheTags.User(botuser.Id) });
+                QueryCache.ExpireTag(new string[] { CacheTags.User(botuser.Id) });
 
                 embed.ImageUrl = $"https://sanakan.pl/i/coin{(int)thrown}.webp";
                 await SafeReplyAsync("", embed: embed.Build());
@@ -286,7 +285,7 @@ namespace Sanakan.Modules
 
                 await db.SaveChangesAsync();
 
-                QueryCacheManager.ExpireTag(new string[] { CacheTags.User(botuser.Id) });
+                QueryCache.ExpireTag(new string[] { CacheTags.User(botuser.Id) });
             }
 
             await SafeReplyAsync("", embed: $"{Context.User.Mention} zmienił nastawy automatu.".ToEmbedMessage(EMType.Success).Build());
@@ -320,7 +319,7 @@ namespace Sanakan.Modules
 
                 await db.SaveChangesAsync();
 
-                QueryCacheManager.ExpireTag(new string[] { CacheTags.User(botuser.Id) });
+                QueryCache.ExpireTag(new string[] { CacheTags.User(botuser.Id) });
 
                 await SafeReplyAsync("", embed: $"{_fun.GetSlotMachineResult(machine.Draw(), Context.User, botuser, win)}".ToEmbedMessage(EMType.Bot).Build());
             }
@@ -368,7 +367,7 @@ namespace Sanakan.Modules
 
                 await db.SaveChangesAsync();
 
-                QueryCacheManager.ExpireTag(new string[] { CacheTags.User(thisUser.Id), CacheTags.User(targetUser.Id) });
+                QueryCache.ExpireTag(new string[] { CacheTags.User(thisUser.Id), CacheTags.User(targetUser.Id) });
 
                 await SafeReplyAsync("", embed: $"{Context.User.Mention} podarował {user.Mention} {newScCnt} SC".ToEmbedMessage(EMType.Success).Build());
             }

@@ -12,7 +12,6 @@ using Sanakan.Database.Models;
 using Sanakan.Extensions;
 using Sanakan.Services.PocketWaifu;
 using Sanakan.Services.Time;
-using Z.EntityFramework.Plus;
 
 namespace Sanakan.Services.Session.Models
 {
@@ -388,7 +387,7 @@ namespace Sanakan.Services.Session.Models
                 await card.ExchangeWithAsync(u2Data, u1Data, db, _time);
 
             await db.SaveChangesAsync();
-            QueryCacheManager.ExpireTag(new string[] { CacheTags.User(P1.User.Id), CacheTags.User(P2.User.Id) });
+            QueryCache.ExpireTag(new string[] { CacheTags.User(P1.User.Id), CacheTags.User(P2.User.Id) });
             return null;
         }
 

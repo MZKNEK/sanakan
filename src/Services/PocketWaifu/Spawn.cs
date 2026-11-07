@@ -15,7 +15,6 @@ using Sanakan.Extensions;
 using Sanakan.Services.Executor;
 using Sanakan.Services.Time;
 using Sanakan.ShindenCompat.Models;
-using Z.EntityFramework.Plus;
 
 namespace Sanakan.Services.PocketWaifu
 {
@@ -225,7 +224,7 @@ namespace Sanakan.Services.PocketWaifu
 
                     await db.SaveChangesAsync();
 
-                    QueryCacheManager.ExpireTag(new string[] { CacheTags.User(botUser.Id) });
+                    QueryCache.ExpireTag(new string[] { CacheTags.User(botUser.Id) });
 
                     if (db.AddActivityFromNewCard(newCard, isOnUserWishlist, _time, botUser, winner.GetUserNickInGuild()))
                     {

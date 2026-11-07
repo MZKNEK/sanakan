@@ -14,7 +14,6 @@ using Sanakan.Database.Models.Configuration;
 using Sanakan.Database.Models.Management;
 using Sanakan.Extensions;
 using Sanakan.Services.Time;
-using Z.EntityFramework.Plus;
 
 namespace Sanakan.Services
 {
@@ -495,7 +494,7 @@ namespace Sanakan.Services
         {
             string mutedList = "Brak";
 
-            var list = (await db.Penalties.Include(x => x.Roles).FromCacheAsync(new string[] { CacheTags.Mute })).Where(x => x.Guild == context.Guild.Id && x.Type == PenaltyType.Mute);
+            var list = (await db.GetCachedFullPenalties()).Where(x => x.Guild == context.Guild.Id && x.Type == PenaltyType.Mute);
             if (list.Count() > 0)
             {
                 mutedList = "";
@@ -559,7 +558,7 @@ namespace Sanakan.Services
 
             await db.SaveChangesAsync();
 
-            QueryCacheManager.ExpireTag(new string[] { CacheTags.Mute });
+            QueryCache.ExpireTag(new string[] { CacheTags.Mute });
         }
 
         private async Task MuteUserGuildAsync(SocketGuildUser user, SocketRole muteRole, IEnumerable<OwnedRole> roles, SocketRole modMuteRole = null)
@@ -641,7 +640,7 @@ namespace Sanakan.Services
 
             await db.SaveChangesAsync();
 
-            QueryCacheManager.ExpireTag(new string[] { CacheTags.Mute });
+            QueryCache.ExpireTag(new string[] { CacheTags.Mute });
 
             await user.Guild.AddBanAsync(user, 0, exInfo.Info.Reason);
         }
@@ -735,7 +734,7 @@ namespace Sanakan.Services
 
             await db.SaveChangesAsync();
 
-            QueryCacheManager.ExpireTag(new string[] { CacheTags.Mute });
+            QueryCache.ExpireTag(new string[] { CacheTags.Mute });
 
             return exInfo;
         }

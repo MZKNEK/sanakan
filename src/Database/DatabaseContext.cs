@@ -1,7 +1,6 @@
 ﻿#pragma warning disable 1591
 
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Caching.Memory;
 using Pomelo.EntityFrameworkCore.MySql.Infrastructure;
 using Sanakan.Config;
 using Sanakan.Database.Models;
@@ -10,7 +9,6 @@ using Sanakan.Database.Models.Configuration;
 using Sanakan.Database.Models.Management;
 using System;
 using System.Collections.Generic;
-using Z.EntityFramework.Plus;
 
 namespace Sanakan.Database
 {
@@ -72,11 +70,6 @@ namespace Sanakan.Database
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
-            QueryCacheManager.DefaultMemoryCacheEntryOptions = new MemoryCacheEntryOptions()
-            {
-                SlidingExpiration = TimeSpan.FromMinutes(60),
-                AbsoluteExpirationRelativeToNow  = TimeSpan.FromHours(12)
-            };
             optionsBuilder.UseMySql(_config.Get().ConnectionString,
                 new MySqlServerVersion(new System.Version(8, 0, 43)), opt => opt.EnableRetryOnFailure())
                 .AddInterceptors(DbActivity.Commands, DbActivity.Saves, CacheActivity.Interceptor);

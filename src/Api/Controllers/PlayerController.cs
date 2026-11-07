@@ -16,7 +16,6 @@ using Sanakan.Services.PocketWaifu;
 using Sanakan.Services.Session;
 using Sanakan.Services.Session.Models;
 using Sanakan.Services.Time;
-using Z.EntityFramework.Plus;
 
 namespace Sanakan.Api.Controllers
 {
@@ -469,7 +468,7 @@ namespace Sanakan.Api.Controllers
                     }
 
                     result = await action(db, discordId);
-                    QueryCacheManager.ExpireTag(new string[] { CacheTags.User(discordId) });
+                    QueryCache.ExpireTag(new string[] { CacheTags.User(discordId) });
                 }
             }), discordId);
 

@@ -23,7 +23,6 @@ using Sanakan.Services.PocketWaifu;
 using Sanakan.Services.Time;
 using Sanakan.ShindenCompat;
 using Sanakan.ShindenCompat.Models;
-using Z.EntityFramework.Plus;
 
 namespace Sanakan.Api.Controllers
 {
@@ -439,7 +438,7 @@ namespace Sanakan.Api.Controllers
                     botUser = await db.GetUserOrCreateSimpleAsync(id.DiscordUserId);
                     botUser.Shinden = id.ShindenUserId;
                     await db.SaveChangesAsync();
-                    QueryCacheManager.ExpireTag(new string[] { CacheTags.User(id.DiscordUserId), CacheTags.UserProfile(id.ShindenUserId) });
+                    QueryCache.ExpireTag(new string[] { CacheTags.User(id.DiscordUserId), CacheTags.UserProfile(id.ShindenUserId) });
                     result = "User connected!".ToResponse(200);
                 }
                 finally
@@ -499,7 +498,7 @@ namespace Sanakan.Api.Controllers
                     {
                         user.Shinden = 0;
                         await db.SaveChangesAsync();
-                        QueryCacheManager.ExpireTag(new string[] { CacheTags.User(discordUserId), CacheTags.UserProfile(shindenUserId) });
+                        QueryCache.ExpireTag(new string[] { CacheTags.User(discordUserId), CacheTags.UserProfile(shindenUserId) });
                     }
                     result = "User disconnected!".ToResponse(200);
                 }
@@ -621,7 +620,7 @@ namespace Sanakan.Api.Controllers
 
                         await dbc.SaveChangesAsync();
 
-                        QueryCacheManager.ExpireTag(new string[] { CacheTags.User(user.Id) });
+                        QueryCache.ExpireTag(new string[] { CacheTags.User(user.Id) });
                     }
                 }), id, Priority.High);
 
@@ -694,7 +693,7 @@ namespace Sanakan.Api.Controllers
 
                         await dbs.SaveChangesAsync();
 
-                        QueryCacheManager.ExpireTag(new string[] { CacheTags.User(user.Id) });
+                        QueryCache.ExpireTag(new string[] { CacheTags.User(user.Id) });
                     }
                 }), user.Id, Priority.High);
 
@@ -775,7 +774,7 @@ namespace Sanakan.Api.Controllers
                         committed = true;
                         result = "TC added!".ToResponse(200);
 
-                        QueryCacheManager.ExpireTag(new string[] { CacheTags.User(botUser.Id) });
+                        QueryCache.ExpireTag(new string[] { CacheTags.User(botUser.Id) });
                         await Services.Idempotency.CleanupIfDueAsync(dbs, record.CreatedAt);
                     }
                     finally

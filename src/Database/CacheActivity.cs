@@ -9,7 +9,6 @@ using Microsoft.EntityFrameworkCore.Diagnostics;
 using Sanakan.Database.Models;
 using Sanakan.Database.Models.Configuration;
 using Sanakan.Database.Models.Management;
-using Z.EntityFramework.Plus;
 
 namespace Sanakan.Database
 {
@@ -60,7 +59,7 @@ namespace Sanakan.Database
                 if (context is DatabaseContext dbc)
                     dbc.PendingCacheTags = tags;
                 else if (tags.Count > 0)
-                    QueryCacheManager.ExpireTag(tags.ToArray());
+                    QueryCache.ExpireTag(tags.ToArray());
             }
 
             // Unieważnia cache PO udanym commicie (bez okna wyścigu z odczytami).
@@ -72,7 +71,7 @@ namespace Sanakan.Database
                     db.PendingCacheTags = null;
 
                     if (tags != null && tags.Count > 0)
-                        QueryCacheManager.ExpireTag(tags.ToArray());
+                        QueryCache.ExpireTag(tags.ToArray());
                 }
             }
 

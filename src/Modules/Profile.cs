@@ -18,7 +18,6 @@ using Sanakan.Services.PocketWaifu;
 using Sanakan.Services.Session;
 using Sanakan.Services.Session.Models;
 using Sanakan.Services.Time;
-using Z.EntityFramework.Plus;
 
 namespace Sanakan.Modules
 {
@@ -233,7 +232,7 @@ namespace Sanakan.Modules
             var building = await SafeReplyAsync("", embed: $"🔨 Trwa budowanie topki...".ToEmbedMessage(EMType.Bot).Build());
             using (var db = new Database.DatabaseContext(Config))
             {
-                session.ListItems = _profile.BuildListView(await _profile.GetTopUsers(db.GetQueryableAllUsers(), type), type, Context.Guild);
+                session.ListItems = _profile.BuildListView(await _profile.GetTopUsers(db, type), type, Context.Guild);
             }
 
             session.Event = ExecuteOn.ReactionAdded;
@@ -342,7 +341,7 @@ namespace Sanakan.Modules
                     {
                         await db.SaveChangesAsync();
 
-                        QueryCacheManager.ExpireTag(new string[] { CacheTags.User(botuser.Id) });
+                        QueryCache.ExpireTag(new string[] { CacheTags.User(botuser.Id) });
 
                         await SafeReplyAsync("", embed: $"**Odebrane nagrody:**\n\n{string.Join("\n", rewards)}".ToEmbedMessage(EMType.Success).WithUser(Context.User).Build());
                         return;
@@ -533,7 +532,7 @@ namespace Sanakan.Modules
 
                 await db.SaveChangesAsync();
 
-                QueryCacheManager.ExpireTag(new string[] { CacheTags.User(botuser.Id) });
+                QueryCache.ExpireTag(new string[] { CacheTags.User(botuser.Id) });
 
                 await SafeReplyAsync("", embed: $"{Context.User.Mention} {config.What()}".ToEmbedMessage(EMType.Success).Build());
             }
@@ -756,7 +755,7 @@ namespace Sanakan.Modules
 
                 await db.SaveChangesAsync();
 
-                QueryCacheManager.ExpireTag(new string[] { CacheTags.User(botuser.Id) });
+                QueryCache.ExpireTag(new string[] { CacheTags.User(botuser.Id) });
 
                 await SafeReplyAsync("", embed: $"{user.Mention} wykupił miesiąc globalnych emotek!".ToEmbedMessage(EMType.Success).Build());
             }
@@ -839,7 +838,7 @@ namespace Sanakan.Modules
 
                 await db.SaveChangesAsync();
 
-                QueryCacheManager.ExpireTag(new string[] { CacheTags.User(botuser.Id) });
+                QueryCache.ExpireTag(new string[] { CacheTags.User(botuser.Id) });
 
                 await user.AddRoleAsync(selectedRole);
             }
@@ -924,7 +923,7 @@ namespace Sanakan.Modules
 
                 await db.SaveChangesAsync();
 
-                QueryCacheManager.ExpireTag(new string[] { CacheTags.User(botuser.Id) });
+                QueryCache.ExpireTag(new string[] { CacheTags.User(botuser.Id) });
 
                 await SafeReplyAsync("", embed: $"{user.Mention} wykupił kolor!".ToEmbedMessage(EMType.Success).Build());
             }

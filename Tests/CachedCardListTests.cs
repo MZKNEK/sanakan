@@ -11,7 +11,6 @@ using Sanakan.Database;
 using Sanakan.Database.Models;
 using Sanakan.Extensions;
 using Xunit;
-using Z.EntityFramework.Plus;
 
 namespace Artifacts
 {
@@ -46,7 +45,7 @@ namespace Artifacts
 
         public CachedCardListTests()
         {
-            QueryCacheManager.ExpireTag(CacheTags.UltimateCards, CacheTags.UniqueCards);
+            QueryCache.ExpireTag(CacheTags.UltimateCards, CacheTags.UniqueCards);
 
             using var db = new TestDatabase(_path);
             db.Database.EnsureCreated();
@@ -62,7 +61,7 @@ namespace Artifacts
 
         public void Dispose()
         {
-            QueryCacheManager.ExpireTag(CacheTags.UltimateCards, CacheTags.UniqueCards);
+            QueryCache.ExpireTag(CacheTags.UltimateCards, CacheTags.UniqueCards);
             Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
             try { File.Delete(_path); } catch (IOException) { }
         }
@@ -113,7 +112,7 @@ namespace Artifacts
             // the test database has no cache interceptor, so a fresh query per filter would see the new card
             Assert.Equal(3, (await Ultimate(new CardsQueryFilter { OrderBy = OrderType.IdDes })).TotalCards);
 
-            QueryCacheManager.ExpireTag(CacheTags.UltimateCards);
+            QueryCache.ExpireTag(CacheTags.UltimateCards);
             Assert.Equal(4, (await Ultimate(new CardsQueryFilter())).TotalCards);
         }
 

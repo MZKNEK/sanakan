@@ -16,7 +16,6 @@ using Sanakan.Services.Time;
 using AsyncKeyedLock;
 using Sanakan.ShindenCompat;
 using Sanakan.ShindenCompat.Models;
-using Z.EntityFramework.Plus;
 using System.Threading;
 using Sanakan.Config;
 using System.Net;
@@ -1037,7 +1036,7 @@ namespace Sanakan.Services.PocketWaifu
 
                 await db.SaveChangesAsync();
 
-                QueryCacheManager.ExpireTag(new string[] { CacheTags.User(bUser.Id) });
+                QueryCache.ExpireTag(new string[] { CacheTags.User(bUser.Id) });
 
                 return $"{discordUser.Mention} zakupił: _{thisItem.Item.Name}{boosterPackTitleName}{count}_.".ToEmbedMessage(EMType.Success).Build();
             }

@@ -12,7 +12,6 @@ using Sanakan.Services.Commands;
 using Sanakan.Services.Session;
 using Sanakan.Services.Session.Models;
 using Sanakan.Services.Time;
-using Z.EntityFramework.Plus;
 using Shden = Sanakan.ShindenCompat;
 
 namespace Sanakan.Modules
@@ -252,7 +251,7 @@ namespace Sanakan.Modules
 
                     await db.SaveChangesAsync();
 
-                    QueryCacheManager.ExpireTag(new string[] { CacheTags.User(botuser.Id) });
+                    QueryCache.ExpireTag(new string[] { CacheTags.User(botuser.Id) });
                 }
 
                 await SafeReplyAsync("", embed: "Konta zostały połączone.".ToEmbedMessage(EMType.Success).Build());

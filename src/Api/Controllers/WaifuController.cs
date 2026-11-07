@@ -21,7 +21,6 @@ using Sanakan.Services.Executor;
 using Sanakan.Services.PocketWaifu;
 using Sanakan.Services.Time;
 using Sanakan.ShindenCompat;
-using Z.EntityFramework.Plus;
 
 namespace Sanakan.Api.Controllers
 {
@@ -205,7 +204,7 @@ namespace Sanakan.Api.Controllers
             {
                 var expireTime = new MemoryCacheEntryOptions().SetAbsoluteExpiration(_time.Now().AddHours(4));
                 var all = await db.Cards.AsQueryable().AsSplitQuery().Where(x => x.FromFigure).Include(x => x.GameDeck).ThenInclude(x => x.User).Include(x => x.Tags)
-                    .AsNoTrackingWithIdentityResolution().FromCacheAsync(expireTime, CacheTags.UltimateCards);
+                    .AsNoTrackingWithIdentityResolution().FromCacheAsync(db, "ultimate-cards", expireTime, CacheTags.UltimateCards);
 
                 return await FilterCachedCardsAsync(all, filter, offset, count);
             }
@@ -228,7 +227,7 @@ namespace Sanakan.Api.Controllers
             {
                 var expireTime = new MemoryCacheEntryOptions().SetAbsoluteExpiration(_time.Now().AddHours(8));
                 var all = await db.Cards.AsQueryable().AsSplitQuery().Where(x => x.Unique).Include(x => x.GameDeck).ThenInclude(x => x.User).Include(x => x.Tags)
-                    .AsNoTrackingWithIdentityResolution().FromCacheAsync(expireTime, CacheTags.UniqueCards);
+                    .AsNoTrackingWithIdentityResolution().FromCacheAsync(db, "unique-cards", expireTime, CacheTags.UniqueCards);
 
                 return await FilterCachedCardsAsync(all, filter, offset, count);
             }
@@ -401,7 +400,7 @@ namespace Sanakan.Api.Controllers
                 var expireTime = new MemoryCacheEntryOptions().SetAbsoluteExpiration(_time.Now().AddMinutes(15));
                 var cached = await db.Users.AsQueryable().AsSplitQuery().Where(x => id != 0 && x.Shinden == id).Include(x => x.GameDeck).ThenInclude(x => x.Tags).Include(x => x.GameDeck)
                     .ThenInclude(x => x.PvPStats).Include(x => x.GameDeck).ThenInclude(x => x.Cards).ThenInclude(x => x.Tags).Include(x => x.Stats).AsNoTracking()
-                    .FromCacheAsync(expireTime, CacheTags.UserProfile(id));
+                    .FromCacheAsync(db, $"user-site-profile-{id}", expireTime, CacheTags.UserProfile(id));
                 var user = cached.FirstOrDefault();
 
                 if (user == null)
@@ -537,7 +536,7 @@ namespace Sanakan.Api.Controllers
 
                     await db.SaveChangesAsync();
 
-                    QueryCacheManager.ExpireTag(userRelease.ToArray());
+                    QueryCache.ExpireTag(userRelease.ToArray());
                 }
             }), 0, Priority.High);
 
@@ -586,7 +585,7 @@ namespace Sanakan.Api.Controllers
 
                     await db.SaveChangesAsync();
 
-                    QueryCacheManager.ExpireTag(userRelease.ToArray());
+                    QueryCache.ExpireTag(userRelease.ToArray());
                 }
             }), 0, Priority.High);
 
@@ -640,7 +639,7 @@ namespace Sanakan.Api.Controllers
 
                         await db.SaveChangesAsync();
 
-                        QueryCacheManager.ExpireTag(userRelease.ToArray());
+                        QueryCache.ExpireTag(userRelease.ToArray());
                     }
                 }));
 
@@ -764,7 +763,7 @@ namespace Sanakan.Api.Controllers
 
                         await dbs.SaveChangesAsync();
 
-                        QueryCacheManager.ExpireTag(new string[] { CacheTags.User(botUser.Id) });
+                        QueryCache.ExpireTag(new string[] { CacheTags.User(botUser.Id) });
                     }
                 }), id);
 
@@ -826,7 +825,7 @@ namespace Sanakan.Api.Controllers
 
                         await dbs.SaveChangesAsync();
 
-                        QueryCacheManager.ExpireTag(new string[] { CacheTags.User(botUser.Id) });
+                        QueryCache.ExpireTag(new string[] { CacheTags.User(botUser.Id) });
                     }
                 }), user.Id);
 
@@ -897,7 +896,7 @@ namespace Sanakan.Api.Controllers
                                 await dbs.SaveChangesAsync();
                                 committed = true;
 
-                                QueryCacheManager.ExpireTag(new string[] { CacheTags.User(botUser.Id) });
+                                QueryCache.ExpireTag(new string[] { CacheTags.User(botUser.Id) });
                                 await Services.Idempotency.CleanupIfDueAsync(dbs, record.CreatedAt);
                             }
                         }
@@ -1025,7 +1024,7 @@ namespace Sanakan.Api.Controllers
 
                     await db.SaveChangesAsync();
 
-                    QueryCacheManager.ExpireTag(new string[] { CacheTags.User(botUser.Id) });
+                    QueryCache.ExpireTag(new string[] { CacheTags.User(botUser.Id) });
                 }
             }), discordId);
 
@@ -1184,7 +1183,7 @@ namespace Sanakan.Api.Controllers
                             await db.SaveChangesAsync();
                             committed = true;
 
-                            QueryCacheManager.ExpireTag(new string[] { CacheTags.User(botUser.Id) });
+                            QueryCache.ExpireTag(new string[] { CacheTags.User(botUser.Id) });
 
                             // card ids exist only after the first save; if this one fails the cards are still granted once
                             record.Result = Services.Idempotency.ToResult(cards.Select(x => x.Id).ToList());
@@ -1339,7 +1338,7 @@ namespace Sanakan.Api.Controllers
 
                             await db.SaveChangesAsync();
 
-                            QueryCacheManager.ExpireTag(new string[] { CacheTags.User(botUser.Id) });
+                            QueryCache.ExpireTag(new string[] { CacheTags.User(botUser.Id) });
                             cards = opened;
                         }
                     }), discordId);
@@ -1414,7 +1413,7 @@ namespace Sanakan.Api.Controllers
 
                             await db.SaveChangesAsync();
 
-                            QueryCacheManager.ExpireTag(new string[] { CacheTags.User(botUser.Id) });
+                            QueryCache.ExpireTag(new string[] { CacheTags.User(botUser.Id) });
                             result = "Card status toggled".ToResponse(200);
                         }
                     }), discordId);
