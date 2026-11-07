@@ -45,9 +45,19 @@ namespace Sanakan.Api.Models
         /// Liczba postaci, z których losowane są karty (0 - brak ograniczenia)
         /// </summary>
         public int CharacterCount { get; set; }
+        /// <summary>
+        /// Sezon anime, z którego losowane są postacie, np. 2026-autumn (tylko dla pool season)
+        /// </summary>
+        public string Season { get; set; }
+        /// <summary>
+        /// Nazwa sezonu do wyświetlenia, np. jesień 2026 (tylko dla pool season)
+        /// </summary>
+        public string SeasonName { get; set; }
 
         public static UserBoosterPack From(BoosterPack pack, int number) => new UserBoosterPack
         {
+            Season = GetPoolType(pack) == CardsPoolType.Season ? pack.Season : null,
+            SeasonName = GetPoolType(pack) == CardsPoolType.Season ? GetSeasonName(pack.Season) : null,
             Number = number,
             Id = pack.Id,
             Name = pack.Name,
@@ -58,6 +68,10 @@ namespace Sanakan.Api.Models
             Pool = GetPoolType(pack),
             CharacterCount = pack.Characters?.Count ?? 0,
         };
+
+        private static string GetSeasonName(string key)
+            => Services.Cache.SeasonSnapshot.TryParseKey(key, out var year, out var season)
+                ? new Services.Cache.SeasonSnapshot { Year = year, Season = season }.Name() : null;
 
         private static CardsPoolType GetPoolType(BoosterPack pack)
         {

@@ -56,6 +56,42 @@ namespace Artifacts
         }
 
         [Fact]
+        public void SeasonPack_ShowsSeasonKeyAndName()
+        {
+            var dto = UserBoosterPack.From(new BoosterPack { Season = "2026-autumn", Characters = new List<BoosterPackCharacter>() }, 1);
+
+            Assert.Equal("2026-autumn", dto.Season);
+            Assert.Equal("jesień 2026", dto.SeasonName);
+        }
+
+        [Fact]
+        public void OtherPacks_HaveNoSeason()
+        {
+            var list = new List<BoosterPackCharacter> { new BoosterPackCharacter { Character = 5 } };
+
+            foreach (var pack in new[]
+            {
+                new BoosterPack { Characters = new List<BoosterPackCharacter>() },
+                new BoosterPack { Title = 10, Characters = new List<BoosterPackCharacter>() },
+                new BoosterPack { Season = "2026-autumn", Characters = list },
+            })
+            {
+                var dto = UserBoosterPack.From(pack, 1);
+                Assert.Null(dto.Season);
+                Assert.Null(dto.SeasonName);
+            }
+        }
+
+        [Fact]
+        public void SeasonPack_WithUnreadableKey_KeepsKeyWithoutName()
+        {
+            var dto = UserBoosterPack.From(new BoosterPack { Season = "broken", Characters = new List<BoosterPackCharacter>() }, 1);
+
+            Assert.Equal("broken", dto.Season);
+            Assert.Null(dto.SeasonName);
+        }
+
+        [Fact]
         public void BoosterPack_DoesNotLeakTitleOrCharacterIds()
         {
             var pack = new BoosterPack

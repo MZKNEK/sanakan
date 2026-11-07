@@ -164,7 +164,7 @@ namespace Sanakan.Services.PocketWaifu
                         {
                             reward = LotteryReward.CardsBig;
                             rewardInfo.Type = LotteryReward.CardsBig;
-                            addInfo = $"\n\nPowinien być sezonowy, ale wpadła 500 od shindena";
+                            addInfo = $"\n\nMiał być sezonowy, ale nie udało się pobrać sezonu z Shindena, więc wpadł zwykły pakiet";
                         }
                     }
 
