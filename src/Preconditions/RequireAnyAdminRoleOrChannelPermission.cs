@@ -46,7 +46,7 @@ namespace Sanakan.Preconditions
         {
             if (user.GuildPermissions.Administrator) return PreconditionResult.FromSuccess();
             if (user.GetPermissions(channel).Has(_permission)) return PreconditionResult.FromSuccess();
-            return PreconditionResult.FromError($"|IMAGE|https://sanakan.pl/i/gif/no_power.gif");
+            return PreconditionResult.FromError($"|IMAGE|https://sanakan.pl/i/gif/no_power.webp");
         }
     }
 }

@@ -40,7 +40,7 @@ namespace Sanakan.Preconditions
         private PreconditionResult CheckUser(SocketGuildUser user)
         {
             if (user.GuildPermissions.Administrator) return PreconditionResult.FromSuccess();
-            return PreconditionResult.FromError($"|IMAGE|https://sanakan.pl/i/gif/no_power.gif");
+            return PreconditionResult.FromError($"|IMAGE|https://sanakan.pl/i/gif/no_power.webp");
         }
     }
 }

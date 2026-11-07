@@ -258,7 +258,7 @@ namespace Sanakan.Modules
 
                 QueryCacheManager.ExpireTag(new string[] { CacheTags.User(botuser.Id) });
 
-                embed.ImageUrl = $"https://sanakan.pl/i/coin{(int)thrown}.png";
+                embed.ImageUrl = $"https://sanakan.pl/i/coin{(int)thrown}.webp";
                 await SafeReplyAsync("", embed: embed.Build());
             }
         }
