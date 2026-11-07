@@ -107,6 +107,14 @@ namespace Sanakan.Services.Session
             }
         }
 
+        public bool SessionExist(ulong userId, Type sessionType)
+        {
+            lock (_lock)
+            {
+                return _sessions.Any(x => x.GetType() == sessionType && x.GetParticipants().Any(p => p.Id == userId));
+            }
+        }
+
         private bool SessionExistUnsafe<T>(T session) where T : ISession
             => _sessions.Where(x => x.IsOwner(session.GetParticipants()))
                 .Any(x => ((x.GetId() == null) ? (x is T) : (x.GetId() == session.GetId())));

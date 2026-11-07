@@ -30,6 +30,7 @@ namespace Sanakan.Api.Controllers
     public class WaifuController : ControllerBase
     {
         private const uint MaxCardsPerRequest = 4000;
+        private const int MaxPacksPerRequest = 100;
         private const uint MaxActivitiesPerRequest = 4000;
         private const int MaxTopCharacters = 1000;
 
@@ -940,7 +941,7 @@ namespace Sanakan.Api.Controllers
         {
             TokenData tokenData = null;
             var currUser = ControllerContext.HttpContext.User;
-            if (user != null && currUser.HasClaim(x => x.Type == ClaimTypes.Webpage))
+            if (user != null && currUser.HasClaim(x => x.Type == ClaimTypes.Webpage) && !user.IsBlacklisted)
             {
                 tokenData = UserTokenBuilder.BuildUserToken(_config, user, _time);
             }
@@ -1130,20 +1131,41 @@ namespace Sanakan.Api.Controllers
                     poolType = bUser.PoolType;
                 }
 
+                handedOff = true;
+                RunInBackground(() => DrawAndSaveOnceAsync(record, packs, poolType, discordId, id, key, timer));
+
+                return Accepted(new BoosterPackOpenStatus { Status = BoosterPackOpenStatus.Pending });
+            }
+            finally
+            {
+                if (!handedOff)
+                    Services.Idempotency.End(record);
+            }
+        }
+
+        protected virtual void RunInBackground(Func<Task> work) => _ = Task.Run(work);
+
+        // drawing asks Shinden for every card, so it runs outside the executor and only the save waits in the queue
+        private async Task DrawAndSaveOnceAsync(IdempotencyRecord record, List<BoosterPack> packs, CharacterPoolType poolType,
+            ulong discordId, ulong id, string key, System.Diagnostics.Stopwatch timer)
+        {
+            var queued = false;
+            try
+            {
+                var drawStart = timer.ElapsedMilliseconds;
+                var cards = await DrawCardsAsync(packs, poolType);
+                if (cards == null)
+                {
+                    Services.Idempotency.Fail(record, BoosterPackOpenStatus.ShindenUnavailable);
+                    return;
+                }
+                var drawMs = timer.ElapsedMilliseconds - drawStart;
+
                 var exe = new Executable($"api-packet-open u{discordId}", new Func<Task>(async () =>
                 {
                     var committed = false;
                     try
                     {
-                        var drawStart = timer.ElapsedMilliseconds;
-                        var cards = await DrawCardsAsync(packs, poolType);
-                        if (cards == null)
-                        {
-                            Services.Idempotency.Fail(record, BoosterPackOpenStatus.ShindenUnavailable);
-                            return;
-                        }
-                        var drawMs = timer.ElapsedMilliseconds - drawStart;
-
                         using (var db = CreateDatabaseContext())
                         {
                             var botUser = await db.GetUserOrCreateSimpleAsync(discordId);
@@ -1187,15 +1209,20 @@ namespace Sanakan.Api.Controllers
 
                 if (!await _executor.TryAdd(exe, TimeSpan.FromSeconds(1)))
                 {
-                    return "Command queue is full".ToResponse(503);
+                    _logger?.LogError($"API: opening packs s{id} u{discordId} key {key}: command queue is full");
+                    Services.Idempotency.Fail(record, BoosterPackOpenStatus.Error);
+                    return;
                 }
-                handedOff = true;
-
-                return Accepted(new BoosterPackOpenStatus { Status = BoosterPackOpenStatus.Pending });
+                queued = true;
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError($"API: opening packs s{id} u{discordId} key {key}: {ex}");
+                Services.Idempotency.Fail(record, BoosterPackOpenStatus.Error);
             }
             finally
             {
-                if (!handedOff)
+                if (!queued)
                     Services.Idempotency.End(record);
             }
         }
@@ -1472,9 +1499,18 @@ namespace Sanakan.Api.Controllers
                 return "Model is Invalid".ToResponse(500);
             }
 
+            if (boosterPacks.Count > MaxPacksPerRequest)
+                return "Model is Invalid".ToResponse(500);
+
             foreach (var pack in boosterPacks)
             {
                 if (pack == null || pack.Count < 1 || pack.Count > MaxCardsPerRequest)
+                    return "Model is Invalid".ToResponse(500);
+
+                if (!Enum.IsDefined(pack.Rarity) || (pack.RarityExcluded?.Any(x => !Enum.IsDefined(x)) ?? false))
+                    return "Model is Invalid".ToResponse(500);
+
+                if (pack.RarityExcluded != null && Waifu.DrawableRarities.All(pack.RarityExcluded.Contains))
                     return "Model is Invalid".ToResponse(500);
 
                 var rPack = pack.ToRealPack();

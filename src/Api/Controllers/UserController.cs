@@ -134,7 +134,7 @@ namespace Sanakan.Api.Controllers
         [HttpGet("shinden/{id}"), Authorize(Policy = "Site")]
         public async Task<ActionResult<UserWithToken>> GetUserByShindenIdAsync(ulong id)
         {
-            using (var db = new Database.DatabaseContext(_config))
+            using (var db = CreateDatabaseContext())
             {
                 var user = await db.GetCachedFullUserByShindenIdAsync(id);
                 if (user == null)
@@ -144,7 +144,7 @@ namespace Sanakan.Api.Controllers
 
                 TokenData tokenData = null;
                 var currUser = ControllerContext.HttpContext.User;
-                if (currUser.HasClaim(x => x.Type == ClaimTypes.Webpage))
+                if (currUser.HasClaim(x => x.Type == ClaimTypes.Webpage) && !user.IsBlacklisted)
                 {
                     tokenData = UserTokenBuilder.BuildUserToken(_config, user, _time);
                 }
@@ -166,7 +166,7 @@ namespace Sanakan.Api.Controllers
         [HttpGet("shinden/simple/{id}"), Authorize(Policy = "Site")]
         public async Task<ActionResult<UserWithToken>> GetUserByShindenIdSimpleAsync(ulong id)
         {
-            using (var db = new Database.DatabaseContext(_config))
+            using (var db = CreateDatabaseContext())
             {
                 var user = await db.Users.AsQueryable().AsSplitQuery().Where(x => id != 0 && x.Shinden == id).Include(x => x.GameDeck).AsNoTracking().FirstOrDefaultAsync();
                 if (user == null)
@@ -176,7 +176,7 @@ namespace Sanakan.Api.Controllers
 
                 TokenData tokenData = null;
                 var currUser = ControllerContext.HttpContext.User;
-                if (currUser.HasClaim(x => x.Type == ClaimTypes.Webpage))
+                if (currUser.HasClaim(x => x.Type == ClaimTypes.Webpage) && !user.IsBlacklisted)
                 {
                     tokenData = UserTokenBuilder.BuildUserToken(_config, user, _time);
                 }
@@ -439,7 +439,7 @@ namespace Sanakan.Api.Controllers
                     botUser = await db.GetUserOrCreateSimpleAsync(id.DiscordUserId);
                     botUser.Shinden = id.ShindenUserId;
                     await db.SaveChangesAsync();
-                    QueryCacheManager.ExpireTag(new string[] { CacheTags.User(id.DiscordUserId) });
+                    QueryCacheManager.ExpireTag(new string[] { CacheTags.User(id.DiscordUserId), CacheTags.UserProfile(id.ShindenUserId) });
                     result = "User connected!".ToResponse(200);
                 }
                 finally

@@ -126,6 +126,7 @@ namespace Sanakan.Api
             services.AddMemoryCache();
             services.AddSingleton(config);
             services.AddSingleton<ITokenAttemptGuard, TokenAttemptGuard>();
+            services.AddSingleton<IPlayerBlacklist, DatabasePlayerBlacklist>();
             services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(opt =>
             {
                 opt.TokenValidationParameters = new TokenValidationParameters
@@ -139,6 +140,7 @@ namespace Sanakan.Api
                     // read on every request so the key can be rotated without a restart
                     IssuerSigningKeyResolver = (token, securityToken, kid, parameters) => new[] { SigningKey(config) }
                 };
+                opt.Events = new JwtBearerEvents { OnTokenValidated = TokenChecks.OnTokenValidatedAsync };
             }).AddScheme<AuthenticationSchemeOptions, UserKeyAuthenticationHandler>(UserKeyAuthenticationHandler.SchemeName, null)
               .AddScheme<AuthenticationSchemeOptions, AppKeyAuthenticationHandler>(AppKeyAuthenticationHandler.SchemeName, null);
             services.AddAuthorization(op =>

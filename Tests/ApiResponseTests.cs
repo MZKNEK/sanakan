@@ -32,6 +32,8 @@ namespace Artifacts
         public FakeConfig Config { get; } = new FakeConfig();
         public FakeExecutor Executor { get; } = new FakeExecutor();
         public ListLogger Logger { get; } = new ListLogger();
+        public FakeBlacklist Blacklist { get; } = new FakeBlacklist();
+        public Sanakan.Services.Session.SessionManager Sessions { get; }
         public HttpClient Client { get; }
         private readonly IHost _host;
         private readonly LocalHttpServer _shindenServer;
@@ -53,6 +55,8 @@ namespace Artifacts
                 Marmolade = "marmolade", BaseUri = _shindenServer.BaseUrl }, null, null, TimeSpan.FromSeconds(5));
             var shindenCache = new Sanakan.Services.Shinden(shinden, null, null, logger, time);
             var waifu = new Waifu(null, shinden, null, logger, null, null, null, time, shindenCache, null, Config);
+            var discord = new DiscordSocketClient();
+            Sessions = new Sanakan.Services.Session.SessionManager(discord, Executor, logger);
 
             _host = new HostBuilder().ConfigureWebHost(web => web
                 .UseTestServer()
@@ -64,7 +68,9 @@ namespace Artifacts
                     services.AddSingleton<ISystemTime>(time);
                     services.AddSingleton(waifu);
                     services.AddSingleton<Sanakan.ILogger>(logger);
-                    services.AddSingleton(new DiscordSocketClient());
+                    services.AddSingleton(discord);
+                    services.AddSingleton(Sessions);
+                    services.AddSingleton<IPlayerBlacklist>(Blacklist);
                     services.AddSingleton(new Sanakan.Services.Helper(Config, logger));
                     services.AddSingleton(shinden);
                     services.AddSingleton(shindenCache);
@@ -96,6 +102,12 @@ namespace Artifacts
             _host.Dispose();
             _shindenServer.Dispose();
         }
+    }
+
+    public class FakeBlacklist : IPlayerBlacklist
+    {
+        public System.Collections.Concurrent.ConcurrentDictionary<ulong, bool> Users { get; } = new System.Collections.Concurrent.ConcurrentDictionary<ulong, bool>();
+        public Task<bool> IsBlacklistedAsync(ulong discordId) => Task.FromResult(Users.ContainsKey(discordId));
     }
 
     public class ApiResponseTests : IDisposable

@@ -13,6 +13,8 @@ using Sanakan.Database.Models;
 using Sanakan.Extensions;
 using Sanakan.Services.Executor;
 using Sanakan.Services.PocketWaifu;
+using Sanakan.Services.Session;
+using Sanakan.Services.Session.Models;
 using Sanakan.Services.Time;
 using Z.EntityFramework.Plus;
 
@@ -40,14 +42,16 @@ namespace Sanakan.Api.Controllers
         private readonly IExecutor _executor;
         private readonly TagHelper _tags;
         private readonly Waifu _waifu;
+        private readonly SessionManager _sessions;
 
-        public PlayerController(IConfig config, ISystemTime time, IExecutor executor, TagHelper tags, Waifu waifu)
+        public PlayerController(IConfig config, ISystemTime time, IExecutor executor, TagHelper tags, Waifu waifu, SessionManager sessions)
         {
             _config = config;
             _time = time;
             _executor = executor;
             _tags = tags;
             _waifu = waifu;
+            _sessions = sessions;
         }
 
         /// <summary>
@@ -340,11 +344,14 @@ namespace Sanakan.Api.Controllers
         /// </summary>
         /// <param name="wid">WID posiadanej karty z postacią (karta nie może być w klatce)</param>
         /// <response code="404">Card not found or in cage</response>
-        /// <response code="409">Character already set</response>
+        /// <response code="409">Character already set / User is in an exchange</response>
         [HttpPut("waifu/{wid}")]
         public Task<IActionResult> SetWaifuAsync(ulong wid)
             => RunAsPlayerAsync("waifu", async (db, discordId) =>
             {
+                if (_sessions.SessionExist(discordId, typeof(ExchangeSession)))
+                    return "User is in an exchange!".ToResponse(409);
+
                 var buser = await db.GetUserOrCreateAsync(discordId);
                 if (wid == 0)
                 {
@@ -453,7 +460,7 @@ namespace Sanakan.Api.Controllers
             IActionResult result = null;
             var exe = new Executable($"api-{name} u{discordId}", new Func<Task>(async () =>
             {
-                using (var db = new Database.DatabaseContext(_config))
+                using (var db = CreateDatabaseContext())
                 {
                     if (!await db.Users.AsQueryable().AnyAsync(x => x.Id == discordId))
                     {
@@ -473,6 +480,8 @@ namespace Sanakan.Api.Controllers
                 return "Command timed out".ToResponse(504);
             return result;
         }
+
+        protected virtual Database.DatabaseContext CreateDatabaseContext() => new Database.DatabaseContext(_config);
 
         private bool TryGetDiscordId(out ulong discordId)
         {

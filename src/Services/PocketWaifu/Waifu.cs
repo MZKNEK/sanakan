@@ -592,6 +592,8 @@ namespace Sanakan.Services.PocketWaifu
             return Rarity.E;
         }
 
+        public static readonly Rarity[] DrawableRarities = { Rarity.SS, Rarity.S, Rarity.A, Rarity.B, Rarity.C, Rarity.D, Rarity.E };
+
         public Rarity RandomizeRarity(List<Rarity> rarityExcluded)
         {
             if (rarityExcluded == null) return RandomizeRarity();
@@ -610,6 +612,9 @@ namespace Sanakan.Services.PocketWaifu
 
             var ex = list.Where(x => rarityExcluded.Any(c => c == x.Rarity)).ToList();
             foreach (var e in ex) list.Remove(e);
+
+            // packs saved before the api rejected this would otherwise never open
+            if (list.Count == 0) return RandomizeRarity();
 
             var num = Fun.GetRandomValue(1000);
             foreach (var rar in list)

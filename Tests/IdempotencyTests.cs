@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -55,14 +56,27 @@ namespace Artifacts
         {
             private readonly Func<DatabaseContext> _factory;
             private readonly Func<List<BoosterPack>, List<Card>> _draw;
-            public TestController(IExecutor executor, ISystemTime time, Func<DatabaseContext> factory, Func<List<BoosterPack>, List<Card>> draw)
+            private readonly ConcurrentQueue<Func<Task>> _background;
+            public TestController(IExecutor executor, ISystemTime time, Func<DatabaseContext> factory, Func<List<BoosterPack>, List<Card>> draw,
+                ConcurrentQueue<Func<Task>> background)
                 : base(null, null, executor, null, new FakeConfig(), time, null, null, null, null)
             {
                 _factory = factory;
                 _draw = draw;
+                _background = background;
             }
             protected override DatabaseContext CreateDatabaseContext() => _factory();
             protected override Task<List<Card>> DrawCardsAsync(List<BoosterPack> packs, CharacterPoolType poolType) => Task.FromResult(_draw(packs));
+            protected override void RunInBackground(Func<Task> work) => _background.Enqueue(work);
+        }
+
+        // the draw runs in the background, the test decides when
+        private readonly ConcurrentQueue<Func<Task>> _background = new ConcurrentQueue<Func<Task>>();
+
+        private async Task RunBackgroundAsync()
+        {
+            while (_background.TryDequeue(out var work))
+                await work();
         }
 
         private int _drawCalls;
@@ -99,7 +113,7 @@ namespace Artifacts
 
         private TestDatabase Open() => new TestDatabase(_connection, this);
 
-        private TestController Controller() => ControllerHarness.Attach(new TestController(_executor, _time, Open, Draw));
+        private TestController Controller() => ControllerHarness.Attach(new TestController(_executor, _time, Open, Draw, _background));
 
         private static string NewKey() => $"shinden-waifu-{Guid.NewGuid():N}";
 
@@ -125,6 +139,7 @@ namespace Artifacts
 
         private async Task RunQueuedAsync()
         {
+            await RunBackgroundAsync();
             IExecutable task;
             var deadline = DateTime.UtcNow.AddSeconds(30);
             while (!_executor.Added.TryDequeue(out task))
@@ -397,10 +412,50 @@ namespace Artifacts
             Assert.Equal(202, res.StatusOf());
             Assert.Equal(BoosterPackOpenStatus.Pending, Body(res).Status);
             Assert.True(Replayed(controller));
+            Assert.Single(_background);
+
+            await RunBackgroundAsync();
             Assert.Single(_executor.Added);
+            Assert.Equal(BoosterPackOpenStatus.Pending, (await StatusOf(key)).Status);
 
             await RunQueuedAsync();
             Assert.Equal(1, CardCount(DiscordId));
+            Assert.Equal(1, _drawCalls);
+        }
+
+        [Fact]
+        public async Task Open_DrawsOutsideTheQueue_AndQueuesOnlyTheSave()
+        {
+            var key = NewKey();
+            await SendOpen(key);
+
+            Assert.Empty(_executor.Added);
+            Assert.Equal(0, _drawCalls);
+
+            await RunBackgroundAsync();
+
+            Assert.Equal(1, _drawCalls);
+            Assert.Single(_executor.Added);
+            Assert.Equal(0, CardCount(DiscordId));
+        }
+
+        [Fact]
+        public async Task Open_QueueFullAfterDraw_FailsWithError_AndKeyStaysFree()
+        {
+            var key = NewKey();
+            await SendOpen(key);
+            _executor.Accept = false;
+            await RunBackgroundAsync();
+            _executor.Accept = true;
+
+            var failed = await StatusOf(key);
+            Assert.Equal(BoosterPackOpenStatus.Failed, failed.Status);
+            Assert.Equal(BoosterPackOpenStatus.Error, failed.Reason);
+            Assert.Equal(0, CardCount(DiscordId));
+
+            Assert.Equal(202, (await SendOpen(key)).StatusOf());
+            await RunQueuedAsync();
+            Assert.Equal(BoosterPackOpenStatus.Done, (await StatusOf(key)).Status);
         }
 
         [Fact]
@@ -409,8 +464,9 @@ namespace Artifacts
             var key = NewKey();
             _drawFails = true;
             await SendOpen(key);
-            await RunQueuedAsync();
+            await RunBackgroundAsync();
 
+            Assert.Empty(_executor.Added);
             var failed = await StatusOf(key);
             Assert.Equal(BoosterPackOpenStatus.Failed, failed.Status);
             Assert.Equal(BoosterPackOpenStatus.ShindenUnavailable, failed.Reason);
