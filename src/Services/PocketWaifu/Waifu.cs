@@ -1635,6 +1635,8 @@ namespace Sanakan.Services.PocketWaifu
             return pages;
         }
 
+        private const int SeasonCharacterAttempts = 3;
+
         // a pack whose season file is gone falls back to the current season instead of never opening
         private async Task<List<ulong>> GetCharactersFromSeasonAsync(string key = null)
         {
@@ -1663,8 +1665,9 @@ namespace Sanakan.Services.PocketWaifu
                 }
                 else if (!string.IsNullOrEmpty(pack.Season))
                 {
+                    // season lists only grow, so some characters may be gone from Shinden by now
                     var charsInSeason = await GetCharactersFromSeasonAsync(pack.Season);
-                    if (!charsInSeason.IsNullOrEmpty())
+                    for (int attempt = 0; chara == null && attempt < SeasonCharacterAttempts && !charsInSeason.IsNullOrEmpty(); attempt++)
                         chara = await _shinden.GetCharacterInfoAsync(Fun.GetOneRandomFrom(charsInSeason));
                 }
                 else if (pack.Title != 0)

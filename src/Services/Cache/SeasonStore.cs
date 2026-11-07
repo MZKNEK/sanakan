@@ -56,9 +56,17 @@ namespace Sanakan.Services.Cache
             if (parts == null || parts.Length != 2 || !int.TryParse(parts[0], out year) || year < 1900 || year > 3000)
                 return false;
 
-            var name = parts[1].ToLowerInvariant();
-            if (name == "fall") name = "autumn";
-            return Enum.TryParse(name, true, out season) && Enum.IsDefined(typeof(AnimeSeason), season) && !int.TryParse(name, out _);
+            AnimeSeason? parsed = parts[1].ToLowerInvariant() switch
+            {
+                "winter" => AnimeSeason.Winter,
+                "spring" => AnimeSeason.Spring,
+                "summer" => AnimeSeason.Summer,
+                "autumn" or "fall" => AnimeSeason.Autumn,
+                _ => null,
+            };
+
+            season = parsed ?? AnimeSeason.Winter;
+            return parsed.HasValue;
         }
     }
 

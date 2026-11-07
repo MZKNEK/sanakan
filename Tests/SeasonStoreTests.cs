@@ -96,6 +96,8 @@ namespace Artifacts
         [InlineData("abc-fall")]
         [InlineData("2026-fall-x")]
         [InlineData("99999-fall")]
+        [InlineData("2026-winter,summer")]
+        [InlineData("2026- fall")]
         public void InvalidKey_IsRejected(string key)
         {
             Assert.False(SeasonSnapshot.TryParseKey(key, out _, out _));
@@ -150,6 +152,17 @@ namespace Artifacts
             File.Delete(Path.Combine(_dir, "current.txt"));
 
             Assert.Equal("2027-winter", new SeasonStore(Day, Retry, _dir).Current.Key);
+        }
+
+        // season files store the season as a number
+        [Fact]
+        public void AnimeSeason_ValuesArePinned()
+        {
+            Assert.Equal(0, (int)AnimeSeason.Winter);
+            Assert.Equal(1, (int)AnimeSeason.Spring);
+            Assert.Equal(2, (int)AnimeSeason.Summer);
+            Assert.Equal(3, (int)AnimeSeason.Autumn);
+            Assert.Equal(4, Enum.GetValues(typeof(AnimeSeason)).Length);
         }
 
         [Fact]
@@ -371,6 +384,7 @@ namespace Artifacts
         {
             public List<string> Paths { get; } = new List<string>();
             public string Season { get; set; } = @"{ ""titles"": [ 100 ], ""characters"": [ ""15"" ] }";
+            public int MissingCharacters { get; set; }
 
             protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
             {
@@ -378,7 +392,7 @@ namespace Artifacts
                 lock (Paths) Paths.Add(path);
 
                 string json = path == "/compat/php-api/anime/current-season" ? Season : null;
-                if (path.StartsWith("/compat/php-api/character/"))
+                if (path.StartsWith("/compat/php-api/character/") && MissingCharacters-- <= 0)
                 {
                     var id = path.Split('/').Last();
                     json = $@"{{ ""character_id"": ""{id}"", ""first_name"": ""Postać"", ""last_name"": ""{id}"", ""picture_artifact_id"": null }}";
@@ -457,6 +471,33 @@ namespace Artifacts
 
             Assert.Equal(2, cards.Count);
             Assert.All(cards, x => Assert.Equal(15ul, x.Character));
+        }
+
+        private int CharacterRequests => _stub.Paths.Count(x => x.StartsWith("/compat/php-api/character/"));
+
+        [Fact]
+        public async Task SeasonPack_MissingCharacter_IsReplacedByAnotherDraw()
+        {
+            await _shinden.GetCurrentSeasonAsync();
+            _stub.MissingCharacters = 2;
+
+            var cards = await _waifu.OpenBoosterPackAsync(null, SeasonPack(_shinden.Seasons.Current.Key, 1), CharacterPoolType.Anime);
+
+            Assert.Single(cards);
+            Assert.Equal(15ul, cards[0].Character);
+            Assert.Equal(3, CharacterRequests);
+        }
+
+        [Fact]
+        public async Task SeasonPack_OnlyMissingCharacters_StopsAfterThreeDrawsPerCard()
+        {
+            await _shinden.GetCurrentSeasonAsync();
+            _stub.MissingCharacters = int.MaxValue;
+
+            var cards = await _waifu.OpenBoosterPackAsync(null, SeasonPack(_shinden.Seasons.Current.Key, 1), CharacterPoolType.Anime);
+
+            Assert.Empty(cards);
+            Assert.Equal(3, CharacterRequests);
         }
 
         [Fact]
