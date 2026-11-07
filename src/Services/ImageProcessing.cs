@@ -29,6 +29,12 @@ namespace Sanakan.Services
         private const long MaxImageBytes = 40 * 1024 * 1024;
         private const int MaxImageDimension = 8192;
         private const long MaxImagePixels = 64_000_000;
+        // the default pool scales with the machine's total memory; this caps what stays reserved between images
+        public const int MemoryPoolMegabytes = 1024;
+
+        public static void LimitMemoryPool()
+            => Configuration.Default.MemoryAllocator = SixLabors.ImageSharp.Memory.MemoryAllocator.Create(
+                new SixLabors.ImageSharp.Memory.MemoryAllocatorOptions { MaximumPoolSizeMegabytes = MemoryPoolMegabytes });
 
         private FontFamily _digital = new FontCollection().Add("Fonts/Digital.ttf");
         private FontFamily _latoBold = new FontCollection().Add("Fonts/Lato-Bold.ttf");

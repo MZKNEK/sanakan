@@ -56,6 +56,7 @@ namespace Sanakan
 
         public async Task MainAsync()
         {
+            ImageProcessing.LimitMemoryPool();
             LoadConfig();
             MigrateConfig();
             ValidateConfig();
@@ -141,7 +142,7 @@ namespace Sanakan
                 GatewayIntents = GatewayIntents.All & ~GatewayIntents.GuildPresences,
                 LogLevel = LogSeverity.Error,
                 AlwaysDownloadUsers = true,
-                MessageCacheSize = 600
+                MessageCacheSize = 250
             });
 
             _client.Log += log =>
