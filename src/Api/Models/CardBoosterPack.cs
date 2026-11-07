@@ -69,6 +69,8 @@ namespace Sanakan.Api.Models
                         pack.Characters.Add(new BoosterPackCharacter() { Character = id });
                 break;
 
+                // the season key is resolved by the controller, it needs the season store
+                case CardsPoolType.Season:
                 default:
                 case CardsPoolType.Random:
                     pack.Title = 0;

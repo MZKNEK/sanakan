@@ -10,6 +10,11 @@ namespace Sanakan.ShindenCompat
 
 namespace Sanakan.ShindenCompat.Models
 {
+    public enum AnimeSeason
+    {
+        Winter, Spring, Summer, Autumn
+    }
+
     public enum Sex
     {
         NotSpecified, Female, Other, Male

@@ -6,6 +6,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Sanakan.Database.Models;
 using Sanakan.Extensions;
+using Sanakan.Services.Cache;
 
 namespace Sanakan.Services.PocketWaifu
 {
@@ -155,11 +156,11 @@ namespace Sanakan.Services.PocketWaifu
                 case LotteryReward.CardsFromSeason:
                 {
                     string addInfo = "";
-                    ulong randomTitle = 0;
+                    SeasonSnapshot season = null;
                     if (reward == LotteryReward.CardsFromSeason)
                     {
-                        randomTitle = await _shinden.GetRandomSeasonTitleAsync();
-                        if (randomTitle == 0)
+                        season = await _shinden.GetCurrentSeasonAsync();
+                        if (season == null || season.Characters.Count == 0)
                         {
                             reward = LotteryReward.CardsBig;
                             rewardInfo.Type = LotteryReward.CardsBig;
@@ -170,7 +171,7 @@ namespace Sanakan.Services.PocketWaifu
                     var isBig = Fun.TakeATry(35d);
                     var name = reward switch
                     {
-                        LotteryReward.CardsFromSeason => "Sezonowy",
+                        LotteryReward.CardsFromSeason => $"Sezon: {season.Name()}",
                         LotteryReward.CardsBig => isBig ? "Duży" : "Średni",
                         _ => isBig ? "Normalny" : "Mały"
                     };
@@ -185,7 +186,7 @@ namespace Sanakan.Services.PocketWaifu
                     var pack = new BoosterPack
                     {
                         CardCnt = cnt,
-                        Title = reward == LotteryReward.CardsFromSeason ? randomTitle : 0,
+                        Season = reward == LotteryReward.CardsFromSeason ? season.Key : null,
                         RarityExcludedFromPack = new List<RarityExcluded>(),
                         Characters = new List<BoosterPackCharacter>(),
                         Name = $"Pakiet kart z loterii ({name})",

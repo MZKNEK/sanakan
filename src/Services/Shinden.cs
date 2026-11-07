@@ -42,8 +42,8 @@ namespace Sanakan.Services
         private readonly CachedValue<List<PoolCharacter>> _animePool;
         private readonly CachedValue<List<PoolCharacter>> _mangaPool;
         private readonly CachedValue<List<PoolCharacter>> _allPool;
-        private readonly CachedValue<List<ulong>> _seasonTitles;
-        private readonly CachedValue<List<ulong>> _seasonCharacters;
+        private readonly SeasonStore _seasons;
+        private Timer _seasonTimer;
 
         private Dictionary<string, string> _customNames = new Dictionary<string, string>
         {
@@ -77,8 +77,25 @@ namespace Sanakan.Services
             _animePool = new CachedValue<List<PoolCharacter>>(PoolMaxAge, RetryAfter, PathOf("pool-anime.json"), logger);
             _mangaPool = new CachedValue<List<PoolCharacter>>(PoolMaxAge, RetryAfter, PathOf("pool-manga.json"), logger);
             _allPool = new CachedValue<List<PoolCharacter>>(PoolMaxAge, RetryAfter, PathOf("pool-all.json"), logger);
-            _seasonTitles = new CachedValue<List<ulong>>(PoolMaxAge, RetryAfter, PathOf("season-titles.json"), logger);
-            _seasonCharacters = new CachedValue<List<ulong>>(PoolMaxAge, RetryAfter, PathOf("season-characters.json"), logger);
+            _seasons = new SeasonStore(PoolMaxAge, RetryAfter, PathOf("seasons"), logger);
+        }
+
+        // the store refreshes at most once per PoolMaxAge, the timer only makes sure that happens even without players
+        public void StartSeasonRefresh(TimeSpan interval)
+        {
+            _seasonTimer = new Timer(_ => _ = RefreshSeasonAsync(), null, TimeSpan.FromMinutes(1), interval);
+        }
+
+        private async Task RefreshSeasonAsync()
+        {
+            try
+            {
+                await GetCurrentSeasonAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Shinden: season refresh: {ex.Message}");
+            }
         }
 
         public Task SaveCacheAsync() => _userNames.SaveAsync(_time.Now());
@@ -186,22 +203,23 @@ namespace Sanakan.Services
             return characters?.FirstOrDefault(x => x.Id == id);
         }
 
-        public async Task<ulong> GetRandomSeasonTitleAsync()
-        {
-            var titles = await _seasonTitles.GetAsync(() => GetSeasonAsync(false), _time.Now());
-            return titles.IsNullOrEmpty() ? 0 : Fun.GetOneRandomFrom(titles);
-        }
+        public Task<SeasonSnapshot> GetCurrentSeasonAsync()
+            => _seasons.GetCurrentAsync(FetchSeasonAsync, _time.Now());
 
-        public Task<List<ulong>> GetSeasonCharactersAsync()
-            => _seasonCharacters.GetAsync(() => GetSeasonAsync(true), _time.Now());
+        public SeasonSnapshot GetSeason(string key) => _seasons.Get(key);
 
-        private async Task<List<ulong>> GetSeasonAsync(bool characters)
+        public SeasonStore Seasons => _seasons;
+
+        public Task<SeasonSnapshot> RefreshSeasonNowAsync()
+            => _seasons.GetCurrentAsync(FetchSeasonAsync, _time.Now(), force: true);
+
+        private async Task<ShindenCompat.Models.Entities.CurrentSeason> FetchSeasonAsync()
         {
-            var res = await _shClient.Ex.GetAnimeFromSeasonAsync(characters);
+            var res = await _shClient.Ex.GetCurrentSeasonAsync();
             if (!res.IsSuccessStatusCode())
                 throw new Exception(res.Code.ToString());
 
-            return res.Body.IsNullOrEmpty() ? null : res.Body;
+            return res.Body;
         }
 
         public UrlParsingError ParseUrlToShindenId(string url, out ulong shindenId)

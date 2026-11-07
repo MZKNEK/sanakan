@@ -196,6 +196,7 @@ namespace Sanakan.Database
             modelBuilder.Entity<BoosterPack>(entity =>
             {
                 entity.HasKey(e => e.Id);
+                entity.Property(e => e.Season).HasMaxLength(32);
 
                 entity.HasOne(e => e.GameDeck)
                     .WithMany(d => d.BoosterPacks);

@@ -10,6 +10,7 @@ namespace Sanakan.Database.Models
         public ulong Id { get; set; }
         public string Name { get; set; }
         public ulong Title { get; set; }
+        public string Season { get; set; }
         public int CardCnt { get; set; }
         public Rarity MinRarity { get; set; }
         public bool IsCardFromPackTradable { get; set; }

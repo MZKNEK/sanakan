@@ -178,6 +178,7 @@ namespace Sanakan
             _daemon = new Daemonizer(_client, _logger, _config);
             _shinden = new Services.Shinden(_shindenClient, _sessions, _img, _logger, _time, Services.Dir.ShindenCache);
             AppDomain.CurrentDomain.ProcessExit += (_, _) => _shinden.SaveCacheAsync().GetAwaiter().GetResult();
+            _shinden.StartSeasonRefresh(TimeSpan.FromHours(1));
             _waifu = new Waifu(_img, _shindenClient, _events, _logger,
                  _expedition, _client, _helper, _time, _shinden, _tags, _config);
             WishlistRecount.Start(_config, _time, _logger);

@@ -1,4 +1,4 @@
-﻿#pragma warning disable 1591
+#pragma warning disable 1591
 
 using System;
 using System.Collections.Generic;
@@ -737,12 +737,13 @@ namespace Sanakan.Api.Controllers
         /// <param name="id">id użytkownika discorda</param>
         /// <param name="boosterPacks">model pakietu</param>
         /// <returns>użytkownik bota</returns>
-        /// <response code="404">User not found</response>
+        /// <response code="404">User/Season not found</response>
         /// <response code="500">Model is Invalid</response>
+        /// <response code="503">Command queue is full / Can't connect to shinden</response>
         [HttpPost("discord/{id}/boosterpack"), Authorize(Policy = "Site")]
         public async Task<IActionResult> GiveUserAPacksAsync(ulong id, [FromBody]List<Models.CardBoosterPack> boosterPacks)
         {
-            var invalid = TryGetBoosterPacks(boosterPacks, out var packs);
+            var (invalid, packs) = await GetBoosterPacksAsync(boosterPacks);
             if (invalid != null) return invalid;
 
             using (var db = new Database.DatabaseContext(_config))
@@ -787,11 +788,11 @@ namespace Sanakan.Api.Controllers
         /// <param name="idempotencyKey">unikalny klucz odbioru (do 64 znaków ASCII)</param>
         /// <returns>użytkownik bota</returns>
         /// <response code="400">Invalid Idempotency-Key</response>
-        /// <response code="404">User not found</response>
+        /// <response code="404">User/Season not found</response>
         /// <response code="409">Request with this Idempotency-Key is in progress</response>
         /// <response code="422">Idempotency-Key was used with a different request</response>
         /// <response code="500">Model is Invalid</response>
-        /// <response code="503">Command queue is full</response>
+        /// <response code="503">Command queue is full / Can't connect to shinden</response>
         /// <response code="504">Command timed out, boosterpacks will still be added</response>
         [HttpPost("shinden/{id}/boosterpack"), Authorize(Policy = "Site")]
         public async Task<ActionResult<UserWithToken>> GiveShindenUserAPacksAsync(ulong id, [FromBody]List<Models.CardBoosterPack> boosterPacks,
@@ -800,7 +801,7 @@ namespace Sanakan.Api.Controllers
             if (idempotencyKey != null && !Services.Idempotency.IsValidKey(idempotencyKey))
                 return "Invalid Idempotency-Key".ToResponse(400);
 
-            var invalid = TryGetBoosterPacks(boosterPacks, out var packs);
+            var (invalid, packs) = await GetBoosterPacksAsync(boosterPacks);
             if (invalid != null) return invalid;
 
             if (idempotencyKey != null)
@@ -966,7 +967,7 @@ namespace Sanakan.Api.Controllers
         /// <returns>karty</returns>
         /// <response code="202">Opening started or still in progress (with Idempotency-Key)</response>
         /// <response code="400">Invalid Idempotency-Key</response>
-        /// <response code="404">User not found</response>
+        /// <response code="404">User/Season not found</response>
         /// <response code="406">User has no space</response>
         /// <response code="422">Idempotency-Key was used with a different request</response>
         /// <response code="500">Model/Data is Invalid</response>
@@ -980,7 +981,7 @@ namespace Sanakan.Api.Controllers
             if (idempotencyKey != null && !Services.Idempotency.IsValidKey(idempotencyKey))
                 return "Invalid Idempotency-Key".ToResponse(400);
 
-            var invalid = TryGetBoosterPacks(boosterPacks, out var packs);
+            var (invalid, packs) = await GetBoosterPacksAsync(boosterPacks);
             if (invalid != null) return invalid;
 
             if (idempotencyKey != null)
@@ -1485,6 +1486,27 @@ namespace Sanakan.Api.Controllers
                 return "Data is Invalid".ToResponse(500);
             }
             return null;
+        }
+
+        private async Task<(ObjectResult Error, List<BoosterPack> Packs)> GetBoosterPacksAsync(List<Models.CardBoosterPack> boosterPacks)
+        {
+            var invalid = TryGetBoosterPacks(boosterPacks, out var packs);
+            if (invalid != null) return (invalid, packs);
+
+            for (int i = 0; i < packs.Count; i++)
+            {
+                var pool = boosterPacks[i].Pool;
+                if (pool?.Type != CardsPoolType.Season) continue;
+
+                var key = pool.Season?.Trim().ToLowerInvariant();
+                var current = string.IsNullOrEmpty(key);
+                var season = current ? await _shinden.GetCurrentSeasonAsync() : _shinden.GetSeason(key);
+                if (season == null || season.Characters.Count == 0)
+                    return (current ? "Can't connect to shinden!".ToResponse(503) : "Season not found!".ToResponse(404), packs);
+
+                packs[i].Season = season.Key;
+            }
+            return (null, packs);
         }
 
         private async Task<ActionResult<IEnumerable<Card>>> GetCardsFormWishlistAsync(User user, Database.DatabaseContext db)

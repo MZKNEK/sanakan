@@ -1635,7 +1635,15 @@ namespace Sanakan.Services.PocketWaifu
             return pages;
         }
 
-        public Task<List<ulong>> GetCharactersFromSeasonAsync() => _shinden.GetSeasonCharactersAsync();
+        // a pack whose season file is gone falls back to the current season instead of never opening
+        private async Task<List<ulong>> GetCharactersFromSeasonAsync(string key = null)
+        {
+            var season = _shinden.GetSeason(key);
+            if (season == null || season.Characters.Count == 0)
+                season = await _shinden.GetCurrentSeasonAsync();
+
+            return season?.Characters;
+        }
 
         public async Task<List<Card>> OpenBoosterPackAsync(IUser user, BoosterPack pack, CharacterPoolType poolType)
         {
@@ -1652,6 +1660,12 @@ namespace Sanakan.Services.PocketWaifu
                         id = Fun.GetOneRandomFrom(pack.Characters);
 
                     chara = await _shinden.GetCharacterInfoAsync(id.Character);
+                }
+                else if (!string.IsNullOrEmpty(pack.Season))
+                {
+                    var charsInSeason = await GetCharactersFromSeasonAsync(pack.Season);
+                    if (!charsInSeason.IsNullOrEmpty())
+                        chara = await _shinden.GetCharacterInfoAsync(Fun.GetOneRandomFrom(charsInSeason));
                 }
                 else if (pack.Title != 0)
                 {

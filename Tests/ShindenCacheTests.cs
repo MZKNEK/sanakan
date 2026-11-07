@@ -274,7 +274,7 @@ namespace Artifacts
             Assert.False(string.IsNullOrEmpty(random.Code));
             Assert.Null(await shinden.FindInPoolAsync(CharacterPoolType.All, 1));
             Assert.Null(await shinden.GetCharacterInfoAsync(1));
-            Assert.Equal(0ul, await shinden.GetRandomSeasonTitleAsync());
+            Assert.Null(await shinden.GetCurrentSeasonAsync());
         }
     }
 }

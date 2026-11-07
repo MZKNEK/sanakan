@@ -2440,6 +2440,124 @@ namespace Sanakan.Modules
             Config.Save();
         }
 
+        [Command("season", RunMode = RunMode.Async), Priority(1), RequireDevOrTester]
+        [Summary("wyświetla zapisane sezony anime z pakietów sezonowych (podanie klucza - szczegóły sezonu)")]
+        [Remarks("2026-autumn")]
+        public async Task ShowSeasonsAsync([Summary("klucz sezonu (niepodanie - lista)")]string key = null)
+        {
+            var store = _shinden.Seasons;
+            var current = store.Current;
+
+            if (key != null)
+            {
+                var season = store.Get(key.Trim().ToLowerInvariant());
+                if (season == null)
+                {
+                    await SafeReplyAsync("", embed: $"Nie znaleziono sezonu `{key}`.".ToEmbedMessage(EMType.Error).Build());
+                    return;
+                }
+
+                var titles = string.Join(", ", season.Titles.Take(20).Select(x => $"[{x}]({ShindenCompat.Url.GetSeriesURL(x)})"));
+                var details = $"**Sezon:** `{season.Key}` ({season.Name()}){(season.Key == current?.Key ? " - bieżący" : "")}\n"
+                    + $"**Aktualizacja:** {season.UpdatedAt.ToShortDateTime()}\n"
+                    + $"**Tytuły:** {season.Titles.Count}\n**Postacie:** {season.Characters.Count}\n\n"
+                    + $"**Tytuły (do 20):** {(titles == "" ? "-" : titles)}\n\n"
+                    + $"Pełna lista: `dev season dump {season.Key}`";
+
+                await SafeReplyAsync("", embed: details.TrimToLength().ToEmbedMessage(EMType.Info).Build());
+                return;
+            }
+
+            var seasons = store.All();
+            var list = seasons.Count == 0 ? "`brak`" : string.Join("\n", seasons.Select(x =>
+                $"{(x.Key == current?.Key ? "▶" : "•")} `{x.Key}` - tytuły: {x.Titles.Count}, postacie: {x.Characters.Count}, aktualizacja: {x.UpdatedAt.ToShortDateTime()}"));
+
+            var info = $"**Bieżący:** `{current?.Key ?? "brak"}`\n"
+                + $"**Ostatni błąd pobrania:** {(store.LastError == null ? "`brak`" : $"`{store.LastError}` ({store.FailedAt?.ToShortDateTime()})")}\n\n"
+                + $"**Sezony:**\n{list}";
+
+            await SafeReplyAsync("", embed: info.TrimToLength().ToEmbedMessage(store.LastError == null ? EMType.Info : EMType.Warning).Build());
+        }
+
+        [Command("season raw", RunMode = RunMode.Async), Priority(2), RequireDevOrTester]
+        [Summary("pobiera bieżący sezon z shindena bez zapisywania i pokazuje, co bot by z nim zrobił")]
+        [Remarks("")]
+        public async Task ShowRawSeasonAsync()
+        {
+            var res = await _shClient.Ex.GetCurrentSeasonAsync();
+            if (!res.IsSuccessStatusCode())
+            {
+                await SafeReplyAsync("", embed: $"Shinden zwrócił `{(int)res.Code} {res.Code}`.".ToEmbedMessage(EMType.Error).Build());
+                return;
+            }
+
+            var value = res.Body;
+            var current = _shinden.Seasons.Current;
+            var target = Services.Cache.SeasonStore.Target(current, value, _time.Now());
+            var targetKey = Services.Cache.SeasonSnapshot.KeyOf(target.Year, target.Season);
+            var existing = _shinden.Seasons.Get(targetKey);
+
+            var knownTitles = current == null ? 0 : value.Titles.Count(current.Titles.Contains);
+            var newTitles = existing == null ? value.Titles.Count : value.Titles.Count(x => !existing.Titles.Contains(x));
+            var newCharacters = existing == null ? value.Characters.Count : value.Characters.Count(x => !existing.Characters.Contains(x));
+
+            var decision = existing == null ? $"nowy sezon `{targetKey}`" : $"dopisanie do `{targetKey}`";
+            var tag = value.Year.HasValue && value.Season.HasValue ? $"`{value.Year}-{value.Season.ToString().ToLower()}`" : "`brak`";
+
+            var info = $"**Tytuły:** {value.Titles.Count}\n**Postacie:** {value.Characters.Count}\n**Znacznik sezonu od shindena:** {tag}\n\n"
+                + $"**Bieżący sezon bota:** `{current?.Key ?? "brak"}`\n"
+                + $"**Znane tytuły:** {knownTitles}/{value.Titles.Count} (zmiana sezonu poniżej {Services.Cache.SeasonStore.SwitchOverlap:P0})\n"
+                + $"**Decyzja:** {decision}\n**Nowe tytuły:** {newTitles}\n**Nowe postacie:** {newCharacters}";
+
+            await SafeReplyAsync("", embed: info.TrimToLength().ToEmbedMessage(EMType.Info).Build());
+            await SendJsonAsync(value, "current-season.json");
+        }
+
+        [Command("season dump", RunMode = RunMode.Async), Priority(2), RequireDevOrTester]
+        [Summary("wysyła zapisany sezon jako plik (niepodanie - bieżący)")]
+        [Remarks("2026-autumn")]
+        public async Task DumpSeasonAsync([Summary("klucz sezonu")]string key = null)
+        {
+            var season = key == null ? _shinden.Seasons.Current : _shinden.Seasons.Get(key.Trim().ToLowerInvariant());
+            if (season == null)
+            {
+                await SafeReplyAsync("", embed: $"Nie znaleziono sezonu `{key ?? "bieżący"}`.".ToEmbedMessage(EMType.Error).Build());
+                return;
+            }
+
+            await SendJsonAsync(season, $"{season.Key}.json");
+        }
+
+        [Command("season refresh", RunMode = RunMode.Async), Priority(2), RequireDev]
+        [Summary("pobiera i zapisuje bieżący sezon z shindena od razu, bez czekania na dobowe odświeżenie")]
+        [Remarks("")]
+        public async Task RefreshSeasonAsync()
+        {
+            var before = _shinden.Seasons.Current;
+            var titlesBefore = before?.Titles.Count ?? 0;
+            var charactersBefore = before?.Characters.Count ?? 0;
+
+            var after = await _shinden.RefreshSeasonNowAsync();
+            if (after == null || _shinden.Seasons.LastError != null)
+            {
+                await SafeReplyAsync("", embed: $"Nie udało się odświeżyć sezonu: `{_shinden.Seasons.LastError ?? "brak danych"}`.".ToEmbedMessage(EMType.Error).Build());
+                return;
+            }
+
+            var changed = before?.Key != after.Key;
+            var info = changed
+                ? $"Nowy sezon `{after.Key}` (poprzedni: `{before?.Key ?? "brak"}`).\n**Tytuły:** {after.Titles.Count}\n**Postacie:** {after.Characters.Count}"
+                : $"Odświeżono `{after.Key}`.\n**Tytuły:** {titlesBefore} → {after.Titles.Count}\n**Postacie:** {charactersBefore} → {after.Characters.Count}";
+
+            await SafeReplyAsync("", embed: info.ToEmbedMessage(EMType.Success).Build());
+        }
+
+        private async Task SendJsonAsync(object value, string name)
+        {
+            using var stream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(value, Formatting.Indented)));
+            await Context.Channel.SendFileAsync(stream, name);
+        }
+
         [Command("pomoc", RunMode = RunMode.Async), RequireDevOrTester]
         [Alias("help", "h")]
         [Summary("wypisuje polecenia")]

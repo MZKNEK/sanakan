@@ -6,7 +6,7 @@ namespace Sanakan.Api.Models
 {
     public enum CardsPoolType
     {
-        Random, Title, List
+        Random, Title, List, Season
     }
 
     public class BoosterPackPool
@@ -15,7 +15,8 @@ namespace Sanakan.Api.Models
         /// Typ wybierania postaci:
         /// Radnom - losowo, 
         /// Title - postacie z tytułu (wymagane TitleId),
-        /// List - postacie z listy id (wymagane Character)
+        /// List - postacie z listy id (wymagane Character),
+        /// Season - postacie z sezonu anime (opcjonalnie Season, domyślnie bieżący sezon)
         /// </summary>
         public CardsPoolType Type { get; set; }
         /// <summary>
@@ -26,5 +27,9 @@ namespace Sanakan.Api.Models
         /// Id tytułu z którego będą losowane postacie
         /// </summary>
         public List<ulong> Character { get; set; }
+        /// <summary>
+        /// Sezon, z którego będą losowane postacie, np. 2026-autumn (puste - bieżący sezon)
+        /// </summary>
+        public string Season { get; set; }
     }
 }

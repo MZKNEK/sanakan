@@ -38,7 +38,7 @@ namespace Sanakan.Api.Models
         /// </summary>
         public CardSource Source { get; set; }
         /// <summary>
-        /// Skąd losowane są postacie: random - dowolne, title - z jednego tytułu, list - z wybranych postaci
+        /// Skąd losowane są postacie: random - dowolne, title - z jednego tytułu, list - z wybranych postaci, season - z postaci jednego sezonu anime
         /// </summary>
         public CardsPoolType Pool { get; set; }
         /// <summary>
@@ -62,6 +62,7 @@ namespace Sanakan.Api.Models
         private static CardsPoolType GetPoolType(BoosterPack pack)
         {
             if (pack.Characters?.Count > 0) return CardsPoolType.List;
+            if (!string.IsNullOrEmpty(pack.Season)) return CardsPoolType.Season;
             if (pack.Title != 0) return CardsPoolType.Title;
             return CardsPoolType.Random;
         }

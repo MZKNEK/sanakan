@@ -50,6 +50,7 @@ namespace Artifacts
             var list = new List<BoosterPackCharacter> { new BoosterPackCharacter { Character = 5 } };
 
             Assert.Equal(CardsPoolType.List, UserBoosterPack.From(new BoosterPack { Title = 10, Characters = list }, 1).Pool);
+            Assert.Equal(CardsPoolType.Season, UserBoosterPack.From(new BoosterPack { Title = 10, Season = "2026-autumn", Characters = new List<BoosterPackCharacter>() }, 1).Pool);
             Assert.Equal(CardsPoolType.Title, UserBoosterPack.From(new BoosterPack { Title = 10, Characters = new List<BoosterPackCharacter>() }, 1).Pool);
             Assert.Equal(CardsPoolType.Random, UserBoosterPack.From(new BoosterPack { Characters = new List<BoosterPackCharacter>() }, 1).Pool);
         }

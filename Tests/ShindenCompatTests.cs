@@ -310,8 +310,11 @@ namespace Artifacts
             Respond(@"{ ""titles"": [ 1, 2 ], ""characters"": [ ""3"" ] }");
             var client = Create();
 
-            Assert.Equal(new ulong[] { 1, 2 }, (await client.Ex.GetAnimeFromSeasonAsync()).Body);
-            Assert.Equal(new ulong[] { 3 }, (await client.Ex.GetAnimeFromSeasonAsync(true)).Body);
+            var season = (await client.Ex.GetCurrentSeasonAsync()).Body;
+
+            Assert.Equal(new ulong[] { 1, 2 }, season.Titles);
+            Assert.Equal(new ulong[] { 3 }, season.Characters);
+            Assert.Single(_stub.Requests);
             Assert.Equal("/compat/php-api/anime/current-season", _stub.Requests.Last().RequestUri.AbsolutePath);
         }
 

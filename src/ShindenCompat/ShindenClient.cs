@@ -198,8 +198,12 @@ namespace Sanakan.ShindenCompat
             public async Task<Response<List<ICharacterInfoTitle>>> GetAllCharactersFromMangaFatAsync()
                 => Wrap(await _api.Characters.MangaFlatListAsync().ConfigureAwait(false), ToPool);
 
-            public async Task<Response<List<ulong>>> GetAnimeFromSeasonAsync(bool characters = false)
-                => Wrap(await _api.Episodes.CurrentSeasonAsync().ConfigureAwait(false), x => characters ? x.CharacterIds : x.TitleIds);
+            public async Task<Response<Models.Entities.CurrentSeason>> GetCurrentSeasonAsync()
+                => Wrap(await _api.Episodes.CurrentSeasonAsync().ConfigureAwait(false), x => new Models.Entities.CurrentSeason
+                {
+                    Titles = x.TitleIds ?? new List<ulong>(),
+                    Characters = x.CharacterIds ?? new List<ulong>(),
+                });
 
             private static List<ICharacterInfoTitle> ToPool(List<ShindenAPI.Models.CharacterFlat> list)
                 => list.Where(x => x != null).Select(x => x.ToModel()).ToList();
