@@ -62,25 +62,25 @@ namespace Sanakan.ShindenCompat
         public ExperimentalModule Ex { get; }
 
         public static ShindenClient Create(ConfigShinden config, ILogger<ApiClient> logger, HttpMessageHandler handler, TimeSpan timeout)
+            => new ShindenClient(new ApiClient(builder => Build(builder.WithRequestTimeout(timeout), config), logger, handler));
+
+        // throws and keeps the current settings when the new ones are invalid; requests in progress finish with the old ones
+        public void Apply(ConfigShinden config) => _api.Reconfigure(builder => Build(builder, config));
+
+        public ShindenAPI.Config Active => _api.Config;
+
+        private static ShindenAPI.Config Build(ConfigBuilder builder, ConfigShinden config)
         {
-            var uri = GetUri(config);
-            var legacyUri = GetLegacyUri(config);
             // without a new token the PHP key also works on compat routes
             var token = string.IsNullOrWhiteSpace(config.ApiToken) ? config.Token : config.ApiToken;
 
-            return new ShindenClient(new ApiClient(builder =>
-            {
-                builder.WithUri(uri)
-                    .WithRequestTimeout(timeout)
-                    .WithAuth(auth => auth.WithToken(token).WithUserAgent(config.UserAgent).Build())
-                    .WithLegacyAuth(auth => auth.WithToken(config.Token).WithUserAgent(config.UserAgent)
-                        .WithMarmolade(config.Marmolade).Build());
-
-                if (legacyUri != uri)
-                    builder.WithLegacyUri(legacyUri);
-
-                return builder.Build();
-            }, logger, handler));
+            // set even when equal to the main uri, a reconfigured client would keep the previous one
+            return builder.WithUri(GetUri(config))
+                .WithLegacyUri(GetLegacyUri(config))
+                .WithAuth(auth => auth.WithToken(token).WithUserAgent(config.UserAgent).Build())
+                .WithLegacyAuth(auth => auth.WithToken(config.Token).WithUserAgent(config.UserAgent)
+                    .WithMarmolade(config.Marmolade).Build())
+                .Build();
         }
 
         public static string GetUri(ConfigShinden config)

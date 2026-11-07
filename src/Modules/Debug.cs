@@ -1063,55 +1063,45 @@ namespace Sanakan.Modules
         }
 
         [Command("shuri"), Priority(1), RequireDev]
-        [Summary("ustawia bazowe uri do api shindena")]
-        [Remarks("")]
+        [Summary("ustawia bazowe uri do api shindena; działa od razu")]
+        [Remarks("https://shinden.pl/")]
         public async Task SetBaseShindenUriAsync([Summary("uri do api")][Remainder] string uri)
         {
-            var config = Config.Get();
-            config.Shinden.BaseUri = uri;
-            Config.Save();
-
-            await SafeReplyAsync("", embed: $"Ustawiono URI na `{uri}`".ToEmbedMessage(EMType.Success).Build());
+            if (await ApplyShindenConfigAsync(x => x.BaseUri = uri))
+                await SafeReplyAsync("", embed: $"Ustawiono URI na `{uri}`, działa od razu.".ToEmbedMessage(EMType.Success).Build());
         }
 
         [Command("shtoken"), Priority(1), RequireDev]
-        [Summary("ustawia stary klucz api shindena (PHP, tylko na PW z botem); działa po restarcie bota")]
+        [Summary("ustawia stary klucz api shindena (PHP, tylko na PW z botem); działa od razu")]
         [Remarks("token")]
         public async Task SetShindenTokenAsync([Summary("token")] string token)
         {
             if (!await RequireDmForSecretAsync())
                 return;
 
-            var config = Config.Get();
-            config.Shinden ??= new ConfigShinden();
-            config.Shinden.Token = token;
-            Config.Save();
-
-            await SafeReplyAsync("", embed: "Ustawiono token Shindena, zacznie działać po restarcie bota.".ToEmbedMessage(EMType.Success).Build());
+            if (await ApplyShindenConfigAsync(x => x.Token = token))
+                await SafeReplyAsync("", embed: "Ustawiono token Shindena, działa od razu.".ToEmbedMessage(EMType.Success).Build());
         }
 
         [Command("shapitoken"), Priority(1), RequireDev]
-        [Summary("ustawia token aplikacji nowego api shindena (shk_…, tylko na PW z botem); działa po restarcie bota")]
+        [Summary("ustawia token aplikacji nowego api shindena (shk_…, tylko na PW z botem); działa od razu")]
         [Remarks("shk_token")]
         public async Task SetShindenApiTokenAsync([Summary("token")] string token)
         {
             if (!await RequireDmForSecretAsync())
                 return;
 
-            var config = Config.Get();
-            config.Shinden ??= new ConfigShinden();
-            config.Shinden.ApiToken = token;
-            Config.Save();
-
-            await SafeReplyAsync("", embed: "Ustawiono token nowego API Shindena, zacznie działać po restarcie bota.".ToEmbedMessage(EMType.Success).Build());
+            if (await ApplyShindenConfigAsync(x => x.ApiToken = token))
+                await SafeReplyAsync("", embed: "Ustawiono token nowego API Shindena, działa od razu.".ToEmbedMessage(EMType.Success).Build());
         }
 
         [Command("shconfig"), Priority(1), RequireDev]
-        [Summary("wyświetla konfigurację api shindena z ukrytymi tokenami; zmiany działają po restarcie bota")]
+        [Summary("wyświetla konfigurację api shindena z ukrytymi tokenami (zapisaną i używaną przez bota)")]
         [Remarks("")]
         public async Task ShowShindenConfigAsync()
         {
             var cfg = Config.Get().Shinden ?? new ConfigShinden();
+            var active = _shClient.Active;
             string Secret(string value) => string.IsNullOrEmpty(value) ? "brak" : MaskKey(value);
 
             var info = $"**Nowe API:** `{ShindenClient.GetUri(cfg)}`\n"
@@ -1119,9 +1109,35 @@ namespace Sanakan.Modules
                 + $"**Token aplikacji:** `{(string.IsNullOrEmpty(cfg.ApiToken) ? "brak - używany stary klucz" : MaskKey(cfg.ApiToken))}`\n"
                 + $"**Stary klucz:** `{Secret(cfg.Token)}`\n"
                 + $"**Marmolade:** `{Secret(cfg.Marmolade)}`\n"
-                + $"**User agent:** `{(string.IsNullOrEmpty(cfg.UserAgent) ? "brak" : cfg.UserAgent)}`";
+                + $"**User agent:** `{(string.IsNullOrEmpty(cfg.UserAgent) ? "brak" : cfg.UserAgent)}`\n\n"
+                + $"**Używane teraz przez bota:**\n"
+                + $"Nowe API: `{active.Uri}`, stare API: `{active.LegacyUri}`\n"
+                + $"Token aplikacji: `{Secret(active.Auth?.Token)}`, stary klucz: `{Secret(active.LegacyAuth?.Token)}`\n"
+                + $"Limit czasu: `{active.RequestTimeout.TotalSeconds:0} s`, ponowienia: `{active.MaxRetries}`";
 
             await SafeReplyAsync("", embed: info.TrimToLength().ToEmbedMessage(EMType.Info).Build());
+        }
+
+        // the running client takes the change first, so a value it rejects is never saved
+        private async Task<bool> ApplyShindenConfigAsync(Action<ConfigShinden> change)
+        {
+            var config = Config.Get();
+            var updated = JsonConvert.DeserializeObject<ConfigShinden>(JsonConvert.SerializeObject(config.Shinden ?? new ConfigShinden()));
+            change(updated);
+
+            try
+            {
+                _shClient.Apply(updated);
+            }
+            catch (Exception ex)
+            {
+                await SafeReplyAsync("", embed: $"Shinden.NET nie przyjął zmiany, nic nie zmieniono: {ex.Message}".TrimToLength().ToEmbedMessage(EMType.Error).Build());
+                return false;
+            }
+
+            config.Shinden = updated;
+            Config.Save();
+            return true;
         }
 
         [Command("dbconn", RunMode = RunMode.Async), Priority(1), RequireDev]

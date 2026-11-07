@@ -323,6 +323,51 @@ namespace Artifacts
         }
 
         [Fact]
+        public async Task Apply_ChangesAddressAndTokenForNextRequests()
+        {
+            Respond(Character);
+            var client = Create();
+            await client.GetCharacterInfoAsync(15);
+
+            client.Apply(new ConfigShinden { Token = "old-php-key", ApiToken = "shk_changed", UserAgent = "tests", Marmolade = "X-Marmolade", BaseUri = "https://proxy.test/shinden/" });
+            await client.GetCharacterInfoAsync(15);
+
+            var before = _stub.Requests.First();
+            var after = _stub.Requests.Last();
+            Assert.Equal("shinden.pl", before.RequestUri.Host);
+            Assert.Equal("shk_new", before.Headers.Authorization.Parameter);
+            Assert.Equal("proxy.test", after.RequestUri.Host);
+            Assert.StartsWith("/shinden/compat/php-api/character/15", after.RequestUri.AbsolutePath);
+            Assert.Equal("shk_changed", after.Headers.Authorization.Parameter);
+            Assert.Equal("https://proxy.test/shinden/", client.Active.Uri.ToString());
+        }
+
+        [Fact]
+        public async Task Apply_InvalidConfig_KeepsWorkingWithThePreviousOne()
+        {
+            Respond(Character);
+            var client = Create();
+
+            Assert.ThrowsAny<Exception>(() => client.Apply(new ConfigShinden { Token = "old-php-key", ApiToken = "shk_x", UserAgent = null }));
+            await client.GetCharacterInfoAsync(15);
+
+            var request = _stub.Requests.Single();
+            Assert.Equal("shinden.pl", request.RequestUri.Host);
+            Assert.Equal("shk_new", request.Headers.Authorization.Parameter);
+        }
+
+        [Fact]
+        public void Apply_LegacyAddressFollowsTheNewBaseUri()
+        {
+            var client = Create(baseUri: "https://old.test/api");
+
+            client.Apply(new ConfigShinden { Token = "old-php-key", UserAgent = "tests", BaseUri = "https://new.test/" });
+
+            Assert.Equal("new.test", client.Active.Uri.Host);
+            Assert.Equal("new.test", client.Active.LegacyUri.Host);
+        }
+
+        [Fact]
         public async Task CurrentSeasonTagIsMappedAndFallBecomesAutumn()
         {
             Respond(@"{ ""season"": { ""year"": 2026, ""season"": ""fall"" }, ""updated_at"": ""2026-11-07 12:00:00"",
