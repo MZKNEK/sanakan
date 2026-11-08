@@ -1930,6 +1930,26 @@ namespace Sanakan.Services.PocketWaifu
                 .Build();
         }
 
+        // the look from before 1.4.11.10, kept on request
+        public async Task<Embed> BuildLegacyCardViewAsync(Card card, ITextChannel trashChannel, SocketUser owner)
+        {
+            string imageUrl = await GetWaifuCardImageAsync(card, trashChannel);
+            string imgUrls = $"[_obrazek_]({imageUrl})\n[_możesz zmienić obrazek tutaj_]({card.GetCharacterUrl()}/edit_crossroad)";
+            string ownerString = (((owner as SocketGuildUser)?.Nickname ?? owner?.GlobalName) ?? owner?.Username) ?? "????";
+            bool hideScalpelInfo = card.CustomImageDate < _hiddeScalpelBeforeDate;
+
+            return new EmbedBuilder
+            {
+                ImageUrl = imageUrl,
+                Color = EMType.Info.Color(),
+                Footer = new EmbedFooterBuilder
+                {
+                    Text = $"Należy do: {ownerString}"
+                },
+                Description = $"{card.GetLegacyDesc(hideScalpelInfo, _tags, _time)}{imgUrls}".TrimToLength(2500)
+            }.Build();
+        }
+
         public const string InactiveSection = "⚠️ **Nieaktywni:**";
 
         // inactive players go to their own section instead of a mark on every row, so each row is one markdown element

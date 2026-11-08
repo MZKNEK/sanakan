@@ -397,15 +397,24 @@ namespace Sanakan.Extensions
             var percent = maxExp <= 0 ? 100 : (int)Math.Min(100, fig.ExpCnt / maxExp * 100);
             embed.AddField("Doświadczenie", $"{ProgressBar(fig.ExpCnt, maxExp)} {fig.ExpCnt:0} / {maxExp:0} ({percent}%)");
 
-            var installed = _bodyParts.Where(x => fig.GetQualityOfPart(x) != Quality.Broken).Select(x => $"✅ {x.ToName()} {fig.GetQualityOfPart(x).ToName()}");
-            var missing = _bodyParts.Where(x => fig.GetQualityOfPart(x) == Quality.Broken).Select(x => $"⬜ {x.ToName()}");
-            var parts = string.Join("\n", new[] { string.Join(" · ", installed), string.Join(" · ", missing) }.Where(x => x.Length > 0));
-            embed.AddField($"Części ({fig.InstalledPartsCount()}/{_bodyParts.Length})", parts);
-
-            if (!fig.AllPartsInstalled())
+            var building = fig.GetQualityOfFocusedPart() == Quality.Broken;
+            var parts = _bodyParts.Select(x =>
             {
-                embed.AddField($"Teraz budujesz: {fig.FocusedPart.ToName()}",
-                    $"Punkty konstrukcji: {fig.PartExp:0} / {fig.ConstructionPointsToInstall(skeleton)} (dla części {skeleton.ToName()})");
+                var quality = fig.GetQualityOfPart(x);
+                if (quality != Quality.Broken) return $"🔳 {x.ToName()} · {quality.ToName()}";
+                return building && x == fig.FocusedPart ? $"🔨 {x.ToName()}" : $"⬜ {x.ToName()}";
+            });
+            embed.AddField($"Części ({fig.InstalledPartsCount()}/{_bodyParts.Length})", string.Join("\n", parts));
+
+            if (building)
+            {
+                var needed = fig.ConstructionPointsToInstall(skeleton);
+                embed.AddField($"🔨 Budujesz: {fig.FocusedPart.ToName()}",
+                    $"{ProgressBar(fig.PartExp, needed)} {fig.PartExp:0} / {needed} pkt (część {skeleton.ToName()})");
+            }
+            else if (!fig.AllPartsInstalled())
+            {
+                embed.AddField("🔨 Nic nie budujesz", "Wybierz kolejną część, np. wybierz element lewa noga.");
             }
 
             return embed;

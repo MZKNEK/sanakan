@@ -292,37 +292,100 @@ namespace Sanakan.Extensions
             return $"KC: {kcs} ({card.AWhoWantsCount} aktywnych)";
         }
 
-        public static string GetDescSmall(this Card card, Services.PocketWaifu.TagHelper tags, ISystemTime time)
-            => $"{card.GetIdWithUrl()} {card.GetString(true, true, true, false, true)}\n"
-                + $"_{card.Title ?? "????"}_\n\n"
-                + $"Charakter: {card.Dere} · Relacja: {card.GetAffectionString()} · Zmęczenie: {card.GetFatigueString(time)}\n"
-                + $"Doświadczenie: {card.ExpCnt:0.##}/{card.ExpToUpgrade():0.##} · Moc: {card.CalculateCardPower():0}\n"
-                + $"{card.GetWhoWantsLine()} · Postać: {card.Character}\n"
-                + $"Tagi: {card.GetTagsLine(tags)}";
+        // the looks from before 1.4.11.10, kept on request
+        public static string GetLegacyDescSmall(this Card card, Services.PocketWaifu.TagHelper tags, ISystemTime time)
+        {
+            var kcs = Fun.IsAF() ? Fun.GetAFKC(card.Character) : card.WhoWantsCount;
+            return $"{card.GetIdWithUrl()} *({card.Character}) KC: {kcs}({card.AWhoWantsCount}) PWR: {card.CalculateCardPower():F}*\n"
+                + $"{card.GetString(true, true, true, false, true)}\n"
+                + $"_{card.Title}_\n\n"
+                + $"{card.Dere}\n"
+                + $"{card.GetAffectionString()}\n"
+                + $"{card.GetFatigueString(time)}\n"
+                + $"{card.ExpCnt:F}/{card.ExpToUpgrade():F} exp\n\n"
+                + $"{(card.Tags.IsNullOrEmpty() ? "---" : string.Join(" ", card.Tags.Select(x => x.Name)))}\n"
+                + $"{card.GetStatusIcons(tags)}";
+        }
+
+        public static string GetLegacyDesc(this Card card, bool hideScalelInfo, Services.PocketWaifu.TagHelper tags, ISystemTime time)
+        {
+            var kcs = Fun.IsAF() ? Fun.GetAFKC(card.Character) : card.WhoWantsCount;
+            string scalpelInfo = (!string.IsNullOrEmpty(card.CustomImage) && !hideScalelInfo)
+                ? $"**Ustawiono obrazek:** {card.CustomImageDate.ToShortDateTime()}\n**Animacja:** {card.IsCardAnimated().GetYesNo()}\n" : "";
+
+            return $"{card.GetNameWithUrl()} **{card.GetCardRealRarity()}**\n"
+                + $"*{card.Title ?? "????"}*\n\n"
+                + $"*{card.GetCardParams(true, false, true)}*\n\n"
+                + $"**Relacja:** {card.GetAffectionString()}\n"
+                + $"**Zmęczenie:** {card.GetFatigueString(time)}\n"
+                + $"**Doświadczenie:** {card.ExpCnt:F}/{card.ExpToUpgrade():F}\n"
+                + $"**Dostępne ulepszenia:** {card.UpgradesCnt}\n\n"
+                + $"**W klatce:** {card.InCage.GetYesNo()}\n"
+                + $"**Aktywna:** {card.Active.GetYesNo()}\n"
+                + $"**Możliwość wymiany:** {card.IsTradable.GetYesNo()}\n\n"
+                + $"**WID:** {card.GetIdWithUrl()} *({card.Character})*\n"
+                + $"**Restarty:** {card.RestartCnt}\n"
+                + $"**Pochodzenie:** {card.Source.GetString()}\n"
+                + $"**Moc:** {card.CalculateCardPower():F}\n"
+                + $"**Charakter:** {card.Dere}\n"
+                + $"**Utworzona:** {card.CreationDate.ToShortDateTime()}\n{scalpelInfo}"
+                + $"**KC:** {kcs} ({card.AWhoWantsCount})\n"
+                + $"**Tagi:** {(card.Tags.IsNullOrEmpty() ? "---" : string.Join(" ", card.Tags.Select(x => x.Name)))}\n"
+                + $"{card.GetStatusIcons(tags)}\n\n";
+        }
+
+        public static string GetHealthLine(this Card card)
+        {
+            var health = card.GetHealthWithPenalty();
+            return health == card.Health ? $"{health}" : $"{health} (bazowo {card.Health})";
+        }
+
+        public static EmbedBuilder GetSmallView(this Card card, Services.PocketWaifu.TagHelper tags, ISystemTime time)
+        {
+            var growth = $"{card.ExpCnt:0.##} / {card.ExpToUpgrade():0.##} exp\nMoc: {card.CalculateCardPower():0}";
+            if (!card.FromFigure)
+                growth += $"\nUlepszenia: {card.UpgradesCnt}";
+
+            return new EmbedBuilder
+            {
+                Color = EMType.Info.Color(),
+                Description = $"{card.GetIdWithUrl()} {card.GetNameWithUrl()} · **{card.GetCardRealRarity()}**\n_{card.Title ?? "????"}_",
+            }
+            .AddField("Walka", $"❤ {card.GetHealthLine()}\n🔥 {card.GetAttackWithBonus()}\n🛡 {card.GetDefenceWithBonus()}", true)
+            .AddField("Postać", $"{card.Dere}\n{card.GetAffectionString()}\nZmęczenie: {card.GetFatigueString(time).ToLower()}", true)
+            .AddField("Rozwój", growth, true)
+            .AddField("Kolekcja", $"{card.GetWhoWantsLine()} · postać {card.Character}\nTagi: {card.GetTagsLine(tags)}".TrimToLength(EmbedFieldBuilder.MaxFieldValueLength));
+        }
 
         public static EmbedBuilder GetView(this Card card, bool hideScalpelInfo, Services.PocketWaifu.TagHelper tags, ISystemTime time)
         {
-            var state = $"{(card.Active ? "Aktywna" : "Nieaktywna")} · {(card.InCage ? "w klatce" : "poza klatką")} · {(card.IsTradable ? "można wymieniać" : "nie można wymieniać")}";
-            var info = $"WID {card.GetIdWithUrl()} · postać {card.Character} · {card.Source.GetString()} · restarty: {card.RestartCnt}\n"
-                + $"{card.GetWhoWantsLine()} · utworzona {card.CreationDate.ToShortDateTime()}";
+            var more = new List<string>
+            {
+                $"{(card.Active ? "Aktywna" : "Nieaktywna")} · {(card.InCage ? "w klatce" : "poza klatką")} · {(card.IsTradable ? "można wymieniać" : "nie można wymieniać")}",
+                $"Numer: {card.GetIdWithUrl()} · postać {card.Character} · restarty: {card.RestartCnt}",
+                card.GetWhoWantsLine(),
+                $"Zdobyta: {card.Source.GetString()}, {card.CreationDate.ToShortDateTime()}",
+            };
             if (!string.IsNullOrEmpty(card.CustomImage) && !hideScalpelInfo)
-                info += $"\nObrazek ustawiony {card.CustomImageDate.ToShortDateTime()} · animacja: {card.IsCardAnimated().GetYesNo()}";
+                more.Add($"Obrazek ustawiony {card.CustomImageDate.ToShortDateTime()} · animacja: {card.IsCardAnimated().GetYesNo()}");
+            more.Add($"Tagi: {card.GetTagsLine(tags)}");
 
             return new EmbedBuilder
             {
                 Title = $"{card.Name} · {card.GetCardRealRarity()}".TrimToLength(EmbedBuilder.MaxTitleLength),
                 Url = card.GetCharacterUrl(),
-                Description = $"_{card.Title ?? "????"}_ · {card.GetCardParams(true, false)}",
+                Description = $"_{card.Title ?? "????"}_",
             }
-            .AddField("Relacja", card.GetAffectionString(), true)
-            .AddField("Zmęczenie", card.GetFatigueString(time), true)
-            .AddField("Charakter", card.Dere.ToString(), true)
-            .AddField("Doświadczenie", $"{card.ExpCnt:0.##} / {card.ExpToUpgrade():0.##}", true)
-            .AddField("Ulepszenia", $"{card.UpgradesCnt} dostępne", true)
-            .AddField("Moc", $"{card.CalculateCardPower():0}", true)
-            .AddField("Stan", state)
-            .AddField("Informacje", info.TrimToLength(EmbedFieldBuilder.MaxFieldValueLength))
-            .AddField("Tagi", card.GetTagsLine(tags).TrimToLength(EmbedFieldBuilder.MaxFieldValueLength));
+            .AddField("❤ Życie", card.GetHealthLine(), true)
+            .AddField("🔥 Atak", $"{card.GetAttackWithBonus()}", true)
+            .AddField("🛡 Obrona", $"{card.GetDefenceWithBonus()}", true)
+            .AddField("💞 Relacja", card.GetAffectionString(), true)
+            .AddField("🎭 Charakter", card.Dere.ToString(), true)
+            .AddField("😴 Zmęczenie", card.GetFatigueString(time), true)
+            .AddField("📈 Doświadczenie", $"{card.ExpCnt:0.##} / {card.ExpToUpgrade():0.##}", true)
+            .AddField("⚡ Moc", $"{card.CalculateCardPower():0}", true)
+            .AddField("⬆️ Ulepszenia", $"{card.UpgradesCnt}", true)
+            .AddField("Więcej", string.Join("\n", more).TrimToLength(EmbedFieldBuilder.MaxFieldValueLength));
         }
 
         public static int GetHealthWithPenalty(this Card card, bool allowZero = false)

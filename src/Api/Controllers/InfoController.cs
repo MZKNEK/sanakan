@@ -103,7 +103,7 @@ namespace Sanakan.Api.Controllers
 
                 foreach (var cmd in item.Commands)
                 {
-                    if (!string.IsNullOrEmpty(cmd.Name))
+                    if (!string.IsNullOrEmpty(cmd.Name) && !cmd.IsHidden())
                     {
                         var cc = new Command()
                         {

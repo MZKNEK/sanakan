@@ -493,7 +493,14 @@ namespace Sanakan.Modules
         [Alias("card-")]
         [Summary("pozwala wyświetlić kartę w prostej postaci")]
         [Remarks("685"), RequireAnyCommandChannelOrLevel(40)]
-        public async Task ShowCardStringAsync([Summary("WID")] ulong wid)
+        public Task ShowCardStringAsync([Summary("WID")] ulong wid) => SendSmallCardAsync(wid, false);
+
+        [Command("kartas-", RunMode = RunMode.Async), Hidden]
+        [Summary("pozwala wyświetlić kartę w prostej postaci w starym wyglądzie")]
+        [Remarks("685"), RequireAnyCommandChannelOrLevel(40)]
+        public Task ShowLegacyCardStringAsync([Summary("WID")] ulong wid) => SendSmallCardAsync(wid, true);
+
+        private async Task SendSmallCardAsync(ulong wid, bool legacy)
         {
             using (var db = new Database.DatabaseContext(Config))
             {
@@ -507,7 +514,8 @@ namespace Sanakan.Modules
                 SocketUser user = Context.Guild.GetUser(card.GameDeck.UserId);
                 if (user == null) user = Context.Client.GetUser(card.GameDeck.UserId);
 
-                await SafeReplyAsync("", embed: card.GetDescSmall(_tags, _time).TrimToLength().ToEmbedMessage(EMType.Info).WithAuthor(new EmbedAuthorBuilder().WithUser(user)).Build());
+                var view = legacy ? card.GetLegacyDescSmall(_tags, _time).TrimToLength().ToEmbedMessage(EMType.Info) : card.GetSmallView(_tags, _time);
+                await SafeReplyAsync("", embed: view.WithAuthor(new EmbedAuthorBuilder().WithUser(user)).Build());
             }
         }
 
@@ -515,7 +523,14 @@ namespace Sanakan.Modules
         [Alias("card")]
         [Summary("pozwala wyświetlić kartę")]
         [Remarks("685"), RequireWaifuCommandChannel]
-        public async Task ShowCardAsync([Summary("WID")] ulong wid)
+        public Task ShowCardAsync([Summary("WID")] ulong wid) => SendCardAsync(wid, false);
+
+        [Command("kartas", RunMode = RunMode.Async), Hidden]
+        [Summary("pozwala wyświetlić kartę w starym wyglądzie")]
+        [Remarks("685"), RequireWaifuCommandChannel]
+        public Task ShowLegacyCardAsync([Summary("WID")] ulong wid) => SendCardAsync(wid, true);
+
+        private async Task SendCardAsync(ulong wid, bool legacy)
         {
             using (var db = new Database.DatabaseContext(Config))
             {
@@ -531,7 +546,9 @@ namespace Sanakan.Modules
 
                 var gConfig = await db.GetCachedGuildFullConfigAsync(Context.Guild.Id);
                 var trashChannel = Context.Guild.GetTextChannel(gConfig.WaifuConfig.TrashCommandsChannel);
-                await SafeReplyAsync("", embed: await _waifu.BuildCardViewAsync(card, trashChannel, user));
+                await SafeReplyAsync("", embed: legacy
+                    ? await _waifu.BuildLegacyCardViewAsync(card, trashChannel, user)
+                    : await _waifu.BuildCardViewAsync(card, trashChannel, user));
             }
         }
 
@@ -4665,11 +4682,89 @@ namespace Sanakan.Modules
             }
         }
 
+        // inline fields go three per row: the collection, its second column and ultimate, then pvp, resources and history
+        public static EmbedBuilder BuildCardGameProfile(User bUser, DateTime now)
+        {
+            var deck = bUser.GameDeck;
+            var ultimate = deck.Cards.Count(x => x.FromFigure);
+            var rarities = new[] { Rarity.SSS, Rarity.SS, Rarity.S, Rarity.A, Rarity.B, Rarity.C, Rarity.D, Rarity.E }
+                .Select(r => (Name: r.ToString(), Count: deck.Cards.Count(x => x.Rarity == r) - (r == Rarity.SSS ? ultimate : 0)))
+                .Where(x => x.Count > 0 || x.Name != "SSS").Select(x => $"{x.Name} {x.Count}").ToList();
+            var half = (rarities.Count + 1) / 2;
+
+            var ultimateByQuality = deck.Cards.Where(x => x.FromFigure).GroupBy(x => x.Quality)
+                .OrderBy(x => x.Key).Select(x => $"{x.Key.ToName()} {x.Count()}").ToList();
+
+            var all = deck.PvPStats?.Count(x => x.Type == FightType.NewVersus) ?? 0;
+            var won = deck.PvPStats?.Count(x => x.Result == FightResult.Win && x.Type == FightType.NewVersus) ?? 0;
+            var season = deck.IsPVPSeasonalRankActive(now) ? $"{deck.GetRankName()} ({deck.SeasonalPVPRank})" : "brak";
+            var pvp = $"{won} / {all} wygranych{(all > 0 ? $" ({won * 100 / all}%)" : "")}\n"
+                + $"Globalna: {deck.GetRankName(deck.GlobalPVPRank)} ({deck.GlobalPVPRank})\nSezon: {season}";
+
+            var stats = bUser.Stats;
+            var history = $"ulepszone: {stats.UpgaredCards}\nuwolnione: {stats.ReleasedCards}\nzniszczone: {stats.DestroyedCards}\n"
+                + $"poświęcone: {stats.SacraficeCards}\nwyzwolone: {stats.UnleashedCards}\nrestarty: {deck.Cards.Sum(x => x.RestartCnt)}";
+
+            return new EmbedBuilder
+            {
+                Color = EMType.Bot.Color(),
+                Description = $"*{deck.GetUserNameStatus()}*",
+            }
+            .AddField($"Kolekcja ({deck.Cards.Count})", string.Join("\n", rarities.Take(half)), true)
+            .AddField("​", string.Join("\n", rarities.Skip(half)), true)
+            .AddField($"Ultimate ({ultimate})", ultimate > 0 ? string.Join("\n", ultimateByQuality) : "brak", true)
+            .AddField("PvP", pvp, true)
+            .AddField("Zasoby", $"CT: {deck.CTCnt}\nKarma: {deck.Karma:F}\nSkrzynia (poz. {(int)deck.ExpContainer.Level}): {deck.ExpContainer.ExpCount:0.##} exp", true)
+            .AddField("Historia kart", history, true);
+        }
+
+        // the look from before 1.4.11.10, kept on request
+        public static EmbedBuilder BuildLegacyCardGameProfile(User bUser, DateTime now)
+        {
+            var deck = bUser.GameDeck;
+            var ultimate = deck.Cards.Count(x => x.FromFigure);
+            int CountOf(Rarity r) => deck.Cards.Count(x => x.Rarity == r);
+            int QualityOf(Quality q) => deck.Cards.Count(x => x.Quality == q);
+
+            var aPvp = deck.PvPStats?.Count(x => x.Type == FightType.NewVersus);
+            var wPvp = deck.PvPStats?.Count(x => x.Result == FightResult.Win && x.Type == FightType.NewVersus);
+
+            var seasonString = deck.IsPVPSeasonalRankActive(now) ? $"{deck.GetRankName()} ({deck.SeasonalPVPRank})" : "----";
+            var globalString = $"{deck.GetRankName(deck.GlobalPVPRank)} ({deck.GlobalPVPRank})";
+
+            var sssCnt = CountOf(Rarity.SSS) - ultimate;
+            var sssString = sssCnt > 0 ? $"**SSS**: {sssCnt} " : "";
+            var ultString = ultimate > 0
+                ? $"**[{ultimate}]** **α**: {QualityOf(Quality.Alpha)} **β**: {QualityOf(Quality.Beta)} **γ**: {QualityOf(Quality.Gamma)} **Δ**: {QualityOf(Quality.Delta)} "
+                    + $"**ε**: {QualityOf(Quality.Epsilon)} **ζ**: {QualityOf(Quality.Zeta)} **η**: {QualityOf(Quality.Eta)} **Θ**: {QualityOf(Quality.Theta)} "
+                    + $"**ι**: {QualityOf(Quality.Jota)} **λ**: {QualityOf(Quality.Lambda)} **Σ**: {QualityOf(Quality.Sigma)} **Ω**: {QualityOf(Quality.Omega)}"
+                : "";
+
+            return new EmbedBuilder()
+            {
+                Color = EMType.Bot.Color(),
+                Description = $"*{deck.GetUserNameStatus()}*\n\n"
+                            + $"**Skrzynia({(int)deck.ExpContainer.Level})**: {deck.ExpContainer.ExpCount:F}\n"
+                            + $"**Uwolnione**: {bUser.Stats.ReleasedCards}\n**Zniszczone**: {bUser.Stats.DestroyedCards}\n**Poświęcone**: {bUser.Stats.SacraficeCards}\n**Ulepszone**: {bUser.Stats.UpgaredCards}\n**Wyzwolone**: {bUser.Stats.UnleashedCards}\n\n"
+                            + $"**Restartów na kartach**: {deck.Cards.Sum(x => x.RestartCnt)}\n\n"
+                            + $"**CT**: {deck.CTCnt}\n**Karma**: {deck.Karma:F}\n\n**Posiadane karty**: {deck.Cards.Count}\n"
+                            + $"{sssString}**SS**: {CountOf(Rarity.SS)} **S**: {CountOf(Rarity.S)} **A**: {CountOf(Rarity.A)} **B**: {CountOf(Rarity.B)} **C**: {CountOf(Rarity.C)} **D**: {CountOf(Rarity.D)} **E**:{CountOf(Rarity.E)}\n{ultString}\n\n"
+                            + $"**PVP** Rozegrane: {aPvp} Wygrane: {wPvp}\n**GR**: {globalString}\n**SR**: {seasonString}"
+            };
+        }
+
         [Command("karcianka", RunMode = RunMode.Async)]
         [Alias("cpf")]
         [Summary("wyświetla profil PocketWaifu")]
         [Remarks("Karna"), RequireWaifuCommandChannel]
-        public async Task ShowProfileAsync([Summary("nazwa użytkownika")] SocketGuildUser usr = null)
+        public Task ShowProfileAsync([Summary("nazwa użytkownika")] SocketGuildUser usr = null) => SendCardGameProfileAsync(usr, false);
+
+        [Command("karciankas", RunMode = RunMode.Async), Hidden]
+        [Summary("wyświetla profil PocketWaifu w starym wyglądzie")]
+        [Remarks("Karna"), RequireWaifuCommandChannel]
+        public Task ShowLegacyProfileAsync([Summary("nazwa użytkownika")] SocketGuildUser usr = null) => SendCardGameProfileAsync(usr, true);
+
+        private async Task SendCardGameProfileAsync(SocketGuildUser usr, bool legacy)
         {
             var user = (usr ?? Context.User) as SocketGuildUser;
             if (user == null) return;
@@ -4683,52 +4778,8 @@ namespace Sanakan.Modules
                     return;
                 }
 
-                var ultimate = bUser.GameDeck.Cards.Count(x => x.FromFigure);
-                var sssCnt = bUser.GameDeck.Cards.Count(x => x.Rarity == Rarity.SSS) - ultimate;
-                var ssCnt = bUser.GameDeck.Cards.Count(x => x.Rarity == Rarity.SS);
-                var sCnt = bUser.GameDeck.Cards.Count(x => x.Rarity == Rarity.S);
-                var aCnt = bUser.GameDeck.Cards.Count(x => x.Rarity == Rarity.A);
-                var bCnt = bUser.GameDeck.Cards.Count(x => x.Rarity == Rarity.B);
-                var cCnt = bUser.GameDeck.Cards.Count(x => x.Rarity == Rarity.C);
-                var dCnt = bUser.GameDeck.Cards.Count(x => x.Rarity == Rarity.D);
-                var eCnt = bUser.GameDeck.Cards.Count(x => x.Rarity == Rarity.E);
-
-                var ultimateByQuality = bUser.GameDeck.Cards.Where(x => x.FromFigure).GroupBy(x => x.Quality)
-                    .OrderBy(x => x.Key).Select(x => $"{x.Key.ToName()} {x.Count()}");
-
-                var resetCnt = bUser.GameDeck.Cards.Sum(x => x.RestartCnt);
-
-                var aPvp = bUser.GameDeck?.PvPStats?.Count(x => x.Type == FightType.NewVersus);
-                var wPvp = bUser.GameDeck?.PvPStats?.Count(x => x.Result == FightResult.Win && x.Type == FightType.NewVersus);
-
-                var seasonString = "brak";
-                if (bUser.GameDeck.IsPVPSeasonalRankActive(_time.Now()))
-                    seasonString = $"{bUser.GameDeck.GetRankName()} ({bUser.GameDeck.SeasonalPVPRank})";
-
-                var globalString = $"{bUser.GameDeck.GetRankName(bUser.GameDeck.GlobalPVPRank)} ({bUser.GameDeck.GlobalPVPRank})";
-
-                var rarities = new[] { ("SSS", sssCnt), ("SS", ssCnt), ("S", sCnt), ("A", aCnt), ("B", bCnt), ("C", cCnt), ("D", dCnt), ("E", eCnt) }
-                    .Where(x => x.Item2 > 0 || x.Item1 != "SSS").Select(x => $"{x.Item1} {x.Item2}");
-
-                var embed = new EmbedBuilder()
-                {
-                    Color = EMType.Bot.Color(),
-                    Author = new EmbedAuthorBuilder().WithUser(user),
-                    Description = $"*{bUser.GameDeck.GetUserNameStatus()}*",
-                }
-                .AddField($"Kolekcja ({bUser.GameDeck.Cards.Count} kart)", string.Join(" · ", rarities));
-
-                if (ultimate > 0)
-                    embed.AddField($"Ultimate ({ultimate})", string.Join(" · ", ultimateByQuality));
-
-                embed.AddField("PvP", $"{wPvp ?? 0} / {aPvp ?? 0} wygranych", true)
-                    .AddField("Ranga globalna", globalString, true)
-                    .AddField("Ranga sezonowa", seasonString, true)
-                    .AddField($"Skrzynia (poz. {(int)bUser.GameDeck.ExpContainer.Level})", $"{bUser.GameDeck.ExpContainer.ExpCount:0.##} exp", true)
-                    .AddField("CT", $"{bUser.GameDeck.CTCnt}", true)
-                    .AddField("Karma", $"{bUser.GameDeck.Karma:F}", true)
-                    .AddField("Historia kart", $"ulepszone {bUser.Stats.UpgaredCards} · uwolnione {bUser.Stats.ReleasedCards} · zniszczone {bUser.Stats.DestroyedCards} · "
-                        + $"poświęcone {bUser.Stats.SacraficeCards} · wyzwolone {bUser.Stats.UnleashedCards} · restarty {resetCnt}");
+                var embed = legacy ? BuildLegacyCardGameProfile(bUser, _time.Now()) : BuildCardGameProfile(bUser, _time.Now());
+                embed.Author = new EmbedAuthorBuilder().WithUser(user);
 
                 if (bUser.GameDeck?.Waifu != 0)
                 {

@@ -107,5 +107,8 @@ namespace Sanakan.Extensions
             var attr = info.Attributes.FirstOrDefault(x => x.GetType() == typeof(HiddenAttribute)) as HiddenAttribute;
             return attr?.IsHidden() ?? false;
         }
+
+        public static bool IsHidden(this CommandInfo info)
+            => info.Attributes.OfType<HiddenAttribute>().Any(x => x.IsHidden());
     }
 }

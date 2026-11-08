@@ -47,8 +47,21 @@ namespace Artifacts
 
             Assert.Equal("▶️ Figurka [12] · Rem", embed.Title);
             Assert.Contains("Δ Delta", embed.Description);
-            Assert.Contains(embed.Fields, x => x.Name == "Części (3/7)" && x.Value.Contains("✅ Głowa Δ") && x.Value.Contains("⬜ Lewa ręka"));
-            Assert.Contains(embed.Fields, x => x.Name == "Teraz budujesz: Lewa ręka" && x.Value == "Punkty konstrukcji: 80 / 680 (dla części Δ)");
+            Assert.Contains(embed.Fields, x => x.Name == "Części (3/7)" && x.Value ==
+                "🔳 Głowa · Δ\n🔳 Tułów · ε\n🔳 Prawa ręka · Δ\n🔨 Lewa ręka\n⬜ Prawa noga\n⬜ Lewa noga\n⬜ Ciuchy");
+            Assert.Contains(embed.Fields, x => x.Name == "🔨 Budujesz: Lewa ręka" && x.Value == "▰▱▱▱▱▱▱▱▱▱ 80 / 680 pkt (część Δ)");
+        }
+
+        [Fact]
+        public void View_AsksToPickTheNextPartWhenTheFocusedOneIsInstalled()
+        {
+            var figure = Figure();
+            figure.FocusedPart = FigurePart.Head;
+
+            var embed = figure.GetView().Build();
+
+            Assert.DoesNotContain("🔨", Assert.Single(embed.Fields, x => x.Name.StartsWith("Części")).Value);
+            Assert.Contains(embed.Fields, x => x.Name == "🔨 Nic nie budujesz");
         }
 
         [Fact]
