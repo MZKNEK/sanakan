@@ -162,15 +162,13 @@ namespace Sanakan.Services.PocketWaifu
                         {
                             if (watch.ElapsedMilliseconds > 60000)
                             {
-                                embed.Description = $"Timeout!";
-                                await msg.ModifyAsync(x => x.Embed = embed.Build());
+                                await msg.ModifyAsync(x => x.Embed = SafariFailed(embed, "Nie udało się wylosować zwycięzcy, karta uciekła."));
                                 return;
                             }
 
                             if (users.Count < 1)
                             {
-                                embed.Description = $"Na polowanie nie stawił się żaden łowca!";
-                                await msg.ModifyAsync(x => x.Embed = embed.Build());
+                                await msg.ModifyAsync(x => x.Embed = SafariFailed(embed, "Na polowanie nie stawił się żaden łowca, karta uciekła."));
                                 return;
                             }
 
@@ -199,6 +197,16 @@ namespace Sanakan.Services.PocketWaifu
                     await msg.RemoveAllReactionsAsync();
                 }
             });
+        }
+
+        private const string SafariFinishedTitle = "🎯 Polowanie zakończone";
+
+        public static Embed SafariFailed(EmbedBuilder embed, string reason)
+        {
+            embed.Title = SafariFinishedTitle;
+            embed.Description = reason;
+            embed.Color = new Color(128, 132, 142);
+            return embed.Build();
         }
 
         private Executable GetSafariExe(EmbedBuilder embed, IUserMessage msg, Card newCard,
@@ -237,6 +245,7 @@ namespace Sanakan.Services.PocketWaifu
                     try
                     {
                         embed.ImageUrl = await _waifu.GetSafariViewAsync(pokeImage, newCard, trashChannel);
+                        embed.Title = SafariFinishedTitle;
                         embed.Description = $"{winner.Mention} zdobył na polowaniu i wsadził do klatki:\n"
                                         + $"{newCard.ToHeartWishlist(isOnUserWishlist)}{newCard.GetString(false, false, true)}\n({newCard.Title})";
                         await msg.ModifyAsync(x => x.Embed = embed.Build());
@@ -276,8 +285,9 @@ namespace Sanakan.Services.PocketWaifu
             var time = _time.Now().AddMinutes(5);
             var embed = new EmbedBuilder
             {
+                Title = "🎯 Polowanie",
                 Color = EMType.Bot.Color(),
-                Description = $"**Polowanie zakończy się** {time.ToRemTime()}",
+                Description = $"Kliknij reakcję, żeby wziąć udział. Koniec {time.ToRemTime()}.",
                 ImageUrl = await _waifu.GetSafariViewAsync(pokeImage, trashChannel)
             };
 

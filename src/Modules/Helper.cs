@@ -90,7 +90,7 @@ namespace Sanakan.Modules
                         }
                     }
 
-                    await SafeReplyAsync(_helper.GiveHelpAboutPublicCmd(command, prefix, admin, dev));
+                    await SafeReplyAsync("", embed: _helper.GiveHelpAboutPublicCmd(command, prefix, admin, dev));
                 }
                 catch (Exception ex)
                 {

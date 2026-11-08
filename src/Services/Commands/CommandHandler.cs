@@ -117,7 +117,8 @@ namespace Sanakan.Services.Commands
                             if (!await _executor.TryAdd(res.Command, TimeSpan.FromSeconds(1)))
                             {
                                 MinuteStats.RejectedCommands.Add(false);
-                                await context.Channel.SendMessageAsync("", embed: "Odrzucono polecenie!".ToEmbedMessage(EMType.Error).Build());
+                                await context.Channel.SendMessageAsync("", embed: string.Format(CommandErrors.Busy, context.User.Mention)
+                                    .ToEmbedMessage().WithColor(CommandErrors.BusyColor).Build());
                             }
                             break;
                     }
@@ -140,13 +141,17 @@ namespace Sanakan.Services.Commands
                     break;
 
                 case CommandError.ParseFailed:
-                    await context.Channel.SendMessageAsync("", embed: $"{context.User.Mention} {result.ErrorReason}".ToEmbedMessage(EMType.Error).Build());
+                case CommandError.ObjectNotFound:
+                    var parameter = result is ParseResult parse ? parse.ErrorParameter : null;
+                    var reason = CommandErrors.Translate(result.ErrorReason, parameter?.Type, parameter?.Summary);
+                    await context.Channel.SendMessageAsync("", embed: $"{context.User.Mention} {reason}".ToEmbedMessage()
+                        .WithColor(CommandErrors.ErrorColor).Build());
                     break;
                 case CommandError.BadArgCount:
                     var cmd = _cmd.Search(context, argPos);
                     if (cmd.Commands.Count > 0)
                     {
-                        await context.Channel.SendMessageAsync(_helper.GetCommandInfo(cmd.Commands.First().Command, prefix));
+                        await context.Channel.SendMessageAsync("", embed: _helper.GetCommandInfo(cmd.Commands.First().Command, prefix));
                     }
                     break;
 

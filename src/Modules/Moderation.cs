@@ -2202,7 +2202,7 @@ namespace Sanakan.Modules
                         }
                     }
 
-                    await SafeReplyAsync(_helper.GiveHelpAboutPrivateCmd("Moderacja", command, prefix));
+                    await SafeReplyAsync("", embed: _helper.GiveHelpAboutPrivateCmd("Moderacja", command, prefix));
                 }
                 catch (Exception ex)
                 {

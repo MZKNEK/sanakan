@@ -77,7 +77,7 @@ namespace Sanakan.Services
             return $"**Lista poleceń:**\n\n**{moduleInfo.Prefix}:** " + string.Join("  ", moduleInfo.Commands);
         }
 
-        public string GiveHelpAboutPrivateCmd(string moduleName, string command, string prefix, bool throwEx = true)
+        public Embed GiveHelpAboutPrivateCmd(string moduleName, string command, string prefix, bool throwEx = true)
         {
             if (!PrivateModulesInfo.TryGetValue(moduleName, out var info))
             {
@@ -99,46 +99,33 @@ namespace Sanakan.Services
             return null;
         }
 
-        public string GetCommandInfo(CommandInfo cmd, string prefix = null)
+        public Embed GetCommandInfo(CommandInfo cmd, string prefix = null)
         {
-            string modulePrefix = GetModGroupPrefix(cmd.Module);
-            string botPrefix = prefix ?? _config.Get().Prefix;
+            var name = $"{prefix ?? _config.Get().Prefix}{GetModGroupPrefix(cmd.Module)}{cmd.Name}";
 
-            var commandBuilder = new StringBuilder($"**{botPrefix}{modulePrefix}{cmd.Name}**");
-
-            if (cmd.Parameters.Any())
+            var embed = new EmbedBuilder
             {
-                foreach (var param in cmd.Parameters.Where(param => !param.IsHidden()))
-                {
-                    commandBuilder.Append($" `{param.Name}` ");
-                }
-            }
+                Title = $"ℹ️ {name}".TrimToLength(EmbedBuilder.MaxTitleLength),
+                Color = Commands.CommandErrors.HelpColor,
+                Description = cmd.Summary,
+            };
 
-            commandBuilder.Append($" - {cmd.Summary}\n");
+            var arguments = Commands.CommandErrors.FormatArguments(cmd.Parameters.Where(x => !x.IsHidden())
+                .Select(x => (string.IsNullOrWhiteSpace(x.Summary) ? x.Name : x.Summary, x.IsOptional)));
+            if (arguments.Length > 0)
+                embed.AddField("Argumenty", arguments.TrimToLength(EmbedFieldBuilder.MaxFieldValueLength));
 
-            if (cmd.Parameters.Any())
-            {
-                foreach (var param in cmd.Parameters.Where(param => !param.IsHidden()))
-                {
-                    commandBuilder.Append($"*{param.Name}* - *{param.Summary}*\n");
-                }
-            }
+            var example = string.IsNullOrWhiteSpace(cmd.Remarks) ? name : $"{name} {cmd.Remarks}";
+            embed.AddField("Przykład", $"`{example}`".TrimToLength(EmbedFieldBuilder.MaxFieldValueLength));
 
-            if (cmd.Aliases.Count > 1)
-            {
-                commandBuilder.Append("\n**Aliasy:**\n");
-                foreach (var alias in cmd.Aliases.Where(alias => alias != cmd.Name))
-                {
-                    commandBuilder.Append($"`{alias}` ");
-                }
-            }
+            var aliases = cmd.Aliases.Where(x => x != cmd.Name).Select(x => $"`{x}`").ToList();
+            if (aliases.Count > 0)
+                embed.AddField("Aliasy", string.Join(" ", aliases).TrimToLength(EmbedFieldBuilder.MaxFieldValueLength));
 
-            commandBuilder.Append($"\n\nnp. `{botPrefix}{modulePrefix}{cmd.Name} {cmd.Remarks}`");
-
-            return commandBuilder.ToString();
+            return embed.Build();
         }
 
-        public string GiveHelpAboutPublicCmd(string command, string prefix, bool admin = false, bool dev = false)
+        public Embed GiveHelpAboutPublicCmd(string command, string prefix, bool admin = false, bool dev = false)
         {
             var matchingCommands = PublicModulesInfo
                 .SelectMany(module => module.Commands)
@@ -153,13 +140,13 @@ namespace Sanakan.Services
             if (admin)
             {
                 var res = GiveHelpAboutPrivateCmd("Moderacja", command, prefix, false);
-                if (!string.IsNullOrEmpty(res)) return res;
+                if (res != null) return res;
             }
 
             if (dev)
             {
                 var res = GiveHelpAboutPrivateCmd("Debug", command, prefix, false);
-                if (!string.IsNullOrEmpty(res)) return res;
+                if (res != null) return res;
             }
 
             throw new Exception("Polecenie nie istnieje!");
