@@ -392,53 +392,6 @@ namespace Sanakan.Services
             return null;
         }
 
-        public Embed BuildRaportInfo(IMessage message, string reportAuthor, string reason, ulong reportId)
-        {
-            var attachments = message.Attachments.Select(x => x.Url).ToList();
-            var attach = attachments.Count > 0 ? string.Join("\n", attachments) : "brak";
-
-            return new EmbedBuilder
-            {
-                Footer = new EmbedFooterBuilder().WithText($"Zgłasza: {reportAuthor}".TrimToLength(EmbedFooterBuilder.MaxFooterTextLength)),
-                Description = message.Content?.TrimToLength(2500) ?? "sam załącznik",
-                Author = new EmbedAuthorBuilder().WithUser(message.Author),
-                Color = EMType.Error.Color(),
-                Fields = new List<EmbedFieldBuilder>
-                {
-                    new EmbedFieldBuilder
-                    {
-                        IsInline = true,
-                        Name = "Kanał:",
-                        Value = message.Channel.Name,
-                    },
-                    new EmbedFieldBuilder
-                    {
-                        IsInline = true,
-                        Name = "Napisano:",
-                        Value = $"{message.GetLocalCreatedAtShortDateTime()}"
-                    },
-                    new EmbedFieldBuilder
-                    {
-                        IsInline = true,
-                        Name = "Id zgloszenia:",
-                        Value = reportId.ToString()
-                    },
-                    new EmbedFieldBuilder
-                    {
-                        IsInline = false,
-                        Name = "Powód:",
-                        Value = reason.TrimToLength(EmbedFieldBuilder.MaxFieldValueLength)
-                    },
-                    new EmbedFieldBuilder
-                    {
-                        IsInline = false,
-                        Name = "Załączniki:",
-                        Value = attach.TrimToLength(EmbedFieldBuilder.MaxFieldValueLength)
-                    }
-                }
-            }.Build();
-        }
-
         public void AppendMessage(List<Embed> embeds, MessageContent currentContent, MessageEntry nextPart, int limitEntries = 27)
         {
             if (currentContent.Length + nextPart.Length > 3000 || (limitEntries > 0 && currentContent.Entries >= limitEntries))

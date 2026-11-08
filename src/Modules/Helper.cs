@@ -602,12 +602,12 @@ namespace Sanakan.Modules
 
                 await SafeReplyAsync("", embed: "Wysłano zgłoszenie.".ToEmbedMessage(EMType.Success).Build());
 
-                string userName = $"{Context.User.Username}({Context.User.Id})";
-                var sendMsg = await raportCh.SendMessageAsync($"{repMsg.GetJumpUrl()}", embed: "prep".ToEmbedMessage().Build());
+                string userName = $"{Context.User.Username} ({Context.User.Id})";
+                var sendMsg = await raportCh.SendMessageAsync("", embed: "prep".ToEmbedMessage().Build());
 
                 try
                 {
-                    await sendMsg.ModifyAsync(x => x.Embed = _helper.BuildRaportInfo(repMsg, userName, reason, sendMsg.Id));
+                    await sendMsg.ModifyAsync(x => x.Embed = ReportFormat.Build(repMsg, userName, reason, sendMsg.Id));
 
                     var rConfig = await db.GetGuildConfigOrCreateAsync(Context.Guild.Id);
                     rConfig.Raports.Add(new Database.Models.Configuration.Raport { User = repMsg.Author.Id, Message = sendMsg.Id });

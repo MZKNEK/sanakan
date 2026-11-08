@@ -1987,24 +1987,25 @@ namespace Sanakan.Modules
                 }
 
                 var reportMsg = await reportChannel.GetMessageAsync(raport.Message);
+                var moderator = (Context.User as SocketGuildUser)?.GetUserNickInGuild() ?? Context.User.Username;
+
+                EmbedBuilder report = null;
+                try
+                {
+                    report = reportMsg?.Embeds?.FirstOrDefault()?.ToEmbedBuilder();
+                }
+                catch (Exception ex)
+                {
+                    Logger?.LogError($"Mod: report edit {raport.Id}: {ex.Message}");
+                }
+
                 if (duration == -1)
                 {
-                    if (reportMsg != null)
-                    {
-                        try
-                        {
-                            var rEmbedBuilder = reportMsg?.Embeds?.FirstOrDefault().ToEmbedBuilder();
+                    if (report != null)
+                        await SafeReplyAsync("", embed: ReportFormat.Resolve(report, false, "odrzucone", moderator).Build());
 
-                            rEmbedBuilder.Color = EMType.Info.Color();
-                            rEmbedBuilder.Fields.FirstOrDefault(x => x.Name == "Id zgloszenia:").Value = "Odrzucone!";
-                            await SafeReplyAsync("", embed: rEmbedBuilder.Build());
-                        }
-                        catch (Exception ex)
-                        {
-                            Logger?.LogError($"Mod: report edit {raport.Id}: {ex.Message}");
-                        }
+                    if (reportMsg != null)
                         await reportMsg.DeleteAsync();
-                    }
 
                     config.Raports.Remove(raport);
                     await db.SaveChangesAsync();
@@ -2013,85 +2014,87 @@ namespace Sanakan.Modules
                 if (duration < 0) return;
 
                 bool warning = duration == 0;
+                if (reason == "z raportu" && report != null)
+                    reason = ReportFormat.GetReason(report) ?? reason;
+
                 if (reportMsg != null)
-                {
-                    try
-                    {
-                        var rEmbedBuilder = reportMsg?.Embeds?.FirstOrDefault().ToEmbedBuilder();
-                        if (reason == "z raportu")
-                            reason = rEmbedBuilder?.Fields.FirstOrDefault(x => x.Name == "Powód:").Value.ToString() ?? reason;
-
-                        rEmbedBuilder.Color = warning ? EMType.Success.Color() : EMType.Bot.Color();
-                        rEmbedBuilder.Fields.FirstOrDefault(x => x.Name == "Id zgloszenia:").Value = "Rozpatrzone!";
-                        await SafeReplyAsync("", embed: rEmbedBuilder.Build());
-                    }
-                    catch (Exception ex)
-                    {
-                        Logger?.LogError($"Mod: report edit {raport.Id}: {ex.Message}");
-                    }
-
                     await reportMsg.DeleteAsync();
-                }
 
                 config.Raports.Remove(raport);
                 await db.SaveChangesAsync();
 
-                var user = Context.Guild.GetUser(raport.User);
-                if (user == null)
+                // the report is already removed, so its copy goes out even when the penalty fails
+                string decision = null;
+                try
                 {
-                    await SafeReplyAsync("", embed: $"Użytkownika nie ma na serwerze.".ToEmbedMessage(EMType.Error).Build());
-                    return;
-                }
-
-                if (user.Roles.Contains(muteRole) && !warning)
-                {
-                    await SafeReplyAsync("", embed: $"{user.Mention} już jest wyciszony.".ToEmbedMessage(EMType.Error).Build());
-                    return;
-                }
-
-                var usr = Context.User as SocketGuildUser;
-                string byWho = usr.GetUserNickInGuild();
-
-                if (warning)
-                {
-                    var dbUser = await db.GetUserOrCreateSimpleAsync(user.Id);
-
-                    ++dbUser.Warnings;
-
-                    var alreadyMuted = user.Roles.Contains(muteRole);
-                    if (dbUser.Warnings < 3 || alreadyMuted)
+                    var user = Context.Guild.GetUser(raport.User);
+                    if (user == null)
                     {
-                        await db.SaveChangesAsync();
-                        await _moderation.NotifyUserAsync(user, reason, dbUser.Warnings);
-
-                        if (alreadyMuted)
-                            await SafeReplyAsync("", embed: $"{user.Mention} już jest wyciszony, dodano tylko ostrzeżenie ({dbUser.Warnings}).".ToEmbedMessage(EMType.Bot).Build());
+                        decision = "brak, gracza nie ma na serwerze";
+                        await SafeReplyAsync("", embed: $"Użytkownika nie ma na serwerze.".ToEmbedMessage(EMType.Error).Build());
                         return;
                     }
 
-                    var multiplier = 1;
-                    if (dbUser.Warnings > 15)
+                    if (user.Roles.Contains(muteRole) && !warning)
                     {
-                        multiplier = 30;
-                    }
-                    else if (dbUser.Warnings > 10)
-                    {
-                        multiplier = 10;
-                    }
-                    else if (dbUser.Warnings > 5)
-                    {
-                        multiplier = 2;
+                        decision = "brak, gracz już jest wyciszony";
+                        await SafeReplyAsync("", embed: $"{user.Mention} już jest wyciszony.".ToEmbedMessage(EMType.Error).Build());
+                        return;
                     }
 
-                    byWho = Moderator.AutoAuthor;
-                    duration = 24 * multiplier;
-                    reason = $"przekroczono maksymalną liczbę ostrzeżeń ({dbUser.Warnings})";
+                    string byWho = moderator;
+                    string warningText = null;
+
+                    if (warning)
+                    {
+                        var dbUser = await db.GetUserOrCreateSimpleAsync(user.Id);
+
+                        ++dbUser.Warnings;
+                        warningText = $"ostrzeżenie ({dbUser.Warnings}.)";
+
+                        var alreadyMuted = user.Roles.Contains(muteRole);
+                        if (dbUser.Warnings < 3 || alreadyMuted)
+                        {
+                            await db.SaveChangesAsync();
+                            decision = alreadyMuted ? $"{warningText}, gracz już jest wyciszony" : warningText;
+                            await _moderation.NotifyUserAsync(user, reason, dbUser.Warnings);
+
+                            if (alreadyMuted)
+                                await SafeReplyAsync("", embed: $"{user.Mention} już jest wyciszony, dodano tylko ostrzeżenie ({dbUser.Warnings}).".ToEmbedMessage(EMType.Bot).Build());
+                            return;
+                        }
+
+                        var multiplier = 1;
+                        if (dbUser.Warnings > 15)
+                        {
+                            multiplier = 30;
+                        }
+                        else if (dbUser.Warnings > 10)
+                        {
+                            multiplier = 10;
+                        }
+                        else if (dbUser.Warnings > 5)
+                        {
+                            multiplier = 2;
+                        }
+
+                        byWho = Moderator.AutoAuthor;
+                        duration = 24 * multiplier;
+                        reason = $"przekroczono maksymalną liczbę ostrzeżeń ({dbUser.Warnings})";
+                    }
+
+                    var info = await _moderation.MuteUserAsync(user, muteRole, null, userRole, db, duration, reason);
+                    var mute = $"wyciszenie na {PenaltyFormat.Duration(info.Info.DurationInHours)}";
+                    decision = warningText == null ? mute : $"{warningText} i {mute}";
+                    await _moderation.NotifyAboutPenaltyAsync(user, notifChannel, info, byWho);
+
+                    await SafeReplyAsync("", embed: $"{user.Mention} został {PenaltyFormat.Applied(info)}.".ToEmbedMessage(EMType.Success).Build());
                 }
-
-                var info = await _moderation.MuteUserAsync(user, muteRole, null, userRole, db, duration, reason);
-                await _moderation.NotifyAboutPenaltyAsync(user, notifChannel, info, byWho);
-
-                await SafeReplyAsync("", embed: $"{user.Mention} został {PenaltyFormat.Applied(info)}.".ToEmbedMessage(EMType.Success).Build());
+                finally
+                {
+                    if (report != null)
+                        await SafeReplyAsync("", embed: ReportFormat.Resolve(report, true, decision ?? "błąd, kara nie została nałożona", moderator).Build());
+                }
             }
         }
 

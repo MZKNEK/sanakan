@@ -181,54 +181,40 @@ namespace Sanakan.Services
                 var ch = channel.Guild.GetTextChannel(config.LogChannel);
                 if (ch == null) return;
 
-                var jump = (newMessage == null) ? "" : $"{newMessage.GetJumpUrl()}";
-                await ch.SendMessageAsync(jump, embed: BuildMessage(oldMessage, newMessage));
+                await ch.SendMessageAsync("", embed: BuildMessage(oldMessage, newMessage, DateTimeOffset.Now));
             }
         }
 
-        private Embed BuildMessage(IMessage oldMessage, IMessage newMessage)
+        public static Embed BuildMessage(IMessage oldMessage, IMessage newMessage, DateTimeOffset now)
         {
-            string content = (newMessage == null) ? oldMessage.Content
-                : $"**Stara:**\n{oldMessage.Content}\n\n**Nowa:**\n{newMessage.Content}";
+            var deleted = newMessage == null;
+            var content = deleted ? TextOrPlaceholder(oldMessage.Content)
+                : $"**Stara:**\n{TextOrPlaceholder(oldMessage.Content)}\n\n**Nowa:**\n{TextOrPlaceholder(newMessage.Content)}";
 
-            return new EmbedBuilder
+            var embed = new EmbedBuilder
             {
-                Color = (newMessage == null) ? EMType.Warning.Color() : EMType.Info.Color(),
+                Title = deleted ? "🗑️ Usunięta wiadomość" : "✏️ Edytowana wiadomość",
+                Url = deleted ? null : newMessage.GetJumpUrl(),
+                Color = deleted ? DeletedColor : EditedColor,
                 Author = new EmbedAuthorBuilder().WithUser(oldMessage.Author, true),
-                Fields = GetFields(oldMessage, newMessage == null),
                 Description = content.TrimToLength(),
-            }.Build();
-        }
-
-        private List<EmbedFieldBuilder> GetFields(IMessage message, bool deleted)
-        {
-            var fields = new List<EmbedFieldBuilder>
-            {
-                new EmbedFieldBuilder
-                {
-                    IsInline = true,
-                    Name = deleted ? "Napisano:" : "Edytowano:",
-                    Value = message.GetLocalCreatedAtShortDateTime()
-                },
-                new EmbedFieldBuilder
-                {
-                    IsInline = true,
-                    Name = "Kanał:",
-                    Value = message.Channel.Name
-                }
-            };
-
-            if (deleted)
-            {
-                fields.Add(new EmbedFieldBuilder
-                {
-                    IsInline = true,
-                    Name = "Załączniki:",
-                    Value = message.Attachments?.Count
-                });
+                Footer = new EmbedFooterBuilder().WithText(deleted ? "Usunięto" : "Edytowano"),
+                Timestamp = deleted ? now : newMessage.EditedTimestamp ?? now,
             }
+            .AddField("Kanał", $"<#{oldMessage.Channel.Id}>", true)
+            .AddField("Napisano", $"<t:{oldMessage.CreatedAt.ToUnixTimeSeconds()}:f>", true);
 
-            return fields;
+            var attachments = oldMessage.Attachments?.Count ?? 0;
+            if (deleted && attachments > 0)
+                embed.AddField("Załączniki", attachments, true);
+
+            return embed.Build();
         }
+
+        private static readonly Color DeletedColor = new Color(229, 72, 77);
+        private static readonly Color EditedColor = new Color(91, 141, 239);
+
+        private static string TextOrPlaceholder(string content)
+            => string.IsNullOrWhiteSpace(content) ? "*brak tekstu*" : content;
     }
 }

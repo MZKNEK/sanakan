@@ -375,7 +375,8 @@ namespace Sanakan.Services.Supervisor
             {
                 case Action.Warn:
                     await message.Channel.SendMessageAsync("",
-                        embed: $"{user.Mention} zaraz przekroczysz granicę!".ToEmbedMessage(EMType.Bot).Build());
+                        embed: $"⚠️ {user.Mention} zwolnij, jeszcze trochę i dostaniesz wyciszenie za spam.".ToEmbedMessage()
+                            .WithColor(PenaltyFormat.WarningColor).Build());
                     break;
 
                 case Action.Mute:

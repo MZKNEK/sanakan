@@ -174,9 +174,6 @@ namespace Sanakan.Services
 
         private async Task UserLeftAsync(SocketGuild guild, SocketUser user)
         {
-            ulong channelId = 0;
-            ulong adminRoleId = 0;
-
             if (user.IsBot || user.IsWebhook) return;
 
             if (!_config.Get().BlacklistedGuilds.Any(x => x == guild.Id))
@@ -184,8 +181,6 @@ namespace Sanakan.Services
                 using (var db = new Database.DatabaseContext(_config))
                 {
                     var config = await db.GetCachedGuildFullConfigAsync(guild.Id);
-                    channelId = config?.GreetingChannel ?? 0;
-                    adminRoleId = config?.AdminRole ?? 0;
 
                     if (config?.GoodbyeMessage != null && config.GoodbyeMessage != "off")
                         await SendMessageAsync(ReplaceTags(user, config.GoodbyeMessage), guild.GetTextChannel(config.GreetingChannel));
@@ -204,8 +199,7 @@ namespace Sanakan.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError($"Greeting: user leave: {ex}");
-                await SendMessageAsync($"**ERR:** `{user.Id}` {guild.GetRole(adminRoleId)?.Mention}", guild.GetTextChannel(channelId));
+                _logger.LogError($"Greeting: user leave u{user.Id}: {ex}");
             }
         }
 
