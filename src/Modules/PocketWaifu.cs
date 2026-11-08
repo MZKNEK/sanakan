@@ -4694,51 +4694,42 @@ namespace Sanakan.Modules
                 var dCnt = bUser.GameDeck.Cards.Count(x => x.Rarity == Rarity.D);
                 var eCnt = bUser.GameDeck.Cards.Count(x => x.Rarity == Rarity.E);
 
-                var alCnt = bUser.GameDeck.Cards.Count(x => x.Quality == Quality.Alpha);
-                var beCnt = bUser.GameDeck.Cards.Count(x => x.Quality == Quality.Beta);
-                var gaCnt = bUser.GameDeck.Cards.Count(x => x.Quality == Quality.Gamma);
-                var deCnt = bUser.GameDeck.Cards.Count(x => x.Quality == Quality.Delta);
-                var epCnt = bUser.GameDeck.Cards.Count(x => x.Quality == Quality.Epsilon);
-                var zeCnt = bUser.GameDeck.Cards.Count(x => x.Quality == Quality.Zeta);
-                var etCnt = bUser.GameDeck.Cards.Count(x => x.Quality == Quality.Eta);
-                var thCnt = bUser.GameDeck.Cards.Count(x => x.Quality == Quality.Theta);
-                var jtCnt = bUser.GameDeck.Cards.Count(x => x.Quality == Quality.Jota);
-                var lbCnt = bUser.GameDeck.Cards.Count(x => x.Quality == Quality.Lambda);
-                var sgCnt = bUser.GameDeck.Cards.Count(x => x.Quality == Quality.Sigma);
-                var ogCnt = bUser.GameDeck.Cards.Count(x => x.Quality == Quality.Omega);
+                var ultimateByQuality = bUser.GameDeck.Cards.Where(x => x.FromFigure).GroupBy(x => x.Quality)
+                    .OrderBy(x => x.Key).Select(x => $"{x.Key.ToName()} {x.Count()}");
 
                 var resetCnt = bUser.GameDeck.Cards.Sum(x => x.RestartCnt);
 
                 var aPvp = bUser.GameDeck?.PvPStats?.Count(x => x.Type == FightType.NewVersus);
                 var wPvp = bUser.GameDeck?.PvPStats?.Count(x => x.Result == FightResult.Win && x.Type == FightType.NewVersus);
 
-                var seasonString = "----";
+                var seasonString = "brak";
                 if (bUser.GameDeck.IsPVPSeasonalRankActive(_time.Now()))
                     seasonString = $"{bUser.GameDeck.GetRankName()} ({bUser.GameDeck.SeasonalPVPRank})";
 
                 var globalString = $"{bUser.GameDeck.GetRankName(bUser.GameDeck.GlobalPVPRank)} ({bUser.GameDeck.GlobalPVPRank})";
 
-                var sssString = "";
-                if (sssCnt > 0)
-                    sssString = $"**SSS**: {sssCnt} ";
-
-                var ultString = "";
-                if (ultimate > 0)
-                    ultString = $"**[{ultimate}]** **α**: {alCnt} **β**: {beCnt} **γ**: {gaCnt} **Δ**: {deCnt} "
-                    + $"**ε**: {epCnt} **ζ**: {zeCnt} **η**: {etCnt} **Θ**: {thCnt} **ι**: {jtCnt} **λ**: {lbCnt} **Σ**: {sgCnt} **Ω**: {ogCnt}";
+                var rarities = new[] { ("SSS", sssCnt), ("SS", ssCnt), ("S", sCnt), ("A", aCnt), ("B", bCnt), ("C", cCnt), ("D", dCnt), ("E", eCnt) }
+                    .Where(x => x.Item2 > 0 || x.Item1 != "SSS").Select(x => $"{x.Item1} {x.Item2}");
 
                 var embed = new EmbedBuilder()
                 {
                     Color = EMType.Bot.Color(),
                     Author = new EmbedAuthorBuilder().WithUser(user),
-                    Description = $"*{bUser.GameDeck.GetUserNameStatus()}*\n\n"
-                                + $"**Skrzynia({(int)bUser.GameDeck.ExpContainer.Level})**: {bUser.GameDeck.ExpContainer.ExpCount:F}\n"
-                                + $"**Uwolnione**: {bUser.Stats.ReleasedCards}\n**Zniszczone**: {bUser.Stats.DestroyedCards}\n**Poświęcone**: {bUser.Stats.SacraficeCards}\n**Ulepszone**: {bUser.Stats.UpgaredCards}\n**Wyzwolone**: {bUser.Stats.UnleashedCards}\n\n"
-                                + $"**Restartów na kartach**: {resetCnt}\n\n"
-                                + $"**CT**: {bUser.GameDeck.CTCnt}\n**Karma**: {bUser.GameDeck.Karma:F}\n\n**Posiadane karty**: {bUser.GameDeck.Cards.Count}\n"
-                                + $"{sssString}**SS**: {ssCnt} **S**: {sCnt} **A**: {aCnt} **B**: {bCnt} **C**: {cCnt} **D**: {dCnt} **E**: {eCnt}\n{ultString}\n\n"
-                                + $"**PVP** Rozegrane: {aPvp} Wygrane: {wPvp}\n**GR**: {globalString}\n**SR**: {seasonString}"
-                };
+                    Description = $"*{bUser.GameDeck.GetUserNameStatus()}*",
+                }
+                .AddField($"Kolekcja ({bUser.GameDeck.Cards.Count} kart)", string.Join(" · ", rarities));
+
+                if (ultimate > 0)
+                    embed.AddField($"Ultimate ({ultimate})", string.Join(" · ", ultimateByQuality));
+
+                embed.AddField("PvP", $"{wPvp ?? 0} / {aPvp ?? 0} wygranych", true)
+                    .AddField("Ranga globalna", globalString, true)
+                    .AddField("Ranga sezonowa", seasonString, true)
+                    .AddField($"Skrzynia (poz. {(int)bUser.GameDeck.ExpContainer.Level})", $"{bUser.GameDeck.ExpContainer.ExpCount:0.##} exp", true)
+                    .AddField("CT", $"{bUser.GameDeck.CTCnt}", true)
+                    .AddField("Karma", $"{bUser.GameDeck.Karma:F}", true)
+                    .AddField("Historia kart", $"ulepszone {bUser.Stats.UpgaredCards} · uwolnione {bUser.Stats.ReleasedCards} · zniszczone {bUser.Stats.DestroyedCards} · "
+                        + $"poświęcone {bUser.Stats.SacraficeCards} · wyzwolone {bUser.Stats.UnleashedCards} · restarty {resetCnt}");
 
                 if (bUser.GameDeck?.Waifu != 0)
                 {

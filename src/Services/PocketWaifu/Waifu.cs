@@ -1432,16 +1432,18 @@ namespace Sanakan.Services.PocketWaifu
         {
             var page = 0;
             var msg = new List<Embed>();
-            var cardsStrings = list.Select(x => $"**P:** {x.CardPower:F} {x.GetString(false, false, true)}");
+            var cardsStrings = list.Select(x => $"{x.GetString(false, false, true)} · moc {x.CardPower:0}");
             var perPage = cardsStrings.SplitList(10);
+            var deckPower = list.Sum(x => x.CalculateCardPower());
 
             foreach (var p in perPage)
             {
                 msg.Add(new EmbedBuilder()
                 {
                     Color = EMType.Info.Color(),
-                    Footer = new EmbedFooterBuilder().WithText($"(S: {++page}) MOC {list.Sum(x => x.CalculateCardPower()):F}"),
-                    Description = ("**Twoje aktywne karty to**:\n\n" + string.Join("\n", p)).TrimToLength(),
+                    Title = "Aktywne karty",
+                    Footer = new EmbedFooterBuilder().WithText($"Strona {++page} z {perPage.Count} · moc talii {deckPower:0}"),
+                    Description = string.Join("\n", p).TrimToLength(),
                 }.Build());
             }
 
@@ -1922,20 +1924,14 @@ namespace Sanakan.Services.PocketWaifu
         public async Task<Embed> BuildCardViewAsync(Card card, ITextChannel trashChannel, SocketUser owner)
         {
             string imageUrl = await GetWaifuCardImageAsync(card, trashChannel);
-            string imgUrls = $"[_obrazek_]({imageUrl})\n[_możesz zmienić obrazek tutaj_]({card.GetCharacterUrl()}/edit_crossroad)";
             string ownerString = (((owner as SocketGuildUser)?.Nickname ?? owner?.GlobalName) ?? owner?.Username) ?? "????";
             bool hideScalpelInfo = card.CustomImageDate < _hiddeScalpelBeforeDate;
 
-            return new EmbedBuilder
-            {
-                ImageUrl = imageUrl,
-                Color = EMType.Info.Color(),
-                Footer = new EmbedFooterBuilder
-                {
-                    Text = $"Należy do: {ownerString}"
-                },
-                Description = $"{card.GetDesc(hideScalpelInfo, _tags, _time)}{imgUrls}".TrimToLength(2500)
-            }.Build();
+            return card.GetView(hideScalpelInfo, _tags, _time)
+                .WithImageUrl(imageUrl)
+                .WithColor(EMType.Info.Color())
+                .WithFooter($"Należy do: {ownerString}")
+                .Build();
         }
 
         public async Task<List<string>> GetWhoWantsCardsStringAsync(List<GameDeck> wishlists, bool showNames, SocketGuild guild)

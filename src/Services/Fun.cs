@@ -84,7 +84,7 @@ namespace Sanakan.Services
 
         public string GetSlotMachineInfo()
         {
-            return $"**Nastawa** / **Wartośći** \n"
+            return $"**Nastawa** / **Wartości** \n"
                     + $"Info `(wypisywanie informacji)`\n"
                     + $"Mnożnik / `1`, `2`, `3`\n"
                     + $"Stawka / `1`, `10`, `100`\n"

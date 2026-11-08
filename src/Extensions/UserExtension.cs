@@ -729,13 +729,13 @@ namespace Sanakan.Extensions
 
         public static EmbedBuilder GetStatsView(this User u, IUser user)
         {
-            string stats = $"**Wiadomości**: {u.MessagesCnt}\n**Polecenia:** {u.CommandsCnt}";
-
             return new EmbedBuilder
             {
                 Color = EMType.Info.Color(),
-                Description = $"**Statystyki** {user.Mention}:\n\n{stats}\n{u.Stats.ToView()}".TrimToLength()
-            };
+                Title = $"Statystyki · {user.GetUserNickInGuild()}".TrimToLength(EmbedBuilder.MaxTitleLength),
+            }
+            .AddField("Aktywność", $"{u.MessagesCnt} wiadomości\n{u.CommandsCnt} poleceń", true)
+            .AddStatsFields(u.Stats);
         }
 
         public static long GetRemainingExp(this User u)

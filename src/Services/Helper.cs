@@ -243,10 +243,11 @@ namespace Sanakan.Services
             string roles = "Brak";
             if (user.Roles.Count > 1)
             {
-                roles = string.Join("\n", user.Roles
+                // a field value holds at most 1024 characters, a longer one makes Discord reject the whole message
+                roles = Moderator.JoinWithinLimit(user.Roles
                     .OrderByDescending(x => x.Position)
                     .Where(x => !x.IsEveryone)
-                    .Select(x => x.Mention));
+                    .Select(x => x.Mention).ToList(), EmbedFieldBuilder.MaxFieldValueLength, " ");
             }
 
             return new List<EmbedFieldBuilder>
