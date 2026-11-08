@@ -848,7 +848,7 @@ namespace Sanakan.Extensions
             }
         }
 
-        public static void StoreExpIfPossible(this User user, double exp)
+        public static double StoreExpIfPossible(this User user, double exp)
         {
             var maxToTransfer = user.GameDeck.ExpContainer.GetMaxExpTransferToChest();
             if (maxToTransfer != -1)
@@ -859,6 +859,7 @@ namespace Sanakan.Extensions
                 if (exp < 0) exp = 0;
             }
             user.GameDeck.ExpContainer.ExpCount += exp;
+            return exp;
         }
 
         public static Card GetCard(this User user, ulong id) => user.GameDeck.Cards.FirstOrDefault(x => x.Id == id);

@@ -479,13 +479,13 @@ namespace Sanakan.Services
             }.Build();
         }
 
-        public static string JoinWithinLimit(IReadOnlyList<string> entries, int limit)
+        public static string JoinWithinLimit(IReadOnlyList<string> entries, int limit, string entrySeparator = "\n\n")
         {
             const int tailReserve = 30;
             var text = new StringBuilder();
             for (var i = 0; i < entries.Count; i++)
             {
-                var separator = text.Length > 0 ? "\n\n" : "";
+                var separator = text.Length > 0 ? entrySeparator : "";
                 if (text.Length + separator.Length + entries[i].Length + tailReserve > limit)
                 {
                     text.Append($"{separator}…i jeszcze {entries.Count - i}");

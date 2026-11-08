@@ -1036,6 +1036,8 @@ namespace Sanakan.Extensions
             _ => 0
         };
 
+        public const string ProtectedFromDiscardingInfo = "chronione są karty aktywne, w klatce, ulubione, ultimate, przeklęte, zmęczone i na wyprawie";
+
         public static bool IsProtectedFromDiscarding(this Card card, TagHelper helper) => card is null
             || card.Active
             || card.InCage

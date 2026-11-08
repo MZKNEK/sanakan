@@ -231,7 +231,7 @@ namespace Sanakan.Services.PocketWaifu
                 case EventType.AddReset:
                 {
                     ++card.RestartCnt;
-                    msg += "Zwiększenie ilości restartów karty.\n";
+                    msg += "Zwiększenie liczby restartów karty.\n";
                 }
                 break;
 

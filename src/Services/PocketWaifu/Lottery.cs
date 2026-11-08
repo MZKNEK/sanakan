@@ -123,6 +123,16 @@ namespace Sanakan.Services.PocketWaifu
             _shinden = shinden;
         }
 
+        // the experience goes to the chest, which may be disabled or almost full
+        public static string ExpRewardText(int won, int stored)
+        {
+            if (stored <= 0)
+                return $"{Polish.Count(won, "punkt", "punkty", "punktów")} doświadczenia, ale skrzynia jest nieaktywna lub pełna i przepadły!";
+
+            var text = $"{Polish.Count(stored, "punkt", "punkty", "punktów")} doświadczenia do skrzyni";
+            return stored < won ? $"{text} (z {won}, skrzynia jest pełna)!" : $"{text}!";
+        }
+
         public static List<LotteryRewardInfo> Simplify(List<LotteryRewardInfo> rewards)
         {
             var newRewards = new List<LotteryRewardInfo>();
@@ -238,11 +248,11 @@ namespace Sanakan.Services.PocketWaifu
                 case LotteryReward.ExpForChest:
                 {
                     var exp = Fun.GetOneRandomFrom(_moneyRewards);
-                    user.StoreExpIfPossible(exp);
+                    var stored = (int)user.StoreExpIfPossible(exp);
 
-                    rewardInfo.Count = exp;
-                    rewardInfo.Text = $"{exp} punktów doświadczenia!";
-                    rewardInfo.SubType = $"Punkty doświadczenia";
+                    rewardInfo.Count = stored;
+                    rewardInfo.Text = ExpRewardText(exp, stored);
+                    rewardInfo.SubType = "Punkty doświadczenia do skrzyni";
                     break;
                 }
 
@@ -316,7 +326,7 @@ namespace Sanakan.Services.PocketWaifu
                         }
                     }
 
-                    rewardInfo.Text = "odwrócenie karmy!";
+                    rewardInfo.Text = "Odwrócenie karmy!";
                     rewardInfo.SubType = "Odwrócenie karmy";
                     break;
                 }

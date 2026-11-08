@@ -1577,7 +1577,7 @@ namespace Sanakan.Services.PocketWaifu
             int groupCnt = 0;
             int startGroup = 1;
             string groupName = "";
-            string packString = "";
+            var packLines = new List<string>();
             for (int i = 0; i < packs.Count + 1; i++)
             {
                 if (i == packs.Count || groupName != packs[i].Name)
@@ -1585,7 +1585,7 @@ namespace Sanakan.Services.PocketWaifu
                     if (groupName != "")
                     {
                         string count = groupCnt > 0 ? $"{startGroup}-{startGroup + groupCnt}" : $"{startGroup}";
-                        packString += $"**[{count}]** {groupName}\n";
+                        packLines.Add($"**[{count}]** {groupName}");
                     }
                     if (i != packs.Count)
                     {
@@ -1600,7 +1600,7 @@ namespace Sanakan.Services.PocketWaifu
             return new EmbedBuilder
             {
                 Color = EMType.Info.Color(),
-                Description = $"{user.Mention} twoje pakiety:\n\n{packString.TrimToLength()}"
+                Description = $"{user.Mention} twoje pakiety:\n\n{Moderator.JoinWithinLimit(packLines, 3000, "\n")}"
             }.Build();
         }
 
@@ -1953,7 +1953,7 @@ namespace Sanakan.Services.PocketWaifu
 
         private async Task<string> GetUserNameInfoAsync(GameDeck deck, SocketGuild guild)
         {
-            return (deck.User.Shinden == 0 && deck.User.Id == 1)
+            return (deck.User.Shinden == 0 || deck.User.Id == 1)
             ? (guild.GetUser(deck.UserId) ?? _client.GetUser(deck.UserId) ?? await _client.GetUserAsync(deck.UserId)).GetUserNickInGuild()
             : $"[{(guild.GetUser(deck.UserId) ?? _client.GetUser(deck.UserId) ?? await _client.GetUserAsync(deck.UserId)).GetUserNickInGuild()}](https://shinden.pl/user/{deck.User.Shinden})";
         }
@@ -2099,6 +2099,7 @@ namespace Sanakan.Services.PocketWaifu
             var allowItems = true;
             var totalExp = _expedition.GetExpFromExpedition(duration.CalcTime, card);
             var totalItemsCnt = _expedition.GetItemsCountFromExpedition(duration.CalcTime, card, user);
+            var cardLost = false;
 
             if (CheckEventInExpedition(card.Expedition, duration))
             {
@@ -2110,7 +2111,7 @@ namespace Sanakan.Services.PocketWaifu
                 {
                     if (card.Curse == CardCurse.DereBlockade)
                     {
-                        reward += $"zmiana zablokowana przez klątwę.\n";
+                        reward += $"nic – zmianę zablokowała klątwa.\n";
                     }
                     else
                     {
@@ -2125,6 +2126,7 @@ namespace Sanakan.Services.PocketWaifu
                 else if (e == EventType.LoseCard)
                 {
                     karmaMod = 0.5;
+                    cardLost = true;
                     user.StoreExpIfPossible(totalExp);
                     if (Fun.TakeATry(6d))
                     {
@@ -2178,7 +2180,9 @@ namespace Sanakan.Services.PocketWaifu
             var minAff = 0d;
             var karmaItem = 0d;
             var missingItems = 0;
-            reward += $"Zdobywa:\n+{totalExp:F} exp ({card.ExpCnt:F})\n";
+            reward += cardLost
+                ? "Zdobywa:\nDoświadczenie z wyprawy trafiło do skrzyni (jeśli było w niej miejsce).\n"
+                : $"Zdobywa:\n+{totalExp:F} exp ({card.ExpCnt:F})\n";
 
             if (allowItems && totalItemsCnt > 0)
             {
@@ -2298,7 +2302,7 @@ namespace Sanakan.Services.PocketWaifu
         {
             var cardsForDiscarding = ids.IsNullOrEmpty() ? user.GetCardsByTag(tagId).ToList() : user.GetCards(ids).ToList();
             if (cardsForDiscarding.IsNullOrEmpty())
-                return ExecutionResult.FromError("nie posiadasz takich kart");
+                return ExecutionResult.FromError(ids.IsNullOrEmpty() ? "nie masz kart oznaczonych jako kosz." : "nie posiadasz takich kart.");
 
             var realDiscardedCount = 0;
             var ignored = new List<Card>();
@@ -2322,7 +2326,7 @@ namespace Sanakan.Services.PocketWaifu
             string lettery = ignored.Count > 1 ? "" : "y";
 
             if (ignored.Count == cardsForDiscarding.Count)
-                return ExecutionResult.FromError($"nie udało się {actionStr}ć żadnej karty, najpewniej znajdują się one w klatce lub są oznaczone jako ulubione.");
+                return ExecutionResult.FromError($"nie udało się {actionStr}ć żadnej karty – {CardExtension.ProtectedFromDiscardingInfo}.");
 
             var response = new StringBuilder().Append($"{actionStr}ł ");
             response.Append(realDiscardedCount > 1 ? Polish.Count(realDiscardedCount, "kartę", "karty", "kart") : $"kartę: {cardsForDiscarding.Where(x => !ignored.Any(c => c.Id == x.Id)).First().GetString(false, false, true)}");
@@ -2340,7 +2344,7 @@ namespace Sanakan.Services.PocketWaifu
                 return ExecutionResult.FromError("nie masz żadnych przedmiotów.");
 
             if (itemNumber <= 0 || itemNumber > itemList.Count)
-                return ExecutionResult.FromError("nie masz aż tylu przedmiotów.");
+                return ExecutionResult.FromError($"nie masz przedmiotu o numerze {itemNumber}.");
 
             var item = itemList[itemNumber - 1];
             if (item.Type.RequireImage() && detail == "1")
@@ -2388,7 +2392,7 @@ namespace Sanakan.Services.PocketWaifu
             if (activeFigure == null && item.Type.IsFigureNeededToUse())
                 return ExecutionResult.FromError("nie posiadasz aktywnej figurki!");
 
-            var str = new StringBuilder().Append($"Użyto _{item.Name}_ {((itemCnt > 1) ? $"x{itemCnt}" : "")}\n\n");
+            var str = new StringBuilder().Append($"Użyto _{item.Name}_{((itemCnt > 1) ? $" x{itemCnt}" : "")}\n\n");
             switch (item.Type)
             {
                 case ItemType.GiveTagSlot:
@@ -2421,7 +2425,7 @@ namespace Sanakan.Services.PocketWaifu
                         return ExecutionResult.FromError("część, którą próbujesz dodać ma zbyt niską jakość.");
 
                     if (!activeFigure.HasEnoughPointsToAddPart(item))
-                        return ExecutionResult.FromError($"aktywowana część ma zbyt małą ilość punktów konstrukcji, wymagana to {activeFigure.ConstructionPointsToInstall(item)}.");
+                        return ExecutionResult.FromError($"aktywowana część ma za mało punktów konstrukcji (wymagane: {activeFigure.ConstructionPointsToInstall(item)}).");
 
                     if (!activeFigure.AddPart(item))
                         return ExecutionResult.FromError("coś poszło nie tak.");
@@ -2432,8 +2436,8 @@ namespace Sanakan.Services.PocketWaifu
                 case ItemType.FigureSkeleton:
                     if (itemToExp)
                     {
-                        var expFromPart = item.ToExpForPart(activeFigure.SkeletonQuality);
-                        activeFigure.PartExp += expFromPart * itemCnt;
+                        var expFromPart = item.ToExpForPart(activeFigure.SkeletonQuality) * itemCnt;
+                        activeFigure.PartExp += expFromPart;
 
                         str.Append($"Dodano do wybranej części figurki {expFromPart:F} punktów konstrukcji. W sumie posiada ich {activeFigure.PartExp:F}.");
                         break;
@@ -2493,7 +2497,7 @@ namespace Sanakan.Services.PocketWaifu
             double karmaChange = item.Type.GetBaseKarmaChange() * itemCnt;
             double affectionInc = item.Type.GetBaseAffection() * itemCnt;
             var expMod = card.Curse == CardCurse.LoweredExperience ? 0.2 : (card.FromFigure ? 0.3 : 1);
-            var str = new StringBuilder().Append($"Użyto _{item.Name}_ {((itemCnt > 1) ? $"x{itemCnt}" : "")}{(" na " + card.GetString(false, false, true))}\n\n");
+            var str = new StringBuilder().Append($"Użyto _{item.Name}_{((itemCnt > 1) ? $" x{itemCnt}" : "")} na {card.GetString(false, false, true)}\n\n");
 
             switch (item.Type)
             {
@@ -2554,7 +2558,7 @@ namespace Sanakan.Services.PocketWaifu
                         card.StarStyle = newStyle;
                         break;
                     }
-                    return ExecutionResult.FromError("Nie rozpoznano typu gwiazdki!");
+                    return ExecutionResult.FromError("Nie rozpoznano typu gwiazdki! Dostępne: `pelna`, `pusta`.");
 
                 case ItemType.ChangeBorderVariant:
                     if (int.TryParse(detail, out var variant))
@@ -2573,12 +2577,14 @@ namespace Sanakan.Services.PocketWaifu
                 case ItemType.ChangeCardImage:
                     var charIf = await _shinden.GetCharacterInfoAsync(card.Character);
                     if (charIf == null)
-                        return ExecutionResult.FromError("Nie odnaleziono postaci na shinden!");
+                        return ExecutionResult.FromError("Nie odnaleziono postaci na Shindenie!");
 
                     int tidx = 0;
                     var urls = charIf.Pictures.GetPicList();
+                    // only a preview: an error result keeps the item unused and does not count toward the daily mission
                     if (string.Equals(detail, "lista", StringComparison.CurrentCultureIgnoreCase))
-                        return ExecutionResult.FromSuccess("Obrazki: \n" + string.Join("\n", urls.Select(x => $"{++tidx}: {x}")), EMType.Info);
+                        return ExecutionResult.FromError(urls.Count == 0 ? "Ta postać nie ma obrazków na Shindenie."
+                            : "Obrazki:\n" + Moderator.JoinWithinLimit(urls.Select(x => $"{++tidx}: {x}").ToList(), 3000, "\n"), EMType.Info);
 
                     if (!int.TryParse(detail, out var urlIdx) || urlIdx <= 0 || urlIdx > urls.Count)
                         return ExecutionResult.FromError("Nie odnaleziono obrazka!");
@@ -2800,12 +2806,15 @@ namespace Sanakan.Services.PocketWaifu
                     if (itemCnt == 1 && Enum.TryParse<Dere>(detail, out var targetDere))
                     {
                         if (targetDere == Dere.Yato || targetDere == Dere.Yami || targetDere == Dere.Raito)
-                            return ExecutionResult.FromError("nie można zmienić charakteru na ten który został wybrany!");
+                            return ExecutionResult.FromError("nie można wylosować charakteru Yami, Raito ani Yato!");
 
                         itemCnt = (int)RerollDereUntil(card, targetDere, item.Count, RandomizeDere);
                         karmaChange *= itemCnt;
                         affectionInc *= itemCnt;
-                        str.Append($"Użyto {Polish.Count(itemCnt, "przedmiot", "przedmioty", "przedmiotów")} by osiągnąć cel!\n");
+                        var used = Polish.Count(itemCnt, "przedmiot", "przedmioty", "przedmiotów");
+                        str.Append(card.Dere == targetDere
+                            ? $"Użyto {used}, by osiągnąć cel!\n"
+                            : $"Użyto {used}, ale nie udało się wylosować charakteru {targetDere}.\n");
                     }
                     else
                     {
