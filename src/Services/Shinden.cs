@@ -383,13 +383,9 @@ namespace Sanakan.Services
 
         public async Task<Stream> GetSiteStatisticAsync(ulong shindenId, SocketGuildUser user)
         {
-            var userInfo = await GetUserInfoAsync(shindenId);
-            if (userInfo.Info is null) throw new Exception(userInfo.Code.ToString());
+            var (info, resLR, resLW) = await GetSiteStatisticDataAsync(shindenId);
 
-            var resLR = await GetUserLastReadedAsync(shindenId);
-            var resLW = await GetUserLastWatchedAsync(shindenId);
-
-            using (var image = await _img.GetSiteStatisticAsync(userInfo.Info, GetSiteStatisticColor(user), resLR, resLW))
+            using (var image = await _img.GetSiteStatisticAsync(info, GetSiteStatisticColor(user), resLR, resLW))
             {
                 return image.ToWebpStream();
             }
@@ -397,23 +393,33 @@ namespace Sanakan.Services
 
         public async Task<List<(string Name, Stream Image)>> GetSiteStatisticVariantsAsync(ulong shindenId, SocketGuildUser user)
         {
-            var userInfo = await GetUserInfoAsync(shindenId);
-            if (userInfo.Info is null) throw new Exception(userInfo.Code.ToString());
-
-            var resLR = await GetUserLastReadedAsync(shindenId);
-            var resLW = await GetUserLastWatchedAsync(shindenId);
+            var (info, resLR, resLW) = await GetSiteStatisticDataAsync(shindenId);
             var color = GetSiteStatisticColor(user);
 
             var variants = new[] { ("pelny", true, true), ("anime", true, false), ("manga", false, true), ("pusty", false, false) };
             var images = new List<(string Name, Stream Image)>();
             foreach (var (name, anime, manga) in variants)
             {
-                using var image = await _img.GetSiteStatisticAsync(new PartialUserInfo(userInfo.Info, anime, manga),
+                using var image = await _img.GetSiteStatisticAsync(new PartialUserInfo(info, anime, manga),
                     color, manga ? resLR : null, anime ? resLW : null);
 
                 images.Add((name, image.ToWebpStream()));
             }
             return images;
+        }
+
+        public async Task<(IUserInfo Info, List<ILastReaded> LastReaded, List<ILastWatched> LastWatched)> GetSiteStatisticDataAsync(ulong shindenId)
+        {
+            // the requests do not depend on each other and none of them throws, failures are logged and give null
+            var info = GetUserInfoAsync(shindenId);
+            var lastReaded = GetUserLastReadedAsync(shindenId);
+            var lastWatched = GetUserLastWatchedAsync(shindenId);
+            await Task.WhenAll(info, lastReaded, lastWatched);
+
+            var userInfo = await info;
+            if (userInfo.Info is null) throw new Exception(userInfo.Code.ToString());
+
+            return (userInfo.Info, await lastReaded, await lastWatched);
         }
 
         private static Discord.Color GetSiteStatisticColor(SocketGuildUser user)

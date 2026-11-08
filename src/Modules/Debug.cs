@@ -1795,7 +1795,7 @@ namespace Sanakan.Modules
 
             using (var db = new Database.DatabaseContext(Config))
             {
-                var botUser = await db.GetCachedFullUserAsync(usr.Id);
+                var botUser = await db.GetCachedNoGameDeckUserAsync(usr.Id);
                 if (botUser == null || botUser.Shinden == 0)
                 {
                     await SafeReplyAsync("", embed: "Ta osoba nie połączyła konta bota z kontem na stronie.".ToEmbedMessage(EMType.Error).Build());
