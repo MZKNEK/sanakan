@@ -173,76 +173,44 @@ namespace Sanakan.Services
 
         private EmbedBuilder GetFullConfiguration(GuildOptions config, SocketCommandContext context)
         {
-            var modsRolesCnt = config.ModeratorRoles?.Count;
-            string mods = (modsRolesCnt > 0) ? $"({modsRolesCnt}) `config mods`" : "--";
+            var guild = context.Guild;
+            var prefix = config.Prefix ?? _config.Get().Prefix;
+            string Role(ulong id) => guild.GetRole(id)?.Mention ?? "brak";
+            string Channel(ulong? id) => guild.GetTextChannel(id ?? 0)?.Mention ?? "brak";
+            string List(int? count, string type) => count > 0 ? $"{count} · `{prefix}mod config {type}`" : "brak";
 
-            var wExpCnt = config.ChannelsWithoutExp?.Count;
-            string wExp = (wExpCnt > 0) ? $"({wExpCnt}) `config wexp`" : "--";
+            var general = $"Prefiks: `{prefix}`{(config.Prefix == null ? " (domyślny)" : "")}\n"
+                + $"Nadzór: {(config.Supervision ? "włączony" : "wyłączony")} · Chaos: {(config.ChaosMode ? "włączony" : "wyłączony")}\n"
+                + $"Always-ban: {Channel(config.AlwaysBanChannel)}";
 
-            var wCntCnt = config.IgnoredChannels?.Count;
-            string wCnt = (wCntCnt > 0) ? $"({wCntCnt}) `config ignch`" : "--";
+            var roles = $"Admin: {Role(config.AdminRole)} · Semi-admin: {Role(config.SemiAdminRole)} · Tester: {Role(config.TesterRole)}\n"
+                + $"Gracz: {Role(config.UserRole)} · Wyciszenie: {Role(config.MuteRole)} · Wyciszenie moda: {Role(config.ModMuteRole)}\n"
+                + $"Globalne emotki: {Role(config.GlobalEmotesRole)} · Nitro: {Role(config.NitroRole)} · Waifu: {Role(config.WaifuRole)}";
 
-            var wSupCnt = config.ChannelsWithoutSupervision?.Count;
-            string wSup = (wSupCnt > 0) ? $"({wSupCnt}) `config wsup`" : "--";
+            var channels = $"Kary: {Channel(config.NotificationChannel)} · Powitania: {Channel(config.GreetingChannel)} · Zgłoszenia: {Channel(config.RaportChannel)}\n"
+                + $"Todo: {Channel(config.ToDoChannel)} · NSFW: {Channel(config.NsfwChannel)} · Log wiadomości: {Channel(config.LogChannel)}";
 
-            var cmdChCnt = config.CommandChannels?.Count;
-            string cmdCh = (cmdChCnt > 0) ? $"({cmdChCnt}) `config cmd`" : "--";
+            var waifu = config.WaifuConfig;
+            var gameChannels = $"Rynek: {Channel(waifu?.MarketChannel)} · Safari: {Channel(waifu?.SpawnChannel)} · Pojedynki: {Channel(waifu?.DuelChannel)}\n"
+                + $"Śmietnik walk: {Channel(waifu?.TrashFightChannel)} · Śmietnik safari: {Channel(waifu?.TrashSpawnChannel)} · Śmietnik poleceń: {Channel(waifu?.TrashCommandsChannel)}";
 
-            var rolPerLvlCnt = config.RolesPerLevel?.Count;
-            string roles = (rolPerLvlCnt > 0) ? $"({rolPerLvlCnt}) `config role`" : "--";
+            var lists = $"Role moderatorów: {List(config.ModeratorRoles?.Count, "mods")}\n"
+                + $"Kanały ignorowane: {List(config.IgnoredChannels?.Count, "ignch")}\n"
+                + $"Kanały bez doświadczenia: {List(config.ChannelsWithoutExp?.Count, "wexp")}\n"
+                + $"Kanały bez nadzoru: {List(config.ChannelsWithoutSupervision?.Count, "wsup")}\n"
+                + $"Kanały poleceń: {List(config.CommandChannels?.Count, "cmd")}\n"
+                + $"Kanały poleceń gry: {List(waifu?.CommandChannels?.Count, "wcmd")}\n"
+                + $"Kanały walk gry: {List(waifu?.FightChannels?.Count, "wfight")}\n"
+                + $"Role za poziom: {List(config.RolesPerLevel?.Count, "role")}\n"
+                + $"Role automatyczne: {List(config.SelfRoles?.Count, "selfrole")}\n"
+                + $"Krainy: {List(config.Lands?.Count, "lands")}";
 
-            var selfRolesCnt = config.SelfRoles?.Count;
-            string selfRoles = (selfRolesCnt > 0) ? $"({selfRolesCnt}) `config selfrole`" : "--";
-
-            var landsCnt = config.Lands?.Count;
-            string lands = (landsCnt > 0) ? $"({landsCnt}) `config lands`" : "--";
-
-            var wCmdCnt = config.WaifuConfig?.CommandChannels?.Count;
-            string wcmd = (wCmdCnt > 0) ? $"({wCmdCnt}) `config wcmd`" : "--";
-
-            var wFightCnt = config.WaifuConfig?.FightChannels?.Count;
-            string wfCh = (wFightCnt > 0) ? $"({wFightCnt}) `config wfight`" : "--";
-
-            return new EmbedBuilder
-            {
-                Color = EMType.Bot.Color(),
-                Description = $"**Prefix:** {config.Prefix ?? "--"}\n"
-                            + $"**Nadzór:** {config.Supervision.GetYesNo()}\n"
-                            + $"**Chaos:** {config.ChaosMode.GetYesNo()}\n"
-                            + $"**Admin:** {context.Guild.GetRole(config.AdminRole)?.Mention ?? "--"}\n"
-                            + $"**SemiAdmin:** {context.Guild.GetRole(config.SemiAdminRole)?.Mention ?? "--"}\n"
-                            + $"**Tester:** {context.Guild.GetRole(config.TesterRole)?.Mention ?? "--"}\n"
-                            + $"**User:** {context.Guild.GetRole(config.UserRole)?.Mention ?? "--"}\n"
-                            + $"**Mute:** {context.Guild.GetRole(config.MuteRole)?.Mention ?? "--"}\n"
-                            + $"**ModMute:** {context.Guild.GetRole(config.ModMuteRole)?.Mention ?? "--"}\n"
-                            + $"**Emote:** {context.Guild.GetRole(config.GlobalEmotesRole)?.Mention ?? "--"}\n"
-                            + $"**Nitro:** {context.Guild.GetRole(config.NitroRole)?.Mention ?? "--"}\n"
-                            + $"**Waifu:** {context.Guild.GetRole(config.WaifuRole)?.Mention ?? "--"}\n\n"
-
-                            + $"**W Market:** {context.Guild.GetTextChannel(config.WaifuConfig?.MarketChannel ?? 0)?.Mention ?? "--"}\n"
-                            + $"**W Spawn:** {context.Guild.GetTextChannel(config.WaifuConfig?.SpawnChannel ?? 0)?.Mention ?? "--"}\n"
-                            + $"**W Duel:** {context.Guild.GetTextChannel(config.WaifuConfig?.DuelChannel ?? 0)?.Mention ?? "--"}\n"
-                            + $"**W Trash Fight:** {context.Guild.GetTextChannel(config.WaifuConfig?.TrashFightChannel ?? 0)?.Mention ?? "--"}\n"
-                            + $"**W Trash Spawn:** {context.Guild.GetTextChannel(config.WaifuConfig?.TrashSpawnChannel ?? 0)?.Mention ?? "--"}\n"
-                            + $"**W Trash Cmd:** {context.Guild.GetTextChannel(config.WaifuConfig?.TrashCommandsChannel ?? 0)?.Mention ?? "--"}\n"
-                            + $"**Powiadomienia:** {context.Guild.GetTextChannel(config.NotificationChannel)?.Mention ?? "--"}\n"
-                            + $"**Przywitalnia:** {context.Guild.GetTextChannel(config.GreetingChannel)?.Mention ?? "--"}\n"
-                            + $"**Raport:** {context.Guild.GetTextChannel(config.RaportChannel)?.Mention ?? "--"}\n"
-                            + $"**Todos:** {context.Guild.GetTextChannel(config.ToDoChannel)?.Mention ?? "--"}\n"
-                            + $"**Nsfw:** {context.Guild.GetTextChannel(config.NsfwChannel)?.Mention ?? "--"}\n"
-                            + $"**Log:** {context.Guild.GetTextChannel(config.LogChannel)?.Mention ?? "--"}\n\n"
-
-                            + $"**W Cmd**: {wcmd}\n"
-                            + $"**W Fight**: {wfCh}\n"
-                            + $"**Role modów**: {mods}\n"
-                            + $"**Bez zliczania**: {wCnt}\n"
-                            + $"**Bez exp**: {wExp}\n"
-                            + $"**Bez nadzoru**: {wSup}\n"
-                            + $"**Polecenia**: {cmdCh}\n"
-                            + $"**Role na lvl**: {roles}\n"
-                            + $"**AutoRole**: {selfRoles}\n"
-                            + $"**Krainy**: {lands}".TrimToLength()
-            };
+            return new EmbedBuilder { Color = EMType.Bot.Color() }
+                .AddField("Ogólne", general)
+                .AddField("Role", roles.TrimToLength(EmbedFieldBuilder.MaxFieldValueLength))
+                .AddField("Kanały", channels.TrimToLength(EmbedFieldBuilder.MaxFieldValueLength))
+                .AddField("Kanały gry", gameChannels.TrimToLength(EmbedFieldBuilder.MaxFieldValueLength))
+                .AddField("Listy", lists.TrimToLength(EmbedFieldBuilder.MaxFieldValueLength));
         }
 
         private EmbedBuilder GetSelfRolesConfig(GuildOptions config, SocketCommandContext context)
