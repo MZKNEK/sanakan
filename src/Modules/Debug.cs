@@ -617,8 +617,10 @@ namespace Sanakan.Modules
                 }
             }
 
-            var sendMsg = $"Loteria kart. Zareaguj {emote}, aby wziąć udział.\n\nKoniec {time.ToRemTime()}".ToEmbedMessage(EMType.Bot);
-            if (progress > -1) sendMsg.Footer = (new EmbedFooterBuilder()).WithText($"{progress+1}/{howMuch}");
+            var sendMsg = $"Do wygrania **{Polish.Count(count, "kartę", "karty", "kart")}**. Zareaguj {emote}, aby wziąć udział.\n\nKoniec {time.ToRemTime()}"
+                .ToEmbedMessage(EMType.Bot).WithTitle("🎰 Loteria kart");
+            var progressText = LotteryProgress(progress, howMuch);
+            if (progressText != null) sendMsg.Footer = new EmbedFooterBuilder().WithText(progressText);
             var msg = await SafeReplyAsync(mention, embed: sendMsg.Build());
             await SafeAddReactionToMsg(msg, emote);
 
@@ -635,13 +637,13 @@ namespace Sanakan.Modules
                 {
                     if (watch.ElapsedMilliseconds > 60000)
                     {
-                        await msg.ModifyAsync(x => x.Embed = "Timeout!".ToEmbedMessage(EMType.Error).Build());
+                        await msg.ModifyAsync(x => x.Embed = LotteryNoWinner("Nie udało się wylosować zwycięzcy."));
                         return;
                     }
 
                     if (users.Count < 1)
                     {
-                        await msg.ModifyAsync(x => x.Embed = "Na loterię nie stawił się żaden użytkownik!".ToEmbedMessage(EMType.Error).Build());
+                        await msg.ModifyAsync(x => x.Embed = LotteryNoWinner("Nikt nie wziął udziału."));
                         return;
                     }
 
@@ -670,14 +672,20 @@ namespace Sanakan.Modules
                         return;
                     }
 
-                    var (cardsIds, wonSSS) = won.Value;
+                    var (cardsIds, scalpels, ultimates, anyWishlist) = won.Value;
                     await msg.DeleteAsync();
 
                     QueryCache.ExpireTag(new string[] { CacheTags.User(id), CacheTags.User(winner.Id) });
 
-                    var msgType = wonSSS ? EMType.Warning : EMType.Success;
-                    var embToSend =  $"Loterię wygrywa {winner.Mention} i otrzymuje:\n\n{string.Join("\n", cardsIds.OrderBy(x => x))}".TrimToLength().ToEmbedMessage(msgType);
-                    if (progress > -1) embToSend.Footer = new EmbedFooterBuilder().WithText($"{progress+1}/{howMuch}");
+                    var special = scalpels > 0 || ultimates > 0;
+                    var footer = string.Join(" · ", new[] { LotteryProgress(progress, howMuch), anyWishlist ? "💚 karta z listy życzeń" : null }.Where(x => x != null));
+                    var embToSend = new EmbedBuilder
+                    {
+                        Title = LotteryResultTitle(scalpels, ultimates),
+                        Color = special ? LotterySpecialColor : LotteryWinColor,
+                        Description = $"{winner.Mention} wygrywa {Polish.Count(cardsIds.Count, "kartę", "karty", "kart")}:\n\n{string.Join("\n", cardsIds)}".TrimToLength(),
+                    };
+                    if (footer.Length > 0) embToSend.Footer = new EmbedFooterBuilder().WithText(footer);
                     msg = await SafeReplyAsync(embed: embToSend.Build());
 
                     try
@@ -711,7 +719,30 @@ namespace Sanakan.Modules
             await msg.RemoveAllReactionsAsync();
         }
 
-        internal static async Task<(List<string> Cards, bool WonSSS)?> TransferLotteryCardsAsync(Database.DatabaseContext db, ulong giverId, IUser winner, uint count, ISystemTime time)
+        internal static readonly Color LotteryWinColor = new Color(59, 165, 93);
+        internal static readonly Color LotterySpecialColor = new Color(232, 197, 71);
+        internal static readonly Color LotteryNoWinnerColor = new Color(128, 132, 142);
+        internal const string LotterySpecialMark = "🌟 ";
+
+        internal static string LotteryProgress(long progress, uint howMuch) => progress > -1 ? $"Loteria {progress + 1} z {howMuch}" : null;
+
+        internal static string LotteryResultTitle(int scalpels, int ultimates)
+        {
+            var parts = new List<string>();
+            if (scalpels > 0) parts.Add(scalpels == 1 ? "skalpel" : Polish.Count(scalpels, "skalpel", "skalpele", "skalpeli"));
+            if (ultimates > 0) parts.Add(ultimates == 1 ? "karta ultimate" : Polish.Count(ultimates, "karta ultimate", "karty ultimate", "kart ultimate"));
+
+            return parts.Count == 0 ? "🎉 Loteria rozstrzygnięta" : $"🌟 Loteria rozstrzygnięta: {string.Join(" i ", parts)}!";
+        }
+
+        internal static Embed LotteryNoWinner(string reason) => new EmbedBuilder
+        {
+            Title = "🎰 Loteria bez zwycięzcy",
+            Color = LotteryNoWinnerColor,
+            Description = $"{reason} Karty zostają u rozdającego.",
+        }.Build();
+
+        internal static async Task<(List<string> Cards, int Scalpels, int Ultimates, bool AnyWishlist)?> TransferLotteryCardsAsync(Database.DatabaseContext db, ulong giverId, IUser winner, uint count, ISystemTime time)
         {
             // the giver can hold tens of thousands of cards, so only ids are read and just the drawn cards are loaded
             var idsToSelect = await db.Cards.AsQueryable().Where(x => x.GameDeckId == giverId).Select(x => x.Id).ToListAsync();
@@ -731,14 +762,17 @@ namespace Sanakan.Modules
 
             var cards = await db.Cards.AsQueryable().Include(x => x.Tags).Where(x => drawn.Contains(x.Id)).ToDictionaryAsync(x => x.Id);
 
-            bool wonSSS = false;
-            var cardsIds = new List<string>();
+            int scalpels = 0, ultimates = 0;
+            bool anyWishlist = false;
+            var cardsIds = new List<(string Line, int Special, int WhoWants, ulong Id)>();
             foreach (var wid in drawn)
             {
                 if (!cards.TryGetValue(wid, out var thisCard))
                     continue;
 
-                if (thisCard.Rarity == Rarity.SSS) wonSSS = true;
+                var isScalpel = !string.IsNullOrEmpty(thisCard.CustomImage);
+                if (isScalpel) scalpels++;
+                if (thisCard.FromFigure) ultimates++;
 
                 thisCard.Active = false;
                 thisCard.InCage = false;
@@ -748,7 +782,10 @@ namespace Sanakan.Modules
                 thisCard.GameDeckId = winnerUser.GameDeck.Id;
 
                 bool isOnUserWishlist = await winnerUser.GameDeck.RemoveCharacterFromWishListAsync(thisCard.Character, db);
-                cardsIds.Add($"{thisCard.ToHeartWishlist(isOnUserWishlist)}{thisCard.GetString(false, false, true, hideStats: true)}");
+                anyWishlist |= isOnUserWishlist;
+                var mark = isScalpel || thisCard.FromFigure ? LotterySpecialMark : "";
+                cardsIds.Add(($"{mark}{thisCard.ToHeartWishlist(isOnUserWishlist)}{thisCard.GetString(false, false, true, hideStats: true)}",
+                    (isScalpel ? 1 : 0) + (thisCard.FromFigure ? 1 : 0), thisCard.WhoWantsCount, thisCard.Id));
                 winnerUser.GameDeck.RemoveCardFromWishList(thisCard.Id);
 
                 db.AddActivityFromNewCard(thisCard, isOnUserWishlist, time, winnerUser, winner.GetUserNickInGuild());
@@ -758,7 +795,9 @@ namespace Sanakan.Modules
                 .WithUser(winnerUser, winner).WithType(Database.Models.ActivityType.WonLottery).Build());
 
             await db.SaveChangesAsync();
-            return (cardsIds, wonSSS);
+            // the most special and most wanted cards go to the top of the results
+            var ordered = cardsIds.OrderByDescending(x => x.Special).ThenByDescending(x => x.WhoWants).ThenBy(x => x.Id).Select(x => x.Line).ToList();
+            return (ordered, scalpels, ultimates, anyWishlist);
         }
 
         [Command("tranc"), Priority(1), RequireDev]

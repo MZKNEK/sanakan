@@ -179,7 +179,7 @@ namespace Artifacts
             Assert.Equal(new[] { PlayerId, OtherId, ThirdId }, forDefault);
         }
 
-        private void SeedLotteryCards(ulong giverId, int count, Rarity rarity = Rarity.A)
+        private void SeedLotteryCards(ulong giverId, int count, Rarity rarity = Rarity.A, string customImage = null, bool fromFigure = false, int whoWants = 0, string name = "lottery")
         {
             using var db = Open();
             var tag = new Tag { Name = $"t{giverId}", GameDeckId = giverId };
@@ -188,8 +188,9 @@ namespace Artifacts
             {
                 db.Cards.Add(new Card
                 {
-                    Name = $"lottery {i}", Character = (ulong)(100 + i), GameDeckId = giverId, Rarity = rarity,
+                    Name = $"{name} {i}", Character = (ulong)(100 + i), GameDeckId = giverId, Rarity = rarity, WhoWantsCount = whoWants,
                     Active = true, InCage = true, Expedition = CardExpedition.NormalItemWithExp, Tags = new List<Tag> { tag },
+                    CustomImage = customImage, FromFigure = fromFigure,
                 });
             }
             db.SaveChanges();
@@ -201,7 +202,7 @@ namespace Artifacts
             return db.Cards.AsQueryable().AsNoTracking().Include(x => x.Tags).Where(x => x.GameDeckId == id).ToList();
         }
 
-        private async Task<(List<string> Cards, bool WonSSS)?> LotteryAsync(ulong giverId, ulong winnerId, uint count)
+        private async Task<(List<string> Cards, int Scalpels, int Ultimates, bool AnyWishlist)?> LotteryAsync(ulong giverId, ulong winnerId, uint count)
         {
             using var db = Open();
             return await Sanakan.Modules.Debug.TransferLotteryCardsAsync(db, giverId, Users.Discord(winnerId), count, new FixedTime { Value = _now });
@@ -224,7 +225,9 @@ namespace Artifacts
 
             Assert.NotNull(won);
             Assert.Equal(4, won.Value.Cards.Count);
-            Assert.False(won.Value.WonSSS);
+            Assert.Equal(0, won.Value.Scalpels);
+            Assert.Equal(0, won.Value.Ultimates);
+            Assert.True(won.Value.AnyWishlist);
             Assert.Empty(CardsOf(PlayerId));
 
             var winnerCards = CardsOf(OtherId);
@@ -259,13 +262,48 @@ namespace Artifacts
         }
 
         [Fact]
-        public async Task Lottery_ReportsSSS()
+        public async Task Lottery_MarksScalpelsAndUltimatesButNotSSS()
         {
             SeedUser(PlayerId);
             SeedUser(OtherId);
             SeedLotteryCards(PlayerId, 1, Rarity.SSS);
+            SeedLotteryCards(PlayerId, 2, customImage: "https://cdn.example/scalpel.png");
+            SeedLotteryCards(PlayerId, 1, fromFigure: true);
 
-            Assert.True((await LotteryAsync(PlayerId, OtherId, 1)).Value.WonSSS);
+            var won = (await LotteryAsync(PlayerId, OtherId, 4)).Value;
+
+            Assert.Equal(2, won.Scalpels);
+            Assert.Equal(1, won.Ultimates);
+            Assert.False(won.AnyWishlist);
+            Assert.Equal(3, won.Cards.Count(x => x.StartsWith(Sanakan.Modules.Debug.LotterySpecialMark)));
+        }
+
+        [Fact]
+        public async Task Lottery_PutsSpecialAndMostWantedCardsFirst()
+        {
+            SeedUser(PlayerId);
+            SeedUser(OtherId);
+            SeedLotteryCards(PlayerId, 1, whoWants: 1, name: "malo");
+            SeedLotteryCards(PlayerId, 1, whoWants: 9, name: "duzo");
+            SeedLotteryCards(PlayerId, 1, customImage: "https://cdn.example/s.png", name: "skalpel");
+            SeedLotteryCards(PlayerId, 1, customImage: "https://cdn.example/u.png", fromFigure: true, name: "oba");
+
+            var cards = (await LotteryAsync(PlayerId, OtherId, 4)).Value.Cards;
+
+            Assert.Contains("oba", cards[0]);
+            Assert.Contains("skalpel", cards[1]);
+            Assert.Contains("duzo", cards[2]);
+            Assert.Contains("malo", cards[3]);
+        }
+
+        [Theory]
+        [InlineData(0, 0, "🎉 Loteria rozstrzygnięta")]
+        [InlineData(1, 0, "🌟 Loteria rozstrzygnięta: skalpel!")]
+        [InlineData(2, 1, "🌟 Loteria rozstrzygnięta: 2 skalpele i karta ultimate!")]
+        [InlineData(0, 5, "🌟 Loteria rozstrzygnięta: 5 kart ultimate!")]
+        public void LotteryResultTitle_HighlightsScalpelsAndUltimates(int scalpels, int ultimates, string expected)
+        {
+            Assert.Equal(expected, Sanakan.Modules.Debug.LotteryResultTitle(scalpels, ultimates));
         }
 
         [Fact]
