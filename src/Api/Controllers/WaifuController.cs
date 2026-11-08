@@ -415,10 +415,9 @@ namespace Sanakan.Api.Controllers
                 }
 
                 var profileTags = new[] { CacheTags.UserProfile(id), CacheTags.User(discordId) };
+                var galleryTag = _tags.GetTag(TagType.Gallery);
 
-                var cached = await db.Users.AsQueryable().AsSplitQuery().Where(x => id != 0 && x.Shinden == id).Include(x => x.GameDeck).ThenInclude(x => x.Tags).Include(x => x.GameDeck)
-                    .ThenInclude(x => x.PvPStats).Include(x => x.GameDeck).ThenInclude(x => x.Cards).ThenInclude(x => x.Tags).Include(x => x.Stats).AsNoTracking()
-                    .FromCacheAsync(db, $"user-site-profile-{id}", expireTime, profileTags);
+                var cached = await QueryCache.GetOrLoadAsync(db, $"user-site-profile-{id}", () => LoadSiteProfileUserAsync(db, id, galleryTag.Id), expireTime, profileTags);
                 var user = cached.FirstOrDefault();
 
                 if (user == null)
@@ -475,7 +474,6 @@ namespace Sanakan.Api.Controllers
                 var galleryOrder = string.IsNullOrEmpty(user.GameDeck.GalleryOrderedIds) ? new List<ulong>()
                     : user.GameDeck.GalleryOrderedIds.Split(" ").Select(x => UserSiteProfile.TryParseIds(x)).ToList();
 
-                var galleryTag = _tags.GetTag(TagType.Gallery);
                 var tags = user.GameDeck.GetOrderedTags().Select(x => new TagIdPair { Name = x.Name, Id = x.Id }).ToList();
 
                 tags.Add(galleryTag.ToView());
@@ -522,6 +520,57 @@ namespace Sanakan.Api.Controllers
 
                 return profile;
             }
+        }
+
+        // Full rows of every card are the bulk of a profile load, so statistics are computed from narrow rows
+        // and only the cards the profile shows are loaded whole. They replace their narrow copies in GameDeck.Cards.
+        private async Task<List<User>> LoadSiteProfileUserAsync(Database.DatabaseContext db, ulong shindenId, ulong galleryTagId)
+        {
+            var users = await db.Users.AsQueryable().AsSplitQuery().Where(x => shindenId != 0 && x.Shinden == shindenId).Include(x => x.GameDeck).ThenInclude(x => x.Tags)
+                .Include(x => x.GameDeck).ThenInclude(x => x.PvPStats).Include(x => x.Stats).AsNoTracking().ToListAsync();
+
+            var user = users.FirstOrDefault();
+            if (user == null)
+                return users;
+
+            var deck = user.GameDeck;
+            var galleryTag = new Tag { Id = galleryTagId };
+            var narrow = await db.Cards.AsQueryable().AsNoTracking().Where(x => x.GameDeckId == deck.Id).Select(x => new
+            {
+                x.Id, x.Character, x.Rarity, x.Quality, x.BorderOverflow, x.BorderVariant, x.RestartCnt, x.WhoWantsCount, x.AWhoWantsCount,
+                x.Unique, x.FromFigure, x.CardPower, x.IsAnimatedImage, x.Expedition,
+                HasCustomImage = x.CustomImage != null && x.CustomImage != "",
+                HasCustomBorder = x.CustomBorder != null && x.CustomBorder != "",
+                InGallery = x.Tags.Any(t => t.Id == galleryTagId),
+            }).ToListAsync();
+
+            // the statistics only check whether the custom image and border are set, the placeholders never reach a view;
+            // ties in the statistics are resolved by card order, which was the id order of the full load (sorted here, SQLite cannot order by ulong)
+            deck.Cards = narrow.OrderBy(x => x.Id).Select(x => new Card
+            {
+                Id = x.Id, Character = x.Character, Rarity = x.Rarity, Quality = x.Quality, BorderOverflow = x.BorderOverflow, BorderVariant = x.BorderVariant,
+                RestartCnt = x.RestartCnt, WhoWantsCount = x.WhoWantsCount, AWhoWantsCount = x.AWhoWantsCount, Unique = x.Unique, FromFigure = x.FromFigure,
+                CardPower = x.CardPower, IsAnimatedImage = x.IsAnimatedImage, Expedition = x.Expedition, GameDeckId = deck.Id,
+                CustomImage = x.HasCustomImage ? "set" : null,
+                CustomBorder = x.HasCustomBorder ? "set" : null,
+                Tags = x.InGallery ? new List<Tag> { galleryTag } : new List<Tag>(),
+            }).ToList();
+
+            var details = _waifu.GetCardsDetails(deck.Cards);
+            var shown = deck.GetOrderedGalleryCardsUnlimited(galleryTagId).Take(deck.CardsInGallery)
+                .Concat(details.CardsOnExpeditions)
+                .Append(details.MostPowerfulCard).Append(details.CardWithMostRestarts).Append(deck.GetWaifuCard())
+                .Where(x => x != null).Select(x => x.Id).Distinct().ToList();
+
+            var full = await db.Cards.AsQueryable().AsNoTracking().Include(x => x.Tags).Where(x => x.GameDeckId == deck.Id && shown.Contains(x.Id))
+                .ToDictionaryAsync(x => x.Id);
+
+            deck.User = user;
+            foreach (var card in full.Values)
+                card.GameDeck = deck;
+
+            deck.Cards = deck.Cards.Select(x => full.TryGetValue(x.Id, out var card) ? card : x).ToList();
+            return users;
         }
 
         /// <summary>
