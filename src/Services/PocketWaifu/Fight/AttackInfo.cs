@@ -7,5 +7,6 @@ namespace Sanakan.Services.PocketWaifu.Fight
         public double Dmg { get; set; }
         public ulong AtkCardId { get; set; }
         public ulong DefCardId { get; set; }
+        public bool Critical { get; set; }
     }
 }

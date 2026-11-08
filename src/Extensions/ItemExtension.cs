@@ -109,6 +109,8 @@ namespace Sanakan.Extensions
                     return $"Pozwala wytworzyć kartę postaci spoza bazy shindena.";
                 case ItemType.ChangeBorderVariant:
                     return $"Zmienia wygląd ramki jeśli ona na to pozwala.";
+                case ItemType.IncreasePrecision:
+                    return $"Zwiększa precyzję karty, czyli szansę na trafienie krytyczne.";
 
                 default:
                     return "Brak opisu.";
@@ -166,6 +168,8 @@ namespace Sanakan.Extensions
                     return $"Karta już nie jest przeklęta!";
                 case ItemType.ChangeBorderVariant:
                     return $"Zmieniono wygląd ramki na: {card.BorderVariant}";
+                case ItemType.IncreasePrecision:
+                    return $"Precyzja karty wynosi teraz {card.CritChance:0.#}%.";
 
                 default:
                     return "";
@@ -277,6 +281,8 @@ namespace Sanakan.Extensions
                     return $"Magiczna rózga";
                 case ItemType.ChangeBorderVariant:
                     return $"Taśma izolacyjna";
+                case ItemType.IncreasePrecision:
+                    return $"Okulary";
 
                 default:
                     return "Brak";
@@ -404,6 +410,7 @@ namespace Sanakan.Extensions
                 case ItemType.IncreaseUltimateDefence:
                 case ItemType.IncreaseUltimateHealth:
                 case ItemType.IncreaseUltimateAll:
+                case ItemType.IncreasePrecision:
                 case ItemType.CardFragment:
                 case ItemType.BloodOfYourWaifu:
                 case ItemType.BetterIncreaseUpgradeCnt:
@@ -532,6 +539,7 @@ namespace Sanakan.Extensions
                 case ItemType.GiveTagSlot:
                 case ItemType.NotAnItem:
                 case ItemType.ChangeBorderVariant:
+                case ItemType.IncreasePrecision:
                     return true;
 
                 default:
@@ -569,6 +577,7 @@ namespace Sanakan.Extensions
             ItemType.CreationItemBase         => 222,
             ItemType.CheckCurse               => 82,
             ItemType.ChangeBorderVariant      => 4,
+            ItemType.IncreasePrecision        => 61,
             ItemType.CardFragment             => 0,
             _ => 1
         };
@@ -793,6 +802,7 @@ namespace Sanakan.Extensions
                 Title = card.Title,
                 Character = card.Character,
                 BodyQuality = Quality.Broken,
+                CritChance = card.CritChance,
                 RestartCnt = card.RestartCnt,
                 HeadQuality = Quality.Broken,
                 PAS = PreAssembledFigure.None,

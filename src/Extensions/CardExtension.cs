@@ -162,15 +162,17 @@ namespace Sanakan.Extensions
         private static readonly double[] _dereTakenMultiplier = _deres.Select(d => _deres.Sum(a => Waifu.GetDereDmgMultiplier(a, d) * DereWeight(a)) / _deres.Sum(DereWeight)).ToArray();
 
         // a maxed normal SSS card keeps the power it had with the old formula
-        private static readonly double _powerScale = 310 / RawCardPower(999, 999, 99, false, 1, 1);
+        private static readonly double _powerScale = 310 / RawCardPower(999, 999, 99, false, 0, 1, 1);
 
-        private static double RawCardPower(int health, int attack, int defence, bool ultimate, double dealtMultiplier, double takenMultiplier)
+        private static double RawCardPower(int health, int attack, int defence, bool ultimate, double critChance, double dealtMultiplier, double takenMultiplier)
         {
             double dealt = 0, taken = 0, weights = 0;
             foreach (var r in _powerReferences)
             {
                 var ultimateInvolved = ultimate || r.Ultimate;
-                dealt += Waifu.GetBaseDamage(attack, r.Defence, ultimateInvolved) / r.Health * r.Weight;
+                var hit = (1 - critChance) * Waifu.GetBaseDamage(attack, r.Defence, ultimateInvolved)
+                    + critChance * Waifu.GetBaseDamage(attack, r.Defence, ultimateInvolved, true);
+                dealt += hit / r.Health * r.Weight;
                 taken += Waifu.GetBaseDamage(r.Attack, defence, ultimateInvolved) * r.Weight;
                 weights += r.Weight;
             }
@@ -185,7 +187,7 @@ namespace Sanakan.Extensions
         {
             var dere = (int)card.Dere;
             var cardPower = _powerScale * RawCardPower(card.GetHealthWithPenalty(), card.GetAttackWithBonus(), card.GetDefenceWithBonus(),
-                card.FromFigure, _dereDealtMultiplier[dere], _dereTakenMultiplier[dere]);
+                card.FromFigure, card.CritChance / 100, _dereDealtMultiplier[dere], _dereTakenMultiplier[dere]);
 
             if (cardPower < 1)
                 cardPower = 1;
@@ -355,7 +357,7 @@ namespace Sanakan.Extensions
                 Color = EMType.Info.Color(),
                 Description = $"{card.GetIdWithUrl()} {card.GetNameWithUrl()} · **{card.GetCardRealRarity()}**\n_{card.Title ?? "????"}_",
             }
-            .AddField("Walka", $"❤ {card.GetHealthLine()}\n🔥 {card.GetAttackWithBonus()}\n🛡 {card.GetDefenceWithBonus()}", true)
+            .AddField("Walka", $"❤ {card.GetHealthLine()}\n🔥 {card.GetAttackWithBonus()}\n🛡 {card.GetDefenceWithBonus()}\n🎯 {card.CritChance:0.#}%", true)
             .AddField("Postać", $"{card.Dere}\n{card.GetAffectionString()}\nZmęczenie: {card.GetFatigueString(time).ToLower()}", true)
             .AddField("Rozwój", growth, true)
             .AddField("Kolekcja", $"{card.GetWhoWantsLine()} · postać {card.Character}\nTagi: {card.GetTagsLine(tags)}".TrimToLength(EmbedFieldBuilder.MaxFieldValueLength));
@@ -366,7 +368,7 @@ namespace Sanakan.Extensions
             var more = new List<string>
             {
                 $"{(card.Active ? "Aktywna" : "Nieaktywna")} · {(card.InCage ? "w klatce" : "poza klatką")} · {(card.IsTradable ? "można wymieniać" : "nie można wymieniać")}",
-                $"Numer: {card.GetIdWithUrl()} · postać {card.Character} · restarty: {card.RestartCnt}",
+                $"Numer: {card.GetIdWithUrl()} · postać {card.Character} · restarty: {card.RestartCnt} · ulepszenia: {card.UpgradesCnt}",
                 card.GetWhoWantsLine(),
                 $"Zdobyta: {card.Source.GetString()}, {card.CreationDate.ToShortDateTime()}",
             };
@@ -388,7 +390,7 @@ namespace Sanakan.Extensions
             .AddField("😴 Zmęczenie", card.GetFatigueString(time), true)
             .AddField("📈 Doświadczenie", $"{card.ExpCnt:0.##} / {card.ExpToUpgrade():0.##}", true)
             .AddField("⚡ Moc", $"{card.CalculateCardPower():0}", true)
-            .AddField("⬆️ Ulepszenia", $"{card.UpgradesCnt}", true)
+            .AddField("🎯 Precyzja", $"{card.CritChance:0.#}%", true)
             .AddField("Więcej", string.Join("\n", more).TrimToLength(EmbedFieldBuilder.MaxFieldValueLength));
         }
 
@@ -882,6 +884,19 @@ namespace Sanakan.Extensions
 
         public static StarStyle Parse(this StarStyle star, string s)
             => star.TryParse(s, out var type) ? type : throw new Exception("Couldn't parse input!");
+
+        public const double PrecisionPerItem = 0.1;
+        public const double MaxCritChance = 25;
+        public const double MaxUltimateCritChance = 40;
+
+        public static double GetMaxCritChance(this Card card) => card.FromFigure ? MaxUltimateCritChance : MaxCritChance;
+
+        // glasses beyond the limit would be used up without changing anything
+        public static long UsefulPrecisionItems(this Card card)
+            => Math.Max(0, (long)Math.Floor((card.GetMaxCritChance() - card.CritChance) / PrecisionPerItem + 1e-6));
+
+        public static void AddCritChance(this Card card, long items)
+            => card.CritChance = Math.Min(card.GetMaxCritChance(), Math.Round(card.CritChance + items * PrecisionPerItem, 1));
 
         public const int MaxUltimateAttack = 9999;
         public const int MaxUltimateDefence = 9999;

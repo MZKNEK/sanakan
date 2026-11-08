@@ -705,6 +705,7 @@ namespace Sanakan.Services.PocketWaifu
                 new ItemWithCost(11999, ItemType.BloodOfYourWaifu.ToItem()),
                 new ItemWithCost(1599,  ItemType.ChangeStarType.ToItem()),
                 new ItemWithCost(11999, ItemType.RandomBoosterPackSingleE.ToItem()),
+                new ItemWithCost(999,   ItemType.IncreasePrecision.ToItem()),
             };
         }
 
@@ -1073,8 +1074,8 @@ namespace Sanakan.Services.PocketWaifu
 
         static public FightWinner GetFightWinner(Card card1, Card card2)
         {
-            var FAcard1 = GetFA(card1, card2);
-            var FAcard2 = GetFA(card2, card1);
+            var FAcard1 = GetExpectedFA(card1, card2);
+            var FAcard2 = GetExpectedFA(card2, card1);
 
             var c1Health = card1.GetHealthWithPenalty();
             var c2Health = card2.GetHealthWithPenalty();
@@ -1090,7 +1091,7 @@ namespace Sanakan.Services.PocketWaifu
 
         public const double UltimateMinDamageShare = 0.15;
 
-        static public double GetFA(Card target, Card enemy)
+        static public double GetFA(Card target, Card enemy, bool critical = false)
         {
             double atk1 = target.GetAttackWithBonus();
             if (!target.HasImage()) atk1 -= atk1 * 20 / 100;
@@ -1098,24 +1099,37 @@ namespace Sanakan.Services.PocketWaifu
             double def2 = enemy.GetDefenceWithBonus();
             if (!enemy.HasImage()) def2 -= def2 * 20 / 100;
 
-            return GetBaseDamage(atk1, def2, target.FromFigure || enemy.FromFigure) * GetDereDmgMultiplier(target, enemy);
+            return GetBaseDamage(atk1, def2, target.FromFigure || enemy.FromFigure, critical) * GetDereDmgMultiplier(target, enemy);
         }
 
+        // average damage with critical hits counted in, for fights resolved without rolling
+        static public double GetExpectedFA(Card target, Card enemy)
+        {
+            var chance = target.CritChance / 100;
+            return (1 - chance) * GetFA(target, enemy) + chance * GetFA(target, enemy, true);
+        }
+
+        public const double CriticalMultiplier = 1.5;
+
         // normal cards treat defence as a percentage, once an ultimate card fights it is subtracted from the attack
-        static public double GetBaseDamage(double attack, double defence, bool ultimateInvolved)
+        static public double GetBaseDamage(double attack, double defence, bool ultimateInvolved, bool critical = false)
         {
             double damage;
             if (!ultimateInvolved)
             {
+                // halving a percentage defence would multiply the damage many times, so a critical hit only multiplies it
                 if (defence > 99) defence = 99;
                 damage = attack * (100 - defence) / 100;
             }
             else
             {
+                if (critical) defence /= 2;
                 // defence above the enemy's attack would make an ultimate card almost immortal
                 damage = Math.Max(attack - defence, attack * UltimateMinDamageShare);
             }
-            return damage < 1 ? 1 : damage;
+
+            if (damage < 1) damage = 1;
+            return critical ? damage * CriticalMultiplier : damage;
         }
 
         static public int RandomizeAttack(Rarity rarity)
@@ -1336,9 +1350,9 @@ namespace Sanakan.Services.PocketWaifu
             return nDef;
         }
 
-        private double GetDmgDeal(Card c1, Card c2)
+        private double GetDmgDeal(Card c1, Card c2, bool critical)
         {
-            return GetFA(c1, c2);
+            return GetFA(c1, c2, critical);
         }
 
         public string GetDeathLog(FightHistory fight, List<PlayerInfo> players)
@@ -1358,7 +1372,18 @@ namespace Sanakan.Services.PocketWaifu
                     deathLog += "\n";
                 }
             }
-            return deathLog;
+            return deathLog + CriticalHitsLine(fight, players);
+        }
+
+        public static string CriticalHitsLine(FightHistory fight, List<PlayerInfo> players)
+        {
+            var critical = fight.Rounds.SelectMany(x => x.Fights).Where(x => x.Critical).Select(x => x.AtkCardId).ToList();
+            if (critical.Count == 0)
+                return "";
+
+            var perPlayer = players.Select(p => (Name: p.User?.Username ?? "????", Count: critical.Count(id => p.Cards.Any(c => c.Id == id))))
+                .Where(x => x.Count > 0).Select(x => $"{x.Name} {x.Count}");
+            return $"💥 Trafienia krytyczne: {string.Join(" · ", perPlayer)}\n";
         }
 
         public FightHistory MakeFightAsync(List<PlayerInfo> players, bool oneCard = false)
@@ -1388,7 +1413,8 @@ namespace Sanakan.Services.PocketWaifu
                     if (enemies.Count() > 0)
                     {
                         var target = Fun.GetOneRandomFrom(enemies);
-                        var dmg = GetDmgDeal(card.Card, target.Card);
+                        var critical = Fun.TakeATry(card.Card.CritChance);
+                        var dmg = GetDmgDeal(card.Card, target.Card, critical);
                         target.Health -= dmg;
 
                         if (target.Health < 1)
@@ -1409,7 +1435,8 @@ namespace Sanakan.Services.PocketWaifu
                         {
                             Dmg = dmg,
                             AtkCardId = card.Card.Id,
-                            DefCardId = target.Card.Id
+                            DefCardId = target.Card.Id,
+                            Critical = critical,
                         });
                     }
                 }
@@ -2520,6 +2547,14 @@ namespace Sanakan.Services.PocketWaifu
                         return ExecutionResult.FromError($"tej karcie wystarczy już {Polish.Count(useful, "pigułka", "pigułki", "pigułek")}, kolejne by się zmarnowały.");
                     break;
 
+                case ItemType.IncreasePrecision:
+                    var usefulGlasses = card.UsefulPrecisionItems();
+                    if (usefulGlasses == 0)
+                        return ExecutionResult.FromError($"precyzja tej karty jest już maksymalna ({card.GetMaxCritChance():0.#}%).");
+                    if (usefulGlasses < itemCnt)
+                        return ExecutionResult.FromError($"tej karcie wystarczy już {Polish.Count(usefulGlasses, "para okularów", "pary okularów", "par okularów")}, kolejne by się zmarnowały.");
+                    break;
+
                 default:
                     break;
             }
@@ -2584,6 +2619,10 @@ namespace Sanakan.Services.PocketWaifu
                     card.AttackBonus += itemCnt * 4;
                     card.HealthBonus += itemCnt * 4;
                     card.DefenceBonus += itemCnt * 4;
+                    break;
+
+                case ItemType.IncreasePrecision:
+                    card.AddCritChance(itemCnt);
                     break;
 
                 case ItemType.ChangeStarType:

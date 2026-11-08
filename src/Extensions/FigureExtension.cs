@@ -160,6 +160,7 @@ namespace Sanakan.Extensions
                 Expedition = CardExpedition.None,
                 LastIdOwner = figure.GameDeckId,
                 RestartCnt = figure.RestartCnt,
+                CritChance = figure.CritChance,
                 ExpeditionDate = creationTime,
                 PAS = PreAssembledFigure.None,
                 Character = figure.Character,

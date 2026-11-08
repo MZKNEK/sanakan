@@ -77,6 +77,10 @@ namespace Sanakan.Api.Models
         /// </summary>
         public double CardPower { get; set; }
         /// <summary>
+        /// Precyzja, czyli szansa na trafienie krytyczne w procentach
+        /// </summary>
+        public double CritChance { get; set; }
+        /// <summary>
         /// Poziom relacji na karcie
         /// </summary>
         public string Affection { get; set; }
@@ -251,6 +255,7 @@ namespace Sanakan.Api.Models
                 UltimateQuality = card.Quality,
                 CreatedAt = card.CreationDate,
                 CardPower = card.CardPower,
+                CritChance = card.CritChance,
                 DiscordId = card.GameDeckId,
                 WhoWantsCount = kcs,
                 ActiveWhoWantsCount = card.AWhoWantsCount,

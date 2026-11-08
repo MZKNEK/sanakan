@@ -57,7 +57,7 @@ namespace Artifacts
             Assert.StartsWith("**[[123456](", embed.Description);
             Assert.Equal(new[] { "Walka", "Postać", "Rozwój", "Kolekcja" }, embed.Fields.Select(x => x.Name));
             Assert.All(embed.Fields.Take(3), x => Assert.True(x.Inline));
-            Assert.Equal("❤ 500\n🔥 210\n🛡 80", embed.Fields[0].Value);
+            Assert.Equal("❤ 500\n🔥 210\n🛡 80\n🎯 0%", embed.Fields[0].Value);
             Assert.Equal("Tsundere\nObojętność\nZmęczenie: brak", embed.Fields[1].Value);
             Assert.EndsWith("\nUlepszenia: 1", embed.Fields[2].Value);
             Assert.StartsWith("KC: 57 (12 aktywnych) · postać 2135\nTagi: ", embed.Fields[3].Value);

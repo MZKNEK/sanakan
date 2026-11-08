@@ -151,6 +151,7 @@ namespace Sanakan.Database.Models
         public int AttackBonus { get; set; }
         public int HealthBonus { get; set; }
         public int DefenceBonus { get; set; }
+        public double CritChance { get; set; }
         public Quality QualityOnStart { get; set; }
         public PreAssembledFigure PAS { get; set; }
         public int BorderVariant { get; set; }

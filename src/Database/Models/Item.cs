@@ -54,7 +54,8 @@ namespace Sanakan.Database.Models
         CreationItemBase = 45,
         NotAnItem = 46,
         CheckCurse = 47,
-        ChangeBorderVariant = 48
+        ChangeBorderVariant = 48,
+        IncreasePrecision = 49
     }
 
     public class Item
