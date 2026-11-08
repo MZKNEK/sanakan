@@ -20,12 +20,6 @@ namespace Sanakan.Preconditions
             PerUser, Global
         }
 
-        public enum ResType
-        {
-            Nothing, MinSec, HourMin
-        }
-
-        private readonly ResType _responseType;
         private readonly DelayMethod _method;
         private readonly TimeSpan _time;
 
@@ -33,65 +27,75 @@ namespace Sanakan.Preconditions
         private const int MaxEntries = 2000;
         private static readonly TimeSpan EntryMaxAge = TimeSpan.FromHours(24);
 
-        public DelayNextUseBy(double time_min, ResType resType = ResType.MinSec, DelayMethod method = DelayMethod.PerUser)
+        public DelayNextUseBy(double time_min, DelayMethod method = DelayMethod.PerUser)
         {
             _time = TimeSpan.FromMinutes(time_min);
-            _responseType = resType;
             _method = method;
         }
 
         public async override Task<PreconditionResult> CheckPermissionsAsync(ICommandContext context, CommandInfo command, IServiceProvider services)
         {
-#if DEBUG
-            await Task.CompletedTask;
-            return PreconditionResult.FromSuccess();
-#else
             var user = context.User as SocketGuildUser;
             if (user == null) return PreconditionResult.FromError($"To polecenie działa tylko z poziomu serwera.");
 
-            if (user.GuildPermissions.Administrator)
-                return PreconditionResult.FromSuccess();
+            var availableAt = await TryUseAsync(user, command.Name, _time, (IConfig)services.GetService(typeof(IConfig)),
+                (ISystemTime)services.GetService(typeof(ISystemTime)), _method);
 
-            var config = (IConfig)services.GetService(typeof(IConfig));
+            return availableAt == null ? PreconditionResult.FromSuccess() : PreconditionResult.FromError(CooldownMessage(user, availableAt.Value));
+        }
+
+        public static string CooldownMessage(Discord.IUser user, DateTime availableAt)
+            => $"{user.Mention} tego polecenia możesz znowu użyć {availableAt.ToRemTime()}.";
+
+        // marks the use and returns null when the command can be used now, otherwise the time it will be available again
+        public static async Task<DateTime?> TryUseAsync(SocketGuildUser user, string commandName, TimeSpan time, IConfig config, ISystemTime clock,
+            DelayMethod method = DelayMethod.PerUser)
+        {
+#if DEBUG
+            await Task.CompletedTask;
+            return null;
+#else
+            if (user.GuildPermissions.Administrator)
+                return null;
+
             using (var db = new Database.DatabaseContext(config))
             {
-                var gConfig = await db.GetCachedGuildFullConfigAsync(context.Guild.Id);
+                var gConfig = await db.GetCachedGuildFullConfigAsync(user.Guild.Id);
                 if (gConfig != null)
                 {
-                    var role = context.Guild.GetRole(gConfig.AdminRole);
+                    var role = user.Guild.GetRole(gConfig.AdminRole);
                     if (role != null)
                     {
                         if (user.Roles.Any(x => x.Id == role.Id))
-                            return PreconditionResult.FromSuccess();
+                            return null;
                     }
 
-                    var srole = context.Guild.GetRole(gConfig.SemiAdminRole);
+                    var srole = user.Guild.GetRole(gConfig.SemiAdminRole);
                     if (srole != null)
                     {
                         if (user.Roles.Any(x => x.Id == srole.Id))
-                            return PreconditionResult.FromSuccess();
+                            return null;
                     }
 
-                    var trole = context.Guild.GetRole(gConfig.TesterRole);
+                    var trole = user.Guild.GetRole(gConfig.TesterRole);
                     if (trole != null)
                     {
                         if (user.Roles.Any(x => x.Id == trole.Id))
-                            return PreconditionResult.FromSuccess();
+                            return null;
                     }
                 }
             }
 
-            var tService = (ISystemTime)services.GetService(typeof(ISystemTime));
-            var cmdKey = BuildKey(command.Name, _method, user.Id);
-            var now = tService.Now();
+            var cmdKey = BuildKey(commandName, method, user.Id);
+            var now = clock.Now();
 
             // atomowe sprawdzenie i aktualizacja licznika (CAS) - dwa równoległe wywołania nie przejdą jednocześnie
             while (true)
             {
                 if (_entries.TryGetValue(cmdKey, out var lastUse))
                 {
-                    if (lastUse + _time > now)
-                        return Denied(context, (lastUse + _time) - now);
+                    if (lastUse + time > now)
+                        return lastUse + time;
 
                     if (_entries.TryUpdate(cmdKey, now, lastUse))
                         break;
@@ -104,29 +108,15 @@ namespace Sanakan.Preconditions
 
             Cleanup(now);
 
-            return PreconditionResult.FromSuccess();
+            return null;
 #endif
         }
 
-        private PreconditionResult Denied(ICommandContext context, TimeSpan left)
-        {
-            switch (_responseType)
-            {
-                case ResType.Nothing:
-                    return PreconditionResult.FromError($"{context.User.Mention} tego polecenia możesz użyć raz na jakiś czas.");
+        // gives the cooldown back when the command did not do its job
+        public static void Release(string commandName, ulong userId, DelayMethod method = DelayMethod.PerUser)
+            => _entries.TryRemove(BuildKey(commandName, method, userId), out _);
 
-                case ResType.HourMin:
-                    var min = (int)left.TotalMinutes;
-                    return PreconditionResult.FromError($"{context.User.Mention} tego polecenia możesz użyć za {min / 60}h {min % 60}m.");
-
-                default:
-                case ResType.MinSec:
-                    var sec = (int)left.TotalSeconds;
-                    return PreconditionResult.FromError($"{context.User.Mention} tego polecenia możesz użyć za {sec / 60}m {sec % 60}s.");
-            }
-        }
-
-        private void Cleanup(DateTime now)
+        private static void Cleanup(DateTime now)
         {
             if (_entries.Count <= MaxEntries)
                 return;

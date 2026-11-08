@@ -15,6 +15,7 @@ namespace Sanakan.Services
             Directory.CreateDirectory(CardsMiniatures);
             Directory.CreateDirectory(CardsInProfiles);
             Directory.CreateDirectory(FakeCardsAsProfiles);
+            Directory.CreateDirectory(SiteStatistics);
         }
 
         public static string Cards = $"{BaseOutput}/Cards";
@@ -25,6 +26,7 @@ namespace Sanakan.Services
         public static string SavedData = $"{BaseOutput}/Saved";
         public static string LocalCardData = $"{SavedData}/Card";
         public static string ShindenCache = $"{SavedData}/Shinden";
+        public static string SiteStatistics = $"{SavedData}/Site";
 
         public static string GetResource(string path) => $"{PicDir}/{path}";
         public static bool IsLocal(string path) => !string.IsNullOrEmpty(path) && (path.StartsWith(BaseOutput) || path.StartsWith(PicDir));

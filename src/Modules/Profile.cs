@@ -248,14 +248,20 @@ namespace Sanakan.Modules
             await _session.TryAddSession(session);
         }
 
-        [Command("profil", RunMode = RunMode.Async)]
+        public const string ProfileCommand = "profil";
+        public static readonly TimeSpan ProfileCooldown = TimeSpan.FromMinutes(5);
+
+        public static string SavedProfileNote(DateTime savedAt, DateTime availableAt)
+            => $"Zapisany profil z {savedAt.ToRemTime()} · nowy wygenerujesz {availableAt.ToRemTime()}";
+
+        [Command(ProfileCommand, RunMode = RunMode.Async)]
         [Alias("profile")]
         [Summary("wyświetla profil użytkownika")]
-        [Remarks("karna"), DelayNextUseBy(5)]
+        [Remarks("karna")]
         public async Task ShowUserProfileAsync([Summary("nazwa użytkownika")]SocketGuildUser user = null)
         {
             var usr = user ?? Context.User as SocketGuildUser;
-            if (usr == null) return;
+            if (usr == null || Context.User is not SocketGuildUser caller) return;
 
             var isBot =  usr.Id == Context.Client.CurrentUser.Id;
             var searchId = isBot ? 1 : usr.Id;
@@ -279,6 +285,15 @@ namespace Sanakan.Modules
 
                 var url = Api.Models.CardFinalView.GetProfileUrl(dataUser.Id);
                 var profileUri = $"{Dir.FakeCardsAsProfiles}/{dataUser.Id}.webp";
+
+                var availableAt = await DelayNextUseBy.TryUseAsync(caller, ProfileCommand, ProfileCooldown, Config, _time);
+                if (availableAt != null)
+                {
+                    if (!await TrySendSavedImageAsync(profileUri, savedAt => SavedProfileNote(savedAt, availableAt.Value)))
+                        await SafeReplyAsync("", embed: DelayNextUseBy.CooldownMessage(caller, availableAt.Value).ToEmbedMessage(EMType.Error).Build());
+                    return;
+                }
+
                 dataUser.GameDeck.Cards = (await db.GetCachedUserGameDeckAsync(searchId)).Cards;
                 using (var image = await _profile.GetProfileImageAsync(usr, dataUser, rankingPosition))
                 {

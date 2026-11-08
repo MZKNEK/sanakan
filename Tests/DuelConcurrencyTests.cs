@@ -207,8 +207,23 @@ namespace Artifacts
             Assert.Equal(0, player.GameDeck.PVPCoins);
         }
 
+        [Fact]
+        public async Task DailyLimit_ResetsAtTheNextMidnight_AlsoAfterMidnight()
+        {
+            _time.Value = new DateTime(2026, 1, 1, 0, 30, 0);
+            var jobs = new List<IExecutable>();
+            var executor = new Mock<IExecutor>();
+            executor.Setup(x => x.TryAdd(It.IsAny<IExecutable>(), It.IsAny<TimeSpan>()))
+                .Callback<IExecutable, TimeSpan>((job, _) => jobs.Add(job)).ReturnsAsync(true);
+            await Queue(Module(executor.Object, 61));
+            foreach (var job in jobs) await job.ExecuteAsync(new EmptyServiceProvider());
+            using var read = Open();
+            var player = await read.GetUserOrCreateAsync(61);
+            Assert.Equal(new DateTime(2026, 1, 2), player.TimeStatuses.Single(x => x.Type == StatusType.Pvp).EndsAt);
+        }
+
         [Theory]
-        [InlineData(0, "dziś już nie")]
+        [InlineData(0, "wszystkie 10 dzisiejszych pojedynków")]
         [InlineData(1, "zbyt słabą")]
         [InlineData(2, "na nowo ustawić")]
         public async Task InvalidCaller_IsRejectedBeforeSelectingAnOpponent(int reason, string expectedReply)

@@ -2190,7 +2190,7 @@ namespace Sanakan.Modules
         [Command("życzenia napraw", RunMode = RunMode.Async)]
         [Alias("wishlist fix", "zyczenia napraw", "wlfix")]
         [Summary("usuwa z listy życzeń duplikaty oraz pozycje, które nie istnieją już na Shindenie")]
-        [Remarks(""), RequireWaifuCommandChannel, DelayNextUseBy(24 * 60, DelayNextUseBy.ResType.HourMin)]
+        [Remarks(""), RequireWaifuCommandChannel, DelayNextUseBy(24 * 60)]
         public async Task FixWishlistAsync()
         {
             List<WishlistObject> wishes;
@@ -4263,13 +4263,14 @@ namespace Sanakan.Modules
 
             if (!pvpDailyMax.IsActive(_time.Now()))
             {
-                pvpDailyMax.EndsAt = _time.Now().Date.AddHours(3).AddDays(1);
+                pvpDailyMax.EndsAt = _time.Now().Date.AddDays(1);
                 duser.GameDeck.PVPDailyGamesPlayed = 0;
             }
 
             if (duser.GameDeck.ReachedDailyMaxPVPCount())
             {
-                await SafeReplyAsync("", embed: $"{Context.User.Mention} dziś już nie możesz rozegrać pojedynku.".ToEmbedMessage(EMType.Error).Build());
+                await SafeReplyAsync("", embed: $"{Context.User.Mention} rozegrano już wszystkie {UserExtension.MAX_PVP_DAILY_GAMES} dzisiejszych pojedynków. Kolejne będą dostępne {(pvpDailyMax.EndsAt.TimeOfDay == TimeSpan.Zero ? "o północy, " : "")}{pvpDailyMax.EndsAt.ToRemTime()}."
+                    .ToEmbedMessage(EMType.Error).Build());
                 return false;
             }
 

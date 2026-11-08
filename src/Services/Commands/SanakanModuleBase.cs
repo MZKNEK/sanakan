@@ -58,5 +58,23 @@ namespace Sanakan.Services.Commands
             Logger?.LogError($"Cmd: add reaction failed: {last?.Message}");
             return false;
         }
+
+        // sends an image generated earlier with a note about its age, false when there is none
+        public async Task<bool> TrySendSavedImageAsync(string path, Func<DateTime, string> note, MessageComponent components = null)
+        {
+            if (!System.IO.File.Exists(path))
+                return false;
+
+            try
+            {
+                await Context.Channel.SendFileAsync(path, note(System.IO.File.GetLastWriteTime(path)), components: components);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Logger?.LogError($"Cmd: saved image {path}: {ex.Message}");
+                return false;
+            }
+        }
     }
 }

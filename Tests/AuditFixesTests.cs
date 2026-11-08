@@ -296,6 +296,37 @@ namespace Artifacts
             Assert.False(entries.ContainsKey((command.Name, 555UL)));
             Assert.True(entries.TryRemove((command.Name, 556UL), out _));
         }
+
+        [Fact]
+        public void Release_RemovesOnlyThatUsersCooldown()
+        {
+            var entries = (ConcurrentDictionary<(string, ulong), DateTime>)typeof(DelayNextUseBy)
+                .GetField("_entries", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static).GetValue(null);
+
+            entries[("releasetest", 557UL)] = DateTime.Now;
+            entries[("releasetest", 558UL)] = DateTime.Now;
+
+            DelayNextUseBy.Release("releasetest", 557);
+
+            Assert.False(entries.ContainsKey(("releasetest", 557UL)));
+            Assert.True(entries.TryRemove(("releasetest", 558UL), out _));
+        }
+
+        [Fact]
+        public void CooldownTexts_UseDiscordCountdowns()
+        {
+            var at = new DateTime(2026, 11, 8, 21, 37, 0, DateTimeKind.Local);
+            var saved = at.AddHours(-2);
+            var user = new Moq.Mock<Discord.IUser>();
+            user.SetupGet(x => x.Mention).Returns("<@1>");
+
+            Assert.Equal($"<@1> tego polecenia możesz znowu użyć {at.ToRemTime()}.", DelayNextUseBy.CooldownMessage(user.Object, at));
+            Assert.Equal($"Zapisany profil z {saved.ToRemTime()} · nowy wygenerujesz {at.ToRemTime()}", Sanakan.Modules.Profile.SavedProfileNote(saved, at));
+            Assert.Equal($"Zapisane statystyki z {saved.ToRemTime()} · nowe wygenerujesz {at.ToRemTime()}", Sanakan.Modules.Shinden.SavedSiteNote(saved, at));
+            Assert.Equal($"Shinden nie odpowiada, pokazuję zapisane statystyki z {saved.ToRemTime()}.", Sanakan.Modules.Shinden.SavedSiteOnErrorNote(saved));
+            Assert.Equal(TimeSpan.FromMinutes(5), Sanakan.Modules.Profile.ProfileCooldown);
+            Assert.Equal(TimeSpan.FromMinutes(5), Sanakan.Modules.Shinden.SiteCooldown);
+        }
     }
 
     public class ExpeditionAffectionTests
