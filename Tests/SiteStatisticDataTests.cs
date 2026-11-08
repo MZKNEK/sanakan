@@ -32,7 +32,8 @@ namespace Artifacts
                 if (Interlocked.Increment(ref _inFlight) == _expected)
                     _allIn.TrySetResult();
 
-                await _allIn.Task.WaitAsync(TimeSpan.FromSeconds(5));
+                // generous, because a busy CI runner can start the parallel requests seconds apart
+                await _allIn.Task.WaitAsync(TimeSpan.FromSeconds(30));
 
                 var path = request.RequestUri.AbsolutePath;
                 var (json, code) = path.EndsWith("/info") ? (UserInfo, InfoCode)
@@ -50,7 +51,7 @@ namespace Artifacts
                 ApiToken = "shk_new",
                 UserAgent = "tests",
                 Marmolade = "X-Marmolade",
-            }, null, handler, TimeSpan.FromSeconds(10));
+            }, null, handler, TimeSpan.FromSeconds(60));
             return new Sanakan.Services.Shinden(client, null, null, new ListLogger(), new FixedTime());
         }
 
