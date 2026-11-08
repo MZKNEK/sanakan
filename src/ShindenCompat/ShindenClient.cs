@@ -100,7 +100,12 @@ namespace Sanakan.ShindenCompat
         }
 
         public async Task<Response<ICharacterInfo>> GetCharacterInfoAsync(ulong id)
-            => Wrap(await _api.Characters.InfoAsync(id).ConfigureAwait(false), x => x.ToModel());
+        {
+            if (CustomCharacters.IsCustom(id))
+                return new Response<ICharacterInfo>(HttpStatusCode.NotFound);
+
+            return Wrap(await _api.Characters.InfoAsync(id).ConfigureAwait(false), x => x.ToModel());
+        }
 
         public async Task<Response<string>> GetHealthAsync()
             => Wrap(await _api.HealthAsync().ConfigureAwait(false), x => x.Response);

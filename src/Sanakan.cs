@@ -196,6 +196,11 @@ namespace Sanakan
             _mod = new Moderator(_logger, _config, _client, _time, _img);
             _daemon = new Daemonizer(_client, _logger, _config);
             _shinden = new Services.Shinden(_shindenClient, _sessions, _img, _logger, _time, Services.Dir.ShindenCache);
+            _shinden.CustomCharacterInfo = async id =>
+            {
+                using var db = new Database.DatabaseContext(_config);
+                return await Extensions.ContextExtension.GetCustomCharacterInfoAsync(db, id);
+            };
             AppDomain.CurrentDomain.ProcessExit += (_, _) => _shinden.SaveCacheAsync().GetAwaiter().GetResult();
             _shinden.StartSeasonRefresh(TimeSpan.FromHours(1));
             _waifu = new Waifu(_img, _shindenClient, _events, _logger,

@@ -2195,15 +2195,44 @@ namespace Sanakan.Modules
         }
 
         [Command("gfcard"), Priority(1), RequireDev]
-        [Summary("generuje kartę nieistniejącej postaci i daje ją użytkownikowi")]
-        [Remarks("Sniku")]
+        [Summary("generuje kartę nowej, wymyślonej postaci z własnym id i daje ją użytkownikowi")]
+        [Remarks("Sniku \"Imię Nazwisko\" \"Tytuł\"")]
         public async Task GenerateFakeCardAsync([Summary("nazwa użytkownika")]SocketGuildUser user, [Summary("nazwa")]string name, [Summary("tytuł")]string title)
         {
             using (var db = new Database.DatabaseContext(Config))
             {
+                var last = await db.Cards.AsQueryable().Where(x => x.Character > CustomCharacters.IdStart).MaxAsync(x => (ulong?)x.Character);
+                await GiveFakeCardAsync(db, user, name, title, (last ?? CustomCharacters.IdStart) + 1);
+            }
+        }
+
+        [Command("gfcard"), Priority(1), RequireDev]
+        [Summary("generuje kolejną kartę istniejącej wymyślonej postaci i daje ją użytkownikowi")]
+        [Remarks("Sniku 1000000001")]
+        public async Task GenerateFakeCardAsync([Summary("nazwa użytkownika")]SocketGuildUser user, [Summary("id wymyślonej postaci")]ulong characterId)
+        {
+            using (var db = new Database.DatabaseContext(Config))
+            {
+                var existing = CustomCharacters.IsCustom(characterId)
+                    ? await db.Cards.AsQueryable().AsNoTracking().Where(x => x.Character == characterId).Select(x => new { x.Name, x.Title }).FirstOrDefaultAsync()
+                    : null;
+
+                if (existing == null)
+                {
+                    await SafeReplyAsync("", embed: $"Nie ma wymyślonej postaci o id {characterId}. Takie postacie mają id powyżej {CustomCharacters.IdStart}.".ToEmbedMessage(EMType.Error).Build());
+                    return;
+                }
+
+                await GiveFakeCardAsync(db, user, existing.Name, existing.Title, characterId);
+            }
+        }
+
+        private async Task GiveFakeCardAsync(Database.DatabaseContext db, SocketGuildUser user, string name, string title, ulong characterId)
+        {
+            {
                 var botuser = await db.GetUserOrCreateAsync(user.Id);
 
-                var card = _waifu.GenerateNewCard(user, name, title, 50453);
+                var card = _waifu.GenerateNewCard(user, name, title, characterId);
                 card.Source = CardSource.GodIntervention;
                 card.Unique = true;
 
@@ -2213,7 +2242,7 @@ namespace Sanakan.Modules
 
                 QueryCache.ExpireTag(new string[] { CacheTags.User(botuser.Id) });
 
-                await SafeReplyAsync("", embed: $"{user.Mention} otrzymał {card.GetString(false, false, true)}.".ToEmbedMessage(EMType.Success).Build());
+                await SafeReplyAsync("", embed: $"{user.Mention} otrzymał {card.GetString(false, false, true)} (postać {characterId}).".ToEmbedMessage(EMType.Success).Build());
             }
         }
 

@@ -100,8 +100,14 @@ namespace Sanakan.Services
 
         public Task SaveCacheAsync() => _userNames.SaveAsync(_time.Now());
 
+        // made-up characters are not on Shinden, the bot describes them from their cards
+        public Func<ulong, Task<ICharacterInfo>> CustomCharacterInfo { get; set; }
+
         public async Task<ICharacterInfo> GetCharacterInfoAsync(ulong characterId)
         {
+            if (CustomCharacters.IsCustom(characterId))
+                return CustomCharacterInfo == null ? null : await CustomCharacterInfo(characterId);
+
             try
             {
                 return await _characters.GetAsync(characterId, async () =>

@@ -204,6 +204,22 @@ namespace Sanakan.Extensions
             return true;
         }
 
+        // a made-up character exists as long as any card of it does, its name comes from that card
+        public static async Task<ShindenCompat.Models.ICharacterInfo> GetCustomCharacterInfoAsync(this Database.DatabaseContext context, ulong characterId)
+        {
+            var name = await context.Cards.AsQueryable().AsNoTracking().Where(x => x.Character == characterId).Select(x => x.Name).FirstOrDefaultAsync();
+            if (name == null)
+                return null;
+
+            var space = name.IndexOf(' ');
+            return new ShindenCompat.Models.Entities.CharacterInfo
+            {
+                Id = characterId,
+                FirstName = space < 0 ? name : name[..space],
+                LastName = space < 0 ? "" : name[(space + 1)..],
+            };
+        }
+
         // users without a leave date are skipped by the daily cleanup, e.g. those who left while the bot was offline
         public static Task<List<ulong>> GetUsersWithoutLeaveDateAsync(this Database.DatabaseContext context)
         {

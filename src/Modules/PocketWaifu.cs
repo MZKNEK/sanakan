@@ -2284,6 +2284,9 @@ namespace Sanakan.Modules
 
                 case WishlistObjectType.Character:
                 {
+                    if (Sden.CustomCharacters.IsCustom(wish.ObjectId))
+                        return await _shinden.GetCharacterInfoAsync(wish.ObjectId) != null ? WishCheck.Exists : WishCheck.Missing;
+
                     var res = await _shclient.GetCharacterInfoAsync(wish.ObjectId);
                     if (res.IsSuccessStatusCode()) return WishCheck.Exists;
                     return res.Code == System.Net.HttpStatusCode.NotFound ? WishCheck.Missing : WishCheck.Unknown;
