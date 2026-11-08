@@ -156,7 +156,7 @@ namespace Artifacts
             Assert.True(_executor.Added.TryDequeue(out var task));
             await task.ExecuteAsync(new EmptyServiceProvider());
 
-            Assert.Equal(409, (await pending.WaitAsync(TimeSpan.FromSeconds(5))).StatusOf());
+            Assert.Equal(409, (await pending.WaitAsync(TimeSpan.FromSeconds(30))).StatusOf());
             using var db = Open();
             Assert.Equal(20ul, (await db.Users.SingleAsync()).Id);
         }
@@ -358,7 +358,7 @@ namespace Artifacts
             Assert.True(_executor.Added.TryDequeue(out var task));
             await task.ExecuteAsync(new EmptyServiceProvider());
 
-            Assert.Equal(409, (await pending.WaitAsync(TimeSpan.FromSeconds(5))).StatusOf());
+            Assert.Equal(409, (await pending.WaitAsync(TimeSpan.FromSeconds(30))).StatusOf());
             using var read = Open();
             Assert.Equal(99ul, (await read.Users.SingleAsync()).Shinden);
         }

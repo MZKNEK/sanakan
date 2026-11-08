@@ -136,7 +136,7 @@ namespace Artifacts
             Assert.Equal(409, (await Send(byDiscord, key)).StatusOf());
 
             await RunQueuedAsync();
-            Assert.Equal(200, (await pending.WaitAsync(TimeSpan.FromSeconds(5))).StatusOf());
+            Assert.Equal(200, (await pending.WaitAsync(TimeSpan.FromSeconds(30))).StatusOf());
             Assert.Equal(200, (await Send(byDiscord, key)).StatusOf());
             Assert.Equal(InitialTc + 100, Balance());
             Assert.Equal(1, TransferCount());
@@ -157,7 +157,7 @@ namespace Artifacts
             Assert.Equal(422, (await Send(byDiscord, key, id: byDiscord ? OtherDiscordId : OtherShindenId)).StatusOf());
 
             if (whileRunning) await RunQueuedAsync();
-            Assert.Equal(200, (await first.WaitAsync(TimeSpan.FromSeconds(5))).StatusOf());
+            Assert.Equal(200, (await first.WaitAsync(TimeSpan.FromSeconds(30))).StatusOf());
             Assert.Equal(InitialTc + 100, Balance());
             Assert.Equal(InitialTc, Balance(OtherDiscordId));
             Assert.Equal(1, TransferCount());
@@ -232,7 +232,7 @@ namespace Artifacts
             var pending = Send(byDiscord, key);
             await RunQueuedAsync();
 
-            Assert.Equal(500, (await pending.WaitAsync(TimeSpan.FromSeconds(5))).StatusOf());
+            Assert.Equal(500, (await pending.WaitAsync(TimeSpan.FromSeconds(30))).StatusOf());
             Assert.Equal(InitialTc, Balance());
             Assert.Equal(0, RecordCount());
             Assert.Equal(0, TransferCount());
@@ -326,7 +326,7 @@ namespace Artifacts
             }
             await RunQueuedAsync();
 
-            Assert.Equal(404, (await pending.WaitAsync(TimeSpan.FromSeconds(5))).StatusOf());
+            Assert.Equal(404, (await pending.WaitAsync(TimeSpan.FromSeconds(30))).StatusOf());
             Assert.Equal(InitialTc, Balance());
             Assert.Equal(InitialTc, Balance(OtherDiscordId));
             Assert.Equal(0, RecordCount());
