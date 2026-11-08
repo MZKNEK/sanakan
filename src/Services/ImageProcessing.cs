@@ -49,9 +49,14 @@ namespace Sanakan.Services
         private readonly List<DomainData> _imageServices;
         private readonly string[] _extensions = new[] { "png", "jpg", "jpeg", "gif", "webp" };
         private readonly bool _allowPrivateHosts;
+        private readonly ILogger _logger;
 
-        public ImageProcessing(ShindenClient shinden, TagIcon gallery, bool allowPrivateHosts = false)
+        private const int CharacterPictureAttempts = 3;
+        private const int CharacterPictureRetryDelayMs = 400;
+
+        public ImageProcessing(ShindenClient shinden, TagIcon gallery, bool allowPrivateHosts = false, ILogger logger = null)
         {
+            _logger = logger;
             _shclient = shinden;
             _galleryTag = gallery;
             _allowPrivateHosts = allowPrivateHosts;
@@ -1279,10 +1284,35 @@ namespace Sanakan.Services
             return imgBase;
         }
 
-        private async Task<Image> GetCharacterPictureAsync(string characterUrl, bool ultimate)
+        // A failed download would be saved into the card file for good, so a remote picture gets a few attempts
+        // and a final failure is logged. Returns null when the picture could not be loaded.
+        internal async Task<Image> LoadCharacterPictureAsync(string url, ulong cardId)
+        {
+            if (Dir.IsLocal(url))
+                return await GetImageFromUrlOrLocalAsync(url);
+
+            for (int attempt = 1; attempt <= CharacterPictureAttempts; attempt++)
+            {
+                try
+                {
+                    using var stream = await GetImageFromUrlAsync(url, true);
+                    if (stream != null && stream != Stream.Null)
+                        return await Image.LoadAsync(stream);
+                }
+                catch (Exception) { }
+
+                if (attempt < CharacterPictureAttempts)
+                    await Task.Delay(CharacterPictureRetryDelayMs * attempt);
+            }
+
+            _logger?.LogError($"Images: character picture for card {cardId} could not be downloaded: {url}");
+            return null;
+        }
+
+        private async Task<Image> GetCharacterPictureAsync(string characterUrl, bool ultimate, ulong cardId)
         {
             var characterImg = ultimate ? new Image<Rgba32>(475, 667) : await Image.LoadAsync(Dir.GetResource("PW/empty.png"));
-            using (var image = await GetImageFromUrlOrLocalAsync(characterUrl ?? "http://cdn.shinden.eu/cdn1/other/placeholders/title/225x350.jpg"))
+            using (var image = await LoadCharacterPictureAsync(characterUrl ?? "http://cdn.shinden.eu/cdn1/other/placeholders/title/225x350.jpg", cardId))
             {
                 if (image is null)
                     return characterImg;
@@ -1961,7 +1991,7 @@ namespace Sanakan.Services
 
             ApplyBorderBack(image, card);
 
-            using (var chara = await GetCharacterPictureAsync(card.GetImage(), card.FromFigure))
+            using (var chara = await GetCharacterPictureAsync(card.GetImage(), card.FromFigure, card.Id))
             {
                 var mov = card.FromFigure ? 0 : 13;
                 image.Mutate(x => x.DrawImage(chara, new Point(mov, mov), 1));
@@ -1990,7 +2020,7 @@ namespace Sanakan.Services
             return await GetWaifuInProfileCardAsync(card);
         }
 
-        public async Task<Image> GetWaifuInProfileCardAsync(Card card)
+        public virtual async Task<Image> GetWaifuInProfileCardAsync(Card card)
         {
             if (card.Quality == Quality.Omega)
                 return await GetOmegaCard(card, true);
@@ -2002,7 +2032,7 @@ namespace Sanakan.Services
 
             ApplyBorderBack(image, card);
 
-            using (var chara = await GetCharacterPictureAsync(card.GetImage(), card.FromFigure))
+            using (var chara = await GetCharacterPictureAsync(card.GetImage(), card.FromFigure, card.Id))
             {
                 var mov = card.FromFigure ? 0 : 13;
                 image.Mutate(x => x.DrawImage(chara, new Point(mov, mov), 1));
@@ -2078,7 +2108,7 @@ namespace Sanakan.Services
             return Image.Load(url);
         }
 
-        public async Task<Image> GetWaifuCardAsync(Card card)
+        public virtual async Task<Image> GetWaifuCardAsync(Card card)
         {
             if (card.Quality == Quality.Omega)
                 return await GetOmegaCard(card);

@@ -183,7 +183,7 @@ namespace Sanakan
             _helper = new Helper(_config, _logger);
             _expedition = new Expedition(_time);
             _img = new ImageProcessing(_shindenClient,
-                _tags.GetTag(Services.PocketWaifu.TagType.Gallery));
+                _tags.GetTag(Services.PocketWaifu.TagType.Gallery), logger: _logger);
             _scamImages = new ScamImageScanner(_img,
                 new ScamImageStore(Services.Dir.GetResource("ScamHashes.txt")), _logger,
                 () => _config.Get().ScamImageMaxDistance);

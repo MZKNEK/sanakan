@@ -1756,20 +1756,29 @@ namespace Sanakan.Services.PocketWaifu
 
             using (await _cardGenLocker.LockAsync(card.Id))
             {
-                if (File.Exists(toReturn))
+                // a generation that failed half way leaves some files missing, so all of them are checked, not just the requested one
+                var cardMissing = !File.Exists(imageLocation) || !File.Exists(sImageLocation);
+                var profileMissing = !File.Exists(pImageLocation);
+                if (!cardMissing && !profileMissing)
                     return toReturn;
 
                 try
                 {
-                    using (var image = await _img.GetWaifuCardAsync(card))
+                    if (cardMissing)
                     {
-                        image.SaveToPath(imageLocation);
-                        image.SaveToPath(sImageLocation, 133);
+                        using (var image = await _img.GetWaifuCardAsync(card))
+                        {
+                            image.SaveToPath(imageLocation);
+                            image.SaveToPath(sImageLocation, 133);
+                        }
                     }
 
-                    using (var cardImage = await _img.GetWaifuInProfileCardAsync(card))
+                    if (profileMissing)
                     {
-                        cardImage.SaveToPath(pImageLocation);
+                        using (var cardImage = await _img.GetWaifuInProfileCardAsync(card))
+                        {
+                            cardImage.SaveToPath(pImageLocation);
+                        }
                     }
                 }
                 catch (Exception ex)
