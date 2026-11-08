@@ -4,6 +4,7 @@ using System;
 using System.Text.RegularExpressions;
 using Discord;
 using Sanakan.Database.Models.Management;
+using Sanakan.Extensions;
 
 namespace Sanakan.Services
 {
@@ -11,6 +12,7 @@ namespace Sanakan.Services
     {
         public static readonly Color MuteColor = new Color(240, 162, 50);
         public static readonly Color BanColor = new Color(229, 72, 77);
+        public static readonly Color WarningColor = new Color(232, 197, 71);
 
         private static readonly Regex _autoReasonPrefix = new Regex("^Automatyczny (mute|ban): ", RegexOptions.Compiled);
 
@@ -69,5 +71,20 @@ namespace Sanakan.Services
             => $"<t:{new DateTimeOffset(date).ToUnixTimeSeconds()}:{style}>";
 
         public static DateTime End(PenaltyInfo info) => info.StartDate.AddHours(info.DurationInHours);
+
+        public static string Applied(ExtendedPenaltyInfo exInfo)
+        {
+            var text = $"{(exInfo.Info.Type == PenaltyType.Ban ? "zbanowany" : "wyciszony")} na **{Duration(exInfo.Info.DurationInHours)}**";
+            return exInfo.IsBonusDuration() ? $"{text} (w tym {Duration(exInfo.BonusDuration)} dodatku)" : text;
+        }
+
+        public static string WarningCount(long warnings)
+            => $"To Twoje **{warnings}. ostrzeżenie**, " + (warnings < 3 ? "przy 3. dostaniesz wyciszenie." : "kolejne oznacza wyciszenie.");
+
+        public static string MutedEntry(PenaltyInfo info)
+        {
+            var reason = (Moderator.IsAutomaticReason(info.Reason) ? "🤖 " : "") + Reason(info.Reason);
+            return $"<@{info.User}> · koniec {Timestamp(End(info), 'R')}\n{Quote(reason.TrimToLength(500))}";
+        }
     }
 }

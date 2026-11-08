@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Discord;
@@ -414,14 +415,23 @@ namespace Sanakan.Services
             }
         }
 
-        public async Task NotifyUserAsync(SocketGuildUser user, string reason)
+        public async Task NotifyUserAsync(SocketGuildUser user, string reason, long warnings)
         {
             try
             {
                 var dm = await user.CreateDMChannelAsync();
                 if (dm != null)
                 {
-                    await dm.SendMessageAsync($"Elo! Otrzymałeś ostrzeżenie o treści:\n {reason}\n\nPozdrawiam serdecznie!".TrimToLength());
+                    var embed = new EmbedBuilder
+                    {
+                        Title = "⚠️ Elo! Dostałeś ostrzeżenie",
+                        Color = PenaltyFormat.WarningColor,
+                        Description = $"Na serwerze **{Format.Sanitize(user.Guild.Name)}**. {PenaltyFormat.WarningCount(warnings)}",
+                        Footer = new EmbedFooterBuilder().WithText("Pozdrawiam serdecznie!"),
+                    }
+                    .AddField("Powód", PenaltyFormat.Quote(PenaltyFormat.Reason(reason)).TrimToLength(1000));
+
+                    await dm.SendMessageAsync("", embed: embed.Build());
                     await dm.CloseAsync();
                 }
             }
@@ -487,27 +497,36 @@ namespace Sanakan.Services
 
         public async Task<Embed> GetMutedListAsync(Database.DatabaseContext db, SocketCommandContext context)
         {
-            string mutedList = "Brak";
-
-            var list = (await db.GetCachedFullPenalties()).Where(x => x.Guild == context.Guild.Id && x.Type == PenaltyType.Mute);
-            if (list.Count() > 0)
-            {
-                mutedList = "";
-                foreach (var penalty in list)
-                {
-                    var endDate = penalty.StartDate.AddHours(penalty.DurationInHours);
-                    var name = context.Guild.GetUser(penalty.User)?.Mention;
-                    if (name is null) continue;
-
-                    mutedList += $"{name} [DO: {endDate.ToShortDateString()} {endDate.ToShortTimeString()}] - {penalty.Reason}\n";
-                }
-            }
+            var entries = (await db.GetCachedFullPenalties())
+                .Where(x => x.Guild == context.Guild.Id && x.Type == PenaltyType.Mute && context.Guild.GetUser(x.User) != null)
+                .OrderBy(PenaltyFormat.End)
+                .Select(PenaltyFormat.MutedEntry)
+                .ToList();
 
             return new EmbedBuilder
             {
-                Description = $"**Wyciszeni**:\n\n{mutedList.TrimToLength()}",
-                Color = EMType.Bot.Color(),
+                Title = $"🔇 Wyciszeni: {entries.Count}",
+                Description = entries.Count == 0 ? "Brak" : JoinWithinLimit(entries, 3900),
+                Color = PenaltyFormat.MuteColor,
             }.Build();
+        }
+
+        public static string JoinWithinLimit(IReadOnlyList<string> entries, int limit)
+        {
+            const int tailReserve = 30;
+            var text = new StringBuilder();
+            for (var i = 0; i < entries.Count; i++)
+            {
+                var separator = text.Length > 0 ? "\n\n" : "";
+                if (text.Length + separator.Length + entries[i].Length + tailReserve > limit)
+                {
+                    text.Append($"{separator}…i jeszcze {entries.Count - i}");
+                    break;
+                }
+
+                text.Append(separator).Append(entries[i]);
+            }
+            return text.ToString();
         }
 
         public Embed BuildTodo(IMessage message, SocketGuildUser who)

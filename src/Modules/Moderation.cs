@@ -142,10 +142,10 @@ namespace Sanakan.Modules
                 var info = _moderation.GetBanUserInfo(user, duration, reason);
                 await _moderation.NotifyAboutPenaltyAsync(user, notifChannel, info, $"{usr.GetUserNickInGuild()}");
                 await _moderation.BanUserAsync(user, info, db);
-            }
 
-            await SafeReplyAsync("", embed: $"{user.Mention} został zbanowany.".ToEmbedMessage(EMType.Success)
-                .WithImageUrl(Services.Fun.GetRandomMuteReactionGif()).Build());
+                await SafeReplyAsync("", embed: $"{user.Mention} został {PenaltyFormat.Applied(info)}.".ToEmbedMessage(EMType.Success)
+                    .WithImageUrl(Services.Fun.GetRandomMuteReactionGif()).Build());
+            }
         }
 
         [Command("mute modifier")]
@@ -225,10 +225,10 @@ namespace Sanakan.Modules
                 var usr = Context.User as SocketGuildUser;
                 var info = await _moderation.MuteUserAsync(user, muteRole, null, userRole, db, duration, reason);
                 await _moderation.NotifyAboutPenaltyAsync(user, notifChannel, info, $"{usr.GetUserNickInGuild()}");
-            }
 
-            await SafeReplyAsync("", embed: $"{user.Mention} został wyciszony.".ToEmbedMessage(EMType.Success)
-                .WithImageUrl(Services.Fun.GetRandomMuteReactionGif()).Build());
+                await SafeReplyAsync("", embed: $"{user.Mention} został {PenaltyFormat.Applied(info)}.".ToEmbedMessage(EMType.Success)
+                    .WithImageUrl(Services.Fun.GetRandomMuteReactionGif()).Build());
+            }
         }
 
         [Command("mute mod")]
@@ -273,10 +273,10 @@ namespace Sanakan.Modules
                 var usr = Context.User as SocketGuildUser;
                 var info = await _moderation.MuteUserAsync(user, muteRole, muteModRole, userRole, db, duration, reason, config.ModeratorRoles);
                 await _moderation.NotifyAboutPenaltyAsync(user, notifChannel, info, $"{usr.GetUserNickInGuild()}");
-            }
 
-            await SafeReplyAsync("", embed: $"{user.Mention} został wyciszony.".ToEmbedMessage(EMType.Success)
-                .WithImageUrl(Services.Fun.GetRandomMuteReactionGif()).Build());
+                await SafeReplyAsync("", embed: $"{user.Mention} został {PenaltyFormat.Applied(info)}.".ToEmbedMessage(EMType.Success)
+                    .WithImageUrl(Services.Fun.GetRandomMuteReactionGif()).Build());
+            }
         }
 
         [Command("unmute")]
@@ -2062,7 +2062,7 @@ namespace Sanakan.Modules
                     if (dbUser.Warnings < 3 || alreadyMuted)
                     {
                         await db.SaveChangesAsync();
-                        await _moderation.NotifyUserAsync(user, reason);
+                        await _moderation.NotifyUserAsync(user, reason, dbUser.Warnings);
 
                         if (alreadyMuted)
                             await SafeReplyAsync("", embed: $"{user.Mention} już jest wyciszony, dodano tylko ostrzeżenie ({dbUser.Warnings}).".ToEmbedMessage(EMType.Bot).Build());
@@ -2091,7 +2091,7 @@ namespace Sanakan.Modules
                 var info = await _moderation.MuteUserAsync(user, muteRole, null, userRole, db, duration, reason);
                 await _moderation.NotifyAboutPenaltyAsync(user, notifChannel, info, byWho);
 
-                await SafeReplyAsync("", embed: $"{user.Mention} został wyciszony.".ToEmbedMessage(EMType.Success).Build());
+                await SafeReplyAsync("", embed: $"{user.Mention} został {PenaltyFormat.Applied(info)}.".ToEmbedMessage(EMType.Success).Build());
             }
         }
 

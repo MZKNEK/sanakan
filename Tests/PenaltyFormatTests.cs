@@ -79,6 +79,54 @@ namespace Artifacts
             Assert.Equal("Nałożył: ModNick", PenaltyFormat.Footer("ModNick", false));
         }
 
+        [Theory]
+        [InlineData(PenaltyType.Mute, 12, 0, "wyciszony na **12 godzin**")]
+        [InlineData(PenaltyType.Mute, 54, 42, "wyciszony na **2 dni 6 godzin** (w tym 1 dzień 18 godzin dodatku)")]
+        [InlineData(PenaltyType.Ban, 720, 0, "zbanowany na **30 dni**")]
+        public void Applied_ShowsTotalAndBonus(PenaltyType type, long total, long bonus, string expected)
+        {
+            var exInfo = new ExtendedPenaltyInfo
+            {
+                Info = new PenaltyInfo { Type = type, DurationInHours = total },
+                BaseDuration = total - bonus,
+                BonusDuration = bonus,
+            };
+
+            Assert.Equal(expected, PenaltyFormat.Applied(exInfo));
+        }
+
+        [Theory]
+        [InlineData(1, "To Twoje **1. ostrzeżenie**, przy 3. dostaniesz wyciszenie.")]
+        [InlineData(2, "To Twoje **2. ostrzeżenie**, przy 3. dostaniesz wyciszenie.")]
+        [InlineData(4, "To Twoje **4. ostrzeżenie**, kolejne oznacza wyciszenie.")]
+        public void WarningCount_AnnouncesTheMute(long warnings, string expected)
+        {
+            Assert.Equal(expected, PenaltyFormat.WarningCount(warnings));
+        }
+
+        [Fact]
+        public void MutedEntry_ShowsCountdownAndMarksAutomatic()
+        {
+            var start = new DateTime(2026, 11, 8, 9, 47, 0, DateTimeKind.Local);
+            var end = new DateTimeOffset(start.AddHours(24)).ToUnixTimeSeconds();
+            var auto = new PenaltyInfo { User = 42, StartDate = start, DurationInHours = 24,
+                Reason = "Automatyczny mute: scamowe obrazki - rozpoznano 4 scamowe obrazki w ciągu 5 minut." };
+            var manual = new PenaltyInfo { User = 42, StartDate = start, DurationInHours = 24, Reason = "obrażanie innych" };
+
+            Assert.Equal($"<@42> · koniec <t:{end}:R>\n> 🤖 Scamowe obrazki - rozpoznano 4 scamowe obrazki w ciągu 5 minut.",
+                PenaltyFormat.MutedEntry(auto));
+            Assert.Equal($"<@42> · koniec <t:{end}:R>\n> obrażanie innych", PenaltyFormat.MutedEntry(manual));
+        }
+
+        [Fact]
+        public void JoinWithinLimit_CutsWholeEntriesAndSaysHowManyAreLeft()
+        {
+            var entries = new[] { new string('a', 40), new string('b', 40), new string('c', 40) };
+
+            Assert.Equal(string.Join("\n\n", entries), Moderator.JoinWithinLimit(entries, 1000));
+            Assert.Equal($"{entries[0]}\n\n…i jeszcze 2", Moderator.JoinWithinLimit(entries, 100));
+        }
+
         [Fact]
         public void Quote_PrefixesEveryLine()
         {
