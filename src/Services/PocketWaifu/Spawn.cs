@@ -325,7 +325,7 @@ namespace Sanakan.Services.PocketWaifu
             _executor.TryAdd(exe, TimeSpan.FromSeconds(1));
         }
 
-        public static async Task<bool> TryGrantActivityPacketAsync(Database.DatabaseContext db, ulong userId, DateTime now, long packsPerDay)
+        internal static async Task<bool> TryGrantActivityPacketAsync(Database.DatabaseContext db, ulong userId, DateTime now, long packsPerDay)
         {
             // only time statuses are needed, the full load would read every card of the player
             var botUser = await db.GetUserOrCreateSimpleAsync(userId);

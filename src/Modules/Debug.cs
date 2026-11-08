@@ -711,7 +711,7 @@ namespace Sanakan.Modules
             await msg.RemoveAllReactionsAsync();
         }
 
-        public static async Task<(List<string> Cards, bool WonSSS)?> TransferLotteryCardsAsync(Database.DatabaseContext db, ulong giverId, IUser winner, uint count, ISystemTime time)
+        internal static async Task<(List<string> Cards, bool WonSSS)?> TransferLotteryCardsAsync(Database.DatabaseContext db, ulong giverId, IUser winner, uint count, ISystemTime time)
         {
             // the giver can hold tens of thousands of cards, so only ids are read and just the drawn cards are loaded
             var idsToSelect = await db.Cards.AsQueryable().Where(x => x.GameDeckId == giverId).Select(x => x.Id).ToListAsync();

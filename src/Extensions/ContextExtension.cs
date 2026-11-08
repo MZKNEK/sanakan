@@ -116,7 +116,7 @@ namespace Sanakan.Extensions
                 : await context.Tags.AsQueryable().FirstOrDefaultAsync(x => x.Name.Equals(tag) && x.GameDeckId == ownerId);
         }
 
-        public static async Task<Dictionary<ulong, long>> CountUserCardsByTagsAsync(this Database.DatabaseContext context, ulong userId, IEnumerable<ulong> tagIds)
+        internal static async Task<Dictionary<ulong, long>> CountUserCardsByTagsAsync(this Database.DatabaseContext context, ulong userId, IEnumerable<ulong> tagIds)
         {
             var ids = tagIds.Distinct().ToList();
             return await context.TagCardRelations.AsQueryable().AsNoTracking()

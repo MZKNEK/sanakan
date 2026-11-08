@@ -408,7 +408,7 @@ namespace Sanakan.Services
             return images;
         }
 
-        public async Task<(IUserInfo Info, List<ILastReaded> LastReaded, List<ILastWatched> LastWatched)> GetSiteStatisticDataAsync(ulong shindenId)
+        internal async Task<(IUserInfo Info, List<ILastReaded> LastReaded, List<ILastWatched> LastWatched)> GetSiteStatisticDataAsync(ulong shindenId)
         {
             // the requests do not depend on each other and none of them throws, failures are logged and give null
             var info = GetUserInfoAsync(shindenId);
