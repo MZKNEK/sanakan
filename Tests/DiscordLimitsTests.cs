@@ -30,6 +30,22 @@ namespace Artifacts
             Assert.Equal(200, pages.Sum(p => p.Count));
         }
 
+        [Theory]
+        [InlineData("link", 1)]
+        [InlineData("bold", 1)]
+        [InlineData("mention", 1)]
+        [InlineData("emoji", 1)]
+        [InlineData("custom", 1)]
+        [InlineData("time", 1)]
+        [InlineData("card", 5)]
+        public void MarkdownTestRows_HaveTheExpectedElements(string type, int perRow)
+        {
+            var rows = Sanakan.Modules.Debug.BuildMarkdownTestRows(type, 10, 42, 1700000000);
+
+            Assert.Equal(10, rows.Count);
+            Assert.All(rows, r => Assert.Equal(perRow, DiscordLimits.CountElements(r)));
+        }
+
         [Fact]
         public void Paginate_AlsoRespectsLength()
         {

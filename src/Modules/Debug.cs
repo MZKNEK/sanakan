@@ -539,6 +539,118 @@ namespace Sanakan.Modules
             await SafeReplyAsync("", embed: "??????????".ToEmbedMessage(EMType.Error).Build());
         }
 
+        public const string MarkdownTestTypes = "link, bold, mention, emoji, custom, time, card, mix";
+
+        // one row per element (card rows have several) to see live where Discord stops rendering markdown
+        public static List<string> BuildMarkdownTestRows(string type, int count, ulong userId, long unixTime)
+        {
+            string Row(int i) => type switch
+            {
+                "link" => $"[link {i}](https://sanakan.pl/?n={i})",
+                "bold" => $"**pogrubienie {i}**",
+                "mention" => $"<@{userId}>",
+                "emoji" => "⭐",
+                "custom" => "<:redcross:581152766655856660>",
+                "time" => $"<t:{unixTime}:R>",
+                "card" => $"<@{userId}>: **[[{1000 + i}](https://alter.sanakan.pl/card/{1000 + i})]** **A** ⭐",
+                _ => (i % 4) switch
+                {
+                    0 => $"[link {i}](https://sanakan.pl/?n={i})",
+                    1 => $"**pogrubienie {i}**",
+                    2 => $"<@{userId}>",
+                    _ => "⭐",
+                },
+            };
+
+            return Enumerable.Range(1, count).Select(i => $"{i}: {Row(i)}").ToList();
+        }
+
+        public const string MarkdownTestEnd = "**✅ KONIEC – jeśli ten wiersz jest pogrubiony, całość się wyrenderowała**";
+
+        [Command("test md", RunMode = RunMode.Async), RequireDevOrTester]
+        [Summary("wysyła embed z podaną liczbą elementów formatowania, żeby sprawdzić, kiedy Discord przestaje je wyświetlać")]
+        [Remarks("link 120 oba nie")]
+        public async Task TestMarkdownLimitAsync([Summary("typ: link, bold, mention, emoji, custom, time, card, mix")] string type, [Summary("liczba wierszy (1-300)")] int count,
+            [Summary("gdzie wysłać: kanał, pw albo oba")] string where = "oba", [Summary("czy rozłożyć wiersze na kilka pól po 20?")] bool fields = false)
+        {
+            type = type.ToLower();
+            if (!MarkdownTestTypes.Split(", ").Contains(type))
+            {
+                await SafeReplyAsync("", embed: $"Nieznany typ. Dostępne: {MarkdownTestTypes}.".ToEmbedMessage(EMType.Error).Build());
+                return;
+            }
+
+            where = where.ToLower().Replace("kanal", "kanał");
+            if (where != "kanał" && where != "pw" && where != "oba")
+            {
+                await SafeReplyAsync("", embed: "Podaj, gdzie wysłać: `kanał`, `pw` albo `oba`.".ToEmbedMessage(EMType.Error).Build());
+                return;
+            }
+
+            var embed = BuildMarkdownTestEmbed(type, Math.Clamp(count, 1, 300), fields);
+
+            if (where != "pw")
+                await SafeReplyAsync("", embed: embed);
+
+            if (where != "kanał")
+            {
+                try
+                {
+                    var dm = await Context.User.CreateDMChannelAsync();
+                    await dm.SendMessageAsync("", embed: embed);
+                    if (where == "pw")
+                        await SafeReplyAsync("", embed: "Test poszedł na PW.".ToEmbedMessage(EMType.Success).Build());
+                }
+                catch (Exception ex)
+                {
+                    var reason = Services.Helper.IsDmClosed(ex) ? Services.Helper.DmClosed : $"nie udało się wysłać PW: {ex.Message}";
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} {reason}".ToEmbedMessage(EMType.Error).Build());
+                }
+            }
+        }
+
+        private Embed BuildMarkdownTestEmbed(string type, int count, bool fields)
+        {
+            var rows = BuildMarkdownTestRows(type, count, Context.User.Id, DateTimeOffset.UtcNow.ToUnixTimeSeconds());
+            var embed = new EmbedBuilder().WithColor(EMType.Info.Color()).WithTitle($"Test formatowania: {type}");
+
+            var shown = 0;
+            if (fields)
+            {
+                foreach (var chunk in rows.SplitList(20))
+                {
+                    var value = string.Join("\n", chunk);
+                    // the last field is kept for the end marker
+                    if (embed.Fields.Count >= EmbedBuilder.MaxFieldCount - 1 || value.Length > EmbedFieldBuilder.MaxFieldValueLength
+                        || embed.Length + value.Length + MarkdownTestEnd.Length + 300 > EmbedBuilder.MaxEmbedLength)
+                        break;
+
+                    embed.AddField($"Wiersze {shown + 1}-{shown + chunk.Count}", value);
+                    shown += chunk.Count;
+                }
+                embed.AddField("Koniec", MarkdownTestEnd);
+            }
+            else
+            {
+                var text = new System.Text.StringBuilder();
+                foreach (var row in rows)
+                {
+                    if (text.Length + row.Length + MarkdownTestEnd.Length + 2 > EmbedBuilder.MaxDescriptionLength)
+                        break;
+
+                    text.AppendLine(row);
+                    ++shown;
+                }
+                text.Append(MarkdownTestEnd);
+                embed.WithDescription(text.ToString());
+            }
+
+            var elements = rows.Take(shown).Sum(DiscordLimits.CountElements) + DiscordLimits.CountElements(MarkdownTestEnd);
+            embed.WithFooter($"Wierszy: {shown}/{count} · elementów (wg bota): {elements} · znaków: {embed.Length} · {(fields ? "w polach" : "w opisie")}");
+
+            return embed.Build();
+        }
+
         [Command("test lrt"), RequireDevOrTester]
         [Summary("odpala długo wykonujące się polecenie")]
         [Remarks("30")]
