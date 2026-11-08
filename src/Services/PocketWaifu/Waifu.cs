@@ -1934,20 +1934,30 @@ namespace Sanakan.Services.PocketWaifu
                 .Build();
         }
 
+        public const string InactiveSection = "⚠️ **Nieaktywni:**";
+
+        // inactive players go to their own section instead of a mark on every row, so each row is one markdown element
         public async Task<List<string>> GetWhoWantsCardsStringAsync(List<GameDeck> wishlists, bool showNames, SocketGuild guild)
         {
-            if (!showNames)
+            var now = _time.Now();
+            var ordered = wishlists.Where(x => x.IsUserActive(now)).Concat(wishlists.Where(x => !x.IsUserActive(now))).ToList();
+
+            var lines = new List<string>();
+            var inactiveStarted = false;
+            for (int i = 0; i < ordered.Count; i++)
             {
-                return wishlists.Select((x, i) => $"{x.GetActiveMark(_time.Now())}{i+1}: <@{x.Id}>").ToList();
+                var deck = ordered[i];
+                if (!inactiveStarted && !deck.IsUserActive(now))
+                {
+                    lines.Add(InactiveSection);
+                    inactiveStarted = true;
+                }
+
+                var name = showNames ? await GetUserNameInfoAsync(deck, guild) : $"<@{deck.Id}>";
+                lines.Add($"{i + 1}: {name}");
             }
 
-            var str = new List<string>();
-            foreach (var user in wishlists.Select(async (x, i) => $"{x.GetActiveMark(_time.Now())}{i+1}: {await GetUserNameInfoAsync(x, guild)}"))
-            {
-                str.Add(await user);
-            }
-
-            return str;
+            return lines;
         }
 
         private async Task<string> GetUserNameInfoAsync(GameDeck deck, SocketGuild guild)
@@ -1982,7 +1992,8 @@ namespace Sanakan.Services.PocketWaifu
         public async Task<IEnumerable<Embed>> GetContentOfWishlistAsync(List<ulong> cardsId, List<ulong> charactersId, List<ulong> titlesId, bool tldr)
         {
             var contentTable = new List<string>();
-            if (cardsId.Count > 0)contentTable.Add($"**Karty:** {string.Join(", ", cardsId)}");
+            foreach (var chunk in cardsId.SplitList(200))
+                contentTable.Add($"**Karty:** {string.Join(", ", chunk)}");
 
             foreach (var character in charactersId)
             {
@@ -2016,29 +2027,11 @@ namespace Sanakan.Services.PocketWaifu
                 }
             }
 
-            string temp = "";
-            var content = new List<Embed>();
-            for (int i = 0; i < contentTable.Count; i++)
-            {
-                if (temp.Length + contentTable[i].Length > 3500)
-                {
-                    content.Add(new EmbedBuilder()
-                    {
-                        Color = EMType.Info.Color(),
-                        Description = temp
-                    }.Build());
-                    temp = contentTable[i];
-                }
-                else temp += $"\n{contentTable[i]}";
-            }
-
-            content.Add(new EmbedBuilder()
+            return DiscordLimits.Paginate(contentTable).Select(page => new EmbedBuilder()
             {
                 Color = EMType.Info.Color(),
-                Description = temp
-            }.Build());
-
-            return content;
+                Description = string.Join("\n", page)
+            }.Build()).ToList();
         }
 
         public async Task<IEnumerable<Card>> GetCardsFromWishlistAsync(List<ulong> cardsId, List<ulong> charactersId, List<ulong> titlesId, Database.DatabaseContext db, IEnumerable<Card> userCards)
@@ -2912,7 +2905,13 @@ namespace Sanakan.Services.PocketWaifu
             var c = user.GameDeck.GetCardsWishList();
 
             if (showContentOnly)
-                return await _helper.SendEmbedsOnDMAsync(discordUser, await GetContentOfWishlistAsync(c, p, t, tldr), tldr);
+            {
+                var pages = (await GetContentOfWishlistAsync(c, p, t, tldr)).ToList();
+                if (pages.Count == 0)
+                    return ExecutionResult.FromError("na liście życzeń nie ma nic do pokazania.");
+
+                return await _helper.SendEmbedsOnDMAsync(discordUser, pages, tldr);
+            }
 
             var cards = await GetCardsFromWishlistAsync(c, p, t, db, user.GameDeck.Cards);
 

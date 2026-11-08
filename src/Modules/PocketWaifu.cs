@@ -71,19 +71,19 @@ namespace Sanakan.Modules
 
         private const string NoCardFromShinden = "nie udało się wylosować karty, brak połączenia z Shindenem. Spróbuj ponownie za chwilę, nic nie zostało zużyte.";
 
-        // longer lists go to DM in pages, a channel embed keeps them under the size Discord renders reliably
+        // a list that fits one page stays on the channel, longer ones go to DM in pages Discord renders fully
         private async Task SendWhoWantsAsync(string header, List<string> users)
         {
-            var inline = string.Join('\n', users);
-            if (users.Count <= WhoWantsPageSize && header.Length + inline.Length < 3000)
+            var reserve = DiscordLimits.CountElements(header) + 2;
+            var pages = DiscordLimits.Paginate(users, reserve, maxLength: DiscordLimits.SafeDescriptionLength - header.Length - 20);
+            if (pages.Count <= 1)
             {
-                await SafeReplyAsync("", embed: $"{header}\n\n{inline}".ToEmbedMessage(EMType.Info).Build());
+                await SafeReplyAsync("", embed: $"{header}\n\n{string.Join('\n', users)}".ToEmbedMessage(EMType.Info).Build());
                 return;
             }
 
             try
             {
-                var pages = users.SplitList(WhoWantsPageSize);
                 var dm = await Context.User.CreateDMChannelAsync();
                 for (int i = 0; i < pages.Count; i++)
                 {
@@ -99,8 +99,6 @@ namespace Sanakan.Modules
                 await SafeReplyAsync("", embed: $"{Context.User.Mention} {DmFailure(ex, "who wants")}".ToEmbedMessage(EMType.Error).Build());
             }
         }
-
-        private const int WhoWantsPageSize = 50;
 
         public static string DeckStatusMessage(DeckPowerStatus status, double power, bool opponent)
         {
@@ -2384,7 +2382,7 @@ namespace Sanakan.Modules
                 else
                 {
                     var usersStr = await _waifu.GetWhoWantsCardsStringAsync(wishlists, showNames, Context.Guild);
-                    await SendWhoWantsAsync($"**{thisCards.GetNameWithUrl()} chcą ({usersStr.Count}):**", usersStr);
+                    await SendWhoWantsAsync($"**{thisCards.GetNameWithUrl()} chcą ({wishlists.Count}):**", usersStr);
                 }
 
                 var exe = new Executable($"kc-check-{thisCards.Character}", new Func<Task>(async () =>
@@ -2491,7 +2489,7 @@ namespace Sanakan.Modules
                 }
 
                 var usersStr = await _waifu.GetWhoWantsCardsStringAsync(wishlists, showNames, Context.Guild);
-                await SendWhoWantsAsync($"**Karty z {response.Body.Title} chcą ({usersStr.Count}):**", usersStr);
+                await SendWhoWantsAsync($"**Karty z {response.Body.Title} chcą ({wishlists.Count}):**", usersStr);
             }
         }
 
