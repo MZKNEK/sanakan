@@ -112,6 +112,11 @@ namespace Sanakan.Database
             {
                 entity.HasKey(e => e.Id);
                 entity.HasIndex(e => e.Shinden);
+                entity.HasIndex(e => e.ExpCnt);
+                entity.HasIndex(e => e.ScCnt);
+                entity.HasIndex(e => e.TcCnt);
+                entity.HasIndex(e => e.AcCnt);
+                entity.HasIndex(e => e.MessagesCnt);
             });
 
             modelBuilder.Entity<UserStats>(entity =>
@@ -134,6 +139,8 @@ namespace Sanakan.Database
             {
                 entity.HasKey(e => e.Id);
                 entity.HasIndex(e => e.Guild);
+                entity.HasIndex(e => e.Type);
+                entity.HasIndex(e => e.BValue);
 
                 entity.HasOne(e => e.User)
                     .WithMany(u => u.TimeStatuses);
@@ -143,6 +150,8 @@ namespace Sanakan.Database
             {
                 entity.HasKey(e => e.Id);
                 entity.HasIndex(e => e.DeckPower);
+                entity.HasIndex(e => e.CardsInDeck);
+                entity.HasIndex(e => e.WishlistIsPrivate);
 
                 entity.HasOne(e => e.User)
                     .WithOne(u => u.GameDeck);
@@ -180,6 +189,10 @@ namespace Sanakan.Database
                 entity.HasIndex(e => e.Character);
                 entity.HasIndex(e => e.FromFigure);
                 entity.HasIndex(e => e.Unique);
+                entity.HasIndex(e => e.CardPower);
+                entity.HasIndex(e => e.Affection);
+                entity.HasIndex(e => e.Dere);
+                entity.HasIndex(e => e.Health);
 
                 entity.HasOne(e => e.GameDeck)
                     .WithMany(d => d.Cards);
@@ -410,6 +423,7 @@ namespace Sanakan.Database
             modelBuilder.Entity<WishlistCount>(entity =>
             {
                 entity.HasKey(e => e.Id);
+                entity.HasIndex(e => e.Count).HasDatabaseName("KCCount");
             });
 
             modelBuilder.Entity<UserActivity>(entity =>
