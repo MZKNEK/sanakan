@@ -275,14 +275,6 @@ namespace Sanakan.Modules
                     return;
                 }
 
-                long rankingPosition = 0;
-                if (!isBot)
-                {
-                    var allUsers = await db.GetCachedAllUsersLiteAsync(1);
-                    var rankingUser = allUsers.FirstOrDefault(x => x.Id == searchId);
-                    rankingPosition = allUsers.OrderByDescending(x => x.ExpCnt).ToList().IndexOf(rankingUser) + 1;
-                }
-
                 var url = Api.Models.CardFinalView.GetProfileUrl(dataUser.Id);
                 var profileUri = $"{Dir.FakeCardsAsProfiles}/{dataUser.Id}.webp";
 
@@ -292,6 +284,14 @@ namespace Sanakan.Modules
                     if (!await TrySendSavedImageAsync(profileUri, savedAt => SavedProfileNote(savedAt, availableAt.Value)))
                         await SafeReplyAsync("", embed: DelayNextUseBy.CooldownMessage(caller, availableAt.Value).ToEmbedMessage(EMType.Error).Build());
                     return;
+                }
+
+                long rankingPosition = 0;
+                if (!isBot)
+                {
+                    var allUsers = await db.GetCachedAllUsersLiteAsync(1);
+                    var rankingUser = allUsers.FirstOrDefault(x => x.Id == searchId);
+                    rankingPosition = allUsers.OrderByDescending(x => x.ExpCnt).ToList().IndexOf(rankingUser) + 1;
                 }
 
                 dataUser.GameDeck.Cards = (await db.GetCachedUserGameDeckAsync(searchId)).Cards;
