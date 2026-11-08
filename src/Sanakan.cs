@@ -33,6 +33,7 @@ namespace Sanakan
         private EmoteCounter _eCounter;
         private ImageProcessing _img;
         private ScamImageScanner _scamImages;
+        private Api.TokenAttemptGuard _apiGuard;
         private DeletedLog _deleted;
         private DmTrash _dmTrash;
         private HealthMonitor _health;
@@ -165,6 +166,7 @@ namespace Sanakan
             _heartbeat = new Heartbeat(_health.GetAsync, _config, _logger);
             _ingest = new DiscordIngest(_client, _config, _logger);
             _time = new SystemTime();
+            _apiGuard = new Api.TokenAttemptGuard(_time);
             _events = new Events(_time);
             _helper = new Helper(_config, _logger);
             _expedition = new Expedition(_time);
@@ -248,6 +250,7 @@ namespace Sanakan
                 .AddSingleton(_exp)
                 .AddSingleton(_img)
                 .AddSingleton(_scamImages)
+                .AddSingleton<Api.ITokenAttemptGuard>(_apiGuard)
                 .AddSingleton<Services.Fun>()
                 .AddSingleton<Services.LandManager>()
                 .AddSingleton<Services.PocketWaifu.Lottery>();

@@ -553,4 +553,64 @@ namespace Artifacts
             Assert.True(guard.IsLocked("ip", out _));
         }
     }
+
+    public class TokenAttemptUnlockTests
+    {
+        private static Sanakan.Api.TokenAttemptGuard Locked(params string[] keys)
+        {
+            var guard = new Sanakan.Api.TokenAttemptGuard(new FixedTime { Value = DateTime.Now });
+            foreach (var key in keys)
+                for (int i = 0; i < Sanakan.Api.TokenAttemptGuard.MaxAttempts; i++)
+                    guard.RegisterFailure(key);
+            return guard;
+        }
+
+        [Fact]
+        public void GetLocked_ListsLockedClients()
+        {
+            var guard = Locked("1.1.1.1", "2.2.2.2");
+            guard.RegisterFailure("3.3.3.3");
+
+            Assert.Equal(new[] { "1.1.1.1", "2.2.2.2" }, guard.GetLocked().Select(x => x.Key).OrderBy(x => x));
+        }
+
+        [Fact]
+        public void Unlock_OneClient()
+        {
+            var guard = Locked("1.1.1.1", "2.2.2.2");
+
+            Assert.Equal(1, guard.Unlock("1.1.1.1"));
+            Assert.Equal(0, guard.Unlock("9.9.9.9"));
+
+            Assert.False(guard.IsLocked("1.1.1.1", out _));
+            Assert.True(guard.IsLocked("2.2.2.2", out _));
+        }
+
+        [Fact]
+        public void Unlock_All_ClearsLocksAndCounters()
+        {
+            var guard = Locked("1.1.1.1");
+            guard.RegisterFailure("3.3.3.3");
+            guard.RegisterFailure("3.3.3.3");
+
+            Assert.Equal(2, guard.Unlock());
+            Assert.Empty(guard.GetLocked());
+
+            guard.RegisterFailure("3.3.3.3");
+            Assert.False(guard.IsLocked("3.3.3.3", out _));
+        }
+
+        [Fact]
+        public void ApiHost_UsesBotGuardInstance()
+        {
+            var config = new FakeConfig();
+            var guard = new Sanakan.Api.TokenAttemptGuard(new FixedTime());
+            var bot = new Microsoft.Extensions.DependencyInjection.ServiceCollection();
+            Microsoft.Extensions.DependencyInjection.ServiceCollectionServiceExtensions.AddSingleton<Sanakan.Api.ITokenAttemptGuard>(bot, guard);
+
+            using var host = Sanakan.Api.BotWebHost.CreateHost(config, bot, "http://localhost:0");
+
+            Assert.Same(guard, host.Services.GetService(typeof(Sanakan.Api.ITokenAttemptGuard)));
+        }
+    }
 }

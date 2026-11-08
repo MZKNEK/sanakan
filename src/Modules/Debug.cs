@@ -45,11 +45,14 @@ namespace Sanakan.Modules
         private Services.Shinden _shinden;
         private Services.DiscordIngest _ingest;
         private Services.ScamImages.ScamImageScanner _scamImages;
+        private Api.ITokenAttemptGuard _apiGuard;
 
         public Debug(Waifu waifu, ShindenClient shClient, Services.Helper helper, Services.ImageProcessing img,
             IConfig config, IExecutor executor, Spawn spawn, ISystemTime time, EmoteCounter counter, Services.Heartbeat heartbeat,
-            Services.ScamImages.ScamImageScanner scamImages, Services.DiscordIngest ingest, Services.Shinden shinden)
+            Services.ScamImages.ScamImageScanner scamImages, Services.DiscordIngest ingest, Services.Shinden shinden,
+            Api.ITokenAttemptGuard apiGuard)
         {
+            _apiGuard = apiGuard;
             _shinden = shinden;
             _scamImages = scamImages;
             _heartbeat = heartbeat;
@@ -1461,6 +1464,38 @@ namespace Sanakan.Modules
 
         private static string MaskKey(string key)
             => string.IsNullOrEmpty(key) || key.Length <= 12 ? "***" : $"{key.Substring(0, 8)}…";
+
+        [Command("apilocks"), Priority(1), RequireDev]
+        [Summary("wyświetla adresy IP zablokowane w API po nieudanych próbach klucza")]
+        [Remarks("")]
+        public async Task ShowApiLocksAsync()
+        {
+            var locked = _apiGuard.GetLocked();
+            if (locked.Count == 0)
+            {
+                await SafeReplyAsync("", embed: "Brak zablokowanych adresów.".ToEmbedMessage(EMType.Info).Build());
+                return;
+            }
+
+            var list = locked.Select(x => $"`{x.Key}` jeszcze {(int)x.Left.TotalHours}h {x.Left.Minutes}m");
+            await SafeReplyAsync("", embed: $"**Zablokowane adresy ({locked.Count}):**\n\n{string.Join("\n", list)}".TrimToLength().ToEmbedMessage(EMType.Info).Build());
+        }
+
+        [Command("apiunlock"), Priority(1), RequireDev]
+        [Summary("zdejmuje blokadę API z adresu IP (bez adresu - ze wszystkich, razem z licznikami nieudanych prób)")]
+        [Remarks("127.0.0.1")]
+        public async Task UnlockApiAsync([Summary("adres IP (opcjonalne)")] string ip = null)
+        {
+            var removed = _apiGuard.Unlock(ip);
+            if (ip != null && removed == 0)
+            {
+                await SafeReplyAsync("", embed: $"Adres `{ip}` nie ma blokady ani nieudanych prób.".ToEmbedMessage(EMType.Error).Build());
+                return;
+            }
+
+            var text = ip == null ? $"Wyczyszczono blokady i liczniki prób ({removed})." : $"Zdjęto blokadę z `{ip}`.";
+            await SafeReplyAsync("", embed: text.ToEmbedMessage(EMType.Success).Build());
+        }
 
         [Command("heartbeat"), Priority(1), RequireDev]
         [Summary("wyświetla konfigurację i stan heartbeatu (bot wysyła swój stan na stronę)")]

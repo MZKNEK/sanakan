@@ -40,7 +40,6 @@ namespace Sanakan.Services.Supervisor
         };
 
         private AsyncNonKeyedLocker _semaphore = new AsyncNonKeyedLocker(1);
-        private AsyncNonKeyedLocker _semaphoreJoin = new AsyncNonKeyedLocker(1);
         private AsyncKeyedLocker<ulong> _semaphoreUser = new AsyncKeyedLocker<ulong>(x =>
         {
             x.PoolSize = 200;
@@ -48,7 +47,6 @@ namespace Sanakan.Services.Supervisor
             x.MaxCount = 1;
         });
         private Dictionary<ulong, Dictionary<ulong, SupervisorEntity>> _guilds;
-        private Dictionary<ulong, Dictionary<string, SupervisorJoinEntity>> _guildsJoin;
         private Dictionary<ulong, HashSet<ulong>> _temporarySupervisionChannels;
 
         private DiscordSocketClient _client;
@@ -70,7 +68,6 @@ namespace Sanakan.Services.Supervisor
             _scamImages = scamImages;
 
             _guilds = new Dictionary<ulong, Dictionary<ulong, SupervisorEntity>>();
-            _guildsJoin = new Dictionary<ulong, Dictionary<string, SupervisorJoinEntity>>();
             _temporarySupervisionChannels = new Dictionary<ulong, HashSet<ulong>>();
 
             _timer = new Timer(async _ =>
@@ -78,7 +75,6 @@ namespace Sanakan.Services.Supervisor
                 try
                 {
                     using (await _semaphore.LockAsync().ConfigureAwait(false))
-                    using (await _semaphoreJoin.LockAsync().ConfigureAwait(false))
                     {
                         AutoValidate();
                     }
@@ -92,7 +88,6 @@ namespace Sanakan.Services.Supervisor
             TimeSpan.FromMinutes(5),
             TimeSpan.FromMinutes(5));
             _client.MessageReceived += HandleMessageAsync;
-            _client.UserJoined += UserJoinedAsync;
         }
 
         private async Task HandleMessageAsync(SocketMessage message)
@@ -556,113 +551,10 @@ namespace Sanakan.Services.Supervisor
                     if (_guilds[guild.Key].Count == 0)
                         _guilds.Remove(guild.Key);
                 }
-
-                var toClean2 = new Dictionary<ulong, List<string>>();
-                foreach (var guild in _guildsJoin)
-                {
-                    var usrs = new List<string>();
-                    foreach (var susspect in guild.Value)
-                    {
-                        if (!susspect.Value.IsValid())
-                            usrs.Add(susspect.Key);
-                    }
-                    toClean2.Add(guild.Key, usrs);
-                }
-
-                foreach (var guild in toClean2)
-                {
-                    foreach (var nick in guild.Value)
-                        _guildsJoin[guild.Key].Remove(nick);
-
-                    if (_guildsJoin[guild.Key].Count == 0)
-                        _guildsJoin.Remove(guild.Key);
-                }
             }
             catch (Exception ex)
             {
                 _logger.LogError($"Supervisor: autovalidate error {ex}");
-            }
-        }
-
-        private async Task UserJoinedAsync(SocketGuildUser user)
-        {
-            if (!_config.Get().Supervision) return;
-
-            var usr = user as SocketGuildUser;
-            if (usr == null) return;
-
-            if (usr.IsBot || usr.IsWebhook) return;
-
-            if (_config.Get().BlacklistedGuilds.Any(x => x == user.Guild.Id))
-                return;
-
-            _ = Task.Run(async () =>
-            {
-                try
-                {
-                    using (await _semaphoreUser.LockAsync(usr.Id).ConfigureAwait(false))
-                    {
-                        await AnalizeJoin(usr);
-                    }
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError($"Supervisor: analize join: {ex}");
-                }
-            });
-
-            await Task.CompletedTask;
-        }
-
-        private async Task AnalizeJoin(SocketGuildUser user)
-        {
-            List<ulong> usersToBan = null;
-
-            using (var db = new Database.DatabaseContext(_config))
-            {
-                var gConfig = await db.GetCachedGuildFullConfigAsync(user.Guild.Id);
-                if (gConfig == null) return;
-
-                if (!gConfig.Supervision) return;
-
-                using (await _semaphoreJoin.LockAsync().ConfigureAwait(false))
-                {
-                    if (!_guildsJoin.Any(x => x.Key == user.Guild.Id))
-                        _guildsJoin.Add(user.Guild.Id, new Dictionary<string, SupervisorJoinEntity>());
-
-                    // usernames are globally unique since the Discord name migration, so group by display name
-                    var joinKey = user.GlobalName ?? user.Username;
-                    var guild = _guildsJoin[user.Guild.Id];
-                    if (!guild.Any(x => x.Key == joinKey))
-                        guild.Add(joinKey, new SupervisorJoinEntity(user.Id, _time));
-
-                    var susspect = guild[joinKey];
-                    if (!susspect.IsValid())
-                    {
-                        susspect = new SupervisorJoinEntity(user.Id, _time);
-                        guild[joinKey] = susspect;
-                    }
-
-                    susspect.Add(user.Id);
-                    if (susspect.IsBannable())
-                        usersToBan = susspect.GetUsersToBan();
-                }
-            }
-
-            if (usersToBan == null)
-                return;
-
-            foreach (var toBan in usersToBan)
-            {
-                try
-                {
-                    await user.Guild.AddBanAsync(toBan, 1,
-                        $"Automatyczny ban: raid - wykryto {usersToBan.Count} kont, które dołączyły w ciągu 2 minut z tą samą nazwą ({user.GlobalName ?? user.Username}).");
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError($"Supervisor: raid ban {toBan}: {ex}");
-                }
             }
         }
     }

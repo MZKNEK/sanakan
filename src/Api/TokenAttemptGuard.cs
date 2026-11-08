@@ -2,6 +2,8 @@
 
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Linq;
 using Sanakan.Services.Time;
 
 namespace Sanakan.Api
@@ -11,6 +13,8 @@ namespace Sanakan.Api
         bool IsLocked(string key, out TimeSpan retryAfter);
         void RegisterFailure(string key);
         void RegisterSuccess(string key);
+        List<(string Key, TimeSpan Left)> GetLocked();
+        int Unlock(string key = null);
     }
 
     /// <summary>
@@ -88,6 +92,28 @@ namespace Sanakan.Api
                 return;
 
             _states.TryRemove(key, out _);
+        }
+
+        public List<(string Key, TimeSpan Left)> GetLocked()
+        {
+            var locked = new List<(string Key, TimeSpan Left)>();
+            foreach (var key in _states.Keys)
+            {
+                if (IsLocked(key, out var left))
+                    locked.Add((key, left));
+            }
+            return locked.OrderByDescending(x => x.Left).ToList();
+        }
+
+        // null clears every client, including ones with failures that are not locked yet
+        public int Unlock(string key = null)
+        {
+            if (key != null)
+                return _states.TryRemove(key, out _) ? 1 : 0;
+
+            var count = _states.Count;
+            _states.Clear();
+            return count;
         }
     }
 }
