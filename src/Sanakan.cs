@@ -68,6 +68,12 @@ namespace Sanakan
             WarnAboutWeakAppKeys();
             AddSigTermHandler();
 
+            _client.Ready += () =>
+            {
+                _logger.Log($"Połączono z Discordem jako {_client.CurrentUser}, serwerów: {_client.Guilds.Count}");
+                return Task.CompletedTask;
+            };
+
             var tmpCnf = _config.Get();
             await _client.LoginAsync(TokenType.Bot, tmpCnf.BotToken);
             await _client.SetGameAsync(tmpCnf.Prefix + "pomoc");
@@ -83,6 +89,8 @@ namespace Sanakan
 
             _heartbeat.Start();
             _ingest.Start();
+
+            _logger.Log($"Sanakan {HealthMonitor.GetVersion()} wystartował, API: {BotWebHost.Url}");
 
             await Task.Delay(-1);
         }
