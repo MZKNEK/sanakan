@@ -313,42 +313,51 @@ namespace Sanakan.Services.PocketWaifu
             {
                 using (var db = new Database.DatabaseContext(_config))
                 {
-                    var botUser = await db.GetUserOrCreateAsync(user.Id);
-                    if (botUser.IsBlacklisted) return;
-
-                    var pCnt = botUser.TimeStatuses.FirstOrDefault(x => x.Type == Database.Models.StatusType.Packet);
-                    if (pCnt == null)
-                    {
-                        pCnt = Database.Models.StatusType.Packet.NewTimeStatus();
-                        botUser.TimeStatuses.Add(pCnt);
-                    }
-
-                    if (!pCnt.IsActive(_time.Now()))
-                    {
-                        pCnt.EndsAt = _time.Now().Date.AddDays(1);
-                        pCnt.IValue = 0;
-                    }
-
                     var pLimit = _config.Get().PacksPerDay;
                     if (pLimit < 1) pLimit = 3;
 
-                    if (++pCnt.IValue > pLimit) return;
-
-                    botUser.GameDeck.BoosterPacks.Add(new BoosterPack
-                    {
-                        CardCnt = 2,
-                        MinRarity = Rarity.E,
-                        IsCardFromPackTradable = true,
-                        Name = "Pakiet kart za aktywność",
-                        CardSourceFromPack = CardSource.Activity
-                    });
-                    await db.SaveChangesAsync();
+                    if (!await TryGrantActivityPacketAsync(db, user.Id, _time.Now(), pLimit)) return;
 
                     FireAndForget("Spawn: pakiet", () => channel.SendMessageAsync("", embed: $"{user.Mention} otrzymał pakiet losowych kart.".ToEmbedMessage(EMType.Bot).Build()));
                 }
             }), user.Id);
 
             _executor.TryAdd(exe, TimeSpan.FromSeconds(1));
+        }
+
+        public static async Task<bool> TryGrantActivityPacketAsync(Database.DatabaseContext db, ulong userId, DateTime now, long packsPerDay)
+        {
+            // only time statuses are needed, the full load would read every card of the player
+            var botUser = await db.GetUserOrCreateSimpleAsync(userId);
+            if (botUser.IsBlacklisted) return false;
+
+            var pCnt = botUser.TimeStatuses.FirstOrDefault(x => x.Type == Database.Models.StatusType.Packet);
+            if (pCnt == null)
+            {
+                pCnt = Database.Models.StatusType.Packet.NewTimeStatus();
+                botUser.TimeStatuses.Add(pCnt);
+            }
+
+            if (!pCnt.IsActive(now))
+            {
+                pCnt.EndsAt = now.Date.AddDays(1);
+                pCnt.IValue = 0;
+            }
+
+            if (++pCnt.IValue > packsPerDay) return false;
+
+            // the simple load leaves GameDeck.BoosterPacks null, so the pack is added through the context
+            db.BoosterPacks.Add(new BoosterPack
+            {
+                CardCnt = 2,
+                MinRarity = Rarity.E,
+                IsCardFromPackTradable = true,
+                Name = "Pakiet kart za aktywność",
+                CardSourceFromPack = CardSource.Activity,
+                GameDeck = botUser.GameDeck,
+            });
+            await db.SaveChangesAsync();
+            return true;
         }
 
         private long GetMessageRealLenght(SocketUserMessage message)

@@ -89,7 +89,9 @@ namespace Sanakan.Extensions
 
         public static async Task<List<GameDeck>> GetCachedPlayersForPVP(this Database.DatabaseContext context, ulong ignore = 1)
         {
-            return (await context.GameDecks.AsQueryable().Where(x => x.DeckPower > UserExtension.MIN_DECK_POWER && x.DeckPower < UserExtension.MAX_DECK_POWER && x.UserId != ignore && x.CardsInDeck <= UserExtension.MAX_CARDS_IN_DECK && x.CardsInDeck > 0).AsNoTracking().AsSplitQuery().FromCacheAsync(context, $"pvp-players-{ignore}", new MemoryCacheEntryOptions{ AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(2) })).ToList();
+            // one shared entry instead of one copy per player, the caller is excluded in memory
+            var all = await context.GameDecks.AsQueryable().Where(x => x.DeckPower > UserExtension.MIN_DECK_POWER && x.DeckPower < UserExtension.MAX_DECK_POWER && x.CardsInDeck <= UserExtension.MAX_CARDS_IN_DECK && x.CardsInDeck > 0).AsNoTracking().AsSplitQuery().FromCacheAsync(context, "pvp-players", new MemoryCacheEntryOptions{ AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(2) });
+            return all.Where(x => x.UserId != ignore).ToList();
         }
 
         public static async Task<User> GetUserOrCreateSimpleAsync(this Database.DatabaseContext context, ulong userId)
@@ -112,6 +114,15 @@ namespace Sanakan.Extensions
             var internalTagId = helper.GetTagId(tag);
             return internalTagId != 0 ? await context.Tags.AsQueryable().FirstOrDefaultAsync(x => x.Id == internalTagId)
                 : await context.Tags.AsQueryable().FirstOrDefaultAsync(x => x.Name.Equals(tag) && x.GameDeckId == ownerId);
+        }
+
+        public static async Task<Dictionary<ulong, long>> CountUserCardsByTagsAsync(this Database.DatabaseContext context, ulong userId, IEnumerable<ulong> tagIds)
+        {
+            var ids = tagIds.Distinct().ToList();
+            return await context.TagCardRelations.AsQueryable().AsNoTracking()
+                .Where(x => x.Card.GameDeckId == userId && ids.Contains(x.TagId))
+                .GroupBy(x => x.TagId).Select(x => new { x.Key, Count = x.LongCount() })
+                .ToDictionaryAsync(x => x.Key, x => x.Count);
         }
 
         public static async Task<User> GetUserOrCreateAsync(this Database.DatabaseContext context, ulong userId)

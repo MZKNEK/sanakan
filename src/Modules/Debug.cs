@@ -663,60 +663,14 @@ namespace Sanakan.Modules
             {
                 using (var db = new Database.DatabaseContext(Config))
                 {
-                    var user = await db.GetUserOrCreateAsync(id);
-                    if (user == null)
+                    var won = await TransferLotteryCardsAsync(db, id, winner, count, _time);
+                    if (won == null)
                     {
                         await msg.ModifyAsync(x => x.Embed = "Nie odnaleziono kart do rozdania!".ToEmbedMessage(EMType.Error).Build());
                         return;
                     }
 
-                    var loteryCards = user.GameDeck.Cards.ToList();
-                    if (loteryCards.Count < 1)
-                    {
-                        await msg.ModifyAsync(x => x.Embed = "Nie odnaleziono kart do rozdania!".ToEmbedMessage(EMType.Error).Build());
-                        return;
-                    }
-
-                    var winnerUser = await db.GetUserOrCreateAsync(winner.Id);
-                    if (winnerUser == null)
-                    {
-                        await msg.ModifyAsync(x => x.Embed = "Nie odnaleziono docelowego użytkownika!".ToEmbedMessage(EMType.Error).Build());
-                        return;
-                    }
-
-                    bool wonSSS = false;
-                    var cardsIds = new List<string>();
-                    var idsToSelect = loteryCards.Select(x => x.Id).ToList();
-
-                    for (int i = 0; i < count; i++)
-                    {
-                        if (idsToSelect.Count < 1)
-                            break;
-
-                        var wid = Services.Fun.GetOneRandomFrom(idsToSelect);
-                        var thisCard = loteryCards.FirstOrDefault(x => x.Id == wid);
-                        if (thisCard.Rarity == Rarity.SSS) wonSSS = true;
-
-                        thisCard.Active = false;
-                        thisCard.InCage = false;
-                        thisCard.Tags.Clear();
-                        thisCard.Expedition = CardExpedition.None;
-
-                        thisCard.GameDeckId = winnerUser.GameDeck.Id;
-
-                        bool isOnUserWishlist = await winnerUser.GameDeck.RemoveCharacterFromWishListAsync(thisCard.Character, db);
-                        cardsIds.Add($"{thisCard.ToHeartWishlist(isOnUserWishlist)}{thisCard.GetString(false, false, true, hideStats: true)}");
-                        winnerUser.GameDeck.RemoveCardFromWishList(thisCard.Id);
-
-                        db.AddActivityFromNewCard(thisCard, isOnUserWishlist, _time, winnerUser, winner.GetUserNickInGuild());
-
-                        idsToSelect.Remove(wid);
-                    }
-
-                    await db.UserActivities.AddAsync(new Services.UserActivityBuilder(_time)
-                        .WithUser(winnerUser, winner).WithType(Database.Models.ActivityType.WonLottery).Build());
-
-                    await db.SaveChangesAsync();
+                    var (cardsIds, wonSSS) = won.Value;
                     await msg.DeleteAsync();
 
                     QueryCache.ExpireTag(new string[] { CacheTags.User(id), CacheTags.User(winner.Id) });
@@ -750,9 +704,61 @@ namespace Sanakan.Modules
                     catch(Exception){}
                 }
             }), winner.Id, Priority.High);
+            // two lotteries from the same account must not draw the same card
+            exe.AddOwner(id);
 
             await _executor.TryAdd(exe, TimeSpan.FromSeconds(1));
             await msg.RemoveAllReactionsAsync();
+        }
+
+        public static async Task<(List<string> Cards, bool WonSSS)?> TransferLotteryCardsAsync(Database.DatabaseContext db, ulong giverId, IUser winner, uint count, ISystemTime time)
+        {
+            // the giver can hold tens of thousands of cards, so only ids are read and just the drawn cards are loaded
+            var idsToSelect = await db.Cards.AsQueryable().Where(x => x.GameDeckId == giverId).Select(x => x.Id).ToListAsync();
+            if (idsToSelect.Count < 1)
+                return null;
+
+            // cards are moved by GameDeckId, only the winner's wishlist is needed
+            var winnerUser = await db.GetUserOrCreateSimpleAsync(winner.Id);
+
+            var drawn = new List<ulong>();
+            for (int i = 0; i < count && idsToSelect.Count > 0; i++)
+            {
+                var wid = Services.Fun.GetOneRandomFrom(idsToSelect);
+                drawn.Add(wid);
+                idsToSelect.Remove(wid);
+            }
+
+            var cards = await db.Cards.AsQueryable().Include(x => x.Tags).Where(x => drawn.Contains(x.Id)).ToDictionaryAsync(x => x.Id);
+
+            bool wonSSS = false;
+            var cardsIds = new List<string>();
+            foreach (var wid in drawn)
+            {
+                if (!cards.TryGetValue(wid, out var thisCard))
+                    continue;
+
+                if (thisCard.Rarity == Rarity.SSS) wonSSS = true;
+
+                thisCard.Active = false;
+                thisCard.InCage = false;
+                thisCard.Tags.Clear();
+                thisCard.Expedition = CardExpedition.None;
+
+                thisCard.GameDeckId = winnerUser.GameDeck.Id;
+
+                bool isOnUserWishlist = await winnerUser.GameDeck.RemoveCharacterFromWishListAsync(thisCard.Character, db);
+                cardsIds.Add($"{thisCard.ToHeartWishlist(isOnUserWishlist)}{thisCard.GetString(false, false, true, hideStats: true)}");
+                winnerUser.GameDeck.RemoveCardFromWishList(thisCard.Id);
+
+                db.AddActivityFromNewCard(thisCard, isOnUserWishlist, time, winnerUser, winner.GetUserNickInGuild());
+            }
+
+            await db.UserActivities.AddAsync(new Services.UserActivityBuilder(time)
+                .WithUser(winnerUser, winner).WithType(Database.Models.ActivityType.WonLottery).Build());
+
+            await db.SaveChangesAsync();
+            return (cardsIds, wonSSS);
         }
 
         [Command("tranc"), Priority(1), RequireDev]

@@ -364,7 +364,7 @@ namespace Sanakan.Modules
                 var card = fig.ToCard(endTime);
                 user.GameDeck.Cards.Add(card);
 
-                var wishlists = db.GameDecks.AsQueryable().AsSplitQuery().Include(x => x.User).Include(x => x.Wishes).AsNoTracking().Where(x => !x.WishlistIsPrivate && x.Wishes.Any(c => c.Type == WishlistObjectType.Character && c.ObjectId == card.Character)).ToList();
+                var wishlists = db.GameDecks.AsQueryable().Include(x => x.User).AsNoTracking().Where(x => !x.WishlistIsPrivate && x.Wishes.Any(c => c.Type == WishlistObjectType.Character && c.ObjectId == card.Character)).ToList();
                 card.AWhoWantsCount = wishlists.Count(x => x.IsUserActive(_time.Now()));
                 card.WhoWantsCount = wishlists.Count;
 
@@ -882,7 +882,7 @@ namespace Sanakan.Modules
                 {
                     await card.Update(Context.User, _shclient, defaultImage);
 
-                    var wish = await db.GameDecks.AsQueryable().AsSplitQuery().Include(x => x.User).Include(x => x.Wishes).AsNoTracking().Where(x => !x.WishlistIsPrivate && x.Wishes.Any(c => c.Type == WishlistObjectType.Character && c.ObjectId == card.Character)).ToListAsync();
+                    var wish = await db.GameDecks.AsQueryable().Include(x => x.User).AsNoTracking().Where(x => !x.WishlistIsPrivate && x.Wishes.Any(c => c.Type == WishlistObjectType.Character && c.ObjectId == card.Character)).ToListAsync();
                     var aCount = wish.Count(x => x.IsUserActive(_time.Now()));
                     var wCount = wish.Count;
 
@@ -1394,7 +1394,7 @@ namespace Sanakan.Modules
                 card.Affection += botuser.GameDeck.AffectionFromKarma();
                 card.Source = CardSource.Daily;
 
-                var wishlists = db.GameDecks.AsQueryable().AsSplitQuery().Include(x => x.User).Include(x => x.Wishes).AsNoTracking().Where(x => !x.WishlistIsPrivate && x.Wishes.Any(c => c.Type == WishlistObjectType.Character && c.ObjectId == card.Character)).ToList();
+                var wishlists = db.GameDecks.AsQueryable().Include(x => x.User).AsNoTracking().Where(x => !x.WishlistIsPrivate && x.Wishes.Any(c => c.Type == WishlistObjectType.Character && c.ObjectId == card.Character)).ToList();
                 card.AWhoWantsCount = wishlists.Count(x => x.IsUserActive(_time.Now()));
                 card.WhoWantsCount = wishlists.Count;
 
@@ -2324,7 +2324,7 @@ namespace Sanakan.Modules
                     {
                     using (var dbs = new Database.DatabaseContext(_config))
                     {
-                        var wish = await dbs.GameDecks.AsQueryable().AsSplitQuery().Include(x => x.User).Include(x => x.Wishes).AsNoTracking().Where(x => !x.WishlistIsPrivate && x.Wishes.Any(c => c.Type == WishlistObjectType.Character && c.ObjectId == thisCards.Character)).ToListAsync();
+                        var wish = await dbs.GameDecks.AsQueryable().Include(x => x.User).AsNoTracking().Where(x => !x.WishlistIsPrivate && x.Wishes.Any(c => c.Type == WishlistObjectType.Character && c.ObjectId == thisCards.Character)).ToListAsync();
                         var aCount = wish.Count(x => x.IsUserActive(_time.Now()));
                         var wCount = wish.Count;
 
@@ -3072,21 +3072,15 @@ namespace Sanakan.Modules
             {
                 var buser = await db.GetBaseUserAndDontTrackAsync(Context.User.Id);
 
-                var tags = new List<(Tag Tag, long Count)>();
-                foreach (var tag in buser.GameDeck.GetOrderedTags())
-                    tags.Add((tag, await db.Cards.AsQueryable().AsNoTracking().CountAsync(x => x.GameDeckId == buser.Id &&  x.Tags.Contains(tag))));
+                var ownTags = buser.GameDeck.GetOrderedTags().ToList();
+                var defaultTags = new[] { Services.PocketWaifu.TagType.Favorite, Services.PocketWaifu.TagType.Exchange, Services.PocketWaifu.TagType.Gallery,
+                    Services.PocketWaifu.TagType.Reservation, Services.PocketWaifu.TagType.TrashBin }.Select(x => _tags.GetTag(x)).ToList();
 
-                var dtag = new List<(TagIcon Tag, long Count)>();
-                var favs = _tags.GetTag(Services.PocketWaifu.TagType.Favorite);
-                dtag.Add((favs, await db.Cards.AsQueryable().AsNoTracking().CountAsync(x => x.GameDeckId == buser.Id &&  x.Tags.Any(x => x.Id == favs.Id))));
-                var exch = _tags.GetTag(Services.PocketWaifu.TagType.Exchange);
-                dtag.Add((exch, await db.Cards.AsQueryable().AsNoTracking().CountAsync(x => x.GameDeckId == buser.Id &&  x.Tags.Any(x => x.Id == exch.Id))));
-                var gall = _tags.GetTag(Services.PocketWaifu.TagType.Gallery);
-                dtag.Add((gall, await db.Cards.AsQueryable().AsNoTracking().CountAsync(x => x.GameDeckId == buser.Id &&  x.Tags.Any(x => x.Id == gall.Id))));
-                var rese = _tags.GetTag(Services.PocketWaifu.TagType.Reservation);
-                dtag.Add((rese, await db.Cards.AsQueryable().AsNoTracking().CountAsync(x => x.GameDeckId == buser.Id &&  x.Tags.Any(x => x.Id == rese.Id))));
-                var tras = _tags.GetTag(Services.PocketWaifu.TagType.TrashBin);
-                dtag.Add((tras, await db.Cards.AsQueryable().AsNoTracking().CountAsync(x => x.GameDeckId == buser.Id &&  x.Tags.Any(x => x.Id == tras.Id))));
+                var counts = await db.CountUserCardsByTagsAsync(buser.Id, ownTags.Select(x => x.Id).Concat(defaultTags.Select(x => x.Id)));
+                long CountOf(ulong id) => counts.TryGetValue(id, out var count) ? count : 0;
+
+                var tags = ownTags.Select(x => (Tag: x, Count: CountOf(x.Id))).ToList();
+                var dtag = defaultTags.Select(x => (Tag: x, Count: CountOf(x.Id))).ToList();
 
                 await SafeReplyAsync("", embed: ($"**Własne oznaczenia**: `{tags.Count}/{buser.GameDeck.MaxNumberOfTags}`\n\n"
                                           + $"{string.Join("\n", tags.Select(x => $"**{x.Tag.Name}** `{x.Count}`"))}\n\n"
