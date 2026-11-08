@@ -1762,11 +1762,12 @@ namespace Sanakan.Services.PocketWaifu
                 if (!cardMissing && !profileMissing)
                     return toReturn;
 
+                var pictures = new ImageProcessing.CardPictureCache();
                 try
                 {
                     if (cardMissing)
                     {
-                        using (var image = await _img.GetWaifuCardAsync(card))
+                        using (var image = await _img.GetWaifuCardAsync(card, pictures))
                         {
                             image.SaveToPath(imageLocation);
                             image.SaveToPath(sImageLocation, 133);
@@ -1775,7 +1776,7 @@ namespace Sanakan.Services.PocketWaifu
 
                     if (profileMissing)
                     {
-                        using (var cardImage = await _img.GetWaifuInProfileCardAsync(card))
+                        using (var cardImage = await _img.GetWaifuInProfileCardAsync(card, pictures))
                         {
                             cardImage.SaveToPath(pImageLocation);
                         }

@@ -23,6 +23,7 @@
 
   <ItemGroup>
     <None Include="..\src\Fonts\**" LinkBase="Fonts" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\src\Pictures\**" LinkBase="Pictures" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

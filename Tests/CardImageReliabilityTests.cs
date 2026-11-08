@@ -86,11 +86,26 @@ namespace Artifacts
             var picture = await new ImageProcessing(null, null, true, logger).LoadCharacterPictureAsync(server.BaseUrl + "char.png", 1081239);
 
             Assert.Null(picture);
+            Assert.Equal(1, requests);
             var message = Assert.Single(logger.Messages);
             Assert.Contains("1081239", message);
             Assert.Contains("HTTP 429", message);
             Assert.Equal(LogKind.Routine, LoggerExtensions.Parse(message).Kind);
             Assert.False(DiscordChannelLogger.ShouldSend(message));
+        }
+
+        [Fact]
+        public async Task RateLimitedDownload_DoesNotTryOtherExtensions()
+        {
+            var requests = 0;
+            using var server = new LocalHttpServer(Flaky(int.MaxValue, 429, () => Interlocked.Increment(ref requests)));
+            var card = new Card { Id = 3 };
+
+            await Assert.ThrowsAsync<InvalidDataException>(() =>
+                new ImageProcessing(null, null, true).SaveCardBorderImageFromUrlAsync(server.BaseUrl + "border.png", card));
+
+            Assert.Equal(1, requests);
+            Assert.Null(card.CustomBorder);
         }
 
         [Fact]
@@ -119,13 +134,13 @@ namespace Artifacts
 
             public FakeImages() : base(null, null, true) { }
 
-            public override Task<Image> GetWaifuCardAsync(Card card)
+            public override Task<Image> GetWaifuCardAsync(Card card, CardPictureCache pictures)
             {
                 CardRenders++;
                 return Task.FromResult<Image>(new Image<Rgba32>(475, 667));
             }
 
-            public override Task<Image> GetWaifuInProfileCardAsync(Card card)
+            public override Task<Image> GetWaifuInProfileCardAsync(Card card, CardPictureCache pictures)
             {
                 ProfileRenders++;
                 if (FailNextProfile)
@@ -134,6 +149,71 @@ namespace Artifacts
                     throw new InvalidOperationException("profile render failed");
                 }
                 return Task.FromResult<Image>(new Image<Rgba32>(475, 667));
+            }
+        }
+
+        [Fact]
+        public async Task CharacterPicture_WithCache_IsDownloadedOnce()
+        {
+            var requests = 0;
+            using var server = new LocalHttpServer(Flaky(0, 200, () => Interlocked.Increment(ref requests)));
+            var images = new ImageProcessing(null, null, true);
+            var pictures = new ImageProcessing.CardPictureCache();
+
+            using var first = await images.LoadCharacterPictureAsync(server.BaseUrl + "char.png", 1, pictures);
+            using var second = await images.LoadCharacterPictureAsync(server.BaseUrl + "char.png", 1, pictures);
+
+            Assert.Equal(1, requests);
+            Assert.Equal(40, first.Width);
+            Assert.Equal(40, second.Width);
+            Assert.NotSame(first, second);
+        }
+
+        [Fact]
+        public async Task CharacterPicture_WithCache_FailureIsNotRetriedOrLoggedAgain()
+        {
+            var requests = 0;
+            using var server = new LocalHttpServer(Flaky(int.MaxValue, 404, () => Interlocked.Increment(ref requests)));
+            var logger = new ListLogger();
+            var images = new ImageProcessing(null, null, true, logger);
+            var pictures = new ImageProcessing.CardPictureCache();
+
+            Assert.Null(await images.LoadCharacterPictureAsync(server.BaseUrl + "char.png", 1, pictures));
+            Assert.Null(await images.LoadCharacterPictureAsync(server.BaseUrl + "char.png", 1, pictures));
+
+            Assert.Equal(3 * 6, requests);
+            Assert.Single(logger.Messages);
+        }
+
+        [Theory]
+        [InlineData(Quality.Broken, false)]
+        [InlineData(Quality.Broken, true)]
+        public async Task GeneratingCard_DownloadsCharacterPictureOnce(Quality quality, bool animated)
+        {
+            Dir.Create();
+            var requests = 0;
+            using var server = new LocalHttpServer(Flaky(0, 200, () => Interlocked.Increment(ref requests)));
+            var card = new Card
+            {
+                Id = 980000000000UL + (ulong)Environment.TickCount64 % 1000000 + (ulong)quality * 10 + (animated ? 1UL : 0UL),
+                Quality = quality,
+                IsAnimatedImage = animated,
+                Image = server.BaseUrl + "char.png",
+            };
+            var logger = new ListLogger();
+            var waifu = new Waifu(new ImageProcessing(null, null, true), null, null, logger, null, null, null, new FixedTime(), null, null, new FakeConfig());
+            try
+            {
+                await waifu.GenerateAndSaveCardAsync(card);
+
+                Assert.Empty(logger.Messages);
+                Assert.All(Files(card), path => Assert.True(File.Exists(path), path));
+                Assert.Equal(1, requests);
+            }
+            finally
+            {
+                foreach (var path in Files(card).Where(File.Exists))
+                    File.Delete(path);
             }
         }
 
