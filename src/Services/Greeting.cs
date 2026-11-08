@@ -264,21 +264,25 @@ namespace Sanakan.Services
             return next - now;
         }
 
-        private async Task<bool> IsStillOnAnyGuildAsync(ulong leftGuildId, ulong userId)
+        private Task<bool> IsStillOnAnyGuildAsync(ulong leftGuildId, ulong userId)
+            => IsOnAnyGuildAsync(_client, _logger, userId, leftGuildId);
+
+        // asks Discord when the cache does not have the user, an error counts as present so nobody is removed by mistake
+        public static async Task<bool> IsOnAnyGuildAsync(DiscordSocketClient client, ILogger logger, ulong userId, ulong skipGuildId = 0)
         {
-            foreach (var guild in _client.Guilds.Where(x => x.Id != leftGuildId))
+            foreach (var guild in client.Guilds.Where(x => x.Id != skipGuildId))
             {
                 if (guild.GetUser(userId) != null)
                     return true;
 
                 try
                 {
-                    if (await _client.Rest.GetGuildUserAsync(guild.Id, userId) != null)
+                    if (await client.Rest.GetGuildUserAsync(guild.Id, userId) != null)
                         return true;
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError($"Greeting: user leave check g{guild.Id} u{userId}: {ex}");
+                    logger?.LogError($"Greeting: user leave check g{guild.Id} u{userId}: {ex}");
                     return true;
                 }
             }

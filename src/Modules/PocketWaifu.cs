@@ -4232,13 +4232,7 @@ namespace Sanakan.Modules
                 return;
             }
 
-            double toLong = 1;
-            var pvpPlayersInRange = allPvpPlayers.Where(x => x.IsNearMMR(duser.GameDeck)).ToList();
-            for (double mmr = 0.5; pvpPlayersInRange.Count < 10; mmr += (0.5 * toLong))
-            {
-                pvpPlayersInRange = allPvpPlayers.Where(x => x.IsNearMMR(duser.GameDeck, mmr)).ToList();
-                toLong += 0.5;
-            }
+            var pvpPlayersInRange = duser.GameDeck.GetPvpOpponentCandidates(allPvpPlayers);
 
             foreach (var candidate in pvpPlayersInRange.Shuffle())
             {
@@ -4360,6 +4354,7 @@ namespace Sanakan.Modules
                 }
                 mission.Count(_time.Now());
 
+                denemy.GameDeck.RecalculateDeck();
                 var info = duser.GameDeck.CalculatePVPParams(denemy.GameDeck, res);
                 await db.SaveChangesAsync();
 
@@ -4657,7 +4652,7 @@ namespace Sanakan.Modules
                 var seasonString = "----";
                 if (bUser.GameDeck.IsPVPSeasonalRankActive(_time.Now()))
                     seasonString = $"{bUser.GameDeck.GetRankName()} ({bUser.GameDeck.SeasonalPVPRank})";
-                var globalString = $"{bUser.GameDeck.GetRankName(bUser.GameDeck.GlobalPVPRank)} ({bUser.GameDeck.GlobalPVPRank})";
+                var globalString = $"{bUser.GameDeck.GetGlobalRankName()} ({bUser.GameDeck.GlobalPVPRank})";
 
                 var embed = new EmbedBuilder()
                 {
@@ -4699,7 +4694,7 @@ namespace Sanakan.Modules
             var won = deck.PvPStats?.Count(x => x.Result == FightResult.Win && x.Type == FightType.NewVersus) ?? 0;
             var season = deck.IsPVPSeasonalRankActive(now) ? $"{deck.GetRankName()} ({deck.SeasonalPVPRank})" : "brak";
             var pvp = $"{won} / {all} wygranych{(all > 0 ? $" ({won * 100 / all}%)" : "")}\n"
-                + $"Globalna: {deck.GetRankName(deck.GlobalPVPRank)} ({deck.GlobalPVPRank})\nSezon: {season}";
+                + $"Globalna: {deck.GetGlobalRankName()} ({deck.GlobalPVPRank})\nSezon: {season}";
 
             var stats = bUser.Stats;
             var history = $"ulepszone: {stats.UpgaredCards}\nuwolnione: {stats.ReleasedCards}\nzniszczone: {stats.DestroyedCards}\n"
@@ -4730,7 +4725,7 @@ namespace Sanakan.Modules
             var wPvp = deck.PvPStats?.Count(x => x.Result == FightResult.Win && x.Type == FightType.NewVersus);
 
             var seasonString = deck.IsPVPSeasonalRankActive(now) ? $"{deck.GetRankName()} ({deck.SeasonalPVPRank})" : "----";
-            var globalString = $"{deck.GetRankName(deck.GlobalPVPRank)} ({deck.GlobalPVPRank})";
+            var globalString = $"{deck.GetGlobalRankName()} ({deck.GlobalPVPRank})";
 
             var sssCnt = CountOf(Rarity.SSS) - ultimate;
             var sssString = sssCnt > 0 ? $"**SSS**: {sssCnt} " : "";

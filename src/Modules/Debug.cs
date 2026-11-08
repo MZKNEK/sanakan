@@ -217,6 +217,123 @@ namespace Sanakan.Modules
             }
         }
 
+        [Command("recpower", RunMode = RunMode.Async), RequireDev]
+        [Summary("przelicza zapisaną moc wszystkich kart i talii, np. po zmianie wzoru")]
+        [Remarks("")]
+        public async Task RecalculatePowerAsync()
+        {
+            try
+            {
+                await SafeReplyAsync("", embed: "Przeliczanie mocy kart i talii...".ToEmbedMessage(EMType.Bot).Build());
+                var watch = Stopwatch.StartNew();
+                var res = await PowerRecalculation.RecalculateAllAsync(() => new Database.DatabaseContext(Config));
+                await SafeReplyAsync("", embed: ($"Gotowe w {watch.Elapsed.TotalSeconds:0} s.\n"
+                    + $"Karty: {res.Cards}, zmieniona moc: {res.ChangedCards}.\n"
+                    + $"Talie: {res.Decks}, zmieniona moc: {res.ChangedDecks}.").ToEmbedMessage(EMType.Success).Build());
+            }
+            catch (Exception ex)
+            {
+                Logger?.LogError($"Debug: recpower: {ex}");
+                await SafeReplyAsync("", embed: $"Przeliczanie przerwane: {ex.Message}".ToEmbedMessage(EMType.Error).Build());
+            }
+        }
+
+        // with partial member lists almost everyone would need a check through the Discord API
+        private bool MemberListsReady() => Context.Client.ConnectionState == ConnectionState.Connected
+            && Context.Client.Guilds.Count > 0 && Context.Client.Guilds.All(x => x.HasAllMembers);
+
+        private async Task<List<ulong>> FindAbsentUsersAsync()
+        {
+            var onGuilds = Context.Client.Guilds.SelectMany(x => x.Users).Select(x => x.Id).ToHashSet();
+            List<ulong> candidates;
+            using (var db = new Database.DatabaseContext(Config))
+            {
+                candidates = await db.GetUsersWithoutLeaveDateAsync();
+            }
+
+            var absent = new List<ulong>();
+            foreach (var id in candidates.Where(x => !onGuilds.Contains(x)))
+            {
+                if (!await Services.Greeting.IsOnAnyGuildAsync(Context.Client, Logger, id))
+                    absent.Add(id);
+            }
+            return absent;
+        }
+
+        private const string MemberListsNotReady = "Bot nie ma jeszcze pełnych list członków serwerów, spróbuj za chwilę.";
+
+        [Command("nieobecni", RunMode = RunMode.Async), RequireDev]
+        [Summary("wypisuje użytkowników z bazy, których nie ma na żadnym serwerze i nie mają daty wyjścia, więc codzienne czyszczenie ich pomija")]
+        [Remarks("")]
+        public async Task ShowAbsentUsersAsync()
+        {
+            if (!MemberListsReady())
+            {
+                await SafeReplyAsync("", embed: MemberListsNotReady.ToEmbedMessage(EMType.Error).Build());
+                return;
+            }
+
+            var absent = await FindAbsentUsersAsync();
+            if (absent.Count == 0)
+            {
+                await SafeReplyAsync("", embed: "Nie ma takich użytkowników.".ToEmbedMessage(EMType.Success).Build());
+                return;
+            }
+
+            var summary = $"Użytkownicy bez daty wyjścia, których nie ma na żadnym serwerze: **{absent.Count}**.\nUsuniesz ich poleceniem `dev nieobecni usuń`.";
+            if (absent.Count <= 40)
+            {
+                await SafeReplyAsync("", embed: $"{summary}\n\n{string.Join("\n", absent)}".ToEmbedMessage(EMType.Info).Build());
+                return;
+            }
+
+            using var stream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(string.Join("\n", absent)));
+            await Context.Channel.SendFileAsync(stream, "nieobecni.txt", embed: summary.ToEmbedMessage(EMType.Info).Build());
+        }
+
+        [Command("nieobecni usuń", RunMode = RunMode.Async), RequireDev]
+        [Alias("nieobecni usun")]
+        [Summary("usuwa z bazy użytkowników, których nie ma na żadnym serwerze i nie mają daty wyjścia; każdy jest sprawdzany jeszcze raz tuż przed usunięciem")]
+        [Remarks("")]
+        public async Task RemoveAbsentUsersAsync()
+        {
+            if (!MemberListsReady())
+            {
+                await SafeReplyAsync("", embed: MemberListsNotReady.ToEmbedMessage(EMType.Error).Build());
+                return;
+            }
+
+            var absent = await FindAbsentUsersAsync();
+            int queued = 0, notQueued = 0;
+            foreach (var userId in absent)
+            {
+                var job = new Executable("delete absent user", async () =>
+                {
+                    try
+                    {
+                        if (await Services.Greeting.IsOnAnyGuildAsync(Context.Client, Logger, userId))
+                            return;
+
+                        using var db = new Database.DatabaseContext(Config);
+                        await db.RemoveUserWithoutLeaveDateAsync(userId);
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger?.LogError($"Debug: absent user removal u{userId}: {ex}");
+                    }
+                }, userId, Priority.Low);
+
+                if (await _executor.TryAdd(job, TimeSpan.FromSeconds(1))) ++queued;
+                else ++notQueued;
+            }
+
+            var text = $"Zlecono usunięcie **{queued}** użytkowników. Każdy jest jeszcze raz sprawdzany tuż przed usunięciem, błędy trafią do logów.";
+            if (notQueued > 0)
+                text += $"\nNie udało się zlecić {notQueued}, kolejka była pełna. Uruchom polecenie ponownie, gdy te się wykonają.";
+
+            await SafeReplyAsync("", embed: text.ToEmbedMessage(absent.Count == 0 ? EMType.Success : EMType.Info).Build());
+        }
+
         [Command("missingu", RunMode = RunMode.Async), RequireDev]
         [Summary("generuje listę id użytkowników, których nie widzi bot na serwerach")]
         [Remarks("")]

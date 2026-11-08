@@ -458,7 +458,9 @@ namespace Sanakan.Services.PocketWaifu
             return collectionInfo;
         }
 
-        static public double GetDereDmgMultiplier(Card atk, Card def) => _dereDmgRelation[(int)def.Dere, (int)atk.Dere];
+        static public double GetDereDmgMultiplier(Card atk, Card def) => GetDereDmgMultiplier(atk.Dere, def.Dere);
+
+        static public double GetDereDmgMultiplier(Dere atk, Dere def) => _dereDmgRelation[(int)def, (int)atk];
 
         public ItemRecipe GetItemRecipe(RecipeType type) => _recipes[type];
 
@@ -1086,6 +1088,8 @@ namespace Sanakan.Services.PocketWaifu
             return winner;
         }
 
+        public const double UltimateMinDamageShare = 0.15;
+
         static public double GetFA(Card target, Card enemy)
         {
             double atk1 = target.GetAttackWithBonus();
@@ -1094,17 +1098,24 @@ namespace Sanakan.Services.PocketWaifu
             double def2 = enemy.GetDefenceWithBonus();
             if (!enemy.HasImage()) def2 -= def2 * 20 / 100;
 
-            var realAtk1 = atk1 - def2;
-            if (!target.FromFigure && !enemy.FromFigure)
+            return GetBaseDamage(atk1, def2, target.FromFigure || enemy.FromFigure) * GetDereDmgMultiplier(target, enemy);
+        }
+
+        // normal cards treat defence as a percentage, once an ultimate card fights it is subtracted from the attack
+        static public double GetBaseDamage(double attack, double defence, bool ultimateInvolved)
+        {
+            double damage;
+            if (!ultimateInvolved)
             {
-                if (def2 > 99) def2 = 99;
-                realAtk1 = atk1 * (100 - def2) / 100;
+                if (defence > 99) defence = 99;
+                damage = attack * (100 - defence) / 100;
             }
-            if (realAtk1 < 1) realAtk1 = 1;
-
-            realAtk1 *= GetDereDmgMultiplier(target, enemy);
-
-            return realAtk1;
+            else
+            {
+                // defence above the enemy's attack would make an ultimate card almost immortal
+                damage = Math.Max(attack - defence, attack * UltimateMinDamageShare);
+            }
+            return damage < 1 ? 1 : damage;
         }
 
         static public int RandomizeAttack(Rarity rarity)
@@ -2501,6 +2512,12 @@ namespace Sanakan.Services.PocketWaifu
                     var res = card.CanUpgradePower((long)itemCnt * item.Type.UltimatePowerPoints());
                     if (res.Status == ExecutionResult.EStatus.Error)
                         return res;
+
+                    var useful = card.UsefulUltimatePills(item.Type);
+                    if (useful == 0)
+                        return ExecutionResult.FromError(item.Type.UltimateStatAtLimit());
+                    if (useful < itemCnt)
+                        return ExecutionResult.FromError($"tej karcie wystarczy już {Polish.Count(useful, "pigułka", "pigułki", "pigułek")}, kolejne by się zmarnowały.");
                     break;
 
                 default:

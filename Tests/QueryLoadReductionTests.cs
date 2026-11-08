@@ -165,7 +165,7 @@ namespace Artifacts
             SeedUser(PlayerId, deckPower: 500, cardsInDeck: 3);
             SeedUser(OtherId, deckPower: 800, cardsInDeck: 5);
             SeedUser(ThirdId, deckPower: 900, cardsInDeck: 4);
-            SeedUser(71004, deckPower: 100, cardsInDeck: 3);
+            SeedUser(71004, deckPower: 10, cardsInDeck: 3);
             SeedUser(71005, deckPower: 600, cardsInDeck: 9);
             SeedUser(71006, deckPower: 600, cardsInDeck: 0);
 

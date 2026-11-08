@@ -47,25 +47,30 @@ namespace Sanakan.Services.Commands
             };
         }
 
+        public static void AddTypeReaders(CommandService commands)
+        {
+            commands.AddTypeReader<ActionAfterExpedition>(new TypeReaders.ActionAfterExpedtionTypeReader());
+            commands.AddTypeReader<SlotMachineSetting>(new TypeReaders.SlotMachineSettingTypeReader());
+            commands.AddTypeReader<ModifyTagActionType>(new TypeReaders.ModifyTagActionTypeReader());
+            commands.AddTypeReader<WishlistObjectType>(new TypeReaders.WishlistObjectTypeReader());
+            commands.AddTypeReader<ProfileConfig>(new TypeReaders.ProfileConfigTypeReader());
+            commands.AddTypeReader<ItemCountPair>(new TypeReaders.ItemCountPairTypeReader());
+            commands.AddTypeReader<CardExpedition>(new TypeReaders.ExpeditionTypeReader());
+            commands.AddTypeReader<FigurePart>(new TypeReaders.FigurePartTypeReader());
+            commands.AddTypeReader<ConfigType>(new TypeReaders.ConfigTypeReader());
+            commands.AddTypeReader<CoinSide>(new TypeReaders.CoinSideTypeReader());
+            commands.AddTypeReader<HaremType>(new TypeReaders.HaremTypeReader());
+            commands.AddTypeReader<ItemType>(new TypeReaders.ItemTypeReader());
+            commands.AddTypeReader<TopType>(new TypeReaders.TopTypeReader());
+            commands.AddTypeReader<bool>(new TypeReaders.BoolTypeReader());
+        }
+
         public async Task InitializeAsync(IServiceProvider provider, Helper helper)
         {
             _helper = helper;
             _provider = provider;
 
-            _cmd.AddTypeReader<ActionAfterExpedition>(new TypeReaders.ActionAfterExpedtionTypeReader());
-            _cmd.AddTypeReader<SlotMachineSetting>(new TypeReaders.SlotMachineSettingTypeReader());
-            _cmd.AddTypeReader<ModifyTagActionType>(new TypeReaders.ModifyTagActionTypeReader());
-            _cmd.AddTypeReader<WishlistObjectType>(new TypeReaders.WishlistObjectTypeReader());
-            _cmd.AddTypeReader<ProfileConfig>(new TypeReaders.ProfileConfigTypeReader());
-            _cmd.AddTypeReader<ItemCountPair>(new TypeReaders.ItemCountPairTypeReader());
-            _cmd.AddTypeReader<CardExpedition>(new TypeReaders.ExpeditionTypeReader());
-            _cmd.AddTypeReader<FigurePart>(new TypeReaders.FigurePartTypeReader());
-            _cmd.AddTypeReader<ConfigType>(new TypeReaders.ConfigTypeReader());
-            _cmd.AddTypeReader<CoinSide>(new TypeReaders.CoinSideTypeReader());
-            _cmd.AddTypeReader<HaremType>(new TypeReaders.HaremTypeReader());
-            _cmd.AddTypeReader<ItemType>(new TypeReaders.ItemTypeReader());
-            _cmd.AddTypeReader<TopType>(new TypeReaders.TopTypeReader());
-            _cmd.AddTypeReader<bool>(new TypeReaders.BoolTypeReader());
+            AddTypeReaders(_cmd);
 
             _helper.PublicModulesInfo = await _cmd.AddModulesAsync(Assembly.GetEntryAssembly(), _provider);
 

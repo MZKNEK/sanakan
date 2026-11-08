@@ -138,6 +138,41 @@ namespace Artifacts
             Assert.Equal(0, (await read.WishlistCountData.SingleAsync()).Count);
         }
 
+        [Fact]
+        public async Task UsersWithoutLeaveDate_SkipTheBotAndMarkedUsers()
+        {
+            using (var db = Open())
+            {
+                db.Users.Add(Player(20, _now));
+                await db.SaveChangesAsync();
+            }
+
+            using var read = Open();
+            Assert.Equal(new[] { 10UL }, await read.GetUsersWithoutLeaveDateAsync());
+        }
+
+        [Fact]
+        public async Task RemovingWithoutLeaveDate_LeavesMarkedUsersAndTheBot()
+        {
+            using (var db = Open())
+            {
+                db.Users.Add(Player(20, _now));
+                await db.SaveChangesAsync();
+            }
+
+            using (var db = Open())
+            {
+                Assert.False(await db.RemoveUserWithoutLeaveDateAsync(20));
+                Assert.False(await db.RemoveUserWithoutLeaveDateAsync(1));
+                Assert.True(await db.RemoveUserWithoutLeaveDateAsync(10));
+            }
+
+            using var read = Open();
+            Assert.False(await read.Users.AnyAsync(x => x.Id == 10));
+            Assert.True(await read.Users.AnyAsync(x => x.Id == 20));
+            Assert.Equal(1UL, (await read.Cards.AsQueryable().SingleAsync(x => x.Id == 1000)).GameDeckId);
+        }
+
         [Theory]
         [InlineData(4, 1)]
         [InlineData(5, 24)]

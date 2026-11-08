@@ -17,30 +17,47 @@ namespace Artifacts
             SeasonalPVPRank = 500,
         };
 
-        [Fact]
-        public void Draw_IsZeroSumForMmrAndRank()
+        [Theory]
+        [InlineData(FightResult.Draw)]
+        [InlineData(FightResult.Win)]
+        [InlineData(FightResult.Lose)]
+        public void Mmr_IsZeroSum_AndTheOpponentRankMovesHalf(FightResult result)
         {
             var d1 = Deck();
             var d2 = Deck();
 
-            d1.CalculatePVPParams(d2, FightResult.Draw);
+            d1.CalculatePVPParams(d2, result);
 
             Assert.Equal(2000, d1.MatachMakingRatio + d2.MatachMakingRatio, 6);
-            Assert.Equal(1000, d1.GlobalPVPRank + d2.GlobalPVPRank);
-            Assert.Equal(1000, d1.SeasonalPVPRank + d2.SeasonalPVPRank);
+            Assert.Equal((d1.GlobalPVPRank - 500) / 2, 500 - d2.GlobalPVPRank);
+            Assert.Equal((d1.SeasonalPVPRank - 500) / 2, 500 - d2.SeasonalPVPRank);
         }
 
+        private static GameDeck Powered(double power) => new GameDeck { DeckPower = power };
+
+        [Theory]
+        [InlineData(1000, 1000, FightResult.Win, 100)]
+        [InlineData(1000, 1000, FightResult.Lose, 50)]
+        [InlineData(1000, 1000, FightResult.Draw, 50)]
+        [InlineData(1000, 5000, FightResult.Win, 140)]
+        [InlineData(5000, 1000, FightResult.Win, 60)]
+        public void Coins_GrowWithTheOpponentsStrength(double mine, double enemy, FightResult result, long expected)
+            => Assert.Equal(expected, Powered(mine).GetPVPCoinsFromDuel(Powered(enemy), result));
+
+        [Theory]
+        [InlineData(0, "Miles gregarius")]
+        [InlineData(52, "Signifer")]
+        [InlineData(3323, "Primus pilus")]
+        [InlineData(14999, "Praetor")]
+        [InlineData(15001, "Konsul")]
+        public void SeasonalRanks_FitAMonth(long points, string expected)
+            => Assert.Equal(expected, new GameDeck { SeasonalPVPRank = points }.GetRankName());
+
         [Fact]
-        public void Win_IsZeroSumForMmrAndRank()
+        public void GlobalRanks_KeepTheLongThresholds()
         {
-            var d1 = Deck();
-            var d2 = Deck();
-
-            d1.CalculatePVPParams(d2, FightResult.Win);
-
-            Assert.Equal(2000, d1.MatachMakingRatio + d2.MatachMakingRatio, 6);
-            Assert.Equal(1000, d1.GlobalPVPRank + d2.GlobalPVPRank);
-            Assert.Equal(1000, d1.SeasonalPVPRank + d2.SeasonalPVPRank);
+            Assert.Equal("Miles gregarius", new GameDeck { GlobalPVPRank = 493 }.GetGlobalRankName());
+            Assert.Equal("Konsul", new GameDeck { GlobalPVPRank = 142717 }.GetGlobalRankName());
         }
     }
 

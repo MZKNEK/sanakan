@@ -87,10 +87,12 @@ namespace Sanakan.Extensions
                 .FromCacheAsync(context, "users-all-full", new MemoryCacheEntryOptions{ AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(6) })).ToList();
         }
 
+        public const string PvpPlayersCacheTag = "pvp-players";
+
         public static async Task<List<GameDeck>> GetCachedPlayersForPVP(this Database.DatabaseContext context, ulong ignore = 1)
         {
             // one shared entry instead of one copy per player, the caller is excluded in memory
-            var all = await context.GameDecks.AsQueryable().Where(x => x.DeckPower > UserExtension.MIN_DECK_POWER && x.DeckPower < UserExtension.MAX_DECK_POWER && x.CardsInDeck <= UserExtension.MAX_CARDS_IN_DECK && x.CardsInDeck > 0).AsNoTracking().AsSplitQuery().FromCacheAsync(context, "pvp-players", new MemoryCacheEntryOptions{ AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(2) });
+            var all = await context.GameDecks.AsQueryable().Where(x => x.DeckPower > UserExtension.MIN_DECK_POWER && x.DeckPower < UserExtension.MAX_DECK_POWER && x.CardsInDeck <= UserExtension.MAX_CARDS_IN_DECK && x.CardsInDeck > 0).AsNoTracking().AsSplitQuery().FromCacheAsync(context, "pvp-players", new MemoryCacheEntryOptions{ AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(2) }, PvpPlayersCacheTag);
             return all.Where(x => x.UserId != ignore).ToList();
         }
 
@@ -196,6 +198,22 @@ namespace Sanakan.Extensions
         public static async Task<bool> RemoveUserLeftBeforeAsync(this Database.DatabaseContext context, ulong userId, DateTime cutoff)
         {
             if (!await context.Users.AsQueryable().AnyAsync(x => x.Id == userId && x.LeftAt != null && x.LeftAt <= cutoff))
+                return false;
+
+            await context.RemoveUserAsync(userId);
+            return true;
+        }
+
+        // users without a leave date are skipped by the daily cleanup, e.g. those who left while the bot was offline
+        public static Task<List<ulong>> GetUsersWithoutLeaveDateAsync(this Database.DatabaseContext context)
+        {
+            return context.Users.AsQueryable().AsNoTracking().Where(x => x.LeftAt == null && x.Id != 1).Select(x => x.Id).ToListAsync();
+        }
+
+        // checked again right before removal, the user could have come back or got a leave date since the scan
+        public static async Task<bool> RemoveUserWithoutLeaveDateAsync(this Database.DatabaseContext context, ulong userId)
+        {
+            if (userId == 1 || !await context.Users.AsQueryable().AnyAsync(x => x.Id == userId && x.LeftAt == null))
                 return false;
 
             await context.RemoveUserAsync(userId);

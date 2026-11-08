@@ -147,41 +147,45 @@ namespace Sanakan.Extensions
 
         public static bool HasCustomBorder(this Card card) => card.CustomBorder != null;
 
+        // typical duel opponents: health, attack, defence, ultimate, weight
+        private static readonly (int Health, int Attack, int Defence, bool Ultimate, double Weight)[] _powerReferences =
+        {
+            (150, 120, 80, false, 2), (350, 350, 92, false, 3), (700, 700, 97, false, 3), (999, 999, 99, false, 2),
+            (4000, 1200, 600, true, 1), (12000, 2500, 1300, true, 1), (28000, 4500, 2500, true, 1),
+        };
+
+        // Yami, Raito and Yato come only from items, so they are met less often
+        private static double DereWeight(Dere dere) => dere >= Dere.Yami ? 0.25 : 1;
+
+        private static readonly Dere[] _deres = Enum.GetValues(typeof(Dere)).Cast<Dere>().ToArray();
+        private static readonly double[] _dereDealtMultiplier = _deres.Select(a => _deres.Sum(d => Waifu.GetDereDmgMultiplier(a, d) * DereWeight(d)) / _deres.Sum(DereWeight)).ToArray();
+        private static readonly double[] _dereTakenMultiplier = _deres.Select(d => _deres.Sum(a => Waifu.GetDereDmgMultiplier(a, d) * DereWeight(a)) / _deres.Sum(DereWeight)).ToArray();
+
+        // a maxed normal SSS card keeps the power it had with the old formula
+        private static readonly double _powerScale = 310 / RawCardPower(999, 999, 99, false, 1, 1);
+
+        private static double RawCardPower(int health, int attack, int defence, bool ultimate, double dealtMultiplier, double takenMultiplier)
+        {
+            double dealt = 0, taken = 0, weights = 0;
+            foreach (var r in _powerReferences)
+            {
+                var ultimateInvolved = ultimate || r.Ultimate;
+                dealt += Waifu.GetBaseDamage(attack, r.Defence, ultimateInvolved) / r.Health * r.Weight;
+                taken += Waifu.GetBaseDamage(r.Attack, defence, ultimateInvolved) * r.Weight;
+                weights += r.Weight;
+            }
+
+            dealt = dealt / weights * dealtMultiplier;
+            taken = taken / weights * takenMultiplier;
+            return Math.Sqrt(dealt * health / taken);
+        }
+
+        // how fast the card kills typical opponents times how long it survives them, so deck power sums compare decks fairly
         public static double CalculateCardPower(this Card card)
         {
-            var cardPower = card.GetHealthWithPenalty() * 0.018;
-            cardPower += card.GetAttackWithBonus() * 0.019;
-
-            var normalizedDef = card.GetDefenceWithBonus();
-            if (normalizedDef > 99)
-            {
-                normalizedDef = 99;
-                if (card.FromFigure)
-                {
-                    cardPower += (card.GetDefenceWithBonus() - normalizedDef) * 0.019;
-                }
-            }
-
-            cardPower += normalizedDef * 2.76;
-
-            switch (card.Dere)
-            {
-                case Dere.Yami:
-                case Dere.Raito:
-                    cardPower += 20;
-                    break;
-
-                case Dere.Yato:
-                    cardPower += 30;
-                    break;
-
-                case Dere.Tsundere:
-                    cardPower -= 20;
-                    break;
-
-                default:
-                    break;
-            }
+            var dere = (int)card.Dere;
+            var cardPower = _powerScale * RawCardPower(card.GetHealthWithPenalty(), card.GetAttackWithBonus(), card.GetDefenceWithBonus(),
+                card.FromFigure, _dereDealtMultiplier[dere], _dereTakenMultiplier[dere]);
 
             if (cardPower < 1)
                 cardPower = 1;
@@ -391,7 +395,7 @@ namespace Sanakan.Extensions
         public static int GetHealthWithPenalty(this Card card, bool allowZero = false)
         {
             var percent = card.Affection * 5d / 100d;
-            var maxHealth = card.FromFigure ? 99999 : 999;
+            var maxHealth = card.FromFigure ? MaxUltimateHealth : 999;
             var bonusFromFood = Math.Min((int)(card.Health * percent), 2000);
 
             var newHealth = card.Health + bonusFromFood;
@@ -465,7 +469,7 @@ namespace Sanakan.Extensions
 
         public static int GetAttackWithBonus(this Card card)
         {
-            var maxAttack = card.FromFigure ? 9999 : 999;
+            var maxAttack = card.FromFigure ? MaxUltimateAttack : 999;
             var newAttack = card.Attack + card.GetAttackFromStars();
             newAttack += card.FromFigure ? card.AttackBonus : card.AttackBonus / 3;
 
@@ -479,7 +483,7 @@ namespace Sanakan.Extensions
 
         public static int GetDefenceWithBonus(this Card card)
         {
-            var maxDefence = card.FromFigure ? 9999 : 99;
+            var maxDefence = card.FromFigure ? MaxUltimateDefence : 99;
             var newDefence = card.Defence + card.GetDefenceFromStars();
             newDefence += card.FromFigure ? card.DefenceBonus : 0;
 
@@ -878,6 +882,37 @@ namespace Sanakan.Extensions
 
         public static StarStyle Parse(this StarStyle star, string s)
             => star.TryParse(s, out var type) ? type : throw new Exception("Couldn't parse input!");
+
+        public const int MaxUltimateAttack = 9999;
+        public const int MaxUltimateDefence = 9999;
+        public const int MaxUltimateHealth = 99999;
+
+        // pills beyond a stat limit would be used up without changing anything
+        public static long UsefulUltimatePills(this Card card, ItemType type)
+        {
+            static long Room(long max, long current, int perPill) => Math.Max(0, (max - current + perPill - 1) / perPill);
+
+            var attack = card.Attack + card.GetAttackFromStars() + card.AttackBonus;
+            var defence = card.Defence + card.GetDefenceFromStars() + card.DefenceBonus;
+            var health = card.Health + card.HealthBonus;
+
+            return type switch
+            {
+                ItemType.IncreaseUltimateAttack => Room(MaxUltimateAttack, attack, 5),
+                ItemType.IncreaseUltimateDefence => Room(MaxUltimateDefence, defence, 3),
+                ItemType.IncreaseUltimateHealth => Room(MaxUltimateHealth, health, 5),
+                ItemType.IncreaseUltimateAll => new[] { Room(MaxUltimateAttack, attack, 4), Room(MaxUltimateDefence, defence, 4), Room(MaxUltimateHealth, health, 4) }.Max(),
+                _ => long.MaxValue,
+            };
+        }
+
+        public static string UltimateStatAtLimit(this ItemType type) => type switch
+        {
+            ItemType.IncreaseUltimateAttack => $"atak tej karty jest już maksymalny ({MaxUltimateAttack}).",
+            ItemType.IncreaseUltimateDefence => $"obrona tej karty jest już maksymalna ({MaxUltimateDefence}).",
+            ItemType.IncreaseUltimateHealth => $"punkty życia tej karty są już maksymalne ({MaxUltimateHealth}).",
+            _ => "wszystkie parametry tej karty są już maksymalne.",
+        };
 
         public static ExecutionResult CanUpgradePower(this Card card, long points)
         {
