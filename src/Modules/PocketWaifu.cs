@@ -399,12 +399,16 @@ namespace Sanakan.Modules
                     return;
                 }
 
+                var lostPoints = fig.PartExp;
                 fig.FocusedPart = part;
                 fig.PartExp = 0;
 
                 await db.SaveChangesAsync();
 
-                await SafeReplyAsync("", embed: $"Wybrana część to: {part.ToName()}".ToEmbedMessage(EMType.Info).WithAuthor(new EmbedAuthorBuilder().WithUser(Context.User)).Build());
+                var lost = lostPoints > 0 ? $" Zebrane punkty konstrukcji ({lostPoints:0.##}) zostały wyzerowane." : "";
+                var needed = fig.ConstructionPointsToInstall(fig.SkeletonQuality);
+                await SafeReplyAsync("", embed: $"Wybrana część: **{part.ToName()}**.{lost} Do założenia części {fig.SkeletonQuality.ToName()} potrzeba {needed}."
+                    .ToEmbedMessage(EMType.Info).WithAuthor(new EmbedAuthorBuilder().WithUser(Context.User)).Build());
             }
         }
 
@@ -483,8 +487,7 @@ namespace Sanakan.Modules
                     return;
                 }
 
-                await SafeReplyAsync("", embed: fig.GetDesc().TrimToLength().ToEmbedMessage(EMType.Info)
-                    .WithUser(Context.Guild.GetUser(fig.GameDeckId)).Build());
+                await SafeReplyAsync("", embed: fig.GetView().WithUser(Context.Guild.GetUser(fig.GameDeckId)).Build());
             }
         }
 
@@ -1036,6 +1039,11 @@ namespace Sanakan.Modules
                     return;
                 }
 
+                var isUltimate = card.Quality != Quality.Broken;
+                var rarityBefore = card.GetCardRealRarity();
+                var attackBefore = card.GetAttackWithBonus();
+                var defenceBefore = card.GetDefenceWithBonus();
+
                 if (card.Quality != Quality.Broken)
                 {
                     var cardOverflowPower = (int)card.Quality + card.BorderOverflow;
@@ -1159,7 +1167,10 @@ namespace Sanakan.Modules
 
                 QueryCache.ExpireTag(new string[] { CacheTags.User(bUser.Id) });
 
-                await SafeReplyAsync("", embed: $"{Context.User.Mention} ulepszył kartę do: {card.GetString(false, false, true)}.".ToEmbedMessage(EMType.Success).Build());
+                var change = isUltimate
+                    ? $"jakość **{rarityBefore} → {card.GetCardRealRarity()}**"
+                    : $"**{rarityBefore} → {card.GetCardRealRarity()}**, 🔥 {attackBefore} → {card.GetAttackWithBonus()}, 🛡 {defenceBefore} → {card.GetDefenceWithBonus()}";
+                await SafeReplyAsync("", embed: $"{Context.User.Mention} ulepszył kartę {card.GetString(false, false, true, hideStats: true)}: {change}.".ToEmbedMessage(EMType.Success).Build());
             }
         }
 

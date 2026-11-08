@@ -232,7 +232,7 @@ namespace Sanakan.Extensions
                 case ItemType.PreAssembledMegumin:
                     return "Szkielet Megumin (Konosuba)";
                 case ItemType.FigureSkeleton:
-                    return $"Szkielet{quality}";
+                    return $"Szkielet figurki{quality}";
                 case ItemType.FigureUniversalPart:
                     return $"Uniwersalna część figurki{quality}";
                 case ItemType.FigureHeadPart:
@@ -242,13 +242,13 @@ namespace Sanakan.Extensions
                 case ItemType.FigureClothesPart:
                     return $"Ciuchy figurki{quality}";
                 case ItemType.FigureLeftArmPart:
-                    return $"Lewa ręka{quality}";
+                    return $"Lewa ręka figurki{quality}";
                 case ItemType.FigureLeftLegPart:
-                    return $"Lewa noga{quality}";
+                    return $"Lewa noga figurki{quality}";
                 case ItemType.FigureRightArmPart:
-                    return $"Prawa ręka{quality}";
+                    return $"Prawa ręka figurki{quality}";
                 case ItemType.FigureRightLegPart:
-                    return $"Prawa noga{quality}";
+                    return $"Prawa noga figurki{quality}";
                 case ItemType.ResetCardValue:
                     return $"Marker";
                 case ItemType.LotteryTicket:

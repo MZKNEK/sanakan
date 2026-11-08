@@ -209,9 +209,12 @@ namespace Sanakan.Extensions
         }
 
         public static int ConstructionPointsToInstall(this Figure figure, Item part)
+            => figure.ConstructionPointsToInstall(part.Quality);
+
+        public static int ConstructionPointsToInstall(this Figure figure, Quality partQuality)
         {
             var pointsFromSkeleton = 50 * (int) figure.SkeletonQuality;
-            var basePointsFromPartQuality = part.Quality switch
+            var basePointsFromPartQuality = partQuality switch
             {
                 Quality.Alpha   => 80,
                 Quality.Beta    => 100,
@@ -226,7 +229,7 @@ namespace Sanakan.Extensions
                 Quality.Sigma   => 140,
                 _ => 160
             };
-            return (basePointsFromPartQuality * (int) part.Quality) + pointsFromSkeleton;
+            return (basePointsFromPartQuality * (int) partQuality) + pointsFromSkeleton;
         }
 
         public static Quality GetQualityOfFocusedPart(this Figure figure)
@@ -312,43 +315,100 @@ namespace Sanakan.Extensions
             return fig.IsFocus ? "**A**" : "";
         }
 
+        private static readonly FigurePart[] _bodyParts =
+        {
+            FigurePart.Head, FigurePart.Body, FigurePart.RightArm, FigurePart.LeftArm,
+            FigurePart.RightLeg, FigurePart.LeftLeg, FigurePart.Clothes,
+        };
+
+        public const string QualityOrder = "α β γ Δ ε ζ η Θ ι λ Σ Ω";
+
+        public static int InstalledPartsCount(this Figure figure) => _bodyParts.Count(x => figure.GetQualityOfPart(x) != Quality.Broken);
+
+        public static string ToFullName(this Quality q) => q == Quality.Broken ? "brak" : $"{q.ToName()} {q}";
+
+        public static string ProgressBar(double value, double max, int width = 10)
+        {
+            var filled = max <= 0 ? width : (int)Math.Round(Math.Clamp(value / max, 0, 1) * width);
+            return new string('▰', filled) + new string('▱', width - filled);
+        }
+
+        public static string ConstructionPointsText(double points)
+            => points == Math.Floor(points)
+                ? Polish.Count((long)points, "punkt", "punkty", "punktów")
+                : $"{points:0.##} punktu";
+
+        public static string ToListLine(this Figure figure)
+        {
+            var quality = figure.SkeletonQuality.ToName("??");
+            if (figure.IsComplete)
+                return $"🎖️ [{figure.Id}] {figure.Name} · {quality} · ukończona";
+
+            var name = figure.IsFocus
+                ? $"▶️ **[{figure.Id}]** [{figure.Name}]({ShindenCompat.Url.GetCharacterURL(figure.Character)})"
+                : $"[{figure.Id}] {figure.Name}";
+
+            return $"{name} · {quality} · {figure.InstalledPartsCount()}/{_bodyParts.Length} części";
+        }
+
+        // few markdown elements per row, Discord stops rendering formatting after about 100 of them
         public static List<Embed> GetFiguresList(this GameDeck deck, SocketUser user)
         {
             var pages = new List<Embed>();
-            var list = deck.Figures.Select(x => $"{x.GetStatus()} **[{x.Id}]** *{x.SkeletonQuality.ToName("??")}* [{x.Name}]({ShindenCompat.Url.GetCharacterURL(x.Character)}) {x.IsActive()}").SplitList(30);
+            var list = deck.Figures.Select(x => x.ToListLine()).SplitList(30);
 
             for (int i = 0; i < list.Count; i++)
             {
                 var embed = new EmbedBuilder
                 {
                     Color = EMType.Info.Color(),
-                    Description = $"{user.Mention} twoje figurki **({i + 1}/{list.Count})**:\n\n{string.Join("\n", list[i]).TrimToLength()}"
-                };
+                    Title = $"Figurki ({i + 1}/{list.Count})",
+                    Description = string.Join("\n", list[i]).TrimToLength(),
+                    Footer = new EmbedFooterBuilder().WithText("▶️ aktywna · 🎖️ ukończona · aktywną ustawisz przez figurki [numer]"),
+                }.WithUser(user);
                 pages.Add(embed.Build());
             }
 
             return pages;
         }
 
-        public static string GetDesc(this Figure fig)
+        public static EmbedBuilder GetView(this Figure fig)
         {
-            var widUrl = CardExtension._UseAlterUrl ? $"[{fig.CreatedCardId}](https://alter.sanakan.pl/card/{fig.CreatedCardId})" : $"[{fig.CreatedCardId}](https://waifu.sanakan.pl/#/card/{fig.CreatedCardId})";
-            var selectedPart = $"**Aktywna część:**\n{fig.FocusedPart.ToName()} *{fig.PartExp:F} pk*\n\n";
-            var name =  $"[{fig.Name}]({ShindenCompat.Url.GetCharacterURL(fig.Character)})";
-            var desc = fig.IsComplete
-                ? $"**Ukończona**: {fig.CompletionDate.ToShortDateTime()}\n**WID**: {widUrl}"
-                : $"*{fig.ExpCnt:F} / {CardExtension.ExpToUpgrade(Rarity.SSS, true, fig.SkeletonQuality)} exp*\n\n"
-                + $"{(fig.AllPartsInstalled() ? "" : selectedPart)}"
-                + $"**Części:**\n"
-                + $"*Głowa*: {fig.HeadQuality.ToName("brak")}\n"
-                + $"*Tułów*: {fig.BodyQuality.ToName("brak")}\n"
-                + $"*Prawa ręka*: {fig.RightArmQuality.ToName("brak")}\n"
-                + $"*Lewa ręka*: {fig.LeftArmQuality.ToName("brak")}\n"
-                + $"*Prawa noga*: {fig.RightLegQuality.ToName("brak")}\n"
-                + $"*Lewa noga*: {fig.LeftLegQuality.ToName("brak")}\n"
-                + $"*Ciuchy*: {fig.ClothesQuality.ToName("brak")}";
+            var embed = new EmbedBuilder
+            {
+                Color = EMType.Info.Color(),
+                Url = ShindenCompat.Url.GetCharacterURL(fig.Character),
+            };
 
-            return $"**[{fig.Id}] Figurka {fig.SkeletonQuality.ToName("??")}**\n{name}\n**Aktywna**: {fig.IsFocus.GetYesNo()}\n{desc}";
+            if (fig.IsComplete)
+            {
+                var cardUrl = CardExtension._UseAlterUrl ? $"https://alter.sanakan.pl/card/{fig.CreatedCardId}" : $"https://waifu.sanakan.pl/#/card/{fig.CreatedCardId}";
+                embed.Title = $"🎖️ Figurka [{fig.Id}] · {fig.Name}";
+                embed.Description = $"Szkielet **{fig.SkeletonQuality.ToFullName()}** · ukończona {fig.CompletionDate.ToShortDateTime()}\nKarta: [{fig.CreatedCardId}]({cardUrl})";
+                return embed;
+            }
+
+            var skeleton = fig.SkeletonQuality;
+            embed.Title = $"{(fig.IsFocus ? "▶️ " : "")}Figurka [{fig.Id}] · {fig.Name}";
+            embed.Description = $"Szkielet **{skeleton.ToFullName()}** · części zakładasz w jakości {skeleton.ToName()} lub lepszej"
+                + (fig.IsFocus ? "" : "\nTa figurka nie jest aktywna.");
+
+            var maxExp = CardExtension.ExpToUpgrade(Rarity.SSS, true, skeleton);
+            var percent = maxExp <= 0 ? 100 : (int)Math.Min(100, fig.ExpCnt / maxExp * 100);
+            embed.AddField("Doświadczenie", $"{ProgressBar(fig.ExpCnt, maxExp)} {fig.ExpCnt:0} / {maxExp:0} ({percent}%)");
+
+            var installed = _bodyParts.Where(x => fig.GetQualityOfPart(x) != Quality.Broken).Select(x => $"✅ {x.ToName()} {fig.GetQualityOfPart(x).ToName()}");
+            var missing = _bodyParts.Where(x => fig.GetQualityOfPart(x) == Quality.Broken).Select(x => $"⬜ {x.ToName()}");
+            var parts = string.Join("\n", new[] { string.Join(" · ", installed), string.Join(" · ", missing) }.Where(x => x.Length > 0));
+            embed.AddField($"Części ({fig.InstalledPartsCount()}/{_bodyParts.Length})", parts);
+
+            if (!fig.AllPartsInstalled())
+            {
+                embed.AddField($"Teraz budujesz: {fig.FocusedPart.ToName()}",
+                    $"Punkty konstrukcji: {fig.PartExp:0} / {fig.ConstructionPointsToInstall(skeleton)} (dla części {skeleton.ToName()})");
+            }
+
+            return embed;
         }
     }
 }

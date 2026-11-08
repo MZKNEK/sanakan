@@ -1621,6 +1621,7 @@ namespace Sanakan.Services.PocketWaifu
             var pages = new List<Embed>();
             var list = items.ToItemList(filter, hideFigureItems).SplitList(50);
             var hiddenCnt = hideFigureItems ? items.CountFigureCreationItems(filter) : 0;
+            var showsFigureItems = !hideFigureItems && items.Any(x => x.Type.IsFigureCreationItem() && x.Quality != Quality.Broken);
 
             for (int i = 0; i < list.Count; i++)
             {
@@ -1632,6 +1633,8 @@ namespace Sanakan.Services.PocketWaifu
 
                 if (hiddenCnt > 0)
                     embed.WithFooter(ItemExtension.GetHiddenFigureItemsInfo(hiddenCnt));
+                else if (showsFigureItems)
+                    embed.WithFooter($"Jakość: {FigureExtension.QualityOrder} (od najsłabszej)");
 
                 pages.Add(embed.Build());
             }
@@ -2383,6 +2386,10 @@ namespace Sanakan.Services.PocketWaifu
             return res;
         }
 
+        public static string PartPointsAdded(Figure figure, double added)
+            => $"Dodano {FigureExtension.ConstructionPointsText(added)} konstrukcji do części {figure.FocusedPart.ToName()} "
+                + $"({figure.PartExp:0.##} / {figure.ConstructionPointsToInstall(figure.SkeletonQuality)}).";
+
         private ExecutionResult UseItem(Item item, User user, int itemCnt, bool itemToExp)
         {
             if (!item.Type.CanUseWithoutCard(itemToExp))
@@ -2407,39 +2414,44 @@ namespace Sanakan.Services.PocketWaifu
                 case ItemType.FigureRightArmPart:
                 case ItemType.FigureRightLegPart:
                 case ItemType.FigureUniversalPart:
-                    if (itemToExp)
                     {
                         var itemPartType = item.Type.GetPartType();
-                        if (activeFigure.FocusedPart != itemPartType && itemPartType != FigurePart.All)
-                            return ExecutionResult.FromError("typy części się nie zgadzają.");
+                        var focused = activeFigure.FocusedPart;
+                        if (focused != itemPartType && itemPartType != FigurePart.All)
+                            return ExecutionResult.FromError($"to część typu {itemPartType.ToName()}, a wybrana jest {focused.ToName()}. Zmień wybór: `wybierz element {itemPartType.ToName().ToLower()}`.");
 
-                        var expFromPart = item.ToExpForPart(activeFigure.SkeletonQuality);
-                        var totalExp = expFromPart * itemCnt;
-                        activeFigure.PartExp += totalExp;
+                        if (itemToExp)
+                        {
+                            var totalExp = item.ToExpForPart(activeFigure.SkeletonQuality) * itemCnt;
+                            activeFigure.PartExp += totalExp;
+                            str.Append(PartPointsAdded(activeFigure, totalExp));
+                            break;
+                        }
 
-                        str.Append($"Dodano do wybranej części figurki {totalExp:F} punktów konstrukcji. W sumie posiada ich {activeFigure.PartExp:F}.");
+                        if (activeFigure.GetQualityOfFocusedPart() != Quality.Broken)
+                            return ExecutionResult.FromError($"wybrana część figurki ({focused.ToName()}) jest już założona, wybierz inną: `wybierz element`.");
+
+                        if (!activeFigure.CanAddPart(item))
+                            return ExecutionResult.FromError($"część {item.Quality.ToName()} jest słabsza od szkieletu, potrzebna jakość co najmniej {activeFigure.SkeletonQuality.ToName()}.");
+
+                        if (!activeFigure.HasEnoughPointsToAddPart(item))
+                            return ExecutionResult.FromError($"aktywowana część ma za mało punktów konstrukcji ({activeFigure.PartExp:0} / {activeFigure.ConstructionPointsToInstall(item)}).");
+
+                        if (!activeFigure.AddPart(item))
+                            return ExecutionResult.FromError("coś poszło nie tak.");
+
+                        var installed = activeFigure.InstalledPartsCount();
+                        str.Append($"Założono **{item.Name}** na figurce {activeFigure.Name} ({installed}/7 części).");
+                        str.Append(activeFigure.AllPartsInstalled() ? " Wszystkie części są założone!" : " Wybierz następną: `wybierz element`.");
                         break;
                     }
-
-                    if (!activeFigure.CanAddPart(item))
-                        return ExecutionResult.FromError("część, którą próbujesz dodać ma zbyt niską jakość.");
-
-                    if (!activeFigure.HasEnoughPointsToAddPart(item))
-                        return ExecutionResult.FromError($"aktywowana część ma za mało punktów konstrukcji (wymagane: {activeFigure.ConstructionPointsToInstall(item)}).");
-
-                    if (!activeFigure.AddPart(item))
-                        return ExecutionResult.FromError("coś poszło nie tak.");
-
-                    str.Append("Dodano część do figurki.");
-                    break;
 
                 case ItemType.FigureSkeleton:
                     if (itemToExp)
                     {
                         var expFromPart = item.ToExpForPart(activeFigure.SkeletonQuality) * itemCnt;
                         activeFigure.PartExp += expFromPart;
-
-                        str.Append($"Dodano do wybranej części figurki {expFromPart:F} punktów konstrukcji. W sumie posiada ich {activeFigure.PartExp:F}.");
+                        str.Append(PartPointsAdded(activeFigure, expFromPart));
                         break;
                     }
                     return ExecutionResult.FromError("nie możesz użyć szkieletu bez karty, chyba że chcesz przerobić go na exp.");
@@ -2831,7 +2843,7 @@ namespace Sanakan.Services.PocketWaifu
                     {
                         user.GameDeck.Figures.Add(figure);
                         user.GameDeck.Cards.Remove(card);
-                        str.Append($"Rozpoczęto tworzenie figurki.");
+                        str.Append($"Rozpoczęto tworzenie figurki {card.Name} (szkielet {item.Quality.ToName()}). Nowa figurka nie jest aktywna, wybierz ją przez `figurki`.");
                         break;
                     }
                     return ExecutionResult.FromError("coś poszło nie tak.");
