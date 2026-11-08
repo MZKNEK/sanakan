@@ -152,5 +152,25 @@ namespace Artifacts
             Assert.Equal(314.16, stored[1].CardPower, 1);
             Assert.Equal(stored[0].CardPower, (await read.GameDecks.AsQueryable().SingleAsync()).DeckPower, 3);
         }
+
+        [Fact]
+        public async Task Recalculation_KeepsTheSetDeckAgainMarker()
+        {
+            using (var db = Open())
+            {
+                var user = new User().Default(6, DateTime.Now);
+                var card = Card(false, 999, 999, 99, Dere.Deredere);
+                card.Active = true;
+                user.GameDeck.Cards.Add(card);
+                user.GameDeck.DeckPower = -1;
+                db.Users.Add(user);
+                await db.SaveChangesAsync();
+            }
+
+            await PowerRecalculation.RecalculateAllAsync(Open, pause: TimeSpan.Zero);
+
+            using var read = Open();
+            Assert.Equal(-1, (await read.GameDecks.AsQueryable().SingleAsync()).DeckPower);
+        }
     }
 }

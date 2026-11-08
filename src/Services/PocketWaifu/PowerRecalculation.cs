@@ -65,7 +65,9 @@ namespace Sanakan.Services.PocketWaifu
                 await Task.Delay(delay);
             }
 
-            var changedDecks = deckPower.Where(x => Math.Abs(storedDeckPower[x.Key] - x.Value) > 1e-6).Select(x => (x.Key, x.Value)).ToList();
+            // -1 marks a deck its owner has to set again, it stays until they do
+            var changedDecks = deckPower.Where(x => storedDeckPower[x.Key] != -1 && Math.Abs(storedDeckPower[x.Key] - x.Value) > 1e-6)
+                .Select(x => (x.Key, x.Value)).ToList();
             foreach (var chunk in changedDecks.Chunk(batchSize))
             {
                 using var db = createContext();
