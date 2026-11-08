@@ -60,7 +60,7 @@ namespace Sanakan.Services
             .WithButton("Wiki", style: ButtonStyle.Link, url: "https://wiki.sanakan.pl/")
             .WithButton("Alter", style: ButtonStyle.Link, url: "https://alter.sanakan.pl/")
             .WithButton("GitHub", style: ButtonStyle.Link, url: "https://github.com/MZKNEK/sanakan.git")
-            .WithButton("Zmiany w tej wersji", style: ButtonStyle.Link, url: ChangesUrl(version), row: 1)
+            .WithButton("Zmiany", style: ButtonStyle.Link, url: ChangesUrl(version))
             .Build();
     }
 }
