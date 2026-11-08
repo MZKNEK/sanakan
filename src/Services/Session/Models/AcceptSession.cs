@@ -1,6 +1,7 @@
 ﻿#pragma warning disable 1591
 
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
@@ -13,6 +14,7 @@ namespace Sanakan.Services.Session.Models
         public IAcceptActions Actions { get; set; }
 
         private readonly IUser Bot;
+        private bool _answered;
         private readonly Emoji AcceptEmote = new Emoji("✅");
         private readonly Emote DeclineEmote = Emote.Parse("<:redcross:581152766655856660>");
 
@@ -51,15 +53,25 @@ namespace Sanakan.Services.Session.Models
                 var reaction = context.ReactionAdded ?? context.ReactionRemoved;
                 if (reaction.Emote.Equals(AcceptEmote))
                 {
-                    return await Actions?.OnAccept(context);
+                    _answered = await Actions.OnAccept(context);
+                    return _answered;
                 }
                 else if (reaction.Emote.Equals(DeclineEmote))
                 {
-                    return await Actions?.OnDecline(context);
+                    _answered = await Actions.OnDecline(context);
+                    return _answered;
                 }
             }
 
             return false;
+        }
+
+        public static Embed Expired(IEmbed question)
+        {
+            var embed = question?.ToEmbedBuilder() ?? new EmbedBuilder();
+            embed.Color = new Color(128, 132, 142);
+            embed.Footer = new EmbedFooterBuilder().WithText("⌛ Pytanie wygasło");
+            return embed.Build();
         }
 
         private async Task DisposeAction()
@@ -70,6 +82,9 @@ namespace Sanakan.Services.Session.Models
                 {
                     try
                     {
+                        if (!_answered && msg.Embeds.Count > 0)
+                            await msg.ModifyAsync(x => x.Embed = Expired(msg.Embeds.First()));
+
                         await msg.RemoveAllReactionsAsync();
                     }
                     catch (Exception)

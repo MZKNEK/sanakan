@@ -3751,10 +3751,6 @@ namespace Sanakan.Modules
                     Cards = new List<Card>()
                 };
 
-                session.Name = "🔄 **Wymiana:**";
-                session.Tips = $"Polecenia: `dodaj [WID]`, `usuń [WID]`.\n\n\u0031\u20E3 "
-                    + $"- zakończenie dodawania {user1.Mention}\n\u0032\u20E3 - zakończenie dodawania {user2.Mention}";
-
                 var msg = await SafeReplyAsync("", embed: session.BuildEmbed());
                 await msg.AddReactionsAsync(session.StartReactions);
                 session.Message = msg;

@@ -47,7 +47,7 @@ namespace Sanakan.Services.Session.Models
             int lastItem = (ItemsPerPage - 1) + (page * ItemsPerPage);
             bool toMuch = lastItem >= ListItems.Count;
 
-            Embed.Footer = new EmbedFooterBuilder().WithText($"{CurrentPage + 1} z {MaxPage()}");
+            Embed.Footer = new EmbedFooterBuilder().WithText(PageFooter(page, MaxPage()));
             var itemsOnPage = ListItems.GetRange(firstItem, toMuch ? (ListItems.Count - firstItem) : ItemsPerPage);
 
             string pageString = "";
@@ -61,6 +61,9 @@ namespace Sanakan.Services.Session.Models
 
             return Embed.Build();
         }
+
+        public static string PageFooter(int page, int pages)
+            => pages > 1 ? $"Strona {page + 1} z {pages} · ⬅ ➡ zmieniają stronę" : $"Strona {page + 1} z {pages}";
 
         private int MaxPage() => ListItems.Count <= 0 ? 1 : (((ListItems.Count - 1) / ItemsPerPage) + 1);
 
