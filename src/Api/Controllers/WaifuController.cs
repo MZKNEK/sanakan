@@ -203,7 +203,10 @@ namespace Sanakan.Api.Controllers
             using (var db = CreateDatabaseContext())
             {
                 var expireTime = new MemoryCacheEntryOptions().SetAbsoluteExpiration(_time.Now().AddHours(4));
-                var all = await db.Cards.AsQueryable().AsSplitQuery().Where(x => x.FromFigure).Include(x => x.GameDeck).ThenInclude(x => x.User).Include(x => x.Tags)
+                // a bare boolean column makes MySQL guess 50% selectivity and scan all tag relations in the split tag query;
+                // comparing with a parameter emits "= @p" and lets it start from the index
+                var ultimate = true;
+                var all = await db.Cards.AsQueryable().AsSplitQuery().Where(x => x.FromFigure == ultimate).Include(x => x.GameDeck).ThenInclude(x => x.User).Include(x => x.Tags)
                     .AsNoTrackingWithIdentityResolution().FromCacheAsync(db, "ultimate-cards", expireTime, CacheTags.UltimateCards);
 
                 return await FilterCachedCardsAsync(all, filter, offset, count);
@@ -226,7 +229,9 @@ namespace Sanakan.Api.Controllers
             using (var db = CreateDatabaseContext())
             {
                 var expireTime = new MemoryCacheEntryOptions().SetAbsoluteExpiration(_time.Now().AddHours(8));
-                var all = await db.Cards.AsQueryable().AsSplitQuery().Where(x => x.Unique).Include(x => x.GameDeck).ThenInclude(x => x.User).Include(x => x.Tags)
+                // same reason as in the ultimate cards query
+                var unique = true;
+                var all = await db.Cards.AsQueryable().AsSplitQuery().Where(x => x.Unique == unique).Include(x => x.GameDeck).ThenInclude(x => x.User).Include(x => x.Tags)
                     .AsNoTrackingWithIdentityResolution().FromCacheAsync(db, "unique-cards", expireTime, CacheTags.UniqueCards);
 
                 return await FilterCachedCardsAsync(all, filter, offset, count);
