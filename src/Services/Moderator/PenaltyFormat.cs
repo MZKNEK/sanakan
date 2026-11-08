@@ -60,7 +60,10 @@ namespace Sanakan.Services
         public static string Timestamp(DateTime date, char style)
             => $"<t:{new DateTimeOffset(date).ToUnixTimeSeconds()}:{style}>";
 
-        public static DateTime End(PenaltyInfo info) => info.StartDate.AddHours(info.DurationInHours);
+        // huge durations are used as permanent penalties and would overflow DateTime
+        private const long MaxEndHours = 24L * 365 * 1000;
+
+        public static DateTime End(PenaltyInfo info) => info.StartDate.AddHours(Math.Min(info.DurationInHours, MaxEndHours));
 
         public static string Applied(ExtendedPenaltyInfo exInfo)
         {

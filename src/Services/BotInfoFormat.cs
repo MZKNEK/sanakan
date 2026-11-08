@@ -18,7 +18,10 @@ namespace Sanakan.Services
 
         public static string Status(HealthStatus health)
         {
-            if (health == null || health.Status == HealthMonitor.Ok)
+            if (health == null)
+                return "❔ Nie udało się sprawdzić stanu bota.";
+
+            if (health.Status == HealthMonitor.Ok)
                 return "✅ Wszystko działa.";
 
             var problems = new List<string>();
@@ -34,14 +37,14 @@ namespace Sanakan.Services
             return $"⚠️ {char.ToUpperInvariant(text[0])}{text.Substring(1)}.";
         }
 
-        public static Embed Build(HealthStatus health, string prefix)
+        public static Embed Build(HealthStatus health, string prefix, bool inGuild = true)
         {
             var embed = new EmbedBuilder
             {
                 Title = "🐙 Sanakan",
                 Color = EMType.Bot.Color(),
                 Description = Status(health),
-                Footer = new EmbedFooterBuilder().WithText($"Prefiks tego serwera: {prefix} · lista poleceń: {prefix}pomoc"),
+                Footer = new EmbedFooterBuilder().WithText($"{(inGuild ? "Prefiks tego serwera" : "Prefiks")}: {prefix} · lista poleceń: {prefix}pomoc"),
             }
             .AddField("Wersja", health?.Version ?? HealthMonitor.GetVersion(), true);
 

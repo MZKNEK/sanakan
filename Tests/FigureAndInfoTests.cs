@@ -83,5 +83,13 @@ namespace Artifacts
             }));
             Assert.Equal("https://sanakan.pl/state/versions/?v=1.4.11.10", BotInfoFormat.ChangesUrl("1.4.11.10+abc1234"));
         }
+
+        [Fact]
+        public void BotInfo_DoesNotClaimHealthWhenTheCheckFailed()
+        {
+            Assert.StartsWith("❔", BotInfoFormat.Status(null));
+            Assert.StartsWith("Prefiks tego serwera: s.", BotInfoFormat.Build(null, "s.").Footer.Value.Text);
+            Assert.StartsWith("Prefiks: s.", BotInfoFormat.Build(null, "s.", inGuild: false).Footer.Value.Text);
+        }
     }
 }

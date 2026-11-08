@@ -2,6 +2,7 @@
 
 using System.Collections.Generic;
 using Sanakan.Database.Models.Management;
+using Sanakan.Extensions;
 
 namespace Sanakan.Services
 {
@@ -12,7 +13,7 @@ namespace Sanakan.Services
         public static string TooLong(int length) => $"Wiadomość jest za długa: {length} znaków, a limit to {MaxGreetingLength}.";
 
         public static string GreetingSet(string what, string message)
-            => message == "off" ? $"Wyłączono {what}." : $"Ustawiono {what}:\n{PenaltyFormat.Quote(message)}";
+            => message == "off" ? $"Wyłączono {what}." : $"Ustawiono {what}:\n{PenaltyFormat.Quote(message).TrimToLength(3500)}";
 
         public static string Toggle(string name, bool enabled) => $"{name}: **{(enabled ? "włączony" : "wyłączony")}**.";
 

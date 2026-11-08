@@ -383,13 +383,13 @@ namespace Sanakan.Extensions
             if (fig.IsComplete)
             {
                 var cardUrl = CardExtension._UseAlterUrl ? $"https://alter.sanakan.pl/card/{fig.CreatedCardId}" : $"https://waifu.sanakan.pl/#/card/{fig.CreatedCardId}";
-                embed.Title = $"🎖️ Figurka [{fig.Id}] · {fig.Name}";
+                embed.Title = $"🎖️ Figurka [{fig.Id}] · {fig.Name}".TrimToLength(EmbedBuilder.MaxTitleLength);
                 embed.Description = $"Szkielet **{fig.SkeletonQuality.ToFullName()}** · ukończona {fig.CompletionDate.ToShortDateTime()}\nKarta: [{fig.CreatedCardId}]({cardUrl})";
                 return embed;
             }
 
             var skeleton = fig.SkeletonQuality;
-            embed.Title = $"{(fig.IsFocus ? "▶️ " : "")}Figurka [{fig.Id}] · {fig.Name}";
+            embed.Title = $"{(fig.IsFocus ? "▶️ " : "")}Figurka [{fig.Id}] · {fig.Name}".TrimToLength(EmbedBuilder.MaxTitleLength);
             embed.Description = $"Szkielet **{skeleton.ToFullName()}** · części zakładasz w jakości {skeleton.ToName()} lub lepszej"
                 + (fig.IsFocus ? "" : "\nTa figurka nie jest aktywna.");
 

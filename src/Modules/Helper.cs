@@ -202,7 +202,7 @@ namespace Sanakan.Modules
                 _logger.LogError($"Info: health: {ex.Message}");
             }
 
-            await SafeReplyAsync("", embed: BotInfoFormat.Build(health, prefix), components: BotInfoFormat.Links(health?.Version ?? Api.HealthMonitor.GetVersion()));
+            await SafeReplyAsync("", embed: BotInfoFormat.Build(health, prefix, Context.Guild != null), components: BotInfoFormat.Links(health?.Version ?? Api.HealthMonitor.GetVersion()));
         }
 
         [Command("można dostać?", RunMode = RunMode.Async)]

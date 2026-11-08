@@ -19,6 +19,9 @@ namespace Artifacts
         [InlineData(0, "godzin")]
         [InlineData(112, "godzin")]
         [InlineData(123, "godziny")]
+        [InlineData(-1, "godzina")]
+        [InlineData(-2, "godziny")]
+        [InlineData(-5, "godzin")]
         public void Plural_FollowsPolishRules(long count, string expected)
         {
             Assert.Equal(expected, Polish.Plural(count, "godzina", "godziny", "godzin"));
@@ -153,6 +156,18 @@ namespace Artifacts
 
             Assert.Equal($"<t:{unix}:R>", PenaltyFormat.Timestamp(date, 'R'));
             Assert.Equal(date.AddHours(54), PenaltyFormat.End(new PenaltyInfo { StartDate = date, DurationInHours = 54 }));
+        }
+
+        [Fact]
+        public void End_HandlesHugeDurationsUsedAsPermanent()
+        {
+            var info = new PenaltyInfo { StartDate = new DateTime(2026, 11, 8), DurationInHours = 99999999, User = 1, Reason = "test" };
+
+            var end = PenaltyFormat.End(info);
+
+            Assert.True(end.Year > 3000);
+            Assert.Contains("<t:", PenaltyFormat.Timestamp(end, 'R'));
+            Assert.Contains("<@1>", PenaltyFormat.MutedEntry(info));
         }
     }
 }

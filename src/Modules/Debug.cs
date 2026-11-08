@@ -693,6 +693,7 @@ namespace Sanakan.Modules
             var time = _time.Now().AddMinutes(duration);
 
             var mention = "";
+            long prizeCount = count;
             using (var db = new Database.DatabaseContext(_config))
             {
                 var config = await db.GetCachedGuildFullConfigAsync(Context.Guild.Id);
@@ -701,9 +702,12 @@ namespace Sanakan.Modules
                     var wRole = Context.Guild.GetRole(config.WaifuRole);
                     if (wRole != null) mention = wRole.Mention;
                 }
+
+                var available = await db.Cards.AsQueryable().CountAsync(x => x.GameDeckId == id);
+                if (available > 0) prizeCount = Math.Min(prizeCount, available);
             }
 
-            var sendMsg = $"Do wygrania **{Polish.Count(count, "kartę", "karty", "kart")}**. Zareaguj {emote}, aby wziąć udział.\n\nKoniec {time.ToRemTime()}"
+            var sendMsg = $"Do wygrania **{Polish.Count(prizeCount, "kartę", "karty", "kart")}**. Zareaguj {emote}, aby wziąć udział.\n\nKoniec {time.ToRemTime()}"
                 .ToEmbedMessage(EMType.Bot).WithTitle("🎰 Loteria kart");
             var progressText = LotteryProgress(progress, howMuch);
             if (progressText != null) sendMsg.Footer = new EmbedFooterBuilder().WithText(progressText);
