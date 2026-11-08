@@ -215,6 +215,30 @@ namespace Artifacts
 
             Assert.Equal(7, await ProfileCtAsync());
         }
+
+        [Fact]
+        public async Task UnknownShindenUser_Returns404_UntilRegistered()
+        {
+            const ulong unknown = 96999;
+            TagHelper tags;
+            using (var db = new DatabaseContext(_config))
+                tags = await TagHelper.CreateAsync(db);
+
+            var waifu = new Waifu(null, null, null, new ListLogger(), null, null, null, _time, null, null, _config);
+            var controller = ControllerHarness.Attach(new WaifuController(null, waifu, new FakeExecutor(), tags, _config, _time, null, null, null, null));
+
+            Assert.Equal(404, (await controller.GetUserWaifuProfileAsync(unknown)).Result.StatusOf());
+
+            using (var db = new DatabaseContext(_config))
+            {
+                var user = new User().Default(96002, _time.Now());
+                user.Shinden = unknown;
+                db.Users.Add(user);
+                await db.SaveChangesAsync();
+            }
+
+            Assert.NotNull((await controller.GetUserWaifuProfileAsync(unknown)).Value);
+        }
     }
 
     public class ProfileConfigAliasTests

@@ -403,9 +403,13 @@ namespace Sanakan.Api.Controllers
                 var discordIds = await db.Users.AsQueryable().Where(x => id != 0 && x.Shinden == id).Select(x => x.Id)
                     .FromCacheAsync(db, $"user-shinden-discord-{id}", expireTime, CacheTags.UserProfile(id));
                 var discordId = discordIds.FirstOrDefault();
-                var profileTags = discordId != 0
-                    ? new[] { CacheTags.UserProfile(id), CacheTags.User(discordId) }
-                    : new[] { CacheTags.UserProfile(id) };
+                // most missing profiles are Shinden users without a bot account, the cached lookup answers them without the heavy query
+                if (discordId == 0)
+                {
+                    return "User not found".ToResponse(404);
+                }
+
+                var profileTags = new[] { CacheTags.UserProfile(id), CacheTags.User(discordId) };
 
                 var cached = await db.Users.AsQueryable().AsSplitQuery().Where(x => id != 0 && x.Shinden == id).Include(x => x.GameDeck).ThenInclude(x => x.Tags).Include(x => x.GameDeck)
                     .ThenInclude(x => x.PvPStats).Include(x => x.GameDeck).ThenInclude(x => x.Cards).ThenInclude(x => x.Tags).Include(x => x.Stats).AsNoTracking()
