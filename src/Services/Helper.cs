@@ -382,9 +382,10 @@ namespace Sanakan.Services
             return null;
         }
 
-        public void AppendMessage(List<Embed> embeds, MessageContent currentContent, MessageEntry nextPart, int limitEntries = 27)
+        public void AppendMessage(List<Embed> embeds, MessageContent currentContent, string nextPart)
         {
-            if (currentContent.Length + nextPart.Length > 3000 || (limitEntries > 0 && currentContent.Entries >= limitEntries))
+            if (currentContent.Length > 0 && (currentContent.Length + nextPart.Length > DiscordLimits.SafeDescriptionLength
+                || currentContent.Elements + DiscordLimits.CountElements(nextPart) > DiscordLimits.SafeMarkdownElements))
             {
                 embeds.Add(new EmbedBuilder() { Color = EMType.Info.Color(), Description = currentContent.ToString() }.Build());
                 currentContent.Clear();
@@ -398,7 +399,7 @@ namespace Sanakan.Services
             var contentString = new MessageContent();
             foreach (var row in rows)
             {
-                AppendMessage(list, contentString, new MessageEntry($"{row}\n", 20));
+                AppendMessage(list, contentString, $"{row}\n");
             }
 
             list.Add(new EmbedBuilder()

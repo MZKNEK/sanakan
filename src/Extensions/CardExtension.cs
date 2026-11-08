@@ -272,27 +272,6 @@ namespace Sanakan.Extensions
             return string.Join(" ", icons);
         }
 
-        public static int GetIconsCount(this Card card, Services.PocketWaifu.TagHelper tags)
-        {
-            int count = 0;
-            if (card.Active) count++;
-            if (card.Unique) count++;
-            if (card.FromFigure) count++;
-            if (!card.IsTradable) count++;
-            if (card.IsBroken()) count++;
-            if (card.InCage) count++;
-            if (card.Curse != CardCurse.None) count++;
-            if (card.Expedition != CardExpedition.None) count++;
-            if (!string.IsNullOrEmpty(card.CustomImage)) count++;
-            if (!string.IsNullOrEmpty(card.CustomBorder)) count++;
-            if (card.GetThreeStateMarketValue() != MarketValue.Normal) count++;
-
-            if (!card.Tags.IsNullOrEmpty())
-                count += tags.GetAllIcons(card).Count;
-
-            return count;
-        }
-
         public static string GetPocketUrl(this Card card) => _UseAlterUrl ? card.GetPocketAlterUrl() : card.GetPocketWaifuUrl();
         public static string GetPocketWaifuUrl(this Card card) => card.Id == 0 ? "": $"https://waifu.sanakan.pl/#/card/{card.Id}";
         public static string GetPocketAlterUrl(this Card card) => card.Id == 0 ? "": $"https://alter.sanakan.pl/card/{card.Id}";
