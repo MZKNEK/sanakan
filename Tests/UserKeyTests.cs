@@ -112,7 +112,7 @@ namespace Artifacts
     {
         private static UserKeyController Controller(FakeConfig config, ClaimsPrincipal user = null)
         {
-            return new UserKeyController(config, new FixedTime())
+            return new UserKeyController(config, new FixedTime(), new Sanakan.Api.TokenAttemptGuard(new FixedTime()))
             {
                 ControllerContext = new ControllerContext
                 {

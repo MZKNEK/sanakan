@@ -717,7 +717,7 @@ namespace Sanakan.Extensions
                 {
                     if (card.Affection < -10)
                     {
-                        var r = -card.Affection + 10;
+                        var r = -card.Affection - 10;
                         card.Affection = -10;
                         value -= r;
                     }
@@ -833,16 +833,16 @@ namespace Sanakan.Extensions
         public static StarStyle Parse(this StarStyle star, string s)
             => star.TryParse(s, out var type) ? type : throw new Exception("Couldn't parse input!");
 
-        public static ExecutionResult CanUpgradePower(this Card card, int by = 1)
+        public static ExecutionResult CanUpgradePower(this Card card, long points)
         {
             if (!card.FromFigure)
             {
                 return ExecutionResult.FromError("ten przedmiot można użyć tylko na karcie ultimate.");
             }
 
-            var currParams = card.AttackBonus + card.HealthBonus + card.DefenceBonus;
-            var maxParams = 4900 * (int)card.Quality.Fake(card.BorderOverflow);
-            if (currParams + by >= maxParams)
+            long currParams = card.AttackBonus + card.HealthBonus + card.DefenceBonus;
+            long maxParams = 4900 * (int)card.Quality.Fake(card.BorderOverflow);
+            if (currParams + points > maxParams)
             {
                 return ExecutionResult.FromError("nie można już bardziej zwiększyć parametrów na tej karcie.");
             }

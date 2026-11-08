@@ -8,6 +8,8 @@ using System.Text;
 using System.Text.Encodings.Web;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.Net.Http.Headers;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Sanakan.Config;
@@ -23,21 +25,36 @@ namespace Sanakan.Api
         public const string PermissionClaim = "AppPermission";
 
         private readonly IConfig _config;
+        private readonly ITokenAttemptGuard _guard;
 
         public AppKeyAuthenticationHandler(IOptionsMonitor<AuthenticationSchemeOptions> options, ILoggerFactory logger,
-            UrlEncoder encoder, ISystemClock clock, IConfig config) : base(options, logger, encoder, clock)
+            UrlEncoder encoder, ISystemClock clock, IConfig config, ITokenAttemptGuard guard) : base(options, logger, encoder, clock)
         {
             _config = config;
+            _guard = guard;
         }
 
-        protected override Task<AuthenticateResult> HandleAuthenticateAsync()
+        protected override async Task<AuthenticateResult> HandleAuthenticateAsync()
         {
             if (!Request.Headers.TryGetValue(HeaderName, out var values))
-                return Task.FromResult(AuthenticateResult.NoResult());
+                return AuthenticateResult.NoResult();
 
+            // a valid site token wins anyway, so a stale app key sent along with it must not count as a guess
+            if (Request.Headers.ContainsKey(HeaderNames.Authorization)
+                && (await Context.AuthenticateAsync(JwtBearerDefaults.AuthenticationScheme)).Succeeded)
+                return AuthenticateResult.NoResult();
+
+            var clientKey = TokenAttemptGuard.ClientKey(Context);
+            if (_guard.IsLocked(clientKey, out _))
+                return AuthenticateResult.Fail("Too many failed attempts");
+
+            // success does not reset the counter here, otherwise one known key would allow guessing the others
             var app = FindApp(_config, values.ToString());
             if (app == null)
-                return Task.FromResult(AuthenticateResult.Fail("App key is invalid"));
+            {
+                _guard.RegisterFailure(clientKey);
+                return AuthenticateResult.Fail("App key is invalid");
+            }
 
             var claims = new List<Claim> { new Claim(AppClaim, app.Bearer) };
             claims.AddRange(app.Permissions.ToString().Split(", ").Select(x => new Claim(PermissionClaim, x)));
@@ -47,7 +64,7 @@ namespace Sanakan.Api
                 claims.Add(new Claim(ClaimTypes.Webpage, app.Bearer));
 
             var principal = new ClaimsPrincipal(new ClaimsIdentity(claims, SchemeName));
-            return Task.FromResult(AuthenticateResult.Success(new AuthenticationTicket(principal, SchemeName)));
+            return AuthenticateResult.Success(new AuthenticationTicket(principal, SchemeName));
         }
 
         public static bool IsAllowed(ClaimsPrincipal user, ApiAppPermission permission)

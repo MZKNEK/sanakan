@@ -105,7 +105,7 @@ namespace Sanakan.Modules
             if (Context.Channel is ITextChannel channel)
             {
                 var enumerable = await channel.GetMessagesAsync().FlattenAsync();
-                var userMessages = enumerable.Where(x => x.Author == user);
+                var userMessages = enumerable.Where(x => x.Author.Id == user.Id);
                 try
                 {
                     await channel.DeleteMessagesAsync(userMessages).ConfigureAwait(false);
@@ -2058,10 +2058,14 @@ namespace Sanakan.Modules
 
                     ++dbUser.Warnings;
 
-                    if (dbUser.Warnings < 3)
+                    var alreadyMuted = user.Roles.Contains(muteRole);
+                    if (dbUser.Warnings < 3 || alreadyMuted)
                     {
                         await db.SaveChangesAsync();
                         await _moderation.NotifyUserAsync(user, reason);
+
+                        if (alreadyMuted)
+                            await SafeReplyAsync("", embed: $"{user.Mention} już jest wyciszony, dodano tylko ostrzeżenie ({dbUser.Warnings}).".ToEmbedMessage(EMType.Bot).Build());
                         return;
                     }
 

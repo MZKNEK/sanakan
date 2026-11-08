@@ -144,6 +144,13 @@ namespace Sanakan.Preconditions
                 _entries.TryRemove(entry.Key, out _);
         }
 
+        // preconditions run before argument parsing, so a command that is not executed must give its cooldown back
+        public static void Refund(CommandInfo command, ulong userId)
+        {
+            foreach (var delay in command.Preconditions.OfType<DelayNextUseBy>())
+                _entries.TryRemove(BuildKey(command.Name, delay._method, userId), out _);
+        }
+
         // Global dzieli jeden klucz dla wszystkich; PerUser kluczuje po uzytkowniku
         public static (string Command, ulong User) BuildKey(string command, DelayMethod method, ulong userId)
             => (command, method == DelayMethod.PerUser ? userId : 1UL);

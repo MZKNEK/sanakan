@@ -591,12 +591,26 @@ namespace Sanakan.Extensions
             }
         }
 
+        public static int UltimatePowerPoints(this ItemType type)
+        {
+            switch (type)
+            {
+                case ItemType.IncreaseUltimateAttack: return 5;
+                case ItemType.IncreaseUltimateDefence: return 3;
+                case ItemType.IncreaseUltimateHealth: return 5;
+                case ItemType.IncreaseUltimateAll: return 12;
+                default: return 0;
+            }
+        }
+
         public static bool ShouldForceSingleUseOnCheck(this ItemType type)
         {
             switch (type)
             {
                 case ItemType.ChangeBorderVariant:
                 case ItemType.ChangeCardImage:
+                case ItemType.CardParamsReRoll:
+                case ItemType.DereReRoll:
                     return true;
 
                 default:

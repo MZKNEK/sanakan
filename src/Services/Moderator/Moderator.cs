@@ -493,7 +493,7 @@ namespace Sanakan.Services
                 var dm = await user.CreateDMChannelAsync();
                 if (dm != null)
                 {
-                    await dm.SendMessageAsync($"Elo! Zostałeś ukarany mutem na {exInfo.GetTotalDurationAsString()}.\n\nPodany powód: {exInfo.Info.Reason}\n\nPozdrawiam serdecznie!".TrimToLength());
+                    await dm.SendMessageAsync($"Elo! Zostałeś ukarany {(exInfo.Info.Type == PenaltyType.Ban ? "banem" : "mutem")} na {exInfo.GetTotalDurationAsString()}.\n\nPodany powód: {exInfo.Info.Reason}\n\nPozdrawiam serdecznie!".TrimToLength());
                     await dm.CloseAsync();
                 }
             }

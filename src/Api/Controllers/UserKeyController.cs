@@ -18,11 +18,13 @@ namespace Sanakan.Api.Controllers
     {
         private readonly ISystemTime _time;
         private readonly IConfig _config;
+        private readonly ITokenAttemptGuard _guard;
 
-        public UserKeyController(IConfig config, ISystemTime time)
+        public UserKeyController(IConfig config, ISystemTime time, ITokenAttemptGuard guard)
         {
             _config = config;
             _time = time;
+            _guard = guard;
         }
 
         /// <summary>
@@ -38,7 +40,10 @@ namespace Sanakan.Api.Controllers
         {
             if (string.IsNullOrEmpty(appKey)) return "App Key Not Provided".ToResponse(401);
 
-            var app = Authenticate(appKey);
+            var clientKey = TokenAttemptGuard.ClientKey(HttpContext);
+            if (_guard.IsLocked(clientKey, out _)) return "Too many failed attempts".ToResponse(429);
+
+            var app = Authenticate(appKey, clientKey);
             if (app == null) return "App Key Is Invalid".ToResponse(403);
 
             using (var db = new Database.DatabaseContext(_config))
@@ -78,7 +83,10 @@ namespace Sanakan.Api.Controllers
         {
             if (string.IsNullOrEmpty(appKey)) return "App Key Not Provided".ToResponse(401);
 
-            var app = Authenticate(appKey);
+            var clientKey = TokenAttemptGuard.ClientKey(HttpContext);
+            if (_guard.IsLocked(clientKey, out _)) return "Too many failed attempts".ToResponse(429);
+
+            var app = Authenticate(appKey, clientKey);
             if (app == null) return "App Key Is Invalid".ToResponse(403);
 
             using (var db = new Database.DatabaseContext(_config))
@@ -107,10 +115,17 @@ namespace Sanakan.Api.Controllers
             return Ok(new { userId = discordId, application = currUser.Claims.FirstOrDefault(x => x.Type == "UserKeyApp")?.Value });
         }
 
-        private string Authenticate(string appKey)
+        private string Authenticate(string appKey, string clientKey)
         {
             var app = AppKeyAuthenticationHandler.FindApp(_config, appKey);
-            return app != null && app.Has(ApiAppPermission.UserKeys) ? app.Bearer : null;
+            if (app == null)
+            {
+                // only unknown keys count as guessing; a real key without the permission is a client misconfiguration
+                _guard.RegisterFailure(clientKey);
+                return null;
+            }
+
+            return app.Has(ApiAppPermission.UserKeys) ? app.Bearer : null;
         }
     }
 }

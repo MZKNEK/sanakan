@@ -85,6 +85,9 @@ namespace Sanakan.Extensions
 
             if (successfulParses.Length == 0)
             {
+                foreach (var pair in successfulPreconditions)
+                    Preconditions.DelayNextUseBy.Refund(pair.Key.Command, context.User.Id);
+
                 var bestMatch = parseResults
                     .FirstOrDefault(x => !x.Value.IsSuccess);
 
@@ -92,6 +95,10 @@ namespace Sanakan.Extensions
             }
 
             var chosenOverload = successfulParses[0];
+            // cooldowns are keyed by command name, so overloads sharing the chosen name keep theirs
+            foreach (var pair in successfulPreconditions.Where(x => x.Key.Command.Name != chosenOverload.Key.Command.Name))
+                Preconditions.DelayNextUseBy.Refund(pair.Key.Command, context.User.Id);
+
             return new Services.Commands.SearchResult(command: new Services.Commands.Command(chosenOverload.Key, chosenOverload.Value, context, (Services.Executor.Priority)chosenOverload.Key.Command.Priority));
         }
 

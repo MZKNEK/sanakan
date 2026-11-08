@@ -437,8 +437,15 @@ namespace Sanakan.Services
             var width = Math.Max(sizeTop.Width, sizeBot.Width);
             var height = sizeTop.Height + sizeBot.Height;
 
-            if (height > 0 || width > 0)
-                CheckImageSize(image, new Size(width, height), true);
+            // both crops below need the image to be exactly width x height
+            if (image.Width != width || image.Height != height)
+            {
+                image.Mutate(x => x.Resize(new ResizeOptions
+                {
+                    Mode = ResizeMode.Crop,
+                    Size = new Size(width, height)
+                }));
+            }
 
             using var topImage = image.Clone(x => x.Crop(sizeTop.Width, sizeTop.Height));
             using var botImage = image.Clone(x => x.Crop(new Rectangle(0, sizeTop.Height, sizeBot.Width, sizeBot.Height)));
@@ -475,7 +482,7 @@ namespace Sanakan.Services
             using (var stream = await GetImageFromUrlAsync(url, true))
             {
                 if (stream is null || stream == Stream.Null)
-                    return;
+                    throw new InvalidDataException("Image could not be downloaded");
 
                 var detectedFormat = await Image.DetectFormatAsync(stream);
                 using var image = detectedFormat == WebpFormat.Instance ?
@@ -940,7 +947,7 @@ namespace Sanakan.Services
             {
                 var hasRoundAvatar = botUser.StatsStyleSettings.HasFlag(ProfileSettings.RoundAvatar) || hasAvBorder;
                 using var webpAvatarStream = avatar.ToWebpStream();
-                using var userAvatar = Image.Load(webpAvatarStream);
+                using var userAvatar = Image.Load<Rgba32>(webpAvatarStream);
 
                 using var avBack = new Image<Rgba32>(tSize, tSize, GetOrCreateColor("#3f3f3f"));
                 if (hasRoundAvatar) avBack.Mutate(x => x.Round(hasAvBorder ? 40 : 44));

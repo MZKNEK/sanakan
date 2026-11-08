@@ -630,15 +630,17 @@ namespace Sanakan.Services.Supervisor
                     if (!_guildsJoin.Any(x => x.Key == user.Guild.Id))
                         _guildsJoin.Add(user.Guild.Id, new Dictionary<string, SupervisorJoinEntity>());
 
+                    // usernames are globally unique since the Discord name migration, so group by display name
+                    var joinKey = user.GlobalName ?? user.Username;
                     var guild = _guildsJoin[user.Guild.Id];
-                    if (!guild.Any(x => x.Key == user.Username))
-                        guild.Add(user.Username, new SupervisorJoinEntity(user.Id, _time));
+                    if (!guild.Any(x => x.Key == joinKey))
+                        guild.Add(joinKey, new SupervisorJoinEntity(user.Id, _time));
 
-                    var susspect = guild[user.Username];
+                    var susspect = guild[joinKey];
                     if (!susspect.IsValid())
                     {
                         susspect = new SupervisorJoinEntity(user.Id, _time);
-                        guild[user.Username] = susspect;
+                        guild[joinKey] = susspect;
                     }
 
                     susspect.Add(user.Id);
@@ -655,7 +657,7 @@ namespace Sanakan.Services.Supervisor
                 try
                 {
                     await user.Guild.AddBanAsync(toBan, 1,
-                        $"Automatyczny ban: raid - wykryto {usersToBan.Count} kont, które dołączyły w ciągu 2 minut z tą samą nazwą użytkownika ({user.Username}).");
+                        $"Automatyczny ban: raid - wykryto {usersToBan.Count} kont, które dołączyły w ciągu 2 minut z tą samą nazwą ({user.GlobalName ?? user.Username}).");
                 }
                 catch (Exception ex)
                 {

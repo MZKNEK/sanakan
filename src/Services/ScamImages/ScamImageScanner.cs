@@ -88,6 +88,9 @@ namespace Sanakan.Services.ScamImages
                         continue;
 
                     var hashes = HashStream(stream);
+                    if (hashes == null)
+                        continue;
+
                     var match = Match(hashes, url);
                     if (match != null)
                         result.Matches.Add(match);
@@ -110,13 +113,18 @@ namespace Sanakan.Services.ScamImages
             if (_store.Count == 0 || stream == null)
                 return null;
 
-            return Match(HashStream(stream), url);
+            var hashes = HashStream(stream);
+            return hashes == null ? null : Match(hashes, url);
         }
 
+        // animations are skipped: a single shared frame (e.g. a black one) could flag an innocent GIF
         private static ulong[] HashStream(Stream stream)
         {
             if (stream.CanSeek)
                 stream.Position = 0;
+
+            if (PerceptualHash.IsAnimated(stream))
+                return null;
 
             return PerceptualHash.FromStreamOrientations(stream);
         }
@@ -159,6 +167,9 @@ namespace Sanakan.Services.ScamImages
                 {
                     using var stream = await _images.TryGetImageStreamAsync(attachment.Url);
                     if (stream == null || ReferenceEquals(stream, Stream.Null))
+                        continue;
+
+                    if (PerceptualHash.IsAnimated(stream))
                         continue;
 
                     if (_store.Add(PerceptualHash.FromStream(stream)))

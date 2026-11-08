@@ -63,11 +63,7 @@ namespace Sanakan.Api.Controllers
             return Ok(new { token = tokenData.Token, expire = tokenData.Expire });
         }
 
-        private string GetClientKey()
-        {
-            var ip = HttpContext?.Connection?.RemoteIpAddress;
-            return ip?.ToString() ?? "unknown";
-        }
+        private string GetClientKey() => TokenAttemptGuard.ClientKey(HttpContext);
 
         private TokenData BuildToken(string user)
         {

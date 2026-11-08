@@ -131,12 +131,12 @@ namespace Sanakan.Services
             using (var db = new Database.DatabaseContext(_config))
             {
                 var config = await db.GetCachedGuildFullConfigAsync(user.Guild.Id);
-                if (config?.WelcomeMessage == null) return;
-                if (config.WelcomeMessage == "off") return;
+                if (config == null) return;
 
-                await SendMessageAsync(ReplaceTags(user, config.WelcomeMessage), user.Guild.GetTextChannel(config.GreetingChannel));
+                if (config.WelcomeMessage != null && config.WelcomeMessage != "off")
+                    await SendMessageAsync(ReplaceTags(user, config.WelcomeMessage), user.Guild.GetTextChannel(config.GreetingChannel));
 
-                if (config?.WelcomeMessagePW == null) return;
+                if (config.WelcomeMessagePW == null) return;
                 if (config.WelcomeMessagePW == "off") return;
 
                 try

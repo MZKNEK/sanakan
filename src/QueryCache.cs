@@ -19,14 +19,21 @@ namespace Sanakan
         // in rows, a user or deck counts its cards too; ~1 KB per card, so roughly 2 GB
         public const long SizeLimit = 2_000_000;
 
+        // ~180 B per tag, so the limit is roughly 180 MB
+        public const int MaxTags = 1_000_000;
+        // no entry lives longer than this, so a tag idle for longer has no cached data left
+        public static readonly TimeSpan MaxEntryLifetime = TimeSpan.FromHours(12);
+        private static readonly long TagIdleMs = (long)(MaxEntryLifetime + TimeSpan.FromHours(1)).TotalMilliseconds;
+        private static readonly long TagSweepIntervalMs = (long)TimeSpan.FromHours(1).TotalMilliseconds;
+
         private static readonly MemoryCache Cache = new MemoryCache(new MemoryCacheOptions { SizeLimit = SizeLimit });
-        private static readonly ConcurrentDictionary<string, CancellationTokenSource> Tags = new ConcurrentDictionary<string, CancellationTokenSource>();
+        private static readonly CacheTagRegistry Tags = new CacheTagRegistry();
         private static long _currentSize;
 
         public static MemoryCacheEntryOptions DefaultOptions { get; } = new MemoryCacheEntryOptions
         {
             SlidingExpiration = TimeSpan.FromMinutes(60),
-            AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(12)
+            AbsoluteExpirationRelativeToNow = MaxEntryLifetime
         };
 
         public static Task<IEnumerable<T>> FromCacheAsync<T>(this IQueryable<T> query, DbContext db, string key, params string[] tags)
@@ -46,7 +53,11 @@ namespace Sanakan
             }
 
             // tokens are taken before the query runs, so an expire that lands during the query discards its result
-            var tokens = tags.Select(tag => Tags.GetOrAdd(tag, _ => new CancellationTokenSource()).Token).ToList();
+            var now = Environment.TickCount64;
+            var tokens = tags.Select(tag => Tags.Use(tag, now)).ToList();
+            if (Tags.ShouldSweep(now, TagSweepIntervalMs, MaxTags))
+                _ = Task.Run(() => Tags.Sweep(now, TagIdleMs, MaxTags));
+
             var timer = Stopwatch.StartNew();
             var result = await load();
             timer.Stop();
@@ -112,19 +123,30 @@ namespace Sanakan
         public static void ExpireTag(params string[] tags)
         {
             foreach (var tag in tags)
-            {
-                // not disposed: a reader may still be holding its token
-                if (Tags.TryRemove(tag, out var source))
-                    source.Cancel();
-            }
+                Tags.Expire(tag);
         }
 
-        private static MemoryCacheEntryOptions Copy(MemoryCacheEntryOptions options) => new MemoryCacheEntryOptions
+        public static MemoryCacheEntryOptions Copy(MemoryCacheEntryOptions options)
         {
-            AbsoluteExpiration = options.AbsoluteExpiration,
-            AbsoluteExpirationRelativeToNow = options.AbsoluteExpirationRelativeToNow,
-            SlidingExpiration = options.SlidingExpiration,
-            Priority = options.Priority
-        };
+            var copy = new MemoryCacheEntryOptions
+            {
+                AbsoluteExpiration = options.AbsoluteExpiration,
+                AbsoluteExpirationRelativeToNow = options.AbsoluteExpirationRelativeToNow,
+                SlidingExpiration = options.SlidingExpiration,
+                Priority = options.Priority
+            };
+
+            // the tag sweep relies on entries never outliving MaxEntryLifetime
+            if (copy.AbsoluteExpirationRelativeToNow > MaxEntryLifetime)
+                copy.AbsoluteExpirationRelativeToNow = MaxEntryLifetime;
+
+            if (copy.AbsoluteExpiration > DateTimeOffset.Now + MaxEntryLifetime)
+                copy.AbsoluteExpiration = DateTimeOffset.Now + MaxEntryLifetime;
+
+            if (copy.AbsoluteExpiration == null && copy.AbsoluteExpirationRelativeToNow == null)
+                copy.AbsoluteExpirationRelativeToNow = MaxEntryLifetime;
+
+            return copy;
+        }
     }
 }

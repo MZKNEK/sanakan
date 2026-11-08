@@ -187,7 +187,9 @@ namespace Sanakan.TypeReaders
 
         private NamePair<ProfileConfigType> GetSelectedOption(string input, uint index, bool useIndex) => useIndex
                 ? _profileConfigTypes.FirstOrDefault(x => x.Index == index)
-                : _profileConfigTypes.FirstOrDefault(x => input.StartsWith(x.Name, StringComparison.OrdinalIgnoreCase));
+                // longest name wins, so "overlay visibility" is not taken as "overlay"
+                : _profileConfigTypes.Where(x => input.StartsWith(x.Name, StringComparison.OrdinalIgnoreCase))
+                    .OrderByDescending(x => x.Name.Length).FirstOrDefault();
 
         private NamePair<ProfileType> GetSelectedStyle(string input, uint index, bool useIndex) => useIndex
                 ? _profileStyleTypes.FirstOrDefault(x => x.Index == index)

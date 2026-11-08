@@ -4,6 +4,7 @@ using System;
 using System.IO;
 using System.Numerics;
 using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Formats;
 using SixLabors.ImageSharp.PixelFormats;
 using SixLabors.ImageSharp.Processing;
 
@@ -18,21 +19,38 @@ namespace Sanakan.Services.ScamImages
         private const int Size = 32;
         private const int LowFreq = 8;
 
+        // only the first frame is hashed, so other frames of a GIF/WebP are not decoded at all
+        private static readonly DecoderOptions FirstFrame = new DecoderOptions { MaxFrames = 1 };
+
+        // leaves the stream at its starting position, so it can be hashed afterwards
+        public static bool IsAnimated(Stream stream)
+        {
+            var start = stream.Position;
+            try
+            {
+                return Image.Identify(stream).FrameMetadataCollection.Count > 1;
+            }
+            finally
+            {
+                stream.Position = start;
+            }
+        }
+
         public static ulong FromFile(string path)
         {
-            using var image = Image.Load<Rgba32>(path);
+            using var image = Image.Load<Rgba32>(FirstFrame, path);
             return FromImage(image);
         }
 
         public static ulong FromStream(Stream stream)
         {
-            using var image = Image.Load<Rgba32>(stream);
+            using var image = Image.Load<Rgba32>(FirstFrame, stream);
             return FromImage(image);
         }
 
         public static ulong[] FromStreamOrientations(Stream stream)
         {
-            using var image = Image.Load<Rgba32>(stream);
+            using var image = Image.Load<Rgba32>(FirstFrame, stream);
             return FromImageOrientations(image);
         }
 

@@ -538,28 +538,28 @@ namespace Sanakan.Services.PocketWaifu
 
                 case HaremType.Tag:
                     {
-                        var nList = new List<Card>();
+                        var nList = list.ToList();
                         var tagList = tag.Split("|").First().Split(" ").ToList();
                         foreach (var t in tagList)
                         {
                             if (t.Length < 1)
                                 continue;
 
-                            nList = list.Where(x => x.Tags.Any(c => c.Name.Equals(t, StringComparison.CurrentCultureIgnoreCase))).ToList();
+                            nList = nList.Where(x => x.Tags.Any(c => c.Name.Equals(t, StringComparison.CurrentCultureIgnoreCase))).ToList();
                         }
                         return nList;
                     }
 
                 case HaremType.NoTag:
                     {
-                        var nList = new List<Card>();
+                        var nList = list.ToList();
                         var tagList = tag.Split("|").First().Split(" ").ToList();
                         foreach (var t in tagList)
                         {
                             if (t.Length < 1)
                                 continue;
 
-                            nList = list.Where(x => !x.Tags.Any(c => c.Name.Equals(t, StringComparison.CurrentCultureIgnoreCase))).ToList();
+                            nList = nList.Where(x => !x.Tags.Any(c => c.Name.Equals(t, StringComparison.CurrentCultureIgnoreCase))).ToList();
                         }
                         return nList;
                     }
@@ -2467,7 +2467,7 @@ namespace Sanakan.Services.PocketWaifu
                 case ItemType.IncreaseUltimateDefence:
                 case ItemType.IncreaseUltimateHealth:
                 case ItemType.IncreaseUltimateAll:
-                    var res = card.CanUpgradePower(itemCnt);
+                    var res = card.CanUpgradePower((long)itemCnt * item.Type.UltimatePowerPoints());
                     if (res.Status == ExecutionResult.EStatus.Error)
                         return res;
                     break;
@@ -2604,7 +2604,7 @@ namespace Sanakan.Services.PocketWaifu
                     }
                     catch (Exception)
                     {
-                        return ExecutionResult.FromError("Obrazek jest zbyt duży!");
+                        return ExecutionResult.FromError("Nie udało się zapisać obrazka! Upewnij się, że nie jest zbyt duży i ma poprawny format.");
                     }
                     card.IsAnimatedImage = isAnim;
                     card.CustomImageDate = _time.Now();
@@ -2620,7 +2620,14 @@ namespace Sanakan.Services.PocketWaifu
                     if (card.Image is null)
                         return ExecutionResult.FromError("Aby ustawić ramkę, karta musi posiadać wcześniej ustawiony obrazek na stronie!");
 
-                    _ = await _img.SaveCardBorderImageFromUrlAsync(imgCheck2.Url, card);
+                    try
+                    {
+                        _ = await _img.SaveCardBorderImageFromUrlAsync(imgCheck2.Url, card);
+                    }
+                    catch (Exception)
+                    {
+                        return ExecutionResult.FromError("Nie udało się zapisać obrazka ramki! Upewnij się, że nie jest zbyt duży i ma poprawny format.");
+                    }
                     break;
 
                 case ItemType.BloodOfYourWaifu:

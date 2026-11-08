@@ -398,9 +398,18 @@ namespace Sanakan.Api.Controllers
             {
                 var countingTimer = System.Diagnostics.Stopwatch.StartNew();
                 var expireTime = new MemoryCacheEntryOptions().SetAbsoluteExpiration(_time.Now().AddMinutes(15));
+
+                // deck, card and tag changes only expire the discord user tag, so the profile has to depend on it too
+                var discordIds = await db.Users.AsQueryable().Where(x => id != 0 && x.Shinden == id).Select(x => x.Id)
+                    .FromCacheAsync(db, $"user-shinden-discord-{id}", expireTime, CacheTags.UserProfile(id));
+                var discordId = discordIds.FirstOrDefault();
+                var profileTags = discordId != 0
+                    ? new[] { CacheTags.UserProfile(id), CacheTags.User(discordId) }
+                    : new[] { CacheTags.UserProfile(id) };
+
                 var cached = await db.Users.AsQueryable().AsSplitQuery().Where(x => id != 0 && x.Shinden == id).Include(x => x.GameDeck).ThenInclude(x => x.Tags).Include(x => x.GameDeck)
                     .ThenInclude(x => x.PvPStats).Include(x => x.GameDeck).ThenInclude(x => x.Cards).ThenInclude(x => x.Tags).Include(x => x.Stats).AsNoTracking()
-                    .FromCacheAsync(db, $"user-site-profile-{id}", expireTime, CacheTags.UserProfile(id));
+                    .FromCacheAsync(db, $"user-site-profile-{id}", expireTime, profileTags);
                 var user = cached.FirstOrDefault();
 
                 if (user == null)

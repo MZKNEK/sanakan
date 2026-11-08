@@ -81,7 +81,7 @@ namespace Sanakan.Modules
             var session = new ListSession<Card>(Context.User, Context.Client.CurrentUser);
             await _session.KillSessionIfExistAsync(session);
 
-            if (type == HaremType.Tag && tag == null)
+            if ((type == HaremType.Tag || type == HaremType.NoTag) && string.IsNullOrWhiteSpace(tag))
             {
                 await SafeReplyAsync("", embed: $"{Context.User.Mention} musisz sprecyzować nazwę oznaczenia!".ToEmbedMessage(EMType.Error).Build());
                 return;
@@ -679,13 +679,17 @@ namespace Sanakan.Modules
                 var allWWCnt = await db.WishlistCountData.AsQueryable().AsNoTracking().ToListAsync();
                 foreach (var card in totalCards)
                 {
+                    // a persistent entry stays on the wishlist and does not change the count
+                    var removesEntry = bUser.GameDeck.Wishes.FirstOrDefault(x => x.Type == WishlistObjectType.Character
+                        && x.ObjectId == card.Character)?.Entry == WishlistEntryType.Normal;
+
                     if (await bUser.GameDeck.RemoveCharacterFromWishListAsync(card.Character, db))
                     {
                         charactersOnWishlist.Add(card.Character);
 
                         // zaktualizuj lokalny snapshot, aby kolejne karty tej samej postaci widziały nowy licznik
                         var removed = allWWCnt.FirstOrDefault(x => x.Id == card.Character);
-                        if (removed != null && !bUser.GameDeck.WishlistIsPrivate)
+                        if (removed != null && removesEntry && !bUser.GameDeck.WishlistIsPrivate)
                         {
                             removed.Count = Math.Max(0, removed.Count - 1);
                             removed.ACount = Math.Max(0, removed.ACount - 1);
@@ -3332,7 +3336,7 @@ namespace Sanakan.Modules
                 var newt = await db.GetTagAsync(_tags, newTag, Context.User.Id);
                 if (!removeTag && newt is null)
                 {
-                    await SafeReplyAsync("", embed: $"{Context.User.Mention} nie odnaleziono oznaczenia `{oldTag}`".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} nie odnaleziono oznaczenia `{newTag}`".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
@@ -4044,13 +4048,19 @@ namespace Sanakan.Modules
             using (var db = new Database.DatabaseContext(Config))
             {
                 var duser = await db.GetUserAndDontTrackAsync(Context.User.Id);
+                var euser = await db.GetUserAndDontTrackAsync(usr.Id);
+                if (duser == null || euser == null)
+                {
+                    await SafeReplyAsync("", embed: "Jeden z graczy nie posiada profilu!".ToEmbedMessage(EMType.Error).Build());
+                    return;
+                }
+
                 if (duser.GameDeck.NeedToSetDeckAgain())
                 {
                     await SafeReplyAsync("", embed: $"{Context.User.Mention} musisz na nowo ustawić swoją talię!".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
-                var euser = await db.GetUserAndDontTrackAsync(usr.Id);
                 if (euser.GameDeck.NeedToSetDeckAgain())
                 {
                     await SafeReplyAsync("", embed: $"{Context.User.Mention} twój przeciwnik musi na nowo ustawić swoją talię!".ToEmbedMessage(EMType.Error).Build());

@@ -387,7 +387,15 @@ namespace Sanakan.Modules
                     return;
                 }
 
-                _ = await _img.SaveCardBorderImageFromUrlAsync(imgCheck.Url, thisCard);
+                try
+                {
+                    _ = await _img.SaveCardBorderImageFromUrlAsync(imgCheck.Url, thisCard);
+                }
+                catch (Exception)
+                {
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} nie udało się zapisać obrazka ramki.".ToEmbedMessage(EMType.Error).Build());
+                    return;
+                }
 
                 await db.SaveChangesAsync();
 
@@ -470,7 +478,15 @@ namespace Sanakan.Modules
                     return;
                 }
 
-                _ = await _img.SaveCardImageFromUrlAsync(imgCheck.Url, thisCard);
+                try
+                {
+                    _ = await _img.SaveCardImageFromUrlAsync(imgCheck.Url, thisCard);
+                }
+                catch (Exception)
+                {
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} nie udało się zapisać obrazka.".ToEmbedMessage(EMType.Error).Build());
+                    return;
+                }
 
                 thisCard.FixedCustomImageCnt++;
                 thisCard.CustomImageDate = _time.Now();

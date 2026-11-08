@@ -26,6 +26,7 @@ namespace Sanakan.Api
         private sealed class AttemptState
         {
             public int Failures;
+            public DateTime LastFailure;
             public DateTime? LockedUntil;
         }
 
@@ -33,6 +34,9 @@ namespace Sanakan.Api
         private readonly ISystemTime _time;
 
         public TokenAttemptGuard(ISystemTime time) => _time = time;
+
+        public static string ClientKey(Microsoft.AspNetCore.Http.HttpContext context)
+            => context?.Connection?.RemoteIpAddress?.ToString() ?? "unknown";
 
         public bool IsLocked(string key, out TimeSpan retryAfter)
         {
@@ -66,9 +70,15 @@ namespace Sanakan.Api
             var state = _states.GetOrAdd(key, _ => new AttemptState());
             lock (state)
             {
+                // only failures within the last LockDuration count, so occasional mistakes never add up to a lock
+                var now = _time.Now();
+                if (now - state.LastFailure > LockDuration)
+                    state.Failures = 0;
+
+                state.LastFailure = now;
                 state.Failures++;
                 if (state.Failures >= MaxAttempts)
-                    state.LockedUntil = _time.Now().Add(LockDuration);
+                    state.LockedUntil = now.Add(LockDuration);
             }
         }
 
