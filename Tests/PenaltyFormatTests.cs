@@ -1,5 +1,6 @@
 using System;
 using Sanakan.Database.Models.Management;
+using Sanakan.Extensions;
 using Sanakan.Services;
 using Xunit;
 
@@ -20,7 +21,18 @@ namespace Artifacts
         [InlineData(123, "godziny")]
         public void Plural_FollowsPolishRules(long count, string expected)
         {
-            Assert.Equal(expected, PenaltyFormat.Plural(count, "godzina", "godziny", "godzin"));
+            Assert.Equal(expected, Polish.Plural(count, "godzina", "godziny", "godzin"));
+        }
+
+        [Theory]
+        [InlineData(1, "1 kartę")]
+        [InlineData(3, "3 karty")]
+        [InlineData(5, "5 kart")]
+        [InlineData(13, "13 kart")]
+        [InlineData(24, "24 karty")]
+        public void Count_PutsTheNumberBeforeTheDeclinedNoun(long count, string expected)
+        {
+            Assert.Equal(expected, Polish.Count(count, "kartę", "karty", "kart"));
         }
 
         [Theory]

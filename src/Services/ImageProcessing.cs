@@ -1160,9 +1160,9 @@ namespace Sanakan.Services
             var listTime = new List<string>();
             if (more.Time != null)
             {
-                if (more.Time.Years != 0) listTime.Add($"{more?.Time?.Years} lat");
+                if (more.Time.Years > 0) listTime.Add(Polish.Count((long)more.Time.Years.Value, "rok", "lata", "lat"));
                 if (more.Time.Months != 0) listTime.Add($"{more?.Time?.Months} mies.");
-                if (more.Time.Days != 0) listTime.Add($"{more?.Time?.Days} dni");
+                if (more.Time.Days > 0) listTime.Add(Polish.Count((long)more.Time.Days.Value, "dzień", "dni", "dni"));
                 if (more.Time.Hours != 0) listTime.Add($"{more?.Time?.Hours} h");
                 if (more.Time.Minutes != 0) listTime.Add($"{more?.Time?.Minutes} m");
             }

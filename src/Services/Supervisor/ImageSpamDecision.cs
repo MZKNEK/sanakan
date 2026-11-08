@@ -1,5 +1,7 @@
 #pragma warning disable 1591
 
+using Sanakan.Extensions;
+
 namespace Sanakan.Services.Supervisor
 {
     public sealed class ImageSpamDecision
@@ -24,11 +26,11 @@ namespace Sanakan.Services.Supervisor
             var penalty = ban ? "ban" : "mute";
             if (ScamImages >= 2)
                 return $"Automatyczny {penalty}: scamowe obrazki - rozpoznano {ScamImages} "
-                    + $"{PenaltyFormat.Plural(ScamImages, "scamowy obrazek", "scamowe obrazki", "scamowych obrazków")} w ciągu {ScamWindowMinutes} minut.";
+                    + $"{Polish.Plural(ScamImages, "scamowy obrazek", "scamowe obrazki", "scamowych obrazków")} w ciągu {ScamWindowMinutes} minut.";
 
             if (OversizedMessages >= 3)
                 return $"Automatyczny {penalty}: spam obrazkami - wysłano {OversizedMessages} "
-                    + $"{PenaltyFormat.Plural(OversizedMessages, "wiadomość zawierającą", "wiadomości zawierające", "wiadomości zawierających")} "
+                    + $"{Polish.Plural(OversizedMessages, "wiadomość zawierającą", "wiadomości zawierające", "wiadomości zawierających")} "
                     + $"więcej niż trzy obrazki w ciągu {SpamWindowMinutes} minut.";
 
             return null;

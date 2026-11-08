@@ -1854,7 +1854,7 @@ namespace Sanakan.Modules
 
                 QueryCache.ExpireTag(new string[] { CacheTags.User(bUser.Id) });
 
-                await SafeReplyAsync("", embed: $"{user.Mention} wyciągnął {cntIn} kart z klatki.".ToEmbedMessage(EMType.Success).Build());
+                await SafeReplyAsync("", embed: $"{user.Mention} wyciągnął {Polish.Count(cntIn, "kartę", "karty", "kart")} z klatki.".ToEmbedMessage(EMType.Success).Build());
             }
         }
 
@@ -3228,7 +3228,7 @@ namespace Sanakan.Modules
 
                 QueryCache.ExpireTag(new string[] { CacheTags.User(Context.User.Id) });
 
-                await SafeReplyAsync("", embed: $"{Context.User.Mention} oznaczono {cardsSelected.Count} kart.".ToEmbedMessage(EMType.Success).Build());
+                await SafeReplyAsync("", embed: $"{Context.User.Mention} oznaczono {Polish.Count(cardsSelected.Count, "kartę", "karty", "kart")}.".ToEmbedMessage(EMType.Success).Build());
             }
         }
 
@@ -3295,7 +3295,7 @@ namespace Sanakan.Modules
 
                 QueryCache.ExpireTag(new string[] { CacheTags.User(Context.User.Id) });
 
-                await SafeReplyAsync("", embed: $"{Context.User.Mention} oznaczono {untaggedCards.Count} kart.".ToEmbedMessage(EMType.Success).Build());
+                await SafeReplyAsync("", embed: $"{Context.User.Mention} oznaczono {Polish.Count(untaggedCards.Count, "kartę", "karty", "kart")}.".ToEmbedMessage(EMType.Success).Build());
             }
         }
 

@@ -428,8 +428,8 @@ namespace Sanakan.Services.Supervisor
             if (hasNonWhitelistedUrl)
                 return $"Automatyczny ban: spam linkami - wykryto adres spoza listy zaufanych domen. Adresy: {GetUrlsDescription(messageContent)}";
 
-            return $"Automatyczny {penalty}: spam/flood - {specifiedMessages} {PenaltyFormat.Plural(specifiedMessages, "powtórzenie", "powtórzenia", "powtórzeń")} "
-                + $"tej samej treści, łącznie {totalMessages} {PenaltyFormat.Plural(totalMessages, "wiadomość", "wiadomości", "wiadomości")} w krótkim czasie.";
+            return $"Automatyczny {penalty}: spam/flood - {specifiedMessages} {Polish.Plural(specifiedMessages, "powtórzenie", "powtórzenia", "powtórzeń")} "
+                + $"tej samej treści, łącznie {totalMessages} {Polish.Plural(totalMessages, "wiadomość", "wiadomości", "wiadomości")} w krótkim czasie.";
         }
 
         private string GetUrlsDescription(string content)

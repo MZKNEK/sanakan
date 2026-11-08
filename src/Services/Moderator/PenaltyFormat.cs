@@ -16,22 +16,12 @@ namespace Sanakan.Services
 
         private static readonly Regex _autoReasonPrefix = new Regex("^Automatyczny (mute|ban): ", RegexOptions.Compiled);
 
-        public static string Plural(long count, string one, string few, string many)
-        {
-            if (count == 1)
-                return one;
-
-            var lastDigit = count % 10;
-            var lastTwoDigits = count % 100;
-            return lastDigit >= 2 && lastDigit <= 4 && (lastTwoDigits < 12 || lastTwoDigits > 14) ? few : many;
-        }
-
         public static string Duration(long hours)
         {
             var days = hours / 24;
             var rest = hours % 24;
             var daysText = $"{days} {(days == 1 ? "dzień" : "dni")}";
-            var hoursText = $"{rest} {Plural(rest, "godzina", "godziny", "godzin")}";
+            var hoursText = Polish.Count(rest, "godzina", "godziny", "godzin");
 
             if (days == 0)
                 return hoursText;

@@ -2325,7 +2325,7 @@ namespace Sanakan.Services.PocketWaifu
                 return ExecutionResult.FromError($"nie udało się {actionStr}ć żadnej karty, najpewniej znajdują się one w klatce lub są oznaczone jako ulubione.");
 
             var response = new StringBuilder().Append($"{actionStr}ł ");
-            response.Append(realDiscardedCount > 1 ? $"{realDiscardedCount} kart" : $"kartę: {cardsForDiscarding.Where(x => !ignored.Any(c => c.Id == x.Id)).First().GetString(false, false, true)}");
+            response.Append(realDiscardedCount > 1 ? Polish.Count(realDiscardedCount, "kartę", "karty", "kart") : $"kartę: {cardsForDiscarding.Where(x => !ignored.Any(c => c.Id == x.Id)).First().GetString(false, false, true)}");
 
             if (ignored.Any())
                 response.Append($"\n\n ❗ Nie udało się {actionStr}ć {ignored.Count} kart{lettery}!");
@@ -2805,7 +2805,7 @@ namespace Sanakan.Services.PocketWaifu
                         itemCnt = (int)RerollDereUntil(card, targetDere, item.Count, RandomizeDere);
                         karmaChange *= itemCnt;
                         affectionInc *= itemCnt;
-                        str.Append($"Użyto {itemCnt} przedmiotów by osiągnąć cel!\n");
+                        str.Append($"Użyto {Polish.Count(itemCnt, "przedmiot", "przedmioty", "przedmiotów")} by osiągnąć cel!\n");
                     }
                     else
                     {
