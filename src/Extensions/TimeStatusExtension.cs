@@ -309,10 +309,10 @@ namespace Sanakan.Extensions
                 return $"{status.Type.Icon()} **{status.Type.Name()}** {progress}{reward}";
             }
 
-            string dateValue = status.EndsAt.ToShortDateTime();
-            if (status.HasEnded(currentTime)) dateValue = "nieaktywne";
+            if (status.HasEnded(currentTime))
+                return $"{status.Type.Name()}: wygasła";
 
-            return $"{status.Type.Name()} do {dateValue}";
+            return $"{status.Type.Name()}: do {status.EndsAt.ToShortDateTime()} ({status.EndsAt.ToRemTime()})";
         }
 
         public static TimeStatus Sub(this TimeStatus status, TimeSpan span)

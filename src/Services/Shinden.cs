@@ -377,7 +377,7 @@ namespace Sanakan.Services
                     return "Brak wyników!";
 
                 default:
-                    return $"Brak połączenia z Shindenem! ({code})";
+                    return "Brak połączenia z Shindenem! Spróbuj ponownie za chwilę.";
             }
         }
 

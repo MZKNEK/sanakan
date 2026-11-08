@@ -91,7 +91,7 @@ namespace Sanakan.Modules
             using (var db = new Database.DatabaseContext(Config))
             {
                 long howMuch = Services.Fun.TakeATry(50d) ? Services.Fun.GetRandomValue(1, 5000) : _spawn.HowMuchToPacket(usr.Id);
-                await SafeReplyAsync("", embed: $"{usr.Mention} potrzebuje **{howMuch}** znaków do następnego pakietu*(teoretycznie)*."
+                await SafeReplyAsync("", embed: $"{usr.Mention} potrzebuje **{howMuch}** {Polish.Plural(howMuch, "znak", "znaki", "znaków")} do następnego pakietu *(teoretycznie)*."
                     .ToEmbedMessage(EMType.Info).Build());
             }
         }
@@ -339,7 +339,7 @@ namespace Sanakan.Modules
 
             if (user.Id == Context.User.Id)
             {
-                await SafeReplyAsync("", embed: "Coś tutaj nie gra.".ToEmbedMessage(EMType.Error).Build());
+                await SafeReplyAsync("", embed: $"{Context.User.Mention} nie możesz podarować SC samemu sobie.".ToEmbedMessage(EMType.Error).Build());
                 return;
             }
 
@@ -356,7 +356,7 @@ namespace Sanakan.Modules
 
                 if (thisUser.ScCnt < value)
                 {
-                    await SafeReplyAsync("", embed: $"{Context.User.Mention} nie masz wystarczającej ilości SC.".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} nie masz wystarczającej liczby SC.".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
@@ -369,7 +369,7 @@ namespace Sanakan.Modules
 
                 QueryCache.ExpireTag(new string[] { CacheTags.User(thisUser.Id), CacheTags.User(targetUser.Id) });
 
-                await SafeReplyAsync("", embed: $"{Context.User.Mention} podarował {user.Mention} {newScCnt} SC".ToEmbedMessage(EMType.Success).Build());
+                await SafeReplyAsync("", embed: $"{Context.User.Mention} podarował {user.Mention} {newScCnt} SC (z {value} SC po 40% podatku).".ToEmbedMessage(EMType.Success).Build());
             }
         }
     }

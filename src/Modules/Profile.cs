@@ -160,18 +160,15 @@ namespace Sanakan.Modules
                 var config = await db.GetCachedGuildFullConfigAsync(Context.Guild.Id);
                 if (config.SelfRoles.Count < 1)
                 {
-                    await SafeReplyAsync("", embed: "Nie odnaleziono roli.".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: "Na tym serwerze nie ma ról do samodzielnego przyznania.".ToEmbedMessage(EMType.Neutral).Build());
                     return;
                 }
 
-                string stringRole = "";
-                foreach (var selfRole in config.SelfRoles)
-                {
-                    var gRole = Context.Guild.GetRole(selfRole?.Role ?? 0);
-                    stringRole += $" `{selfRole.Name}` ";
-                }
+                var roles = config.SelfRoles.Select(x => $"`{x.Name}` → {Context.Guild.GetRole(x.Role)?.Mention ?? "rola usunięta z serwera"}");
+                var prefix = config.Prefix ?? Config.Get().Prefix;
 
-                await SafeReplyAsync($"**Dostępne role:**\n{stringRole}\n\nUżyj `s.przyznaj role [nazwa]` aby dodać lub `s.zdejmij role [nazwa]` odebrać sobie rolę.");
+                await SafeReplyAsync("", embed: $"{string.Join("\n", roles)}\n\nUżyj `{prefix}przyznaj role [nazwa]`, aby dodać rolę, albo `{prefix}zdejmij role [nazwa]`, aby ją zdjąć."
+                    .TrimToLength(4000).ToEmbedMessage(EMType.Info).WithTitle("Role do wzięcia").Build());
             }
         }
 
@@ -215,7 +212,8 @@ namespace Sanakan.Modules
                     return;
                 }
 
-                await SafeReplyAsync("", embed: $"{usr.Mention} potrzebuje **{botuser.GetRemainingExp()}** punktów doświadczenia do następnego poziomu."
+                var remaining = botuser.GetRemainingExp();
+                await SafeReplyAsync("", embed: $"{usr.Mention} potrzebuje **{remaining}** {Polish.Plural(remaining, "punkt", "punkty", "punktów")} doświadczenia do następnego poziomu."
                     .ToEmbedMessage(EMType.Info).Build());
             }
         }
@@ -757,7 +755,7 @@ namespace Sanakan.Modules
 
                 QueryCache.ExpireTag(new string[] { CacheTags.User(botuser.Id) });
 
-                await SafeReplyAsync("", embed: $"{user.Mention} wykupił miesiąc globalnych emotek!".ToEmbedMessage(EMType.Success).Build());
+                await SafeReplyAsync("", embed: $"{user.Mention} wykupił miesiąc globalnych emotek, ważne do {global.EndsAt.ToShortDateTime()}.".ToEmbedMessage(EMType.Success).Build());
             }
         }
 
@@ -841,9 +839,9 @@ namespace Sanakan.Modules
                 QueryCache.ExpireTag(new string[] { CacheTags.User(botuser.Id) });
 
                 await user.AddRoleAsync(selectedRole);
-            }
 
-            await SafeReplyAsync("", embed: $"{user.Mention} wykupił kolor!".ToEmbedMessage(EMType.Success).Build());
+                await SafeReplyAsync("", embed: $"{user.Mention} wykupił kolor, ważny do {colort.EndsAt.ToShortDateTime()}.".ToEmbedMessage(EMType.Success).Build());
+            }
         }
 
         [Command("kolor")]
@@ -904,7 +902,7 @@ namespace Sanakan.Modules
                     colort.BValue = true;
                     if (!await _profile.SetUserColorAsync(user, gConfig.MuteRole, color))
                     {
-                        await SafeReplyAsync("", embed: $"Coś poszło nie tak!".ToEmbedMessage(EMType.Error).Build());
+                        await SafeReplyAsync("", embed: $"{user.Mention} nie udało się nadać koloru, opłata nie została pobrana. Zgłoś to administracji.".ToEmbedMessage(EMType.Error).Build());
                         return;
                     }
 
@@ -925,7 +923,10 @@ namespace Sanakan.Modules
 
                 QueryCache.ExpireTag(new string[] { CacheTags.User(botuser.Id) });
 
-                await SafeReplyAsync("", embed: $"{user.Mention} wykupił kolor!".ToEmbedMessage(EMType.Success).Build());
+                var reply = color == FColor.CleanColor
+                    ? $"{user.Mention} zdjęto kolor."
+                    : $"{user.Mention} wykupił kolor, ważny do {colort.EndsAt.ToShortDateTime()}.";
+                await SafeReplyAsync("", embed: reply.ToEmbedMessage(EMType.Success).Build());
             }
         }
     }

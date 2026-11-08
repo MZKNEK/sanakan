@@ -58,7 +58,11 @@ namespace Sanakan.Modules
                     }
                     catch (Exception ex)
                     {
-                        await msg.ModifyAsync(x => x.Embed = $"{Context.User.Mention} nie udało się wysłać PW! ({ex.Message})".ToEmbedMessage(EMType.Error).Build());
+                        var reason = Services.Helper.IsDmClosed(ex) ? Services.Helper.DmClosed : Services.Helper.DmFailedText;
+                        if (!Services.Helper.IsDmClosed(ex))
+                            Logger?.LogError($"Shinden: episodes DM u{Context.User.Id}: {ex}");
+
+                        await msg.ModifyAsync(x => x.Embed = $"{Context.User.Mention} {reason}".ToEmbedMessage(EMType.Error).Build());
                     }
 
                     return;
@@ -225,7 +229,8 @@ namespace Sanakan.Modules
 
                 if (!user.Name.Equals(userNameInDiscord))
                 {
-                    await SafeReplyAsync("", embed: "Wykryto próbę podszycia się. Nieładnie!".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"Nick na serwerze (**{Discord.Format.Sanitize(userNameInDiscord)}**) musi być taki sam jak na Shindenie (**{Discord.Format.Sanitize(user.Name)}**). Zmień nick i spróbuj ponownie."
+                        .ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
@@ -260,7 +265,10 @@ namespace Sanakan.Modules
                 return;
             }
 
-            await SafeReplyAsync("", embed: $"Brak połączenia z Shindenem! ({response.Code})".ToEmbedMessage(EMType.Error).Build());
+            var error = response.Code == System.Net.HttpStatusCode.NotFound
+                ? "Nie znaleziono takiego konta na Shindenie. Sprawdź link do profilu."
+                : "Brak połączenia z Shindenem! Spróbuj ponownie za chwilę.";
+            await SafeReplyAsync("", embed: error.ToEmbedMessage(EMType.Error).Build());
         }
     }
 }
