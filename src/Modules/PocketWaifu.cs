@@ -894,8 +894,9 @@ namespace Sanakan.Modules
                 }
                 catch (Exception ex)
                 {
+                    _logger.LogError($"Waifu: card update {id}: {ex}");
                     await db.SaveChangesAsync();
-                    await SafeReplyAsync("", embed: $"{Context.User.Mention}: {ex.Message}".ToEmbedMessage(EMType.Error).Build());
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} nie udało się zaktualizować karty. Spróbuj ponownie za chwilę.".ToEmbedMessage(EMType.Error).Build());
                 }
             }
         }
@@ -1948,7 +1949,7 @@ namespace Sanakan.Modules
                             }
                             if (ids.Length > 1)
                             {
-                                response = $"{ids.Length} tytułów";
+                                response = Polish.Count(ids.Length, "tytuł", "tytuły", "tytułów");
                             }
                             break;
                         }
@@ -1995,7 +1996,8 @@ namespace Sanakan.Modules
             }
             catch (Exception ex)
             {
-                await SafeReplyAsync("", embed: $"Laud lama: {ex.Message}".ToEmbedMessage(EMType.Error).Build());
+                _logger.LogError($"Waifu: wishlist add u{Context.User.Id}: {ex}");
+                await SafeReplyAsync("", embed: $"{Context.User.Mention} nie udało się dodać do listy życzeń. Spróbuj ponownie za chwilę.".ToEmbedMessage(EMType.Error).Build());
             }
         }
 
@@ -2334,7 +2336,8 @@ namespace Sanakan.Modules
                     }
                     catch (Exception ex)
                     {
-                        await SafeReplyAsync("", embed: $"Laud lama: {ex.Message}".ToEmbedMessage(EMType.Error).Build());
+                        // the player's action already succeeded, only the wishlist counter failed
+                        _logger.LogError($"Waifu: wishlist count {thisCards.Character}: {ex}");
                     }
                 }));
                 await _executor.TryAdd(exe, TimeSpan.FromSeconds(1));
@@ -3356,7 +3359,7 @@ namespace Sanakan.Modules
                 QueryCache.ExpireTag(new string[] { CacheTags.User(Context.User.Id) });
 
                 string thing = removeTag ? "skasowane" : "zmienione";
-                await SafeReplyAsync("", embed: $"{Context.User.Mention} {thing} zostało oznaczenie na {cardsSelected.Count} kartach.".ToEmbedMessage(EMType.Success).Build());
+                await SafeReplyAsync("", embed: $"{Context.User.Mention} {thing} zostało oznaczenie na {Polish.Count(cardsSelected.Count, "karcie", "kartach", "kartach")}.".ToEmbedMessage(EMType.Success).Build());
             }
         }
 

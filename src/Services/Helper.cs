@@ -434,8 +434,23 @@ namespace Sanakan.Services
             }
             catch (Exception ex)
             {
-                return ExecutionResult.FromError($"coś poszło nie tak [{embeds.Count()}]:\n\n{ex.Message}".TrimToLength());
+                return DmFailed(ex, $"list of {embeds.Count()}");
             }
+        }
+
+        public const string DmClosed = "nie mogę wysłać Ci wiadomości prywatnej. Włącz wiadomości prywatne od członków tego serwera i spróbuj ponownie.";
+        public const string DmFailedText = "nie udało się wysłać wiadomości prywatnej. Spróbuj ponownie za chwilę.";
+
+        public static bool IsDmClosed(Exception ex)
+            => ex is Discord.Net.HttpException http && (int?)http.DiscordCode is 50007 or 50278;
+
+        private ExecutionResult DmFailed(Exception ex, string what)
+        {
+            if (IsDmClosed(ex))
+                return ExecutionResult.FromError(DmClosed);
+
+            _log?.LogError($"Helper: DM {what}: {ex}");
+            return ExecutionResult.FromError(DmFailedText);
         }
 
         public async Task<ExecutionResult> SendAsFileOnDMAsync(IUser user, IEnumerable<string> things)
@@ -451,7 +466,7 @@ namespace Sanakan.Services
             }
             catch (Exception ex)
             {
-                return ExecutionResult.FromError($"coś poszło nie tak:\n\n{ex.Message}".TrimToLength());
+                return DmFailed(ex, "file");
             }
         }
 

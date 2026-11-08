@@ -179,7 +179,8 @@ namespace Sanakan.Modules
                 }
                 catch(Exception ex)
                 {
-                    await SafeReplyAsync("", embed: $"Brak połączenia z Shindenem! ({ex.Message})".ToEmbedMessage(EMType.Error).Build());
+                    Logger?.LogError($"Shinden: user stats u{usr.Id}: {ex}");
+                    await SafeReplyAsync("", embed: "Brak połączenia z Shindenem! Spróbuj ponownie za chwilę.".ToEmbedMessage(EMType.Error).Build());
                 }
             }
         }
@@ -212,7 +213,8 @@ namespace Sanakan.Modules
             }
             catch (Exception ex)
             {
-                await SafeReplyAsync("", embed: $"Brak połączenia z Shindenem! ({ex.Message})".ToEmbedMessage(EMType.Error).Build());
+                Logger?.LogError($"Shinden: user {shindenId}: {ex}");
+                await SafeReplyAsync("", embed: "Brak połączenia z Shindenem! Spróbuj ponownie za chwilę.".ToEmbedMessage(EMType.Error).Build());
                 return;
             }
 
