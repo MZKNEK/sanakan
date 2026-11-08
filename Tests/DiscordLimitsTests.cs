@@ -25,7 +25,7 @@ namespace Artifacts
 
             var pages = DiscordLimits.Paginate(lines, firstPageReserve: 5);
 
-            Assert.Equal(85, pages[0].Count);
+            Assert.Equal(175, pages[0].Count);
             Assert.All(pages, p => Assert.True(p.Sum(DiscordLimits.CountElements) <= DiscordLimits.SafeMarkdownElements));
             Assert.Equal(200, pages.Sum(p => p.Count));
         }

@@ -6,12 +6,12 @@ using System.Text;
 
 namespace Sanakan.Services
 {
-    // Discord accepts up to 4096 characters in a description, but the client stops rendering
-    // markdown after about 100 elements (links, bold, mentions, emoji, timestamps) in one message
+    // Discord accepts up to 4096 characters in a description, but the client shows only the first
+    // 199 markdown elements (links, bold, mentions, emoji, timestamps) and drops the rest of the text
     public static class DiscordLimits
     {
-        public const int SafeMarkdownElements = 90;
-        public const int SafeDescriptionLength = 3000;
+        public const int SafeMarkdownElements = 180;
+        public const int SafeDescriptionLength = 3900;
 
         private static readonly string[] _openers = { "<@", "<#", "<t:", "<:", "<a:", "](" };
 

@@ -569,9 +569,9 @@ namespace Sanakan.Modules
 
         [Command("test md", RunMode = RunMode.Async), RequireDevOrTester]
         [Summary("wysyła embed z podaną liczbą elementów formatowania, żeby sprawdzić, kiedy Discord przestaje je wyświetlać")]
-        [Remarks("link 120 oba nie")]
+        [Remarks("link 120 nie")]
         public async Task TestMarkdownLimitAsync([Summary("typ: link, bold, mention, emoji, custom, time, card, mix")] string type, [Summary("liczba wierszy (1-300)")] int count,
-            [Summary("gdzie wysłać: kanał, pw albo oba")] string where = "oba", [Summary("czy rozłożyć wiersze na kilka pól po 20?")] bool fields = false)
+            [Summary("czy rozłożyć wiersze na kilka pól po 20?")] bool fields = false)
         {
             type = type.ToLower();
             if (!MarkdownTestTypes.Split(", ").Contains(type))
@@ -580,33 +580,7 @@ namespace Sanakan.Modules
                 return;
             }
 
-            where = where.ToLower().Replace("kanal", "kanał");
-            if (where != "kanał" && where != "pw" && where != "oba")
-            {
-                await SafeReplyAsync("", embed: "Podaj, gdzie wysłać: `kanał`, `pw` albo `oba`.".ToEmbedMessage(EMType.Error).Build());
-                return;
-            }
-
-            var embed = BuildMarkdownTestEmbed(type, Math.Clamp(count, 1, 300), fields);
-
-            if (where != "pw")
-                await SafeReplyAsync("", embed: embed);
-
-            if (where != "kanał")
-            {
-                try
-                {
-                    var dm = await Context.User.CreateDMChannelAsync();
-                    await dm.SendMessageAsync("", embed: embed);
-                    if (where == "pw")
-                        await SafeReplyAsync("", embed: "Test poszedł na PW.".ToEmbedMessage(EMType.Success).Build());
-                }
-                catch (Exception ex)
-                {
-                    var reason = Services.Helper.IsDmClosed(ex) ? Services.Helper.DmClosed : $"nie udało się wysłać PW: {ex.Message}";
-                    await SafeReplyAsync("", embed: $"{Context.User.Mention} {reason}".ToEmbedMessage(EMType.Error).Build());
-                }
-            }
+            await SafeReplyAsync("", embed: BuildMarkdownTestEmbed(type, Math.Clamp(count, 1, 300), fields));
         }
 
         private Embed BuildMarkdownTestEmbed(string type, int count, bool fields)
