@@ -259,11 +259,31 @@ namespace Sanakan.Services
         private static bool IsTooLarge(HttpResponseMessage res)
             => res.Content.Headers.ContentLength > MaxImageBytes;
 
-        private async Task<Stream> GetImageFromUrlAsync(string url, bool fixExt = false)
+        internal sealed class DownloadFailure
+        {
+            public string Reason { get; private set; }
+            public HttpStatusCode? StatusCode { get; private set; }
+
+            public void Set(string reason, HttpStatusCode? statusCode = null)
+            {
+                Reason = reason;
+                StatusCode = statusCode;
+            }
+
+            public void Set(Exception ex) => Set(ex is OperationCanceledException ? "timeout" : $"{ex.GetType().Name}: {ex.Message}");
+        }
+
+        private static Stream Fail(DownloadFailure failure, Stream result, string reason, HttpStatusCode? statusCode = null)
+        {
+            failure?.Set(reason, statusCode);
+            return result;
+        }
+
+        private async Task<Stream> GetImageFromUrlAsync(string url, bool fixExt = false, DownloadFailure failure = null)
         {
             try
             {
-                var stream = await DownloadImageAsync(url);
+                var stream = await DownloadImageAsync(url, failure);
                 if (stream != null)
                     return stream;
 
@@ -273,33 +293,34 @@ namespace Sanakan.Services
                     foreach (var ext in _extensions)
                     {
                         splited[splited.Length - 1] = ext;
-                        stream = await DownloadImageAsync(string.Join(".", splited));
+                        stream = await DownloadImageAsync(string.Join(".", splited), failure);
 
                         if (stream != null)
                             return stream;
                     }
                 }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                failure?.Set(ex);
                 return Stream.Null;
             }
 
             return null;
         }
 
-        private async Task<Stream> DownloadImageAsync(string url)
+        private async Task<Stream> DownloadImageAsync(string url, DownloadFailure failure = null)
         {
             if (!_allowPrivateHosts && !IsPublicHttpUrl(url))
-                return null;
+                return Fail(failure, null, "not a public address");
 
             using var timeout = new CancellationTokenSource(_httpClient.Timeout);
             using var res = await _httpClient.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, timeout.Token);
             if (!res.IsSuccessStatusCode)
-                return null;
+                return Fail(failure, null, $"HTTP {(int)res.StatusCode}", res.StatusCode);
 
             if (IsTooLarge(res))
-                return Stream.Null;
+                return Fail(failure, Stream.Null, "file too large");
 
             var buffer = new MemoryStream();
             try
@@ -312,7 +333,7 @@ namespace Sanakan.Services
                     if (buffer.Length + read > MaxImageBytes)
                     {
                         buffer.Dispose();
-                        return Stream.Null;
+                        return Fail(failure, Stream.Null, "file too large");
                     }
                     buffer.Write(chunk, 0, read);
                 }
@@ -320,14 +341,14 @@ namespace Sanakan.Services
                 if (!await HasAllowedImageSignatureAsync(buffer))
                 {
                     buffer.Dispose();
-                    return Stream.Null;
+                    return Fail(failure, Stream.Null, "not a supported image");
                 }
 
                 buffer.Position = 0;
                 if (!await HasAcceptableDimensionsAsync(buffer))
                 {
                     buffer.Dispose();
-                    return Stream.Null;
+                    return Fail(failure, Stream.Null, "image dimensions too large");
                 }
 
                 buffer.Position = 0;
@@ -1291,21 +1312,30 @@ namespace Sanakan.Services
             if (Dir.IsLocal(url))
                 return await GetImageFromUrlOrLocalAsync(url);
 
+            var failure = new DownloadFailure();
             for (int attempt = 1; attempt <= CharacterPictureAttempts; attempt++)
             {
                 try
                 {
-                    using var stream = await GetImageFromUrlAsync(url, true);
+                    using var stream = await GetImageFromUrlAsync(url, true, failure);
                     if (stream != null && stream != Stream.Null)
                         return await Image.LoadAsync(stream);
                 }
-                catch (Exception) { }
+                catch (Exception ex)
+                {
+                    failure.Set(ex);
+                }
 
                 if (attempt < CharacterPictureAttempts)
                     await Task.Delay(CharacterPictureRetryDelayMs * attempt);
             }
 
-            _logger?.LogError($"Images: character picture for card {cardId} could not be downloaded: {url}");
+            var message = $"Images: character picture for card {cardId} could not be downloaded ({failure.Reason ?? "unknown"}): {url}";
+            // a rate limit on the image host is temporary and nothing can be done about it, so it stays off the log channel
+            if (failure.StatusCode == HttpStatusCode.TooManyRequests)
+                _logger?.LogRoutine(message);
+            else
+                _logger?.LogError(message);
             return null;
         }
 

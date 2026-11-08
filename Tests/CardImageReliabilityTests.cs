@@ -3,6 +3,7 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Sanakan;
 using Sanakan.Database.Models;
 using Sanakan.Services;
 using Sanakan.Services.PocketWaifu;
@@ -70,6 +71,44 @@ namespace Artifacts
             var message = Assert.Single(logger.Messages);
             Assert.Contains("2930843", message);
             Assert.Contains(url, message);
+            Assert.Contains("HTTP 404", message);
+            Assert.True(DiscordChannelLogger.ShouldSend(message));
+            Assert.Equal(LogKind.Error, LoggerExtensions.Parse(message).Kind);
+        }
+
+        [Fact]
+        public async Task CharacterPicture_RateLimited_IsLoggedWithReason_ButNotSentToLogChannel()
+        {
+            var requests = 0;
+            using var server = new LocalHttpServer(Flaky(int.MaxValue, 429, () => Interlocked.Increment(ref requests)));
+            var logger = new ListLogger();
+
+            var picture = await new ImageProcessing(null, null, true, logger).LoadCharacterPictureAsync(server.BaseUrl + "char.png", 1081239);
+
+            Assert.Null(picture);
+            var message = Assert.Single(logger.Messages);
+            Assert.Contains("1081239", message);
+            Assert.Contains("HTTP 429", message);
+            Assert.Equal(LogKind.Routine, LoggerExtensions.Parse(message).Kind);
+            Assert.False(DiscordChannelLogger.ShouldSend(message));
+        }
+
+        [Fact]
+        public async Task CharacterPicture_NotAnImage_IsLoggedWithReason()
+        {
+            using var server = new LocalHttpServer(async ctx =>
+            {
+                ctx.Response.ContentType = "text/html";
+                await ctx.Response.OutputStream.WriteAsync(System.Text.Encoding.UTF8.GetBytes("<html></html>"));
+            });
+            var logger = new ListLogger();
+
+            var picture = await new ImageProcessing(null, null, true, logger).LoadCharacterPictureAsync(server.BaseUrl + "char.png", 5);
+
+            Assert.Null(picture);
+            var message = Assert.Single(logger.Messages);
+            Assert.Contains("not a supported image", message);
+            Assert.Equal(LogKind.Error, LoggerExtensions.Parse(message).Kind);
         }
 
         private sealed class FakeImages : ImageProcessing

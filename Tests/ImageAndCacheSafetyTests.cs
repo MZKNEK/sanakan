@@ -96,7 +96,7 @@ namespace Artifacts
         }
 
         private static async Task<Stream> DownloadAsync(ImageProcessing img, string url)
-            => await (Task<Stream>)DownloadMethod.Invoke(img, new object[] { url });
+            => await (Task<Stream>)DownloadMethod.Invoke(img, new object[] { url, null });
 
         private static Func<HttpListenerContext, Task> Serve(byte[] body, string type = "image/png")
             => async ctx =>
