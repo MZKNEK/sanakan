@@ -20,10 +20,10 @@ namespace Artifacts
         [Fact]
         public void Report_IsColoredAndLabeled()
         {
-            var entries = DiscordChannelLogger.Format(LoggerExtensions.ReportPrefix + "DB (60min): zapytania 5\nlinia 2", false, Now);
+            var entries = DiscordChannelLogger.Format(LoggerExtensions.ReportPrefix + "DB (60 min): 5 queries\nline 2", false, Now);
 
             var entry = Assert.Single(entries);
-            Assert.Equal($"{ReportColor}[12:00:00] 📊 RAPORT DB (60min): zapytania 5\n{ReportColor}linia 2", entry);
+            Assert.Equal($"{ReportColor}[12:00:00] 📊 REPORT DB (60 min): 5 queries\n{ReportColor}line 2", entry);
         }
 
         [Fact]
@@ -125,8 +125,8 @@ namespace Artifacts
         [Fact]
         public void ErrorPingText_MentionsRole()
         {
-            Assert.Equal("<@&612125835721179146> ⚠️ Błędy w logach: 3", DiscordChannelLogger.ErrorPingText(612125835721179146, 3, false));
-            Assert.Contains("najwcześniej za 30 min", DiscordChannelLogger.ErrorPingText(1, 40, true));
+            Assert.Equal("<@&612125835721179146> ⚠️ Errors in logs: 3", DiscordChannelLogger.ErrorPingText(612125835721179146, 3, false));
+            Assert.Contains("next ping in 30 min", DiscordChannelLogger.ErrorPingText(1, 40, true));
         }
 
         [Fact]
@@ -164,18 +164,19 @@ namespace Artifacts
         public void MemoryReport_ShowsProcessGcAndCaches()
         {
             MemoryReport.Sample();
-            var report = MemoryReport.Flush(() => "Discord: serwerów 1");
+            var report = MemoryReport.Flush(() => "1 guilds");
 
-            Assert.StartsWith("Pamięć (60min):", report);
-            foreach (var part in new[] { "- proces ", "maks. ", "sterta GC ", "generacje: gen0 ", "poza GC ok. ", "GC stacja robocza", "cache zapytań: ", "- Discord: serwerów 1" })
+            Assert.StartsWith("Memory (60 min):", report);
+            foreach (var part in new[] { "process ", "peak ", "GC heap ", "generations ", "gen0 ", "outside GC ", "workstation", "query cache ", "Discord " })
                 Assert.Contains(part, report);
+            Assert.Matches(@"(?m)^Discord +1 guilds$", report);
         }
 
         [Fact]
         public void MemoryReport_SurvivesBrokenDiscordStats()
         {
-            var report = MemoryReport.Flush(() => throw new InvalidOperationException("brak klienta"));
-            Assert.Contains("Discord: brak danych (brak klienta)", report);
+            var report = MemoryReport.Flush(() => throw new InvalidOperationException("no client"));
+            Assert.Matches(@"(?m)^Discord +no data \(no client\)$", report);
             Assert.Null(MemoryReport.DescribeDiscord(null));
         }
     }

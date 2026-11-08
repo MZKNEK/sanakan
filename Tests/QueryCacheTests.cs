@@ -141,10 +141,16 @@ namespace Artifacts
             await QueryCacheTests.CountAsync(path, "statshit-1", tag);
             await QueryCacheTests.CountAsync(path, "statshit-1", tag);
 
-            var report = QueryCacheStats.Flush();
-            Assert.Contains("- statshit: trafienia 50% z 2, ładowania 1 (", report);
-            Assert.Contains("śr. 1 wyników", report);
+            var row = Row(QueryCacheStats.Flush(), "statshit");
+            Assert.NotNull(row);
+            Assert.Equal(new[] { "statshit", "50%", "2", "1" }, row.Take(4));
+            Assert.Equal("1", row[6]);
         }
+
+        // query, hit%, reqs, loads, avg, max, rows, exp, inv, inv age
+        private static string[] Row(string report, string kind)
+            => (report ?? "").Split('\n').Select(x => x.Split(' ', StringSplitOptions.RemoveEmptyEntries))
+                .FirstOrDefault(x => x.Length > 0 && x[0] == kind);
 
         [Fact]
         public async Task Report_CountsInvalidatedEntries()
@@ -158,15 +164,16 @@ namespace Artifacts
             QueryCache.ExpireTag(tag);
 
             // eviction callbacks run on the thread pool
-            var reports = "";
-            for (int i = 0; i < 100 && !reports.Contains("unieważnione 1 (śr. po"); i++)
+            string[] row = null;
+            for (int i = 0; i < 100 && row?[8] != "1"; i++)
             {
                 await Task.Delay(20);
-                reports += QueryCacheStats.Flush();
+                row = Row(QueryCacheStats.Flush(), "statsexpire") ?? row;
             }
 
-            Assert.Contains("- statsexpire:", reports);
-            Assert.Contains("unieważnione 1 (śr. po", reports);
+            Assert.NotNull(row);
+            Assert.Equal("1", row[8]);
+            Assert.EndsWith("s", row[9]);
         }
 
         [Fact]
@@ -179,7 +186,7 @@ namespace Artifacts
 
             await QueryCacheTests.CountAsync(path, "statslive-1", tag);
             Assert.Equal((1, 2), QueryCacheStats.GetLive("statslive"));
-            Assert.Contains("W pamięci: wpisów ", QueryCacheStats.Flush());
+            Assert.Contains("In memory: ", QueryCacheStats.Flush());
 
             QueryCache.ExpireTag(tag);
             for (int i = 0; i < 100 && QueryCacheStats.GetLive("statslive").Entries > 0; i++)
@@ -202,8 +209,8 @@ namespace Artifacts
 
             var report = QueryCacheStats.Flush();
             Assert.True(report.Length < 1600, $"report has {report.Length} chars");
-            Assert.Contains("innych)", report);
-            Assert.Contains("W pamięci: wpisów ", report);
+            Assert.Contains("more)", report);
+            Assert.Contains("In memory: ", report);
         }
     }
 }

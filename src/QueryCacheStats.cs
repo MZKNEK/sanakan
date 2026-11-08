@@ -2,10 +2,13 @@
 
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading;
 using Microsoft.Extensions.Caching.Memory;
+using Sanakan.Services;
+using static System.FormattableString;
 
 namespace Sanakan
 {
@@ -50,11 +53,11 @@ namespace Sanakan
             var minutes = (now - _lastReport).TotalMinutes;
             _lastReport = now;
 
-            return Format($"Cache ({minutes:0}min)", stats);
+            return Format(Invariant($"Cache ({minutes:0} min)"), stats);
         }
 
         public static string FlushDaily()
-            => Format("Cache", Interlocked.Exchange(ref _day, new ConcurrentDictionary<string, Counters>())) ?? "Cache: brak odczytów";
+            => Format("Cache", Interlocked.Exchange(ref _day, new ConcurrentDictionary<string, Counters>())) ?? "Cache: no reads";
 
         public static void Hit(string kind)
         {
@@ -126,6 +129,9 @@ namespace Sanakan
             Interlocked.Add(ref c.InvalidatedAgeMs, ageMs);
         }
 
+        private static readonly string[] Header = { "query", "hit%", "reqs", "loads", "avg", "max", "rows", "exp", "inv", "inv age" };
+        private static readonly bool[] RightAlign = { false, true, true, true, true, true, true, true, true, true };
+
         private static string Format(string title, ConcurrentDictionary<string, Counters> stats)
         {
             if (stats.IsEmpty) return null;
@@ -134,50 +140,51 @@ namespace Sanakan
             var hits = all.Sum(x => x.Value.Hits);
             var loads = all.Sum(x => x.Value.Loads);
             var loadMs = all.Sum(x => x.Value.LoadMs);
+            var overLimit = all.Sum(x => x.Value.OverLimit);
 
-            var sb = new StringBuilder();
-            sb.Append($"{title}: trafienia {hits}/{hits + loads} ({Percent(hits, hits + loads)}), ")
-              .Append($"ładowania {loads} ({loadMs / 1000.0:0.0}s), ")
-              .Append($"unieważnione {all.Sum(x => x.Value.Invalidated)}, odrzucone {all.Sum(x => x.Value.Discarded)}");
+            var summary = Invariant($"{title}: hits {hits}/{hits + loads} ({Percent(hits, hits + loads)}), loads {loads} ({loadMs / 1000.0:0.0} s), ")
+                + Invariant($"invalidated {all.Sum(x => x.Value.Invalidated)}, discarded {all.Sum(x => x.Value.Discarded)}")
+                + (overLimit > 0 ? Invariant($", over limit {overLimit}") : "");
 
             var memory = Memory();
-            var shown = 0;
-            var top = all.OrderByDescending(x => x.Value.LoadMs).ThenByDescending(x => x.Value.Loads + x.Value.Hits).Take(MaxKindsInReport);
+            var rows = new List<string[]> { Header };
+            var top = all.OrderByDescending(x => x.Value.LoadMs).ThenByDescending(x => x.Value.Loads + x.Value.Hits).Take(MaxKindsInReport).ToList();
             foreach (var (kind, c) in top)
             {
-                var line = KindLine(kind, c);
-                if (sb.Length + line.Length + memory.Length > MaxReportLength)
+                rows.Add(KindRow(kind, c));
+                var length = summary.Length + memory.Length + TextTable.Render(rows, RightAlign).Sum(x => x.Length + 1);
+                if (length > MaxReportLength)
+                {
+                    rows.RemoveAt(rows.Count - 1);
                     break;
-
-                sb.Append(line);
-                ++shown;
+                }
             }
 
-            if (all.Count > shown)
-                sb.Append($"\n(+{all.Count - shown} innych)");
+            var sb = new StringBuilder(summary);
+            if (rows.Count > 1)
+                foreach (var line in TextTable.Render(rows, RightAlign))
+                    sb.Append('\n').Append(line);
+
+            if (all.Count > rows.Count - 1)
+                sb.Append(Invariant($"\n(+{all.Count - (rows.Count - 1)} more)"));
 
             sb.Append(memory);
             return sb.ToString();
         }
 
-        private static string KindLine(string kind, Counters c)
+        private static string[] KindRow(string kind, Counters c) => new[]
         {
-            var sb = new StringBuilder($"\n- {kind}: trafienia {Percent(c.Hits, c.Hits + c.Loads)} z {c.Hits + c.Loads}");
-            if (c.Loads > 0)
-            {
-                sb.Append($", ładowania {c.Loads} ({c.LoadMs / 1000.0:0.0}s, śr. {c.LoadMs / c.Loads}ms, maks. {c.MaxLoadMs}ms, ")
-                  .Append($"śr. {c.Results / c.Loads} wyników)");
-            }
-            if (c.Invalidated > 0)
-                sb.Append($", unieważnione {c.Invalidated} (śr. po {Age(c.InvalidatedAgeMs / c.Invalidated)})");
-            if (c.Expired > 0)
-                sb.Append($", wygasłe {c.Expired}");
-            if (c.Discarded > 0)
-                sb.Append($", odrzucone {c.Discarded}");
-            if (c.OverLimit > 0)
-                sb.Append($", ponad limit {c.OverLimit}");
-            return sb.ToString();
-        }
+            kind,
+            Percent(c.Hits, c.Hits + c.Loads),
+            Invariant($"{c.Hits + c.Loads}"),
+            Invariant($"{c.Loads}"),
+            c.Loads > 0 ? Invariant($"{c.LoadMs / c.Loads}ms") : "-",
+            c.Loads > 0 ? Invariant($"{c.MaxLoadMs}ms") : "-",
+            c.Loads > 0 ? Invariant($"{(double)c.Results / c.Loads:0.#}") : "-",
+            c.Expired > 0 ? Invariant($"{c.Expired}") : "-",
+            c.Invalidated > 0 ? Invariant($"{c.Invalidated}") : "-",
+            c.Invalidated > 0 ? Age(c.InvalidatedAgeMs / c.Invalidated) : "-",
+        };
 
         public static (long Entries, long Results) GetLive(string kind)
             => _live.TryGetValue(kind, out var live) ? (Interlocked.Read(ref live.Entries), Interlocked.Read(ref live.Results)) : (0, 0);
@@ -188,18 +195,19 @@ namespace Sanakan
                 .Where(x => x.Entries > 0).ToList();
 
             var sb = new StringBuilder();
-            sb.Append($"\nW pamięci: wpisów {QueryCache.EntryCount}, wyników {live.Sum(x => x.Results)}, tagów {QueryCache.TagCount}, ")
-              .Append($"rozmiar {QueryCache.CurrentSize}/{QueryCache.SizeLimit}");
+            sb.Append(Invariant($"\nIn memory: {QueryCache.EntryCount} entries, {live.Sum(x => x.Results)} rows, {QueryCache.TagCount} tags, "))
+              .Append(Invariant($"size {QueryCache.CurrentSize}/{QueryCache.SizeLimit}"));
 
-            var biggest = live.OrderByDescending(x => x.Results).Take(MaxKindsInReport).Select(x => $"{x.Kind} {x.Entries} ({x.Results} wyn.)");
+            var biggest = live.OrderByDescending(x => x.Results).Take(MaxKindsInReport)
+                .Select(x => Invariant($"{x.Kind} {x.Results} rows ({x.Entries} {(x.Entries == 1 ? "entry" : "entries")})"));
             if (live.Count > 0)
-                sb.Append($"\nNajwięcej w pamięci: {string.Join(", ", biggest)}");
+                sb.Append($"\nLargest: {string.Join(", ", biggest)}");
 
             return sb.ToString();
         }
 
-        private static string Percent(long part, long total) => total == 0 ? "-" : $"{100.0 * part / total:0}%";
+        private static string Percent(long part, long total) => total == 0 ? "-" : Invariant($"{100.0 * part / total:0}%");
 
-        private static string Age(long ms) => ms < 60_000 ? $"{ms / 1000.0:0}s" : $"{ms / 60_000.0:0.0}min";
+        private static string Age(long ms) => ms < 60_000 ? Invariant($"{ms / 1000.0:0}s") : Invariant($"{ms / 60_000.0:0.0}min");
     }
 }

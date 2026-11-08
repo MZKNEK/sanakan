@@ -28,7 +28,7 @@ namespace Sanakan.Api.Controllers
         public async Task<IActionResult> RestartBotAsync()
         {
             await _client.LogoutAsync();
-            _logger.Log("Kill app from web.");
+            _logger.Log("API: kill requested from web");
             await Task.Delay(1500);
             Environment.Exit(0);
             return Ok();
@@ -42,7 +42,7 @@ namespace Sanakan.Api.Controllers
         {
             await _client.LogoutAsync();
             System.IO.File.WriteAllText("./updateNow", string.Empty);
-            _logger.Log("Update app from web.");
+            _logger.Log("API: update requested from web");
             await Task.Delay(1500);
             Environment.Exit(200);
             return Ok();

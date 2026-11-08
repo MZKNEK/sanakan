@@ -46,7 +46,7 @@ namespace Sanakan.Api.Controllers
             }
             catch(Exception ex)
             {
-                _logger?.LogError($"Info commands: {ex}");
+                _logger?.LogError($"API: info commands: {ex}");
                 return "Internal Server Error".ToResponse(500);
             }
         }
@@ -68,7 +68,7 @@ namespace Sanakan.Api.Controllers
             }
             catch(Exception ex)
             {
-                _logger?.LogError($"Info commands: {ex}");
+                _logger?.LogError($"API: info commands: {ex}");
                 return "Internal Server Error".ToResponse(500);
             }
         }

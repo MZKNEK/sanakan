@@ -35,7 +35,7 @@ namespace Sanakan.Services.Commands
                 await Task.Delay(DELAY_MS);
             }
             if (last != null)
-                Logger?.LogError($"SafeReply: {last.Message}");
+                Logger?.LogError($"Cmd: reply failed: {last.Message}");
             return msg;
         }
 
@@ -55,7 +55,7 @@ namespace Sanakan.Services.Commands
                 }
                 await Task.Delay(DELAY_MS);
             }
-            Logger?.LogError($"SafeAddReaction: {last?.Message}");
+            Logger?.LogError($"Cmd: add reaction failed: {last?.Message}");
             return false;
         }
     }

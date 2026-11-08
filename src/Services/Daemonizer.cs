@@ -66,7 +66,7 @@ namespace Sanakan.Services
                 await Task.Delay(_timeout, token);
 
                 if (!_config.Get().Demonization) return;
-                _logger.Log("Disconnected! Running demonization check.");
+                _logger.Log("Discord: disconnected, waiting for reconnect");
 
                 await Task.Delay(_timeout, token);
             }
@@ -77,11 +77,11 @@ namespace Sanakan.Services
 
             if (_state() == ConnectionState.Connected)
             {
-                _logger.Log("Reconnected!");
+                _logger.LogRoutine("Discord: reconnected");
                 return;
             }
 
-            _logger.LogError("Timeout! Shutting down!");
+            _logger.LogError("Discord: reconnect timeout, shutting down");
             _exit(1);
         }
     }

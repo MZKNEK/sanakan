@@ -176,7 +176,7 @@ namespace Sanakan.Services
                     }
                     catch (Exception)
                     {
-                        _logger.Log($"Chaos: Missing emote - {emote.Name}");
+                        _logger.Log($"Chaos: missing emote {emote.Name}");
                     }
                 });
             }

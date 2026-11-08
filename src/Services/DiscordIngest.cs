@@ -118,7 +118,7 @@ namespace Sanakan.Services
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError($"Ingest: pobranie ostatnich wiadomości z kanału {id}: {ex.Message}");
+                    _logger.LogError($"Ingest: fetching recent messages from channel {id}: {ex.Message}");
                 }
             }
             return count;
@@ -149,7 +149,7 @@ namespace Sanakan.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError($"Ingest: wiadomość {message?.Id}: {ex.Message}");
+                _logger.LogError($"Ingest: message {message?.Id}: {ex.Message}");
             }
             return Task.CompletedTask;
         }
@@ -196,7 +196,7 @@ namespace Sanakan.Services
                 {
                     if (batch.Count == 0)
                     {
-                        _logger.LogError($"Ingest: pominięto wiadomość większą niż {MaxBodyBytes / 1024} KB.");
+                        _logger.LogError($"Ingest: skipped a message larger than {MaxBodyBytes / 1024} KB");
                         continue;
                     }
                     _carry = next;
@@ -234,7 +234,7 @@ namespace Sanakan.Services
                     break;
             }
 
-            _logger.LogError($"Ingest: porzucono {batch.Count} wiadomości: {reason}");
+            _logger.LogError($"Ingest: dropped {batch.Count} messages: {reason}");
             return false;
         }
 
@@ -281,7 +281,7 @@ namespace Sanakan.Services
         {
             if (_overflowLogged) return;
             _overflowLogged = true;
-            _logger.LogError($"Ingest: kolejka pełna ({MaxQueue}), najstarsze wiadomości są pomijane.");
+            _logger.LogError($"Ingest: queue full ({MaxQueue}), dropping the oldest messages");
         }
 
         private bool Succeeded()
@@ -292,7 +292,7 @@ namespace Sanakan.Services
             if (_failing)
             {
                 _failing = false;
-                _logger.Log("Ingest: wysyłanie znowu działa.");
+                _logger.Log("Ingest: sending works again");
             }
             return true;
         }
@@ -304,7 +304,7 @@ namespace Sanakan.Services
             if (!_failing)
             {
                 _failing = true;
-                _logger.LogError($"Ingest: nie udało się wysłać wiadomości: {reason}");
+                _logger.LogError($"Ingest: failed to send messages: {reason}");
             }
             return false;
         }

@@ -133,7 +133,7 @@ namespace Artifacts
             var messages = _logger.Messages.ToList();
             Assert.Equal(2, messages.Count);
             Assert.Contains("502", messages[0]);
-            Assert.Contains("znowu działa", messages[1]);
+            Assert.Contains("works again", messages[1]);
         }
     }
 }

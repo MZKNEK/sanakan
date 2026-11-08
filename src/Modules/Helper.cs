@@ -615,7 +615,7 @@ namespace Sanakan.Modules
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError($"in raport: {ex}");
+                    _logger.LogError($"Mod: user report: {ex}");
                     await sendMsg.DeleteAsync();
                 }
             }

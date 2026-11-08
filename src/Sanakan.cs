@@ -70,7 +70,7 @@ namespace Sanakan
 
             _client.Ready += () =>
             {
-                _logger.Log($"Połączono z Discordem jako {_client.CurrentUser}, serwerów: {_client.Guilds.Count}");
+                _logger.Log($"Discord: connected as {_client.CurrentUser}, guilds: {_client.Guilds.Count}");
                 return Task.CompletedTask;
             };
 
@@ -90,10 +90,13 @@ namespace Sanakan
             _heartbeat.Start();
             _ingest.Start();
 
-            _logger.Log($"Sanakan {HealthMonitor.GetVersion()} wystartował, API: {BotWebHost.Url}");
+            _logger.Log($"Bot: Sanakan {HealthMonitor.GetVersion()} started, API: {BotWebHost.Url}");
 
             await Task.Delay(-1);
         }
+
+        private static string DescribeDiscordLog(LogMessage log)
+            => log.Exception == null ? $"Discord: {log.Source}: {log.Message}" : $"Discord: {log.Source}: {log.Message} - {log.Exception}";
 
         private void MigrateConfig()
         {
@@ -101,7 +104,7 @@ namespace Sanakan
             if (migrated == null) return;
 
             _config.Save();
-            Console.WriteLine($"Przeniesiono ApiKeys do UserKeyApps z uprawnieniem Site: {string.Join(", ", migrated)}");
+            Console.WriteLine($"Config: moved ApiKeys to UserKeyApps with the Site permission: {string.Join(", ", migrated)}");
         }
 
         private void ValidateConfig()
@@ -112,7 +115,7 @@ namespace Sanakan
             }
             catch (InvalidOperationException ex)
             {
-                Console.Error.WriteLine($"Błąd konfiguracji: {ex.Message}");
+                Console.Error.WriteLine($"Config: invalid configuration: {ex.Message}");
                 Environment.Exit(1);
             }
         }
@@ -122,7 +125,7 @@ namespace Sanakan
             var weak = BotWebHost.WeakAppKeys(_config.Get());
             if (weak.Count == 0) return;
 
-            _logger.Log($"Klucze x-app-key krótsze niż {BotWebHost.MinAppKeyLength} znaki, przegeneruj je przez ukapp add: {string.Join(", ", weak)}");
+            _logger.Log($"API: x-app-key keys shorter than {BotWebHost.MinAppKeyLength} characters, regenerate them with ukapp add: {string.Join(", ", weak)}");
         }
 
         private async Task EnsureDbIsCreatedAsync()
@@ -160,9 +163,9 @@ namespace Sanakan
             _client.Log += log =>
             {
                 if (log.Severity <= LogSeverity.Error)
-                    _logger.LogError(log.ToString());
+                    _logger.LogError(DescribeDiscordLog(log));
                 else
-                    _logger.Log(log.ToString());
+                    _logger.Log(DescribeDiscordLog(log));
                 return Task.CompletedTask;
             };
 
@@ -175,6 +178,7 @@ namespace Sanakan
             _ingest = new DiscordIngest(_client, _config, _logger);
             _time = new SystemTime();
             _apiGuard = new Api.TokenAttemptGuard(_time);
+            MemoryReport.StartStoring(_config, _time, _logger, TimeSpan.FromMinutes(5));
             _events = new Events(_time);
             _helper = new Helper(_config, _logger);
             _expedition = new Expedition(_time);
@@ -221,7 +225,7 @@ namespace Sanakan
                 e.Cancel = true;
                 _ = Task.Run(async () =>
                 {
-                    _logger.Log("SIGTERM Received!");
+                    _logger.Log("Bot: SIGTERM received");
                     await _client.LogoutAsync();
                     await BotWebHost.StopAsync(TimeSpan.FromSeconds(5));
                     _executor?.Dispose();

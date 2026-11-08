@@ -407,7 +407,7 @@ namespace Sanakan.Modules
                     }
                     catch (Exception ex)
                     {
-                        Logger?.LogError($"dev: aktualizacja karty {card.Id}: {ex.Message}");
+                        Logger?.LogError($"Debug: card update {card.Id}: {ex.Message}");
                     }
 
                     userRelease.Add(CacheTags.User(card.GameDeckId));
@@ -442,7 +442,7 @@ namespace Sanakan.Modules
                 }
                 catch (Exception ex)
                 {
-                    Logger?.LogError($"dev: zmiana ramki karty {card.Id}: {ex.Message}");
+                    Logger?.LogError($"Debug: card border change {card.Id}: {ex.Message}");
                 }
 
                 await db.SaveChangesAsync();
@@ -899,7 +899,7 @@ namespace Sanakan.Modules
                 }
                 catch (Exception ex)
                 {
-                    Logger?.LogError($"dev: multi kick {user.Id}: {ex.Message}");
+                    Logger?.LogError($"Debug: multi kick {user.Id}: {ex.Message}");
                 }
             }
 
@@ -922,7 +922,7 @@ namespace Sanakan.Modules
                 }
                 catch (Exception ex)
                 {
-                    Logger?.LogError($"dev: multi ban {user.Id}: {ex.Message}");
+                    Logger?.LogError($"Debug: multi ban {user.Id}: {ex.Message}");
                 }
             }
 

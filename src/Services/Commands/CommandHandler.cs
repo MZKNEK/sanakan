@@ -5,7 +5,6 @@ using Discord.Commands;
 using Discord.WebSocket;
 using Sanakan.Config;
 using Sanakan.Database.Models;
-using Sanakan.Database.Models.Analytics;
 using Sanakan.Extensions;
 using Sanakan.Services.Executor;
 using Sanakan.Services.PocketWaifu;
@@ -13,7 +12,6 @@ using Sanakan.Services.Time;
 using System;
 using System.Linq;
 using System.Reflection;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace Sanakan.Services.Commands
@@ -28,7 +26,6 @@ namespace Sanakan.Services.Commands
         private ILogger _logger;
         private IConfig _config;
         private Helper _helper;
-        private Timer _timer;
 
         public CommandHandler(DiscordSocketClient client, IConfig config, ILogger logger,
             IExecutor executor, ISystemTime time)
@@ -39,40 +36,15 @@ namespace Sanakan.Services.Commands
             _logger = logger;
             _executor = executor;
             _cmd = new CommandService();
-            _cmd.CommandExecuted += (cmd, _, result) =>
+            _cmd.CommandExecuted += (cmd, context, result) =>
             {
                 if (cmd.IsSpecified)
+                {
                     MinuteStats.Commands.Add(result.Error is CommandError.Exception or CommandError.Unsuccessful);
+                    CommandLog.Finished(_logger, cmd.Value.Name, context, result);
+                }
                 return Task.CompletedTask;
             };
-
-            _timer = new Timer(async _ =>
-            {
-                try
-                {
-                    using (var proc = System.Diagnostics.Process.GetCurrentProcess())
-                    {
-                        _logger.Log($"mem usage: {proc.WorkingSet64 / 1048576} MiB");
-                        using (var dba = new Database.DatabaseContext(_config))
-                        {
-                            dba.SystemData.Add(new SystemAnalytics
-                            {
-                                MeasureDate = _time.Now(),
-                                Value = proc.WorkingSet64 / 1048576,
-                                Type = SystemAnalyticsEventType.Ram,
-                            });
-                            await dba.SaveChangesAsync();
-                        }
-                    }
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError($"in mem check: {ex}");
-                }
-            },
-            null,
-            TimeSpan.FromMinutes(1),
-            TimeSpan.FromMinutes(5));
         }
 
         public async Task InitializeAsync(IServiceProvider provider, Helper helper)
@@ -132,7 +104,7 @@ namespace Sanakan.Services.Commands
                 var res = await _cmd.GetExecutableCommandAsync(context, argPos, _provider);
                 if (res.IsSuccess())
                 {
-                    _logger.Log($"Run cmd: u{msg.Author.Id} {res.Command.Match.Command.Name}");
+                    CommandLog.Started(context);
 
                     switch (res.Command.Match.Command.RunMode)
                     {
@@ -192,7 +164,7 @@ namespace Sanakan.Services.Commands
                     break;
 
                 default:
-                    _logger.Log(result.ErrorReason);
+                    _logger.Log($"Cmd: {result.Error}: {result.ErrorReason}");
                     break;
             }
         }

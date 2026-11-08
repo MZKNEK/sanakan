@@ -3932,7 +3932,7 @@ namespace Sanakan.Modules
                     }
                     catch (Exception ex)
                     {
-                        Logger?.LogError($"Expedition return reply: {ex}");
+                        Logger?.LogError($"Waifu: expedition return reply: {ex}");
                     }
                 });
             }
@@ -4033,7 +4033,7 @@ namespace Sanakan.Modules
                     }
                     catch (Exception ex)
                     {
-                        Logger?.LogError($"Expedition send reply: {ex}");
+                        Logger?.LogError($"Waifu: expedition send reply: {ex}");
                     }
                 });
             }
@@ -4293,7 +4293,7 @@ namespace Sanakan.Modules
                     }
                     catch (Exception ex)
                     {
-                        Logger?.LogError($"Duel reply: {ex}");
+                        Logger?.LogError($"Waifu: duel reply: {ex}");
                     }
                 });
             }

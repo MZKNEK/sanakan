@@ -162,7 +162,7 @@ namespace Sanakan.Services.Session
                             }
                             catch (Exception ex)
                             {
-                                _logger.LogError($"Sessions: {session.GetEventType()}-{session.GetOwner().Id}: {ex}");
+                                _logger.LogError($"Session: {session.GetEventType()}-{session.GetOwner().Id}: {ex}");
                             }
                         });
                         break;
@@ -171,7 +171,7 @@ namespace Sanakan.Services.Session
                     case RunMode.Sync:
                         session.SetDestroyer(DisposeAsync);
                         if (!await _executor.TryAdd(session.GetExecutable(context), TimeSpan.FromSeconds(1)))
-                                _logger.Log($"Sessions: {session.GetEventType()}-{session.GetOwner().Id} waiting time has been exceeded!");
+                                _logger.Log($"Session: {session.GetEventType()}-{session.GetOwner().Id} queue wait time exceeded");
                         break;
                 }
             }
@@ -272,7 +272,7 @@ namespace Sanakan.Services.Session
             }
             catch(Exception ex)
             {
-                _logger.LogError($"Session: autovalidate error {ex}");
+                _logger.LogError($"Session: autovalidate: {ex}");
             }
         }
 

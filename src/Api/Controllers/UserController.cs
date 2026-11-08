@@ -301,7 +301,7 @@ namespace Sanakan.Api.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError($"Profile preview: shinden user {shindenId}: {ex.Message}");
+                _logger.LogError($"API: profile preview: shinden user {shindenId}: {ex.Message}");
                 return null;
             }
         }
@@ -419,7 +419,7 @@ namespace Sanakan.Api.Controllers
                             }
                             catch (Exception ex)
                             {
-                                _logger?.LogError($"API registration notification failed: {ex.Message}");
+                                _logger?.LogError($"API: registration notification failed: {ex.Message}");
                             }
                         }
                         return;
@@ -548,7 +548,7 @@ namespace Sanakan.Api.Controllers
             }
             catch (Exception ex)
             {
-                _logger?.LogError($"API account link: Discord user {account.DiscordUserId}: {ex.Message}");
+                _logger?.LogError($"API: account link: discord user {account.DiscordUserId}: {ex.Message}");
             }
         }
 
@@ -794,7 +794,7 @@ namespace Sanakan.Api.Controllers
             }
             catch (Exception ex)
             {
-                _logger?.LogError($"API TC transaction {record.Scope}: {ex.Message}");
+                _logger?.LogError($"API: TC transaction {record.Scope}: {ex.Message}");
                 return committed ? "TC added!".ToResponse(200) : "TC not added".ToResponse(500);
             }
             finally

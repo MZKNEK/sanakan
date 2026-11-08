@@ -133,16 +133,19 @@ namespace Sanakan.Services.Executor
         private async Task RunAsync(IExecutable cmd)
         {
             var taskName = cmd.GetName();
+            // commands are logged by the command handler once Discord.Net reports their result
+            var isCommand = cmd is Commands.Command;
+            var watch = Stopwatch.StartNew();
             try
             {
-                _logger.Log($"Executor: running {taskName}");
-                var watch = Stopwatch.StartNew();
                 await cmd.ExecuteAsync(_provider).ConfigureAwait(false);
-                _logger.Log($"Executor: completed {taskName} in {watch.ElapsedMilliseconds}ms");
+                if (!isCommand)
+                    _logger.LogRoutine($"Exec: {taskName} ({watch.ElapsedMilliseconds}ms)");
             }
             catch (Exception ex)
             {
-                _logger.LogError($"Executor: {taskName} - {ex}");
+                if (!isCommand)
+                    _logger.LogError($"Exec: {taskName} ({watch.ElapsedMilliseconds}ms) - {ex}");
             }
             finally
             {

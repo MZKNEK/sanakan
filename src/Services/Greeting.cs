@@ -68,7 +68,7 @@ namespace Sanakan.Services
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError($"Greeting: nie udało się pobrać powodu bana użytkownika {user.Id}: {ex}");
+                    _logger.LogError($"Greeting: fetching ban reason for u{user.Id}: {ex}");
                 }
 
                 var banMessage = string.IsNullOrWhiteSpace(banReason)
@@ -122,7 +122,7 @@ namespace Sanakan.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError($"In user join u{user.Id}: {ex}");
+                _logger.LogError($"Greeting: user join u{user.Id}: {ex}");
             }
 
             if (_config.Get().BlacklistedGuilds.Any(x => x == user.Guild.Id))
@@ -187,7 +187,7 @@ namespace Sanakan.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError("In user leave:" + ex.ToString());
+                _logger.LogError($"Greeting: user leave: {ex}");
                 await SendMessageAsync($"**ERR:** `{user.Id}` {guild.GetRole(adminRoleId)?.Mention}", guild.GetTextChannel(channelId));
             }
         }
@@ -229,7 +229,7 @@ namespace Sanakan.Services
                         }
                         catch (Exception ex)
                         {
-                            _logger.LogError($"In left user removal u{userId}: {ex}");
+                            _logger.LogError($"Greeting: left user removal u{userId}: {ex}");
                         }
                     });
 
@@ -238,7 +238,7 @@ namespace Sanakan.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError($"In left users cleanup: {ex}");
+                _logger.LogError($"Greeting: left users cleanup: {ex}");
             }
             finally
             {
@@ -267,7 +267,7 @@ namespace Sanakan.Services
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError($"In user leave check g{guild.Id} u{userId}: {ex}");
+                    _logger.LogError($"Greeting: user leave check g{guild.Id} u{userId}: {ex}");
                     return true;
                 }
             }

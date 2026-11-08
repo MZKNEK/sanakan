@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using Sanakan;
 using Sanakan.Services;
 using Xunit;
 
@@ -47,9 +48,9 @@ namespace Artifacts
         {
             var pending = new Queue<string>(new[] { "a" });
 
-            var messages = DiscordChannelLogger.Pack(pending, "[pominięto 3 wpisów]", 5);
+            var messages = DiscordChannelLogger.Pack(pending, "[skipped 3 entries]", 5);
 
-            Assert.Equal("```ansi\n[pominięto 3 wpisów]\na\n```", messages[0]);
+            Assert.Equal("```ansi\n[skipped 3 entries]\na\n```", messages[0]);
         }
 
         [Fact]
@@ -65,12 +66,11 @@ namespace Artifacts
         }
 
         [Theory]
-        [InlineData("Executor: running api-tc u1 (5)")]
-        [InlineData("Executor: completed api-tc u1 (5) in 12ms")]
-        [InlineData("Run cmd: u1 profil")]
-        [InlineData("mem usage: 512 MiB")]
-        [InlineData("Reconnected!")]
+        [InlineData(LoggerExtensions.RoutinePrefix + "Exec: api-tc u1 (5) (12ms)")]
+        [InlineData(LoggerExtensions.RoutinePrefix + "Cmd: u1 profil (40ms)")]
+        [InlineData(LoggerExtensions.RoutinePrefix + "Discord: reconnected")]
         [InlineData("")]
+        [InlineData(LoggerExtensions.RoutinePrefix)]
         public void ShouldSend_RoutineEntriesAreFiltered(string message)
         {
             Assert.False(DiscordChannelLogger.ShouldSend(message));
@@ -79,13 +79,14 @@ namespace Artifacts
         [Theory]
         [InlineData("API: site:shinden PUT /api/user/discord/1/tc -> 200 (15ms)")]
         [InlineData("API: u1 app:token POST /api/waifu/boosterpack/open/1 -> 503 (3ms)")]
-        [InlineData("Executor: api-tc u1 (5) - System.NullReferenceException")]
+        [InlineData(LoggerExtensions.ErrorPrefix + "Exec: api-tc u1 (5) (3ms) - System.NullReferenceException")]
+        [InlineData(LoggerExtensions.ErrorPrefix + "Cmd: u1 harem (3ms) - System.NullReferenceException")]
         [InlineData("Error while sending request: timeout")]
         [InlineData("Request unsuccessful.")]
-        [InlineData("Disconnected! Running demonization check.")]
-        [InlineData("Timeout! Shutting down!")]
-        [InlineData("Kill app from web.")]
-        [InlineData("SIGTERM Received!")]
+        [InlineData("Discord: disconnected, waiting for reconnect")]
+        [InlineData("Discord: reconnect timeout, shutting down")]
+        [InlineData("API: kill requested from web")]
+        [InlineData("Bot: SIGTERM received")]
         public void ShouldSend_ErrorsAndApiEntriesPass(string message)
         {
             Assert.True(DiscordChannelLogger.ShouldSend(message));

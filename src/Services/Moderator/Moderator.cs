@@ -81,7 +81,7 @@ namespace Sanakan.Services
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError($"in penalty: {ex}");
+                    _logger.LogError($"Mod: penalty sweep: {ex}");
                 }
                 finally
                 {
@@ -111,7 +111,7 @@ namespace Sanakan.Services
                         }
                         catch (Exception ex)
                         {
-                            _logger.LogError($"Moderator: unban: {ex}");
+                            _logger.LogError($"Mod: unban: {ex}");
                             continue;
                         }
                         await RemovePenaltyFromDb(db, penalty);
@@ -146,7 +146,7 @@ namespace Sanakan.Services
                         }
                         catch (Exception ex)
                         {
-                            _logger.LogError($"Moderator: re-mute: {ex}");
+                            _logger.LogError($"Mod: re-mute: {ex}");
                         }
                         continue;
                     }
@@ -160,7 +160,7 @@ namespace Sanakan.Services
                     }
                     catch (Exception ex)
                     {
-                        _logger.LogError($"Moderator: unmute: {ex}");
+                        _logger.LogError($"Mod: unmute: {ex}");
                         continue;
                     }
                     await RemovePenaltyFromDb(db, penalty);
@@ -430,7 +430,7 @@ namespace Sanakan.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError($"in notify: {ex}");
+                _logger.LogError($"Mod: warning DM: {ex}");
             }
         }
 
@@ -499,7 +499,7 @@ namespace Sanakan.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError($"in mute: {ex}");
+                _logger.LogError($"Mod: penalty DM: {ex}");
             }
         }
 

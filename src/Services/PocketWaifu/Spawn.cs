@@ -60,7 +60,7 @@ namespace Sanakan.Services.PocketWaifu
             }
             catch (Exception ex)
             {
-                _logger.LogError($"Spawn: zapis dump.json: {ex.Message}");
+                _logger.LogError($"Spawn: saving dump.json: {ex.Message}");
             }
         }
 
@@ -114,7 +114,7 @@ namespace Sanakan.Services.PocketWaifu
             }
             catch (Exception ex)
             {
-                _logger.LogError($"Spawn: odczyt dump.json: {ex.Message}");
+                _logger.LogError($"Spawn: loading dump.json: {ex.Message}");
             }
         }
 
@@ -194,7 +194,7 @@ namespace Sanakan.Services.PocketWaifu
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError($"In Safari: {ex}");
+                    _logger.LogError($"Spawn: safari: {ex}");
                     await msg.ModifyAsync(x => x.Embed = "Karta uciekła!".ToEmbedMessage(EMType.Error).Build());
                     await msg.RemoveAllReactionsAsync();
                 }
@@ -252,7 +252,7 @@ namespace Sanakan.Services.PocketWaifu
                     }
                     catch (Exception ex)
                     {
-                        _logger.LogError($"In Safari: {ex}");
+                        _logger.LogError($"Spawn: safari: {ex}");
                     }
                 });
             }), winner.Id);
@@ -263,7 +263,7 @@ namespace Sanakan.Services.PocketWaifu
             var character = await _waifu.GetRandomCharacterAsync(CharacterPoolType.Anime);
             if (character.CharInfo == null)
             {
-                _logger.LogError("In Safari: bad shinden connection");
+                _logger.LogError("Spawn: safari: bad shinden connection");
                 return;
             }
 

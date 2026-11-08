@@ -99,7 +99,7 @@ namespace Sanakan.Services.ScamImages
                 }
                 catch (Exception ex)
                 {
-                    _logger?.LogError($"ScamImageScanner: {ex}");
+                    _logger?.LogError($"ScamImage: {ex}");
                 }
             }
 
@@ -177,7 +177,7 @@ namespace Sanakan.Services.ScamImages
                 }
                 catch (Exception ex)
                 {
-                    _logger?.LogError($"ScamImageScanner: {ex}");
+                    _logger?.LogError($"ScamImage: {ex}");
                 }
             }
 

@@ -52,12 +52,17 @@ namespace Sanakan.Api
                 return null;
 
             var lines = snapshot.OrderByDescending(x => x.Value).ThenBy(x => x.Key, StringComparer.Ordinal).ToList();
-            var text = string.Join("\n", lines.Take(MaxReportLines).Select(x => $"{x.Key} - {x.Value}"));
+            var rows = lines.Take(MaxReportLines).Select(x =>
+            {
+                var space = x.Key.IndexOf(' ');
+                return space < 0 ? new[] { x.Value.ToString(), "", x.Key } : new[] { x.Value.ToString(), x.Key.Substring(0, space), x.Key.Substring(space + 1) };
+            }).ToList();
+            var text = string.Join("\n", Services.TextTable.Render(rows, new[] { true, false, false }));
             if (lines.Count > MaxReportLines)
-                text += $"\n... +{lines.Count - MaxReportLines} more ({lines.Skip(MaxReportLines).Sum(x => x.Value)})";
+                text += $"\n(+{lines.Count - MaxReportLines} more routes, {lines.Skip(MaxReportLines).Sum(x => x.Value)} requests)";
 
             var total = lines.Sum(x => x.Value);
-            return $"API traffic ({seconds / 60:0}min): {total} ({total / seconds:0.0}/s)\n{text}";
+            return FormattableString.Invariant($"API traffic ({seconds / 60:0} min): {total} requests ({total / seconds:0.0}/s)\n{text}");
         }
 
         public void Dispose() => _timer.Dispose();
@@ -80,14 +85,14 @@ namespace Sanakan.Api
 
             var total = snapshot.Sum(x => x.Value);
             if (total == 0)
-                return "API: 0 zapytań";
+                return "API: 0 requests";
 
             var clients = snapshot.OrderByDescending(x => x.Value).ThenBy(x => x.Key, StringComparer.Ordinal).ToList();
             var text = string.Join(", ", clients.Take(MaxClients).Select(x => $"{x.Key} {x.Value}"));
             if (clients.Count > MaxClients)
-                text += $", +{clients.Count - MaxClients} innych ({clients.Skip(MaxClients).Sum(x => x.Value)})";
+                text += $", +{clients.Count - MaxClients} others ({clients.Skip(MaxClients).Sum(x => x.Value)})";
 
-            return $"API: {total} zapytań ({text})";
+            return $"API: {total} requests ({text})";
         }
     }
     public static class ApiAudit

@@ -1,12 +1,14 @@
 #pragma warning disable 1591
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Runtime;
 using System.Text;
 using System.Threading;
 using Discord.WebSocket;
+using static System.FormattableString;
 
 namespace Sanakan.Services
 {
@@ -18,6 +20,30 @@ namespace Sanakan.Services
         private static long _dayPeak;
         private static Timer _sampler;
         private static Timer _reporter;
+        private static Timer _store;
+
+        // keeps the RAM history (working set in MiB) in the SystemData table
+        public static void StartStoring(Config.IConfig config, Time.ISystemTime time, ILogger logger, TimeSpan interval)
+        {
+            _store = new Timer(async _ =>
+            {
+                try
+                {
+                    using var db = new Database.DatabaseContext(config);
+                    db.SystemData.Add(new Database.Models.Analytics.SystemAnalytics
+                    {
+                        MeasureDate = time.Now(),
+                        Value = ProcessBytes() / MiB,
+                        Type = Database.Models.Analytics.SystemAnalyticsEventType.Ram,
+                    });
+                    await db.SaveChangesAsync();
+                }
+                catch (Exception ex)
+                {
+                    logger.LogError($"Report: memory sample: {ex}");
+                }
+            }, null, TimeSpan.FromMinutes(1), interval);
+        }
 
         public static void Start(ILogger logger, Func<string> discord, TimeSpan interval)
         {
@@ -30,7 +56,7 @@ namespace Sanakan.Services
                 }
                 catch (Exception ex)
                 {
-                    logger.LogError($"Raport pamięci: {ex.Message}");
+                    logger.LogError($"Report: memory: {ex.Message}");
                 }
             }, null, interval, interval);
         }
@@ -43,38 +69,38 @@ namespace Sanakan.Services
         }
 
         public static string Flush(Func<string> discord = null)
-            => $"Pamięć (60min):\n{Describe(Interlocked.Exchange(ref _hourPeak, 0), discord)}";
+            => $"Memory (60 min):\n{Describe(Interlocked.Exchange(ref _hourPeak, 0), discord)}";
 
         public static string FlushDaily(Func<string> discord = null)
-            => $"Pamięć:\n{Describe(Interlocked.Exchange(ref _dayPeak, 0), discord)}";
+            => $"Memory:\n{Describe(Interlocked.Exchange(ref _dayPeak, 0), discord)}";
 
         public static string Describe(long peak, Func<string> discord)
         {
             var process = ProcessBytes();
             var gc = GC.GetGCMemoryInfo();
-            var sb = new StringBuilder();
-
-            sb.Append($"- proces {Mb(process)} MiB (maks. {Mb(Math.Max(peak, process))} MiB)\n")
-              .Append($"- sterta GC {Mb(gc.HeapSizeBytes)} MiB, zarezerwowane {Mb(gc.TotalCommittedBytes)} MiB, fragmentacja {Mb(gc.FragmentedBytes)} MiB\n");
+            var rows = new List<string[]>
+            {
+                new[] { "process", Invariant($"{Mb(process)} MiB (peak {Mb(Math.Max(peak, process))} MiB)") },
+                new[] { "GC heap", Invariant($"{Mb(gc.HeapSizeBytes)} MiB, committed {Mb(gc.TotalCommittedBytes)} MiB, fragmented {Mb(gc.FragmentedBytes)} MiB") },
+            };
 
             var gens = gc.GenerationInfo;
             if (gens.Length >= 5)
             {
-                sb.Append($"- generacje: gen0 {Mb(gens[0].SizeAfterBytes)}, gen1 {Mb(gens[1].SizeAfterBytes)}, gen2 {Mb(gens[2].SizeAfterBytes)}, ")
-                  .Append($"LOH {Mb(gens[3].SizeAfterBytes)}, POH {Mb(gens[4].SizeAfterBytes)} MiB\n");
+                rows.Add(new[] { "generations", Invariant($"gen0 {Mb(gens[0].SizeAfterBytes)}, gen1 {Mb(gens[1].SizeAfterBytes)}, gen2 {Mb(gens[2].SizeAfterBytes)}, ")
+                    + Invariant($"LOH {Mb(gens[3].SizeAfterBytes)}, POH {Mb(gens[4].SizeAfterBytes)} MiB") });
             }
 
             // working set and committed GC memory are measured differently, so this is only an estimate
-            sb.Append($"- poza GC ok. {Mb(Math.Max(0, process - gc.TotalCommittedBytes))} MiB (m.in. pula obrazów, limit {ImageProcessing.MemoryPoolMegabytes} MiB)\n")
-              .Append($"- GC {(GCSettings.IsServerGC ? "serwerowy" : "stacja robocza")}, odśmiecania od startu gen0/1/2: ")
-              .Append($"{GC.CollectionCount(0)}/{GC.CollectionCount(1)}/{GC.CollectionCount(2)}\n")
-              .Append($"- cache zapytań: wpisów {QueryCache.EntryCount}, rozmiar {QueryCache.CurrentSize}/{QueryCache.SizeLimit}");
+            rows.Add(new[] { "outside GC", Invariant($"~{Mb(Math.Max(0, process - gc.TotalCommittedBytes))} MiB (incl. image pool, limit {ImageProcessing.MemoryPoolMegabytes} MiB)") });
+            rows.Add(new[] { "GC", Invariant($"{(GCSettings.IsServerGC ? "server" : "workstation")}, collections gen0/1/2: {GC.CollectionCount(0)}/{GC.CollectionCount(1)}/{GC.CollectionCount(2)}") });
+            rows.Add(new[] { "query cache", Invariant($"{QueryCache.EntryCount} entries, size {QueryCache.CurrentSize}/{QueryCache.SizeLimit}") });
 
             var discordLine = TryDescribe(discord);
             if (!string.IsNullOrEmpty(discordLine))
-                sb.Append($"\n- {discordLine}");
+                rows.Add(new[] { "Discord", discordLine });
 
-            return sb.ToString();
+            return string.Join("\n", TextTable.Render(rows, new[] { false, false }));
         }
 
         public static string DescribeDiscord(DiscordSocketClient client)
@@ -85,7 +111,7 @@ namespace Sanakan.Services
             var channels = guilds.SelectMany(x => x.TextChannels).ToList();
             var members = guilds.Sum(x => (long)x.DownloadedMemberCount);
             var messages = channels.Sum(x => (long)x.CachedMessages.Count);
-            return $"Discord: serwerów {guilds.Count}, członków w pamięci {members}, kanałów tekstowych {channels.Count}, wiadomości w cache {messages}";
+            return Invariant($"{guilds.Count} guilds, {members} members cached, {channels.Count} text channels, {messages} messages cached");
         }
 
         private static string TryDescribe(Func<string> discord)
@@ -96,7 +122,7 @@ namespace Sanakan.Services
             }
             catch (Exception ex)
             {
-                return $"Discord: brak danych ({ex.Message})";
+                return $"no data ({ex.Message})";
             }
         }
 

@@ -2001,7 +2001,7 @@ namespace Sanakan.Modules
                         }
                         catch (Exception ex)
                         {
-                            Logger?.LogError($"mod: edycja raportu {raport.Id}: {ex.Message}");
+                            Logger?.LogError($"Mod: report edit {raport.Id}: {ex.Message}");
                         }
                         await reportMsg.DeleteAsync();
                     }
@@ -2027,7 +2027,7 @@ namespace Sanakan.Modules
                     }
                     catch (Exception ex)
                     {
-                        Logger?.LogError($"mod: edycja raportu {raport.Id}: {ex.Message}");
+                        Logger?.LogError($"Mod: report edit {raport.Id}: {ex.Message}");
                     }
 
                     await reportMsg.DeleteAsync();

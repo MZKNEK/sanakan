@@ -362,7 +362,7 @@ namespace Sanakan.Services
                         }
                         catch (Exception ex)
                         {
-                            _logger.LogError($"Experience: level notify: {ex}");
+                            _logger.LogError($"Exp: level notify: {ex}");
                         }
                     });
                 }
@@ -395,7 +395,7 @@ namespace Sanakan.Services
                     }
                     catch (Exception ex)
                     {
-                        _logger.LogError($"Experience: level roles: {ex}");
+                        _logger.LogError($"Exp: level roles: {ex}");
                     }
                 });
             }

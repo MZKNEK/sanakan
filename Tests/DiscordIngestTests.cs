@@ -262,7 +262,7 @@ namespace Artifacts
             Assert.Equal(1 + DiscordIngest.Retries, _handler.Requests.Count);
             Assert.True(ingest.Failing);
             Assert.Equal("odpowiedź 503", ingest.LastError);
-            Assert.Contains(_logger.Messages, x => x.Contains("porzucono 1"));
+            Assert.Contains(_logger.Messages, x => x.Contains("dropped 1"));
             Assert.Equal(0, ingest.Queued);
         }
 
@@ -277,7 +277,7 @@ namespace Artifacts
             await ingest.FlushAsync();
 
             Assert.Single(_handler.Requests);
-            Assert.Contains(_logger.Messages, x => x.Contains("porzucono 2"));
+            Assert.Contains(_logger.Messages, x => x.Contains("dropped 2"));
         }
 
         [Fact]

@@ -26,7 +26,13 @@ namespace Sanakan.Services
 
         public void Log(string message)
         {
-            Console.WriteLine(MaskSecrets(message));
+            Console.WriteLine(Format(MaskSecrets(message), DateTime.Now));
+        }
+
+        public static string Format(string message, DateTime now)
+        {
+            var (kind, text) = LoggerExtensions.Parse(message);
+            return $"[{now:yyyy-MM-dd HH:mm:ss}] {LoggerExtensions.Label(kind)}{text}";
         }
 
         public string MaskSecrets(string message)

@@ -73,9 +73,9 @@ namespace Artifacts
         }
 
         [Theory]
-        [InlineData("Executor: running cmd-lazyp")]
-        [InlineData("Run cmd: u303101521552211970 lazyp")]
-        [InlineData("mem usage: 682 MiB")]
+        [InlineData("Exec: api-tc u1 (5) (12ms)")]
+        [InlineData("Cmd: u303101521552211970 lazyp (412ms)")]
+        [InlineData("API: app:Shinden POST /api/user/find -> 200 (15ms)")]
         [InlineData("Response code: 200")]
         public void OrdinaryMessages_AreUnchanged(string message)
         {

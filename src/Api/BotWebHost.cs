@@ -50,7 +50,7 @@ namespace Sanakan.Api
             }
             catch (Exception ex)
             {
-                logger.LogError($"API nie wystartowało: {ex}");
+                logger.LogError($"API: failed to start: {ex}");
                 Environment.Exit(1);
             }
 
@@ -93,10 +93,10 @@ namespace Sanakan.Api
         public static void ValidateConfig(ConfigModel config)
         {
             if (config.Jwt == null || string.IsNullOrWhiteSpace(config.Jwt.Key) || Encoding.UTF8.GetByteCount(config.Jwt.Key) < MinJwtKeyBytes)
-                throw new InvalidOperationException($"Jwt.Key musi być ustawiony i mieć co najmniej {MinJwtKeyBytes} bajty");
+                throw new InvalidOperationException($"Jwt.Key must be set and be at least {MinJwtKeyBytes} bytes long");
 
             if (string.IsNullOrWhiteSpace(config.Jwt.Issuer))
-                throw new InvalidOperationException("Jwt.Issuer musi być ustawiony");
+                throw new InvalidOperationException("Jwt.Issuer must be set");
         }
 
         public static List<string> WeakAppKeys(ConfigModel config)

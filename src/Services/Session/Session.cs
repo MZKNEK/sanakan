@@ -137,7 +137,7 @@ namespace Sanakan.Services.Session
                     if (_logger != null)
                     {
                         string sessionName = Id ?? this.ToString();
-                        _logger.LogError($"In {sessionName} session: {ex}");
+                        _logger.LogError($"Session: {sessionName}: {ex}");
                     }
                     return false;
                 }

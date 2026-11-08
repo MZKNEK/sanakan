@@ -30,15 +30,6 @@ namespace Sanakan.Services
         private const string ColorYellow = "\u001b[0;33m";
         private const string ColorReport = "\u001b[1;36m";
 
-        private static readonly string[] _routinePrefixes =
-        {
-            "Executor: running ",
-            "Executor: completed ",
-            "Run cmd: ",
-            "mem usage: ",
-            "Reconnected!",
-        };
-
         private readonly ConsoleLogger _console;
         private readonly IConfig _config;
         private readonly DiscordRestClient _rest = new DiscordRestClient();
@@ -74,7 +65,7 @@ namespace Sanakan.Services
             if (!IsEnabled() || !ShouldSend(message))
                 return;
 
-            if (message.StartsWith(LoggerExtensions.ErrorPrefix, StringComparison.Ordinal))
+            if (LoggerExtensions.Parse(message).Kind == LogKind.Error)
                 _errorPing.Record(DateTime.Now);
 
             var entries = Format(_console.MaskSecrets(message), fromShinden, DateTime.Now);
@@ -93,11 +84,10 @@ namespace Sanakan.Services
 
         public static List<string> Format(string message, bool fromShinden, DateTime now)
         {
-            var isError = message.StartsWith(LoggerExtensions.ErrorPrefix, StringComparison.Ordinal);
-            var isReport = message.StartsWith(LoggerExtensions.ReportPrefix, StringComparison.Ordinal);
-            var text = isError ? message.Substring(LoggerExtensions.ErrorPrefix.Length)
-                : isReport ? message.Substring(LoggerExtensions.ReportPrefix.Length) : message;
-            var label = isError ? "ERROR " : isReport ? "📊 RAPORT " : "";
+            var (kind, text) = LoggerExtensions.Parse(message);
+            var isError = kind == LogKind.Error;
+            var isReport = kind == LogKind.Report;
+            var label = isReport ? "📊 REPORT " : LoggerExtensions.Label(kind);
 
             var entry = PrefixLines($"[{now:HH:mm:ss}] {label}{text}",
                 isError ? ColorRed : isReport ? ColorReport : fromShinden ? ColorYellow : ColorDefault);
@@ -136,8 +126,10 @@ namespace Sanakan.Services
             => string.Join("\n", entry.Replace("\r", "").Split('\n').Select(x => prefix + x));
 
         public static bool ShouldSend(string message)
-            => !string.IsNullOrWhiteSpace(message)
-                && !_routinePrefixes.Any(x => message.StartsWith(x, StringComparison.Ordinal));
+        {
+            var (kind, text) = LoggerExtensions.Parse(message);
+            return kind != LogKind.Routine && !string.IsNullOrWhiteSpace(text);
+        }
 
         public async Task FlushAllAsync(TimeSpan timeout)
         {
@@ -268,7 +260,7 @@ namespace Sanakan.Services
             List<string> messages;
             lock (_lock)
             {
-                var header = _dropped > 0 ? $"[pominięto {_dropped} wpisów - zbyt dużo logów]" : null;
+                var header = _dropped > 0 ? $"[skipped {_dropped} entries - too many logs]" : null;
                 _dropped = 0;
                 messages = Pack(_pending, header, MaxMessagesPerFlush);
             }
@@ -293,8 +285,8 @@ namespace Sanakan.Services
         }
 
         public static string ErrorPingText(ulong roleId, int errors, bool flood)
-            => $"<@&{roleId}> ⚠️ Błędy w logach: {errors}"
-                + (flood ? $" (dużo błędów, kolejne oznaczenie najwcześniej za {ErrorPingLimiter.FloodPingInterval.TotalMinutes:0} min)" : "");
+            => $"<@&{roleId}> ⚠️ Errors in logs: {errors}"
+                + (flood ? $" (many errors, next ping in {ErrorPingLimiter.FloodPingInterval.TotalMinutes:0} min at the earliest)" : "");
 
         private async Task<ITextChannel> GetChannelAsync(CancellationToken token)
         {
@@ -325,7 +317,7 @@ namespace Sanakan.Services
                     _pending.Clear();
                     _dropped = 0;
                 }
-                _console.Log($"DiscordLog: brak dostępu do kanału {cfg.ChannelId} na serwerze {cfg.GuildId}, logi zostają tylko na konsoli.");
+                _console.Log($"DiscordLog: no access to channel {cfg.ChannelId} on guild {cfg.GuildId}, logs stay on the console only");
                 return null;
             }
 
@@ -348,7 +340,7 @@ namespace Sanakan.Services
                 if (!IsEnabled(logLevel))
                     return;
 
-                var message = $"Shinden {formatter(state, exception)}";
+                var message = $"Shinden: {formatter(state, exception)}";
                 // missing users or titles are routine, the library still reports them as errors
                 if (logLevel < LogLevel.Warning || IsNotFound(state))
                     _parent._console.Log(message);
