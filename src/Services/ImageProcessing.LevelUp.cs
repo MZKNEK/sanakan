@@ -7,29 +7,36 @@ using Sanakan.Extensions;
 using SixLabors.Fonts;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Drawing.Processing;
+using SixLabors.ImageSharp.Formats.Webp;
 using SixLabors.ImageSharp.PixelFormats;
 using SixLabors.ImageSharp.Processing;
+using EllipsePolygon = SixLabors.ImageSharp.Drawing.EllipsePolygon;
 using EndCapStyle = SixLabors.ImageSharp.Drawing.EndCapStyle;
 using JointStyle = SixLabors.ImageSharp.Drawing.JointStyle;
-using PathBuilder = SixLabors.ImageSharp.Drawing.PathBuilder;
-using RectangularPolygon = SixLabors.ImageSharp.Drawing.RectangularPolygon;
 
 namespace Sanakan.Services
 {
     public partial class ImageProcessing
     {
-        // the badge is drawn at twice its layout size, so it stays sharp and readable on phones
-        private const int LevelUpScale = 2;
-        private const int LevelUpHeight = 140 * LevelUpScale;
-        private const int LevelUpTextX = 158 * LevelUpScale;
-        private const int LevelUpIconWidth = 76 * LevelUpScale;
+        // Discord shows attachments close to their pixel size, so the badge is drawn only slightly above 1:1 -
+        // sharp enough on phones without looking oversized on desktop
+        private const float LevelUpScale = 1.6f;
+        private const float LevelUpHeight = 72;
+        private const float LevelUpTextX = 80;
+        private const float LevelUpAvatarX = 14;
+        private const float LevelUpAvatarY = 10;
+        private const float LevelUpAvatarSize = 52;
+        private const float LevelUpMarkRadius = 9;
+        private const int LevelUpBounceFrames = 14;
+        private const uint LevelUpBounceFrameMs = 50;
+        private const uint LevelUpBouncePauseMs = 1800;
 
         private static float LS(float value) => value * LevelUpScale;
 
-        private record LevelUpPalette(string Accent, string Bright, string Border, string Number);
+        private record LevelUpPalette(string Accent, string Number);
 
-        private static readonly LevelUpPalette LevelUpRegular = new("#8B63E6", "#9B78F0", "#8F74D4", "#FFFFFF");
-        private static readonly LevelUpPalette LevelUpGold = new("#D9A22B", "#F5C445", "#D9B256", "#F8D978");
+        private static readonly LevelUpPalette LevelUpRegular = new("#8B63E6", "#FFFFFF");
+        private static readonly LevelUpPalette LevelUpGold = new("#D9A22B", "#F8D978");
 
         private static LevelUpPalette GetLevelUpPalette(Discord.Color color)
         {
@@ -45,7 +52,7 @@ namespace Sanakan.Services
                 t = lift + (1 - lift) * t;
                 return $"#{(byte)(color.R + (255 - color.R) * t):X2}{(byte)(color.G + (255 - color.G) * t):X2}{(byte)(color.B + (255 - color.B) * t):X2}";
             }
-            return new LevelUpPalette(Lighten(0), Lighten(0.25f), Lighten(0.15f), Lighten(0.45f));
+            return new LevelUpPalette(Lighten(0), Lighten(0.45f));
         }
 
         private void DrawLevelUpText(Image image, string text, Font font, string color, float x, float y)
@@ -54,40 +61,46 @@ namespace Sanakan.Services
             image.Mutate(c => c.DrawText(options, text, GetOrCreateColor(color)));
         }
 
-        private void DrawLevelUpChevron(Image image, float cx, float cy, Color color)
+        private void DrawLevelUpMark(Image image, LevelUpPalette palette, float lift = 0)
         {
-            var pen = new SolidPen(new PenOptions(color, LS(10)) { JointStyle = JointStyle.Round, EndCapStyle = EndCapStyle.Round });
-            image.Mutate(x => x.DrawLine(pen, new PointF(cx - LS(22), cy + LS(11)), new PointF(cx, cy - LS(11)), new PointF(cx + LS(22), cy + LS(11))));
-        }
-
-        private void DrawLevelUpBackground(Image image, int width, LevelUpPalette palette)
-        {
-            var accent = GetOrCreateColor(palette.Accent);
-            var panel = GetRoundedRectPath(LS(1), LS(1), width - LS(2), LevelUpHeight - LS(2), LS(16));
-
-            var glow = new RadialGradientBrush(new PointF(width - LS(60), LevelUpHeight), LS(170), GradientRepetitionMode.None,
-                new ColorStop(0, accent.WithAlpha(0.22f)), new ColorStop(1, accent.WithAlpha(0)));
-
-            var border = new LinearGradientBrush(new PointF(0, 0), new PointF(width, 0), GradientRepetitionMode.None,
-                new ColorStop(0, GetOrCreateColor("#3A3646")), new ColorStop(0.6f, GetOrCreateColor("#4A4060")), new ColorStop(1, GetOrCreateColor(palette.Border)));
-
-            var arcStart = new PointF(width * 0.55f, LevelUpHeight - LS(6));
-            var arcEnd = new PointF(width - LS(8), LevelUpHeight - LS(52));
-            var arc = new PathBuilder().AddCubicBezier(arcStart, new PointF(width * 0.72f, LevelUpHeight - LS(24)),
-                new PointF(width * 0.85f, LevelUpHeight - LS(30)), arcEnd).Build();
-
-            var arcBrush = new LinearGradientBrush(arcStart, arcEnd, GradientRepetitionMode.None,
-                new ColorStop(0, accent.WithAlpha(0)), new ColorStop(0.5f, accent.WithAlpha(0.9f)), new ColorStop(1, accent.WithAlpha(0.2f)));
-
-            var arcGlowBrush = new LinearGradientBrush(arcStart, arcEnd, GradientRepetitionMode.None,
-                new ColorStop(0, accent.WithAlpha(0)), new ColorStop(0.5f, accent.WithAlpha(0.25f)), new ColorStop(1, accent.WithAlpha(0)));
+            var cx = LS(LevelUpAvatarX + LevelUpAvatarSize - 8);
+            var cy = LS(LevelUpAvatarY + LevelUpAvatarSize - 8) - lift;
+            var arm = LS(LevelUpMarkRadius * 0.45f);
+            var pen = new SolidPen(new PenOptions(Color.White, LS(LevelUpMarkRadius * 0.2f)) { JointStyle = JointStyle.Round, EndCapStyle = EndCapStyle.Round });
 
             image.Mutate(x => x
-                .Fill(GetOrCreateColor("#19181F"), panel)
-                .Fill(glow, panel)
-                .Draw(new SolidPen(arcGlowBrush, LS(8)), arc)
-                .Draw(new SolidPen(arcBrush, LS(2)), arc)
-                .Draw(new SolidPen(border, LS(2)), panel));
+                .Fill(GetOrCreateColor(palette.Accent), new EllipsePolygon(cx, cy, LS(LevelUpMarkRadius)))
+                .DrawLine(pen, new PointF(cx - arm, cy + arm / 2), new PointF(cx, cy - arm / 2), new PointF(cx + arm, cy + arm / 2)));
+        }
+
+        // a still avatar gets a short loop: the mark hops twice and rests; the first frame is the resting badge
+        private Image<Rgba32> AnimateLevelUpMark(Image<Rgba32> card, LevelUpPalette palette)
+        {
+            var result = card.Clone();
+            DrawLevelUpMark(result, palette);
+            SetLevelUpFrameDelay(result.Frames.RootFrame, LevelUpBounceFrameMs);
+
+            for (int i = 1; i <= LevelUpBounceFrames; i++)
+            {
+                var t = i / (float)LevelUpBounceFrames;
+                var lift = i == LevelUpBounceFrames ? 0 : LS(4) * MathF.Abs(MathF.Sin(MathF.PI * 2 * t)) * (1 - t);
+
+                using var frame = card.Clone();
+                DrawLevelUpMark(frame, palette, lift);
+                var added = result.Frames.AddFrame(frame.Frames.RootFrame);
+                SetLevelUpFrameDelay(added, i == LevelUpBounceFrames ? LevelUpBouncePauseMs : LevelUpBounceFrameMs);
+            }
+
+            result.Metadata.GetWebpMetadata().RepeatCount = 0;
+            return result;
+        }
+
+        private static void SetLevelUpFrameDelay(ImageFrame frame, uint delayMs)
+        {
+            var meta = frame.Metadata.GetWebpMetadata();
+            meta.DisposalMethod = WebpDisposalMethod.DoNotDispose;
+            meta.BlendMethod = WebpBlendMethod.Source;
+            meta.FrameDelay = delayMs;
         }
 
         // highlight is the color of the role granted for this level, the badge keeps its default look without it
@@ -99,65 +112,80 @@ namespace Sanakan.Services
             const string promoteText = "Awansuje na:";
             const string levelText = "POZIOM";
 
-            var nameFont = GetOrCreateFont(_latoBold, LS(26));
-            var promoteFont = GetOrCreateFont(_latoRegular, LS(18));
-            var lvlFont = GetOrCreateFont(_latoBold, LS(46));
-            var levelTextFont = GetOrCreateFont(_latoRegular, LS(22));
+            var nameFont = GetOrCreateFont(_latoBold, LS(17));
+            var promoteFont = GetOrCreateFont(_latoRegular, LS(12));
+            var lvlFont = GetOrCreateFont(_latoBold, LS(26));
+            var levelTextFont = GetOrCreateFont(_latoRegular, LS(12));
 
             var lvl = $"{ulvl}";
             var lvlWidth = TextMeasurer.MeasureSize(lvl, new TextOptions(lvlFont)).Width;
             var textWidth = Math.Max(TextMeasurer.MeasureSize(name, new TextOptions(nameFont)).Width,
-                lvlWidth + LS(10) + TextMeasurer.MeasureSize(levelText, new TextOptions(levelTextFont)).Width);
+                lvlWidth + LS(6) + TextMeasurer.MeasureSize(levelText, new TextOptions(levelTextFont)).Width);
+            textWidth = Math.Max(textWidth, TextMeasurer.MeasureSize(promoteText, new TextOptions(promoteFont)).Width);
 
-            var width = LevelUpTextX + (int)textWidth + (int)LS(36) + LevelUpIconWidth;
-            var baseImg = new Image<Rgba32>(width, LevelUpHeight);
+            var width = (int)(LS(LevelUpTextX + 20) + textWidth);
+            var height = (int)LS(LevelUpHeight);
+            var baseImg = new Image<Rgba32>(width, height);
             var palette = highlight.HasValue ? GetLevelUpPalette(highlight.Value) : LevelUpRegular;
 
-            DrawLevelUpBackground(baseImg, width, palette);
+            var avatarSize = (int)LS(LevelUpAvatarSize);
+            var avatarPos = new Point((int)LS(LevelUpAvatarX), (int)LS(LevelUpAvatarY));
+            var avatarCenter = new PointF(avatarPos.X + avatarSize / 2f, avatarPos.Y + avatarSize / 2f);
+            var ringWidth = LS(2.5f);
 
-            var accent = GetOrCreateColor(palette.Accent);
+            // Discord's embed surface with a side bar, like a native embed
             baseImg.Mutate(x => x
-                .Fill(GetOrCreateColor($"#{color.RawValue:X6}"), GetRoundedRectPath(LS(17), LS(17), LS(106), LS(106), LS(14)))
-                .Fill(accent, new RectangularPolygon(LS(139), LS(20), LS(2), LS(100))));
+                .Fill(GetOrCreateColor("#2B2D31"), GetRoundedRectPath(0, 0, width, height, LS(6)))
+                .Fill(GetOrCreateColor(palette.Accent), GetRoundedRectPath(0, 0, LS(4), height, LS(2)))
+                .Draw(new SolidPen(GetOrCreateColor($"#{color.RawValue:X6}"), ringWidth),
+                    new EllipsePolygon(avatarCenter, avatarSize / 2f + ringWidth / 2f)));
 
-            DrawLevelUpChevron(baseImg, width - LS(54), LS(58), GetOrCreateColor(palette.Bright));
-            DrawLevelUpChevron(baseImg, width - LS(54), LS(86), accent.WithAlpha(0.55f));
+            DrawLevelUpText(baseImg, name, nameFont, "#F2F0F7", LS(LevelUpTextX), LS(17));
+            DrawLevelUpText(baseImg, promoteText, promoteFont, "#A09AAE", LS(LevelUpTextX), LS(34));
+            DrawLevelUpText(baseImg, lvl, lvlFont, palette.Number, LS(LevelUpTextX - 1), LS(54));
+            DrawLevelUpText(baseImg, levelText, levelTextFont, "#D6D2DE", LS(LevelUpTextX + 6) + lvlWidth, LS(58));
 
-            DrawLevelUpText(baseImg, name, nameFont, "#F2F0F7", LevelUpTextX, LS(36));
-            DrawLevelUpText(baseImg, promoteText, promoteFont, "#A09AAE", LevelUpTextX, LS(67));
-            DrawLevelUpText(baseImg, lvl, lvlFont, palette.Number, LevelUpTextX - LS(2), LS(101));
-            DrawLevelUpText(baseImg, levelText, levelTextFont, "#D6D2DE", LevelUpTextX + lvlWidth + LS(10), LS(107));
-
+            var animatedAvatar = false;
             using (var stream = await GetImageFromUrlAsync(avatarUrl))
             {
                 if (stream is null || stream == Stream.Null)
                 {
-                    baseImg.Mutate(x => x.Fill(GetOrCreateColor("#2A2733"), GetRoundedRectPath(LS(20), LS(20), LS(100), LS(100), LS(11))));
-                    return baseImg;
+                    baseImg.Mutate(x => x.Fill(GetOrCreateColor("#3F4147"), new EllipsePolygon(avatarCenter, avatarSize / 2f)));
                 }
-
-                // Rgba32: without an alpha channel the rounded corners would turn black
-                using (var avatar = Image.Load<Rgba32>(stream))
+                else
                 {
-                    var avatarSize = (int)LS(100);
-                    var avatarPos = new Point((int)LS(20), (int)LS(20));
-                    avatar.Mutate(x =>
+                    // Rgba32: without an alpha channel the area outside the circle would turn black
+                    using (var avatar = Image.Load<Rgba32>(stream))
                     {
-                        x.Resize(new ResizeOptions { Mode = ResizeMode.Crop, Size = new Size(avatarSize, avatarSize) });
-                        x.Round(LS(11));
-                    });
+                        avatar.Mutate(x =>
+                        {
+                            x.Resize(new ResizeOptions { Mode = ResizeMode.Crop, Size = new Size(avatarSize, avatarSize) });
+                            x.Round(avatarSize / 2f);
+                        });
 
-                    if (avatar.Frames.Count > 1)
-                    {
-                        Animate(baseImg, avatar, avatarPos);
-                    }
-                    else
-                    {
-                        baseImg.Mutate(x => x.DrawImage(avatar, avatarPos, 1));
+                        if (avatar.Frames.Count > 1)
+                        {
+                            animatedAvatar = true;
+                            Animate(baseImg, avatar, avatarPos);
+                        }
+                        else
+                        {
+                            baseImg.Mutate(x => x.DrawImage(avatar, avatarPos, 1));
+                        }
                     }
                 }
             }
 
+            if (!animatedAvatar)
+            {
+                using (baseImg)
+                {
+                    return AnimateLevelUpMark(baseImg, palette);
+                }
+            }
+
+            // the mark overlaps the avatar, so it is drawn last to stay on top of every frame of an animated one
+            DrawLevelUpMark(baseImg, palette);
             return baseImg;
         }
     }

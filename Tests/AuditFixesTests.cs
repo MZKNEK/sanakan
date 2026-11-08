@@ -444,21 +444,86 @@ namespace Artifacts
         }
 
         [Fact]
-        public async Task OpaqueAvatar_HasNoBlackCorners_AndBadgeIsDoubleSize()
+        public async Task OpaqueAvatar_HasNoBlackCorners_AndBadgeKeepsItsSize()
         {
             using var server = new LocalHttpServer(ServeOpaqueAvatar());
 
             using var badge = await new ImageProcessing(null, null, true).GetLevelUpBadgeAsync("gracz", 2,
                 server.BaseUrl + "avatar.png", new Discord.Color(30, 200, 30));
 
-            Assert.Equal(280, badge.Height);
+            Assert.Equal(115, badge.Height);
 
-            // (44, 44) lies between the avatar's rounded corner and the frame's, so it must show the frame color, not black
-            var corner = badge[44, 44];
-            Assert.True(corner.G > 150 && corner.R < 100, $"corner pixel was {corner}");
+            // the avatar is an 83px circle at (22, 16); (25, 19) is inside its square but outside the circle and the ring,
+            // so it must show the card background, not black
+            var corner = badge[25, 19];
+            Assert.True(corner.R > 30 && corner.G > 30 && corner.B > 30, $"corner pixel was {corner}");
 
-            var center = badge[140, 140];
+            var ring = badge[63, 14];
+            Assert.True(ring.G > 150 && ring.R < 100, $"ring pixel was {ring}");
+
+            var center = badge[63, 57];
             Assert.True(center.R > 150 && center.G < 100, $"avatar pixel was {center}");
+        }
+
+        [Fact]
+        public async Task StillAvatar_GetsBounceLoop_ThatSurvivesWebpExport()
+        {
+            using var server = new LocalHttpServer(ServeOpaqueAvatar());
+
+            using var badge = await new ImageProcessing(null, null, true).GetLevelUpBadgeAsync("gracz", 2,
+                server.BaseUrl + "avatar.png", new Discord.Color(30, 200, 30));
+
+            Assert.Equal(15, badge.Frames.Count);
+
+            // (92, 69) is avatar just above the resting mark, a lifted mark covers it with the accent #8B63E6
+            static bool IsAccent(Rgba32 p) => p.R > 110 && p.R < 160 && p.B > 200;
+            var rest = badge.Frames[0][92, 69];
+            Assert.True(rest.R > 150 && rest.G < 100, $"resting frame pixel was {rest}");
+            Assert.Contains(Enumerable.Range(1, 13), i => IsAccent(badge.Frames[i][92, 69]));
+            Assert.False(IsAccent(badge.Frames[14][92, 69]));
+
+            using var exported = badge.ToWebpStream();
+            using var decoded = Image.Load<Rgba32>(exported);
+            Assert.Equal(15, decoded.Frames.Count);
+            Assert.Equal(50u, decoded.Frames[1].Metadata.GetWebpMetadata().FrameDelay);
+            Assert.Equal(1800u, decoded.Frames[14].Metadata.GetWebpMetadata().FrameDelay);
+        }
+
+        private static Func<System.Net.HttpListenerContext, Task> ServeAnimatedAvatar(int frames)
+        {
+            using var image = new Image<Rgba32>(120, 120, new Rgba32(200, 30, 30));
+            for (int i = 1; i < frames; i++)
+            {
+                using var frame = new Image<Rgba32>(120, 120, new Rgba32(30, 30, (byte)(100 + i * 20)));
+                image.Frames.AddFrame(frame.Frames.RootFrame);
+            }
+            using var ms = new MemoryStream();
+            image.SaveAsGif(ms);
+            var body = ms.ToArray();
+            return async ctx =>
+            {
+                ctx.Response.ContentType = "image/gif";
+                ctx.Response.ContentLength64 = body.Length;
+                await ctx.Response.OutputStream.WriteAsync(body);
+            };
+        }
+
+        [Fact]
+        public async Task AnimatedAvatar_KeepsFrames_AndLevelMarkIsOnEveryFrame()
+        {
+            using var server = new LocalHttpServer(ServeAnimatedAvatar(4));
+
+            using var badge = await new ImageProcessing(null, null, true).GetLevelUpBadgeAsync("gracz", 2,
+                server.BaseUrl + "avatar.gif", new Discord.Color(30, 200, 30));
+
+            Assert.Equal(4, badge.Frames.Count);
+            for (int i = 0; i < badge.Frames.Count; i++)
+            {
+                // (88, 82) is inside both the avatar circle and the mark, so it shows the mark's default accent #8B63E6
+                // only when the mark is drawn over the avatar frame
+                var mark = badge.Frames[i][88, 82];
+                Assert.True(mark.R > 110 && mark.R < 160 && mark.B > 200, $"frame {i} mark pixel was {mark}");
+            }
         }
     }
 
