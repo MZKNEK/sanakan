@@ -685,7 +685,7 @@ namespace Sanakan.Modules
                         var privEmb = new EmbedBuilder()
                         {
                             Color = EMType.Info.Color(),
-                            Description = $"Na [loterii]({msg.GetJumpUrl()}) zdobyłeś {cardsIds.Count} kart."
+                            Description = $"Na [loterii]({msg.GetJumpUrl()}) zdobyłeś {Polish.Count(cardsIds.Count, "kartę", "karty", "kart")}."
                         };
 
                         var pw = await winner.CreateDMChannelAsync();

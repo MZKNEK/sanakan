@@ -100,7 +100,17 @@ namespace Sanakan.Modules
                 return;
             }
 
-            await SafeReplyAsync(_helper.GivePublicHelp());
+            string listPrefix = _config.Get().Prefix;
+            if (Context.Guild != null)
+            {
+                using (var db = new Database.DatabaseContext(_config))
+                {
+                    var gConfig = await db.GetCachedGuildFullConfigAsync(Context.Guild.Id);
+                    if (gConfig?.Prefix != null) listPrefix = gConfig.Prefix;
+                }
+            }
+
+            await SafeReplyAsync(_helper.GivePublicHelp(listPrefix));
         }
 
         [Command("ktoto", RunMode = RunMode.Async)]

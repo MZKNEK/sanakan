@@ -41,8 +41,10 @@ namespace Sanakan.Services
             return res.StatusCode;
         }
 
-        public string GivePublicHelp()
+        public string GivePublicHelp(string guildPrefix = null)
         {
+            var botPrefix = guildPrefix ?? _config.Get().Prefix;
+
             StringBuilder sb = new StringBuilder();
             sb.AppendLine("**Lista poleceń:**");
 
@@ -66,7 +68,7 @@ namespace Sanakan.Services
                 }
             }
 
-            sb.AppendLine($"\n\nUżyj `{_config.Get().Prefix}pomoc [polecenie]`, aby uzyskać informacje dotyczące danego polecenia.");
+            sb.AppendLine($"\n\nUżyj `{botPrefix}pomoc [polecenie]`, aby uzyskać informacje dotyczące danego polecenia.");
 
             return sb.ToString();
         }
