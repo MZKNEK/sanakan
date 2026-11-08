@@ -41,6 +41,7 @@ namespace Artifacts
         {
             var lines = new[] { "a", "b", "c" };
             Assert.Equal("a\nb\nc", Moderator.JoinWithinLimit(lines, 1000, "\n"));
+            Assert.Equal("a\nb\n…i jeszcze 1", Moderator.JoinWithinLimit(lines, 1000, "\n", maxEntries: 2));
         }
     }
 }

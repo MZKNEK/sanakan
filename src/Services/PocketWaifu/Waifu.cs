@@ -1342,7 +1342,7 @@ namespace Sanakan.Services.PocketWaifu
                     foreach (var d in dead)
                     {
                         var thisCard = players.First(x => x.Cards.Any(c => c.Id == d.CardId)).Cards.First(x => x.Id == d.CardId);
-                        deathLog += $"❌ {thisCard.GetString(true, false, true, true)}\n";
+                        deathLog += $"❌ {thisCard.GetString(true, false, true, true, hideStats: true)}\n";
                     }
                     deathLog += "\n";
                 }

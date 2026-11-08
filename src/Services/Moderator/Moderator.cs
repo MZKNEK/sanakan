@@ -474,19 +474,22 @@ namespace Sanakan.Services
             return new EmbedBuilder
             {
                 Title = $"🔇 Wyciszeni: {entries.Count}",
-                Description = entries.Count == 0 ? "Brak" : JoinWithinLimit(entries, 3900),
+                Description = entries.Count == 0 ? "Brak" : JoinWithinLimit(entries, 3900, maxEntries: MaxMutedShown),
                 Color = PenaltyFormat.MuteColor,
             }.Build();
         }
 
-        public static string JoinWithinLimit(IReadOnlyList<string> entries, int limit, string entrySeparator = "\n\n")
+        // each entry has a mention, a timestamp, a quote and maybe an emoji; Discord stops formatting after ~100 elements
+        public const int MaxMutedShown = 20;
+
+        public static string JoinWithinLimit(IReadOnlyList<string> entries, int limit, string entrySeparator = "\n\n", int maxEntries = int.MaxValue)
         {
             const int tailReserve = 30;
             var text = new StringBuilder();
             for (var i = 0; i < entries.Count; i++)
             {
                 var separator = text.Length > 0 ? entrySeparator : "";
-                if (text.Length + separator.Length + entries[i].Length + tailReserve > limit)
+                if (i >= maxEntries || text.Length + separator.Length + entries[i].Length + tailReserve > limit)
                 {
                     text.Append($"{separator}…i jeszcze {entries.Count - i}");
                     break;

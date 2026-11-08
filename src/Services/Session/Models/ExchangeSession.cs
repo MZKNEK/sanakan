@@ -297,7 +297,8 @@ namespace Sanakan.Services.Session.Models
             if (player.Cards.Count > 12)
                 return $"{header}\n**{Polish.Count(player.Cards.Count, "kartę", "karty", "kart")}**";
 
-            return $"{header}\n{string.Join("\n", player.Cards.Select(x => x.GetString(false, false, true)))}";
+            // no stat emoji: two full offers would pass the ~100 markdown elements Discord renders
+            return $"{header}\n{string.Join("\n", player.Cards.Select(x => x.GetString(false, false, true, hideStats: true)))}";
         }
 
         private async Task<bool> HandleReactionAsync(SessionContext context)

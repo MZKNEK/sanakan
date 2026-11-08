@@ -683,7 +683,7 @@ namespace Sanakan.Modules
                     {
                         Title = LotteryResultTitle(scalpels, ultimates),
                         Color = special ? LotterySpecialColor : LotteryWinColor,
-                        Description = $"{winner.Mention} wygrywa {Polish.Count(cardsIds.Count, "kartę", "karty", "kart")}:\n\n{string.Join("\n", cardsIds)}".TrimToLength(),
+                        Description = $"{winner.Mention} wygrywa {Polish.Count(cardsIds.Count, "kartę", "karty", "kart")}:\n\n{Moderator.JoinWithinLimit(cardsIds, 3500, "\n", LotteryCardsShown)}",
                     };
                     if (footer.Length > 0) embToSend.Footer = new EmbedFooterBuilder().WithText(footer);
                     msg = await SafeReplyAsync(embed: embToSend.Build());
@@ -723,6 +723,8 @@ namespace Sanakan.Modules
         internal static readonly Color LotterySpecialColor = new Color(232, 197, 71);
         internal static readonly Color LotteryNoWinnerColor = new Color(128, 132, 142);
         internal const string LotterySpecialMark = "🌟 ";
+        // about 5 markdown elements per card, Discord stops formatting after ~100 of them
+        internal const int LotteryCardsShown = 20;
 
         internal static string LotteryProgress(long progress, uint howMuch) => progress > -1 ? $"Loteria {progress + 1} z {howMuch}" : null;
 
