@@ -1700,7 +1700,7 @@ namespace Sanakan.Modules
                 }
 
                 await SafeAddReactionToMsg(Context.Message, new Emoji("👌"));
-                await todoChannel.SendMessageAsync(message.GetJumpUrl(), embed: _moderation.BuildTodo(message, Context.User as SocketGuildUser));
+                await todoChannel.SendMessageAsync("", embed: _moderation.BuildTodo(message, Context.User as SocketGuildUser, guild.Id, DateTimeOffset.Now));
             }
         }
 
@@ -1724,7 +1724,7 @@ namespace Sanakan.Modules
             }
 
             await SafeAddReactionToMsg(Context.Message, new Emoji("👌"));
-            await channel2Send.SendMessageAsync(message.GetJumpUrl(), embed: _moderation.BuildTodo(message, Context.User as SocketGuildUser));
+            await channel2Send.SendMessageAsync("", embed: _moderation.BuildQuote(message, Context.User as SocketGuildUser));
         }
 
         [Command("tchaos")]

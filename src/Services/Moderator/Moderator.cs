@@ -529,7 +529,26 @@ namespace Sanakan.Services
             return text.ToString();
         }
 
-        public Embed BuildTodo(IMessage message, SocketGuildUser who)
+        public Embed BuildTodo(IMessage message, SocketGuildUser who, ulong targetGuildId, DateTimeOffset now)
+        {
+            var embed = BuildForwarded(message, who, "📌 Todo", "Dodał")
+                .AddField("Kanał", ChannelReference(message.Channel, targetGuildId), true)
+                .AddField("Napisano", $"<t:{message.CreatedAt.ToUnixTimeSeconds()}:f>", true);
+
+            embed.Timestamp = now;
+            return embed.Build();
+        }
+
+        public Embed BuildQuote(IMessage message, SocketGuildUser who)
+            => BuildForwarded(message, who, $"💬 Cytat z #{message.Channel.Name}", "Przesłał").Build();
+
+        // a channel mention from another server shows up as "#unknown"
+        public static string ChannelReference(IChannel channel, ulong targetGuildId)
+            => channel is IGuildChannel guildChannel && guildChannel.GuildId != targetGuildId
+                ? $"#{channel.Name} ({guildChannel.Guild?.Name})"
+                : $"<#{channel.Id}>";
+
+        private EmbedBuilder BuildForwarded(IMessage message, SocketGuildUser who, string title, string byLabel)
         {
             string image = "";
             if (message.Attachments.Count > 0)
@@ -540,18 +559,24 @@ namespace Sanakan.Services
                     image = first.Url;
             }
 
+            var description = message.Content.TrimToLength();
+            if (string.IsNullOrWhiteSpace(description) && string.IsNullOrEmpty(image))
+                description = "*sam załącznik*";
+
             return new EmbedBuilder
             {
+                Title = title.TrimToLength(EmbedBuilder.MaxTitleLength),
+                Url = message.GetJumpUrl(),
                 Author = new EmbedAuthorBuilder().WithUser(message.Author),
-                Description = message.Content.TrimToLength(),
+                Description = description,
                 Color = EMType.Bot.Color(),
                 ImageUrl = image,
                 Footer = new EmbedFooterBuilder
                 {
                     IconUrl = who.GetUserOrDefaultAvatarUrl(),
-                    Text = $"Przez: {who.GetUserNickInGuild()}",
+                    Text = $"{byLabel}: {who.GetUserNickInGuild()}",
                 },
-            }.Build();
+            };
         }
 
         public async Task UnmuteUserAsync(SocketGuildUser user, SocketRole muteRole, SocketRole muteModRole, Database.DatabaseContext db)

@@ -133,6 +133,39 @@ namespace Artifacts
         }
 
         [Fact]
+        public void ChannelReference_NamesTheServerOnlyForAnotherServer()
+        {
+            var guild = new Mock<IGuild>();
+            guild.SetupGet(x => x.Name).Returns("Inny serwer");
+
+            var channel = new Mock<ITextChannel>();
+            channel.SetupGet(x => x.Id).Returns(200);
+            channel.SetupGet(x => x.Name).Returns("pomoc");
+            channel.SetupGet(x => x.GuildId).Returns(100);
+            channel.SetupGet(x => x.Guild).Returns(guild.Object);
+
+            Assert.Equal("<#200>", Moderator.ChannelReference(channel.Object, 100));
+            Assert.Equal("#pomoc (Inny serwer)", Moderator.ChannelReference(channel.Object, 101));
+        }
+
+        [Theory]
+        [InlineData(DeletedLog.VoiceActionType.Join, null, 5ul, "🎙️ Dołączył do <#5>")]
+        [InlineData(DeletedLog.VoiceActionType.Left, 4ul, null, "📤 Wyszedł z <#4>")]
+        [InlineData(DeletedLog.VoiceActionType.Changed, 4ul, 5ul, "🔀 Przeszedł z <#4> na <#5>")]
+        public void VoiceText_MentionsTheChannels(DeletedLog.VoiceActionType action, ulong? oldChannel, ulong? newChannel, string expected)
+        {
+            Assert.Equal(expected, DeletedLog.VoiceText(action, oldChannel, newChannel));
+        }
+
+        [Fact]
+        public void SupervisionStatus_ShowsTheState()
+        {
+            Assert.Equal("🛡️ Nadzór na tym kanale jest **aktywny**.", Sanakan.Services.Supervisor.Supervisor.SupervisionStatus(true, false).Description);
+            Assert.Equal("🛡️ Nadzór na tym kanale jest **nieaktywny**.", Sanakan.Services.Supervisor.Supervisor.SupervisionStatus(false, false).Description);
+            Assert.Contains("tymczasowo włączony", Sanakan.Services.Supervisor.Supervisor.SupervisionStatus(true, true).Description);
+        }
+
+        [Fact]
         public void DeletedLog_CountsAttachmentsOnlyWhenThereAreAny()
         {
             var now = Written.AddMinutes(17);

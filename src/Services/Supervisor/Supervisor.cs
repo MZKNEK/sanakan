@@ -171,19 +171,26 @@ namespace Sanakan.Services.Supervisor
                         channels.Add(message.Channel.Id);
                     }
 
-                    await message.Channel.SendMessageAsync("Nadzór został tymczasowo aktywowany na tym kanale (do restartu bota).");
+                    await message.Channel.SendMessageAsync("", embed: SupervisionStatus(true, true));
                     return true;
                 }
 
                 var isTemporary = await IsTemporarySupervisionActiveAsync(user.Guild.Id, message.Channel.Id);
                 var isActive = !isBlacklisted && (isTemporary ||
                     (gConfig.Supervision && !gConfig.ChannelsWithoutSupervision.Any(x => x.Channel == message.Channel.Id)));
-                var status = isActive ? "aktywny" : "nieaktywny";
-
-                await message.Channel.SendMessageAsync($"Nadzór na tym kanale jest {status}.");
+                await message.Channel.SendMessageAsync("", embed: SupervisionStatus(isActive, false));
                 return true;
             }
         }
+
+        public static Embed SupervisionStatus(bool active, bool temporarilyEnabled)
+            => new EmbedBuilder
+            {
+                Color = active ? new Color(59, 165, 93) : new Color(128, 132, 142),
+                Description = temporarilyEnabled
+                    ? "🛡️ Nadzór został tymczasowo włączony na tym kanale, do restartu bota."
+                    : $"🛡️ Nadzór na tym kanale jest **{(active ? "aktywny" : "nieaktywny")}**.",
+            }.Build();
 
         private async Task<bool> IsTemporarySupervisionActiveAsync(ulong guildId, ulong channelId)
         {

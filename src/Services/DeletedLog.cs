@@ -20,7 +20,7 @@ namespace Sanakan.Services
         private IConfig _config;
         private ILogger _logger;
 
-        private enum VoiceActionType
+        public enum VoiceActionType
         {
             Join, Left, Changed
         }
@@ -141,33 +141,33 @@ namespace Sanakan.Services
                 var ch = guild.GetTextChannel(config.LogChannel);
                 if (ch == null) return;
 
-                await ch.SendMessageAsync("", embed: BuildVoiceMessage(user, action, oldChannel?.Name ?? "??", newChannel?.Name ?? "??"));
+                await ch.SendMessageAsync("", embed: BuildVoiceMessage(user, action, oldChannel?.Id, newChannel?.Id));
             }
         }
 
-        private Embed BuildVoiceMessage(SocketUser user, VoiceActionType action, string oldChannel, string newChannel)
-        {
-            var color = action switch
+        private static Embed BuildVoiceMessage(IUser user, VoiceActionType action, ulong? oldChannel, ulong? newChannel)
+            => new EmbedBuilder
             {
-                VoiceActionType.Join => EMType.Success.Color(),
-                VoiceActionType.Left => EMType.Error.Color(),
-                _ => EMType.Bot.Color()
-            };
-
-            var text = action switch
-            {
-                VoiceActionType.Left => $"[VA] Opuścił kanał: {oldChannel}",
-                VoiceActionType.Join => $"[VA] Dołączył do kanału: {newChannel}",
-                _ => $"[VA] Zmienił kanał z: {oldChannel} na: {newChannel}"
-            };
-
-            return new EmbedBuilder
-            {
-                Color = color,
+                Color = action switch
+                {
+                    VoiceActionType.Join => JoinedColor,
+                    VoiceActionType.Left => DeletedColor,
+                    _ => EditedColor
+                },
                 Author = new EmbedAuthorBuilder().WithUser(user, true),
-                Description = text,
+                Description = VoiceText(action, oldChannel, newChannel),
             }.Build();
-        }
+
+        public static string VoiceText(VoiceActionType action, ulong? oldChannel, ulong? newChannel) => action switch
+        {
+            VoiceActionType.Left => $"📤 Wyszedł z {ChannelMention(oldChannel)}",
+            VoiceActionType.Join => $"🎙️ Dołączył do {ChannelMention(newChannel)}",
+            _ => $"🔀 Przeszedł z {ChannelMention(oldChannel)} na {ChannelMention(newChannel)}"
+        };
+
+        private static string ChannelMention(ulong? id) => id.HasValue ? $"<#{id.Value}>" : "??";
+
+        private static readonly Color JoinedColor = new Color(59, 165, 93);
 
         private async Task LogMessageAsync(SocketGuildChannel channel, IMessage oldMessage, IMessage newMessage = null)
         {
