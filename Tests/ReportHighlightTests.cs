@@ -154,13 +154,6 @@ namespace Artifacts
         }
 
         [Fact]
-        public void AutoPenaltyLabel_NamesThePenalty()
-        {
-            Assert.Equal("🤖 Automatyczny ban", Moderator.AutoPenaltyLabel(PenaltyType.Ban));
-            Assert.Equal("🤖 Automatyczny mute", Moderator.AutoPenaltyLabel(PenaltyType.Mute));
-        }
-
-        [Fact]
         public void MemoryReport_ShowsProcessGcAndCaches()
         {
             MemoryReport.Sample();

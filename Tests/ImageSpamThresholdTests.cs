@@ -13,6 +13,7 @@ namespace Artifacts
             var time = new FixedTime();
             var entity = new SupervisorEntity(time);
             var penalty = ban ? "ban" : "mute";
+            var counted = new[] { "3 scamowe obrazki", "6 scamowych obrazków", "9 scamowych obrazków", "12 scamowych obrazków" };
 
             for (var message = 1; message <= 4; message++)
             {
@@ -23,7 +24,7 @@ namespace Artifacts
                 Assert.False(decision.ShouldWarn);
                 Assert.Equal(message, decision.OversizedMessages);
                 Assert.Equal(message * 3, decision.ScamImages);
-                Assert.Equal($"Automatyczny {penalty}: scamowe obrazki - rozpoznano {message * 3} scamowych obrazków w ciągu 5 minut.",
+                Assert.Equal($"Automatyczny {penalty}: scamowe obrazki - rozpoznano {counted[message - 1]} w ciągu 5 minut.",
                     decision.GetPenaltyReason(ban));
                 time.Value = time.Value.AddSeconds(3);
             }
@@ -84,7 +85,7 @@ namespace Artifacts
             Assert.True(third.ShouldPunish);
             Assert.False(third.ShouldWarn);
             var penalty = ban ? "ban" : "mute";
-            Assert.Equal($"Automatyczny {penalty}: spam obrazkami - wysłano 3 wiadomości zawierających więcej niż trzy obrazki w ciągu 2 minut.",
+            Assert.Equal($"Automatyczny {penalty}: spam obrazkami - wysłano 3 wiadomości zawierające więcej niż trzy obrazki w ciągu 2 minut.",
                 third.GetPenaltyReason(ban));
         }
 
@@ -105,7 +106,7 @@ namespace Artifacts
             var secondScam = entity.TrackImageSpam(false, 1);
             Assert.True(secondScam.ShouldPunish);
             Assert.Equal(2, secondScam.ScamImages);
-            Assert.Equal("Automatyczny mute: scamowe obrazki - rozpoznano 2 scamowych obrazków w ciągu 5 minut.",
+            Assert.Equal("Automatyczny mute: scamowe obrazki - rozpoznano 2 scamowe obrazki w ciągu 5 minut.",
                 secondScam.GetPenaltyReason(false));
         }
 

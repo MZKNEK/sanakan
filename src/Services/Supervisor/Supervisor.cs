@@ -203,6 +203,7 @@ namespace Sanakan.Services.Supervisor
             bool deleteMessage = false;
             bool sendImageScamWarning = false;
             string penaltyReason = null;
+            string imagePenaltyReason = null;
             var hasTooManyImages = HasMoreThanThreeImages(message) && !IsImageSpamExempt(message);
 
             using (var db = new Database.DatabaseContext(_config))
@@ -330,7 +331,8 @@ namespace Sanakan.Services.Supervisor
 
                     if (action == Action.Mute || action == Action.Ban)
                     {
-                        penaltyReason = imageSpam.GetPenaltyReason(action == Action.Ban) ??
+                        imagePenaltyReason = imageSpam.GetPenaltyReason(action == Action.Ban);
+                        penaltyReason = imagePenaltyReason ??
                             GetPenaltyReason(action, messageContent, hasSuspiciousUrl,
                                 hasNonWhitelistedUrl, susspect.TotalMessages, specifiedMessages);
                     }
@@ -343,6 +345,9 @@ namespace Sanakan.Services.Supervisor
                             $"action={action} deleted={deleteMessage} url={image.Url} hash={ScamImageStore.FormatHash(image.Hash)} " +
                             $"closest={ScamImageStore.FormatHash(image.ClosestHash)} distance={image.Distance}");
                 }
+
+                if (imagePenaltyReason != null)
+                    _logger.Log($"ScamImage: {imagePenaltyReason} msg={message.GetJumpUrl()} author={user.Id}");
             }
 
             if (deleteMessage)

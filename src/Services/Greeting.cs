@@ -9,6 +9,7 @@ using Discord;
 using Discord.WebSocket;
 using Microsoft.EntityFrameworkCore;
 using Sanakan.Config;
+using Sanakan.Database.Models.Management;
 using Sanakan.Extensions;
 using Sanakan.Services.Executor;
 using Sanakan.Services.Time;
@@ -71,19 +72,35 @@ namespace Sanakan.Services
                     _logger.LogError($"Greeting: fetching ban reason for u{user.Id}: {ex}");
                 }
 
+                if (Moderator.IsAutomaticReason(banReason))
+                {
+                    var embed = new EmbedBuilder
+                    {
+                        Title = PenaltyFormat.Title(PenaltyType.Ban, true),
+                        Color = PenaltyFormat.GetColor(PenaltyType.Ban),
+                        Author = new EmbedAuthorBuilder().WithUser(user),
+                        Description = $"**Powód:** {PenaltyFormat.Reason(banReason)}".TrimToLength(2500),
+                        Footer = new EmbedFooterBuilder().WithText(PenaltyFormat.Footer(Moderator.AutoAuthor, true)),
+                        Timestamp = new DateTimeOffset(_time.Now()),
+                    }
+                    .AddField("Użytkownik", PenaltyFormat.User(user), true)
+                    .AddField("Czas", "na stałe", true);
+
+                    await notifCh.SendMessageAsync("", embed: embed.Build());
+                    return;
+                }
+
+                // the ban command has already announced this ban
+                var since = _time.Now().AddMinutes(-5);
+                if (await db.Penalties.AsQueryable().AnyAsync(x => x.User == user.Id && x.Guild == guild.Id
+                    && x.Type == PenaltyType.Ban && x.StartDate >= since))
+                    return;
+
                 var banMessage = string.IsNullOrWhiteSpace(banReason)
                     ? "Poleciał, szczegółów raczej brak."
                     : $"Poleciał. Powód: {banReason}";
 
-                if (!Moderator.IsAutomaticReason(banReason))
-                {
-                    await notifCh.SendMessageAsync("", embed: banMessage.ToEmbedMessage(EMType.Error).WithUser(user, true).Build());
-                    return;
-                }
-
-                var label = Moderator.AutoPenaltyLabel(Database.Models.Management.PenaltyType.Ban);
-                await notifCh.SendMessageAsync($"**{label}**",
-                    embed: banMessage.ToEmbedMessage(EMType.Bot).WithTitle(label).WithUser(user, true).Build());
+                await notifCh.SendMessageAsync("", embed: banMessage.ToEmbedMessage(EMType.Error).WithUser(user, true).Build());
             }
         }
 

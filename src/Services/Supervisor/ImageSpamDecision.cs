@@ -23,10 +23,13 @@ namespace Sanakan.Services.Supervisor
         {
             var penalty = ban ? "ban" : "mute";
             if (ScamImages >= 2)
-                return $"Automatyczny {penalty}: scamowe obrazki - rozpoznano {ScamImages} scamowych obrazków w ciągu {ScamWindowMinutes} minut.";
+                return $"Automatyczny {penalty}: scamowe obrazki - rozpoznano {ScamImages} "
+                    + $"{PenaltyFormat.Plural(ScamImages, "scamowy obrazek", "scamowe obrazki", "scamowych obrazków")} w ciągu {ScamWindowMinutes} minut.";
 
             if (OversizedMessages >= 3)
-                return $"Automatyczny {penalty}: spam obrazkami - wysłano {OversizedMessages} wiadomości zawierających więcej niż trzy obrazki w ciągu {SpamWindowMinutes} minut.";
+                return $"Automatyczny {penalty}: spam obrazkami - wysłano {OversizedMessages} "
+                    + $"{PenaltyFormat.Plural(OversizedMessages, "wiadomość zawierającą", "wiadomości zawierające", "wiadomości zawierających")} "
+                    + $"więcej niż trzy obrazki w ciągu {SpamWindowMinutes} minut.";
 
             return null;
         }

@@ -41,9 +41,6 @@ namespace Sanakan.Services
         public static bool IsAutomaticReason(string reason)
             => reason?.StartsWith(AutoReasonPrefix, StringComparison.Ordinal) ?? false;
 
-        public static string AutoPenaltyLabel(PenaltyType type)
-            => $"🤖 Automatyczny {(type == PenaltyType.Ban ? "ban" : "mute")}";
-
         private DiscordSocketClient _client;
         private ImageProcessing _img;
         private ISystemTime _time;
@@ -438,62 +435,47 @@ namespace Sanakan.Services
             ExtendedPenaltyInfo exInfo, string byWho = AutoAuthor)
         {
             var automatic = byWho == AutoAuthor;
+            var info = exInfo.Info;
+            var reason = PenaltyFormat.Reason(info.Reason);
+            var total = PenaltyFormat.Duration(info.DurationInHours);
+            var end = PenaltyFormat.End(info);
+
+            var duration = total;
+            if (exInfo.IsBonusDuration())
+                duration += $"\n({PenaltyFormat.Duration(exInfo.BaseDuration)} + {PenaltyFormat.Duration(exInfo.BonusDuration)} dodatku)";
+
             var embed = new EmbedBuilder
             {
-                Title = automatic ? AutoPenaltyLabel(exInfo.Info.Type) : null,
-                Color = automatic ? EMType.Bot.Color() : exInfo.GetColor(),
-                Footer = new EmbedFooterBuilder().WithText($"Przez: {byWho}"),
-                Description = $"Powód: {exInfo.Info.Reason}".TrimToLength(2500),
+                Title = PenaltyFormat.Title(info.Type, automatic),
+                Color = PenaltyFormat.GetColor(info.Type),
                 Author = new EmbedAuthorBuilder().WithUser(user),
-                Fields = new List<EmbedFieldBuilder>
-                {
-                    new EmbedFieldBuilder
-                    {
-                        IsInline = true,
-                        Name = "UserId:",
-                        Value = $"{user.Id}",
-                    },
-                    new EmbedFieldBuilder
-                    {
-                        IsInline = true,
-                        Name = "Typ:",
-                        Value = exInfo.Info.Type,
-                    },
-                    new EmbedFieldBuilder
-                    {
-                        IsInline = true,
-                        Name = "Kiedy:",
-                        Value = $"{exInfo.GetTimeAsString()}"
-                    },
-                    new EmbedFieldBuilder
-                    {
-                        IsInline = true,
-                        Name = "Na ile:",
-                        Value = $"{exInfo.GetTotalDurationAsString()}",
-                    }
-                }
-            };
-
-            if (exInfo.IsBonusDuration())
-            {
-                embed.AddField(new EmbedFieldBuilder
-                    {
-                        IsInline = true,
-                        Name = "Bonus:",
-                        Value = $"{exInfo.GetBonusDurationAsString()}",
-                    });
+                Description = $"**Powód:** {reason}".TrimToLength(2500),
+                Footer = new EmbedFooterBuilder().WithText(PenaltyFormat.Footer(byWho, automatic)),
+                Timestamp = new DateTimeOffset(info.StartDate),
             }
+            .AddField("Użytkownik", PenaltyFormat.User(user), true)
+            .AddField("Czas", duration, true)
+            .AddField("Koniec", $"{PenaltyFormat.Timestamp(end, 'f')}\n{PenaltyFormat.Timestamp(end, 'R')}", true);
 
-            // plain text too, because Discord search does not look inside embeds
             if (channel != null)
-                await channel.SendMessageAsync(automatic ? $"**{AutoPenaltyLabel(exInfo.Info.Type)}**" : "", embed: embed.Build());
+                await channel.SendMessageAsync("", embed: embed.Build());
 
             try
             {
                 var dm = await user.CreateDMChannelAsync();
                 if (dm != null)
                 {
-                    await dm.SendMessageAsync($"Elo! Zostałeś ukarany {(exInfo.Info.Type == PenaltyType.Ban ? "banem" : "mutem")} na {exInfo.GetTotalDurationAsString()}.\n\nPodany powód: {exInfo.Info.Reason}\n\nPozdrawiam serdecznie!".TrimToLength());
+                    var dmEmbed = new EmbedBuilder
+                    {
+                        Title = PenaltyFormat.DmTitle(info.Type),
+                        Color = PenaltyFormat.GetColor(info.Type),
+                        Description = $"Na serwerze **{Format.Sanitize(user.Guild.Name)}** na **{total}**.",
+                        Footer = new EmbedFooterBuilder().WithText("Pozdrawiam serdecznie!"),
+                    }
+                    .AddField("Powód", PenaltyFormat.Quote(reason).TrimToLength(1000))
+                    .AddField("Koniec", $"{PenaltyFormat.Timestamp(end, 'f')} ({PenaltyFormat.Timestamp(end, 'R')})");
+
+                    await dm.SendMessageAsync("", embed: dmEmbed.Build());
                     await dm.CloseAsync();
                 }
             }
