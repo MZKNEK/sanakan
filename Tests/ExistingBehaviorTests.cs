@@ -90,6 +90,17 @@ namespace Artifacts
         }
 
         [Fact]
+        public void ExpeditionMoreItems_IncludesBothEnds()
+        {
+            var events = (Events)System.Runtime.Serialization.FormatterServices.GetUninitializedObject(typeof(Events));
+            var rolls = Enumerable.Range(0, 5000).Select(_ => events.GetMoreItems(EventType.MoreItems)).ToList();
+
+            Assert.Equal(2, rolls.Min());
+            Assert.Equal(22, rolls.Max());
+            Assert.Equal(0, events.GetMoreItems(EventType.None));
+        }
+
+        [Fact]
         public void NormalShop_SellsGlassesLast_SoOlderItemNumbersStay()
         {
             var items = NewWaifu().GetItemsWithCost();

@@ -68,6 +68,8 @@ namespace Sanakan.Services
 
         public static int GetRandomValue(int min, int max) => RandomNumberGenerator.GetInt32(min, max);
 
+        public static int GetRandomValueInclusive(int min, int max) => GetRandomValue(min, max + 1);
+
         public static bool TakeATry(double percent) => ((double) GetRandomValue(10000) / 100) < percent;
 
         public static T GetOneRandomFrom<T>(IEnumerable<T> enumerable)

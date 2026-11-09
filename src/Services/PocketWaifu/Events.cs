@@ -175,7 +175,7 @@ namespace Sanakan.Services.PocketWaifu
 
         public bool ExecuteEvent(EventType e, User user, Card card, ref string msg)
         {
-            var aVal = Fun.GetRandomValue(1, 4);
+            var aVal = Fun.GetRandomValueInclusive(1, 4);
             msg += "**Wydarzenie**: ";
 
             switch (e)
@@ -215,7 +215,7 @@ namespace Sanakan.Services.PocketWaifu
 
                 case EventType.MoreExp:
                 {
-                    var addExp = Fun.GetRandomValue(1, 8);
+                    var addExp = Fun.GetRandomValueInclusive(1, 8);
                     card.ExpCnt += addExp;
 
                     msg += $"Dodatkowe punkty doświadczenia. (+{addExp} exp)\n";
@@ -289,7 +289,7 @@ namespace Sanakan.Services.PocketWaifu
 
         public int GetMoreItems(EventType e) => e switch
         {
-            EventType.MoreItems => Fun.GetRandomValue(2, 22),
+            EventType.MoreItems => Fun.GetRandomValueInclusive(2, 22),
             _ => 0,
         };
     }

@@ -157,8 +157,7 @@ namespace Sanakan.Services.PocketWaifu
             return newRewards;
         }
 
-        // both ends included, Fun.GetRandomValue leaves the upper one out
-        public static int RollCount(int min, int max) => Fun.GetRandomValue(min, max + 1);
+        public static int RollCount(int min, int max) => Fun.GetRandomValueInclusive(min, max);
 
         // about a quarter of what a hardcore expedition drops, so the lottery adds to it without replacing it
         public const int MinPills = 5;
