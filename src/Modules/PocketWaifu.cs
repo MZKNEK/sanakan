@@ -688,7 +688,7 @@ namespace Sanakan.Modules
 
                 if (numberOfPack == 0)
                 {
-                    await SafeReplyAsync("", embed: _waifu.GetBoosterPackList(Context.User, bUser.GameDeck.BoosterPacks.OrderBy(x => x.Id).ToList()));
+                    await SafeReplyAsync("", embed: _waifu.GetBoosterPackList(Context.User, Waifu.OrderPacksForDiscord(bUser.GameDeck.BoosterPacks)));
                     return;
                 }
 
@@ -710,7 +710,7 @@ namespace Sanakan.Modules
                     return;
                 }
 
-                var packs = bUser.GameDeck.BoosterPacks.OrderBy(x => x.Id).ToList().GetRange(numberOfPack - 1, count);
+                var packs = Waifu.OrderPacksForDiscord(bUser.GameDeck.BoosterPacks).GetRange(numberOfPack - 1, count);
                 var cardsCount = packs.Sum(x => x.CardCnt);
 
                 if (cardsCount > 20)

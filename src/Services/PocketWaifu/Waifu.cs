@@ -1726,7 +1726,18 @@ namespace Sanakan.Services.PocketWaifu
         private void AppendMessage(List<Embed> embeds, MessageContent currentContent, string nextPart) =>
             _helper.AppendMessage(embeds, currentContent, nextPart);
 
-        public Embed GetBoosterPackList(SocketUser user, List<BoosterPack> packs)
+        // on Discord packs are numbered with the same names together, groups in the order their first pack came;
+        // the list and the opening command must both use it so the numbers match
+        public static List<BoosterPack> OrderPacksForDiscord(IEnumerable<BoosterPack> packs)
+            => packs.OrderBy(x => x.Id).GroupBy(x => x.Name).SelectMany(x => x).ToList();
+
+        public Embed GetBoosterPackList(SocketUser user, List<BoosterPack> packs) => new EmbedBuilder
+        {
+            Color = EMType.Info.Color(),
+            Description = $"{user.Mention} twoje pakiety:\n\n{Moderator.JoinWithinLimit(GetBoosterPackLines(packs), 3000, "\n")}"
+        }.Build();
+
+        public static List<string> GetBoosterPackLines(List<BoosterPack> packs)
         {
             int groupCnt = 0;
             int startGroup = 1;
@@ -1750,12 +1761,7 @@ namespace Sanakan.Services.PocketWaifu
                 }
                 else ++groupCnt;
             }
-
-            return new EmbedBuilder
-            {
-                Color = EMType.Info.Color(),
-                Description = $"{user.Mention} twoje pakiety:\n\n{Moderator.JoinWithinLimit(packLines, 3000, "\n")}"
-            }.Build();
+            return packLines;
         }
 
         public string NormalizeItemFilter(string filter)

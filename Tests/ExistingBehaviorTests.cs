@@ -100,6 +100,30 @@ namespace Artifacts
             Assert.Equal(0, events.GetMoreItems(EventType.None));
         }
 
+        private static List<BoosterPack> MixedPacks() => new[] { "Aktywność", "Wyprawa", "Aktywność", "Loteria", "Wyprawa", "Aktywność" }
+            .Select((name, i) => new BoosterPack { Id = (ulong)(10 - i), Name = name }).Reverse().ToList();
+
+        [Fact]
+        public void DiscordPackList_GroupsSameNames_InTheOrderTheyFirstCame()
+        {
+            var ordered = Waifu.OrderPacksForDiscord(MixedPacks());
+
+            Assert.Equal(new[] { "Aktywność", "Aktywność", "Aktywność", "Wyprawa", "Wyprawa", "Loteria" }, ordered.Select(x => x.Name));
+            Assert.Equal(new[] { "**[1-3]** Aktywność", "**[4-5]** Wyprawa", "**[6]** Loteria" }, Waifu.GetBoosterPackLines(ordered));
+        }
+
+        [Fact]
+        public void DiscordPackOpening_UsesTheSameNumbersAsTheList()
+        {
+            var ordered = Waifu.OrderPacksForDiscord(MixedPacks());
+
+            // "s.pakiet 4 2" opens both expedition packs, the oldest one first
+            var opened = ordered.GetRange(4 - 1, 2);
+            Assert.All(opened, x => Assert.Equal("Wyprawa", x.Name));
+            Assert.True(opened[0].Id < opened[1].Id);
+            Assert.Equal(MixedPacks().Min(x => x.Id), ordered[0].Id);
+        }
+
         [Fact]
         public void NormalShop_SellsGlassesLast_SoOlderItemNumbersStay()
         {
