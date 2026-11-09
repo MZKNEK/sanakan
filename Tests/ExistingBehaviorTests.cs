@@ -69,6 +69,37 @@ namespace Artifacts
         }
 
         [Fact]
+        public void Lottery_GivesTenTimesLessTcThanCt()
+        {
+            Assert.Equal(new[] { 5, 10, 15, 20, 30 }, Lottery.GetTcRewardChances().Select(x => x.Item1).OrderBy(x => x));
+            Assert.Equal(new[] { 50, 100, 150, 200, 300 }, Lottery.GetMoneyRewardChances().Select(x => x.Item1).OrderBy(x => x));
+            Assert.Equal(Lottery.GetMoneyRewardChances().OrderBy(x => x.Item1).Select(x => x.Item2), Lottery.GetTcRewardChances().OrderBy(x => x.Item1).Select(x => x.Item2));
+        }
+
+        [Fact]
+        public void LotteryCounts_IncludeBothEnds()
+        {
+            var rolls = Enumerable.Range(0, 3000).Select(_ => Lottery.RollCount(1, 5)).ToList();
+
+            Assert.Equal(1, rolls.Min());
+            Assert.Equal(5, rolls.Max());
+            Assert.Equal(10, Lottery.MaxFigureParts(Quality.Delta));
+            Assert.Equal(5, Lottery.MaxFigureParts(Quality.Jota));
+            Assert.Equal(2, Lottery.MaxFigureParts(Quality.Omega));
+            Assert.Equal((5, 15), (Lottery.MinPills, Lottery.MaxPills));
+        }
+
+        [Fact]
+        public void NormalShop_SellsGlassesLast_SoOlderItemNumbersStay()
+        {
+            var items = NewWaifu().GetItemsWithCost();
+
+            Assert.Equal(ItemType.ChangeBorderVariant, items[^2].Item.Type);
+            Assert.Equal(ItemType.IncreasePrecision, items[^1].Item.Type);
+            Assert.Equal(99, items[^1].Cost);
+        }
+
+        [Fact]
         public async Task ExecuteShop_ListInfoAndInvalidInput_DoNotTouchDatabase()
         {
             var waifu = NewWaifu();

@@ -172,6 +172,11 @@ namespace Sanakan.Modules
                 break;
 
                 case LotteryReward.TC:
+                {
+                    chances = Lottery.GetTcRewardChances().Select(x => (x.Item1.ToString(), x.Item2)).OrderByDescending(x => x.Item2);
+                }
+                break;
+
                 case LotteryReward.CT:
                 {
                     chances = Lottery.GetMoneyRewardChances().Select(x => (x.Item1.ToString(), x.Item2)).OrderByDescending(x => x.Item2);

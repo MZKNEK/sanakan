@@ -108,6 +108,16 @@ namespace Sanakan.Services.PocketWaifu
             (300,   1),
         }.ToRealList();
 
+        // TC is the premium currency, so it comes in much smaller amounts than CT
+        private static List<int> _tcRewards = new List<(int, int)>
+        {
+            (5,     60),
+            (10,    40),
+            (15,    10),
+            (20,    5),
+            (30,    1),
+        }.ToRealList();
+
         public struct LotteryRewardInfo
         {
             public string Text;
@@ -147,10 +157,20 @@ namespace Sanakan.Services.PocketWaifu
             return newRewards;
         }
 
+        // both ends included, Fun.GetRandomValue leaves the upper one out
+        public static int RollCount(int min, int max) => Fun.GetRandomValue(min, max + 1);
+
+        // about a quarter of what a hardcore expedition drops, so the lottery adds to it without replacing it
+        public const int MinPills = 5;
+        public const int MaxPills = 15;
+
+        public static int MaxFigureParts(Quality quality) => quality > Quality.Jota ? 2 : quality > Quality.Delta ? 5 : 10;
+
         public static List<(Quality, float)> GetPartQualityChances() => _figurePartsQuality.GetChances();
         public static List<(ItemType, float)> GetPartNSChances() => _figurePartsNoSkeleton.GetChances();
         public static List<(LotteryReward, float)> GetRewardChances() => _rewardsPool.GetChances();
         public static List<(int, float)> GetMoneyRewardChances() => _moneyRewards.GetChances();
+        public static List<(int, float)> GetTcRewardChances() => _tcRewards.GetChances();
         public static List<(ItemType, float)> GetPartChances() => _figureParts.GetChances();
         public static List<(ItemType, float)> GetPillsChances() => _pills.GetChances();
         public static List<(ItemType, float)> GetFoodChances() => _food.GetChances();
@@ -224,7 +244,7 @@ namespace Sanakan.Services.PocketWaifu
 
                 case LotteryReward.TC:
                 {
-                    var tcCnt = Fun.GetOneRandomFrom(_moneyRewards);
+                    var tcCnt = Fun.GetOneRandomFrom(_tcRewards);
                     user.TcCnt += tcCnt;
 
                     rewardInfo.Count = tcCnt;
@@ -235,7 +255,7 @@ namespace Sanakan.Services.PocketWaifu
 
                 case LotteryReward.WaifuFood:
                 {
-                    var cnt = Fun.GetRandomValue(5, 20);
+                    var cnt = RollCount(5, 20);
                     var food = Fun.GetOneRandomFrom(_food).ToItem(cnt);
                     user.GameDeck.AddItem(food);
 
@@ -258,13 +278,10 @@ namespace Sanakan.Services.PocketWaifu
 
                 case LotteryReward.FigurePart:
                 {
-                    var max = 10;
                     var pool = _figureParts;
                     var quality = Fun.GetOneRandomFrom(_figurePartsQuality);
-                    if (quality > Quality.Jota) max = 2;
-                    else if (quality > Quality.Delta) max = 5;
                     if (quality > Quality.Lambda) pool = _figurePartsNoSkeleton;
-                    var cnt = Fun.GetRandomValue(1, max);
+                    var cnt = RollCount(1, MaxFigureParts(quality));
                     var part = Fun.GetOneRandomFrom(pool).ToItem(cnt, quality);
                     user.GameDeck.AddItem(part);
 
@@ -276,7 +293,7 @@ namespace Sanakan.Services.PocketWaifu
 
                 case LotteryReward.RandomPill:
                 {
-                    var cnt = Fun.GetRandomValue(1, 5);
+                    var cnt = RollCount(MinPills, MaxPills);
                     var pill = Fun.GetOneRandomFrom(_pills).ToItem(cnt);
                     user.GameDeck.AddItem(pill);
 

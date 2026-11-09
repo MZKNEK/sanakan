@@ -694,6 +694,7 @@ namespace Sanakan.Services.PocketWaifu
                 new ItemWithCost(444,   ItemType.GiveTagSlot.ToItem()),
                 new ItemWithCost(99999, ItemType.NotAnItem.ToItem()),
                 new ItemWithCost(55,    ItemType.ChangeBorderVariant.ToItem()),
+                new ItemWithCost(99,    ItemType.IncreasePrecision.ToItem()),
             };
         }
 
@@ -1719,7 +1720,7 @@ namespace Sanakan.Services.PocketWaifu
             if (!shindenUrls || card?.GameDeck?.User?.Shinden == 0 || card?.GameDeckId == 1)
                 return $"{user?.GetUserNickInGuild() ?? "????"}{mark}: {card.GetIdWithUrl()} **{card.GetCardRealRarity()}** {card.GetStatusIcons(_tags)}\n";
 
-            return $"[{user?.GetUserNickInGuild() ?? "????"}](https://shinden.pl/user/{card.GameDeck.User.Shinden}){mark}: {card.GetIdWithUrl()} **{card.GetCardRealRarity()}** {card.GetStatusIcons(_tags)}\n";
+            return $"[{user?.GetUserNickInGuild() ?? "????"}]({card.GameDeck.User.GetAlterProfileUrl()}){mark}:{card.GetIdWithUrl()} **{card.GetCardRealRarity()}** {card.GetStatusIcons(_tags)}\n";
         }
 
         private void AppendMessage(List<Embed> embeds, MessageContent currentContent, string nextPart) =>
@@ -2135,7 +2136,7 @@ namespace Sanakan.Services.PocketWaifu
         {
             return (deck.User.Shinden == 0 || deck.User.Id == 1)
             ? (guild.GetUser(deck.UserId) ?? _client.GetUser(deck.UserId) ?? await _client.GetUserAsync(deck.UserId)).GetUserNickInGuild()
-            : $"[{(guild.GetUser(deck.UserId) ?? _client.GetUser(deck.UserId) ?? await _client.GetUserAsync(deck.UserId)).GetUserNickInGuild()}](https://shinden.pl/user/{deck.User.Shinden})";
+            : $"[{(guild.GetUser(deck.UserId) ?? _client.GetUser(deck.UserId) ?? await _client.GetUserAsync(deck.UserId)).GetUserNickInGuild()}]({deck.User.GetAlterProfileUrl()})";
         }
 
         public Embed GetShopView(ItemWithCost[] items, string name = "Sklepik", string currency = "TC")

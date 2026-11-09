@@ -181,7 +181,7 @@ namespace Sanakan.Modules
 
                 var link = new Discord.ComponentBuilder()
                     .WithButton("Shinden", style: Discord.ButtonStyle.Link, url: Shden.Url.GetProfileURL(botUser.Shinden))
-                    .WithButton("Alter", style: Discord.ButtonStyle.Link, url: $"https://alter.sanakan.pl/user/{botUser.Shinden}/profile")
+                    .WithButton("Alter", style: Discord.ButtonStyle.Link, url: botUser.GetAlterProfileUrl())
                     .WithButton("Lista anime", style: Discord.ButtonStyle.Link, url: Shden.Url.GetAnimeListURL(botUser.Shinden))
                     .WithButton("Lista mangi", style: Discord.ButtonStyle.Link, url: Shden.Url.GetMangaListURL(botUser.Shinden))
                     .Build();

@@ -544,6 +544,8 @@ namespace Sanakan.Extensions
             return false;
         }
 
+        public static string GetAlterProfileUrl(this User user) => $"https://alter.sanakan.pl/user/{user.Shinden}/profile";
+
         public static double GetDeckPower(this GameDeck deck) => deck.DeckPower;
 
         public static bool NeedToSetDeckAgain(this GameDeck deck) => deck.DeckPower == -1;

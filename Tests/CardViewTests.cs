@@ -103,6 +103,10 @@ namespace Artifacts
         }
 
         [Fact]
+        public void OwnerNick_LinksToTheAlterProfile()
+            => Assert.Equal("https://alter.sanakan.pl/user/136/profile", new User { Shinden = 136 }.GetAlterProfileUrl());
+
+        [Fact]
         public async Task HiddenCommands_AreMarked()
         {
             var module = await new CommandService().AddModuleAsync<HiddenCommandModule>(null);
