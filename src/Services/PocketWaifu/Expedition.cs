@@ -578,7 +578,7 @@ namespace Sanakan.Services.PocketWaifu
         {
             expedition = expedition == CardExpedition.None ? card.Expedition : expedition;
 
-            var qualityMod = card.Quality.Fake(card.BorderOverflow) switch
+            var qualityMod = card.GetEffectiveQuality() switch
             {
                 Quality.Omega   => 0.51,
                 Quality.Sigma   => 0.55,
@@ -681,7 +681,7 @@ namespace Sanakan.Services.PocketWaifu
 
                 case CardExpedition.UltimateHard:
                 case CardExpedition.UltimateHardcore:
-                    fuel *= ((int)card.Quality.Fake(card.BorderOverflow) * 0.7) + 1.4;
+                    fuel *= (card.GetUltimateValue() * 0.7) + 1.4;
                     costOffset = 0;
                     karmaBonus = 0;
                     break;

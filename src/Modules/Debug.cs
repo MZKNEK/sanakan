@@ -2681,7 +2681,7 @@ namespace Sanakan.Modules
                     return;
                 }
 
-                await SafeReplyAsync("", embed: $"Fake: {card.Quality.Fake(card.BorderOverflow).ToName()}".ToEmbedMessage(EMType.Info).Build());
+                await SafeReplyAsync("", embed: $"Wartość: {card.GetUltimateValue()}, gra jako: {card.GetEffectiveQuality().ToName()}".ToEmbedMessage(EMType.Info).Build());
             }
         }
 

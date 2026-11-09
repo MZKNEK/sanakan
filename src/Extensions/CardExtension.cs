@@ -640,7 +640,7 @@ namespace Sanakan.Extensions
                 case Rarity.SSS:
                     if (fromFigure)
                     {
-                        return 1000 + (50 * (int)q);
+                        return UltimateExpToUpgrade((int)q);
                     }
                     return 1000;
                 case Rarity.SS:
@@ -651,9 +651,57 @@ namespace Sanakan.Extensions
             }
         }
 
+        private static double UltimateExpToUpgrade(int qualityValue) => 1000 + (50 * qualityValue);
+
         public static double ExpToUpgrade(this Card card)
         {
-            return card.Rarity.ExpToUpgrade(card.FromFigure, card.Quality.Fake(card.BorderOverflow));
+            if (card.FromFigure && card.Rarity == Rarity.SSS)
+                return UltimateExpToUpgrade(card.GetUltimateValue());
+
+            return card.Rarity.ExpToUpgrade(card.FromFigure, card.Quality);
+        }
+
+        // the overflow adds whole points to the quality value and the card plays as the highest quality that value reaches,
+        // so the gaps between qualities fill in by themselves if a new quality is ever added there
+        public static int GetUltimateValue(this Card card) => (int)card.Quality + card.BorderOverflow;
+
+        public static Quality GetEffectiveQuality(this Card card) => QualityReachedBy(card.GetUltimateValue());
+
+        public static Quality QualityReachedBy(int value)
+        {
+            var reached = Quality.Broken;
+            foreach (var quality in Enum.GetValues(typeof(Quality)).Cast<Quality>())
+            {
+                if ((int)quality <= value)
+                    reached = quality;
+            }
+            return reached;
+        }
+
+        // both the overflow and a normal upgrade take a figure or an ultimate card of the quality the card plays as
+        public static string GetUltimateUpgradeBlockReason(this Card card, Quality offered, bool isFigure)
+        {
+            var required = card.GetEffectiveQuality();
+            if (required == Quality.Omega)
+                return "tej karty nie można już ulepszyć.";
+
+            if (offered != required)
+                return $"{(isFigure ? "ta figurka" : "ta karta")} nie ma wymaganej jakości (potrzebna: {required.ToName()}).";
+
+            return null;
+        }
+
+        public static void ApplyUltimateUpgrade(this Card card, bool overflow)
+        {
+            if (overflow)
+            {
+                card.BorderOverflow += 1;
+                return;
+            }
+
+            card.Quality = card.GetEffectiveQuality().Next();
+            card.BorderOverflow = 0;
+            card.BorderVariant = 0;
         }
 
         public static int GetAttackMin(this Rarity rarity)
@@ -935,7 +983,7 @@ namespace Sanakan.Extensions
             }
 
             long currParams = card.AttackBonus + card.HealthBonus + card.DefenceBonus;
-            long maxParams = 4900 * (int)card.Quality.Fake(card.BorderOverflow);
+            long maxParams = 4900 * card.GetUltimateValue();
             if (currParams + points > maxParams)
             {
                 return ExecutionResult.FromError("nie można już bardziej zwiększyć parametrów na tej karcie.");
@@ -1113,7 +1161,7 @@ namespace Sanakan.Extensions
             target.user.GameDeck.RecalculateDeck();
         }
 
-        public static int GetMarketBonusFromUltimate(this Card card) => card.Quality.Fake(card.BorderOverflow) switch
+        public static int GetMarketBonusFromUltimate(this Card card) => card.GetEffectiveQuality() switch
         {
             Quality.Alpha   => 1,
             Quality.Beta    => 2,

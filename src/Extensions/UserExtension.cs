@@ -570,10 +570,10 @@ namespace Sanakan.Extensions
             var cnt = ultimateCards.Count;
             if (cnt > 5) cnt = 5;
 
-            cnt += ultimateCards.Any(x => x.Quality > Quality.Alpha) ? 1 : 0;
-            cnt += ultimateCards.Any(x => x.Quality > Quality.Gamma) ? 2 : 0;
-            cnt += ultimateCards.Any(x => x.Quality > Quality.Zeta) ? 3 : 0;
-            cnt += ultimateCards.Any(x => x.Quality > Quality.Lambda) ? 5 : 0;
+            cnt += ultimateCards.Any(x => x.GetEffectiveQuality() > Quality.Alpha) ? 1 : 0;
+            cnt += ultimateCards.Any(x => x.GetEffectiveQuality() > Quality.Gamma) ? 2 : 0;
+            cnt += ultimateCards.Any(x => x.GetEffectiveQuality() > Quality.Zeta) ? 3 : 0;
+            cnt += ultimateCards.Any(x => x.GetEffectiveQuality() > Quality.Lambda) ? 5 : 0;
             if (cnt > 12) cnt = 12;
 
             return cnt;

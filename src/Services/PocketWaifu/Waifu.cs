@@ -644,7 +644,7 @@ namespace Sanakan.Services.PocketWaifu
 
         public Item RandomizeItemFromMarketUlt(Card card)
         {
-            var cardQuality = card.Quality.Fake(card.BorderOverflow);
+            var cardQuality = card.GetEffectiveQuality();
             var itemType = Fun.GetOneRandomFrom(_ultMarketItems);
             var itemQuality = Fun.GetOneRandomFrom(_ultMarket[cardQuality]);
             return itemType.ToItem(1, itemQuality);

@@ -1053,10 +1053,7 @@ namespace Sanakan.Modules
 
                 if (card.Quality != Quality.Broken)
                 {
-                    var cardOverflowPower = (int)card.Quality + card.BorderOverflow;
-                    // cap liczbowy (zachowanie pierwotne z 6f54212): pozwala na większy overflow,
-                    // a saturujący Fake/Next gwarantuje brak crashu przy dużym BorderOverflow
-                    if (card.Quality == Quality.Omega || cardOverflowPower >= (int)Quality.Omega)
+                    if (card.GetEffectiveQuality() == Quality.Omega)
                     {
                         await SafeReplyAsync("", embed: $"{Context.User.Mention} tej karty nie można już ulepszyć.".ToEmbedMessage(EMType.Error).Build());
                         return;
@@ -1083,10 +1080,10 @@ namespace Sanakan.Modules
                             return;
                         }
 
-                        var figQ = fig.GetAvgQuality();
-                        if ((!overflow && card.Quality != figQ) || (overflow && cardOverflowPower < (int)figQ))
+                        var figureBlockReason = card.GetUltimateUpgradeBlockReason(fig.GetAvgQuality(), true);
+                        if (figureBlockReason != null)
                         {
-                            await SafeReplyAsync("", embed: $"{Context.User.Mention} ta figurka nie ma takiej samej jakości jak karta, którą chcesz ulepszyć.".ToEmbedMessage(EMType.Error).Build());
+                            await SafeReplyAsync("", embed: $"{Context.User.Mention} {figureBlockReason}".ToEmbedMessage(EMType.Error).Build());
                             return;
                         }
 
@@ -1108,10 +1105,10 @@ namespace Sanakan.Modules
                             return;
                         }
 
-                        var cardToSacOverflowPower = (int)cardSac.Quality + cardSac.BorderOverflow;
-                        if (cardOverflowPower != cardToSacOverflowPower)
+                        var qualityBlockReason = card.GetUltimateUpgradeBlockReason(cardSac.GetEffectiveQuality(), false);
+                        if (qualityBlockReason != null)
                         {
-                            await SafeReplyAsync("", embed: $"{Context.User.Mention} ta karta nie ma takiej samej jakości jak karta, którą chcesz ulepszyć.".ToEmbedMessage(EMType.Error).Build());
+                            await SafeReplyAsync("", embed: $"{Context.User.Mention} {qualityBlockReason}".ToEmbedMessage(EMType.Error).Build());
                             return;
                         }
 
@@ -1126,16 +1123,7 @@ namespace Sanakan.Modules
                         bUser.GameDeck.Figures.Remove(figure);
                     }
 
-                    if (overflow)
-                    {
-                        card.BorderOverflow += 1;
-                    }
-                    else
-                    {
-                        card.Quality = card.Quality.Fake(card.BorderOverflow).Next();
-                        card.BorderOverflow = 0;
-                        card.BorderVariant = 0;
-                    }
+                    card.ApplyUltimateUpgrade(overflow);
                 }
                 else
                 {
@@ -1417,7 +1405,7 @@ namespace Sanakan.Modules
 
         [Command("lazyc")]
         [Alias("lc")]
-        [Summary("dostajesz jedną darmową kartę z domyślnie ustawionym niszczeniem kc na 3 oraz tagiem wymiana")]
+        [Summary("dostajesz jedną darmową kartę z domyślnie ustawionym niszczeniem kc na 1 oraz tagiem wymiana")]
         [Remarks("3 nie Wymiana Ulubione"), RequireAnyCommandChannelLevelOrNitro(40)]
         public async Task GetLazyFreeCardAsync([Summary("niszcz karty, które są na mniej niż tylu listach życzeń (0 = nie niszcz); pomija karty z twojej listy życzeń")] uint destroyCards = 1,
             [Summary("czy zamienić niszczenie na uwalnianie?")] bool changeToRelease = false, [Summary("oznacz niezniszczone karty")] string tag = "wymiana", [Summary("oznacz karty z wishlisty")] string tagWishlist = "ulubione")
@@ -3999,10 +3987,9 @@ namespace Sanakan.Modules
                 string action = "";
                 var trashTag = _tags.GetTag(Services.PocketWaifu.TagType.TrashBin);
                 if (botUser.GameDeck.EndOfExpeditionAction != ActionAfterExpedition.Nothing
-                    && thisCard.Curse == CardCurse.None
                     && _tags.HasTag(thisCard, trashTag)
                     && !message.Contains("Utrata karty")
-                    && !_tags.HasTag(thisCard, Services.PocketWaifu.TagType.Favorite))
+                    && !thisCard.IsProtectedFromDiscarding(_tags))
                 {
                     var receivedCt = thisCard.DestroyOrRelease(botUser, botUser.GameDeck.EndOfExpeditionAction == ActionAfterExpedition.Release, 0.14);
                     var addMsg = receivedCt && botUser.GameDeck.EndOfExpeditionAction == ActionAfterExpedition.Release;
