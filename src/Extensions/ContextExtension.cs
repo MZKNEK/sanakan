@@ -92,7 +92,7 @@ namespace Sanakan.Extensions
         public static async Task<List<GameDeck>> GetCachedPlayersForPVP(this Database.DatabaseContext context, ulong ignore = 1)
         {
             // one shared entry instead of one copy per player, the caller is excluded in memory
-            var all = await context.GameDecks.AsQueryable().Where(x => x.DeckPower > UserExtension.MIN_DECK_POWER && x.DeckPower < UserExtension.MAX_DECK_POWER && x.CardsInDeck <= UserExtension.MAX_CARDS_IN_DECK && x.CardsInDeck > 0).AsNoTracking().AsSplitQuery().FromCacheAsync(context, "pvp-players", new MemoryCacheEntryOptions{ AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(2) }, PvpPlayersCacheTag);
+            var all = await context.GameDecks.AsQueryable().Where(x => x.DeckPower > UserExtension.MIN_DECK_POWER && x.DeckPower < UserExtension.MAX_DECK_POWER && x.CardsInDeck <= UserExtension.MAX_CARDS_IN_DECK && x.CardsInDeck > 0).AsNoTracking().AsSplitQuery().FromCacheAsync(context, "pvp-players", new MemoryCacheEntryOptions{ AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(15) }, PvpPlayersCacheTag);
             return all.Where(x => x.UserId != ignore).ToList();
         }
 

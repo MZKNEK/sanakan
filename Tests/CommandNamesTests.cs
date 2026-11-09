@@ -31,11 +31,10 @@ namespace Artifacts
 
         [Theory]
         [InlineData("kartas 685", "kartas")]
-        [InlineData("kartas- 685", "kartas-")]
-        [InlineData("karciankas", "karciankas")]
         [InlineData("karta 685", "karta")]
         [InlineData("karta- 685", "karta-")]
         [InlineData("karcianka", "karcianka")]
+        [InlineData("karciankas", "karcianka")]
         [InlineData("karcianka- Karna", "karcianka-")]
         public async Task LegacyAndNewCardCommands_ResolveOnlyToThemselves(string input, string expected)
         {

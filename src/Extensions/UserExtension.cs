@@ -19,9 +19,9 @@ namespace Sanakan.Extensions
     public static class UserExtension
     {
         public const int MAX_CARDS_IN_DECK = 8;
-        // opponents are matched by deck power, so the upper limit only guards against broken values
-        public const double MAX_DECK_POWER = 1_000_000;
-        public const double MIN_DECK_POWER = 25;
+        // about four maxed ultimate cards
+        public const double MAX_DECK_POWER = 500_000;
+        public const double MIN_DECK_POWER = 10;
 
         public static bool SendAnyMsgInMonth(this User u)
             => u.MessagesCnt > u.MessagesCntAtDate;

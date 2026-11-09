@@ -50,7 +50,7 @@ namespace Artifacts
             var precise = Card(true, 3000, 3000, crit: 40);
             precise.Health = 10000;
 
-            Assert.Equal(7933.24, plain.CalculateCardPower(), 1);
+            Assert.Equal(2992.43, plain.CalculateCardPower(), 1);
             Assert.True(precise.CalculateCardPower() > plain.CalculateCardPower() * 1.1);
         }
 

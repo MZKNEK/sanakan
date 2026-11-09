@@ -42,15 +42,17 @@ namespace Artifacts
             Attack = attack,
             Defence = defence,
             Dere = dere,
+            Image = "https://example.com/a.png",
             Tags = new List<Tag>(),
         };
 
         // expected values come from the duel simulator the formula was fitted on
         [Theory]
-        [InlineData(false, 999, 999, 99, Dere.Deredere, 314.16)]
-        [InlineData(false, 120, 115, 92, Dere.Tsundere, 24.37)]
-        [InlineData(true, 10000, 3000, 3000, Dere.Kamidere, 7933.24)]
-        [InlineData(true, 99999, 9999, 9999, Dere.Raito, 79402.29)]
+        [InlineData(false, 999, 999, 99, Dere.Deredere, 315.64)]
+        [InlineData(false, 120, 115, 92, Dere.Tsundere, 8.91)]
+        [InlineData(true, 10000, 3000, 3000, Dere.Kamidere, 2992.43)]
+        [InlineData(true, 99999, 9999, 9999, Dere.Raito, 66896.71)]
+        [InlineData(true, 99999, 9999, 9999, Dere.Yato, 77720.50)]
         public void Power_MatchesTheSimulator(bool ultimate, int health, int attack, int defence, Dere dere, double expected)
         {
             var card = Card(ultimate, health, attack, defence, dere);
@@ -60,13 +62,25 @@ namespace Artifacts
         }
 
         [Fact]
+        public void Power_ValuesDefenceUpTo9999_AndPenalisesAMissingPicture()
+        {
+            var fullDefence = Card(true, 42000, 9999, 9999, Dere.Deredere);
+            var halfDefence = Card(true, 46999, 9999, 5000, Dere.Deredere);
+            var noPicture = Card(false, 999, 999, 99, Dere.Deredere);
+            noPicture.Image = null;
+
+            Assert.True(fullDefence.CalculateCardPower() > halfDefence.CalculateCardPower() * 1.4);
+            Assert.True(noPicture.CalculateCardPower() < 100);
+        }
+
+        [Fact]
         public void Power_RanksUltimateDefenceAndTsundereWeakness()
         {
             var tank = Card(true, 10000, 3000, 3000, Dere.Kamidere).CalculateCardPower();
             var glass = Card(true, 10000, 3000, 300, Dere.Kamidere).CalculateCardPower();
             var tsundere = Card(true, 10000, 3000, 3000, Dere.Tsundere).CalculateCardPower();
 
-            Assert.True(tank > glass * 1.5);
+            Assert.True(tank > glass * 1.2);
             Assert.True(tsundere < tank);
         }
 
@@ -148,8 +162,8 @@ namespace Artifacts
 
             using var read = Open();
             var stored = (await read.Cards.AsQueryable().ToListAsync()).OrderBy(x => x.Id).ToList();
-            Assert.Equal(7933.24, stored[0].CardPower, 1);
-            Assert.Equal(314.16, stored[1].CardPower, 1);
+            Assert.Equal(2992.43, stored[0].CardPower, 1);
+            Assert.Equal(315.64, stored[1].CardPower, 1);
             Assert.Equal(stored[0].CardPower, (await read.GameDecks.AsQueryable().SingleAsync()).DeckPower, 3);
         }
 

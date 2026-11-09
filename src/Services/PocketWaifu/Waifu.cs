@@ -302,18 +302,20 @@ namespace Sanakan.Services.PocketWaifu
 
         private static double[,] _dereDmgRelation = new double[DERE_TAB_SIZE, DERE_TAB_SIZE]
         {
+            // Yato is a fusion of Yami and Raito: against normal characters it leans to the stronger parent,
+            // to both parents it is the same x1.5 both ways, and against itself x0.5 like each parent
             //Tsundere, Kamidere, Deredere, Yandere, Dandere, Kuudere, Mayadere, Bodere, Yami, Raito, Yato
             { 0.5,      2,        2,        2,       2,       2,       2,        2,      3,    3,     3     }, //Tsundere
-            { 1,        0.5,      2,        0.5,     1,       1,       1,        1,      2,    1,     2     }, //Kamidere
-            { 1,        1,        0.5,      2,       0.5,     1,       1,        1,      2,    1,     2     }, //Deredere
-            { 1,        1,        1,        0.5,     2,       0.5,     1,        1,      2,    1,     2     }, //Yandere
-            { 1,        1,        1,        1,       0.5,     2,       0.5,      1,      2,    1,     2     }, //Dandere
-            { 1,        1,        1,        1,       1,       0.5,     2,        0.5,    2,    1,     2     }, //Kuudere
-            { 1,        0.5,      1,        1,       1,       1,       0.5,      2,      2,    1,     2     }, //Mayadere
-            { 1,        2,        0.5,      1,       1,       1,       1,        0.5,    2,    1,     2     }, //Bodere
-            { 1,        1,        1,        1,       1,       1,       1,        1,      0.5,  3,     2     }, //Yami
-            { 0.5,      0.5,      0.5,      0.5,     0.5,     0.5,     0.5,      0.5,    3,    0.5,   1     }, //Raito
-            { 0.5,      0.5,      0.5,      0.5,     0.5,     0.5,     0.5,      0.5,    1,    0.5,   1     }, //Yato
+            { 1,        0.5,      2,        0.5,     1,       1,       1,        1,      2,    1,     1.75  }, //Kamidere
+            { 1,        1,        0.5,      2,       0.5,     1,       1,        1,      2,    1,     1.75  }, //Deredere
+            { 1,        1,        1,        0.5,     2,       0.5,     1,        1,      2,    1,     1.75  }, //Yandere
+            { 1,        1,        1,        1,       0.5,     2,       0.5,      1,      2,    1,     1.75  }, //Dandere
+            { 1,        1,        1,        1,       1,       0.5,     2,        0.5,    2,    1,     1.75  }, //Kuudere
+            { 1,        0.5,      1,        1,       1,       1,       0.5,      2,      2,    1,     1.75  }, //Mayadere
+            { 1,        2,        0.5,      1,       1,       1,       1,        0.5,    2,    1,     1.75  }, //Bodere
+            { 1,        1,        1,        1,       1,       1,       1,        1,      0.5,  3,     1.5   }, //Yami
+            { 0.5,      0.5,      0.5,      0.5,     0.5,     0.5,     0.5,      0.5,    3,    0.5,   1.5   }, //Raito
+            { 0.5,      0.6,      0.6,      0.6,     0.6,     0.6,     0.6,      0.6,    1.5,  1.5,   0.5   }, //Yato
         };
 
         private Timer _timer;
@@ -1968,8 +1970,8 @@ namespace Sanakan.Services.PocketWaifu
                 .Build();
         }
 
-        // the look from before 1.4.11.10, kept on request
-        public async Task<Embed> BuildLegacyCardViewAsync(Card card, ITextChannel trashChannel, SocketUser owner)
+        // the classic full look, kept as its own command on request
+        public async Task<Embed> BuildClassicCardViewAsync(Card card, ITextChannel trashChannel, SocketUser owner)
         {
             string imageUrl = await GetWaifuCardImageAsync(card, trashChannel);
             string imgUrls = $"[_obrazek_]({imageUrl})\n[_możesz zmienić obrazek tutaj_]({card.GetCharacterUrl()}/edit_crossroad)";
@@ -1984,7 +1986,7 @@ namespace Sanakan.Services.PocketWaifu
                 {
                     Text = $"Należy do: {ownerString}"
                 },
-                Description = $"{card.GetLegacyDesc(hideScalpelInfo, _tags, _time)}{imgUrls}".TrimToLength(2500)
+                Description = $"{card.GetDesc(hideScalpelInfo, _tags, _time)}{imgUrls}".TrimToLength(2500)
             }.Build();
         }
 

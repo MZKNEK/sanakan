@@ -50,58 +50,55 @@ namespace Artifacts
         }
 
         [Fact]
-        public void SmallView_GroupsInfoInThreeColumns()
-        {
-            var embed = Card().GetSmallView(null, Time).Build();
-
-            Assert.StartsWith("**[[123456](", embed.Description);
-            Assert.Equal(new[] { "Walka", "Postać", "Rozwój", "Kolekcja" }, embed.Fields.Select(x => x.Name));
-            Assert.All(embed.Fields.Take(3), x => Assert.True(x.Inline));
-            Assert.Equal("❤ 500\n🔥 210\n🛡 80\n🎯 0%", embed.Fields[0].Value);
-            Assert.Equal("Tsundere\nObojętność\nZmęczenie: brak", embed.Fields[1].Value);
-            Assert.EndsWith("\nUlepszenia: 1", embed.Fields[2].Value);
-            Assert.StartsWith("KC: 57 (12 aktywnych) · postać 2135\nTagi: ", embed.Fields[3].Value);
-        }
-
-        [Fact]
-        public void FullView_HasAThreeByThreeGridAndOneLinePerFact()
+        public void FullView_HasAGridWithPrecision()
         {
             var embed = Card().GetView(true, null, Time).Build();
 
             Assert.Equal("Rem · SS", embed.Title);
             Assert.Equal(9, embed.Fields.Count(x => x.Inline));
             Assert.Equal("❤ Życie", embed.Fields[0].Name);
+            Assert.Contains(embed.Fields, x => x.Name == "🎯 Precyzja");
             var more = Assert.Single(embed.Fields, x => x.Name == "Więcej").Value.Split('\n');
-            Assert.StartsWith("Nieaktywna · poza klatką · ", more[0]);
             Assert.StartsWith("Numer: ", more[1]);
             Assert.Equal("KC: 57 (12 aktywnych)", more[2]);
-            Assert.StartsWith("Tagi: ", more.Last());
         }
 
         [Fact]
-        public void LegacyViews_KeepTheOldLayout()
+        public void ClassicViews_KeepTheOldLayoutWithPrecision()
         {
-            Assert.Contains("PWR:", Card().GetLegacyDescSmall(null, Time));
-            Assert.Contains("**Możliwość wymiany:** ", Card().GetLegacyDesc(true, null, Time));
+            var card = Card();
+            card.CritChance = 12.5;
+
+            var small = card.GetDescSmall(null, Time);
+            var full = card.GetDesc(true, null, Time);
+
+            Assert.Contains("PWR:", small);
+            Assert.Contains("% precyzji", small);
+            Assert.Contains("**Możliwość wymiany:** ", full);
+            Assert.Contains("**Dostępne ulepszenia:** 1\n**Precyzja:** ", full);
         }
 
         [Fact]
-        public void CardGameProfile_ColumnsKeepTheirRowsWithoutUltimate()
+        public void CardGameProfile_HasTheClassicLookWithoutZeros()
         {
             var user = new User().Default(5, Time.Now());
             user.GameDeck.Cards.Add(Card());
+            user.GameDeck.Cards.Add(new Card { FromFigure = true, Rarity = Rarity.SSS, Quality = Quality.Gamma, Tags = new List<Tag>() });
             user.GameDeck.CTCnt = 3200;
+            user.Stats.ReleasedCards = 4;
 
-            var embed = Sanakan.Modules.PocketWaifu.BuildCardGameProfile(user, Time.Now()).Build();
+            var text = Sanakan.Modules.PocketWaifu.BuildCardGameProfile(user, Time.Now()).Build().Description;
 
-            Assert.Equal(new[] { "Kolekcja (1)", "​", "Ultimate (0)", "PvP", "Zasoby", "Historia kart" }, embed.Fields.Select(x => x.Name));
-            Assert.All(embed.Fields, x => Assert.True(x.Inline));
-            Assert.Equal("SS 1\nS 0\nA 0\nB 0", embed.Fields[0].Value);
-            Assert.Equal("C 0\nD 0\nE 0", embed.Fields[1].Value);
-            Assert.Equal("brak", embed.Fields[2].Value);
-            Assert.StartsWith("0 / 0 wygranych\n", embed.Fields[3].Value);
-            Assert.StartsWith("CT: 3200\n", embed.Fields[4].Value);
-            Assert.Contains("**Posiadane karty**: 1", Sanakan.Modules.PocketWaifu.BuildLegacyCardGameProfile(user, Time.Now()).Description);
+            Assert.Contains("**Posiadane karty**: 2\n**SS**: 1\n**[1]** **γ**: 1", text);
+            Assert.Contains("**Uwolnione**: 4", text);
+            Assert.Contains("**CT**: 3200", text);
+            Assert.DoesNotContain("**S**: 0", text);
+            Assert.DoesNotContain("**E**: 0", text);
+            Assert.DoesNotContain("**α**", text);
+            Assert.DoesNotContain("Zniszczone", text);
+            Assert.DoesNotContain("Restartów", text);
+            Assert.DoesNotContain("**PVP**", text);
+            Assert.Contains("**GR**: ", text);
         }
 
         [Fact]

@@ -147,11 +147,17 @@ namespace Sanakan.Extensions
 
         public static bool HasCustomBorder(this Card card) => card.CustomBorder != null;
 
-        // typical duel opponents: health, attack, defence, ultimate, weight
-        private static readonly (int Health, int Attack, int Defence, bool Ultimate, double Weight)[] _powerReferences =
+        // duels pair decks of similar power, so a card is measured against opponents of its own kind:
+        // normal cards from a fresh SSS to a maxed one, ultimates from quality α to fully pilled ones
+        private static readonly (int Health, int Attack, int Defence)[] _normalReferences =
         {
-            (150, 120, 80, false, 2), (350, 350, 92, false, 3), (700, 700, 97, false, 3), (999, 999, 99, false, 2),
-            (4000, 1200, 600, true, 1), (12000, 2500, 1300, true, 1), (28000, 4500, 2500, true, 1),
+            (100, 115, 92), (137, 123, 96), (225, 211, 99), (475, 403, 99), (850, 691, 99), (999, 999, 99),
+        };
+
+        private static readonly (int Health, int Attack, int Defence)[] _ultimateReferences =
+        {
+            (4000, 1200, 600), (12000, 2500, 1300), (28000, 4500, 2500), (3080, 3204, 1814), (4060, 5409, 3529), (6020, 9819, 6959),
+            (12600, 9999, 9999), (27300, 9999, 9999), (42000, 9999, 9999), (71400, 9999, 9999), (99999, 9999, 9999),
         };
 
         // Yami, Raito and Yato come only from items, so they are met less often
@@ -161,24 +167,24 @@ namespace Sanakan.Extensions
         private static readonly double[] _dereDealtMultiplier = _deres.Select(a => _deres.Sum(d => Waifu.GetDereDmgMultiplier(a, d) * DereWeight(d)) / _deres.Sum(DereWeight)).ToArray();
         private static readonly double[] _dereTakenMultiplier = _deres.Select(d => _deres.Sum(a => Waifu.GetDereDmgMultiplier(a, d) * DereWeight(a)) / _deres.Sum(DereWeight)).ToArray();
 
-        // a maxed normal SSS card keeps the power it had with the old formula
-        private static readonly double _powerScale = 310 / RawCardPower(999, 999, 99, false, 0, 1, 1);
+        // a maxed normal SSS card keeps the power it had with the old formula, in both scales
+        private static readonly double _normalPowerScale = 310 / RawCardPower(999, 999, 99, false, 0, 1, 1);
+        private static readonly double _ultimatePowerScale = 310 / RawCardPower(999, 999, 99, true, 0, 1, 1);
 
-        private static double RawCardPower(int health, int attack, int defence, bool ultimate, double critChance, double dealtMultiplier, double takenMultiplier)
+        private static double RawCardPower(double health, double attack, double defence, bool ultimate, double critChance, double dealtMultiplier, double takenMultiplier)
         {
-            double dealt = 0, taken = 0, weights = 0;
-            foreach (var r in _powerReferences)
+            double dealt = 0, taken = 0;
+            var references = ultimate ? _ultimateReferences : _normalReferences;
+            foreach (var r in references)
             {
-                var ultimateInvolved = ultimate || r.Ultimate;
-                var hit = (1 - critChance) * Waifu.GetBaseDamage(attack, r.Defence, ultimateInvolved)
-                    + critChance * Waifu.GetBaseDamage(attack, r.Defence, ultimateInvolved, true);
-                dealt += hit / r.Health * r.Weight;
-                taken += Waifu.GetBaseDamage(r.Attack, defence, ultimateInvolved) * r.Weight;
-                weights += r.Weight;
+                var hit = (1 - critChance) * Waifu.GetBaseDamage(attack, r.Defence, ultimate)
+                    + critChance * Waifu.GetBaseDamage(attack, r.Defence, ultimate, true);
+                dealt += hit / r.Health;
+                taken += Waifu.GetBaseDamage(r.Attack, defence, ultimate);
             }
 
-            dealt = dealt / weights * dealtMultiplier;
-            taken = taken / weights * takenMultiplier;
+            dealt = dealt / references.Length * dealtMultiplier;
+            taken = taken / references.Length * takenMultiplier;
             return Math.Sqrt(dealt * health / taken);
         }
 
@@ -186,7 +192,15 @@ namespace Sanakan.Extensions
         public static double CalculateCardPower(this Card card)
         {
             var dere = (int)card.Dere;
-            var cardPower = _powerScale * RawCardPower(card.GetHealthWithPenalty(), card.GetAttackWithBonus(), card.GetDefenceWithBonus(),
+            double attack = card.GetAttackWithBonus(), defence = card.GetDefenceWithBonus();
+            // the same penalty a card without a picture gets in a duel
+            if (!card.HasImage())
+            {
+                attack -= attack * 20 / 100;
+                defence -= defence * 20 / 100;
+            }
+
+            var cardPower = (card.FromFigure ? _ultimatePowerScale : _normalPowerScale) * RawCardPower(card.GetHealthWithPenalty(), attack, defence,
                 card.FromFigure, card.CritChance / 100, _dereDealtMultiplier[dere], _dereTakenMultiplier[dere]);
 
             if (cardPower < 1)
@@ -298,69 +312,10 @@ namespace Sanakan.Extensions
             return $"KC: {kcs} ({card.AWhoWantsCount} aktywnych)";
         }
 
-        // the looks from before 1.4.11.10, kept on request
-        public static string GetLegacyDescSmall(this Card card, Services.PocketWaifu.TagHelper tags, ISystemTime time)
-        {
-            var kcs = Fun.IsAF() ? Fun.GetAFKC(card.Character) : card.WhoWantsCount;
-            return $"{card.GetIdWithUrl()} *({card.Character}) KC: {kcs}({card.AWhoWantsCount}) PWR: {card.CalculateCardPower():F}*\n"
-                + $"{card.GetString(true, true, true, false, true)}\n"
-                + $"_{card.Title}_\n\n"
-                + $"{card.Dere}\n"
-                + $"{card.GetAffectionString()}\n"
-                + $"{card.GetFatigueString(time)}\n"
-                + $"{card.ExpCnt:F}/{card.ExpToUpgrade():F} exp\n\n"
-                + $"{(card.Tags.IsNullOrEmpty() ? "---" : string.Join(" ", card.Tags.Select(x => x.Name)))}\n"
-                + $"{card.GetStatusIcons(tags)}";
-        }
-
-        public static string GetLegacyDesc(this Card card, bool hideScalelInfo, Services.PocketWaifu.TagHelper tags, ISystemTime time)
-        {
-            var kcs = Fun.IsAF() ? Fun.GetAFKC(card.Character) : card.WhoWantsCount;
-            string scalpelInfo = (!string.IsNullOrEmpty(card.CustomImage) && !hideScalelInfo)
-                ? $"**Ustawiono obrazek:** {card.CustomImageDate.ToShortDateTime()}\n**Animacja:** {card.IsCardAnimated().GetYesNo()}\n" : "";
-
-            return $"{card.GetNameWithUrl()} **{card.GetCardRealRarity()}**\n"
-                + $"*{card.Title ?? "????"}*\n\n"
-                + $"*{card.GetCardParams(true, false, true)}*\n\n"
-                + $"**Relacja:** {card.GetAffectionString()}\n"
-                + $"**Zmęczenie:** {card.GetFatigueString(time)}\n"
-                + $"**Doświadczenie:** {card.ExpCnt:F}/{card.ExpToUpgrade():F}\n"
-                + $"**Dostępne ulepszenia:** {card.UpgradesCnt}\n\n"
-                + $"**W klatce:** {card.InCage.GetYesNo()}\n"
-                + $"**Aktywna:** {card.Active.GetYesNo()}\n"
-                + $"**Możliwość wymiany:** {card.IsTradable.GetYesNo()}\n\n"
-                + $"**WID:** {card.GetIdWithUrl()} *({card.Character})*\n"
-                + $"**Restarty:** {card.RestartCnt}\n"
-                + $"**Pochodzenie:** {card.Source.GetString()}\n"
-                + $"**Moc:** {card.CalculateCardPower():F}\n"
-                + $"**Charakter:** {card.Dere}\n"
-                + $"**Utworzona:** {card.CreationDate.ToShortDateTime()}\n{scalpelInfo}"
-                + $"**KC:** {kcs} ({card.AWhoWantsCount})\n"
-                + $"**Tagi:** {(card.Tags.IsNullOrEmpty() ? "---" : string.Join(" ", card.Tags.Select(x => x.Name)))}\n"
-                + $"{card.GetStatusIcons(tags)}\n\n";
-        }
-
         public static string GetHealthLine(this Card card)
         {
             var health = card.GetHealthWithPenalty();
             return health == card.Health ? $"{health}" : $"{health} (bazowo {card.Health})";
-        }
-
-        public static EmbedBuilder GetSmallView(this Card card, Services.PocketWaifu.TagHelper tags, ISystemTime time)
-        {
-            var growth = $"{card.ExpCnt:0.##} / {card.ExpToUpgrade():0.##} exp\nMoc: {card.CalculateCardPower():0}";
-            if (!card.FromFigure)
-                growth += $"\nUlepszenia: {card.UpgradesCnt}";
-
-            return new EmbedBuilder
-            {
-                Color = EMType.Info.Color(),
-                Description = $"{card.GetIdWithUrl()} {card.GetNameWithUrl()} · **{card.GetCardRealRarity()}**\n_{card.Title ?? "????"}_",
-            }
-            .AddField("Walka", $"❤ {card.GetHealthLine()}\n🔥 {card.GetAttackWithBonus()}\n🛡 {card.GetDefenceWithBonus()}\n🎯 {card.CritChance:0.#}%", true)
-            .AddField("Postać", $"{card.Dere}\n{card.GetAffectionString()}\nZmęczenie: {card.GetFatigueString(time).ToLower()}", true)
-            .AddField("Rozwój", growth, true)
-            .AddField("Kolekcja", $"{card.GetWhoWantsLine()} · postać {card.Character}\nTagi: {card.GetTagsLine(tags)}".TrimToLength(EmbedFieldBuilder.MaxFieldValueLength));
         }
 
         public static EmbedBuilder GetView(this Card card, bool hideScalpelInfo, Services.PocketWaifu.TagHelper tags, ISystemTime time)
@@ -392,6 +347,49 @@ namespace Sanakan.Extensions
             .AddField("⚡ Moc", $"{card.CalculateCardPower():0}", true)
             .AddField("🎯 Precyzja", $"{card.CritChance:0.#}%", true)
             .AddField("Więcej", string.Join("\n", more).TrimToLength(EmbedFieldBuilder.MaxFieldValueLength));
+        }
+
+        public static string GetDescSmall(this Card card, Services.PocketWaifu.TagHelper tags, ISystemTime time)
+        {
+            var kcs = Fun.IsAF() ? Fun.GetAFKC(card.Character) : card.WhoWantsCount;
+            return $"{card.GetIdWithUrl()} *({card.Character}) KC: {kcs}({card.AWhoWantsCount}) PWR: {card.CalculateCardPower():F}*\n"
+                + $"{card.GetString(true, true, true, false, true)}\n"
+                + $"_{card.Title}_\n\n"
+                + $"{card.Dere}\n"
+                + $"{card.GetAffectionString()}\n"
+                + $"{card.GetFatigueString(time)}\n"
+                + $"{card.ExpCnt:F}/{card.ExpToUpgrade():F} exp\n"
+                + $"{card.CritChance:0.#}% precyzji\n\n"
+                + $"{(card.Tags.IsNullOrEmpty() ? "---" : string.Join(" ", card.Tags.Select(x => x.Name)))}\n"
+                + $"{card.GetStatusIcons(tags)}";
+        }
+
+        public static string GetDesc(this Card card, bool hideScalelInfo, Services.PocketWaifu.TagHelper tags, ISystemTime time)
+        {
+            var kcs = Fun.IsAF() ? Fun.GetAFKC(card.Character) : card.WhoWantsCount;
+            string scalpelInfo = (!string.IsNullOrEmpty(card.CustomImage) && !hideScalelInfo)
+                ? $"**Ustawiono obrazek:** {card.CustomImageDate.ToShortDateTime()}\n**Animacja:** {card.IsCardAnimated().GetYesNo()}\n" : "";
+
+            return $"{card.GetNameWithUrl()} **{card.GetCardRealRarity()}**\n"
+                + $"*{card.Title ?? "????"}*\n\n"
+                + $"*{card.GetCardParams(true, false, true)}*\n\n"
+                + $"**Relacja:** {card.GetAffectionString()}\n"
+                + $"**Zmęczenie:** {card.GetFatigueString(time)}\n"
+                + $"**Doświadczenie:** {card.ExpCnt:F}/{card.ExpToUpgrade():F}\n"
+                + $"**Dostępne ulepszenia:** {card.UpgradesCnt}\n"
+                + $"**Precyzja:** {card.CritChance:0.#}%\n\n"
+                + $"**W klatce:** {card.InCage.GetYesNo()}\n"
+                + $"**Aktywna:** {card.Active.GetYesNo()}\n"
+                + $"**Możliwość wymiany:** {card.IsTradable.GetYesNo()}\n\n"
+                + $"**WID:** {card.GetIdWithUrl()} *({card.Character})*\n"
+                + $"**Restarty:** {card.RestartCnt}\n"
+                + $"**Pochodzenie:** {card.Source.GetString()}\n"
+                + $"**Moc:** {card.CalculateCardPower():F}\n"
+                + $"**Charakter:** {card.Dere}\n"
+                + $"**Utworzona:** {card.CreationDate.ToShortDateTime()}\n{scalpelInfo}"
+                + $"**KC:** {kcs} ({card.AWhoWantsCount})\n"
+                + $"**Tagi:** {(card.Tags.IsNullOrEmpty() ? "---" : string.Join(" ", card.Tags.Select(x => x.Name)))}\n"
+                + $"{card.GetStatusIcons(tags)}\n\n";
         }
 
         public static int GetHealthWithPenalty(this Card card, bool allowZero = false)

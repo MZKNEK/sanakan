@@ -26,6 +26,9 @@ namespace Sanakan.Database
         // Tagi cache wyliczone przed zapisem, unieważniane po commicie (używa CacheActivity).
         public List<string> PendingCacheTags { get; set; }
 
+        // decks whose stored power is refreshed after the save (used by PowerActivity)
+        public HashSet<ulong> PendingPowerDecks { get; set; }
+
         public DatabaseContext(IConfig config) : base()
         {
             _config = config;
@@ -80,7 +83,7 @@ namespace Sanakan.Database
                 : optionsBuilder.UseMySql(config.ConnectionString,
                     new MySqlServerVersion(new System.Version(8, 0, 43)), opt => opt.EnableRetryOnFailure());
 
-            builder.AddInterceptors(DbActivity.Commands, DbActivity.Saves, CacheActivity.Interceptor);
+            builder.AddInterceptors(DbActivity.Commands, DbActivity.Saves, PowerActivity.Interceptor, CacheActivity.Interceptor);
             if (config.DatabaseProvider == global::Sanakan.Config.Model.DatabaseProvider.Sqlite)
                 builder.AddInterceptors(SqliteText.Interceptor);
         }

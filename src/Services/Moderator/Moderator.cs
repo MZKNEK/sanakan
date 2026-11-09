@@ -403,6 +403,10 @@ namespace Sanakan.Services
                     await dm.CloseAsync();
                 }
             }
+            catch (Exception ex) when (Helper.IsDmClosed(ex))
+            {
+                _logger.Log($"Mod: warning DM: u{user.Id} has closed DMs");
+            }
             catch (Exception ex)
             {
                 _logger.LogError($"Mod: warning DM: {ex}");
@@ -456,6 +460,10 @@ namespace Sanakan.Services
                     await dm.SendMessageAsync("", embed: dmEmbed.Build());
                     await dm.CloseAsync();
                 }
+            }
+            catch (Exception ex) when (Helper.IsDmClosed(ex))
+            {
+                _logger.Log($"Mod: penalty DM: u{user.Id} has closed DMs");
             }
             catch (Exception ex)
             {

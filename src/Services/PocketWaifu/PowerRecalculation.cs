@@ -43,7 +43,9 @@ namespace Sanakan.Services.PocketWaifu
                     Id = x.Id, GameDeckId = x.GameDeckId, Active = x.Active, FromFigure = x.FromFigure, Dere = x.Dere, Curse = x.Curse,
                     Health = x.Health, HealthBonus = x.HealthBonus, Attack = x.Attack, AttackBonus = x.AttackBonus,
                     Defence = x.Defence, DefenceBonus = x.DefenceBonus, Affection = x.Affection, RestartCnt = x.RestartCnt,
-                    CardPower = x.CardPower,
+                    CardPower = x.CardPower, CritChance = x.CritChance,
+                    // only whether there is a picture matters for the power, the address itself is not needed
+                    Image = x.Image != null || x.CustomImage != null ? "set" : null,
                 }).ToListAsync();
 
                 var changed = new List<(ulong Id, double Power)>();

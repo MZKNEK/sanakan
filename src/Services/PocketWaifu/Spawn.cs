@@ -259,6 +259,10 @@ namespace Sanakan.Services.PocketWaifu
                         var priv = await winner.CreateDMChannelAsync();
                         if (priv != null) await priv.SendMessageAsync("", false, privEmb.Build());
                     }
+                    catch (Exception ex) when (global::Sanakan.Services.Helper.IsDmClosed(ex))
+                    {
+                        // the card is already given, the DM only repeats what the channel shows
+                    }
                     catch (Exception ex)
                     {
                         _logger.LogError($"Spawn: safari: {ex}");
