@@ -8,5 +8,11 @@ namespace Sanakan.Services.PocketWaifu.Fight
         public ulong AtkCardId { get; set; }
         public ulong DefCardId { get; set; }
         public bool Critical { get; set; }
+        public bool Dodged { get; set; }
+        public bool Counter { get; set; }
+        public bool Healed { get; set; }
+        public bool Rage { get; set; }
+        public bool Guarded { get; set; }
+        public double TargetHp { get; set; }
     }
 }

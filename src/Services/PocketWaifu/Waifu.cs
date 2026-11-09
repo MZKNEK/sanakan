@@ -462,7 +462,13 @@ namespace Sanakan.Services.PocketWaifu
 
         static public double GetDereDmgMultiplier(Card atk, Card def) => GetDereDmgMultiplier(atk.Dere, def.Dere);
 
-        static public double GetDereDmgMultiplier(Dere atk, Dere def) => _dereDmgRelation[(int)def, (int)atk];
+        static public double GetDereDmgMultiplier(Dere atk, Dere def)
+        {
+            var multiplier = _dereDmgRelation[(int)def, (int)atk];
+            if (def == Dere.Kamidere) multiplier = Math.Min(multiplier, 1);
+            if (atk == Dere.Mayadere) multiplier = Math.Max(multiplier, 1);
+            return multiplier;
+        }
 
         public ItemRecipe GetItemRecipe(RecipeType type) => _recipes[type];
 
@@ -1107,7 +1113,7 @@ namespace Sanakan.Services.PocketWaifu
         // average damage with critical hits counted in, for fights resolved without rolling
         static public double GetExpectedFA(Card target, Card enemy)
         {
-            var chance = target.CritChance / 100;
+            var chance = target.GetCritChance() / 100;
             return (1 - chance) * GetFA(target, enemy) + chance * GetFA(target, enemy, true);
         }
 
@@ -1352,9 +1358,52 @@ namespace Sanakan.Services.PocketWaifu
             return nDef;
         }
 
-        private double GetDmgDeal(Card c1, Card c2, bool critical)
+        // a counter cannot be dodged and does not provoke another counter
+        public static bool Strike(RoundInfo round, CardWithHealth attacker, CardWithHealth target, bool counter)
         {
-            return GetFA(c1, c2, critical);
+            var info = new AttackInfo { AtkCardId = attacker.Card.Id, DefCardId = target.Card.Id, Counter = counter };
+            round.Fights.Add(info);
+
+            if (!counter && target.Card.Dere == Dere.Dandere && Fun.TakeATry(DereAbility.DandereDodgeChance))
+            {
+                info.Dodged = true;
+                info.TargetHp = target.Health;
+                return false;
+            }
+
+            info.Critical = Fun.TakeATry(attacker.Card.GetCritChance());
+            var dmg = GetFA(attacker.Card, target.Card, info.Critical);
+            if (attacker.Card.Dere == Dere.Yandere && attacker.Health < attacker.MaxHealth * DereAbility.YandereRageBelow)
+            {
+                dmg *= DereAbility.YandereRageMultiplier;
+                info.Rage = true;
+            }
+            if (target.Card.Dere == Dere.Tsundere && target.Health < target.MaxHealth * DereAbility.TsundereGuardBelow)
+            {
+                dmg *= DereAbility.TsundereGuardMultiplier;
+                info.Guarded = true;
+            }
+
+            info.Dmg = dmg;
+            target.Health -= dmg;
+            if (target.Health < 1)
+                target.Health = 0;
+
+            if (target.Card.Dere == Dere.Deredere && !target.Healed && target.Health > 0 && target.Health < target.MaxHealth * DereAbility.DeredereHealBelow)
+            {
+                target.Health += target.MaxHealth * DereAbility.DeredereHeal;
+                target.Healed = true;
+                info.Healed = true;
+            }
+            info.TargetHp = target.Health;
+
+            var hpSnap = round.Cards.FirstOrDefault(x => x.CardId == target.Card.Id);
+            if (hpSnap == null)
+                round.Cards.Add(new HpSnapshot { CardId = target.Card.Id, Hp = target.Health });
+            else
+                hpSnap.Hp = target.Health;
+
+            return true;
         }
 
         public string GetDeathLog(FightHistory fight, List<PlayerInfo> players)
@@ -1374,7 +1423,88 @@ namespace Sanakan.Services.PocketWaifu
                     deathLog += "\n";
                 }
             }
-            return deathLog + CriticalHitsLine(fight, players);
+            return deathLog + CriticalHitsLine(fight, players) + AbilitiesLine(fight, players);
+        }
+
+        public static string AbilitiesLine(FightHistory fight, List<PlayerInfo> players)
+        {
+            var attacks = fight.Rounds.SelectMany(x => x.Fights).ToList();
+            var perPlayer = new List<string>();
+            foreach (var player in players)
+            {
+                bool Own(ulong id) => player.Cards.Any(c => c.Id == id);
+                var events = new List<string>();
+                var dodges = attacks.Count(x => x.Dodged && Own(x.DefCardId));
+                var counters = attacks.Count(x => x.Counter && Own(x.AtkCardId));
+                var heals = attacks.Count(x => x.Healed && Own(x.DefCardId));
+                if (dodges > 0) events.Add($"uniki {dodges}");
+                if (counters > 0) events.Add($"kontry {counters}");
+                if (heals > 0) events.Add($"leczenie {heals}");
+                if (events.Count > 0)
+                    perPlayer.Add($"{player.User?.Username ?? "????"} {string.Join(", ", events)}");
+            }
+
+            return perPlayer.Count == 0 ? "" : $"✨ Zdolności: {string.Join(" · ", perPlayer)}\n";
+        }
+
+        public const string FightLogFileName = "walka.txt";
+
+        public static string GetFullFightLog(FightHistory fight, List<PlayerInfo> players)
+        {
+            string PlayerName(PlayerInfo p) => p.User?.Username ?? "????";
+            var owners = players.SelectMany(p => p.Cards.Select(c => (Card: c, Player: PlayerName(p))))
+                .GroupBy(x => x.Card.Id).ToDictionary(g => g.Key, g => g.First());
+            string Label(ulong id) => owners.TryGetValue(id, out var o) ? $"{o.Card.Name} [{o.Player}]" : $"{id}";
+            string MaxHp(ulong id) => owners.TryGetValue(id, out var o) ? $"{o.Card.GetHealthWithPenalty()}" : "?";
+
+            var log = new StringBuilder();
+            log.AppendLine($"Pojedynek: {string.Join(" vs ", players.Select(PlayerName))}");
+            log.AppendLine();
+            log.AppendLine("Karty na start");
+            foreach (var player in players)
+            {
+                log.AppendLine($"{PlayerName(player)}:");
+                foreach (var card in player.Cards)
+                {
+                    log.AppendLine($"  {card.Name} (WID {card.Id}, {card.GetCardRealRarity()}) · {card.Dere} · życie {card.GetHealthWithPenalty()} · atak {card.GetAttackWithBonus()}"
+                        + $" · obrona {card.GetDefenceWithBonus()} · precyzja {card.GetCritChance():0.#}% · moc {card.CalculateCardPower():0}");
+                    var ability = card.Dere.GetAbilityDescription();
+                    if (ability != null)
+                        log.AppendLine($"     zdolność: {ability}");
+                    if (!card.HasImage())
+                        log.AppendLine("     bez obrazka: atak i obrona słabsze o 20% w walce");
+                }
+            }
+
+            for (int i = 0; i < fight.Rounds.Count; i++)
+            {
+                log.AppendLine();
+                log.AppendLine($"Runda {i + 1}");
+                foreach (var attack in fight.Rounds[i].Fights)
+                {
+                    var who = $"{(attack.Counter ? "↩ kontra: " : "")}{Label(attack.AtkCardId)} → {Label(attack.DefCardId)}";
+                    if (attack.Dodged)
+                    {
+                        log.AppendLine($"  {who}: unik");
+                        continue;
+                    }
+
+                    var notes = new List<string>();
+                    if (attack.Critical) notes.Add("krytyk");
+                    if (attack.Rage) notes.Add("szał Yandere");
+                    if (attack.Guarded) notes.Add("osłona Tsundere");
+                    var noteText = notes.Count > 0 ? $" ({string.Join(", ", notes)})" : "";
+                    log.AppendLine($"  {who}: {attack.Dmg:0.#} obrażeń{noteText} · zostało {attack.TargetHp:0.#}/{MaxHp(attack.DefCardId)}");
+                    if (attack.Healed)
+                        log.AppendLine($"  {Label(attack.DefCardId)} leczy się (Deredere)");
+                    if (attack.TargetHp <= 0)
+                        log.AppendLine($"  ✖ {Label(attack.DefCardId)} pada");
+                }
+            }
+
+            log.AppendLine();
+            log.AppendLine(fight.Winner == null ? "Wynik: remis" : $"Wynik: wygrywa {PlayerName(fight.Winner)}");
+            return log.ToString();
         }
 
         public static string CriticalHitsLine(FightHistory fight, List<PlayerInfo> players)
@@ -1395,7 +1525,10 @@ namespace Sanakan.Services.PocketWaifu
             foreach (var player in players)
             {
                 foreach (var card in player.Cards)
-                    totalCards.Add(new CardWithHealth() { Card = card, Health = card.GetHealthWithPenalty() });
+                {
+                    var health = card.GetHealthWithPenalty();
+                    totalCards.Add(new CardWithHealth() { Card = card, Health = health, MaxHealth = health });
+                }
             }
 
             var rounds = new List<RoundInfo>();
@@ -1415,31 +1548,9 @@ namespace Sanakan.Services.PocketWaifu
                     if (enemies.Count() > 0)
                     {
                         var target = Fun.GetOneRandomFrom(enemies);
-                        var critical = Fun.TakeATry(card.Card.CritChance);
-                        var dmg = GetDmgDeal(card.Card, target.Card, critical);
-                        target.Health -= dmg;
-
-                        if (target.Health < 1)
-                            target.Health = 0;
-
-                        var hpSnap = round.Cards.FirstOrDefault(x => x.CardId == target.Card.Id);
-                        if (hpSnap == null)
-                        {
-                            round.Cards.Add(new HpSnapshot
-                            {
-                                CardId = target.Card.Id,
-                                Hp = target.Health
-                            });
-                        }
-                        else hpSnap.Hp = target.Health;
-
-                        round.Fights.Add(new AttackInfo
-                        {
-                            Dmg = dmg,
-                            AtkCardId = card.Card.Id,
-                            DefCardId = target.Card.Id,
-                            Critical = critical,
-                        });
+                        var landed = Strike(round, card, target, false);
+                        if (landed && target.Health > 0 && target.Card.Dere == Dere.Bodere && Fun.TakeATry(DereAbility.BodereCounterChance))
+                            Strike(round, target, card, true);
                     }
                 }
 

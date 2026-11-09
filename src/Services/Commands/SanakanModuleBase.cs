@@ -39,6 +39,29 @@ namespace Sanakan.Services.Commands
             return msg;
         }
 
+        public async Task<IUserMessage> SafeReplyWithTextFileAsync(Embed embed, string fileName, string fileContent)
+        {
+            Exception last = null;
+            for (int i = 0; i < MAX_SNED_ATTEMPTS; i++)
+            {
+                try
+                {
+                    using var stream = new System.IO.MemoryStream(System.Text.Encoding.UTF8.GetBytes(fileContent));
+                    var msg = await Context.Channel.SendFileAsync(stream, fileName, embed: embed);
+                    if (msg != null)
+                        return msg;
+                }
+                catch (Exception ex)
+                {
+                    last = ex;
+                }
+                await Task.Delay(DELAY_MS);
+            }
+            if (last != null)
+                Logger?.LogError($"Cmd: reply with file failed: {last.Message}");
+            return null;
+        }
+
         public async Task<bool> SafeAddReactionToMsg(IUserMessage msg, IEmote emote)
         {
             Exception last = null;

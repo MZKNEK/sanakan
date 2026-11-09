@@ -255,7 +255,7 @@ namespace Sanakan.Api.Models
                 UltimateQuality = card.Quality,
                 CreatedAt = card.CreationDate,
                 CardPower = card.CardPower,
-                CritChance = card.CritChance,
+                CritChance = card.GetCritChance(),
                 DiscordId = card.GameDeckId,
                 WhoWantsCount = kcs,
                 ActiveWhoWantsCount = card.AWhoWantsCount,

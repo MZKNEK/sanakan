@@ -48,11 +48,11 @@ namespace Artifacts
 
         // expected values come from the duel simulator the formula was fitted on
         [Theory]
-        [InlineData(false, 999, 999, 99, Dere.Deredere, 315.64)]
-        [InlineData(false, 120, 115, 92, Dere.Tsundere, 8.91)]
-        [InlineData(true, 10000, 3000, 3000, Dere.Kamidere, 2992.43)]
-        [InlineData(true, 99999, 9999, 9999, Dere.Raito, 66896.71)]
-        [InlineData(true, 99999, 9999, 9999, Dere.Yato, 77720.50)]
+        [InlineData(false, 999, 999, 99, Dere.Deredere, 328.91)]
+        [InlineData(false, 120, 115, 92, Dere.Tsundere, 9.43)]
+        [InlineData(true, 10000, 3000, 3000, Dere.Kamidere, 2950.69)]
+        [InlineData(true, 99999, 9999, 9999, Dere.Raito, 56529.851)]
+        [InlineData(true, 99999, 9999, 9999, Dere.Yato, 61511.06)]
         public void Power_MatchesTheSimulator(bool ultimate, int health, int attack, int defence, Dere dere, double expected)
         {
             var card = Card(ultimate, health, attack, defence, dere);
@@ -162,8 +162,8 @@ namespace Artifacts
 
             using var read = Open();
             var stored = (await read.Cards.AsQueryable().ToListAsync()).OrderBy(x => x.Id).ToList();
-            Assert.Equal(2992.43, stored[0].CardPower, 1);
-            Assert.Equal(315.64, stored[1].CardPower, 1);
+            Assert.Equal(2950.69, stored[0].CardPower, 1);
+            Assert.Equal(328.91, stored[1].CardPower, 1);
             Assert.Equal(stored[0].CardPower, (await read.GameDecks.AsQueryable().SingleAsync()).DeckPower, 3);
         }
 

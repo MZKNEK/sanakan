@@ -11,6 +11,7 @@ using Sanakan.Database;
 using Sanakan.Database.Models;
 using Sanakan.Services;
 using Sanakan.Services.PocketWaifu;
+using Sanakan.Services.PocketWaifu.Fight;
 using Sanakan.Services.Time;
 
 namespace Sanakan.Extensions
@@ -160,18 +161,19 @@ namespace Sanakan.Extensions
             (12600, 9999, 9999), (27300, 9999, 9999), (42000, 9999, 9999), (71400, 9999, 9999), (99999, 9999, 9999),
         };
 
-        // Yami, Raito and Yato come only from items, so they are met less often
-        private static double DereWeight(Dere dere) => dere >= Dere.Yami ? 0.25 : 1;
+        // how much a dere is worth at equal stats, with its relations and ability: simulated duels were tuned until every dere
+        // won half of its fights against random cards of the same power (Yami, Raito and Yato met four times less often);
+        // the duel outcome depends on the exact pair of deres, so an average of the relation table misjudged them
+        private static readonly double[] _normalDereFactor = { 0.732, 0.975, 1.061, 1.017, 0.996, 0.956, 0.977, 1.019, 1.332, 1.351, 1.581 };
+        private static readonly double[] _ultimateDereFactor = { 0.793, 1.004, 1.025, 1.014, 0.979, 0.967, 1.007, 1.003, 1.213, 1.237, 1.346 };
 
-        private static readonly Dere[] _deres = Enum.GetValues(typeof(Dere)).Cast<Dere>().ToArray();
-        private static readonly double[] _dereDealtMultiplier = _deres.Select(a => _deres.Sum(d => Waifu.GetDereDmgMultiplier(a, d) * DereWeight(d)) / _deres.Sum(DereWeight)).ToArray();
-        private static readonly double[] _dereTakenMultiplier = _deres.Select(d => _deres.Sum(a => Waifu.GetDereDmgMultiplier(a, d) * DereWeight(a)) / _deres.Sum(DereWeight)).ToArray();
+        // a maxed normal SSS card of an average dere keeps the power it had with the old formula, in both scales
+        private static readonly double _normalPowerScale = 310 / RawCardPower(999, 999, 99, false, 0);
+        private static readonly double _ultimatePowerScale = 310 / RawCardPower(999, 999, 99, true, 0);
 
-        // a maxed normal SSS card keeps the power it had with the old formula, in both scales
-        private static readonly double _normalPowerScale = 310 / RawCardPower(999, 999, 99, false, 0, 1, 1);
-        private static readonly double _ultimatePowerScale = 310 / RawCardPower(999, 999, 99, true, 0, 1, 1);
+        public static double GetCritChance(this Card card) => card.CritChance + (card.Dere == Dere.Kuudere ? DereAbility.KuudereCritBonus : 0);
 
-        private static double RawCardPower(double health, double attack, double defence, bool ultimate, double critChance, double dealtMultiplier, double takenMultiplier)
+        private static double RawCardPower(double health, double attack, double defence, bool ultimate, double critChance)
         {
             double dealt = 0, taken = 0;
             var references = ultimate ? _ultimateReferences : _normalReferences;
@@ -183,8 +185,8 @@ namespace Sanakan.Extensions
                 taken += Waifu.GetBaseDamage(r.Attack, defence, ultimate);
             }
 
-            dealt = dealt / references.Length * dealtMultiplier;
-            taken = taken / references.Length * takenMultiplier;
+            dealt /= references.Length;
+            taken /= references.Length;
             return Math.Sqrt(dealt * health / taken);
         }
 
@@ -200,8 +202,9 @@ namespace Sanakan.Extensions
                 defence -= defence * 20 / 100;
             }
 
-            var cardPower = (card.FromFigure ? _ultimatePowerScale : _normalPowerScale) * RawCardPower(card.GetHealthWithPenalty(), attack, defence,
-                card.FromFigure, card.CritChance / 100, _dereDealtMultiplier[dere], _dereTakenMultiplier[dere]);
+            var cardPower = card.FromFigure
+                ? _ultimatePowerScale * _ultimateDereFactor[dere] * RawCardPower(card.GetHealthWithPenalty(), attack, defence, true, card.GetCritChance() / 100)
+                : _normalPowerScale * _normalDereFactor[dere] * RawCardPower(card.GetHealthWithPenalty(), attack, defence, false, card.GetCritChance() / 100);
 
             if (cardPower < 1)
                 cardPower = 1;
@@ -327,6 +330,9 @@ namespace Sanakan.Extensions
                 card.GetWhoWantsLine(),
                 $"Zdobyta: {card.Source.GetString()}, {card.CreationDate.ToShortDateTime()}",
             };
+            var ability = card.Dere.GetAbilityDescription();
+            if (ability != null)
+                more.Insert(0, $"Zdolność ({card.Dere}): {ability}");
             if (!string.IsNullOrEmpty(card.CustomImage) && !hideScalpelInfo)
                 more.Add($"Obrazek ustawiony {card.CustomImageDate.ToShortDateTime()} · animacja: {card.IsCardAnimated().GetYesNo()}");
             more.Add($"Tagi: {card.GetTagsLine(tags)}");
@@ -345,7 +351,7 @@ namespace Sanakan.Extensions
             .AddField("😴 Zmęczenie", card.GetFatigueString(time), true)
             .AddField("📈 Doświadczenie", $"{card.ExpCnt:0.##} / {card.ExpToUpgrade():0.##}", true)
             .AddField("⚡ Moc", $"{card.CalculateCardPower():0}", true)
-            .AddField("🎯 Precyzja", $"{card.CritChance:0.#}%", true)
+            .AddField("🎯 Precyzja", $"{card.GetCritChance():0.#}%", true)
             .AddField("Więcej", string.Join("\n", more).TrimToLength(EmbedFieldBuilder.MaxFieldValueLength));
         }
 
@@ -359,7 +365,7 @@ namespace Sanakan.Extensions
                 + $"{card.GetAffectionString()}\n"
                 + $"{card.GetFatigueString(time)}\n"
                 + $"{card.ExpCnt:F}/{card.ExpToUpgrade():F} exp\n"
-                + $"{card.CritChance:0.#}% precyzji\n\n"
+                + $"{card.GetCritChance():0.#}% precyzji\n\n"
                 + $"{(card.Tags.IsNullOrEmpty() ? "---" : string.Join(" ", card.Tags.Select(x => x.Name)))}\n"
                 + $"{card.GetStatusIcons(tags)}";
         }
@@ -377,7 +383,7 @@ namespace Sanakan.Extensions
                 + $"**Zmęczenie:** {card.GetFatigueString(time)}\n"
                 + $"**Doświadczenie:** {card.ExpCnt:F}/{card.ExpToUpgrade():F}\n"
                 + $"**Dostępne ulepszenia:** {card.UpgradesCnt}\n"
-                + $"**Precyzja:** {card.CritChance:0.#}%\n\n"
+                + $"**Precyzja:** {card.GetCritChance():0.#}%\n\n"
                 + $"**W klatce:** {card.InCage.GetYesNo()}\n"
                 + $"**Aktywna:** {card.Active.GetYesNo()}\n"
                 + $"**Możliwość wymiany:** {card.IsTradable.GetYesNo()}\n\n"

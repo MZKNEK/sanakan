@@ -19,7 +19,7 @@ namespace Sanakan.Extensions
     public static class UserExtension
     {
         public const int MAX_CARDS_IN_DECK = 8;
-        // about four maxed ultimate cards
+        // about seven maxed ultimate cards
         public const double MAX_DECK_POWER = 500_000;
         public const double MIN_DECK_POWER = 10;
 

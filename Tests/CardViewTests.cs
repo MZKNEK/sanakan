@@ -59,8 +59,9 @@ namespace Artifacts
             Assert.Equal("❤ Życie", embed.Fields[0].Name);
             Assert.Contains(embed.Fields, x => x.Name == "🎯 Precyzja");
             var more = Assert.Single(embed.Fields, x => x.Name == "Więcej").Value.Split('\n');
-            Assert.StartsWith("Numer: ", more[1]);
-            Assert.Equal("KC: 57 (12 aktywnych)", more[2]);
+            Assert.StartsWith("Zdolność (Tsundere): ", more[0]);
+            Assert.StartsWith("Numer: ", more[2]);
+            Assert.Equal("KC: 57 (12 aktywnych)", more[3]);
         }
 
         [Fact]

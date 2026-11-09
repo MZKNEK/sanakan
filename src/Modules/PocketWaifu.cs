@@ -4192,7 +4192,8 @@ namespace Sanakan.Modules
 
                 var info = duser.GameDeck.CalculatePVPParams(duser.GameDeck, res);
                 string wStr = fight.Winner == null ? "Remis!" : $"Zwycięża {fight.Winner.User.Mention}!";
-                await SafeReplyAsync("", embed: $"⚔️ **Pojedynek testowy**:\n{Context.User.Mention} vs. {usr.Mention}\n\n{Moderator.JoinWithinLimit(deathLog.Split('\n'), 2000, "\n")}\n{wStr}\n{info}".ToEmbedMessage(EMType.Info).Build());
+                await SafeReplyWithTextFileAsync($"⚔️ **Pojedynek testowy**:\n{Context.User.Mention} vs. {usr.Mention}\n\n{Moderator.JoinWithinLimit(deathLog.Split('\n'), 2000, "\n")}\n{wStr}\n{info}".ToEmbedMessage(EMType.Info).Build(),
+                    Waifu.FightLogFileName, Waifu.GetFullFightLog(fight, players));
             }
         }
 
@@ -4345,7 +4346,8 @@ namespace Sanakan.Modules
                     try
                     {
                         string wStr = fight.Winner == null ? "Remis!" : $"Zwycięża {fight.Winner.User.Mention}!";
-                        await SafeReplyAsync("", embed: $"⚔️ **Pojedynek**:\n{Context.User.Mention} vs. {euser.Mention}\n\n{Moderator.JoinWithinLimit(deathLog.Split('\n'), 2000, "\n")}\n{wStr}\n{info}".ToEmbedMessage(EMType.Bot).Build());
+                        await SafeReplyWithTextFileAsync($"⚔️ **Pojedynek**:\n{Context.User.Mention} vs. {euser.Mention}\n\n{Moderator.JoinWithinLimit(deathLog.Split('\n'), 2000, "\n")}\n{wStr}\n{info}".ToEmbedMessage(EMType.Bot).Build(),
+                            Waifu.FightLogFileName, Waifu.GetFullFightLog(fight, players));
                     }
                     catch (Exception ex)
                     {
