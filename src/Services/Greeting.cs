@@ -267,13 +267,16 @@ namespace Sanakan.Services
         private Task<bool> IsStillOnAnyGuildAsync(ulong leftGuildId, ulong userId)
             => IsOnAnyGuildAsync(_client, _logger, userId, leftGuildId);
 
-        // asks Discord when the cache does not have the user, an error counts as present so nobody is removed by mistake
+        // asks Discord only when the guild's member list is incomplete, an error counts as present so nobody is removed by mistake
         public static async Task<bool> IsOnAnyGuildAsync(DiscordSocketClient client, ILogger logger, ulong userId, ulong skipGuildId = 0)
         {
             foreach (var guild in client.Guilds.Where(x => x.Id != skipGuildId))
             {
                 if (guild.GetUser(userId) != null)
                     return true;
+
+                if (guild.HasAllMembers)
+                    continue;
 
                 try
                 {
