@@ -60,6 +60,7 @@ namespace Artifacts
         public ExperienceWriteFailureTests()
         {
             _connection.Open();
+            Sanakan.Database.SqliteText.RegisterPow(_connection);
             using var db = Open();
             db.Database.EnsureCreated();
             db.Users.Add(new User().Default(_user.Id, _time.Now()));

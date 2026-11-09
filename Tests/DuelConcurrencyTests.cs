@@ -60,6 +60,7 @@ namespace Artifacts
         public DuelConcurrencyTests()
         {
             _connection.Open();
+            Sanakan.Database.SqliteText.RegisterPow(_connection);
             using var db = Open();
             db.Database.EnsureCreated();
             foreach (ulong id in new ulong[] { 61, 62, 63 })

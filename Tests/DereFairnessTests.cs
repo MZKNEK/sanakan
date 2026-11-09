@@ -120,9 +120,9 @@ namespace Artifacts
         }
 
         [Fact]
-        public void Bodere_CountersAboutOneHitInSeven()
+        public void Bodere_StrikesAgainInAboutOneTurnInSeven()
         {
-            int landed = 0, counters = 0;
+            int turns = 0, again = 0;
             for (int i = 0; i < 5; i++)
             {
                 var bodere = NewCard(false, 999, 10, 99, 0);
@@ -137,12 +137,12 @@ namespace Artifacts
                     new PlayerInfo { Cards = new List<Card> { enemy } },
                 });
 
-                var attacks = fight.Rounds.SelectMany(x => x.Fights).ToList();
-                landed += attacks.Count(x => x.DefCardId == bodere.Id && !x.Counter);
-                counters += attacks.Count(x => x.AtkCardId == bodere.Id && x.Counter);
+                var attacks = fight.Rounds.SelectMany(x => x.Fights).Where(x => x.AtkCardId == bodere.Id).ToList();
+                turns += attacks.Count(x => !x.SecondStrike);
+                again += attacks.Count(x => x.SecondStrike);
             }
 
-            Assert.InRange(counters / (double)landed, 0.12, 0.18);
+            Assert.InRange(again / (double)turns, 0.12, 0.18);
         }
     }
 }

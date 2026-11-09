@@ -66,7 +66,7 @@ namespace Sanakan.Database
 
         // the -1 marker means the owner has to set the deck again, it stays until they do
         public static string RefreshDecksSql(IEnumerable<ulong> decks) => Invariant(
-            $"UPDATE GameDecks SET DeckPower = COALESCE((SELECT SUM(c.CardPower) FROM Cards c WHERE c.GameDeckId = GameDecks.Id AND c.Active = 1), 0), ")
+            $"UPDATE GameDecks SET DeckPower = COALESCE((SELECT POW(SUM(POW(c.CardPower, {UserExtension.DeckPowerExponent})), {1 / UserExtension.DeckPowerExponent:R}) FROM Cards c WHERE c.GameDeckId = GameDecks.Id AND c.Active = 1), 0), ")
             + "CardsInDeck = (SELECT COUNT(*) FROM Cards c WHERE c.GameDeckId = GameDecks.Id AND c.Active = 1) "
             + Invariant($"WHERE Id IN ({string.Join(",", decks)}) AND DeckPower <> -1");
 

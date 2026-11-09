@@ -19,8 +19,8 @@ namespace Sanakan.Extensions
     public static class UserExtension
     {
         public const int MAX_CARDS_IN_DECK = 8;
-        // about seven maxed ultimate cards
-        public const double MAX_DECK_POWER = 500_000;
+        // the four strongest maxed ultimate cards and a little room for more
+        public const double MAX_DECK_POWER = 300_000;
         public const double MIN_DECK_POWER = 10;
 
         public static bool SendAnyMsgInMonth(this User u)
@@ -549,7 +549,14 @@ namespace Sanakan.Extensions
         public static bool NeedToSetDeckAgain(this GameDeck deck) => deck.DeckPower == -1;
 
         public static double CalculateDeckPower(this GameDeck deck)
-            => deck.Cards.Where(x => x.Active).Sum(x => x.CalculateCardPower());
+            => CombineCardPowers(deck.Cards.Where(x => x.Active).Select(x => x.CalculateCardPower()));
+
+        // in simulated deck fights a few strong cards beat more weaker ones of the same total power,
+        // raising the powers to this exponent before adding them up evens that out
+        public const double DeckPowerExponent = 1.025;
+
+        public static double CombineCardPowers(IEnumerable<double> powers)
+            => Math.Pow(powers.Sum(x => Math.Pow(x, DeckPowerExponent)), 1 / DeckPowerExponent);
 
         /// <summary>
         /// Przelicza zapisane w bazie pola talii (moc i liczba aktywnych kart) na podstawie kolekcji kart.

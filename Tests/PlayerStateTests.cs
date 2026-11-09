@@ -145,13 +145,13 @@ namespace Artifacts
         }
 
         [Fact]
-        public void Deck_PowerIsSumOfActiveCards_AndStatusFollowsLimits()
+        public void Deck_PowerCombinesActiveCards_AndStatusFollowsLimits()
         {
             var user = NewUser();
             user.GameDeck.Cards = new List<Card> { ActiveCard(1), ActiveCard(2), ActiveCard(3, active: false) };
 
             var deck = UserDeck.From(user, Now);
-            var expected = user.GameDeck.Cards.Where(x => x.Active).Sum(x => x.CalculateCardPower());
+            var expected = UserExtension.CombineCardPowers(user.GameDeck.Cards.Where(x => x.Active).Select(x => x.CalculateCardPower()));
 
             Assert.Equal(2, deck.Cards.Count);
             Assert.Equal(expected, deck.Power, 6);

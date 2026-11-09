@@ -56,7 +56,7 @@ namespace Artifacts
             Assert.Contains("Runda 1", log);
             Assert.Contains("Rem [????] → Emilia [????]: ", log);
             Assert.Contains("(szał Yandere, osłona Tsundere)", log);
-            Assert.Contains("↩ kontra: Rem", log);
+            Assert.Contains("⚔ drugi cios: Rem", log);
             Assert.Contains("✖ Emilia [????] pada", log);
             Assert.Contains("Emilia [????] → Rem [????]: unik", log);
             Assert.EndsWith("Wynik: wygrywa ????" + System.Environment.NewLine, log);

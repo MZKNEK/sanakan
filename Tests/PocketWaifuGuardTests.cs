@@ -74,7 +74,7 @@ namespace Artifacts
 
             deck.RecalculateDeck();
 
-            var expected = deck.Cards.Where(x => x.Active).Sum(x => x.CalculateCardPower());
+            var expected = UserExtension.CombineCardPowers(deck.Cards.Where(x => x.Active).Select(x => x.CalculateCardPower()));
             Assert.Equal(expected, deck.DeckPower, 3);
         }
 

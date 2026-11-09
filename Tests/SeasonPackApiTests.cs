@@ -47,6 +47,7 @@ namespace Artifacts
         public SeasonPackApiTests()
         {
             _connection.Open();
+            Sanakan.Database.SqliteText.RegisterPow(_connection);
             using var db = Open();
             db.Database.EnsureCreated();
             var user = new User().Default(DiscordId, _time.Now());

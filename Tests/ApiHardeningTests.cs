@@ -121,6 +121,7 @@ namespace Artifacts
         public ApiSqliteHardeningTests()
         {
             _connection.Open();
+            Sanakan.Database.SqliteText.RegisterPow(_connection);
             using var db = Open();
             db.Database.EnsureCreated();
             foreach (var (discord, shinden, blacklisted) in new[] { (DiscordId, ShindenId, false), (BlacklistedId, BlacklistedShindenId, true) })

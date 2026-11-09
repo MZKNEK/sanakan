@@ -1358,13 +1358,12 @@ namespace Sanakan.Services.PocketWaifu
             return nDef;
         }
 
-        // a counter cannot be dodged and does not provoke another counter
-        public static bool Strike(RoundInfo round, CardWithHealth attacker, CardWithHealth target, bool counter)
+        public static bool Strike(RoundInfo round, CardWithHealth attacker, CardWithHealth target, bool secondStrike)
         {
-            var info = new AttackInfo { AtkCardId = attacker.Card.Id, DefCardId = target.Card.Id, Counter = counter };
+            var info = new AttackInfo { AtkCardId = attacker.Card.Id, DefCardId = target.Card.Id, SecondStrike = secondStrike };
             round.Fights.Add(info);
 
-            if (!counter && target.Card.Dere == Dere.Dandere && Fun.TakeATry(DereAbility.DandereDodgeChance))
+            if (target.Card.Dere == Dere.Dandere && Fun.TakeATry(DereAbility.DandereDodgeChance))
             {
                 info.Dodged = true;
                 info.TargetHp = target.Health;
@@ -1435,10 +1434,10 @@ namespace Sanakan.Services.PocketWaifu
                 bool Own(ulong id) => player.Cards.Any(c => c.Id == id);
                 var events = new List<string>();
                 var dodges = attacks.Count(x => x.Dodged && Own(x.DefCardId));
-                var counters = attacks.Count(x => x.Counter && Own(x.AtkCardId));
+                var secondStrikes = attacks.Count(x => x.SecondStrike && Own(x.AtkCardId));
                 var heals = attacks.Count(x => x.Healed && Own(x.DefCardId));
                 if (dodges > 0) events.Add($"uniki {dodges}");
-                if (counters > 0) events.Add($"kontry {counters}");
+                if (secondStrikes > 0) events.Add($"drugie ciosy {secondStrikes}");
                 if (heals > 0) events.Add($"leczenie {heals}");
                 if (events.Count > 0)
                     perPlayer.Add($"{player.User?.Username ?? "????"} {string.Join(", ", events)}");
@@ -1482,7 +1481,7 @@ namespace Sanakan.Services.PocketWaifu
                 log.AppendLine($"Runda {i + 1}");
                 foreach (var attack in fight.Rounds[i].Fights)
                 {
-                    var who = $"{(attack.Counter ? "↩ kontra: " : "")}{Label(attack.AtkCardId)} → {Label(attack.DefCardId)}";
+                    var who = $"{(attack.SecondStrike ? "⚔ drugi cios: " : "")}{Label(attack.AtkCardId)} → {Label(attack.DefCardId)}";
                     if (attack.Dodged)
                     {
                         log.AppendLine($"  {who}: unik");
@@ -1547,10 +1546,15 @@ namespace Sanakan.Services.PocketWaifu
                     var enemies = totalCards.Where(x => x.Health > 0 && x.Card.GameDeckId != card.Card.GameDeckId).ToList();
                     if (enemies.Count() > 0)
                     {
-                        var target = Fun.GetOneRandomFrom(enemies);
-                        var landed = Strike(round, card, target, false);
-                        if (landed && target.Health > 0 && target.Card.Dere == Dere.Bodere && Fun.TakeATry(DereAbility.BodereCounterChance))
-                            Strike(round, target, card, true);
+                        Strike(round, card, Fun.GetOneRandomFrom(enemies), false);
+
+                        // on its own turn, so the bonus does not grow with the number of enemies hitting it
+                        if (card.Card.Dere == Dere.Bodere && card.Health > 0 && Fun.TakeATry(DereAbility.BodereSecondStrikeChance))
+                        {
+                            enemies = enemies.Where(x => x.Health > 0).ToList();
+                            if (enemies.Count > 0)
+                                Strike(round, card, Fun.GetOneRandomFrom(enemies), true);
+                        }
                     }
                 }
 
@@ -1585,7 +1589,7 @@ namespace Sanakan.Services.PocketWaifu
             var msg = new List<Embed>();
             var cardsStrings = list.Select(x => $"{x.GetString(false, false, true)} · moc {x.CardPower:0}");
             var perPage = cardsStrings.SplitList(10);
-            var deckPower = list.Sum(x => x.CalculateCardPower());
+            var deckPower = UserExtension.CombineCardPowers(list.Select(x => x.CalculateCardPower()));
 
             foreach (var p in perPage)
             {

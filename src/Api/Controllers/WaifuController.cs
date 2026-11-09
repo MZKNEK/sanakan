@@ -1475,7 +1475,7 @@ namespace Sanakan.Api.Controllers
                             thisCard.Active = !thisCard.Active;
                             if (thisCard.Active) active.Add(thisCard);
 
-                            botUser.GameDeck.DeckPower = active.Sum(x => x.CalculateCardPower());
+                            botUser.GameDeck.DeckPower = UserExtension.CombineCardPowers(active.Select(x => x.CalculateCardPower()));
                             botUser.GameDeck.CardsInDeck = active.Count;
 
                             await db.SaveChangesAsync();

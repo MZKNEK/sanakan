@@ -54,7 +54,7 @@ namespace Sanakan.Api.Models
         {
             var deck = user.GameDeck;
             var active = deck.Cards.Where(x => x.Active).ToList();
-            var power = active.Sum(x => x.CalculateCardPower());
+            var power = UserExtension.CombineCardPowers(active.Select(x => x.CalculateCardPower()));
 
             var pvp = user.TimeStatuses?.FirstOrDefault(x => x.Type == StatusType.Pvp);
             var gamesToday = pvp != null && pvp.IsActive(now) ? (long)deck.PVPDailyGamesPlayed : 0;

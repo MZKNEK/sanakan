@@ -27,7 +27,13 @@ namespace Sanakan.Database
             // EF translates string.Contains/IndexOf to instr()
             connection.CreateFunction<string, string, long?>("instr",
                 (text, part) => text == null || part == null ? null : Compare.IndexOf(text, part, Options) + 1, isDeterministic: true);
+            RegisterPow(connection);
         }
+
+        // MySQL has it built in, the deck power refresh needs it
+        public static void RegisterPow(SqliteConnection connection)
+            => connection.CreateFunction<double?, double?, double?>("pow",
+                (x, y) => x == null || y == null ? null : System.Math.Pow(x.Value, y.Value), isDeterministic: true);
 
         private class ConnectionSetup : DbConnectionInterceptor
         {

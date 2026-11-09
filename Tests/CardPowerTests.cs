@@ -26,6 +26,7 @@ namespace Artifacts
         public CardPowerTests()
         {
             _connection.Open();
+            Sanakan.Database.SqliteText.RegisterPow(_connection);
             using var db = Open();
             db.Database.EnsureCreated();
         }

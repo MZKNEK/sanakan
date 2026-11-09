@@ -32,7 +32,7 @@ namespace Sanakan.Services.PocketWaifu
                     .ToDictionaryAsync(x => x.Id, x => x.DeckPower);
             }
 
-            var deckPower = storedDeckPower.Keys.ToDictionary(x => x, _ => 0d);
+            var deckPower = storedDeckPower.Keys.ToDictionary(x => x, _ => new List<double>());
             var changedCards = 0;
 
             foreach (var chunk in cardIds.Chunk(batchSize))
@@ -57,7 +57,7 @@ namespace Sanakan.Services.PocketWaifu
                         changed.Add((card.Id, power));
 
                     if (card.Active && deckPower.ContainsKey(card.GameDeckId))
-                        deckPower[card.GameDeckId] += power;
+                        deckPower[card.GameDeckId].Add(power);
                 }
 
                 if (changed.Count > 0)
@@ -68,8 +68,8 @@ namespace Sanakan.Services.PocketWaifu
             }
 
             // -1 marks a deck its owner has to set again, it stays until they do
-            var changedDecks = deckPower.Where(x => storedDeckPower[x.Key] != -1 && Math.Abs(storedDeckPower[x.Key] - x.Value) > 1e-6)
-                .Select(x => (x.Key, x.Value)).ToList();
+            var changedDecks = deckPower.Select(x => (x.Key, Value: UserExtension.CombineCardPowers(x.Value)))
+                .Where(x => storedDeckPower[x.Key] != -1 && Math.Abs(storedDeckPower[x.Key] - x.Value) > 1e-6).ToList();
             foreach (var chunk in changedDecks.Chunk(batchSize))
             {
                 using var db = createContext();

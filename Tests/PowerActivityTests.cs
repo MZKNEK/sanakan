@@ -26,6 +26,7 @@ namespace Artifacts
         public PowerActivityTests()
         {
             _connection.Open();
+            Sanakan.Database.SqliteText.RegisterPow(_connection);
             using var db = Open();
             db.Database.EnsureCreated();
             foreach (ulong id in new ulong[] { 5, 6 })
@@ -110,7 +111,9 @@ namespace Artifacts
 
             var deck = await DeckAsync(5);
             Assert.Equal(2, deck.Cards);
-            Assert.Equal(await CardPowerAsync(50) + await CardPowerAsync(51), deck.Power, 6);
+            var expected = UserExtension.CombineCardPowers(new[] { await CardPowerAsync(50), await CardPowerAsync(51) });
+            Assert.Equal(expected, deck.Power, 6);
+            Assert.True(expected < await CardPowerAsync(50) + await CardPowerAsync(51));
         }
 
         [Fact]

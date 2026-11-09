@@ -106,20 +106,15 @@ namespace Artifacts
         }
 
         [Fact]
-        public void Dandere_DodgesAboutOneInTen_ButNotCounters()
+        public void Dandere_DodgesAboutOneInTen()
         {
             var attacker = Fighter(Dere.Bodere);
             var round = new RoundInfo();
             for (int i = 0; i < 20000; i++)
-                Waifu.Strike(round, attacker, Fighter(Dere.Dandere), false);
+                Waifu.Strike(round, attacker, Fighter(Dere.Dandere), i % 2 == 0);
 
             var rate = round.Fights.Count(x => x.Dodged) / 20000d;
             Assert.InRange(rate, 0.09, 0.11);
-
-            var counters = new RoundInfo();
-            for (int i = 0; i < 2000; i++)
-                Waifu.Strike(counters, attacker, Fighter(Dere.Dandere), true);
-            Assert.DoesNotContain(counters.Fights, x => x.Dodged);
         }
 
         [Fact]
@@ -133,7 +128,7 @@ namespace Artifacts
                 Fights = new List<AttackInfo>
                 {
                     new AttackInfo { AtkCardId = b.Id, DefCardId = a.Id, Dodged = true },
-                    new AttackInfo { AtkCardId = b.Id, DefCardId = a.Id, Counter = true },
+                    new AttackInfo { AtkCardId = b.Id, DefCardId = a.Id, SecondStrike = true },
                     new AttackInfo { AtkCardId = a.Id, DefCardId = b.Id, Healed = true },
                 }
             });
@@ -143,7 +138,7 @@ namespace Artifacts
                 new PlayerInfo { Cards = new List<Card> { b } },
             };
 
-            Assert.Equal("✨ Zdolności: ???? uniki 1 · ???? kontry 1, leczenie 1\n", Waifu.AbilitiesLine(fight, players));
+            Assert.Equal("✨ Zdolności: ???? uniki 1 · ???? drugie ciosy 1, leczenie 1\n", Waifu.AbilitiesLine(fight, players));
             Assert.Equal("", Waifu.AbilitiesLine(new FightHistory(null), players));
         }
 

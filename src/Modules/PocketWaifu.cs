@@ -3554,7 +3554,7 @@ namespace Sanakan.Modules
                     thisCard.Active = false;
                 }
 
-                bUser.GameDeck.DeckPower = active.Sum(x => x.CalculateCardPower());
+                bUser.GameDeck.DeckPower = UserExtension.CombineCardPowers(active.Select(x => x.CalculateCardPower()));
                 bUser.GameDeck.CardsInDeck = active.Count;
 
                 await db.SaveChangesAsync();

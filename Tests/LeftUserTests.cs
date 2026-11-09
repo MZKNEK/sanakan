@@ -27,6 +27,7 @@ namespace Artifacts
         public LeftUserTests()
         {
             _connection.Open();
+            Sanakan.Database.SqliteText.RegisterPow(_connection);
             using var db = Open();
             db.Database.EnsureCreated();
             db.Users.Add(new User().Default(1, _now));

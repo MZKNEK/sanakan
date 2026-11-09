@@ -14,7 +14,7 @@ namespace Sanakan.Services.PocketWaifu.Fight
         public const double YandereRageMultiplier = 1.5;
         public const double DandereDodgeChance = 10;
         public const double KuudereCritBonus = 20;
-        public const double BodereCounterChance = 15;
+        public const double BodereSecondStrikeChance = 15;
 
         public static string GetAbilityDescription(this Dere dere) => dere switch
         {
@@ -25,7 +25,7 @@ namespace Sanakan.Services.PocketWaifu.Fight
             Dere.Dandere  => "unika 10% ataków",
             Dere.Kuudere  => "ma 20 punktów precyzji więcej",
             Dere.Mayadere => "przewaga charakteru przeciwnika nie zmniejsza zadawanych obrażeń",
-            Dere.Bodere   => "po otrzymaniu trafienia w 15% przypadków od razu kontratakuje",
+            Dere.Bodere   => "po swoim ataku w 15% przypadków atakuje drugi raz",
             _ => null
         };
     }
