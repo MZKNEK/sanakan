@@ -76,6 +76,40 @@ namespace Artifacts
             Assert.Equal(LogKind.Error, LoggerExtensions.Parse(message).Kind);
         }
 
+        [Theory]
+        [InlineData(404)]
+        [InlineData(410)]
+        public async Task CharacterPicture_PlayerImageGone_IsLoggedWithReason_ButNotSentToLogChannel(int status)
+        {
+            var requests = 0;
+            using var server = new LocalHttpServer(Flaky(int.MaxValue, status, () => Interlocked.Increment(ref requests)));
+            var logger = new ListLogger();
+            var url = server.BaseUrl + "char.png";
+
+            var picture = await new ImageProcessing(null, null, true, logger).LoadCharacterPictureAsync(url, 1704809, userImage: true);
+
+            Assert.Null(picture);
+            var message = Assert.Single(logger.Messages);
+            Assert.Contains("1704809", message);
+            Assert.Contains(url, message);
+            Assert.Contains($"HTTP {status}", message);
+            Assert.Equal(LogKind.Routine, LoggerExtensions.Parse(message).Kind);
+            Assert.False(DiscordChannelLogger.ShouldSend(message));
+        }
+
+        [Fact]
+        public async Task CharacterPicture_PlayerImageServerError_IsStillAnError()
+        {
+            var requests = 0;
+            using var server = new LocalHttpServer(Flaky(int.MaxValue, 500, () => Interlocked.Increment(ref requests)));
+            var logger = new ListLogger();
+
+            var picture = await new ImageProcessing(null, null, true, logger).LoadCharacterPictureAsync(server.BaseUrl + "char.png", 1, userImage: true);
+
+            Assert.Null(picture);
+            Assert.Equal(LogKind.Error, LoggerExtensions.Parse(Assert.Single(logger.Messages)).Kind);
+        }
+
         [Fact]
         public async Task CharacterPicture_RateLimited_IsLoggedWithReason_ButNotSentToLogChannel()
         {

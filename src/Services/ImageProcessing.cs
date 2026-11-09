@@ -1333,7 +1333,7 @@ namespace Sanakan.Services
 
         // A failed download would be saved into the card file for good, so a remote picture gets a few attempts
         // and a final failure is logged. Returns null when the picture could not be loaded.
-        internal async Task<Image> LoadCharacterPictureAsync(string url, ulong cardId, CardPictureCache pictures = null)
+        internal async Task<Image> LoadCharacterPictureAsync(string url, ulong cardId, CardPictureCache pictures = null, bool userImage = false)
         {
             if (Dir.IsLocal(url))
                 return await GetImageFromUrlOrLocalAsync(url);
@@ -1369,17 +1369,20 @@ namespace Sanakan.Services
             pictures?.Add(url, null);
             var message = $"Images: character picture for card {cardId} could not be downloaded ({failure.Reason ?? "unknown"}): {url}";
             // a rate limit on the image host is temporary and nothing can be done about it, so it stays off the log channel
-            if (failure.StatusCode == HttpStatusCode.TooManyRequests)
+            // (same for a picture set by the player that no longer exists - it is the player's data, not a bot error)
+            if (failure.StatusCode == HttpStatusCode.TooManyRequests
+                || (userImage && failure.StatusCode is HttpStatusCode.NotFound or HttpStatusCode.Gone))
                 _logger?.LogRoutine(message);
             else
                 _logger?.LogError(message);
             return null;
         }
 
-        private async Task<Image> GetCharacterPictureAsync(string characterUrl, bool ultimate, ulong cardId, CardPictureCache pictures)
+        private async Task<Image> GetCharacterPictureAsync(Card card, CardPictureCache pictures)
         {
-            var characterImg = ultimate ? new Image<Rgba32>(475, 667) : await Image.LoadAsync(Dir.GetResource("PW/empty.png"));
-            using (var image = await LoadCharacterPictureAsync(characterUrl ?? "http://cdn.shinden.eu/cdn1/other/placeholders/title/225x350.jpg", cardId, pictures))
+            var characterImg = card.FromFigure ? new Image<Rgba32>(475, 667) : await Image.LoadAsync(Dir.GetResource("PW/empty.png"));
+            using (var image = await LoadCharacterPictureAsync(card.GetImage() ?? "http://cdn.shinden.eu/cdn1/other/placeholders/title/225x350.jpg",
+                card.Id, pictures, card.CustomImage != null))
             {
                 if (image is null)
                     return characterImg;
@@ -2058,7 +2061,7 @@ namespace Sanakan.Services
 
             ApplyBorderBack(image, card);
 
-            using (var chara = await GetCharacterPictureAsync(card.GetImage(), card.FromFigure, card.Id, pictures))
+            using (var chara = await GetCharacterPictureAsync(card, pictures))
             {
                 var mov = card.FromFigure ? 0 : 13;
                 image.Mutate(x => x.DrawImage(chara, new Point(mov, mov), 1));
@@ -2101,7 +2104,7 @@ namespace Sanakan.Services
 
             ApplyBorderBack(image, card);
 
-            using (var chara = await GetCharacterPictureAsync(card.GetImage(), card.FromFigure, card.Id, pictures))
+            using (var chara = await GetCharacterPictureAsync(card, pictures))
             {
                 var mov = card.FromFigure ? 0 : 13;
                 image.Mutate(x => x.DrawImage(chara, new Point(mov, mov), 1));
