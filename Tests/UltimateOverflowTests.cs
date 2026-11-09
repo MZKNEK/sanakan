@@ -126,6 +126,16 @@ namespace Artifacts
         }
 
         [Fact]
+        public void Omega_HasEnoughPillPointsToMaxEveryStat()
+        {
+            Assert.Equal(119_997, Ultimate(Quality.Omega).GetMaxUltimateParams());
+            Assert.Equal(119_997, Ultimate(Quality.Sigma, 6).GetMaxUltimateParams());
+            Assert.Equal(4900 * 23, Ultimate(Quality.Sigma, 5).GetMaxUltimateParams());
+            Assert.True(Ultimate(Quality.Omega).CanUpgradePower(119_997).IsOk());
+            Assert.False(Ultimate(Quality.Omega).CanUpgradePower(119_998).IsOk());
+        }
+
+        [Fact]
         public void QualityTables_FollowThePlayedQuality()
         {
             Assert.Equal(6, Ultimate(Quality.Jota, 1).GetMarketBonusFromUltimate());

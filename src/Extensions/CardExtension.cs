@@ -981,6 +981,11 @@ namespace Sanakan.Extensions
             _ => "wszystkie parametry tej karty są już maksymalne.",
         };
 
+        // omega is the last quality, so its pills are enough to max every stat
+        public static long GetMaxUltimateParams(this Card card) => card.GetEffectiveQuality() == Quality.Omega
+            ? (long)MaxUltimateHealth + MaxUltimateAttack + MaxUltimateDefence
+            : 4900L * card.GetUltimateValue();
+
         public static ExecutionResult CanUpgradePower(this Card card, long points)
         {
             if (!card.FromFigure)
@@ -989,7 +994,7 @@ namespace Sanakan.Extensions
             }
 
             long currParams = card.AttackBonus + card.HealthBonus + card.DefenceBonus;
-            long maxParams = 4900 * card.GetUltimateValue();
+            long maxParams = card.GetMaxUltimateParams();
             if (currParams + points > maxParams)
             {
                 return ExecutionResult.FromError("nie można już bardziej zwiększyć parametrów na tej karcie.");

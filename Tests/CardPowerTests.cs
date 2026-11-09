@@ -138,6 +138,34 @@ namespace Artifacts
         }
 
         [Fact]
+        public async Task Recalculation_ReportsProgressForCardsAndThenDecks()
+        {
+            using (var db = Open())
+            {
+                var user = new User().Default(5, DateTime.Now);
+                for (int i = 0; i < 3; i++)
+                {
+                    var card = Card(false, 999, 999, 99, Dere.Deredere);
+                    card.Active = true;
+                    card.CardPower = 1;
+                    user.GameDeck.Cards.Add(card);
+                }
+                user.GameDeck.DeckPower = 3;
+                db.Users.Add(user);
+                await db.SaveChangesAsync();
+            }
+
+            var reports = new List<PowerRecalculationProgress>();
+            await PowerRecalculation.RecalculateAllAsync(Open, batchSize: 1, pause: TimeSpan.Zero, progress: reports.Add);
+
+            Assert.Equal(new[] { 1, 2, 3 }, reports.Where(x => x.DecksToWrite < 0).Select(x => x.CardsDone));
+            Assert.Equal(new PowerRecalculationProgress(3, 3, 3, 1, 1), reports.Last());
+            Assert.Contains("1 / 3 (33%)", PowerRecalculation.ProgressText(reports[0], TimeSpan.FromSeconds(30)));
+            Assert.Contains("zostało ok. 1 min 0 s", PowerRecalculation.ProgressText(reports[0], TimeSpan.FromSeconds(30)));
+            Assert.Contains("Zapisywanie mocy talii: 1 / 1", PowerRecalculation.ProgressText(reports.Last(), TimeSpan.FromSeconds(90)));
+        }
+
+        [Fact]
         public async Task Recalculation_UpdatesStoredCardAndDeckPower()
         {
             using (var db = Open())

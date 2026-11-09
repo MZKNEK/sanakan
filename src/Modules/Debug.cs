@@ -229,17 +229,47 @@ namespace Sanakan.Modules
         {
             try
             {
-                await SafeReplyAsync("", embed: "Przeliczanie mocy kart i talii...".ToEmbedMessage(EMType.Bot).Build());
+                var msg = await SafeReplyAsync("", embed: "Przeliczanie mocy kart i talii...".ToEmbedMessage(EMType.Bot).Build());
                 var watch = Stopwatch.StartNew();
-                var res = await PowerRecalculation.RecalculateAllAsync(() => new Database.DatabaseContext(Config));
-                await SafeReplyAsync("", embed: ($"Gotowe w {watch.Elapsed.TotalSeconds:0} s.\n"
+                var shownAt = TimeSpan.Zero;
+                Task lastEdit = Task.CompletedTask;
+                // the edits run beside the recalculation and at most this often, so they never slow it down
+                var res = await PowerRecalculation.RecalculateAllAsync(() => new Database.DatabaseContext(Config), progress: p =>
+                {
+                    if (msg == null || !lastEdit.IsCompleted || watch.Elapsed - shownAt < RecalculationProgressInterval)
+                        return;
+
+                    shownAt = watch.Elapsed;
+                    lastEdit = EditEmbedAsync(msg, PowerRecalculation.ProgressText(p, watch.Elapsed), EMType.Bot);
+                });
+
+                await lastEdit;
+                var summary = $"Gotowe w {watch.Elapsed.TotalSeconds:0} s.\n"
                     + $"Karty: {res.Cards}, zmieniona moc: {res.ChangedCards}.\n"
-                    + $"Talie: {res.Decks}, zmieniona moc: {res.ChangedDecks}.").ToEmbedMessage(EMType.Success).Build());
+                    + $"Talie: {res.Decks}, zmieniona moc: {res.ChangedDecks}.";
+                if (msg == null || !await EditEmbedAsync(msg, summary, EMType.Success))
+                    await SafeReplyAsync("", embed: summary.ToEmbedMessage(EMType.Success).Build());
             }
             catch (Exception ex)
             {
                 Logger?.LogError($"Debug: recpower: {ex}");
                 await SafeReplyAsync("", embed: $"Przeliczanie przerwane: {ex.Message}".ToEmbedMessage(EMType.Error).Build());
+            }
+        }
+
+        private static readonly TimeSpan RecalculationProgressInterval = TimeSpan.FromSeconds(20);
+
+        private async Task<bool> EditEmbedAsync(IUserMessage msg, string text, EMType type)
+        {
+            try
+            {
+                await msg.ModifyAsync(x => x.Embed = text.ToEmbedMessage(type).Build());
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Logger?.LogError($"Debug: editing a message: {ex.Message}");
+                return false;
             }
         }
 
