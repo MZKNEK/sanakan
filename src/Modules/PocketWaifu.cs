@@ -4192,9 +4192,30 @@ namespace Sanakan.Modules
 
                 var info = duser.GameDeck.CalculatePVPParams(duser.GameDeck, res);
                 string wStr = fight.Winner == null ? "Remis!" : $"Zwycięża {fight.Winner.User.Mention}!";
-                await SafeReplyWithTextFileAsync($"⚔️ **Pojedynek testowy**:\n{Context.User.Mention} vs. {usr.Mention}\n\n{Moderator.JoinWithinLimit(deathLog.Split('\n'), 2000, "\n")}\n{wStr}\n{info}".ToEmbedMessage(EMType.Info).Build(),
-                    Waifu.FightLogFileName, Waifu.GetFullFightLog(fight, players));
+                await SendDuelResultAsync(await GetFightTrashChannelAsync(db), $"⚔️ **Pojedynek testowy**:\n{Context.User.Mention} vs. {usr.Mention}\n\n{Moderator.JoinWithinLimit(deathLog.Split('\n'), 2000, "\n")}\n{wStr}\n{info}",
+                    EMType.Info, fight, players);
             }
+        }
+
+        private async Task<ITextChannel> GetFightTrashChannelAsync(Database.DatabaseContext db)
+        {
+            if (Context.Guild == null) return null;
+            var config = await db.GetCachedGuildFullConfigAsync(Context.Guild.Id);
+            return Context.Guild.GetTextChannel(config?.WaifuConfig?.TrashFightChannel ?? 0);
+        }
+
+        // the full log goes to the fight trash channel and the result links to it, without that channel it is attached to the result
+        private async Task SendDuelResultAsync(ITextChannel trash, string text, EMType type, Services.PocketWaifu.Fight.FightHistory fight, List<PlayerInfo> players)
+        {
+            var fileName = Waifu.GetFightLogFileName(_time.Now(), players);
+            var log = Waifu.GetFullFightLog(fight, players);
+            var url = trash == null ? null : (await SafeSendTextFileAsync(trash, fileName, log))?.Attachments.FirstOrDefault()?.Url;
+            if (url == null)
+            {
+                await SafeReplyWithTextFileAsync(text.ToEmbedMessage(type).Build(), fileName, log);
+                return;
+            }
+            await SafeReplyAsync("", embed: $"{text}\n\n[Kliknij, by zobaczyć cały przebieg]({url})".ToEmbedMessage(type).Build());
         }
 
         [Command("pojedynek")]
@@ -4219,10 +4240,12 @@ namespace Sanakan.Modules
 
             foreach (var candidate in pvpPlayersInRange.Shuffle())
             {
-                var enemy = Context.Client.GetUser(candidate.UserId);
-                if (enemy == null) continue;
-                if (!await db.Cards.AsQueryable().AnyAsync(x => x.GameDeckId == enemy.Id && x.Active))
+                if (!await db.Cards.AsQueryable().AnyAsync(x => x.GameDeckId == candidate.UserId && x.Active))
                     continue;
+
+                // the bot is on many servers, so the opponent does not have to share one with it
+                var enemy = await GetDuelOpponentAsync(candidate.UserId);
+                if (enemy == null) continue;
 
                 await QueueDuelAsync(enemy);
                 return;
@@ -4232,6 +4255,19 @@ namespace Sanakan.Modules
         }
 
         protected virtual Database.DatabaseContext CreateDuelDatabaseContext() => new Database.DatabaseContext(Config);
+
+        private async Task<IUser> GetDuelOpponentAsync(ulong id)
+        {
+            try
+            {
+                return await Context.Client.GetUserAsync(id);
+            }
+            catch (Exception ex)
+            {
+                Logger?.LogError($"Waifu: duel opponent {id}: {ex.Message}");
+                return null;
+            }
+        }
 
         private async Task<bool> PrepareDuelAsync(User duser)
         {
@@ -4276,7 +4312,7 @@ namespace Sanakan.Modules
             return true;
         }
 
-        private async Task QueueDuelAsync(SocketUser enemy)
+        private async Task QueueDuelAsync(IUser enemy)
         {
             var duel = new Executable("pvp duel", () => ExecuteDuelAsync(enemy), Context.User.Id);
             duel.AddOwner(enemy.Id);
@@ -4284,7 +4320,7 @@ namespace Sanakan.Modules
                 await SafeReplyAsync("", embed: $"{Context.User.Mention} kolejka pojedynków jest pełna, spróbuj później.".ToEmbedMessage(EMType.Error).Build());
         }
 
-        private async Task ExecuteDuelAsync(SocketUser euser)
+        private async Task ExecuteDuelAsync(IUser euser)
         {
             using (var db = CreateDuelDatabaseContext())
             {
@@ -4340,14 +4376,15 @@ namespace Sanakan.Modules
                 denemy.GameDeck.RecalculateDeck();
                 var info = duser.GameDeck.CalculatePVPParams(denemy.GameDeck, res);
                 await db.SaveChangesAsync();
+                var trash = await GetFightTrashChannelAsync(db);
 
                 _ = Task.Run(async () =>
                 {
                     try
                     {
                         string wStr = fight.Winner == null ? "Remis!" : $"Zwycięża {fight.Winner.User.Mention}!";
-                        await SafeReplyWithTextFileAsync($"⚔️ **Pojedynek**:\n{Context.User.Mention} vs. {euser.Mention}\n\n{Moderator.JoinWithinLimit(deathLog.Split('\n'), 2000, "\n")}\n{wStr}\n{info}".ToEmbedMessage(EMType.Bot).Build(),
-                            Waifu.FightLogFileName, Waifu.GetFullFightLog(fight, players));
+                        await SendDuelResultAsync(trash, $"⚔️ **Pojedynek**:\n{Context.User.Mention} vs. {euser.Mention}\n\n{Moderator.JoinWithinLimit(deathLog.Split('\n'), 2000, "\n")}\n{wStr}\n{info}",
+                            EMType.Bot, fight, players);
                     }
                     catch (Exception ex)
                     {

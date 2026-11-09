@@ -1447,7 +1447,14 @@ namespace Sanakan.Services.PocketWaifu
             return perPlayer.Count == 0 ? "" : $"✨ Zdolności: {string.Join(" · ", perPlayer)}\n";
         }
 
-        public const string FightLogFileName = "walka.txt";
+        public static string GetFightLogFileName(DateTime date, List<PlayerInfo> players)
+            => $"{date:yyyy-MM-dd_HH-mm-ss}_{string.Join("_vs_", players.Select(p => FightLogNamePart(p.User?.Username)))}.txt";
+
+        internal static string FightLogNamePart(string name)
+        {
+            var part = new string((name ?? "").Where(c => c < 128 && (char.IsLetterOrDigit(c) || c == '-' || c == '_' || c == '.')).Take(32).ToArray());
+            return part.Length == 0 ? "gracz" : part;
+        }
 
         public static string GetFullFightLog(FightHistory fight, List<PlayerInfo> players)
         {

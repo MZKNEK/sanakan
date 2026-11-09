@@ -63,6 +63,18 @@ namespace Artifacts
         }
 
         [Fact]
+        public void LogFileName_HasTheDateAndBothPlayers()
+        {
+            var players = new List<PlayerInfo> { new PlayerInfo(), new PlayerInfo() };
+
+            Assert.Equal("2026-11-09_14-05-03_gracz_vs_gracz.txt", Waifu.GetFightLogFileName(new System.DateTime(2026, 11, 9, 14, 5, 3), players));
+            Assert.Equal("rem.13_x", Waifu.FightLogNamePart("rem.13_x"));
+            Assert.Equal("ukasz", Waifu.FightLogNamePart("Łukasz 🎴/"));
+            Assert.Equal("gracz", Waifu.FightLogNamePart("🎴"));
+            Assert.Equal(32, Waifu.FightLogNamePart(new string('a', 40)).Length);
+        }
+
+        [Fact]
         public void FullLog_OfTheLongestRealisticFight_FitsInADiscordUpload()
         {
             var waifu = (Waifu)FormatterServices.GetUninitializedObject(typeof(Waifu));

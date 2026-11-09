@@ -39,7 +39,10 @@ namespace Sanakan.Services.Commands
             return msg;
         }
 
-        public async Task<IUserMessage> SafeReplyWithTextFileAsync(Embed embed, string fileName, string fileContent)
+        public Task<IUserMessage> SafeReplyWithTextFileAsync(Embed embed, string fileName, string fileContent)
+            => SafeSendTextFileAsync(Context.Channel, fileName, fileContent, embed);
+
+        public async Task<IUserMessage> SafeSendTextFileAsync(IMessageChannel channel, string fileName, string fileContent, Embed embed = null)
         {
             Exception last = null;
             for (int i = 0; i < MAX_SNED_ATTEMPTS; i++)
@@ -47,7 +50,7 @@ namespace Sanakan.Services.Commands
                 try
                 {
                     using var stream = new System.IO.MemoryStream(System.Text.Encoding.UTF8.GetBytes(fileContent));
-                    var msg = await Context.Channel.SendFileAsync(stream, fileName, embed: embed);
+                    var msg = await channel.SendFileAsync(stream, fileName, embed: embed);
                     if (msg != null)
                         return msg;
                 }
