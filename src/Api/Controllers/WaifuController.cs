@@ -1347,7 +1347,7 @@ namespace Sanakan.Api.Controllers
                             return "User not found!".ToResponse(404);
                         }
 
-                        var packs = botUserCh.GameDeck.BoosterPacks.OrderBy(x => x.Id).ToList();
+                        var packs = Waifu.OrderPacksForNumbering(botUserCh.GameDeck.BoosterPacks);
                         if (packs.Count < packNumber || packNumber <= 0)
                         {
                             return "Boosterpack not found!".ToResponse(404);

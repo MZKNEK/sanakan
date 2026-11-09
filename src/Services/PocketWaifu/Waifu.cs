@@ -1733,9 +1733,9 @@ namespace Sanakan.Services.PocketWaifu
         private void AppendMessage(List<Embed> embeds, MessageContent currentContent, string nextPart) =>
             _helper.AppendMessage(embeds, currentContent, nextPart);
 
-        // on Discord packs are numbered with the same names together, groups in the order their first pack came;
-        // the list and the opening command must both use it so the numbers match
-        public static List<BoosterPack> OrderPacksForDiscord(IEnumerable<BoosterPack> packs)
+        // packs are numbered with the same names together, groups in the order their first pack came;
+        // every pack list and opening (Discord and API) must use it so the numbers match
+        public static List<BoosterPack> OrderPacksForNumbering(IEnumerable<BoosterPack> packs)
             => packs.OrderBy(x => x.Id).GroupBy(x => x.Name).SelectMany(x => x).ToList();
 
         public Embed GetBoosterPackList(SocketUser user, List<BoosterPack> packs) => new EmbedBuilder
