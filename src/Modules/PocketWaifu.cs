@@ -2624,7 +2624,7 @@ namespace Sanakan.Modules
         public async Task ChangeWaifuSiteForegroundAsync([Summary("bezpośredni adres do obrazka")] string imgUrl)
         {
             var tcCost = 500;
-            var imageCheck = await _img.CheckImageUrlAsync(imgUrl);
+            var imageCheck = await _img.CheckSiteImageUrlAsync(imgUrl);
             if (imageCheck.IsError())
             {
                 await SafeReplyAsync("", embed: ExecutionResult.From(imageCheck).ToEmbedMessage($"{Context.User.Mention} ").Build());
@@ -2660,7 +2660,7 @@ namespace Sanakan.Modules
         public async Task ChangeWaifuSiteBackgroundAsync([Summary("bezpośredni adres do obrazka")] string imgUrl)
         {
             var tcCost = 2000;
-            var imageCheck = await _img.CheckImageUrlAsync(imgUrl);
+            var imageCheck = await _img.CheckSiteImageUrlAsync(imgUrl);
             if (imageCheck.IsError())
             {
                 await SafeReplyAsync("", embed: ExecutionResult.From(imageCheck).ToEmbedMessage($"{Context.User.Mention} ").Build());

@@ -2809,11 +2809,7 @@ namespace Sanakan.Services.PocketWaifu
                     if (card.Image is null && !card.FromFigure && !card.Unique)
                         return ExecutionResult.FromError("Aby ustawić własny obrazek, karta musi posiadać wcześniej ustawiony główny (na stronie)!");
 
-                    var (isUrlToImage, imageExt) = await _img.IsUrlToImageAsync(imgCheck.Url);
-                    if (!isUrlToImage)
-                        return ExecutionResult.FromError("Nie został podany bezpośredni adres do obrazka!");
-
-                    if (card.FromFigure && !_imgExtWithAlpha.Any(x => x.Equals(imageExt, StringComparison.CurrentCultureIgnoreCase)))
+                    if (card.FromFigure && !_imgExtWithAlpha.Any(x => x.Equals(imgCheck.Extension, StringComparison.CurrentCultureIgnoreCase)))
                         return ExecutionResult.FromError("Format obrazka nie pozwala na przeźroczystość, która jest wymagana do kart ultimate!");
 
                     bool isAnim = item.Type == ItemType.SetCustomAnimatedImage;

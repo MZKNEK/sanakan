@@ -41,6 +41,15 @@ namespace Sanakan.Services
             Activity = null,
         };
 
+        static public ExecutionResult From(ImageCheckResult check)
+        {
+            var result = From((ImageUrlCheckResult)check);
+            if (result.IsError() && check != null && check.Status == ImageUrlCheckResult.BlacklistedHost && check.AllowedHosts.Count > 0)
+                result.Message = $"Ten adres nie jest obsługiwany! Dozwolone są obrazki z: {string.Join(", ", check.AllowedHosts)}.";
+
+            return result;
+        }
+
         static public ExecutionResult From(ImageUrlCheckResult res)
         {
             var result = new ExecutionResult

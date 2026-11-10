@@ -46,7 +46,7 @@ namespace Sanakan.Services
         private readonly ShindenClient _shclient;
         private ConcurrentDictionary<string, Color> _colors;
         private ConcurrentDictionary<(FontFamily, float), Font> _fonts;
-        private readonly List<DomainData> _imageServices;
+        private readonly List<DomainData> _siteImageServices;
         private readonly string[] _extensions = new[] { "png", "jpg", "jpeg", "gif", "webp" };
         private readonly bool _allowPrivateHosts;
         private readonly ILogger _logger;
@@ -63,15 +63,16 @@ namespace Sanakan.Services
             _httpClient = new HttpClient { Timeout = TimeSpan.FromSeconds(30) };
             _fonts = new ConcurrentDictionary<(FontFamily, float), Font>();
             _colors = new ConcurrentDictionary<string, Color>();
-            _imageServices = new List<DomainData>
+            _siteImageServices = new List<DomainData>
             {
-                new DomainData("sanakan.pl", true),
+                new DomainData("sanakan.pl", true, includeSubdomains: true),
+                new DomainData("shinden.pl", includeSubdomains: true),
+                new DomainData("shinden.eu", includeSubdomains: true),
+                new DomainData("cdn.discordapp.com"),
+                new DomainData("media.discordapp.net"),
                 new DomainData("i.imgur.com", true),
-                new DomainData("cdn.imgchest.com", true),
                 new DomainData("www.dropbox.com") { Transform = TransformDropboxAsync },
                 new DomainData("dl.dropboxusercontent.com"),
-                new DomainData("cdn.discordapp.com"),
-                new DomainData("onedrive.live.com"),
             };
         }
 
@@ -88,14 +89,17 @@ namespace Sanakan.Services
         public bool IsUrlFromHost(string url, IEnumerable<DomainData> hosts)
         {
             if (!Uri.IsWellFormedUriString(url, UriKind.Absolute))
-                return ImageCheckResult.From(ImageUrlCheckResult.NotUrl);
+                return false;
 
             var uri = new Uri(url);
-            var host = hosts.FirstOrDefault(x => x.Url.Equals(uri.Host, StringComparison.OrdinalIgnoreCase));
-            return host != null;
+            return hosts.Any(x => x.Matches(uri.Host));
         }
 
-        public Task<ImageCheckResult> CheckImageUrlAsync(string str) => CheckImageUrlAsync(str, _imageServices);
+        // the image is downloaded and kept by the bot, so its host does not matter
+        public Task<ImageCheckResult> CheckImageUrlAsync(string str) => CheckImageUrlAsync(str, null);
+
+        // the link itself is stored and shown later, so only hosts that keep it working are allowed
+        public Task<ImageCheckResult> CheckSiteImageUrlAsync(string str) => CheckImageUrlAsync(str, _siteImageServices);
 
         public async Task<ImageCheckResult> CheckImageUrlAsync(string str, IEnumerable<DomainData> allowedHosts)
         {
@@ -103,32 +107,33 @@ namespace Sanakan.Services
                 return ImageCheckResult.From(ImageUrlCheckResult.NotUrl);
 
             var url = new Uri(str);
+            var restricted = !allowedHosts.IsNullOrEmpty();
+            var host = restricted
+                ? allowedHosts.FirstOrDefault(x => x.Matches(url.Host))
+                : _siteImageServices.FirstOrDefault(x => x.Transform != null && x.Matches(url.Host));
+
+            if (restricted && host == null)
+                return ImageCheckResult.From(ImageUrlCheckResult.BlacklistedHost, allowedHosts: allowedHosts.Select(x => x.Url));
+
             var transform = false;
-            if (!allowedHosts.IsNullOrEmpty())
+            if (host?.Transform != null)
             {
-                var host = allowedHosts.FirstOrDefault(x => x.Url.Equals(url.Host, StringComparison.OrdinalIgnoreCase));
-                if (host == null)
-                    return ImageCheckResult.From(ImageUrlCheckResult.BlacklistedHost);
+                var newStr = await host.Transform(str);
+                if (string.IsNullOrEmpty(newStr))
+                    return ImageCheckResult.From(ImageUrlCheckResult.TransformError);
 
-                if (host.Transform != null)
-                {
-                    var newStr = await host.Transform(str);
-                    if (string.IsNullOrEmpty(newStr))
-                        return ImageCheckResult.From(ImageUrlCheckResult.TransformError);
-
-                    str = newStr;
-                    transform = true;
-                }
-
-                if (host.CheckExt && !IsUrlToImageSimple(str))
-                    return ImageCheckResult.From(ImageUrlCheckResult.WrongExtension);
+                str = newStr;
+                transform = true;
             }
 
-            var (isImage, _) = await IsUrlToImageAsync(str);
+            if (restricted && host.CheckExt && !IsUrlToImageSimple(str))
+                return ImageCheckResult.From(ImageUrlCheckResult.WrongExtension);
+
+            var (isImage, ext) = await IsUrlToImageAsync(str);
             if (!isImage)
                 return ImageCheckResult.From(ImageUrlCheckResult.WrongExtension);
 
-            return ImageCheckResult.From(transform ? ImageUrlCheckResult.UrlTransformed : ImageUrlCheckResult.Ok, str);
+            return ImageCheckResult.From(transform ? ImageUrlCheckResult.UrlTransformed : ImageUrlCheckResult.Ok, str, ext);
         }
 
         public bool IsUrlToImageSimple(string url)
