@@ -762,7 +762,8 @@ namespace Sanakan.Modules
                     totalCards.AddRange(cards);
                 }
 
-                var allWWCnt = await db.WishlistCountData.AsQueryable().AsNoTracking().ToListAsync();
+                var characterIds = totalCards.Select(x => x.Character).Distinct().ToList();
+                var allWWCnt = await db.WishlistCountData.AsQueryable().AsNoTracking().Where(x => characterIds.Contains(x.Id)).ToListAsync();
                 foreach (var card in totalCards)
                 {
                     // a persistent entry stays on the wishlist and does not change the count
@@ -2370,7 +2371,11 @@ namespace Sanakan.Modules
                     return;
                 }
 
-                var wishlists =  await db.GameDecks.AsQueryable().AsNoTracking().Where(x => !x.WishlistIsPrivate).Include(x => x.Wishes).Include(x => x.User).Where(x => x.Wishes.Any(c => c.Type == WishlistObjectType.Character && c.ObjectId == thisCards.Character)).ToListAsync();
+                // id order as before, when the wishes include made the query sort by deck; sorted here because SQLite cannot order by ulong
+                var wishlists = (await db.GameDecks.AsQueryable().AsNoTracking().Where(x => !x.WishlistIsPrivate).Include(x => x.User)
+                    .Where(x => x.Wishes.Any(c => c.Type == WishlistObjectType.Character && c.ObjectId == thisCards.Character)).ToListAsync()).OrderBy(x => x.Id).ToList();
+                var wCount = wishlists.Count;
+                var aCount = wishlists.Count(x => x.IsUserActive(_time.Now()));
                 if (hideInactive)
                 {
                     wishlists = wishlists.Where(x => x.IsUserActive(_time.Now())).ToList();
@@ -2391,10 +2396,6 @@ namespace Sanakan.Modules
                     {
                     using (var dbs = new Database.DatabaseContext(_config))
                     {
-                        var wish = await dbs.GameDecks.AsQueryable().Include(x => x.User).AsNoTracking().Where(x => !x.WishlistIsPrivate && x.Wishes.Any(c => c.Type == WishlistObjectType.Character && c.ObjectId == thisCards.Character)).ToListAsync();
-                        var aCount = wish.Count(x => x.IsUserActive(_time.Now()));
-                        var wCount = wish.Count;
-
                         _ = await dbs.CreateOrChangeWishlistCountByAsync(thisCards.Character, thisCards.Name, wCount, aCount, true);
                         await dbs.SaveChangesAsync();
                     }
@@ -2975,7 +2976,8 @@ namespace Sanakan.Modules
 
                 var totalCards = new List<Card>();
                 var charactersOnWishlist = new List<string>();
-                var allWWCnt = await db.WishlistCountData.AsQueryable().AsNoTracking().ToListAsync();
+                // counts as stored before this command; the loop changes them only in memory until SaveChanges
+                var wishlistCounts = new Dictionary<ulong, Database.Models.Analytics.WishlistCount>();
                 for (int i = 0; i < count; i++)
                 {
                     var character = await _waifu.GetRandomCharacterAsync(bUser.PoolType);
@@ -2998,7 +3000,11 @@ namespace Sanakan.Modules
                     if (isOnUserWishlist)
                         charactersOnWishlist.Add(card.Name);
 
-                    var thisCardWishlist = allWWCnt.FirstOrDefault(x => x.Id == card.Character);
+                    if (!wishlistCounts.TryGetValue(card.Character, out var thisCardWishlist))
+                    {
+                        thisCardWishlist = await db.WishlistCountData.AsQueryable().AsNoTracking().FirstOrDefaultAsync(x => x.Id == card.Character);
+                        wishlistCounts[card.Character] = thisCardWishlist;
+                    }
                     var wishlistsCnt = thisCardWishlist?.Count ?? 0;
                     var awishlistsCnt = thisCardWishlist?.ACount ?? 0;
                     if (destroyCards > 0)
