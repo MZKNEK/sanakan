@@ -11,8 +11,10 @@ read from the process environment or, on Windows, from the user environment. The
 The password is passed to the mysql client in a temporary option file, never on the command line.
 """
 
+import glob
 import os
 import re
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -57,7 +59,7 @@ class Client:
 
     def run(self, sql, database=None, stdin=None):
         # batch mode escapes newlines, tabs and backslashes in values, rows() undoes it
-        args = ["mysql", f"--defaults-extra-file={self.options}", "--batch", "--skip-column-names"]
+        args = [mysql_client(), f"--defaults-extra-file={self.options}", "--batch", "--skip-column-names"]
         if database:
             args.append(database)
         if sql is not None:
@@ -69,6 +71,17 @@ class Client:
 
     def rows(self, sql, database=None):
         return [[unescape(v) for v in line.split("\t")] for line in self.run(sql, database).splitlines() if line]
+
+
+def mysql_client():
+    # a console opened before MySQL was added to PATH does not see it, the default install folder is checked too
+    found = shutil.which("mysql")
+    if found:
+        return found
+    installed = sorted(glob.glob(r"C:\Program Files\MySQL\MySQL Server *\bin\mysql.exe"))
+    if installed:
+        return installed[-1]
+    sys.exit("mysql client not found, add its bin folder to PATH")
 
 
 def unescape(value):

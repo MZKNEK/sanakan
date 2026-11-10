@@ -101,7 +101,7 @@ if (options.Mode == "load")
     var runner = new LoadRunner(world, gateway, rest, replies, bot, log, JsonNode.Parse(File.ReadAllText(options.Mix)), settings);
     var result = await runner.RunAsync();
     result["requests"] = new JsonObject(log.Routes.OrderBy(x => x.Key).Select(x => KeyValuePair.Create(x.Key, (JsonNode)x.Value)));
-    result["errors"] = new JsonArray(bot.Errors.Select(x => x.Length > 300 ? x[..300] : x).GroupBy(x => System.Text.RegularExpressions.Regex.Replace(x, @"^\[[^\]]+\] |u\d+|\d+", "#"))
+    result["errors"] = new JsonArray(bot.Errors.Select(x => x.Length > 300 ? x[..300] : x).GroupBy(x => System.Text.RegularExpressions.Regex.Replace(x, @"^\[[^\]]+\] |https?://\S+|u\d+|\d+", "#"))
         .OrderByDescending(x => x.Count()).Take(20).Select(x => (JsonNode)$"{x.Count()}x {x.First()}").ToArray());
 
     var resultsDir = Path.Combine(runDir, "results");
