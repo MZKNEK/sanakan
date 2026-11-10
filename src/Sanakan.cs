@@ -213,6 +213,8 @@ namespace Sanakan
             _shinden.StartSeasonRefresh(TimeSpan.FromHours(1));
             _waifu = new Waifu(_img, _shindenClient, _events, _logger,
                  _expedition, _client, _helper, _time, _shinden, _tags, _config);
+            _img.CurrentCharacterPicture = id => _shinden.GetCurrentPictureAsync(id);
+            _img.CharacterPictureMoved = (id, oldUrl, newUrl) => _waifu.MoveCharacterPictureAsync(id, oldUrl, newUrl);
             WishlistRecount.Start(_config, _time, _logger);
             _supervisor = new Supervisor(_client, _config, _logger, _mod, _time, _scamImages);
             _greeting = new Greeting(_client, _logger, _config, _executor, _time);

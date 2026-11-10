@@ -1961,6 +1961,25 @@ namespace Sanakan.Services.PocketWaifu
             return toReturn;
         }
 
+        // The picture of the character was replaced on Shinden: cards still holding the old url get the current one, and their
+        // saved images, which may have been drawn without the picture, are removed so they are drawn again.
+        public async Task MoveCharacterPictureAsync(ulong characterId, string oldUrl, string newUrl)
+        {
+            using var db = new Database.DatabaseContext(_config);
+            var cards = await db.Cards.AsQueryable().Where(x => x.Character == characterId && x.Image == oldUrl).ToListAsync();
+            if (cards.Count == 0)
+                return;
+
+            foreach (var card in cards)
+            {
+                card.Image = newUrl;
+                DeleteCardImageIfExist(card);
+            }
+
+            await db.SaveChangesAsync();
+            QueryCache.ExpireTag(cards.Select(x => CacheTags.User(x.GameDeckId)).Distinct().ToArray());
+        }
+
         public void DeleteCardImageIfExist(Card card)
         {
             var toRemove = new List<string>()

@@ -123,6 +123,13 @@ namespace Sanakan.Services
             }
         }
 
+        // the character's picture on Shinden now, null when it has none or Shinden does not answer
+        public async Task<string> GetCurrentPictureAsync(ulong characterId)
+        {
+            var info = await GetCharacterInfoAsync(characterId);
+            return info != null && info.HasImage ? info.PictureUrl : null;
+        }
+
         public async Task<List<IRelation>> GetCharactersFromTitleAsync(ulong titleId)
         {
             try

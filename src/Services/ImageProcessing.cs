@@ -53,6 +53,14 @@ namespace Sanakan.Services
 
         private const int CharacterPictureAttempts = 3;
         private const int CharacterPictureRetryDelayMs = 400;
+        private const int MaxMovedPictures = 10000;
+
+        // set at startup: the character's picture on Shinden now, and saving a changed picture into that character's cards
+        public Func<ulong, Task<string>> CurrentCharacterPicture { get; set; }
+        public Func<ulong, string, string, Task> CharacterPictureMoved { get; set; }
+
+        // old picture url -> the current one, so the other cards still holding the old url skip its failing download
+        private readonly ConcurrentDictionary<string, string> _movedPictures = new ConcurrentDictionary<string, string>();
 
         public ImageProcessing(ShindenClient shinden, TagIcon gallery, bool allowPrivateHosts = false, ILogger logger = null)
         {
@@ -1348,10 +1356,13 @@ namespace Sanakan.Services
 
         // A failed download would be saved into the card file for good, so a remote picture gets a few attempts
         // and a final failure is logged. Returns null when the picture could not be loaded.
-        internal async Task<Image> LoadCharacterPictureAsync(string url, ulong cardId, CardPictureCache pictures = null)
+        internal async Task<Image> LoadCharacterPictureAsync(string url, ulong cardId, CardPictureCache pictures = null, ulong characterId = 0)
         {
             if (Dir.IsLocal(url))
                 return await GetImageFromUrlOrLocalAsync(url);
+
+            if (_movedPictures.TryGetValue(url, out var moved))
+                url = moved;
 
             if (pictures != null && pictures.TryGet(url, out var cached))
                 return cached is null ? null : Image.Load(cached);
@@ -1383,6 +1394,13 @@ namespace Sanakan.Services
                     await Task.Delay(CharacterPictureRetryDelayMs * attempt);
             }
 
+            if (failure.OnlyMissing && characterId != 0)
+            {
+                var current = await LoadCurrentCharacterPictureAsync(url, cardId, characterId, pictures);
+                if (current != null)
+                    return current;
+            }
+
             pictures?.Add(url, null);
             var message = $"Images: character picture for card {cardId} could not be downloaded ({failure.Reason ?? "unknown"}): {url}";
             // a rate limit on the image host is temporary and nothing can be done about it, and a picture that no longer exists
@@ -1394,11 +1412,60 @@ namespace Sanakan.Services
             return null;
         }
 
+        // A card keeps the picture url from its creation; when the picture on Shinden was replaced, the old url is gone.
+        // The current picture is used instead, remembered for the other cards and saved into the cards of that character.
+        private async Task<Image> LoadCurrentCharacterPictureAsync(string url, ulong cardId, ulong characterId, CardPictureCache pictures)
+        {
+            if (CurrentCharacterPicture == null)
+                return null;
+
+            string current;
+            try
+            {
+                current = await CurrentCharacterPicture(characterId);
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError($"Images: current picture of character {characterId}: {ex.Message}");
+                return null;
+            }
+
+            if (string.IsNullOrEmpty(current) || current == url)
+                return null;
+
+            var image = await LoadCharacterPictureAsync(current, cardId, pictures);
+            if (image == null)
+                return null;
+
+            if (_movedPictures.Count >= MaxMovedPictures)
+                _movedPictures.Clear();
+            _movedPictures[url] = current;
+            _logger?.LogRoutine($"Images: character {characterId} has a new picture, card {cardId}: {url} -> {current}");
+
+            if (CharacterPictureMoved != null)
+                _ = SaveMovedPictureAsync(characterId, url, current);
+
+            return image;
+        }
+
+        private async Task SaveMovedPictureAsync(ulong characterId, string oldUrl, string newUrl)
+        {
+            try
+            {
+                await CharacterPictureMoved(characterId, oldUrl, newUrl);
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError($"Images: saving the new picture of character {characterId}: {ex.Message}");
+            }
+        }
+
         private async Task<Image> GetCharacterPictureAsync(Card card, CardPictureCache pictures)
         {
             var characterImg = card.FromFigure ? new Image<Rgba32>(475, 667) : await Image.LoadAsync(Dir.GetResource("PW/empty.png"));
+            // only the Shinden picture can be refreshed, a picture set by the player stays as it is
             using (var image = await LoadCharacterPictureAsync(card.GetImage() ?? "http://cdn.shinden.eu/cdn1/other/placeholders/title/225x350.jpg",
-                card.Id, pictures))
+                card.Id, pictures, card.CustomImage == null ? card.Character : 0))
             {
                 if (image is null)
                     return characterImg;
