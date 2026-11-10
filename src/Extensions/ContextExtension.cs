@@ -271,6 +271,26 @@ namespace Sanakan.Extensions
             return user;
         }
 
+        // For commands working on a few cards: items, figures, the experience container and the packs (without their
+        // characters) are loaded, of the cards only the given ones. Collections left out stay null, so code that
+        // reaches for them fails loudly instead of acting on missing data.
+        public static async Task<User> GetUserOrCreateWithCardsAsync(this Database.DatabaseContext context, ulong userId, params ulong[] cardIds)
+        {
+            var user = await context.Users.AsQueryable().Where(x => x.Id == userId).Include(x => x.Stats).Include(x => x.SMConfig).Include(x => x.TimeStatuses)
+                .Include(x => x.GameDeck).ThenInclude(x => x.Items).Include(x => x.GameDeck).ThenInclude(x => x.Figures)
+                .Include(x => x.GameDeck).ThenInclude(x => x.ExpContainer).Include(x => x.GameDeck).ThenInclude(x => x.BoosterPacks)
+                .Include(x => x.GameDeck).ThenInclude(x => x.Cards.Where(c => cardIds.Contains(c.Id))).ThenInclude(x => x.Tags)
+                .AsSplitQuery().FirstOrDefaultAsync();
+
+            if (user == null)
+            {
+                user = user.Default(userId, DateTime.Now);
+                await context.Users.AddAsync(user);
+            }
+
+            return user;
+        }
+
         public static Task<User> GetUserWithItemsAsync(this Database.DatabaseContext context, ulong userId)
             => context.Users.AsQueryable().Include(x => x.GameDeck).ThenInclude(x => x.Items).AsNoTracking().FirstOrDefaultAsync(x => x.Id == userId);
 

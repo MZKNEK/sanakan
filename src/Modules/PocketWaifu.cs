@@ -599,7 +599,7 @@ namespace Sanakan.Modules
 
             using (var db = new Database.DatabaseContext(Config))
             {
-                var bUser = await db.GetUserOrCreateAsync(Context.User.Id);
+                var bUser = await db.GetUserOrCreateWithCardsAsync(Context.User.Id, wid);
                 var res = await _waifu.UseItemAsync(bUser, Context.User.GetUserNickInGuild(), itemNumber, wid, detail, itemToExp, attachmentUrl);
 
                 if (res.IsError())
@@ -3972,7 +3972,7 @@ namespace Sanakan.Modules
 
             using (var db = new Database.DatabaseContext(Config))
             {
-                var botUser = await db.GetUserOrCreateAsync(Context.User.Id);
+                var botUser = await db.GetUserOrCreateWithCardsAsync(Context.User.Id, wid);
                 var thisCard = botUser.GameDeck.Cards.FirstOrDefault(x => x.Id == wid);
                 if (thisCard == null)
                 {
