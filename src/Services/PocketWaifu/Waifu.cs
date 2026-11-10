@@ -2258,6 +2258,57 @@ namespace Sanakan.Services.PocketWaifu
             return cards.Distinct().ToList();
         }
 
+        // The wishlist view: filters run in the query and each owner's deck with its user is loaded once and shared by
+        // that owner's cards, instead of a copy per card (the API keeps GetCardsFromWishlistAsync and its output).
+        public async Task<List<Card>> GetWishlistCardsAsync(Database.DatabaseContext db, User owner, List<ulong> cardsId, List<ulong> charactersId,
+            List<ulong> titlesId, ulong onlyDeckId, bool hideFavs, bool hideBlocked, bool hideInactive)
+        {
+            var characters = new List<ulong>(charactersId ?? new List<ulong>());
+            if (titlesId != null)
+            {
+                var owned = owner.GameDeck.Cards.Select(x => x.Character).ToHashSet();
+                foreach (var id in titlesId)
+                {
+                    var charsFromTitle = await _shinden.GetCharactersFromTitleAsync(id);
+                    if (charsFromTitle != null)
+                        characters.AddRange(charsFromTitle.Where(x => x.CharacterId.HasValue && !owned.Contains(x.CharacterId.Value)).Select(x => x.CharacterId.Value));
+                }
+            }
+
+            var favId = _tags.GetTagId(TagType.Favorite);
+            IQueryable<Card> Filter(IQueryable<Card> query)
+            {
+                query = onlyDeckId != 0 ? query.Where(x => x.GameDeckId == onlyDeckId) : query.Where(x => x.GameDeckId != owner.Id);
+                if (hideFavs)
+                    query = query.Where(x => !x.Tags.Any(t => t.Id == favId));
+                if (hideBlocked)
+                    query = query.Where(x => x.IsTradable);
+                return query.Include(x => x.Tags).AsNoTracking().AsSplitQuery();
+            }
+
+            // id order like the old single query; sorted here because SQLite cannot order by ulong
+            var cards = new List<Card>();
+            if (cardsId != null && cardsId.Count > 0)
+                cards.AddRange((await Filter(db.Cards.AsQueryable().Where(x => cardsId.Contains(x.Id))).ToListAsync()).OrderBy(x => x.Id));
+
+            if (characters.Count > 0)
+            {
+                characters = characters.Distinct().ToList();
+                cards.AddRange((await Filter(db.Cards.AsQueryable().Where(x => characters.Contains(x.Character))).ToListAsync()).OrderBy(x => x.Id));
+            }
+
+            // a card wished both by itself and by its character is listed once
+            cards = cards.GroupBy(x => x.Id).Select(x => x.First()).ToList();
+
+            var deckIds = cards.Select(x => x.GameDeckId).Distinct().ToList();
+            var decks = await db.GameDecks.AsQueryable().Include(x => x.User).AsNoTracking().Where(x => deckIds.Contains(x.Id)).ToDictionaryAsync(x => x.Id);
+            foreach (var card in cards)
+                card.GameDeck = decks.GetValueOrDefault(card.GameDeckId);
+
+            var now = _time.Now();
+            return cards.Where(x => x.GameDeck?.User != null && (!hideInactive || x.GameDeck.IsUserActive(now))).ToList();
+        }
+
         public string EndExpedition(User user, Card card, bool showStats = false)
         {
             Dictionary<string, int> items = new Dictionary<string, int>();
@@ -3112,26 +3163,8 @@ namespace Sanakan.Services.PocketWaifu
                 return await _helper.SendEmbedsOnDMAsync(discordUser, pages, tldr);
             }
 
-            var cards = await GetCardsFromWishlistAsync(c, p, t, db, user.GameDeck.Cards);
-
-            if (filrerById != 0)
-                cards = cards.Where(x => x.GameDeckId == filrerById);
-            else
-                cards = cards.Where(x => x.GameDeckId != user.Id);
-
-            if (hideFavs)
-            {
-                var favId = _tags.GetTagId(TagType.Favorite);
-                cards = cards.Where(x => !x.Tags.Any(t => t.Id == favId));
-            }
-
-            if (hideBlocked)
-                cards = cards.Where(x => x.IsTradable);
-
-            if (hideInactive)
-                cards = cards.Where(x => x.GameDeck.IsUserActive(_time.Now()));
-
-            if (cards.IsNullOrEmpty())
+            var cards = await GetWishlistCardsAsync(db, user, c, p, t, filrerById, hideFavs, hideBlocked, hideInactive);
+            if (cards.Count == 0)
                 return ExecutionResult.FromError("nie odnaleziono kart.");
 
             return await _helper.SendEmbedsOnDMAsync(discordUser, await GetWaifuFromCharacterTitleSearchResultAsync(cards, hideNames, guild, showShindenUrl, tldr), tldr);
