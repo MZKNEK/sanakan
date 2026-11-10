@@ -46,7 +46,7 @@ namespace Sanakan.Modules
         {
             using (var db = new Database.DatabaseContext(Config))
             {
-                var botuser = await db.GetUserOrCreateSimpleAsync(Context.User.Id);
+                var botuser = await db.GetUserOrCreateLightAsync(Context.User.Id);
                 var daily = botuser.TimeStatuses.FirstOrDefault(x => x.Type == Database.Models.StatusType.Daily);
                 if (daily == null)
                 {
@@ -158,7 +158,7 @@ namespace Sanakan.Modules
         {
             using (var db = new Database.DatabaseContext(Config))
             {
-                var botuser = await db.GetUserOrCreateSimpleAsync(Context.User.Id);
+                var botuser = await db.GetUserOrCreateLightAsync(Context.User.Id);
                 var hourly = botuser.TimeStatuses.FirstOrDefault(x => x.Type == Database.Models.StatusType.Hourly);
                 if (hourly == null)
                 {
@@ -225,7 +225,7 @@ namespace Sanakan.Modules
 
             using (var db = new Database.DatabaseContext(Config))
             {
-                var botuser = await db.GetUserOrCreateSimpleAsync(Context.User.Id);
+                var botuser = await db.GetUserOrCreateLightAsync(Context.User.Id);
                 if (botuser.ScCnt < amount)
                 {
                     await SafeReplyAsync("", embed: $"{Context.User.Mention} nie posiadasz wystarczającej liczby SC!".ToEmbedMessage(EMType.Error).Build());

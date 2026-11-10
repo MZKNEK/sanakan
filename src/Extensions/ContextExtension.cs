@@ -256,6 +256,21 @@ namespace Sanakan.Extensions
                 .Include(x => x.GameDeck).ThenInclude(x => x.Figures).AsNoTracking().AsSplitQuery().FirstOrDefaultAsync(x => x.Id == userId);
         }
 
+        // the user row with its stats, slot machine settings, time statuses and the deck row, without any deck collection
+        public static async Task<User> GetUserOrCreateLightAsync(this Database.DatabaseContext context, ulong userId)
+        {
+            var user = await context.Users.AsQueryable().Where(x => x.Id == userId).Include(x => x.Stats).Include(x => x.SMConfig)
+                .Include(x => x.TimeStatuses).Include(x => x.GameDeck).FirstOrDefaultAsync();
+
+            if (user == null)
+            {
+                user = user.Default(userId, DateTime.Now);
+                await context.Users.AddAsync(user);
+            }
+
+            return user;
+        }
+
         public static Task<User> GetUserWithItemsAsync(this Database.DatabaseContext context, ulong userId)
             => context.Users.AsQueryable().Include(x => x.GameDeck).ThenInclude(x => x.Items).AsNoTracking().FirstOrDefaultAsync(x => x.Id == userId);
 

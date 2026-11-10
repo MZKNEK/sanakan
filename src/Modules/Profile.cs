@@ -318,7 +318,7 @@ namespace Sanakan.Modules
         {
             using (var db = new Database.DatabaseContext(Config))
             {
-                var botuser = await db.GetUserOrCreateSimpleAsync(Context.User.Id);
+                var botuser = await db.GetUserOrCreateLightAsync(Context.User.Id);
                 var weeklyQuests = botuser.CreateOrGetAllWeeklyQuests();
                 var dailyQuests = botuser.CreateOrGetAllDailyQuests();
 

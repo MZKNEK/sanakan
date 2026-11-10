@@ -311,6 +311,42 @@ namespace Artifacts
         }
 
         [Fact]
+        public async Task LightUser_LoadsStatusesAndDeckRowWithoutCollections_AndCreatesMissingUser()
+        {
+            var path = NewDb();
+            using (var db = new TestDatabase(path))
+            {
+                var player = Player(10, 0, 0, NewCard(1001, Rarity.A, 50));
+                player.TimeStatuses.Add(StatusType.Daily.NewTimeStatus());
+                player.GameDeck.PVPCoins = 70;
+                player.GameDeck.Items.Add(new Item { Name = "Tort", Type = ItemType.AffectionRecoveryBig, Count = 3 });
+                player.GameDeck.Wishes.Add(new WishlistObject { Type = WishlistObjectType.Character, ObjectId = 5, ObjectName = "x" });
+                db.Users.Add(player);
+                db.SaveChanges();
+            }
+
+            using (var db = new TestDatabase(path))
+            {
+                var user = await db.GetUserOrCreateLightAsync(10);
+
+                Assert.Single(user.TimeStatuses);
+                Assert.NotNull(user.Stats);
+                Assert.NotNull(user.SMConfig);
+                Assert.Equal(70, user.GameDeck.PVPCoins);
+                Assert.Null(user.GameDeck.Items);
+                Assert.Null(user.GameDeck.Wishes);
+                Assert.Null(user.GameDeck.Cards);
+
+                var created = await db.GetUserOrCreateLightAsync(30);
+                Assert.Equal(EntityState.Added, db.Entry(created).State);
+                await db.SaveChangesAsync();
+            }
+
+            using (var db = new TestDatabase(path))
+                Assert.True(await db.Users.AnyAsync(x => x.Id == 30));
+        }
+
+        [Fact]
         public async Task UserWithItems_LoadsOnlyTheItemsOfTheDeck()
         {
             var path = NewDb();
