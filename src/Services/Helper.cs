@@ -411,8 +411,13 @@ namespace Sanakan.Services
             return list;
         }
 
+        // a page per second stays under the usual 5 messages per 5 s of a channel; Discord.Net also waits when the bucket runs out
+        public static readonly TimeSpan DmPageDelay = TimeSpan.FromSeconds(1);
+
+        internal Func<TimeSpan, Task> Wait { get; set; } = Task.Delay;
+
         public async Task<ExecutionResult> SendEmbedsOnDMAsync(IUser user, IEnumerable<Embed> embeds, bool tldr = false)
-            => await SendEmbedsOnDMAsync(user, embeds, TimeSpan.FromSeconds(2), tldr);
+            => await SendEmbedsOnDMAsync(user, embeds, DmPageDelay, tldr);
 
         public async Task<ExecutionResult> SendEmbedsOnDMAsync(IUser user, IEnumerable<Embed> embeds, TimeSpan delay, bool tldr)
         {
@@ -426,10 +431,14 @@ namespace Sanakan.Services
                 }
                 else
                 {
+                    var first = true;
                     foreach (var emb in embeds)
                     {
+                        if (!first)
+                            await Wait(delay);
+
+                        first = false;
                         await dm.SendMessageAsync("", embed: emb);
-                        await Task.Delay(delay);
                     }
                 }
                 return ExecutionResult.FromSuccess("lista poszła na PW!");
