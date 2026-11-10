@@ -57,14 +57,14 @@ class Client:
     def close(self):
         os.remove(self.options)
 
-    def run(self, sql, database=None, stdin=None):
+    def run(self, sql, database=None, stdin=None, script=None):
         # batch mode escapes newlines, tabs and backslashes in values, rows() undoes it
         args = [mysql_client(), f"--defaults-extra-file={self.options}", "--batch", "--skip-column-names"]
         if database:
             args.append(database)
         if sql is not None:
             args += ["-e", sql]
-        result = subprocess.run(args, stdin=stdin, capture_output=True, text=True, encoding="utf-8")
+        result = subprocess.run(args, stdin=stdin, input=script, capture_output=True, text=True, encoding="utf-8")
         if result.returncode != 0:
             sys.exit(f"mysql failed: {result.stderr.strip()}")
         return result.stdout
@@ -108,13 +108,21 @@ def reset(client):
         create = client.rows(f"SHOW CREATE TABLE `{client.base}`.`{table}`")[0][1]
         statements.append(create)
         statements.append(f"INSERT INTO `{table}` SELECT * FROM `{client.base}`.`{table}`")
-    for name, in client.rows(f"SELECT trigger_name FROM information_schema.triggers WHERE trigger_schema = '{client.base}'"):
-        # single-statement triggers only (the dump has one); a BEGIN ... END body would need a delimiter
-        body = client.rows(f"SHOW CREATE TRIGGER `{client.base}`.`{name}`")[0][2]
-        statements.append(body)
+    # view definitions name the base database explicitly, the copies must read the simulation tables
+    views = [r[0] for r in client.rows(f"SELECT table_name FROM information_schema.views WHERE table_schema = '{client.base}'")]
+    for view in views:
+        create = client.rows(f"SHOW CREATE VIEW `{client.base}`.`{view}`")[0][1]
+        statements.append(create.replace(f"`{client.base}`.", ""))
     statements += ["SET UNIQUE_CHECKS = 1", "SET FOREIGN_KEY_CHECKS = 1"]
-    client.run(";\n".join(statements))
-    print(f"{client.base} -> {client.database}: {len(tables)} tables in {time.time() - started:.0f} s")
+
+    # trigger bodies can hold several statements (IF ... END IF;), so they get their own delimiter
+    triggers = [client.rows(f"SHOW CREATE TRIGGER `{client.base}`.`{name}`")[0][2]
+                for name, in client.rows(f"SELECT trigger_name FROM information_schema.triggers WHERE trigger_schema = '{client.base}'")]
+    script = ";\n".join(statements) + ";\n"
+    if triggers:
+        script += "DELIMITER $$\n" + "".join(f"{body}\n$$\n" for body in triggers) + "DELIMITER ;\n"
+    client.run(None, script=script)
+    print(f"{client.base} -> {client.database}: {len(tables)} tables, {len(views)} views, {len(triggers)} triggers in {time.time() - started:.0f} s")
     counts(client)
 
 
@@ -130,6 +138,10 @@ def counts(client):
         if a != b:
             differ.append(f"{table} ({a} vs {b})")
     print("row counts: " + ("ALL MATCH" if not differ else "DIFFER for " + ", ".join(differ)))
+    for kind, query in (("triggers", "SELECT COUNT(*) FROM information_schema.triggers WHERE trigger_schema = '%s'"),
+                        ("views", "SELECT COUNT(*) FROM information_schema.views WHERE table_schema = '%s'")):
+        a, b = (client.rows(query % db)[0][0] for db in (client.base, client.database))
+        print(f"{kind}: {a} in base, {b} in simulation" + ("" if a == b else "  MISMATCH"))
 
 
 def main():
