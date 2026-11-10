@@ -45,8 +45,8 @@ namespace Artifacts
         public async Task CharacterPicture_IsRetried_AfterTemporaryFailure()
         {
             var requests = 0;
-            // one failed attempt is the picture url plus its five extension variants
-            using var server = new LocalHttpServer(Flaky(6, 503, () => Interlocked.Increment(ref requests)));
+            // one failed attempt is the picture url plus the four other extension variants
+            using var server = new LocalHttpServer(Flaky(5, 503, () => Interlocked.Increment(ref requests)));
             var logger = new ListLogger();
 
             using var picture = await new ImageProcessing(null, null, true, logger).LoadCharacterPictureAsync(server.BaseUrl + "char.png", 77);
@@ -67,7 +67,7 @@ namespace Artifacts
             var picture = await new ImageProcessing(null, null, true, logger).LoadCharacterPictureAsync(url, 2930843);
 
             Assert.Null(picture);
-            Assert.Equal(3 * 6, requests);
+            Assert.Equal(3 * 5, requests);
             var message = Assert.Single(logger.Messages);
             Assert.Contains("2930843", message);
             Assert.Contains(url, message);
@@ -90,6 +90,8 @@ namespace Artifacts
             var picture = await new ImageProcessing(null, null, true, logger).LoadCharacterPictureAsync(url, 1704809);
 
             Assert.Null(picture);
+            // one attempt: the url and the four other extensions, a missing picture is not retried
+            Assert.Equal(5, requests);
             var message = Assert.Single(logger.Messages);
             Assert.Contains("1704809", message);
             Assert.Contains(url, message);
@@ -216,8 +218,29 @@ namespace Artifacts
             Assert.Null(await images.LoadCharacterPictureAsync(server.BaseUrl + "char.png", 1, pictures));
             Assert.Null(await images.LoadCharacterPictureAsync(server.BaseUrl + "char.png", 1, pictures));
 
-            Assert.Equal(3 * 6, requests);
+            Assert.Equal(5, requests);
             Assert.Single(logger.Messages);
+        }
+
+        [Fact]
+        public async Task CharacterPicture_ServerErrorThenMissingVariants_IsRetriedAndAnError()
+        {
+            // the picture url itself fails with 500, the extension variants answer 404: the failure may be temporary
+            var requests = 0;
+            using var server = new LocalHttpServer(ctx =>
+            {
+                Interlocked.Increment(ref requests);
+                ctx.Response.StatusCode = ctx.Request.Url.AbsolutePath.EndsWith("char.png") ? 500 : 404;
+                ctx.Response.Close();
+                return Task.CompletedTask;
+            });
+            var logger = new ListLogger();
+
+            var picture = await new ImageProcessing(null, null, true, logger).LoadCharacterPictureAsync(server.BaseUrl + "char.png", 3);
+
+            Assert.Null(picture);
+            Assert.Equal(3 * 5, requests);
+            Assert.Equal(LogKind.Error, LoggerExtensions.Parse(Assert.Single(logger.Messages)).Kind);
         }
 
         [Theory]

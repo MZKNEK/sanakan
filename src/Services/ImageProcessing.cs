@@ -268,11 +268,16 @@ namespace Sanakan.Services
         {
             public string Reason { get; private set; }
             public HttpStatusCode? StatusCode { get; private set; }
+            // every request since StartAttempt answered 404 or 410, so the picture does not exist
+            public bool OnlyMissing { get; private set; } = true;
+
+            public void StartAttempt() => OnlyMissing = true;
 
             public void Set(string reason, HttpStatusCode? statusCode = null)
             {
                 Reason = reason;
                 StatusCode = statusCode;
+                OnlyMissing &= statusCode is HttpStatusCode.NotFound or HttpStatusCode.Gone;
             }
 
             public void Set(Exception ex) => Set(ex is OperationCanceledException ? "timeout" : $"{ex.GetType().Name}: {ex.Message}");
@@ -296,8 +301,13 @@ namespace Sanakan.Services
                 if (fixExt)
                 {
                     var splited = url.Split(".");
+                    var originalExt = splited[^1];
                     foreach (var ext in _extensions)
                     {
+                        // the url with its own extension was just tried
+                        if (string.Equals(ext, originalExt, StringComparison.OrdinalIgnoreCase))
+                            continue;
+
                         // more requests to a host that is rate limiting us only prolong the limit
                         if (failure.StatusCode == HttpStatusCode.TooManyRequests)
                             return null;
@@ -1349,6 +1359,7 @@ namespace Sanakan.Services
             var failure = new DownloadFailure();
             for (int attempt = 1; attempt <= CharacterPictureAttempts; attempt++)
             {
+                failure.StartAttempt();
                 try
                 {
                     using var stream = await GetImageFromUrlAsync(url, true, failure);
@@ -1364,7 +1375,8 @@ namespace Sanakan.Services
                     failure.Set(ex);
                 }
 
-                if (failure.StatusCode == HttpStatusCode.TooManyRequests)
+                // a missing picture will not appear on the next attempt
+                if (failure.StatusCode == HttpStatusCode.TooManyRequests || failure.OnlyMissing)
                     break;
 
                 if (attempt < CharacterPictureAttempts)
@@ -1375,7 +1387,7 @@ namespace Sanakan.Services
             var message = $"Images: character picture for card {cardId} could not be downloaded ({failure.Reason ?? "unknown"}): {url}";
             // a rate limit on the image host is temporary and nothing can be done about it, and a picture that no longer exists
             // (on Shinden or set by the player) is missing data, not a bot error, so both stay off the log channel
-            if (failure.StatusCode is HttpStatusCode.TooManyRequests or HttpStatusCode.NotFound or HttpStatusCode.Gone)
+            if (failure.StatusCode == HttpStatusCode.TooManyRequests || failure.OnlyMissing)
                 _logger?.LogRoutine(message);
             else
                 _logger?.LogError(message);
