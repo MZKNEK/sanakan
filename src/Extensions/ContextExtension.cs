@@ -256,6 +256,9 @@ namespace Sanakan.Extensions
                 .Include(x => x.GameDeck).ThenInclude(x => x.Figures).AsNoTracking().AsSplitQuery().FirstOrDefaultAsync(x => x.Id == userId);
         }
 
+        public static Task<User> GetUserWithItemsAsync(this Database.DatabaseContext context, ulong userId)
+            => context.Users.AsQueryable().Include(x => x.GameDeck).ThenInclude(x => x.Items).AsNoTracking().FirstOrDefaultAsync(x => x.Id == userId);
+
         public static async Task<int> RecalculateWishlistCountsAsync(this Database.DatabaseContext context, DateTime now)
         {
             var counts = await context.WishlistCountData.ToListAsync();

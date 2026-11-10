@@ -309,5 +309,31 @@ namespace Artifacts
             Assert.Same(first, second);
             Assert.Equal(1, loads);
         }
+
+        [Fact]
+        public async Task UserWithItems_LoadsOnlyTheItemsOfTheDeck()
+        {
+            var path = NewDb();
+            using (var db = new TestDatabase(path))
+            {
+                var player = Player(10, 0, 0, NewCard(1001, Rarity.A, 50), NewCard(1002, Rarity.B, 10));
+                player.GameDeck.Items.Add(new Item { Name = "Tort", Type = ItemType.AffectionRecoveryBig, Count = 3 });
+                player.GameDeck.Items.Add(new Item { Name = "Lizak", Type = ItemType.AffectionRecoverySmall, Count = 7 });
+                db.Users.Add(player);
+                db.Users.Add(Player(20, 0, 0));
+                db.SaveChanges();
+            }
+
+            using (var db = new TestDatabase(path))
+            {
+                var user = await db.GetUserWithItemsAsync(10);
+
+                Assert.Equal(new[] { ItemType.AffectionRecoverySmall, ItemType.AffectionRecoveryBig }, user.GetAllItems().Select(x => x.Type));
+                Assert.Equal(new long[] { 7, 3 }, user.GetAllItems().Select(x => x.Count));
+                Assert.True(user.GameDeck.Cards == null || user.GameDeck.Cards.Count == 0);
+                Assert.Empty((await db.GetUserWithItemsAsync(20)).GameDeck.Items);
+                Assert.Null(await db.GetUserWithItemsAsync(30));
+            }
+        }
     }
 }

@@ -211,8 +211,8 @@ namespace Sanakan.Modules
         {
             using (var db = new Database.DatabaseContext(Config))
             {
-                var bUser = await db.GetUserAndDontTrackAsync(Context.User.Id);
-                var itemList = bUser.GetAllItems();
+                var bUser = await db.GetUserWithItemsAsync(Context.User.Id);
+                var itemList = bUser?.GetAllItems();
 
                 if (itemList.IsNullOrEmpty())
                 {
