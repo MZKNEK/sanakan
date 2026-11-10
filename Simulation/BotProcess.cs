@@ -39,7 +39,14 @@ public sealed class BotProcess : IDisposable
 
     private string _simulatorUrl = BlackholeProxy;
 
-    public void Prepare(World world, string baseUrl, bool fresh)
+    public const string MySqlVariable = "SANAKAN_SIM_MYSQL";
+
+    // the connection string stays in the run directory, which git ignores
+    public static string MySqlConnection()
+        => Environment.GetEnvironmentVariable(MySqlVariable)
+            ?? (OperatingSystem.IsWindows() ? Environment.GetEnvironmentVariable(MySqlVariable, EnvironmentVariableTarget.User) : null);
+
+    public void Prepare(World world, string baseUrl, bool fresh, string mySql = null)
     {
         _simulatorUrl = baseUrl;
         Directory.CreateDirectory(BotDir);
@@ -66,8 +73,8 @@ public sealed class BotProcess : IDisposable
             ["Demonization"] = false,
             ["SafariEnabled"] = false,
             ["AutoCleanCards"] = false,
-            ["DatabaseProvider"] = "Sqlite",
-            ["ConnectionString"] = "Data Source=sim.db",
+            ["DatabaseProvider"] = mySql != null ? "MySql" : "Sqlite",
+            ["ConnectionString"] = mySql ?? "Data Source=sim.db",
             ["CharPerPacket"] = 250000,
             ["PacksPerDay"] = 4,
             ["Shinden"] = new JsonObject

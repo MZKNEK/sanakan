@@ -9,6 +9,7 @@ if (options == null)
     Console.WriteLine("  init: fresh database, the bot creates the schema and stops (for tools/mysql_dump_to_sqlite.py)");
     Console.WriteLine("  load --world W --mix M [--minutes 10] [--speed 1] [--scale 1] [--chat 2300] [--start-hour 20]: replays the logged traffic mix");
     Console.WriteLine("       speed: virtual hours per real hour (hour-of-day profile), scale: traffic multiplier, chat: chat messages per hour");
+    Console.WriteLine($"  --mysql: the bot uses MySQL from {BotProcess.MySqlVariable} instead of SQLite (tools/mysql_sim_db.py)");
     return 1;
 }
 
@@ -59,7 +60,18 @@ if (!File.Exists(dll))
 
 using var bot = new BotProcess(options.Repo, runDir, log);
 Console.CancelKeyPress += (_, _) => bot.Dispose();
-bot.Prepare(world, baseUrl, fresh: !options.KeepDb);
+string mySql = null;
+if (options.MySql)
+{
+    mySql = BotProcess.MySqlConnection();
+    if (mySql == null)
+    {
+        log.Info($"--mysql needs the connection string in {BotProcess.MySqlVariable}");
+        return 1;
+    }
+    log.Info("database: MySQL (reset it with tools/mysql_sim_db.py reset before comparable runs)");
+}
+bot.Prepare(world, baseUrl, fresh: !options.KeepDb, mySql);
 bot.Start(dll);
 
 var ready = Task.WhenAll(gateway.Identified.Task, bot.Started.Task);
@@ -177,14 +189,14 @@ void Report()
 }
 
 sealed record Options(string Mode, int Port, int Users, bool KeepDb, string Repo, string World,
-    string Mix = null, double Minutes = 10, double Speed = 1, double Scale = 1, double ChatPerHour = 2300, int StartHour = 20)
+    string Mix = null, double Minutes = 10, double Speed = 1, double Scale = 1, double ChatPerHour = 2300, int StartHour = 20, bool MySql = false)
 {
     public static Options Parse(string[] args)
     {
         if (args.Length == 0 || args[0] is not ("smoke" or "init" or "load")) return null;
 
         int port = 5199, users = 50, startHour = 20;
-        bool keepDb = false;
+        bool keepDb = false, mySql = false;
         string repo = Directory.GetCurrentDirectory();
         string world = null, mix = null;
         double minutes = 10, speed = 1, scale = 1, chat = 2300;
@@ -204,6 +216,7 @@ sealed record Options(string Mode, int Port, int Users, bool KeepDb, string Repo
                 case "--scale": scale = D(args[++i]); break;
                 case "--chat": chat = D(args[++i]); break;
                 case "--start-hour": startHour = int.Parse(args[++i]); break;
+                case "--mysql": mySql = true; break;
                 default: return null;
             }
         }
@@ -213,7 +226,7 @@ sealed record Options(string Mode, int Port, int Users, bool KeepDb, string Repo
         // relative paths are relative to the repository, dotnet run changes the working directory
         string Resolve(string path) => path == null || Path.IsPathRooted(path) ? path : Path.Combine(root, path);
         return new Options(args[0], port, users, keepDb && args[0] != "init", root, Resolve(world),
-            Resolve(mix), minutes, speed, scale, chat, startHour);
+            Resolve(mix), minutes, speed, scale, chat, startHour, mySql);
     }
 
     // dotnet run starts in the project directory, the repository is the first parent with the bot project
