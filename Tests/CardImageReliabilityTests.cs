@@ -60,7 +60,7 @@ namespace Artifacts
         public async Task CharacterPicture_GivesUpAfterThreeAttempts_AndLogsCardAndUrl()
         {
             var requests = 0;
-            using var server = new LocalHttpServer(Flaky(int.MaxValue, 404, () => Interlocked.Increment(ref requests)));
+            using var server = new LocalHttpServer(Flaky(int.MaxValue, 500, () => Interlocked.Increment(ref requests)));
             var logger = new ListLogger();
             var url = server.BaseUrl + "char.png";
 
@@ -71,7 +71,7 @@ namespace Artifacts
             var message = Assert.Single(logger.Messages);
             Assert.Contains("2930843", message);
             Assert.Contains(url, message);
-            Assert.Contains("HTTP 404", message);
+            Assert.Contains("HTTP 500", message);
             Assert.True(DiscordChannelLogger.ShouldSend(message));
             Assert.Equal(LogKind.Error, LoggerExtensions.Parse(message).Kind);
         }
@@ -79,14 +79,15 @@ namespace Artifacts
         [Theory]
         [InlineData(404)]
         [InlineData(410)]
-        public async Task CharacterPicture_PlayerImageGone_IsLoggedWithReason_ButNotSentToLogChannel(int status)
+        public async Task CharacterPicture_Gone_IsLoggedWithReason_ButNotSentToLogChannel(int status)
         {
+            // a picture missing on Shinden or set by the player that no longer exists
             var requests = 0;
             using var server = new LocalHttpServer(Flaky(int.MaxValue, status, () => Interlocked.Increment(ref requests)));
             var logger = new ListLogger();
             var url = server.BaseUrl + "char.png";
 
-            var picture = await new ImageProcessing(null, null, true, logger).LoadCharacterPictureAsync(url, 1704809, userImage: true);
+            var picture = await new ImageProcessing(null, null, true, logger).LoadCharacterPictureAsync(url, 1704809);
 
             Assert.Null(picture);
             var message = Assert.Single(logger.Messages);
@@ -98,13 +99,13 @@ namespace Artifacts
         }
 
         [Fact]
-        public async Task CharacterPicture_PlayerImageServerError_IsStillAnError()
+        public async Task CharacterPicture_ServerError_IsStillAnError()
         {
             var requests = 0;
             using var server = new LocalHttpServer(Flaky(int.MaxValue, 500, () => Interlocked.Increment(ref requests)));
             var logger = new ListLogger();
 
-            var picture = await new ImageProcessing(null, null, true, logger).LoadCharacterPictureAsync(server.BaseUrl + "char.png", 1, userImage: true);
+            var picture = await new ImageProcessing(null, null, true, logger).LoadCharacterPictureAsync(server.BaseUrl + "char.png", 1);
 
             Assert.Null(picture);
             Assert.Equal(LogKind.Error, LoggerExtensions.Parse(Assert.Single(logger.Messages)).Kind);

@@ -1338,7 +1338,7 @@ namespace Sanakan.Services
 
         // A failed download would be saved into the card file for good, so a remote picture gets a few attempts
         // and a final failure is logged. Returns null when the picture could not be loaded.
-        internal async Task<Image> LoadCharacterPictureAsync(string url, ulong cardId, CardPictureCache pictures = null, bool userImage = false)
+        internal async Task<Image> LoadCharacterPictureAsync(string url, ulong cardId, CardPictureCache pictures = null)
         {
             if (Dir.IsLocal(url))
                 return await GetImageFromUrlOrLocalAsync(url);
@@ -1373,10 +1373,9 @@ namespace Sanakan.Services
 
             pictures?.Add(url, null);
             var message = $"Images: character picture for card {cardId} could not be downloaded ({failure.Reason ?? "unknown"}): {url}";
-            // a rate limit on the image host is temporary and nothing can be done about it, so it stays off the log channel
-            // (same for a picture set by the player that no longer exists - it is the player's data, not a bot error)
-            if (failure.StatusCode == HttpStatusCode.TooManyRequests
-                || (userImage && failure.StatusCode is HttpStatusCode.NotFound or HttpStatusCode.Gone))
+            // a rate limit on the image host is temporary and nothing can be done about it, and a picture that no longer exists
+            // (on Shinden or set by the player) is missing data, not a bot error, so both stay off the log channel
+            if (failure.StatusCode is HttpStatusCode.TooManyRequests or HttpStatusCode.NotFound or HttpStatusCode.Gone)
                 _logger?.LogRoutine(message);
             else
                 _logger?.LogError(message);
@@ -1387,7 +1386,7 @@ namespace Sanakan.Services
         {
             var characterImg = card.FromFigure ? new Image<Rgba32>(475, 667) : await Image.LoadAsync(Dir.GetResource("PW/empty.png"));
             using (var image = await LoadCharacterPictureAsync(card.GetImage() ?? "http://cdn.shinden.eu/cdn1/other/placeholders/title/225x350.jpg",
-                card.Id, pictures, card.CustomImage != null))
+                card.Id, pictures))
             {
                 if (image is null)
                     return characterImg;
