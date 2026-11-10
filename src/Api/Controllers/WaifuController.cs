@@ -574,72 +574,92 @@ namespace Sanakan.Api.Controllers
         }
 
         /// <summary>
-        /// Zastępuje id postaci w kartach
+        /// Synchronizuje karty postaci z jej aktualnymi danymi na Shindenie: id postaci, obrazek (pusty, gdy postać go nie ma)
+        /// i nazwę; tytuł serii zostaje bez zmian
+        /// </summary>
+        /// <param name="id">id postaci z bazy shindena</param>
+        /// <param name="from">id usuniętej postaci, której karty przechodzą na postać {id} (0 - nic nie przenosimy)</param>
+        /// <param name="overrides">opcjonalne dane podane ręcznie, mają pierwszeństwo przed danymi z Shindena; tytuł serii zmienia się tylko tak</param>
+        /// <response code="400">from is the same as id</response>
+        /// <response code="404">Character not found (and no data given by hand)</response>
+        [HttpPost("character/{id}/sync"), Authorize(Policy = "Site")]
+        public Task<IActionResult> SyncCharacterCardsAsync(ulong id, [FromQuery] ulong from = 0,
+            [FromBody(EmptyBodyBehavior = Microsoft.AspNetCore.Mvc.ModelBinding.EmptyBodyBehavior.Allow)] Models.CharacterCardInfoUpdate overrides = null)
+            => SyncCharacterCardsAsync(id, from, overrides, useShinden: true);
+
+        /// <summary>
+        /// Przestarzałe, zamiast tego character/{newId}/sync?from={oldId}
         /// </summary>
         /// <param name="oldId">id postaci z bazy shindena, która została usunięta</param>
         /// <param name="newId">id nowej postaci z bazy shindena</param>
-        /// <response code="500">New character ID is invalid!</response>
         [HttpPost("character/repair/{oldId}/{newId}"), Authorize(Policy = "Site")]
         public async Task<IActionResult> RepairCardsAsync(ulong oldId, ulong newId)
         {
-            var response = await _shClient.GetCharacterInfoAsync(newId);
-            if (!response.IsSuccessStatusCode())
+            // the old route's answers, which the site may still expect
+            var result = await SyncCharacterCardsAsync(newId, oldId, null, useShinden: true);
+            return result switch
             {
-                return "New character ID is invalid!".ToResponse(500);
-            }
-
-            var exe = new Executable($"api-repair oc{oldId} c{newId}", new Func<Task>(async () =>
-            {
-                using (var db = new Database.DatabaseContext(_config))
-                {
-                    var userRelease = new List<string>();
-                    var cards = await db.Cards.AsQueryable().Where(x => x.Character == oldId).ToListAsync();
-
-                    foreach (var card in cards)
-                    {
-                        card.Character = newId;
-                        userRelease.Add(CacheTags.User(card.GameDeckId));
-                    }
-
-                    await db.SaveChangesAsync();
-
-                    QueryCache.ExpireTag(userRelease.ToArray());
-                }
-            }), 0, Priority.High);
-
-            if (!await _executor.TryAdd(exe, TimeSpan.FromSeconds(1)))
-            {
-                return "Command queue is full".ToResponse(503);
-            }
-
-            return "Success".ToResponse(200);
+                ObjectResult { StatusCode: 404 } => "New character ID is invalid!".ToResponse(500),
+                ObjectResult { StatusCode: 200 } => "Success".ToResponse(200),
+                _ => result,
+            };
         }
 
         /// <summary>
-        /// Podmienia dane na karcie danej postaci
+        /// Przestarzałe, zamiast tego character/{id}/sync z danymi w treści
         /// </summary>
         /// <param name="id">id postaci z bazy shindena</param>
         /// <param name="newData">nowe dane karty</param>
         [HttpPost("cards/character/{id}/update"), Authorize(Policy = "Site")]
-        public async Task<IActionResult> UpdateCardInfoAsync(ulong id, [FromBody]Models.CharacterCardInfoUpdate newData)
+        public Task<IActionResult> UpdateCardInfoAsync(ulong id, [FromBody]Models.CharacterCardInfoUpdate newData)
+            => SyncCharacterCardsAsync(id, 0, newData ?? new Models.CharacterCardInfoUpdate(), useShinden: false);
+
+        private async Task<IActionResult> SyncCharacterCardsAsync(ulong id, ulong from, Models.CharacterCardInfoUpdate overrides, bool useShinden)
         {
-            var exe = new Executable($"update cards-{id} img", new Func<Task>(async () =>
+            if (from == id)
+                return "The character to move cards from is the same as the target one!".ToResponse(400);
+
+            var setImage = false;
+            string image = null, name = null;
+            if (useShinden)
+            {
+                var response = await _shClient.GetCharacterInfoAsync(id);
+                if (response.IsSuccessStatusCode())
+                {
+                    setImage = true;
+                    image = response.Body.HasImage ? response.Body.PictureUrl : null;
+                    name = response.Body.ToString();
+                }
+                else if (overrides == null)
+                {
+                    return "Character not found!".ToResponse(404);
+                }
+            }
+
+            if (overrides?.ImageUrl != null)
+            {
+                setImage = true;
+                image = overrides.ImageUrl;
+            }
+            name = overrides?.CharacterName ?? name;
+            var title = overrides?.CardSeriesTitle;
+
+            var exe = new Executable($"sync cards-{id}{(from != 0 ? $" from {from}" : "")}", new Func<Task>(async () =>
             {
                 using (var db = new Database.DatabaseContext(_config))
                 {
                     var userRelease = new List<string>();
-                    var cards = await db.Cards.AsQueryable().Where(x => x.Character == id).ToListAsync();
+                    var cards = await db.Cards.AsQueryable().Where(x => x.Character == id || (from != 0 && x.Character == from)).ToListAsync();
 
                     foreach (var card in cards)
                     {
-                        if (newData?.ImageUrl != null)
-                            card.Image = newData.ImageUrl;
-
-                        if (newData?.CharacterName != null)
-                            card.Name = newData.CharacterName;
-
-                        if (newData?.CardSeriesTitle != null)
-                            card.Title = newData.CardSeriesTitle;
+                        card.Character = id;
+                        if (setImage)
+                            card.Image = image;
+                        if (name != null)
+                            card.Name = name;
+                        if (title != null)
+                            card.Title = title;
 
                         try
                         {
@@ -665,58 +685,13 @@ namespace Sanakan.Api.Controllers
         }
 
         /// <summary>
-        /// Generuje na nowo karty danej postaci
+        /// Przestarzałe, zamiast tego character/{id}/sync
         /// </summary>
         /// <param name="id">id postaci z bazy shindena</param>
         /// <response code="404">Character not found</response>
-        /// <response code="405">Image in character date not found</response>
         [HttpPost("users/make/character/{id}"), Authorize(Policy = "Site")]
-        public async Task<IActionResult> GenerateCharacterCardAsync(ulong id)
-        {
-            var response = await _shClient.GetCharacterInfoAsync(id);
-            if (!response.IsSuccessStatusCode())
-            {
-                return "Character not found!".ToResponse(404);
-            }
-
-            if (!response.Body.HasImage)
-            {
-                return "There is no character image!".ToResponse(405);
-            }
-
-            var exe = new Executable($"update cards-{id}", new Func<Task>(async () =>
-                {
-                    using (var db = new Database.DatabaseContext(_config))
-                    {
-                        var userRelease = new List<string>();
-                        var cards = await db.Cards.AsQueryable().Where(x => x.Character == id).ToListAsync();
-
-                        foreach (var card in cards)
-                        {
-                            card.Image = response.Body.PictureUrl;
-
-                            try
-                            {
-                                _waifu.DeleteCardImageIfExist(card);
-                            }
-                            catch (Exception) { }
-
-                            userRelease.Add(CacheTags.User(card.GameDeckId));
-                        }
-
-                        await db.SaveChangesAsync();
-
-                        QueryCache.ExpireTag(userRelease.ToArray());
-                    }
-                }));
-
-                if (!await _executor.TryAdd(exe, TimeSpan.FromSeconds(1)))
-                {
-                    return "Command queue is full".ToResponse(503);
-                }
-
-                return "Started!".ToResponse(200);
-        }
+        public Task<IActionResult> GenerateCharacterCardAsync(ulong id)
+            => SyncCharacterCardsAsync(id, 0, null, useShinden: true);
 
         /// <summary>
         /// Pobiera listę życzeń użytkownika

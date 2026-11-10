@@ -1,0 +1,164 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
+using Sanakan.Api.Controllers;
+using Sanakan.Api.Models;
+using Sanakan.Config.Model;
+using Sanakan.Database;
+using Sanakan.Database.Models;
+using Sanakan.Extensions;
+using Sanakan.Services.PocketWaifu;
+using Xunit;
+
+namespace Artifacts
+{
+    public class CharacterSyncTests : IDisposable
+    {
+        private const string OldImage = "http://cdn.shinden.eu/cdn1/images/genuine/1.jpg";
+        private const string NewImage = "http://cdn.shinden.eu/cdn1/images/genuine/555.jpg";
+
+        private readonly string _path = Path.Combine(Path.GetTempPath(), $"sanakan-charsync-{Guid.NewGuid():N}.db");
+        private readonly FakeConfig _config = new FakeConfig();
+        private readonly FixedTime _time = new FixedTime();
+        private readonly LocalHttpServer _shindenServer;
+        private readonly WaifuController _controller;
+
+        public CharacterSyncTests()
+        {
+            _config.Model.DatabaseProvider = DatabaseProvider.Sqlite;
+            _config.Model.ConnectionString = $"Data Source={_path}";
+
+            using (var db = new DatabaseContext(_config))
+            {
+                db.EnsureReady();
+                var first = new User().Default(20, _time.Now());
+                var second = new User().Default(30, _time.Now());
+                first.GameDeck.Cards.Add(NewCard(1, 100, "Seria A"));
+                second.GameDeck.Cards.Add(NewCard(2, 100, "Seria A"));
+                second.GameDeck.Cards.Add(NewCard(3, 200, "Seria B"));
+                first.GameDeck.Cards.Add(NewCard(4, 300, "Seria C"));
+                first.GameDeck.Cards.Add(NewCard(5, 101, "Seria D"));
+                db.Users.AddRange(first, second);
+                db.SaveChanges();
+            }
+
+            // character 100 has picture 555, character 101 has no picture, anything else does not exist
+            _shindenServer = new LocalHttpServer(async ctx =>
+            {
+                var path = ctx.Request.Url.AbsolutePath;
+                var body = path.EndsWith("/character/100")
+                    ? @"{ ""character_id"": ""100"", ""first_name"": ""Nowa"", ""last_name"": ""Postać"", ""picture_artifact_id"": ""555"" }"
+                    : path.EndsWith("/character/101")
+                        ? @"{ ""character_id"": ""101"", ""first_name"": ""Bez"", ""last_name"": ""Obrazka"", ""picture_artifact_id"": null }"
+                        : null;
+                ctx.Response.StatusCode = body == null ? 404 : 200;
+                if (body != null)
+                    await ctx.Response.OutputStream.WriteAsync(Encoding.UTF8.GetBytes(body));
+                ctx.Response.Close();
+            });
+
+            var shinden = Sanakan.ShindenCompat.ShindenClient.Create(new ConfigShinden { Token = "token", UserAgent = "tests",
+                Marmolade = "marmolade", BaseUri = _shindenServer.BaseUrl }, null, null, TimeSpan.FromSeconds(5));
+            var waifu = new Waifu(null, null, null, new ListLogger(), null, null, null, _time, null, null, _config);
+            _controller = ControllerHarness.Attach(new WaifuController(shinden, waifu, new FakeExecutor { RunImmediately = true }, null, _config, _time,
+                new Sanakan.Services.Shinden(null, null, null, new ListLogger(), _time), null, null, null));
+        }
+
+        public void Dispose()
+        {
+            _shindenServer.Dispose();
+            Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
+            try { File.Delete(_path); } catch (IOException) { }
+        }
+
+        private static Card NewCard(ulong id, ulong character, string title)
+            => new Card { Id = id, Character = character, Name = $"stara {character}", Title = title, Image = OldImage, Rarity = Rarity.A,
+                Tags = new List<Tag>(), CreationDate = new DateTime(2026, 1, 1) };
+
+        private Dictionary<ulong, Card> Cards()
+        {
+            using var db = new DatabaseContext(_config);
+            return db.Cards.AsNoTracking().ToList().ToDictionary(x => x.Id);
+        }
+
+        private static string Describe(Card card) => $"{card.Character}|{card.Name}|{card.Title}|{card.Image}";
+
+        [Fact]
+        public async Task Sync_RefreshesImageAndName_KeepsTitle_OnlyForThatCharacter()
+        {
+            var before = Cards();
+
+            var result = await _controller.SyncCharacterCardsAsync(100);
+
+            Assert.Equal(200, result.StatusOf());
+            var after = Cards();
+            Assert.Equal($"100|Nowa Postać|Seria A|{NewImage}", Describe(after[1]));
+            Assert.Equal($"100|Nowa Postać|Seria A|{NewImage}", Describe(after[2]));
+            foreach (var id in new ulong[] { 3, 4, 5 })
+                Assert.Equal(Describe(before[id]), Describe(after[id]));
+        }
+
+        [Fact]
+        public async Task SyncFrom_MovesCardsOfTheDeletedCharacter_AndRefreshesThem()
+        {
+            var result = await _controller.SyncCharacterCardsAsync(100, from: 200);
+
+            Assert.Equal(200, result.StatusOf());
+            var after = Cards();
+            Assert.Equal($"100|Nowa Postać|Seria B|{NewImage}", Describe(after[3]));
+            Assert.Equal($"100|Nowa Postać|Seria A|{NewImage}", Describe(after[1]));
+            Assert.Equal($"300|stara 300|Seria C|{OldImage}", Describe(after[4]));
+        }
+
+        [Fact]
+        public async Task CharacterWithoutPicture_ClearsTheImage()
+        {
+            await _controller.SyncCharacterCardsAsync(101);
+
+            Assert.Equal("101|Bez Obrazka|Seria D|", Describe(Cards()[5]));
+        }
+
+        [Fact]
+        public async Task UnknownCharacter_Returns404_AndChangesNothing()
+        {
+            var before = Cards();
+
+            var result = await _controller.SyncCharacterCardsAsync(999, from: 100);
+
+            Assert.Equal(404, result.StatusOf());
+            Assert.Equal(before.Values.Select(Describe), Cards().Values.Select(Describe));
+        }
+
+        [Fact]
+        public async Task MovingToTheSameCharacter_Returns400()
+        {
+            Assert.Equal(400, (await _controller.SyncCharacterCardsAsync(100, from: 100)).StatusOf());
+        }
+
+        [Fact]
+        public async Task DataGivenByHand_WinsOverShinden_AndCanChangeTheTitle()
+        {
+            await _controller.SyncCharacterCardsAsync(100, 0, new CharacterCardInfoUpdate { ImageUrl = "https://i.imgur.com/x.png", CardSeriesTitle = "Nowa seria" });
+
+            Assert.Equal("100|Nowa Postać|Nowa seria|https://i.imgur.com/x.png", Describe(Cards()[1]));
+        }
+
+        [Fact]
+        public async Task OldRoutes_UseTheSameSync()
+        {
+            Assert.Equal(200, (await _controller.RepairCardsAsync(200, 100)).StatusOf());
+            Assert.Equal($"100|Nowa Postać|Seria B|{NewImage}", Describe(Cards()[3]));
+
+            Assert.Equal(200, (await _controller.GenerateCharacterCardAsync(101)).StatusOf());
+            Assert.Equal("101|Bez Obrazka|Seria D|", Describe(Cards()[5]));
+
+            // the hand-made update does not ask Shinden, only the given fields change
+            Assert.Equal(200, (await _controller.UpdateCardInfoAsync(300, new CharacterCardInfoUpdate { CharacterName = "Ręczna" })).StatusOf());
+            Assert.Equal($"300|Ręczna|Seria C|{OldImage}", Describe(Cards()[4]));
+        }
+    }
+}
