@@ -32,5 +32,8 @@ namespace Sanakan.Config.Model
         public HeartbeatConfig Heartbeat { get; set; }
         public IngestConfig Ingest { get; set; }
         public int ScamImageMaxDistance { get; set; } = 6;
+        // only for the local simulation (fake Discord), empty in production
+        public string DiscordGatewayUrl { get; set; }
+        public string DiscordApiUrl { get; set; }
     }
 }

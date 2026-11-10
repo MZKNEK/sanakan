@@ -152,13 +152,21 @@ namespace Sanakan
 
             AppDomain.CurrentDomain.ProcessExit += (_, _) => discordLogger.FlushAllAsync(TimeSpan.FromSeconds(5)).GetAwaiter().GetResult();
 
-            _client = new DiscordSocketClient(new DiscordSocketConfig()
+            var socketConfig = new DiscordSocketConfig()
             {
                 GatewayIntents = GatewayIntents.All & ~GatewayIntents.GuildPresences,
                 LogLevel = LogSeverity.Error,
                 AlwaysDownloadUsers = true,
                 MessageCacheSize = 250
-            });
+            };
+
+            var endpoints = _config.Get();
+            if (!string.IsNullOrWhiteSpace(endpoints.DiscordGatewayUrl))
+                socketConfig.GatewayHost = endpoints.DiscordGatewayUrl;
+            if (!string.IsNullOrWhiteSpace(endpoints.DiscordApiUrl))
+                socketConfig.RestClientProvider = _ => Discord.Net.Rest.DefaultRestClientProvider.Instance(endpoints.DiscordApiUrl);
+
+            _client = new DiscordSocketClient(socketConfig);
 
             _client.Log += log =>
             {
