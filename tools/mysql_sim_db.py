@@ -107,7 +107,11 @@ def reset(client):
     for table in tables:
         create = client.rows(f"SHOW CREATE TABLE `{client.base}`.`{table}`")[0][1]
         statements.append(create)
-        statements.append(f"INSERT INTO `{table}` SELECT * FROM `{client.base}`.`{table}`")
+        # generated columns are computed by MySQL and cannot be inserted
+        columns = ", ".join(f"`{name}`" for name, in client.rows(
+            f"SELECT column_name FROM information_schema.columns WHERE table_schema = '{client.base}' AND table_name = '{table}' "
+            f"AND extra NOT LIKE '%GENERATED%' ORDER BY ordinal_position"))
+        statements.append(f"INSERT INTO `{table}` ({columns}) SELECT {columns} FROM `{client.base}`.`{table}`")
     # view definitions name the base database explicitly, the copies must read the simulation tables
     views = [r[0] for r in client.rows(f"SELECT table_name FROM information_schema.views WHERE table_schema = '{client.base}'")]
     for view in views:
