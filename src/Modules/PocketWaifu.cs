@@ -678,7 +678,7 @@ namespace Sanakan.Modules
             using (var db = new Database.DatabaseContext(Config))
             {
                 await db.Database.OpenConnectionAsync();
-                var bUser = await db.GetUserOrCreateAsync(Context.User.Id, _time);
+                var bUser = await db.GetUserOrCreateWithBoosterPacksAsync(Context.User.Id, _time);
 
                 if (bUser.GameDeck.BoosterPacks.Count < 1)
                 {
@@ -719,7 +719,7 @@ namespace Sanakan.Modules
                     return;
                 }
 
-                if (bUser.GameDeck.Cards.Count + cardsCount > bUser.GameDeck.MaxNumberOfCards)
+                if (await db.CountCardsAsync(bUser.Id) + cardsCount > bUser.GameDeck.MaxNumberOfCards)
                 {
                     await SafeReplyAsync("", embed: $"{Context.User.Mention} nie masz w kolekcji miejsca na wszystkie karty z tych pakietów (potrzebujesz {Polish.Count(cardsCount, "wolnego miejsca", "wolnych miejsc", "wolnych miejsc")}).".ToEmbedMessage(EMType.Error).Build());
                     return;
@@ -763,6 +763,7 @@ namespace Sanakan.Modules
                 }
 
                 var characterIds = totalCards.Select(x => x.Character).Distinct().ToList();
+                await db.LoadCharacterWishesAsync(bUser.GameDeck, characterIds);
                 var allWWCnt = await db.WishlistCountData.AsQueryable().AsNoTracking().Where(x => characterIds.Contains(x.Id)).ToListAsync();
                 foreach (var card in totalCards)
                 {
@@ -2939,7 +2940,7 @@ namespace Sanakan.Modules
 
             using (var db = new Database.DatabaseContext(Config))
             {
-                var bUser = await db.GetUserOrCreateAsync(Context.User.Id, _time);
+                var bUser = await db.GetUserOrCreateWithCardsAsync(Context.User.Id, _time);
                 var dt = bUser.TimeStatuses.FirstOrDefault(x => x.Type == StatusType.Tinkering);
                 if (dt == null)
                 {
@@ -2976,7 +2977,7 @@ namespace Sanakan.Modules
                     return;
                 }
 
-                if (bUser.GameDeck.Cards.Count + count > bUser.GameDeck.MaxNumberOfCards)
+                if (await db.CountCardsAsync(bUser.Id) + count > bUser.GameDeck.MaxNumberOfCards)
                 {
                     await SafeReplyAsync("", embed: $"{Context.User.Mention} nie masz miejsca na tyle kart!".ToEmbedMessage(EMType.Error).Build());
                     return;
@@ -3010,6 +3011,7 @@ namespace Sanakan.Modules
                     totalCards.Add(card);
                     bUser.Stats.CreatedCardsFromItems++;
 
+                    await db.LoadCharacterWishAsync(bUser.GameDeck, card.Character);
                     bool isOnUserWishlist = await bUser.GameDeck.RemoveCharacterFromWishListAsync(card.Character, db);
                     if (isOnUserWishlist)
                         charactersOnWishlist.Add(card.Name);

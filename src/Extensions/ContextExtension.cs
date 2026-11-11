@@ -349,12 +349,36 @@ namespace Sanakan.Extensions
         }
 
         // fills the deck's wishlist with only the entry for this character
-        public static async Task LoadCharacterWishAsync(this Database.DatabaseContext context, GameDeck deck, ulong characterId)
+        public static Task LoadCharacterWishAsync(this Database.DatabaseContext context, GameDeck deck, ulong characterId)
+            => context.LoadCharacterWishesAsync(deck, new[] { characterId });
+
+        public static async Task LoadCharacterWishesAsync(this Database.DatabaseContext context, GameDeck deck, IEnumerable<ulong> characterIds)
         {
             deck.Wishes ??= new List<WishlistObject>();
             if (context.Entry(deck).State == EntityState.Added) return;
 
-            await context.Wishes.AsQueryable().Where(x => x.GameDeckId == deck.Id && x.Type == WishlistObjectType.Character && x.ObjectId == characterId).LoadAsync();
+            var ids = characterIds.Distinct().ToList();
+            var deckId = deck.Id;
+            await context.Wishes.AsQueryable().Where(x => x.GameDeckId == deckId && x.Type == WishlistObjectType.Character && ids.Contains(x.ObjectId)).LoadAsync();
+        }
+
+        // opening packs needs the packs with their contents; the new cards are only added, the collection is counted with CountCardsAsync
+        public static async Task<User> GetUserOrCreateWithBoosterPacksAsync(this Database.DatabaseContext context, ulong userId, Services.Time.ISystemTime time)
+        {
+            var user = await context.Users.AsQueryable().Where(x => x.Id == userId).Include(x => x.Stats).Include(x => x.SMConfig).Include(x => x.TimeStatuses)
+                .Include(x => x.GameDeck).ThenInclude(x => x.ExpContainer)
+                .Include(x => x.GameDeck).ThenInclude(x => x.BoosterPacks).ThenInclude(x => x.Characters)
+                .Include(x => x.GameDeck).ThenInclude(x => x.BoosterPacks).ThenInclude(x => x.RarityExcludedFromPack)
+                .AsSplitQuery().FirstOrDefaultAsync();
+
+            if (user == null)
+            {
+                user = user.Default(userId, time.Now());
+                await context.Users.AddAsync(user);
+            }
+
+            user.GameDeck.Cards ??= new List<Card>();
+            return user;
         }
 
         public static Task<User> GetUserWithItemsAsync(this Database.DatabaseContext context, ulong userId)

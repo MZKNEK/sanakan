@@ -20,13 +20,10 @@ namespace Artifacts
     {
         private readonly string _path = Path.Combine(Path.GetTempPath(), $"sanakan-command-{Guid.NewGuid():N}.db");
         private readonly DiscordSocketClient _client = new DiscordSocketClient();
-        // Shinden answers 404 to everything, so character info and seasons are missing
-        private readonly LocalHttpServer _shindenServer = new LocalHttpServer(ctx =>
-        {
-            ctx.Response.StatusCode = 404;
-            ctx.Response.Close();
-            return Task.CompletedTask;
-        });
+        private readonly LocalHttpServer _shindenServer;
+
+        // the random character pool; everything else on Shinden answers 404, so character info and seasons are missing
+        public List<(ulong Id, string Name)> Pool { get; } = new List<(ulong, string)>();
 
         public FixedTime Time { get; } = new FixedTime();
         public FakeConfig Config { get; } = new FakeConfig();
@@ -34,6 +31,23 @@ namespace Artifacts
 
         public WaifuCommandHarness()
         {
+            _shindenServer = new LocalHttpServer(async ctx =>
+            {
+                if (ctx.Request.Url.AbsolutePath.Contains("/character/flat-list") && Pool.Count > 0)
+                {
+                    var list = new Newtonsoft.Json.Linq.JArray(Pool.Select(x => new Newtonsoft.Json.Linq.JObject
+                    {
+                        ["c"] = x.Id, ["p"] = x.Id, ["f"] = x.Name, ["l"] = "", ["t"] = "Seria", ["n"] = x.Id,
+                    }));
+                    ctx.Response.ContentType = "application/json";
+                    await ctx.Response.OutputStream.WriteAsync(System.Text.Encoding.UTF8.GetBytes(list.ToString()));
+                }
+                else
+                {
+                    ctx.Response.StatusCode = 404;
+                }
+                ctx.Response.Close();
+            });
             Config.Model.DatabaseProvider = DatabaseProvider.Sqlite;
             Config.Model.ConnectionString = $"Data Source={_path}";
             var client = Sanakan.ShindenCompat.ShindenClient.Create(new ConfigShinden { Token = "token", UserAgent = "tests",
