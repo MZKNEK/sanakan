@@ -109,6 +109,11 @@ namespace Artifacts
             Assert.Contains("GameDeckId,Rarity,FromFigure,Quality,RestartCnt", indexes);
             Assert.Contains("GameDeckId", indexes);
             Assert.Contains("Name,Title", indexes);
+            Assert.Contains("PictureKind,CustomImageDate,Id", indexes);
+            Assert.Contains("GameDeckId,PictureKind,CustomImageDate,Id", indexes);
+            Assert.Contains("GameDeckId,Character", indexes);
+            Assert.Contains("GameDeckId,Fatigue", indexes);
+            Assert.Contains("GameDeckId,Cursed", indexes);
             Assert.Contains("WhoWantsCount,Character", indexes);
             Assert.Contains("AWhoWantsCount,Character", indexes);
         }

@@ -75,6 +75,9 @@ namespace Sanakan.Database
         public DbSet<UserApiKey> UserApiKeys { get; set; }
         public DbSet<IdempotencyRecord> IdempotencyRecords { get; set; }
 
+        public const string PictureKindSql = "CASE WHEN CustomImage IS NULL THEN (CASE WHEN Image IS NULL THEN 0 ELSE 1 END) ELSE (CASE WHEN IsAnimatedImage THEN 3 ELSE 2 END) END";
+        public const string CursedSql = "CASE WHEN Curse <> 0 THEN 1 ELSE 0 END";
+
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
             var config = _config.Get();
@@ -86,6 +89,8 @@ namespace Sanakan.Database
             builder.AddInterceptors(DbActivity.Commands, DbActivity.Saves, PowerActivity.Interceptor, CacheActivity.Interceptor);
             if (config.DatabaseProvider == global::Sanakan.Config.Model.DatabaseProvider.Sqlite)
                 builder.AddInterceptors(SqliteText.Interceptor);
+            else
+                builder.AddInterceptors(CardListHint.Interceptor);
         }
 
         public static async Task TestConnectionAsync(global::Sanakan.Config.Model.DatabaseProvider provider, string connectionString)
@@ -208,6 +213,14 @@ namespace Sanakan.Database
                 entity.Property(e => e.CustomImage).HasMaxLength(Card.TextMaxLength);
                 entity.Property(e => e.CustomBorder).HasMaxLength(Card.TextMaxLength);
                 entity.HasIndex(e => new { e.Name, e.Title });
+                // the most used sorts of the site's card lists, for all cards and for one player's
+                entity.Property(e => e.PictureKind).HasComputedColumnSql(PictureKindSql, stored: true);
+                entity.Property(e => e.Cursed).HasComputedColumnSql(CursedSql, stored: true);
+                entity.HasIndex(e => new { e.PictureKind, e.CustomImageDate, e.Id });
+                entity.HasIndex(e => new { e.GameDeckId, e.PictureKind, e.CustomImageDate, e.Id });
+                entity.HasIndex(e => new { e.GameDeckId, e.Character });
+                entity.HasIndex(e => new { e.GameDeckId, e.Fatigue });
+                entity.HasIndex(e => new { e.GameDeckId, e.Cursed });
 
                 entity.HasOne(e => e.GameDeck)
                     .WithMany(d => d.Cards);

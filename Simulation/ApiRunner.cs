@@ -91,13 +91,16 @@ public sealed class ApiRunner : IDisposable
 
     private async Task<(int Status, string Body)> SendAsync(string name, ApiCatalog.Template template, ApiCatalog.Context context)
     {
-        string path;
+        string path, requestBody;
         lock (_random)
+        {
             path = template.Path(context);
+            requestBody = template.Body?.Invoke(context);
+        }
 
         using var request = new HttpRequestMessage(template.Method, path);
-        if (template.Body != null)
-            request.Content = new StringContent(template.Body, Encoding.UTF8, "application/json");
+        if (requestBody != null)
+            request.Content = new StringContent(requestBody, Encoding.UTF8, "application/json");
         else if (template.Method == HttpMethod.Post)
             request.Content = new StringContent("", Encoding.UTF8, "application/json");
         if (template.Auth == ApiCatalog.Auth.Player)

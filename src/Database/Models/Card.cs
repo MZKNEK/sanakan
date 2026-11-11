@@ -177,6 +177,13 @@ namespace Sanakan.Database.Models
         public DateTime ExpeditionEndDate { get; set; }
         public double Fatigue { get; set; }
 
+        // computed by the database (stored generated columns) only for sorting the card lists by an index;
+        // 0 no picture, 1 Shinden's, 2 own, 3 own animated
+        [JsonIgnore]
+        public byte PictureKind { get; set; }
+        [JsonIgnore]
+        public bool Cursed { get; set; }
+
         public virtual ICollection<Tag> Tags { get; set; }
 
         public ulong GameDeckId { get; set; }

@@ -209,7 +209,7 @@ namespace Sanakan.Api.Controllers
 
             using (var db = new Database.DatabaseContext(_config))
             {
-                var query = db.Cards.AsQueryable();
+                var query = db.Cards.AsQueryable().TagWith(Database.CardListHint.Tag);
                 if (!string.IsNullOrEmpty(filter.SearchText))
                 {
                     query = query.Where(x => x.Name.Contains(filter.SearchText) || x.Title.Contains(filter.SearchText));
@@ -306,7 +306,7 @@ namespace Sanakan.Api.Controllers
                 }
 
                 var deckId = user.GameDeck.Id;
-                var query = db.Cards.AsQueryable().Where(x => x.GameDeckId == deckId);
+                var query = db.Cards.AsQueryable().TagWith(Database.CardListHint.Tag).Where(x => x.GameDeckId == deckId);
                 if (!string.IsNullOrEmpty(filter.SearchText))
                 {
                     query = query.Where(x => x.Name.Contains(filter.SearchText) || x.Title.Contains(filter.SearchText));
