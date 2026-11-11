@@ -101,7 +101,9 @@ namespace Sanakan.Api.Models
                 OrderType.UniqueDes => query.OrderByDescending(x => x.Unique ? 1 : 0),
                 _ => query.OrderBy(x => x.Id)
             };
-            return orderedQuery.ThenBy(x => x.Id);
+            // the tie-breaker follows the last key's direction, so a descending sort can read its index backwards
+            var descending = orderedQuery.Expression is System.Linq.Expressions.MethodCallExpression last && last.Method.Name.EndsWith("Descending");
+            return descending ? orderedQuery.ThenByDescending(x => x.Id) : orderedQuery.ThenBy(x => x.Id);
         }
     }
 }
