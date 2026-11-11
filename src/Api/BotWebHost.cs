@@ -230,6 +230,16 @@ namespace Sanakan.Api
                 {
                     await next();
                 }
+                catch (Microsoft.AspNetCore.Http.BadHttpRequestException ex)
+                {
+                    // the client sent a broken request, e.g. closed the connection before sending the whole body
+                    auditLogger?.LogRoutine($"API: {context.Request.Method} {context.Request.Path} - bad request from {ApiAudit.GetClient(context.User)} after {watch.ElapsedMilliseconds}ms: {ex.Message}");
+                    if (context.Response.HasStarted || context.RequestAborted.IsCancellationRequested) return;
+
+                    context.Response.Clear();
+                    context.Response.StatusCode = ex.StatusCode;
+                    await context.Response.WriteAsJsonAsync(new { message = "Bad request", success = false });
+                }
                 catch (Exception ex)
                 {
                     auditLogger?.LogError($"API: {context.Request.Method} {context.Request.Path} - {ex}");

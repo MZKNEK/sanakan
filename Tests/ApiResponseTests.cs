@@ -35,10 +35,14 @@ namespace Artifacts
         public FakeBlacklist Blacklist { get; } = new FakeBlacklist();
         public Sanakan.Services.Session.SessionManager Sessions { get; }
         public HttpClient Client { get; }
+        public Uri KestrelUrl { get; }
         private readonly IHost _host;
         private readonly LocalHttpServer _shindenServer;
 
-        public ApiServer()
+        public ApiServer() : this(false) { }
+
+        // kestrel: a real socket listener instead of the in-memory test server, for raw connection behaviour
+        public ApiServer(bool kestrel)
         {
             Config.Model.UserKeyApps.Add(new ApiApp { Key = SiteKey, Bearer = "Shinden", Permissions = ApiAppPermission.Site });
 
@@ -58,8 +62,9 @@ namespace Artifacts
             var discord = new DiscordSocketClient();
             Sessions = new Sanakan.Services.Session.SessionManager(discord, Executor, logger);
 
-            _host = new HostBuilder().ConfigureWebHost(web => web
-                .UseTestServer()
+            _host = new HostBuilder().ConfigureWebHost(web => (kestrel
+                    ? web.UseKestrel(o => o.Listen(IPAddress.Loopback, 0))
+                    : web.UseTestServer())
                 .ConfigureServices(services =>
                 {
                     BotWebHost.AddApiServices(services, Config);
@@ -79,7 +84,17 @@ namespace Artifacts
                 })
                 .Configure(BotWebHost.UseApi)).Start();
 
-            Client = _host.GetTestClient();
+            if (kestrel)
+            {
+                var address = _host.Services.GetRequiredService<Microsoft.AspNetCore.Hosting.Server.IServer>().Features
+                    .Get<Microsoft.AspNetCore.Hosting.Server.Features.IServerAddressesFeature>().Addresses.First();
+                KestrelUrl = new Uri(address);
+                Client = new HttpClient { BaseAddress = KestrelUrl };
+            }
+            else
+            {
+                Client = _host.GetTestClient();
+            }
         }
 
         public async Task<HttpClient> AsSiteAsync()
@@ -350,6 +365,36 @@ namespace Artifacts
             }).Select(m => $"{m.DeclaringType.Name}.{m.Name}").ToList();
 
             Assert.Empty(wrong);
+        }
+    }
+
+    public class ApiClientAbortTests : IDisposable
+    {
+        private readonly ApiServer _api = new ApiServer(kestrel: true);
+
+        public void Dispose() => _api.Dispose();
+
+        // the client announces a body and closes the connection before sending all of it
+        [Fact]
+        public async Task TruncatedBody_IsABadRequest_NotAnError()
+        {
+            using var tcp = new System.Net.Sockets.TcpClient();
+            await tcp.ConnectAsync(_api.KestrelUrl.Host, _api.KestrelUrl.Port);
+            var stream = tcp.GetStream();
+            var request = "POST /api/waifu/unique/cards/0/500 HTTP/1.1\r\nHost: localhost\r\nContent-Type: application/json\r\n"
+                + "Content-Length: 100\r\n\r\n{\"orderBy\":";
+            await stream.WriteAsync(Encoding.ASCII.GetBytes(request));
+            tcp.Client.Shutdown(System.Net.Sockets.SocketShutdown.Send);
+
+            // the client is gone, so the connection is closed without a response
+            Assert.Equal("", await new StreamReader(stream, Encoding.ASCII).ReadToEndAsync());
+            for (var i = 0; i < 100 && !_api.Logger.Messages.Any(x => x.Contains("/api/waifu/unique/cards/0/500")); i++)
+                await Task.Delay(50);
+
+            Assert.DoesNotContain(_api.Logger.Messages, x => Sanakan.LoggerExtensions.Parse(x).Kind == Sanakan.LogKind.Error);
+            var message = Assert.Single(_api.Logger.Messages, x => x.Contains("/api/waifu/unique/cards/0/500"));
+            Assert.Equal(Sanakan.LogKind.Routine, Sanakan.LoggerExtensions.Parse(message).Kind);
+            Assert.DoesNotContain(" at ", message);
         }
     }
 }
