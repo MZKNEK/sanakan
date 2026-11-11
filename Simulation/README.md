@@ -18,7 +18,8 @@ dotnet run --project Simulation -- load --world W --mix M # replays the producti
 
 `load` options: `--minutes 10` (real duration), `--speed 1` (virtual hours per real hour, drives the hour-of-day
 profile), `--scale 1` (traffic multiplier), `--chat 2300` (chat messages per hour at the average hour),
-`--start-hour 20`.
+`--start-hour 20`, `--extra "jakie,czego brak"` (commands sent on top of the mix, one every 10 s, so the rare ones
+changed in a commit are exercised; each needs a template in `CommandCatalog.cs`).
 
 ## Production data (SQLite)
 

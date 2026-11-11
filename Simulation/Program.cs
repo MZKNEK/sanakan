@@ -97,7 +97,7 @@ if (options.Mode == "load")
 
     // give the bot a moment to finish its startup work before measuring
     await Task.Delay(TimeSpan.FromSeconds(10));
-    var settings = new LoadRunner.Settings(options.Minutes, options.Speed, options.Scale, options.ChatPerHour, options.StartHour, prefix);
+    var settings = new LoadRunner.Settings(options.Minutes, options.Speed, options.Scale, options.ChatPerHour, options.StartHour, prefix, options.Extra);
     var runner = new LoadRunner(world, gateway, rest, replies, bot, log, JsonNode.Parse(File.ReadAllText(options.Mix)), settings);
     var result = await runner.RunAsync();
     result["requests"] = new JsonObject(log.Routes.OrderBy(x => x.Key).Select(x => KeyValuePair.Create(x.Key, (JsonNode)x.Value)));
@@ -189,7 +189,8 @@ void Report()
 }
 
 sealed record Options(string Mode, int Port, int Users, bool KeepDb, string Repo, string World,
-    string Mix = null, double Minutes = 10, double Speed = 1, double Scale = 1, double ChatPerHour = 2300, int StartHour = 20, bool MySql = false)
+    string Mix = null, double Minutes = 10, double Speed = 1, double Scale = 1, double ChatPerHour = 2300, int StartHour = 20, bool MySql = false,
+    IReadOnlyList<string> Extra = null)
 {
     public static Options Parse(string[] args)
     {
@@ -199,6 +200,7 @@ sealed record Options(string Mode, int Port, int Users, bool KeepDb, string Repo
         bool keepDb = false, mySql = false;
         string repo = Directory.GetCurrentDirectory();
         string world = null, mix = null;
+        List<string> extra = null;
         double minutes = 10, speed = 1, scale = 1, chat = 2300;
         double D(string value) => double.Parse(value, System.Globalization.CultureInfo.InvariantCulture);
         for (int i = 1; i < args.Length; i++)
@@ -217,6 +219,7 @@ sealed record Options(string Mode, int Port, int Users, bool KeepDb, string Repo
                 case "--chat": chat = D(args[++i]); break;
                 case "--start-hour": startHour = int.Parse(args[++i]); break;
                 case "--mysql": mySql = true; break;
+                case "--extra": extra = args[++i].Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList(); break;
                 default: return null;
             }
         }
@@ -226,7 +229,7 @@ sealed record Options(string Mode, int Port, int Users, bool KeepDb, string Repo
         // relative paths are relative to the repository, dotnet run changes the working directory
         string Resolve(string path) => path == null || Path.IsPathRooted(path) ? path : Path.Combine(root, path);
         return new Options(args[0], port, users, keepDb && args[0] != "init", root, Resolve(world),
-            Resolve(mix), minutes, speed, scale, chat, startHour, mySql);
+            Resolve(mix), minutes, speed, scale, chat, startHour, mySql, extra);
     }
 
     // dotnet run starts in the project directory, the repository is the first parent with the bot project

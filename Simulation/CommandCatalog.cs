@@ -19,6 +19,8 @@ public static class CommandCatalog
         public string Item => Random.Next(1, Math.Max(1, Math.Min(User.Items, 30)) + 1).ToString();
         public string OtherPlayer => $"<@{World.Users[Random.Next(Math.Min(300, World.Users.Count))].Id}>";
         public string Character => Random.Next(1, 20001).ToString();
+        // FakeShinden's titles
+        public string Title => Random.Next(1000, 1500).ToString();
     }
 
     private static Template T(ChannelKind channel, Func<Context, string> text) => new(channel, text);
@@ -70,5 +72,9 @@ public static class CommandCatalog
         ["koszary"] = T(ChannelKind.Waifu, "koszary"),
         ["pomoc"] = T(ChannelKind.Command, "pomoc"),
         ["idp"] = T(ChannelKind.Command, "idp"),
+        ["jakie"] = T(ChannelKind.Waifu, c => $"jakie {c.Title} nie tak"),
+        ["czego brak"] = T(ChannelKind.Waifu, c => $"czego brak {c.Title} tak"),
+        ["ulubione"] = T(ChannelKind.Waifu, "ulubione"),
+        ["subskrypcje"] = T(ChannelKind.Command, "subskrypcje"),
     };
 }

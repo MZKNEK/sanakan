@@ -9,7 +9,11 @@ namespace Sanakan.Simulation;
 // players weighted by their activity, chat messages between commands; samples the bot's memory and CPU.
 public sealed class LoadRunner
 {
-    public sealed record Settings(double Minutes, double Speed, double Scale, double ChatPerHour, int StartHour, string Prefix);
+    // Extra: commands sent on top of the mix, one every ExtraEvery, so rare ones get exercised
+    public sealed record Settings(double Minutes, double Speed, double Scale, double ChatPerHour, int StartHour, string Prefix,
+        IReadOnlyList<string> Extra = null);
+
+    private static readonly TimeSpan ExtraEvery = TimeSpan.FromSeconds(10);
 
     private static readonly string[] Words =
     {
@@ -45,6 +49,10 @@ public sealed class LoadRunner
         _log = log;
         _settings = settings;
 
+        var unknown = settings.Extra?.Where(x => !CommandCatalog.Templates.ContainsKey(x)).ToList();
+        if (unknown is { Count: > 0 })
+            throw new ArgumentException($"--extra: no template in CommandCatalog for {string.Join(", ", unknown)}");
+
         _hourly = mix["commands"]!["avg_per_hour_of_day"]!.AsArray().Select(x => (double)x!).ToArray();
         _commands = mix["commands"]!["by_name"]!.AsObject()
             .Where(x => CommandCatalog.Templates.ContainsKey(x.Key))
@@ -68,6 +76,8 @@ public sealed class LoadRunner
         var tick = TimeSpan.FromMilliseconds(100);
         var nextSample = TimeSpan.Zero;
         var nextStatus = TimeSpan.FromMinutes(1);
+        var nextExtra = ExtraEvery;
+        var extraIndex = 0;
         var lastCpu = TimeSpan.Zero;
         var lastCpuAt = TimeSpan.Zero;
 
@@ -82,6 +92,11 @@ public sealed class LoadRunner
                 _ = SendCommandAsync();
             for (int i = Poisson(chatPerHour * perTick); i > 0; i--)
                 _ = SendChatAsync();
+            if (_settings.Extra is { Count: > 0 } extra && watch.Elapsed >= nextExtra)
+            {
+                _ = SendCommandAsync(extra[extraIndex++ % extra.Count]);
+                nextExtra += ExtraEvery;
+            }
 
             if (watch.Elapsed >= nextSample)
             {
@@ -140,7 +155,7 @@ public sealed class LoadRunner
         return items[^1];
     }
 
-    private Task SendCommandAsync()
+    private Task SendCommandAsync(string forced = null)
     {
         string name;
         SimUser user;
@@ -148,7 +163,7 @@ public sealed class LoadRunner
         SimChannel channel;
         lock (_random)
         {
-            name = Weighted(_commands, i => _commands[i].Weight, _commands.Sum(x => x.Weight)).Name;
+            name = forced ?? Weighted(_commands, i => _commands[i].Weight, _commands.Sum(x => x.Weight)).Name;
             user = Weighted(_players, i => _playerWeights[i], _playerWeights.Sum());
             var template = CommandCatalog.Templates[name];
             text = template.Text(new CommandCatalog.Context { User = user, World = _world, Random = _random });
