@@ -1,15 +1,15 @@
-# 1.4.11.17
+# 1.4.11.18
 
 Data: 2026-11-11
 
-- Przyspieszono większość poleceń kart, m.in. użyj, wyprawę, pojedynek, kartę+, ulepszanie, rynek, czarny rynek, loterię, klatkę, niszczenie, uwalnianie i poświęcanie kart.
-- Przyspieszono listę życzeń, sprawdzanie, kto chce kartę, otwieranie pakietów, druciarstwo, listę przedmiotów i codzienne nagrody.
-- Przyspieszono wysyłanie długich list w wiadomościach prywatnych.
-- Naprawiono karty postaci, których obrazek zmienił się na Shindenie – pokazują teraz aktualny obrazek.
-- Zmieniono komunikat przy nieobsługiwanym adresie obrazka – podaje teraz, z jakich stron można brać obrazki.
+- Przyspieszono otwieranie pakietów, druciarstwo, wymianę oraz rzadziej używane polecenia kart, m.in. reset, skrzynię, galeriankę i zakończenie figurki.
+- Przyspieszono profil na stronie u graczy z długą historią pojedynków.
+- Przyspieszono listy kart na stronie, zwłaszcza sortowane malejąco i po liczbie chętnych.
+- Przyspieszono wczytywanie nazw właścicieli kart na listach na stronie.
+- Zmieniono wysyłanie list w wiadomościach prywatnych: odpowiedź przychodzi po pierwszej stronie, a kolejne strony dochodzą zaraz po niej.
 
 ## Techniczne
 
-- Bot wczytuje z bazy tylko te karty, których dane polecenie potrzebuje, dzięki czemu działa szybciej przy graczach z dużymi kolekcjami.
-- Dodano dla strony nowy sposób odświeżania kart postaci z danymi z Shindena, który przy chwilowej niedostępności Shindena prosi o ponowienie.
-- Zmieniono zgłaszanie błędów: brakujące obrazki postaci i przerwane przez klienta zapytania do API nie są już zgłaszane jako błędy bota.
+- Usunięto z bazy nieużywane indeksy i dodano nowe pod najczęstsze zapytania.
+- Naprawiono odświeżanie kart postaci przez stronę, które przy chwilowym błędzie Shindena mogło po cichu niczego nie zmienić.
+- Usunięto stare sposoby aktualizacji kart postaci, z których strona już nie korzysta.
