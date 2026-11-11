@@ -164,10 +164,11 @@ namespace Sanakan.Services
             }
         }
 
-        // null when the user does not exist, throws when shinden is unreachable and the name was never seen
+        // null when the user does not exist, throws when shinden is unreachable and the name was never seen;
+        // a name older than a day is returned at once and refreshed in the background
         public Task<string> GetUserNameAsync(ulong shindenId)
         {
-            return _userNames.GetAsync(shindenId, async () =>
+            return _userNames.GetStaleAndRefreshAsync(shindenId, async () =>
             {
                 var res = await _shClient.User.GetAsync(shindenId);
                 return res.IsSuccessStatusCode() ? res.Body.Name : null;

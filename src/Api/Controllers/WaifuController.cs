@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Security.Claims;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -50,6 +51,7 @@ namespace Sanakan.Api.Controllers
         private readonly ILogger _logger;
 
         private const int MaxShindenFailures = 2;
+        private const int MaxParallelNameLookups = 5;
         private int _shindenFailures;
 
         private const string ShindenPacksIdempotencyScope = "shinden-boosterpack";
@@ -1528,11 +1530,15 @@ namespace Sanakan.Api.Controllers
 
         private async Task<List<CardFinalView>> ToViewWithUsernamesAsync(List<Card> cards)
         {
-            var usernames = new Dictionary<ulong, string>();
-            foreach (var shindenId in cards.Select(x => x.GameDeck.User.Shinden).Distinct())
+            // a page can have dozens of owners, their names are looked up a few at a time instead of one by one
+            using var gate = new SemaphoreSlim(MaxParallelNameLookups);
+            var lookups = cards.Select(x => x.GameDeck.User.Shinden).Distinct().Select(async shindenId =>
             {
-                usernames[shindenId] = await GetUsernameAsync(shindenId);
-            }
+                await gate.WaitAsync();
+                try { return (shindenId, Name: await GetUsernameAsync(shindenId)); }
+                finally { gate.Release(); }
+            });
+            var usernames = (await Task.WhenAll(lookups)).ToDictionary(x => x.shindenId, x => x.Name);
             return cards.Select(x => x.ToView(usernames[x.GameDeck.User.Shinden], 0, _time)).ToList();
         }
 
@@ -1557,7 +1563,7 @@ namespace Sanakan.Api.Controllers
                 }
                 catch (Exception)
                 {
-                    _shindenFailures++;
+                    Interlocked.Increment(ref _shindenFailures);
                 }
             }
             return string.Empty;

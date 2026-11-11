@@ -26,6 +26,7 @@ namespace Sanakan.Services.Cache
         }
 
         private ConcurrentDictionary<TKey, Entry> _entries = new ConcurrentDictionary<TKey, Entry>();
+        private readonly ConcurrentDictionary<TKey, bool> _refreshing = new ConcurrentDictionary<TKey, bool>();
         private readonly SemaphoreSlim _saveLock = new SemaphoreSlim(1, 1);
         private readonly object _loadLock = new object();
         private readonly TimeSpan _maxAge;
@@ -93,6 +94,26 @@ namespace Sanakan.Services.Cache
                 await SaveAsync(now).ConfigureAwait(false);
 
             return value;
+        }
+
+        // a stale value is returned at once and refreshed in the background, one refresh per key at a time;
+        // only a key never seen waits for the fetch
+        public Task<TValue> GetStaleAndRefreshAsync(TKey key, Func<Task<TValue>> fetch, DateTime now)
+        {
+            EnsureLoaded();
+            if (!_entries.TryGetValue(key, out var entry))
+                return GetAsync(key, fetch, now);
+
+            if (now - entry.UpdatedAt >= _maxAge && _refreshing.TryAdd(key, true))
+            {
+                _ = Task.Run(async () =>
+                {
+                    try { await GetAsync(key, fetch, now).ConfigureAwait(false); }
+                    catch (Exception) { }
+                    finally { _refreshing.TryRemove(key, out _); }
+                });
+            }
+            return Task.FromResult(entry.Value);
         }
 
         public async Task SaveAsync(DateTime now)
