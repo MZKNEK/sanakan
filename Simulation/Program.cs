@@ -52,12 +52,17 @@ await app.StartAsync();
 log.Info($"fake Discord and Shinden listening on {baseUrl}");
 
 var runDir = Path.Combine(options.Repo, "Simulation", "run");
-var dll = Path.Combine(options.Repo, "src", "bin", "Release", "net6.0", "Sanakan.dll");
-if (!File.Exists(dll))
+// the newest Release build, whatever framework the bot targets
+var releaseDir = Path.Combine(options.Repo, "src", "bin", "Release");
+var dll = Directory.Exists(releaseDir)
+    ? Directory.GetFiles(releaseDir, "Sanakan.dll", SearchOption.AllDirectories).OrderByDescending(File.GetLastWriteTimeUtc).FirstOrDefault()
+    : null;
+if (dll == null)
 {
-    log.Info($"bot build not found: {dll} (dotnet build src/Sanakan.csproj -c Release)");
+    log.Info($"bot build not found in {releaseDir} (dotnet build src/Sanakan.csproj -c Release)");
     return 1;
 }
+log.Info($"bot build: {Path.GetRelativePath(options.Repo, dll)}");
 
 using var bot = new BotProcess(options.Repo, runDir, log);
 Console.CancelKeyPress += (_, _) => bot.Dispose();

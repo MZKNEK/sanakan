@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
     <AssemblyName>Sanakan</AssemblyName>
     <Copyright>Sniku</Copyright>
     <Product>Sanakan</Product>
@@ -12,32 +12,32 @@
     <StartupObject>Sanakan.Sanakan</StartupObject>
     <!-- the Web SDK turns on Server GC, which keeps a heap per core and holds far more memory than a bot needs -->
     <ServerGarbageCollection>false</ServerGarbageCollection>
+    <!-- Sanakan.xml next to the build, whatever the framework; the API docs read it from there -->
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-    <DocumentationFile>bin\Debug\net6.0\Sanakan.xml</DocumentationFile>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
-    <DocumentationFile>bin\Release\net6.0\Sanakan.xml</DocumentationFile>
     <NoWarn>1701;1702;1705;1591</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Discord.Net" Version="3.17.4" />
     <PackageReference Include="AsyncKeyedLock" Version="6.3.4" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="6.0.36" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.33" />
     <PackageReference Include="Asp.Versioning.Mvc" Version="6.4.1" />
     <PackageReference Include="Microsoft.AspNetCore.Identity" Version="2.3.1" />
-    <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="6.0.36" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="8.0.33" />
     <PackageReference Include="Microsoft.IdentityModel.Tokens" Version="8.12.1" />
     <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.12.1" />
-    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="6.0.36" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.33" />
     <PackageReference Include="Swashbuckle.AspNetCore.SwaggerGen" Version="7.3.2" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
-    <PackageReference Include="Pomelo.EntityFrameworkCore.MySql" Version="6.0.3" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="6.0.36" />
+    <PackageReference Include="Pomelo.EntityFrameworkCore.MySql" Version="8.0.3" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="8.0.33" />
     <PackageReference Include="Shinden.NET" Version="0.8.0" />
     <PackageReference Include="SixLabors.ImageSharp" Version="3.1.12" />
     <PackageReference Include="SixLabors.Fonts " Version="2.1.3" />

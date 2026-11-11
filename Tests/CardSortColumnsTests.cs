@@ -98,6 +98,7 @@ namespace Artifacts
             var tagged = "-- card-list\r\n\r\nSELECT `c`.`Id` FROM `Cards` AS `c`";
 
             Assert.Equal("-- card-list\r\n\r\nSELECT " + CardListHint.Hint + " `c`.`Id` FROM `Cards` AS `c`", CardListHint.Apply(tagged));
+            Assert.Equal("\r\n-- card-list\r\n\r\nSELECT " + CardListHint.Hint + " 1", CardListHint.Apply("\r\n-- card-list\r\n\r\nSELECT 1"));
             Assert.Equal("SELECT 1", CardListHint.Apply("SELECT 1"));
             Assert.Equal("-- other\r\n\r\nSELECT 1", CardListHint.Apply("-- other\r\n\r\nSELECT 1"));
         }

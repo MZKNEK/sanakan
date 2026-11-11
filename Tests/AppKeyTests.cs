@@ -85,7 +85,7 @@ namespace Artifacts
             options.Setup(x => x.Get(It.IsAny<string>())).Returns(new AuthenticationSchemeOptions());
 
             var handler = new AppKeyAuthenticationHandler(options.Object, NullLoggerFactory.Instance,
-                UrlEncoder.Default, new SystemClock(), config, guard ?? new Sanakan.Api.TokenAttemptGuard(new FixedTime()));
+                UrlEncoder.Default, config, guard ?? new Sanakan.Api.TokenAttemptGuard(new FixedTime()));
 
             var context = new DefaultHttpContext();
             if (appKey != null) context.Request.Headers[AppKeyAuthenticationHandler.HeaderName] = appKey;
