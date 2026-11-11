@@ -287,35 +287,22 @@ namespace Sanakan.Services
         public async Task<List<CharacterWithTitle>> GetTitlesForCharactersAsync(IEnumerable<IPersonSearch> characters)
         {
             // ograniczamy równoległość, aby nie zalać API Shindena
-            using (var gate = new SemaphoreSlim(5))
+            return await BoundedParallel.SelectAsync(characters, BoundedParallel.ShindenLookups, async ch =>
             {
-                var tasks = characters.Select(async ch =>
+                var entity = new CharacterWithTitle
                 {
-                    await gate.WaitAsync().ConfigureAwait(false);
-                    try
-                    {
-                        var entity = new CharacterWithTitle
-                        {
-                            Character = ch,
-                            Title = string.Empty
-                        };
+                    Character = ch,
+                    Title = string.Empty
+                };
 
-                        var info = await GetCharacterInfoAsync(ch.Id).ConfigureAwait(false);
-                        if (info != null)
-                        {
-                            entity.Title = info?.Relations?.OrderBy(x => x.Id)?.FirstOrDefault()?.Title ?? string.Empty;
-                        }
+                var info = await GetCharacterInfoAsync(ch.Id).ConfigureAwait(false);
+                if (info != null)
+                {
+                    entity.Title = info?.Relations?.OrderBy(x => x.Id)?.FirstOrDefault()?.Title ?? string.Empty;
+                }
 
-                        return entity;
-                    }
-                    finally
-                    {
-                        gate.Release();
-                    }
-                }).ToList();
-
-                return new List<CharacterWithTitle>(await Task.WhenAll(tasks).ConfigureAwait(false));
-            }
+                return entity;
+            }).ConfigureAwait(false);
         }
 
         public string[] GetSearchResponse(IEnumerable<object> list, string title)

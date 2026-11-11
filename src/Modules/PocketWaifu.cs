@@ -1889,24 +1889,10 @@ namespace Sanakan.Modules
 
                     // pobierz dane postaci równolegle (z ograniczeniem), zamiast sekwencyjnych żądań w pętli
                     var charInfos = new Dictionary<ulong, Sden.Models.ICharacterInfo>();
-                    using (var gate = new SemaphoreSlim(5))
-                    {
-                        var fetches = cageList.Select(async card =>
-                        {
-                            await gate.WaitAsync();
-                            try
-                            {
-                                return (Character: card.Character, Info: await _shinden.GetCharacterInfoAsync(card.Character));
-                            }
-                            finally
-                            {
-                                gate.Release();
-                            }
-                        }).ToList();
-
-                        foreach (var fetched in await Task.WhenAll(fetches))
-                            if (fetched.Info != null) charInfos[fetched.Character] = fetched.Info;
-                    }
+                    var fetches = await BoundedParallel.SelectAsync(cageList, BoundedParallel.ShindenLookups,
+                        async card => (Character: card.Character, Info: await _shinden.GetCharacterInfoAsync(card.Character)));
+                    foreach (var fetched in fetches)
+                        if (fetched.Info != null) charInfos[fetched.Character] = fetched.Info;
 
                     foreach (var card in cageList)
                     {
@@ -2031,9 +2017,10 @@ namespace Sanakan.Modules
 
                         case WishlistObjectType.Title:
                         {
-                            foreach (var obj in objl)
+                            // looked up together, the database is still used one entry at a time
+                            var titleInfos = await BoundedParallel.SelectAsync(objl, BoundedParallel.ShindenLookups, x => _shclient.Title.GetInfoAsync(x.ObjectId));
+                            foreach (var (obj, res1) in objl.Zip(titleInfos))
                             {
-                                var res1 = await _shclient.Title.GetInfoAsync(obj.ObjectId);
                                 if (!res1.IsSuccessStatusCode())
                                 {
                                     await SafeReplyAsync("", embed: TitleNotFound(res1.Code, obj.ObjectId).ToEmbedMessage(EMType.Error).Build());
@@ -2057,9 +2044,9 @@ namespace Sanakan.Modules
 
                         case WishlistObjectType.Character:
                         {
-                            foreach (var obj in objl)
+                            var characterInfos = await BoundedParallel.SelectAsync(objl, BoundedParallel.ShindenLookups, x => _shinden.GetCharacterInfoAsync(x.ObjectId));
+                            foreach (var (obj, charInfo) in objl.Zip(characterInfos))
                             {
-                                var charInfo = await _shinden.GetCharacterInfoAsync(obj.ObjectId);
                                 if (charInfo == null)
                                 {
                                     await SafeReplyAsync("", embed: CharacterNotFound(obj.ObjectId).ToEmbedMessage(EMType.Error).Build());

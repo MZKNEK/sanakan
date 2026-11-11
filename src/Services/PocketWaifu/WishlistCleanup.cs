@@ -26,28 +26,20 @@ namespace Sanakan.Services.PocketWaifu
         public static async Task<(List<WishlistObject> Missing, int Unknown)> FindMissingAsync(IEnumerable<WishlistObject> wishes,
             Func<WishlistObject, Task<WishCheck>> check, int parallel = 5)
         {
-            using (var gate = new SemaphoreSlim(parallel))
+            var results = await BoundedParallel.SelectAsync(wishes, parallel, async wish =>
             {
-                var results = await Task.WhenAll(wishes.Select(async wish =>
+                try
                 {
-                    await gate.WaitAsync().ConfigureAwait(false);
-                    try
-                    {
-                        return (wish, result: await check(wish).ConfigureAwait(false));
-                    }
-                    catch (Exception)
-                    {
-                        return (wish, result: WishCheck.Unknown);
-                    }
-                    finally
-                    {
-                        gate.Release();
-                    }
-                }));
+                    return (wish, result: await check(wish).ConfigureAwait(false));
+                }
+                catch (Exception)
+                {
+                    return (wish, result: WishCheck.Unknown);
+                }
+            }).ConfigureAwait(false);
 
-                return (results.Where(x => x.result == WishCheck.Missing).Select(x => x.wish).ToList(),
-                    results.Count(x => x.result == WishCheck.Unknown));
-            }
+            return (results.Where(x => x.result == WishCheck.Missing).Select(x => x.wish).ToList(),
+                results.Count(x => x.result == WishCheck.Unknown));
         }
     }
 }

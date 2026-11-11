@@ -2199,9 +2199,11 @@ namespace Sanakan.Services.PocketWaifu
             foreach (var chunk in cardsId.SplitList(200))
                 contentTable.Add($"**Karty:** {string.Join(", ", chunk)}");
 
-            foreach (var character in charactersId)
+            var characterInfos = await BoundedParallel.SelectAsync(charactersId, BoundedParallel.ShindenLookups, id => _shinden.GetCharacterInfoAsync(id));
+            var titleInfos = await BoundedParallel.SelectAsync(titlesId, BoundedParallel.ShindenLookups, id => _shinden.GetInfoFromTitleAsync(id));
+
+            foreach (var (character, charInfo) in charactersId.Zip(characterInfos))
             {
-                var charInfo = await _shinden.GetCharacterInfoAsync(character);
                 if (charInfo != null)
                 {
                     if (tldr) contentTable.Add($"P[{charInfo.Id}] {charInfo} {charInfo.CharacterUrl}");
@@ -2213,9 +2215,8 @@ namespace Sanakan.Services.PocketWaifu
                 }
             }
 
-            foreach (var title in titlesId)
+            foreach (var (title, titleInfo) in titlesId.Zip(titleInfos))
             {
-                var titleInfo = await _shinden.GetInfoFromTitleAsync(title);
                 if (titleInfo != null)
                 {
                     var url = "https://shinden.pl/";
@@ -2255,9 +2256,8 @@ namespace Sanakan.Services.PocketWaifu
             if (titlesId != null)
             {
                 var charactersInTitles = new List<ulong>();
-                foreach (var id in titlesId)
+                foreach (var charsFromTitle in await BoundedParallel.SelectAsync(titlesId, BoundedParallel.ShindenLookups, id => _shinden.GetCharactersFromTitleAsync(id)))
                 {
-                    var charsFromTitle = await _shinden.GetCharactersFromTitleAsync(id);
                     if (charsFromTitle != null && charsFromTitle.Count > 0)
                     {
                         charactersInTitles.AddRange(charsFromTitle.Where(x => x.CharacterId.HasValue).Select(x => x.CharacterId.Value));
@@ -2286,9 +2286,8 @@ namespace Sanakan.Services.PocketWaifu
             if (titlesId != null && titlesId.Count > 0)
             {
                 var owned = await db.GetOwnedCharactersAsync(owner.Id);
-                foreach (var id in titlesId)
+                foreach (var charsFromTitle in await BoundedParallel.SelectAsync(titlesId, BoundedParallel.ShindenLookups, id => _shinden.GetCharactersFromTitleAsync(id)))
                 {
-                    var charsFromTitle = await _shinden.GetCharactersFromTitleAsync(id);
                     if (charsFromTitle != null)
                         characters.AddRange(charsFromTitle.Where(x => x.CharacterId.HasValue && !owned.Contains(x.CharacterId.Value)).Select(x => x.CharacterId.Value));
                 }
