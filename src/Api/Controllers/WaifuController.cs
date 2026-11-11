@@ -37,6 +37,29 @@ namespace Sanakan.Api.Controllers
         /// <summary>Zabezpiecza przesunięcie (uint) przed przepełnieniem rzutowania na int.</summary>
         private static int ClampOffset(uint offset) => (int)Math.Min(offset, int.MaxValue);
 
+        private static readonly TimeSpan SearchCountLifetime = TimeSpan.FromMinutes(5);
+
+        // a text search has to scan every card to count its results, so the count is kept while the same results are paged
+        // or sorted; other filters are counted every time. A player's list drops it when the player's cards change.
+        private static async Task<int> CountFilteredCardsAsync(Database.DatabaseContext db, IQueryable<Card> filtered, CardsQueryFilter filter, ulong deckId)
+        {
+            if (string.IsNullOrEmpty(filter.SearchText))
+                return await filtered.CountAsync();
+
+            var options = new MemoryCacheEntryOptions().SetAbsoluteExpiration(SearchCountLifetime);
+            var tags = deckId == 0 ? Array.Empty<string>() : new[] { CacheTags.User(deckId) };
+            var counts = await QueryCache.GetOrLoadAsync(db, SearchCountKey(filter, deckId), async () => new List<int> { await filtered.CountAsync() }, options, tags);
+            return counts[0];
+        }
+
+        // the sort order and the page do not change the count
+        internal static string SearchCountKey(CardsQueryFilter filter, ulong deckId)
+        {
+            static string Ids(IEnumerable<ulong> ids) => ids == null ? "" : string.Join(",", ids.Distinct().OrderBy(x => x));
+            return $"search-count-{deckId}|{filter.SearchText.ToLowerInvariant()}|in:{Ids(filter.IncludeTags?.Select(x => x.Id))}|{filter.FilterTagsMethod}"
+                + $"|ex:{Ids(filter.ExcludeTags?.Select(x => x.Id))}|cards:{Ids(filter.CardIds)}|chars:{Ids(filter.CharIds)}";
+        }
+
         // the page is picked by ids only, so MySQL sorts narrow rows instead of whole cards (a tag can have 200k cards);
         // then only the cards of the page are loaded, in the picked order
         private static async Task<List<Card>> LoadPageAsync(Database.DatabaseContext db, IQueryable<Card> filtered, uint offset, uint count, Func<IQueryable<Card>, IQueryable<Card>> load)
@@ -199,7 +222,7 @@ namespace Sanakan.Api.Controllers
                 var cards = await LoadPageAsync(db, query, offset, count,
                     page => page.AsSplitQuery().Include(x => x.GameDeck).ThenInclude(x => x.User).Include(x => x.Tags).AsNoTrackingWithIdentityResolution());
 
-                return new FilteredCards{TotalCards = await query.CountAsync(), Cards = await ToViewWithUsernamesAsync(cards)};
+                return new FilteredCards{TotalCards = await CountFilteredCardsAsync(db, query, filter, 0), Cards = await ToViewWithUsernamesAsync(cards)};
             }
         }
 
@@ -297,7 +320,7 @@ namespace Sanakan.Api.Controllers
                 var username = await GetUsernameAsync(user.Shinden);
                 var cards = await LoadPageAsync(db, query, offset, count, page => page.AsSplitQuery().Include(x => x.Tags).AsNoTrackingWithIdentityResolution());
 
-                return new FilteredCards{TotalCards = await query.CountAsync(), Cards = cards.ToView(username, id, _time)};
+                return new FilteredCards{TotalCards = await CountFilteredCardsAsync(db, query, filter, deckId), Cards = cards.ToView(username, id, _time)};
             }
         }
 
