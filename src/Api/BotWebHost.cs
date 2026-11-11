@@ -51,7 +51,7 @@ namespace Sanakan.Api
             catch (Exception ex)
             {
                 logger.LogError($"API: failed to start: {ex}");
-                Environment.Exit(1);
+                Environment.Exit(ExitCodes.Restart);
             }
 
             _host = host;

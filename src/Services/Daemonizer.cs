@@ -82,7 +82,7 @@ namespace Sanakan.Services
             }
 
             _logger.LogError("Discord: reconnect timeout, shutting down");
-            _exit(1);
+            _exit(ExitCodes.Restart);
         }
     }
 }

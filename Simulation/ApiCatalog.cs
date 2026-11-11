@@ -57,6 +57,9 @@ public static class ApiCatalog
             c => $"api/Waifu/user/{c.Shinden}/cards/{(c.Random.Next(4) == 0 ? 50 : 0)}/50", c => CardFilter(c, false), NeedsShinden: true),
         ["api:total-cards"] = new("POST api/Waifu/total/cards/{offset}/{count}", HttpMethod.Post, Auth.Site,
             c => $"api/Waifu/total/cards/{(c.Random.Next(4) == 0 ? 500 : 0)}/50", c => CardFilter(c, true)),
+        // they end the bot, only for checking its exit code (ExitCodes.Update, ExitCodes.Stop)
+        ["api:debug-update"] = new("POST api/Debug/update", HttpMethod.Post, Auth.Site, _ => "api/Debug/update"),
+        ["api:debug-kill"] = new("POST api/Debug/kill", HttpMethod.Post, Auth.Site, _ => "api/Debug/kill"),
         ["api:profile-preview"] = new("GET api/User/discord/{id}/profile", HttpMethod.Get, Auth.Info, c => $"api/User/discord/{c.User.Id}/profile"),
     };
 }

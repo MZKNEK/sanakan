@@ -448,7 +448,7 @@ namespace Artifacts
             daemon.HandleDisconnected();
             await UserBasedExecutorBehaviorTests.WaitUntil(() => exits.Count > 0);
 
-            Assert.Equal(new[] { 1 }, exits);
+            Assert.Equal(new[] { Sanakan.ExitCodes.Restart }, exits);
         }
 
         [Fact]

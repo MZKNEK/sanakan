@@ -4,16 +4,16 @@
 [![CodeFactor](https://www.codefactor.io/repository/github/mzknek/sanakan/badge)](https://www.codefactor.io/repository/github/mzknek/sanakan)
 [![License: MPL 2.0](https://img.shields.io/badge/License-MPL_2.0-brightgreen.svg)](https://github.com/MZKNEK/sanakan/blob/master/LICENSE)
 
-Sanakan is a Discord bot and web API built with [.NET 6](https://dotnet.microsoft.com/download/dotnet/6.0) and [Discord.NET](https://github.com/discord-net/Discord.Net).
+Sanakan is a Discord bot and web API built with [.NET 8](https://dotnet.microsoft.com/download/dotnet/8.0) and [Discord.NET](https://github.com/discord-net/Discord.Net).
 
 ## Requirements
 
-- [.NET 6 SDK](https://dotnet.microsoft.com/download/dotnet/6.0)
+- [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)
 - MySQL-compatible database, or SQLite (no separate server needed)
 - A Shinden API application token (`shk_…`) and, for operations not yet
   moved to the new API, the legacy Shinden API key
 - A Discord bot token
-- `make` for the Makefile commands
+- On Linux, systemd to run the bot as a service (`tools/install-service.sh`)
 
 ## Getting started
 
@@ -108,46 +108,94 @@ used to prevent accidental commits of local configuration.
 
 ### Build
 
-From the `src` directory, restore dependencies and build the Release version:
+From the `src` directory:
 
 ```bash
-make full-build
-```
-
-The equivalent .NET commands are:
-
-```bash
-dotnet restore
 dotnet build -c Release
 ```
 
-To build the Debug version:
+### First start on a server (Linux)
+
+Log in as the user the bot will run as (not root), then:
+
+1. Install the [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0) and git.
+2. Get the code and enter it:
+   ```bash
+   git clone <repository address> sanakan
+   cd sanakan
+   ```
+3. Put the configuration in `src/Config.json` (see [Configuration](#configuration)).
+4. Register the bot as the `sanakan` service; this also gives your user the files and hides the config from others:
+   ```bash
+   sudo tools/install-service.sh
+   ```
+5. Start it and watch the log:
+   ```bash
+   sudo systemctl start sanakan
+   journalctl -u sanakan -f
+   ```
+
+The first start builds the bot, which takes a minute. From then on the service starts with the server.
+
+Everyday commands:
+
+| What | Command |
+|---|---|
+| status | `systemctl status sanakan` |
+| restart | `sudo systemctl restart sanakan` |
+| stop | `sudo systemctl stop sanakan` |
+| log | `journalctl -u sanakan -f` |
+| update | the bot's `update` command (or `POST api/debug/update`) |
+| fix file owners after copying files by hand | `sudo tools/install-service.sh --permissions` |
+| remove the service | `sudo tools/install-service.sh --remove` |
+
+A Debug instance is the same with `debug`: `sudo tools/install-service.sh debug` registers `sanakan-debug`.
+
+#### Generated pictures (GOut)
+
+The bot keeps generated cards and the pictures players upload in `GOut` next to `src`. The database stores these
+files as `../GOut/...`, so the folder has to stay reachable under that name. To keep it elsewhere, for example on
+another disk, give the folder when installing; the script refuses a folder inside the repository:
 
 ```bash
-make restore
-make build-debug
+sudo tools/install-service.sh --data /data/sanakan-GOut
 ```
 
-### Run
+It creates the folder and leaves a link in `GOut`'s place. An existing `GOut` is moved there when the folder is on
+the same disk (stop the bot first); for another disk the script prints the commands to copy the pictures, which can
+take long with millions of files. `GOut` lies outside `src`, so its files do not slow down building the bot, and git
+ignores it.
 
-From the `src` directory, run the Release build with:
+#### How updates and restarts work
+
+The bot tells `src/Run.sh` what to do next with its exit code (`src/ExitCodes.cs`):
+
+| Code | Meaning | What happens |
+|---|---|---|
+| 0 | stopped on purpose | stays down |
+| 75 | something a new start can fix (lost Discord connection) | started again after 5 seconds |
+| 78 | invalid configuration | stays down until fixed |
+| 100 | update requested | new code is pulled, built and started |
+| other | crash | started again after 5 seconds |
+
+An update pulls the current branch from `origin` (fast-forward only) and builds it into a new folder under
+`src/deploy/`. The bot switches to it only when the build succeeded; if the new build fails within a minute of
+starting, the previous one is started again. The last three builds are kept. If the bot crashes 10 times within
+10 minutes, systemd stops trying; `systemctl status sanakan` shows why.
+
+### Run by hand
 
 ```bash
-./Run.sh
+./Run.sh --loop          # restarts the bot like the service does
+./Run.sh debug --loop    # Debug build
+./Run.sh --update        # pull and build only, the next start uses the new build
 ```
 
-For a Debug build, use:
+Without a shell, run a build directly from `src` (the folder under `bin/Release` is named after `<TargetFramework>`
+in `Sanakan.csproj`):
 
 ```bash
-./RunDebug.sh
-```
-
-The scripts restart the application after an update when the `updateNow`
-marker file is present. On systems where shell scripts are not available, run
-the compiled application directly:
-
-```bash
-dotnet ./bin/Release/net6.0/Sanakan.dll
+dotnet ./bin/Release/net8.0/Sanakan.dll
 ```
 
 ### Bot setup
