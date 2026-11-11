@@ -75,7 +75,9 @@ namespace Artifacts
         public void Cards_HaveTheIndexesTheQueriesUse()
         {
             var indexes = new SqliteContext().Model.FindEntityType(typeof(Card)).GetIndexes().Select(i => string.Join(",", i.Properties.Select(p => p.Name))).ToList();
-            Assert.Contains("GameDeckId,Active", indexes);
+            Assert.Contains("GameDeckId,Active,CardPower", indexes);
+            Assert.DoesNotContain("GameDeckId,Active", indexes);
+            Assert.Contains("GameDeckId,Rarity,FromFigure,Quality,RestartCnt", indexes);
             Assert.Contains("GameDeckId", indexes);
             Assert.Contains("WhoWantsCount,Character", indexes);
             Assert.Contains("AWhoWantsCount,Character", indexes);

@@ -192,9 +192,12 @@ namespace Sanakan.Database
                 entity.HasIndex(e => e.Dere);
                 entity.HasIndex(e => e.Health);
                 entity.HasIndex(e => e.Expedition);
-                // a player's active cards (duel, exchange); the plain deck index stays for reading a player's cards in id order
-                entity.HasIndex(e => new { e.GameDeckId, e.Active });
+                // a player's active cards (duel, exchange); with the power the deck power refresh reads only the index.
+                // The plain deck index stays for reading a player's cards in id order
+                entity.HasIndex(e => new { e.GameDeckId, e.Active, e.CardPower });
                 entity.HasIndex(e => e.GameDeckId);
+                // the card game profile counts a player's cards by these columns from the index alone
+                entity.HasIndex(e => new { e.GameDeckId, e.Rarity, e.FromFigure, e.Quality, e.RestartCnt });
                 // the site's card list sorts by the count and then the character
                 entity.HasIndex(e => new { e.WhoWantsCount, e.Character });
                 entity.HasIndex(e => new { e.AWhoWantsCount, e.Character });
