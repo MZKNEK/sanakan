@@ -65,6 +65,23 @@ namespace Artifacts
             => Assert.True(HasCompositeIndex<TransferAnalytics>(new SqliteContext(), nameof(TransferAnalytics.DiscordId), nameof(TransferAnalytics.Date)));
 
         [Fact]
+        public void CardPvPStats_HasCoveringIndexForTheProfileCounts()
+        {
+            var entity = new SqliteContext().Model.FindEntityType(typeof(CardPvPStats));
+            Assert.Contains(entity.GetIndexes(), i => i.Properties.Select(p => p.Name).SequenceEqual(new[] { nameof(CardPvPStats.GameDeckId), nameof(CardPvPStats.Type), nameof(CardPvPStats.Result) }));
+        }
+
+        [Fact]
+        public void Cards_HaveTheIndexesTheQueriesUse()
+        {
+            var indexes = new SqliteContext().Model.FindEntityType(typeof(Card)).GetIndexes().Select(i => string.Join(",", i.Properties.Select(p => p.Name))).ToList();
+            Assert.Contains("GameDeckId,Active", indexes);
+            Assert.Contains("GameDeckId", indexes);
+            Assert.Contains("WhoWantsCount,Character", indexes);
+            Assert.Contains("AWhoWantsCount,Character", indexes);
+        }
+
+        [Fact]
         public void CommandsAnalytics_HasUserAndGuildIndexes()
         {
             var ctx = new SqliteContext();

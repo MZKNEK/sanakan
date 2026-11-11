@@ -115,11 +115,6 @@ namespace Sanakan.Database
             {
                 entity.HasKey(e => e.Id);
                 entity.HasIndex(e => e.Shinden);
-                entity.HasIndex(e => e.ExpCnt);
-                entity.HasIndex(e => e.ScCnt);
-                entity.HasIndex(e => e.TcCnt);
-                entity.HasIndex(e => e.AcCnt);
-                entity.HasIndex(e => e.MessagesCnt);
             });
 
             modelBuilder.Entity<UserStats>(entity =>
@@ -153,7 +148,6 @@ namespace Sanakan.Database
             {
                 entity.HasKey(e => e.Id);
                 entity.HasIndex(e => e.DeckPower);
-                entity.HasIndex(e => e.CardsInDeck);
                 entity.HasIndex(e => e.WishlistIsPrivate);
 
                 entity.HasOne(e => e.User)
@@ -163,6 +157,8 @@ namespace Sanakan.Database
             modelBuilder.Entity<ExpContainer>(entity =>
             {
                 entity.HasKey(e => e.Id);
+                // the name of the existing index in the production database
+                entity.HasIndex(e => e.GameDeckId).IsUnique().HasDatabaseName("IX_ExpConteiners_GameDeckId");
 
                 entity.HasOne(e => e.GameDeck)
                     .WithOne(u => u.ExpContainer);
@@ -179,7 +175,7 @@ namespace Sanakan.Database
             modelBuilder.Entity<Tag>(entity =>
             {
                 entity.HasKey(e => e.Id);
-                entity.HasIndex(e => e.Name);
+                entity.HasIndex(e => e.GameDeckId).HasDatabaseName("GameDeckId");
 
                 entity.HasOne(e => e.GameDeck)
                     .WithMany(u => u.Tags);
@@ -188,7 +184,6 @@ namespace Sanakan.Database
             modelBuilder.Entity<Card>(entity =>
             {
                 entity.HasKey(e => e.Id);
-                entity.HasIndex(e => e.Active);
                 entity.HasIndex(e => e.Character);
                 entity.HasIndex(e => e.FromFigure);
                 entity.HasIndex(e => e.Unique);
@@ -196,6 +191,13 @@ namespace Sanakan.Database
                 entity.HasIndex(e => e.Affection);
                 entity.HasIndex(e => e.Dere);
                 entity.HasIndex(e => e.Health);
+                entity.HasIndex(e => e.Expedition);
+                // a player's active cards (duel, exchange); the plain deck index stays for reading a player's cards in id order
+                entity.HasIndex(e => new { e.GameDeckId, e.Active });
+                entity.HasIndex(e => e.GameDeckId);
+                // the site's card list sorts by the count and then the character
+                entity.HasIndex(e => new { e.WhoWantsCount, e.Character });
+                entity.HasIndex(e => new { e.AWhoWantsCount, e.Character });
 
                 entity.HasOne(e => e.GameDeck)
                     .WithMany(d => d.Cards);
@@ -227,6 +229,7 @@ namespace Sanakan.Database
                 entity.HasKey(e => e.Id);
 
                 entity.HasIndex(e => new { e.ObjectId, e.Type });
+                entity.HasIndex(e => e.Type);
 
                 entity.HasOne(e => e.GameDeck)
                     .WithMany(d => d.Wishes);
@@ -244,6 +247,8 @@ namespace Sanakan.Database
             modelBuilder.Entity<CardPvPStats>(entity =>
             {
                 entity.HasKey(e => e.Id);
+                // the site profile counts the fights from the index alone
+                entity.HasIndex(e => new { e.GameDeckId, e.Type, e.Result });
 
                 entity.HasOne(e => e.GameDeck)
                     .WithMany(d => d.PvPStats);
