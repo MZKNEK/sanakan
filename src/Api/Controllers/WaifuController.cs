@@ -430,6 +430,7 @@ namespace Sanakan.Api.Controllers
                     return "User on blacklist".ToResponse(401);
                 }
 
+                var pvp = (await QueryCache.GetOrLoadAsync(db, $"user-site-pvp-{id}", () => CountSiteProfilePvpAsync(db, user.GameDeck.Id), expireTime, profileTags)).First();
                 var cardDetails = _waifu.GetCardsDetails(user.GameDeck.Cards);
                 var cardCount = cardDetails.CardsByRarityAndQuality;
                 cardCount.Add("max", user.GameDeck.MaxNumberOfCards);
@@ -445,7 +446,6 @@ namespace Sanakan.Api.Controllers
                     {"SC", user.ScCnt},
                 };
 
-                var newPvp = user.GameDeck.PvPStats.Where(x => x.Type == FightType.NewVersus).ToList();
                 var misc = new Dictionary<string, long>
                 {
                     {"upgraded",        user.Stats.UpgaredCards},
@@ -462,8 +462,8 @@ namespace Sanakan.Api.Controllers
                     {"premiumwaifu",    user.GameDeck.PremiumWaifu != 0 ? 1 : 0},
                     {"lottery",         user.Stats.LotteryTicketsUsed},
                     {"reversedkarma",   user.Stats.ReversedKarmaCnt},
-                    {"pvpplayed",       newPvp.Count},
-                    {"pvpwon",          newPvp.Count(x => x.Result == FightResult.Win)},
+                    {"pvpplayed",       pvp.Played},
+                    {"pvpwon",          pvp.Won},
                     {"pvpglobal",       user.GameDeck.GlobalPVPRank},
                     {"pvpseason",       user.IsPVPSeasonalRankActive(_time.Now()) ? user.GameDeck.SeasonalPVPRank : 0},
                     {"kccnt",           cardDetails.TotalKCount},
@@ -524,10 +524,24 @@ namespace Sanakan.Api.Controllers
 
         // Full rows of every card are the bulk of a profile load, so statistics are computed from narrow rows
         // and only the cards the profile shows are loaded whole. They replace their narrow copies in GameDeck.Cards.
+        public sealed class SiteProfilePvp
+        {
+            public long Played { get; init; }
+            public long Won { get; init; }
+        }
+
+        // the most active players have tens of thousands of fights, the profile only shows two counts
+        private static async Task<List<SiteProfilePvp>> CountSiteProfilePvpAsync(Database.DatabaseContext db, ulong deckId)
+        {
+            var counts = await db.CardPvPStats.AsQueryable().AsNoTracking().Where(x => x.GameDeckId == deckId && x.Type == FightType.NewVersus)
+                .GroupBy(x => x.Result).Select(x => new { x.Key, Count = x.LongCount() }).ToListAsync();
+            return new List<SiteProfilePvp> { new SiteProfilePvp { Played = counts.Sum(x => x.Count), Won = counts.Where(x => x.Key == FightResult.Win).Sum(x => x.Count) } };
+        }
+
         private async Task<List<User>> LoadSiteProfileUserAsync(Database.DatabaseContext db, ulong shindenId, ulong galleryTagId)
         {
             var users = await db.Users.AsQueryable().AsSplitQuery().Where(x => shindenId != 0 && x.Shinden == shindenId).Include(x => x.GameDeck).ThenInclude(x => x.Tags)
-                .Include(x => x.GameDeck).ThenInclude(x => x.PvPStats).Include(x => x.Stats).AsNoTracking().ToListAsync();
+                .Include(x => x.Stats).AsNoTracking().ToListAsync();
 
             var user = users.FirstOrDefault();
             if (user == null)
