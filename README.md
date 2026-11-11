@@ -205,4 +205,5 @@ commands. Run `.mod h` to display the available moderation commands.
 
 ## License
 
-See [LICENSE](LICENSE) for the license terms.
+See [LICENSE](LICENSE) for the license terms. Fonts and libraries by others, with their licenses, are listed in
+[THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
