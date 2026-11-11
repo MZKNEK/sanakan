@@ -155,18 +155,21 @@ public sealed class LoadRunner
         return items[^1];
     }
 
-    private Task SendCommandAsync(string forced = null)
+    private async Task SendCommandAsync(string forced = null)
     {
         string name;
         SimUser user;
         string text;
+        string followUp;
         SimChannel channel;
         lock (_random)
         {
             name = forced ?? Weighted(_commands, i => _commands[i].Weight, _commands.Sum(x => x.Weight)).Name;
             user = Weighted(_players, i => _playerWeights[i], _playerWeights.Sum());
             var template = CommandCatalog.Templates[name];
-            text = template.Text(new CommandCatalog.Context { User = user, World = _world, Random = _random });
+            var context = new CommandCatalog.Context { User = user, World = _world, Random = _random };
+            text = template.Text(context);
+            followUp = template.FollowUp?.Invoke(context);
             channel = _world.Channel(template.Channel, _random);
             _sent[name] = _sent.GetValueOrDefault(name) + 1;
         }
@@ -174,7 +177,13 @@ public sealed class LoadRunner
         var message = _world.MessageJson(Snowflake.Next(), channel.Id, user, _settings.Prefix + text);
         _rest.StoreUserMessage(message);
         _replies.Sent(channel.Id, user.Id, name);
-        return _gateway.DispatchAsync("MESSAGE_CREATE", message);
+        await _gateway.DispatchAsync("MESSAGE_CREATE", message);
+        if (followUp == null) return;
+
+        await Task.Delay(TimeSpan.FromSeconds(1.5));
+        var next = _world.MessageJson(Snowflake.Next(), channel.Id, user, followUp);
+        _rest.StoreUserMessage(next);
+        await _gateway.DispatchAsync("MESSAGE_CREATE", next);
     }
 
     private Task SendChatAsync()

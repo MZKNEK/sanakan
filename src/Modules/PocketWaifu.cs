@@ -3808,8 +3808,8 @@ namespace Sanakan.Modules
 
             using (var db = new Database.DatabaseContext(Config))
             {
-                var duser1 = await db.GetCachedFullUserAsync(user1.Id);
-                var duser2 = await db.GetCachedFullUserAsync(user2.Id);
+                var duser1 = await db.GetUserWithDeckAsync(user1.Id);
+                var duser2 = await db.GetUserWithDeckAsync(user2.Id);
                 if (duser1 == null || duser2 == null)
                 {
                     await SafeReplyAsync("", embed: "Jeden z graczy nie posiada profilu!".ToEmbedMessage(EMType.Error).Build());

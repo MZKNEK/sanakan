@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
+using Microsoft.EntityFrameworkCore;
 using Sanakan.Config;
 using Sanakan.Database.Models;
 using Sanakan.Extensions;
@@ -218,9 +219,15 @@ namespace Sanakan.Services.Session.Models
             bool error = false;
             bool added = false;
 
+            List<Card> offered;
+            using (var db = new Database.DatabaseContext(_config))
+            {
+                offered = await LoadOfferedCardsAsync(db, player.User.Id, wid);
+            }
+
             foreach (var id in wid)
             {
-                var card = player.Dbuser.GetCard(id);
+                var card = offered.FirstOrDefault(x => x.Id == id);
                 if (card is null)
                 {
                     error = true;
@@ -263,6 +270,10 @@ namespace Sanakan.Services.Session.Models
                 await msg.ModifyAsync(x => x.Embed = BuildEmbed());
             }
         }
+
+        // the session keeps only the offered cards, read when they are added; the exchange itself reads them again
+        public static Task<List<Card>> LoadOfferedCardsAsync(Database.DatabaseContext db, ulong userId, List<ulong> ids)
+            => db.Cards.AsQueryable().Where(x => x.GameDeckId == userId && ids.Contains(x.Id)).Include(x => x.Tags).AsNoTracking().AsSplitQuery().ToListAsync();
 
         private async Task HandleDeleteAsync(PlayerInfo player, ulong wid, IUserMessage message)
         {

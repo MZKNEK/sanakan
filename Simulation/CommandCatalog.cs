@@ -6,7 +6,8 @@ namespace Sanakan.Simulation;
 // built from the player's sampled state. Commands missing here are left out of the mix.
 public static class CommandCatalog
 {
-    public sealed record Template(ChannelKind Channel, Func<Context, string> Text);
+    // FollowUp is sent by the same player in the same channel a moment later, without the prefix (session input)
+    public sealed record Template(ChannelKind Channel, Func<Context, string> Text, Func<Context, string> FollowUp = null);
 
     public sealed class Context
     {
@@ -60,7 +61,7 @@ public static class CommandCatalog
         ["życzenia"] = T(ChannelKind.Waifu, "życzenia"),
         ["oznacz puste"] = T(ChannelKind.Waifu, "oznacz puste Wymiana"),
         ["rzut"] = T(ChannelKind.Command, c => $"rzut {(c.Random.Next(2) == 0 ? "orzeł" : "reszka")} {c.Random.Next(1, 21)}"),
-        ["wymiana"] = T(ChannelKind.Market, c => $"wymiana {c.OtherPlayer}"),
+        ["wymiana"] = new(ChannelKind.Market, c => $"wymiana {c.OtherPlayer}", c => $"dodaj {c.Card} {c.Card}"),
         ["barter"] = T(ChannelKind.Waifu, c => $"barter {c.Item}:1"),
         ["strona"] = T(ChannelKind.Command, "strona"),
         ["portfel"] = T(ChannelKind.Command, "portfel"),

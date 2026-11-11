@@ -27,3 +27,4 @@ src/sanakan_key.pub
 /Tests/bin/
 /Tests/obj/
 /Tests/TestResults/
+__pycache__/
