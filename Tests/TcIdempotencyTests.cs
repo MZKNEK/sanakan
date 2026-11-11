@@ -314,6 +314,26 @@ namespace Artifacts
             Assert.Equal(3, RecordCount());
         }
 
+        // the site relies on the key being checked before the account: a saved transfer stays a replay after unlinking
+        [Fact]
+        public async Task SavedTransfer_IsReplayed_AfterTheAccountWasUnlinked()
+        {
+            _executor.RunImmediately = true;
+            var key = NewKey();
+            Assert.Equal(200, (await Send(false, key)).StatusOf());
+            using (var db = Open())
+            {
+                (await db.Users.SingleAsync(x => x.Id == DiscordId)).Shinden = 0;
+                await db.SaveChangesAsync();
+            }
+
+            var replay = Controller();
+            Assert.Equal(200, (await Send(false, key, controller: replay)).StatusOf());
+            Assert.Equal("true", replay.Response.Headers[Idempotency.ReplayedHeader].ToString());
+            Assert.Equal(InitialTc + 100, Balance());
+            Assert.Equal(1, TransferCount());
+        }
+
         [Fact]
         public async Task ShindenRelinkedWhileWaiting_DoesNotCreditAnotherDiscordAccount()
         {
