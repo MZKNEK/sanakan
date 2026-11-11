@@ -4330,10 +4330,10 @@ namespace Sanakan.Modules
         {
             using (var db = CreateDuelDatabaseContext())
             {
-                var duser = await db.GetUserOrCreateAsync(Context.User.Id);
+                var duser = await db.GetUserOrCreateWithActiveCardsAsync(Context.User.Id);
                 if (!await PrepareDuelAsync(duser)) return;
 
-                var denemy = await db.GetUserOrCreateAsync(euser.Id);
+                var denemy = await db.GetUserOrCreateWithActiveCardsAsync(euser.Id);
                 if (!denemy.GameDeck.Cards.Any(x => x.Active))
                 {
                     await SafeReplyAsync("", embed: $"{Context.User.Mention} nie udało się znaleźć przeciwnika, spróbuj później.".ToEmbedMessage(EMType.Error).Build());
@@ -4365,8 +4365,10 @@ namespace Sanakan.Modules
                 else if (fight.Winner.User.Id == duser.Id)
                     res = FightResult.Win;
 
-                duser.GameDeck.PvPStats.Add(new CardPvPStats
+                // the fight history is not loaded, the new entry is added on its own
+                db.Add(new CardPvPStats
                 {
+                    GameDeckId = duser.GameDeck.Id,
                     Type = FightType.NewVersus,
                     Result = res
                 });

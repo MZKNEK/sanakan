@@ -163,6 +163,41 @@ namespace Artifacts
         }
 
         [Fact]
+        public async Task Duel_LoadsOnlyActiveCards_KeepsTheHistoryAndInactiveCards()
+        {
+            // the duel no longer loads the whole collection and the fight history
+            using (var db = Open())
+            {
+                var player = await db.GetUserOrCreateAsync(61);
+                for (int i = 0; i < 3; i++)
+                    player.GameDeck.PvPStats.Add(new CardPvPStats { Type = FightType.NewVersus, Result = FightResult.Lose });
+                var enemy = await db.GetUserOrCreateAsync(63);
+                db.Cards.Add(new Card { Id = 630, GameDeckId = 63, Character = 630, Name = "Inactive", Active = false, Health = 999, Attack = 999, Defence = 99,
+                    Rarity = Rarity.SSS, Dere = Dere.Deredere, Tags = new List<Tag>() });
+                enemy.GameDeck.DeckPower = -5;
+                await db.SaveChangesAsync();
+            }
+
+            var jobs = new List<IExecutable>();
+            var executor = new Mock<IExecutor>();
+            executor.Setup(x => x.TryAdd(It.IsAny<IExecutable>(), It.IsAny<TimeSpan>()))
+                .Callback<IExecutable, TimeSpan>((job, _) => jobs.Add(job)).ReturnsAsync(true);
+            await Queue(Module(executor.Object, 61));
+            foreach (var job in jobs) await job.ExecuteAsync(new EmptyServiceProvider());
+
+            using var read = Open();
+            var after = await read.GetUserOrCreateAsync(61);
+            Assert.Equal(4, after.GameDeck.PvPStats.Count);
+            Assert.Equal(3, after.GameDeck.PvPStats.Count(x => x.Result == FightResult.Lose));
+            Assert.Equal(1UL, after.GameDeck.PVPDailyGamesPlayed);
+
+            var enemyAfter = await read.GetUserOrCreateAsync(63);
+            Assert.Equal(2, enemyAfter.GameDeck.Cards.Count);
+            Assert.Equal(1, enemyAfter.GameDeck.CardsInDeck);
+            Assert.Equal(enemyAfter.GameDeck.CalculateDeckPower(), enemyAfter.GameDeck.DeckPower, 6);
+        }
+
+        [Fact]
         public async Task QueuedDuel_RechecksDailyLimitBeforeChargingAnotherGame()
         {
             using (var db = Open())

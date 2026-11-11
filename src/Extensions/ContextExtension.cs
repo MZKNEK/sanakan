@@ -291,6 +291,23 @@ namespace Sanakan.Extensions
             return user;
         }
 
+        // a duel needs the deck row and its active cards, not the whole collection nor the fight history
+        public static async Task<User> GetUserOrCreateWithActiveCardsAsync(this Database.DatabaseContext context, ulong userId)
+        {
+            var user = await context.Users.AsQueryable().Where(x => x.Id == userId).Include(x => x.Stats).Include(x => x.SMConfig).Include(x => x.TimeStatuses)
+                .Include(x => x.GameDeck).ThenInclude(x => x.ExpContainer)
+                .Include(x => x.GameDeck).ThenInclude(x => x.Cards.Where(c => c.Active)).ThenInclude(x => x.Tags)
+                .AsSplitQuery().FirstOrDefaultAsync();
+
+            if (user == null)
+            {
+                user = user.Default(userId, DateTime.Now);
+                await context.Users.AddAsync(user);
+            }
+
+            return user;
+        }
+
         public static Task<User> GetUserWithItemsAsync(this Database.DatabaseContext context, ulong userId)
             => context.Users.AsQueryable().Include(x => x.GameDeck).ThenInclude(x => x.Items).AsNoTracking().FirstOrDefaultAsync(x => x.Id == userId);
 
