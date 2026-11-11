@@ -1,7 +1,9 @@
 ﻿#pragma warning disable 1591
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using Sanakan.Database.Models;
 
 namespace Sanakan.Api.Models
@@ -54,6 +56,37 @@ namespace Sanakan.Api.Models
         /// </summary>
         public List<ulong> CharIds { get; set; }
 
+        // the stats as the card shows them (GetAttackWithBonus, GetDefenceWithBonus, GetHealthWithPenalty), written so the
+        // database can compute them; 3 restarts make a star and a card has at most 6 * 61 stars. Integer divisions are
+        // truncated explicitly, MySQL's / keeps the fraction
+        internal static readonly Expression<Func<Card, int>> AttackShown = WithCurseAndCap(x => x.Attack
+            + Math.Min(x.RestartCnt, 100) * 4 + Math.Max(0, x.RestartCnt - 100)
+            + Math.Min(Math.Min((int)Math.Truncate(x.RestartCnt / 3d), 366), 50) * 20 + Math.Max(0, Math.Min((int)Math.Truncate(x.RestartCnt / 3d), 366) - 50) * 4
+            + (x.FromFigure ? x.AttackBonus : (int)Math.Truncate(x.AttackBonus / 3d)), 999, Extensions.CardExtension.MaxUltimateAttack);
+
+        internal static readonly Expression<Func<Card, int>> DefenceShown = WithCurseAndCap(x => x.Defence
+            + Math.Min(x.RestartCnt, 100) * 2 + (int)Math.Truncate(Math.Max(0, x.RestartCnt - 100) / 2d)
+            + Math.Min(Math.Min((int)Math.Truncate(x.RestartCnt / 3d), 366), 50) * 5 + Math.Max(0, Math.Min((int)Math.Truncate(x.RestartCnt / 3d), 366) - 50)
+            + (x.FromFigure ? x.DefenceBonus : 0), 99, Extensions.CardExtension.MaxUltimateDefence);
+
+        internal static readonly Expression<Func<Card, int>> HealthShown = x => Math.Max(Math.Min(x.Health
+            + Math.Min((int)Math.Truncate(x.Health * (x.Affection * 5d / 100d)), 2000)
+            + (x.FromFigure ? x.HealthBonus : 0), x.FromFigure ? Extensions.CardExtension.MaxUltimateHealth : 999), 10);
+
+        // the lowered stats curse halves the value, then the value is capped like the card does it
+        private static Expression<Func<Card, int>> WithCurseAndCap(Expression<Func<Card, int>> value, int normalCap, int ultimateCap)
+        {
+            var card = value.Parameters[0];
+            var raw = value.Body;
+            var cursed = Expression.Equal(Expression.Property(card, nameof(Card.Curse)), Expression.Constant(CardCurse.LoweredStats));
+            var truncate = typeof(Math).GetMethod(nameof(Math.Truncate), new[] { typeof(double) });
+            var half = Expression.Convert(Expression.Call(truncate, Expression.Divide(Expression.Convert(Expression.Multiply(raw, Expression.Constant(5)), typeof(double)), Expression.Constant(10d))), typeof(int));
+            var lowered = Expression.Condition(cursed, Expression.Subtract(raw, half), raw);
+            var cap = Expression.Condition(Expression.Property(card, nameof(Card.FromFigure)), Expression.Constant(ultimateCap), Expression.Constant(normalCap));
+            var min = Expression.Call(typeof(Math).GetMethod(nameof(Math.Min), new[] { typeof(int), typeof(int) }), lowered, cap);
+            return Expression.Lambda<Func<Card, int>>(min, card);
+        }
+
         public static IOrderedQueryable<Card> Use(OrderType type, IQueryable<Card> query)
         {
             var orderedQuery = type switch
@@ -64,16 +97,16 @@ namespace Sanakan.Api.Models
                 OrderType.FatigueDes => query.OrderByDescending(x => x.Fatigue),
                 OrderType.Curse => query.OrderBy(x => x.Curse != CardCurse.None ? 1 : 0),
                 OrderType.CurseDes => query.OrderByDescending(x => x.Curse != CardCurse.None ? 1 : 0),
-                OrderType.Atack => query.OrderBy(x => x.Attack + x.AttackBonus + (x.RestartCnt * 2d)),
-                OrderType.AtackDes => query.OrderByDescending(x => x.Attack + x.AttackBonus + (x.RestartCnt * 2d)),
+                OrderType.Atack => query.OrderBy(AttackShown),
+                OrderType.AtackDes => query.OrderByDescending(AttackShown),
                 OrderType.Exp => query.OrderBy(x => x.ExpCnt),
                 OrderType.ExpDes => query.OrderByDescending(x => x.ExpCnt),
                 OrderType.Dere => query.OrderBy(x => x.Dere),
                 OrderType.DereDes => query.OrderByDescending(x => x.Dere),
-                OrderType.Defence => query.OrderBy(x => x.Defence + x.DefenceBonus + x.RestartCnt),
-                OrderType.DefenceDes => query.OrderByDescending(x => x.Defence + x.DefenceBonus + x.RestartCnt),
-                OrderType.Health => query.OrderBy(x => x.Health + ((x.Health * (x.Affection * 5d / 100d)) + x.HealthBonus)),
-                OrderType.HealthDes => query.OrderByDescending(x => x.Health + ((x.Health * (x.Affection * 5d / 100d)) + x.HealthBonus)),
+                OrderType.Defence => query.OrderBy(DefenceShown),
+                OrderType.DefenceDes => query.OrderByDescending(DefenceShown),
+                OrderType.Health => query.OrderBy(HealthShown),
+                OrderType.HealthDes => query.OrderByDescending(HealthShown),
                 OrderType.HealthBase => query.OrderBy(x => x.Health),
                 OrderType.HealthBaseDes => query.OrderByDescending(x => x.Health),
                 OrderType.CardPower => query.OrderBy(x => x.CardPower),
