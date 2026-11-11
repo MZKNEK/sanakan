@@ -170,6 +170,28 @@ namespace Artifacts
             Assert.Equal(1, RecordCount());
         }
 
+        // the response carries the player row and the deck row for the token, not the collections
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task Response_HasTheUserWithoutCollections_AndTheToken(bool withKey)
+        {
+            _executor.RunImmediately = true;
+            var controller = Controller();
+            controller.HttpContext.User = new System.Security.Claims.ClaimsPrincipal(new System.Security.Claims.ClaimsIdentity(
+                new[] { new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Webpage, "Shinden") }, "test"));
+
+            var res = withKey ? await Send(NewKey(), controller: controller)
+                : await controller.GiveShindenUserAPacksAsync(ShindenId, Packs());
+
+            Assert.Equal(DiscordId, res.Value.User.Id);
+            Assert.Equal(ShindenId, res.Value.User.Shinden);
+            Assert.NotNull(res.Value.User.GameDeck);
+            Assert.Null(res.Value.User.GameDeck.Cards);
+            Assert.Null(res.Value.User.GameDeck.BoosterPacks);
+            Assert.False(string.IsNullOrEmpty(res.Value.Token));
+        }
+
         [Fact]
         public async Task Replay_DoesNotAddPacksAgain()
         {

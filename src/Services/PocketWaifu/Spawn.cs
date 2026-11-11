@@ -175,12 +175,8 @@ namespace Sanakan.Services.PocketWaifu
                             var selected = Fun.GetOneRandomFrom(users);
                             if (!await db.IsUserMutedOnGuildAsync(selected.Id, trashChannel.GuildId))
                             {
-                                var dUser = await db.GetCachedFullUserAsync(selected.Id);
-                                if (dUser != null)
-                                {
-                                    if (!dUser.IsBlacklisted && dUser.GameDeck.MaxNumberOfCards > dUser.GameDeck.Cards.Count)
-                                        winner = selected;
-                                }
+                                if (await CanWinSafariAsync(db, selected.Id))
+                                    winner = selected;
                             }
                             users.Remove(selected);
                         }
@@ -197,6 +193,12 @@ namespace Sanakan.Services.PocketWaifu
                     await msg.RemoveAllReactionsAsync();
                 }
             });
+        }
+
+        public static async Task<bool> CanWinSafariAsync(Database.DatabaseContext db, ulong userId)
+        {
+            var user = await db.GetUserWithDeckAsync(userId);
+            return user?.GameDeck != null && !user.IsBlacklisted && user.GameDeck.MaxNumberOfCards > await db.CountCardsAsync(userId);
         }
 
         private const string SafariFinishedTitle = "🎯 Polowanie zakończone";

@@ -26,6 +26,12 @@ public sealed class BotProcess : IDisposable
         _log = log;
     }
 
+    public const string JwtIssuer = "sanakan-simulation";
+
+    // written into the bot's config, the API runner signs player tokens and calls as the site with them
+    public string JwtKey { get; } = Convert.ToBase64String(RandomNumberGenerator.GetBytes(48));
+    public string SiteKey { get; } = Convert.ToHexString(RandomNumberGenerator.GetBytes(32));
+
     public string BotDir => Path.Combine(_runDir, "bot");
     public string LogPath => Path.Combine(_runDir, "bot.log");
     public TaskCompletionSource Started { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -87,10 +93,10 @@ public sealed class BotProcess : IDisposable
             },
             ["Exp"] = new JsonObject { ["CharPerPoint"] = 60, ["MinPerMessage"] = 0.00005, ["MaxPerMessage"] = 5 },
             ["Dev"] = new JsonArray(),
-            ["Jwt"] = new JsonObject { ["Key"] = Convert.ToBase64String(RandomNumberGenerator.GetBytes(48)), ["Issuer"] = "sanakan-simulation" },
+            ["Jwt"] = new JsonObject { ["Key"] = JwtKey, ["Issuer"] = JwtIssuer },
             ["GiveBanForUrlSpam"] = false,
             ["ApiKeys"] = new JsonArray(),
-            ["UserKeyApps"] = new JsonArray(),
+            ["UserKeyApps"] = new JsonArray(new JsonObject { ["Key"] = SiteKey, ["Bearer"] = "sim-site", ["Permissions"] = "Info, Site" }),
             ["AdminNotifyChannels"] = new JsonArray(),
             ["BlacklistedGuilds"] = new JsonArray(),
             ["LogChannel"] = new JsonObject { ["GuildId"] = 0, ["ChannelId"] = 0, ["ErrorRoleId"] = 0 },

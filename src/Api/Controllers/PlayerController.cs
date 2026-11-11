@@ -88,7 +88,8 @@ namespace Sanakan.Api.Controllers
         /// <returns>pakiety, numer odpowiada numerowi w api/waifu/boosterpack/open/{numer}</returns>
         [HttpGet("boosterpacks"), ProducesResponseType(typeof(List<UserBoosterPack>), 200)]
         public Task<IActionResult> GetUserBoosterPacksAsync()
-            => WithCachedPlayerAsync(user => Waifu.OrderPacksForNumbering(user.GameDeck.BoosterPacks).Select((x, i) => UserBoosterPack.From(x, i + 1)).ToList());
+            => WithPlayerAsync(q => q.Include(x => x.GameDeck).ThenInclude(x => x.BoosterPacks).ThenInclude(x => x.Characters),
+                user => Waifu.OrderPacksForNumbering(user.GameDeck.BoosterPacks).Select((x, i) => UserBoosterPack.From(x, i + 1)).ToList());
 
         /// <summary>
         /// Pobiera listę przedmiotów użytkownika
@@ -96,42 +97,44 @@ namespace Sanakan.Api.Controllers
         /// <returns>przedmioty, numer odpowiada numerowi w poleceniach bota</returns>
         [HttpGet("items"), ProducesResponseType(typeof(List<UserItem>), 200)]
         public Task<IActionResult> GetUserItemsAsync()
-            => WithCachedPlayerAsync(user => user.GetAllItems().Select((x, i) => UserItem.From(x, i + 1)).ToList());
+            => WithPlayerAsync(q => q.Include(x => x.GameDeck).ThenInclude(x => x.Items), user => user.GetAllItems().Select((x, i) => UserItem.From(x, i + 1)).ToList());
 
         /// <summary>
         /// Pobiera postęp misji dziennych i tygodniowych
         /// </summary>
         [HttpGet("missions"), ProducesResponseType(typeof(UserMissions), 200)]
         public Task<IActionResult> GetMissionsAsync()
-            => WithCachedPlayerAsync(user => UserMissions.From(user, _time.Now()));
+            => WithPlayerAsync(q => q.Include(x => x.TimeStatuses), user => UserMissions.From(user, _time.Now()));
 
         /// <summary>
         /// Pobiera dzienne limity i czasy odnowienia (drobne, zaskórniaki, karta+, rynek, PvP, pakiety, druciarstwo)
         /// </summary>
         [HttpGet("limits"), ProducesResponseType(typeof(UserLimits), 200)]
         public Task<IActionResult> GetLimitsAsync()
-            => WithCachedPlayerAsync(user => UserLimits.From(user, _time.Now(), _config.Get().PacksPerDay));
+            => WithPlayerAsync(q => q.Include(x => x.TimeStatuses).Include(x => x.GameDeck).ThenInclude(x => x.Cards.Where(c => c.FromFigure)),
+                user => UserLimits.From(user, _time.Now(), _config.Get().PacksPerDay));
 
         /// <summary>
         /// Pobiera aktywną talię, jej moc i informację czy można grać w PvP
         /// </summary>
         [HttpGet("deck"), ProducesResponseType(typeof(UserDeck), 200)]
         public Task<IActionResult> GetDeckAsync()
-            => WithCachedPlayerAsync(user => UserDeck.From(user, _time.Now()));
+            => WithPlayerAsync(q => q.Include(x => x.TimeStatuses).Include(x => x.GameDeck).ThenInclude(x => x.Cards.Where(c => c.Active)),
+                user => UserDeck.From(user, _time.Now()));
 
         /// <summary>
         /// Pobiera własną listę życzeń (również gdy jest prywatna)
         /// </summary>
         [HttpGet("wishlist"), ProducesResponseType(typeof(UserWishlist), 200)]
         public Task<IActionResult> GetWishlistAsync()
-            => WithCachedPlayerAsync(user => UserWishlist.From(user.GameDeck));
+            => WithPlayerAsync(q => q.Include(x => x.GameDeck).ThenInclude(x => x.Wishes), user => UserWishlist.From(user.GameDeck));
 
         /// <summary>
         /// Pobiera figurki i ich części
         /// </summary>
         [HttpGet("figures"), ProducesResponseType(typeof(List<UserFigure>), 200)]
         public Task<IActionResult> GetFiguresAsync()
-            => WithCachedPlayerAsync(user => user.GameDeck.Figures.Select(UserFigure.From).ToList());
+            => WithPlayerAsync(q => q.Include(x => x.GameDeck).ThenInclude(x => x.Figures), user => user.GameDeck.Figures.Select(UserFigure.From).ToList());
 
         /// <summary>
         /// Pobiera własne i domyślne oznaczenia wraz z liczbą oznaczonych kart
@@ -144,7 +147,7 @@ namespace Sanakan.Api.Controllers
 
             using (var db = new Database.DatabaseContext(_config))
             {
-                var user = await db.GetCachedFullUserAsync(discordId);
+                var user = await db.GetUserWithDeckAsync(discordId);
                 if (user == null)
                     return "User not found!".ToResponse(404);
 
@@ -152,7 +155,8 @@ namespace Sanakan.Api.Controllers
                 var ordered = user.GameDeck.TagsOrder == TagsOrder.Alphabetically
                     ? custom.OrderBy(x => x.Name).ThenBy(x => x.Id) : custom.OrderBy(x => x.Id);
 
-                var counts = user.GameDeck.Cards.SelectMany(x => x.Tags).GroupBy(x => x.Id).ToDictionary(x => x.Key, x => (long)x.Count());
+                var counts = (await db.Cards.AsQueryable().Where(x => x.GameDeckId == discordId).SelectMany(x => x.Tags).GroupBy(x => x.Id)
+                    .Select(x => new { x.Key, Count = x.LongCount() }).ToListAsync()).ToDictionary(x => x.Key, x => x.Count);
                 long CountOf(ulong id) => counts.TryGetValue(id, out var c) ? c : 0;
 
                 return Ok(new UserTags
@@ -439,14 +443,16 @@ namespace Sanakan.Api.Controllers
             return null;
         }
 
-        private async Task<IActionResult> WithCachedPlayerAsync<T>(Func<User, T> map)
+        // the read endpoints load the user and the deck row with only the parts they show
+        private async Task<IActionResult> WithPlayerAsync<T>(Func<IQueryable<User>, IQueryable<User>> parts, Func<User, T> map)
         {
             if (!TryGetDiscordId(out var discordId))
                 return NoClaim();
 
             using (var db = new Database.DatabaseContext(_config))
             {
-                var user = await db.GetCachedFullUserAsync(discordId);
+                var user = await parts(db.Users.AsQueryable().Where(x => x.Id == discordId).Include(x => x.GameDeck))
+                    .AsNoTracking().AsSplitQuery().FirstOrDefaultAsync();
                 if (user == null)
                     return "User not found!".ToResponse(404);
 

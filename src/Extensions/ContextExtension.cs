@@ -74,6 +74,10 @@ namespace Sanakan.Extensions
                 .AsNoTracking().AsSplitQuery().FromCacheAsync(context, $"user-nodeck-{userId}", CacheTags.User(userId))).FirstOrDefault();
         }
 
+        // the user with the deck row and no deck collection, read only
+        public static Task<User> GetUserWithDeckByShindenIdAsync(this Database.DatabaseContext context, ulong shindenId)
+            => context.Users.AsQueryable().Include(x => x.GameDeck).AsNoTracking().FirstOrDefaultAsync(x => shindenId != 0 && x.Shinden == shindenId);
+
         public static async Task<User> GetCachedFullUserByShindenIdAsync(this Database.DatabaseContext context, ulong shindenId)
         {
             var userId = await context.Users.AsQueryable().AsNoTracking()

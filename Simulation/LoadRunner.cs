@@ -9,11 +9,13 @@ namespace Sanakan.Simulation;
 // players weighted by their activity, chat messages between commands; samples the bot's memory and CPU.
 public sealed class LoadRunner
 {
-    // Extra: commands sent on top of the mix, one every ExtraEvery, so rare ones get exercised
+    // Extra: commands sent on top of the mix, one every ExtraEvery, so rare ones get exercised; api: names go to the
+    // web API, one every ApiExtraEvery. Api: the web API traffic of the mix, at the same speed and scale as the commands.
     public sealed record Settings(double Minutes, double Speed, double Scale, double ChatPerHour, int StartHour, string Prefix,
-        IReadOnlyList<string> Extra = null);
+        IReadOnlyList<string> Extra = null, bool Api = false);
 
     private static readonly TimeSpan ExtraEvery = TimeSpan.FromSeconds(10);
+    private static readonly TimeSpan ApiExtraEvery = TimeSpan.FromSeconds(2);
 
     private static readonly string[] Words =
     {
@@ -38,6 +40,10 @@ public sealed class LoadRunner
     private readonly Dictionary<string, int> _sent = new();
     private readonly List<(double Seconds, long WorkingSet, double Cpu)> _samples = new();
     private int _chatSent;
+    private readonly ApiRunner _api;
+    private readonly Dictionary<string, double> _apiRates;
+    private readonly List<string> _extraCommands;
+    private readonly List<string> _extraApi;
 
     public LoadRunner(World world, Gateway gateway, RestApi rest, ReplyTracker replies, BotProcess bot, SimLog log, JsonNode mix, Settings settings)
     {
@@ -49,9 +55,12 @@ public sealed class LoadRunner
         _log = log;
         _settings = settings;
 
-        var unknown = settings.Extra?.Where(x => !CommandCatalog.Templates.ContainsKey(x)).ToList();
+        var unknown = settings.Extra?.Where(x => !CommandCatalog.Templates.ContainsKey(x) && !ApiCatalog.Templates.ContainsKey(x)).ToList();
         if (unknown is { Count: > 0 })
-            throw new ArgumentException($"--extra: no template in CommandCatalog for {string.Join(", ", unknown)}");
+            throw new ArgumentException($"--extra: no template in CommandCatalog or ApiCatalog for {string.Join(", ", unknown)}");
+        _extraCommands = settings.Extra?.Where(x => CommandCatalog.Templates.ContainsKey(x)).ToList() ?? new List<string>();
+        _extraApi = settings.Extra?.Where(x => ApiCatalog.Templates.ContainsKey(x)).ToList() ?? new List<string>();
+        _apiRates = settings.Api ? ApiRunner.RatesFromMix(mix) : new Dictionary<string, double>();
 
         _hourly = mix["commands"]!["avg_per_hour_of_day"]!.AsArray().Select(x => (double)x!).ToArray();
         _commands = mix["commands"]!["by_name"]!.AsObject()
@@ -62,6 +71,8 @@ public sealed class LoadRunner
         _players = world.Users.Where(x => x.Cards.Count > 0).Take(active).ToList();
         _playerWeights = _players.Select(x => Math.Max(1, x.Weight)).ToArray();
         _chatters = world.Users.Take(3000).ToList();
+        if (settings.Api || _extraApi.Count > 0)
+            _api = new ApiRunner(bot, log, _players);
 
         var covered = _commands.Sum(x => x.Weight) / mix["commands"]!["by_name"]!.AsObject().Sum(x => (double)x.Value!["count"]!);
         _log.Info($"load: {_commands.Count} commands cover {covered:P1} of the logged traffic, {_players.Count} players, {_chatters.Count} chatters");
@@ -69,6 +80,13 @@ public sealed class LoadRunner
 
     public async Task<JsonObject> RunAsync()
     {
+        if (_api != null)
+        {
+            await _api.PrepareAsync();
+            if (_apiRates.Count > 0)
+                _log.Info($"api: {_apiRates.Count} routes of the mix, {_apiRates.Values.Sum() * 60 * _settings.Speed * _settings.Scale:0} requests per hour");
+        }
+
         var watch = Stopwatch.StartNew();
         var duration = TimeSpan.FromMinutes(_settings.Minutes);
         var start = DateTime.Today.AddHours(_settings.StartHour);
@@ -78,6 +96,8 @@ public sealed class LoadRunner
         var nextStatus = TimeSpan.FromMinutes(1);
         var nextExtra = ExtraEvery;
         var extraIndex = 0;
+        var nextApiExtra = ApiExtraEvery;
+        var apiExtraIndex = 0;
         var lastCpu = TimeSpan.Zero;
         var lastCpuAt = TimeSpan.Zero;
 
@@ -92,10 +112,20 @@ public sealed class LoadRunner
                 _ = SendCommandAsync();
             for (int i = Poisson(chatPerHour * perTick); i > 0; i--)
                 _ = SendChatAsync();
-            if (_settings.Extra is { Count: > 0 } extra && watch.Elapsed >= nextExtra)
+            if (_extraCommands.Count > 0 && watch.Elapsed >= nextExtra)
             {
-                _ = SendCommandAsync(extra[extraIndex++ % extra.Count]);
+                _ = SendCommandAsync(_extraCommands[extraIndex++ % _extraCommands.Count]);
                 nextExtra += ExtraEvery;
+            }
+            foreach (var (name, perMinute) in _apiRates)
+            {
+                for (int i = Poisson(perMinute * 60 * _settings.Scale * perTick); i > 0; i--)
+                    _ = _api.SendAsync(name);
+            }
+            if (_extraApi.Count > 0 && watch.Elapsed >= nextApiExtra)
+            {
+                _ = _api.SendAsync(_extraApi[apiExtraIndex++ % _extraApi.Count]);
+                nextApiExtra += ApiExtraEvery;
             }
 
             if (watch.Elapsed >= nextSample)
@@ -239,6 +269,7 @@ public sealed class LoadRunner
             ["memory_mib"] = memory.Count == 0 ? null : new JsonObject { ["min"] = Math.Round(memory.Min()), ["avg"] = Math.Round(memory.Average()), ["max"] = Math.Round(memory.Max()), ["last"] = Math.Round(memory[^1]) },
             ["cpu_percent"] = cpu.Count == 0 ? null : new JsonObject { ["avg"] = Math.Round(cpu.Average(), 1), ["max"] = Math.Round(cpu.Max(), 1) },
             ["commands"] = commands,
+            ["api"] = _api?.Result(),
         };
     }
 }

@@ -10,6 +10,7 @@ if (options == null)
     Console.WriteLine("  load --world W --mix M [--minutes 10] [--speed 1] [--scale 1] [--chat 2300] [--start-hour 20]: replays the logged traffic mix");
     Console.WriteLine("       speed: virtual hours per real hour (hour-of-day profile), scale: traffic multiplier, chat: chat messages per hour");
     Console.WriteLine($"  --mysql: the bot uses MySQL from {BotProcess.MySqlVariable} instead of SQLite (tools/mysql_sim_db.py)");
+    Console.WriteLine("  --extra a,b: commands (CommandCatalog) or api:names (ApiCatalog) on top of the mix; --api: the web API traffic of the mix");
     return 1;
 }
 
@@ -97,7 +98,7 @@ if (options.Mode == "load")
 
     // give the bot a moment to finish its startup work before measuring
     await Task.Delay(TimeSpan.FromSeconds(10));
-    var settings = new LoadRunner.Settings(options.Minutes, options.Speed, options.Scale, options.ChatPerHour, options.StartHour, prefix, options.Extra);
+    var settings = new LoadRunner.Settings(options.Minutes, options.Speed, options.Scale, options.ChatPerHour, options.StartHour, prefix, options.Extra, options.Api);
     var runner = new LoadRunner(world, gateway, rest, replies, bot, log, JsonNode.Parse(File.ReadAllText(options.Mix)), settings);
     var result = await runner.RunAsync();
     result["requests"] = new JsonObject(log.Routes.OrderBy(x => x.Key).Select(x => KeyValuePair.Create(x.Key, (JsonNode)x.Value)));
@@ -162,6 +163,12 @@ void PrintLoad(JsonObject result)
     Console.WriteLine($"   {"command",-16} {"sent",6} {"reply",6} {"timed",6} {"p50",7} {"p95",7} {"max",7}");
     foreach (var (name, c) in result["commands"]!.AsObject())
         Console.WriteLine($"   {name,-16} {c!["sent"],6} {c["replied"],6} {c["timed"],6} {c["p50_ms"],7} {c["p95_ms"],7} {c["max_ms"],7}");
+    if (result["api"] is JsonObject api)
+    {
+        Console.WriteLine($"   {"api",-24} {"sent",6} {"p50",7} {"p95",7} {"max",7}  statuses");
+        foreach (var (name, a) in api)
+            Console.WriteLine($"   {name,-24} {a!["sent"],6} {a["p50_ms"],7} {a["p95_ms"],7} {a["max_ms"],7}  {a["statuses"]!.ToJsonString()}");
+    }
     Console.WriteLine("== errors");
     foreach (var error in result["errors"]!.AsArray())
         Console.WriteLine($"   {error}");
@@ -190,14 +197,14 @@ void Report()
 
 sealed record Options(string Mode, int Port, int Users, bool KeepDb, string Repo, string World,
     string Mix = null, double Minutes = 10, double Speed = 1, double Scale = 1, double ChatPerHour = 2300, int StartHour = 20, bool MySql = false,
-    IReadOnlyList<string> Extra = null)
+    IReadOnlyList<string> Extra = null, bool Api = false)
 {
     public static Options Parse(string[] args)
     {
         if (args.Length == 0 || args[0] is not ("smoke" or "init" or "load")) return null;
 
         int port = 5199, users = 50, startHour = 20;
-        bool keepDb = false, mySql = false;
+        bool keepDb = false, mySql = false, api = false;
         string repo = Directory.GetCurrentDirectory();
         string world = null, mix = null;
         List<string> extra = null;
@@ -219,6 +226,7 @@ sealed record Options(string Mode, int Port, int Users, bool KeepDb, string Repo
                 case "--chat": chat = D(args[++i]); break;
                 case "--start-hour": startHour = int.Parse(args[++i]); break;
                 case "--mysql": mySql = true; break;
+                case "--api": api = true; break;
                 case "--extra": extra = args[++i].Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList(); break;
                 default: return null;
             }
@@ -229,7 +237,7 @@ sealed record Options(string Mode, int Port, int Users, bool KeepDb, string Repo
         // relative paths are relative to the repository, dotnet run changes the working directory
         string Resolve(string path) => path == null || Path.IsPathRooted(path) ? path : Path.Combine(root, path);
         return new Options(args[0], port, users, keepDb && args[0] != "init", root, Resolve(world),
-            Resolve(mix), minutes, speed, scale, chat, startHour, mySql, extra);
+            Resolve(mix), minutes, speed, scale, chat, startHour, mySql, extra, api);
     }
 
     // dotnet run starts in the project directory, the repository is the first parent with the bot project

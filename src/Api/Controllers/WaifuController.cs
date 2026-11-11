@@ -823,8 +823,7 @@ namespace Sanakan.Api.Controllers
 
             using (var db = new Database.DatabaseContext(_config))
             {
-                var user = await db.GetCachedFullUserAsync(id);
-                if (user == null)
+                if (!await db.Users.AsQueryable().AnyAsync(x => x.Id == id))
                 {
                     return "User not found!".ToResponse(404);
                 }
@@ -884,7 +883,7 @@ namespace Sanakan.Api.Controllers
 
             using (var db = CreateDatabaseContext())
             {
-                var user = await db.GetCachedFullUserByShindenIdAsync(id);
+                var user = await db.GetUserWithDeckByShindenIdAsync(id);
                 if (user == null)
                 {
                     return "User not found!".ToResponse(404);
@@ -946,10 +945,10 @@ namespace Sanakan.Api.Controllers
                             return IdempotencyKeyReused();
 
                         Response.Headers[Services.Idempotency.ReplayedHeader] = "true";
-                        return ShindenPacksResponse(await db.GetCachedFullUserByShindenIdAsync(id));
+                        return ShindenPacksResponse(await db.GetUserWithDeckByShindenIdAsync(id));
                     }
 
-                    var user = await db.GetCachedFullUserByShindenIdAsync(id);
+                    var user = await db.GetUserWithDeckByShindenIdAsync(id);
                     if (user == null)
                     {
                         return "User not found!".ToResponse(404);
@@ -1349,7 +1348,9 @@ namespace Sanakan.Api.Controllers
                     var opened = new List<Card>();
                     using (var db = new Database.DatabaseContext(_config))
                     {
-                        var botUserCh = await db.GetCachedFullUserAsync(discordId);
+                        var botUserCh = await db.Users.AsQueryable().Where(x => x.Id == discordId).Include(x => x.GameDeck).ThenInclude(x => x.BoosterPacks)
+                            .ThenInclude(x => x.Characters).Include(x => x.GameDeck).ThenInclude(x => x.BoosterPacks).ThenInclude(x => x.RarityExcludedFromPack)
+                            .AsNoTracking().AsSplitQuery().FirstOrDefaultAsync();
                         if (botUserCh == null)
                         {
                             return "User not found!".ToResponse(404);
@@ -1362,7 +1363,7 @@ namespace Sanakan.Api.Controllers
                         }
 
                         var packCh = packs[packNumber - 1];
-                        if (botUserCh.GameDeck.Cards.Count + packCh.CardCnt > botUserCh.GameDeck.MaxNumberOfCards)
+                        if (await CountCardsAsync(db, discordId) + packCh.CardCnt > botUserCh.GameDeck.MaxNumberOfCards)
                         {
                             return "User has no space left in deck!".ToResponse(406);
                         }

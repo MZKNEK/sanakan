@@ -21,6 +21,12 @@ profile), `--scale 1` (traffic multiplier), `--chat 2300` (chat messages per hou
 `--start-hour 20`, `--extra "jakie,czego brak"` (commands sent on top of the mix, one every 10 s, so the rare ones
 changed in a commit are exercised; each needs a template in `CommandCatalog.cs`).
 
+Web API: `--api` adds the API traffic of the mix (hourly API reports and logged writes) for the routes with a template
+in `ApiCatalog.cs`, at the same speed and scale as the commands. `--extra` also takes `api:` names (e.g.
+`api:deck,api:pack-open`), one every 2 s. The bot listens on `http://localhost:5000`; the simulation calls it with an
+app key (Site and Info) and with player tokens it signs itself, both written into the bot's config. The result has
+status codes and times per route under `api`.
+
 ## Production data (SQLite)
 
 1. Export the production database (phpMyAdmin: custom export, SQL, no `CREATE DATABASE / USE`).
