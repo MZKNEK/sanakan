@@ -48,7 +48,7 @@ namespace Sanakan.Modules
 
             using (var db = new Database.DatabaseContext(Config))
             {
-                var botuser = await db.GetCachedFullUserAsync(usr.Id);
+                var botuser = await db.GetUserWithDeckAsync(usr.Id);
                 if (botuser == null)
                 {
                     await SafeReplyAsync("", embed: "Ta osoba nie ma profilu bota.".ToEmbedMessage(EMType.Error).Build());
@@ -73,7 +73,7 @@ namespace Sanakan.Modules
         {
             using (var db = new Database.DatabaseContext(Config))
             {
-                var botuser = await db.GetCachedFullUserAsync(Context.User.Id);
+                var botuser = await db.GetCachedNoGameDeckUserAsync(Context.User.Id);
                 if (botuser == null)
                 {
                     await SafeReplyAsync("", embed: $"{Context.User.Mention} nie odnaleziono profilu.".ToEmbedMessage(EMType.Error).Build());

@@ -54,6 +54,10 @@ namespace Sanakan.Extensions
                 .Include(x => x.GameDeck).ThenInclude(x => x.Figures).Include(x => x.GameDeck).ThenInclude(x => x.Tags).AsNoTracking().AsSplitQuery().FromCacheAsync(context, $"user-full-{userId}", CacheTags.User(userId))).FirstOrDefault();
         }
 
+        // the user with the deck row and no deck collection, read only
+        public static Task<User> GetUserWithDeckAsync(this Database.DatabaseContext context, ulong userId)
+            => context.Users.AsQueryable().Include(x => x.GameDeck).AsNoTracking().FirstOrDefaultAsync(x => x.Id == userId);
+
         // the wishlist views need the deck's wishes, not its collection
         public static Task<User> GetWishlistOwnerAsync(this Database.DatabaseContext context, ulong userId)
             => context.Users.AsQueryable().Include(x => x.GameDeck).ThenInclude(x => x.Wishes).AsNoTracking().FirstOrDefaultAsync(x => x.Id == userId);

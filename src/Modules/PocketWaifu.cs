@@ -3631,7 +3631,7 @@ namespace Sanakan.Modules
         {
             using (var db = new Database.DatabaseContext(Config))
             {
-                var user = await db.GetCachedFullUserAsync(Context.User.Id);
+                var user = await db.GetCachedNoGameDeckUserAsync(Context.User.Id);
                 if (user == null)
                 {
                     await SafeReplyAsync("", embed: "Nie posiadasz profilu bota!".ToEmbedMessage(EMType.Error).Build());
@@ -3697,7 +3697,7 @@ namespace Sanakan.Modules
 
             using (var db = new Database.DatabaseContext(Config))
             {
-                var user = await db.GetCachedFullUserAsync(Context.User.Id);
+                var user = await db.GetWishlistOwnerAsync(Context.User.Id);
                 if (user is null)
                 {
                     await SafeReplyAsync("", embed: $"Nie udało się pobrać danych użytkownika.".ToEmbedMessage(EMType.Error).Build());
@@ -3710,11 +3710,8 @@ namespace Sanakan.Modules
                     characterIds.RemoveAll(x => charsFromWl.Any(c => c == x));
                 }
 
-                if (!user.GameDeck.Cards.IsNullOrEmpty())
-                {
-                    var userOwnedCharacters = user.GameDeck.Cards.Select(x => x.Character).Distinct().ToList();
-                    characterIds.RemoveAll(x => userOwnedCharacters.Any(c => c == x));
-                }
+                var userOwnedCharacters = await db.GetOwnedCharactersAsync(user.Id);
+                characterIds.RemoveAll(x => x.HasValue && userOwnedCharacters.Contains(x.Value));
 
                 if (characterIds.IsNullOrEmpty())
                 {
@@ -3753,18 +3750,15 @@ namespace Sanakan.Modules
             {
                 if (hiddeOwned)
                 {
-                    var user = await db.GetCachedFullUserAsync(Context.User.Id);
+                    var user = await db.GetCachedNoGameDeckUserAsync(Context.User.Id);
                     if (user is null)
                     {
                         await SafeReplyAsync("", embed: $"Nie udało się pobrać danych użytkownika.".ToEmbedMessage(EMType.Error).Build());
                         return;
                     }
 
-                    if (!user.GameDeck.Cards.IsNullOrEmpty())
-                    {
-                        var userOwnedCharacters = user.GameDeck.Cards.Select(x => x.Character).Distinct().ToList();
-                        characterIds.RemoveAll(x => userOwnedCharacters.Any(c => c == x));
-                    }
+                    var userOwnedCharacters = await db.GetOwnedCharactersAsync(user.Id);
+                    characterIds.RemoveAll(x => x.HasValue && userOwnedCharacters.Contains(x.Value));
                 }
 
                 var cards = await db.Cards.AsQueryable().Include(x => x.Tags).Include(x => x.GameDeck).ThenInclude(x => x.User).AsSplitQuery().Where(x => characterIds.Contains(x.Character)).AsNoTracking().FromCacheAsync(db, $"characters-cards-{string.Join(",", characterIds.OrderBy(x => x))}", new MemoryCacheEntryOptions { AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(1) }, characterIds.Where(x => x.HasValue).Select(x => CacheTags.Character(x.Value)).Distinct().ToArray());
@@ -3947,8 +3941,9 @@ namespace Sanakan.Modules
         {
             using (var db = new Database.DatabaseContext(Config))
             {
-                var botUser = await db.GetCachedFullUserAsync(Context.User.Id);
-                var cardsOnExpedition = botUser.GameDeck.Cards.Where(x => x.Expedition != CardExpedition.None).ToList();
+                var botUser = await db.GetUserWithDeckAsync(Context.User.Id);
+                var cardsOnExpedition = botUser == null ? new List<Card>() : await db.Cards.AsQueryable().AsNoTracking()
+                    .Where(x => x.GameDeckId == botUser.Id && x.Expedition != CardExpedition.None).ToListAsync();
 
                 if (cardsOnExpedition.Count < 1)
                 {
