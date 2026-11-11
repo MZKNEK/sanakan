@@ -56,7 +56,7 @@ namespace Artifacts
 
             Assert.Contains("udało Ci się zdobyć", reply);
             var deck = Read();
-            Assert.Empty(deck.Items.GroupBy(x => (x.Type, x.Quality)).Where(x => x.Count() > 1));
+            Assert.DoesNotContain(deck.Items.GroupBy(x => (x.Type, x.Quality)), x => x.Count() > 1);
             // 1 + affection 30 / 15, plus one for the ring or the blood
             Assert.True(deck.Items.Sum(x => x.Count) >= itemsBefore + 4);
             var cards = deck.Cards.ToDictionary(x => x.Id);

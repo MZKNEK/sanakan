@@ -111,7 +111,7 @@ namespace Artifacts
 
             Assert.True(res.IsOk());
             Assert.Equal(0, Sent(channel));
-            Assert.Single(channel.Invocations.Where(x => x.Method.Name == "SendFileAsync"));
+            Assert.Single(channel.Invocations, x => x.Method.Name == "SendFileAsync");
             Assert.Empty(_waits);
         }
     }

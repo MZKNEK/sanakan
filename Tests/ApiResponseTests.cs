@@ -388,6 +388,9 @@ namespace Artifacts
             var request = "POST /api/waifu/unique/cards/0/500 HTTP/1.1\r\nHost: localhost\r\nContent-Type: application/json\r\n"
                 + "Content-Length: 100\r\n\r\n{\"orderBy\":";
             await stream.WriteAsync(Encoding.ASCII.GetBytes(request));
+            // .NET 10 does not start a request whose client is already gone when it reads the headers, so the
+            // connection is closed only once the bot is reading the body
+            await Task.Delay(500);
             tcp.Client.Shutdown(System.Net.Sockets.SocketShutdown.Send);
 
             // the client is gone, so the connection is closed without a response
