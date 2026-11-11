@@ -279,7 +279,7 @@ namespace Artifacts
             var executor = new Mock<IExecutor>(MockBehavior.Strict);
             var module = Module(executor.Object, 61);
             await module.MakeADuelAsync();
-            var reply = Assert.Single(module.ReplyChannel.Invocations.Where(x => x.Method.Name == "SendMessageAsync"));
+            var reply = Assert.Single(module.ReplyChannel.Invocations, x => x.Method.Name == "SendMessageAsync");
             Assert.Contains(expectedReply, ((Embed)reply.Arguments[2]).Description);
             Assert.Equal(1, module.ContextsCreated);
         }
@@ -291,7 +291,7 @@ namespace Artifacts
             executor.Setup(x => x.TryAdd(It.IsAny<IExecutable>(), It.IsAny<TimeSpan>())).ReturnsAsync(false);
             var module = Module(executor.Object, 61);
             await Queue(module);
-            var reply = Assert.Single(module.ReplyChannel.Invocations.Where(x => x.Method.Name == "SendMessageAsync"));
+            var reply = Assert.Single(module.ReplyChannel.Invocations, x => x.Method.Name == "SendMessageAsync");
             Assert.Contains("kolejka pojedynków jest pełna", ((Embed)reply.Arguments[2]).Description);
             Assert.Equal(0, module.ContextsCreated);
         }
