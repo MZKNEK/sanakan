@@ -27,6 +27,7 @@ namespace Artifacts
         private readonly FakeConfig _config = new FakeConfig();
         private readonly FixedTime _time = new FixedTime();
         private readonly LocalHttpServer _shindenServer;
+        private readonly System.Collections.Concurrent.ConcurrentDictionary<string, int> _requests = new System.Collections.Concurrent.ConcurrentDictionary<string, int>();
         private readonly WaifuController _controller;
 
         public CharacterSyncTests()
@@ -56,6 +57,14 @@ namespace Artifacts
             _shindenServer = new LocalHttpServer(async ctx =>
             {
                 var path = ctx.Request.Url.AbsolutePath;
+                _requests.AddOrUpdate(path[(path.LastIndexOf('/') + 1)..], 1, (_, v) => v + 1);
+                if (path.EndsWith("/character/430"))
+                {
+                    ctx.Response.StatusCode = 429;
+                    ctx.Response.Headers["Retry-After"] = "42";
+                    ctx.Response.Close();
+                    return;
+                }
                 if (path.EndsWith("/character/500") || path.EndsWith("/character/429"))
                 {
                     ctx.Response.StatusCode = int.Parse(path[^3..]);
@@ -162,6 +171,24 @@ namespace Artifacts
             Assert.Equal(503, result.StatusOf());
             Assert.Equal("60", _controller.Response.Headers["Retry-After"].ToString());
             Assert.Equal(before.Values.Select(Describe), Cards().Values.Select(Describe));
+        }
+
+        // Shinden's wait goes to the site, and the paused token sends nothing until it ends
+        [Fact]
+        public async Task ShindenLimit_PassesItsWait_AndPausesFurtherRequests()
+        {
+            var limited = await _controller.SyncCharacterCardsAsync(430);
+
+            Assert.Equal(503, limited.StatusOf());
+            Assert.Equal("42", _controller.Response.Headers["Retry-After"].ToString());
+
+            _controller.Response.Headers.Remove("Retry-After");
+            var paused = await _controller.SyncCharacterCardsAsync(100);
+
+            Assert.Equal(503, paused.StatusOf());
+            Assert.InRange(int.Parse(_controller.Response.Headers["Retry-After"].ToString()), 1, 42);
+            Assert.False(_requests.ContainsKey("100"));
+            Assert.Equal($"100|stara 100|Seria A|{OldImage}", Describe(Cards()[1]));
         }
 
         // the site sends {} when it gives no data by hand

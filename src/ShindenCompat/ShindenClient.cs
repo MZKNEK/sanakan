@@ -17,14 +17,17 @@ namespace Sanakan.ShindenCompat
 {
     public class Response<T>
     {
-        public Response(HttpStatusCode code, T body = default)
+        public Response(HttpStatusCode code, T body = default, TimeSpan? retryAfter = null)
         {
             Code = code;
             Body = body;
+            RetryAfter = retryAfter;
         }
 
         public T Body { get; }
         public HttpStatusCode Code { get; }
+        // how long Shinden asks to wait (429, 503), also when the library held the request back itself
+        public TimeSpan? RetryAfter { get; }
 
         public bool IsSuccessStatusCode() => (int)Code >= 200 && (int)Code <= 299;
     }
@@ -69,13 +72,21 @@ namespace Sanakan.ShindenCompat
 
         public ShindenAPI.Config Active => _api.Config;
 
+        public const int RequestsPerMinute = 290;
+        public static readonly TimeSpan RateLimitMaxWait = TimeSpan.FromSeconds(10);
+
         private static ShindenAPI.Config Build(ConfigBuilder builder, ConfigShinden config)
         {
             // without a new token the PHP key also works on compat routes
             var token = string.IsNullOrWhiteSpace(config.ApiToken) ? config.Token : config.ApiToken;
 
             // set even when equal to the main uri, a reconfigured client would keep the previous one
-            return builder.WithUri(GetUri(config))
+            // the bot and the site's card sync share one token (300 requests a minute): stay under it, let a request
+            // wait a little for a pause instead of failing, and repeat a refused GET once
+            return builder.WithRateLimit(RequestsPerMinute, TimeSpan.FromMinutes(1))
+                .WithRateLimitMaxWait(RateLimitMaxWait)
+                .WithRateLimitRetries(1)
+                .WithUri(GetUri(config))
                 .WithLegacyUri(GetLegacyUri(config))
                 .WithAuth(auth => auth.WithToken(token).WithUserAgent(config.UserAgent).Build())
                 .WithLegacyAuth(auth => auth.WithToken(config.Token).WithUserAgent(config.UserAgent)
@@ -122,7 +133,11 @@ namespace Sanakan.ShindenCompat
             switch (error.Type)
             {
                 case ErrorType.Http:
-                    return new Response<TOut>((HttpStatusCode)error.Code);
+                    return new Response<TOut>((HttpStatusCode)error.Code, retryAfter: error.RetryAfter);
+
+                // the library did not send the request, the token is paused after a 429
+                case ErrorType.RateLimit:
+                    return new Response<TOut>(HttpStatusCode.TooManyRequests, retryAfter: error.RetryAfter);
 
                 case ErrorType.Parsing:
                     ShindenActivity.Default.ParsingFailed();

@@ -668,8 +668,9 @@ namespace Sanakan.Api.Controllers
                 if (response?.Code == System.Net.HttpStatusCode.NotFound)
                     return "Character not found!".ToResponse(404);
 
-                // a limit, an outage or a timeout on Shinden, the site retries later
-                Response.Headers["Retry-After"] = "60";
+                // a limit, an outage or a timeout on Shinden, the site retries later; Shinden's own wait when it gave one
+                var wait = response?.RetryAfter is { } retryAfter && retryAfter > TimeSpan.Zero ? (int)Math.Ceiling(retryAfter.TotalSeconds) : 60;
+                Response.Headers["Retry-After"] = wait.ToString();
                 return "Shinden is not available, try again later!".ToResponse(503);
             }
 
