@@ -121,7 +121,7 @@ namespace Artifacts
         {
             Id = id, GameDeckId = owner, IsTradable = true, Affection = 10,
             Rarity = Rarity.E, Dere = Dere.Deredere, Tags = new List<Tag>(),
-            MarketValue = 1, Character = id, Health = 100, Attack = 20, Defence = 10
+            MarketValue = 1, Character = id, Name = $"postać {id}", Health = 100, Attack = 20, Defence = 10
         };
 
         private static async Task<(AuditDatabase Db, ExchangeSession Session, User First, User Second)> CreateExchange()
@@ -228,6 +228,40 @@ namespace Artifacts
                 db.ChangeTracker.Clear();
                 Assert.Equal(second.Id, (await db.Cards.FindAsync(101UL)).GameDeckId);
                 Assert.Equal(first.Id, (await db.Cards.FindAsync(102UL)).GameDeckId);
+            }
+        }
+
+        // only the offered and the active cards are loaded: the deck power still counts every active card,
+        // and each recipient loses exactly the wishes the old full load removed
+        [Fact]
+        public async Task Exchange_RecalculatesFromActiveCards_AndRemovesTheFulfilledWishes()
+        {
+            var (db, session, first, second) = await CreateExchange();
+            using (db)
+            {
+                var active = NewCard(105, first.Id);
+                active.Active = true;
+                db.Cards.Add(active);
+                db.Cards.Add(NewCard(106, first.Id));
+                foreach (var (deck, type, id) in new[] { (second.GameDeck, WishlistObjectType.Character, 101ul), (second.GameDeck, WishlistObjectType.Character, 999ul),
+                    (first.GameDeck, WishlistObjectType.Card, 102ul), (first.GameDeck, WishlistObjectType.Character, 102ul) })
+                    db.Wishes.Add(new WishlistObject { GameDeckId = deck.Id, Type = type, ObjectId = id, ObjectName = "x", Entry = WishlistEntryType.Normal });
+                first.GameDeck.CardsInDeck = 0;
+                first.GameDeck.DeckPower = 0;
+                await db.SaveChangesAsync();
+                db.ChangeTracker.Clear();
+
+                Assert.Null(await Finalize(session, db));
+
+                db.ChangeTracker.Clear();
+                var firstDeck = await db.GameDecks.Include(x => x.Cards).Include(x => x.Wishes).SingleAsync(x => x.Id == first.Id);
+                var secondDeck = await db.GameDecks.Include(x => x.Cards).Include(x => x.Wishes).SingleAsync(x => x.Id == second.Id);
+                Assert.Equal(new ulong[] { 102, 105, 106 }, firstDeck.Cards.Select(x => x.Id).OrderBy(x => x));
+                Assert.Equal(1, firstDeck.CardsInDeck);
+                Assert.Equal(firstDeck.CalculateDeckPower(), firstDeck.DeckPower, 6);
+                Assert.Equal(0, secondDeck.CardsInDeck);
+                Assert.Equal(new[] { (WishlistObjectType.Character, 102ul) }, firstDeck.Wishes.Select(x => (x.Type, x.ObjectId)));
+                Assert.Equal(new[] { (WishlistObjectType.Character, 999ul) }, secondDeck.Wishes.Select(x => (x.Type, x.ObjectId)));
             }
         }
 

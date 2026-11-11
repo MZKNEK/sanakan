@@ -362,6 +362,19 @@ namespace Sanakan.Extensions
             await context.Wishes.AsQueryable().Where(x => x.GameDeckId == deckId && x.Type == WishlistObjectType.Character && ids.Contains(x.ObjectId)).LoadAsync();
         }
 
+        // the receiving player's wishes that these cards fulfil: the card itself or its character
+        public static async Task LoadWishesForCardsAsync(this Database.DatabaseContext context, GameDeck deck, IEnumerable<Card> cards)
+        {
+            deck.Wishes ??= new List<WishlistObject>();
+            if (context.Entry(deck).State == EntityState.Added) return;
+
+            var cardIds = cards.Select(x => x.Id).Distinct().ToList();
+            var characterIds = cards.Select(x => x.Character).Distinct().ToList();
+            var deckId = deck.Id;
+            await context.Wishes.AsQueryable().Where(x => x.GameDeckId == deckId && ((x.Type == WishlistObjectType.Card && cardIds.Contains(x.ObjectId))
+                || (x.Type == WishlistObjectType.Character && characterIds.Contains(x.ObjectId)))).LoadAsync();
+        }
+
         // opening packs needs the packs with their contents; the new cards are only added, the collection is counted with CountCardsAsync
         public static async Task<User> GetUserOrCreateWithBoosterPacksAsync(this Database.DatabaseContext context, ulong userId, Services.Time.ISystemTime time)
         {

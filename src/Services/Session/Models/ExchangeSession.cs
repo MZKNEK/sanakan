@@ -425,10 +425,15 @@ namespace Sanakan.Services.Session.Models
 
         private async Task<string> FinalizeExchangeAsync(Database.DatabaseContext db)
         {
-            var user1 = await db.GetUserOrCreateAsync(P1.User.Id, _time);
-            var user2 = await db.GetUserOrCreateAsync(P2.User.Id, _time);
+            var user1 = await db.GetUserOrCreateWithCardsAsync(P1.User.Id, _time, P1.Cards.Select(c => c.Id).ToArray());
+            var user2 = await db.GetUserOrCreateWithCardsAsync(P2.User.Id, _time, P2.Cards.Select(c => c.Id).ToArray());
+            // both decks are recalculated from their active cards
+            await db.LoadCardsAsync(user1.GameDeck, x => x.Active);
+            await db.LoadCardsAsync(user2.GameDeck, x => x.Active);
             var cards1 = P1.Cards.Select(c => user1.GetCard(c.Id)).ToList();
             var cards2 = P2.Cards.Select(c => user2.GetCard(c.Id)).ToList();
+            await db.LoadWishesForCardsAsync(user2.GameDeck, cards1.Where(x => x != null));
+            await db.LoadWishesForCardsAsync(user1.GameDeck, cards2.Where(x => x != null));
 
             if (user1.IsBlacklisted || user2.IsBlacklisted)
                 return "Wymiana anulowana: jeden z graczy znajduje się na czarnej liście.";
@@ -436,8 +441,8 @@ namespace Sanakan.Services.Session.Models
             if (cards1.Any(c => !CanTransfer(c, user2)) || cards2.Any(c => !CanTransfer(c, user1)))
                 return "Wymiana anulowana: co najmniej jedna z oferowanych kart nie może już zostać wymieniona.";
 
-            if ((long)user1.GameDeck.Cards.Count - cards1.Count + cards2.Count > user1.GameDeck.MaxNumberOfCards
-                || (long)user2.GameDeck.Cards.Count - cards2.Count + cards1.Count > user2.GameDeck.MaxNumberOfCards)
+            if ((long)await db.CountCardsAsync(user1.Id) - cards1.Count + cards2.Count > user1.GameDeck.MaxNumberOfCards
+                || (long)await db.CountCardsAsync(user2.Id) - cards2.Count + cards1.Count > user2.GameDeck.MaxNumberOfCards)
                 return "Wymiana anulowana: jeden z graczy nie ma wystarczająco miejsca na otrzymywane karty.";
 
             var u1Data = (user1, Math.Max(cards1.Count, 1), await db.GetTagAsync(_tags, P1.Tag, P1.User.Id), P1.User.GetUserNickInGuild());
