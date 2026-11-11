@@ -293,8 +293,9 @@ namespace Sanakan.Services
 
         private async Task<List<TopEntry>> LoadTopUsersAsync(Database.DatabaseContext db, TopType type)
         {
+            // ties keep the order the dropped single-column indexes gave them
             var users = await OrderUsersByTop(db.Users.AsQueryable().Include(x => x.GameDeck).Where(x => x.Id != FakeUserId).AsNoTracking(), type)
-                .Take(TopSize).ToListAsync();
+                .ThenByDescending(x => (long)x.Id).Take(TopSize).ToListAsync();
 
             var ids = users.Select(x => x.Id).ToList();
             var cards = db.Cards.AsQueryable().AsNoTracking();

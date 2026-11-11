@@ -136,6 +136,25 @@ namespace Artifacts
             Assert.Equal("---", (await profile.GetTopUsers(db, TopType.Card)).Last().Value);
         }
 
+        // the dropped ExpCnt index read ties by id from the highest; the query keeps that order without it
+        [Fact]
+        public async Task Top_TiesAreOrderedByIdFromTheHighest()
+        {
+            var path = NewDb();
+            using (var db = new TestDatabase(path))
+            {
+                foreach (var id in new ulong[] { 11, 33, 22 })
+                    db.Users.Add(Player(id, 500, 0));
+                db.Users.Add(Player(44, 900, 0));
+                db.SaveChanges();
+            }
+
+            using var read = new TestDatabase(path);
+            var top = await NewProfile().GetTopUsers(read, TopType.Level);
+
+            Assert.Equal(new ulong[] { 44, 33, 22, 11 }, top.Select(x => x.UserId));
+        }
+
         [Fact]
         public void CardCountStats_KeepsRarityOrderAndSkipsMissing()
         {
