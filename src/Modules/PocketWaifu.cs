@@ -2304,7 +2304,7 @@ namespace Sanakan.Modules
 
             using (var db = new Database.DatabaseContext(Config))
             {
-                var bUser = await db.GetCachedFullUserAsync(user.Id);
+                var bUser = await db.GetWishlistOwnerAsync(user.Id);
                 var res = await _waifu.CheckWishlistAndSendToDMAsync(db, Context.User, bUser, showContentOnly: true, tldr: tldr);
 
                 await SafeReplyAsync("", embed: res.ToEmbedMessage($"{Context.User.Mention} ").Build());
@@ -2329,7 +2329,7 @@ namespace Sanakan.Modules
 
             using (var db = new Database.DatabaseContext(Config))
             {
-                var bUser = await db.GetCachedFullUserAsync(user.Id);
+                var bUser = await db.GetWishlistOwnerAsync(user.Id);
                 var res = await _waifu.CheckWishlistAndSendToDMAsync(db, Context.User, bUser, !showFavs,
                     !showBlocked, !showNames, showShindenUrl, Context.Guild, false, 0, ignoreTitles, tldr, hideInactive);
 
@@ -2362,7 +2362,7 @@ namespace Sanakan.Modules
 
             using (var db = new Database.DatabaseContext(Config))
             {
-                var bUser = await db.GetCachedFullUserAsync(user.Id);
+                var bUser = await db.GetWishlistOwnerAsync(user.Id);
                 ulong searchId = userf.Id == Context.Client.CurrentUser.Id ? 1 : userf.Id;
                 var res = await _waifu.CheckWishlistAndSendToDMAsync(db, Context.User, bUser, !showFavs,
                     !showBlocked, !showNames, showShindenUrl, Context.Guild, false, searchId, ignoreTitles, tldr, hideInactive);

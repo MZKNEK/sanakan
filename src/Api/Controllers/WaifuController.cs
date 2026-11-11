@@ -698,7 +698,7 @@ namespace Sanakan.Api.Controllers
         {
             using (var db = new Database.DatabaseContext(_config))
             {
-                var user = await db.GetCachedFullUserAsync(id);
+                var user = await db.GetWishlistOwnerAsync(id);
                 return await GetCardsFormWishlistAsync(user, db);
             }
         }
@@ -713,7 +713,7 @@ namespace Sanakan.Api.Controllers
         {
             using (var db = new Database.DatabaseContext(_config))
             {
-                var user = await db.GetCachedFullUserByShindenIdAsync(id);
+                var user = await db.GetWishlistOwnerByShindenIdAsync(id);
                 return await GetCardsFormWishlistAsync(user, db);
             }
         }
@@ -1603,7 +1603,8 @@ namespace Sanakan.Api.Controllers
             var t = user.GameDeck.GetTitlesWishList();
             var c = user.GameDeck.GetCardsWishList();
 
-            return Ok(await _waifu.GetCardsFromWishlistAsync(c, p, t, db, user.GameDeck.Cards));
+            var owned = t.Count > 0 ? await db.GetOwnedCharactersAsync(user.Id) : new HashSet<ulong>();
+            return Ok(await _waifu.GetCardsFromWishlistAsync(c, p, t, db, owned));
         }
 
         public static PhysicalFileResult CardImageFile(string path)

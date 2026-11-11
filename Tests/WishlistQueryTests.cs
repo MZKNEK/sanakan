@@ -119,7 +119,7 @@ namespace Artifacts
         private async Task<List<Card>> OldAsync(Waifu waifu, DatabaseContext db, User owner, ulong favId, ulong onlyDeck, bool hideFavs, bool hideBlocked, bool hideInactive)
         {
             var cards = await waifu.GetCardsFromWishlistAsync(owner.GameDeck.GetCardsWishList(), owner.GameDeck.GetCharactersWishList(),
-                owner.GameDeck.GetTitlesWishList(), db, owner.GameDeck.Cards);
+                owner.GameDeck.GetTitlesWishList(), db, owner.GameDeck.Cards.Select(x => x.Character).ToHashSet());
             cards = onlyDeck != 0 ? cards.Where(x => x.GameDeckId == onlyDeck) : cards.Where(x => x.GameDeckId != owner.Id);
             if (hideFavs) cards = cards.Where(x => !x.Tags.Any(t => t.Id == favId));
             if (hideBlocked) cards = cards.Where(x => x.IsTradable);
@@ -144,7 +144,7 @@ namespace Artifacts
 
             var expected = (await OldAsync(waifu, db, owner, favId, onlyDeck, hideFavs, hideBlocked, hideInactive))
                 .GroupBy(x => x.Id).Select(x => x.First()).ToList();
-            var actual = await waifu.GetWishlistCardsAsync(db, owner, owner.GameDeck.GetCardsWishList(), owner.GameDeck.GetCharactersWishList(),
+            var actual = await waifu.GetWishlistCardsAsync(db, await db.GetWishlistOwnerAsync(Owner), owner.GameDeck.GetCardsWishList(), owner.GameDeck.GetCharactersWishList(),
                 owner.GameDeck.GetTitlesWishList(), onlyDeck, hideFavs, hideBlocked, hideInactive);
 
             Assert.Equal(expected.Select(x => x.Id), actual.Select(x => x.Id));
@@ -161,7 +161,7 @@ namespace Artifacts
 
             // życzenia without options: favourites hidden, untradable and inactive shown
             var old = await OldAsync(waifu, db, owner, favId, 0, true, false, false);
-            var actual = await waifu.GetWishlistCardsAsync(db, owner, owner.GameDeck.GetCardsWishList(), owner.GameDeck.GetCharactersWishList(),
+            var actual = await waifu.GetWishlistCardsAsync(db, await db.GetWishlistOwnerAsync(Owner), owner.GameDeck.GetCardsWishList(), owner.GameDeck.GetCharactersWishList(),
                 owner.GameDeck.GetTitlesWishList(), 0, true, false, false);
 
             // 3001 is wished as a card and through its character; the old way listed it twice

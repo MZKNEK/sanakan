@@ -54,6 +54,16 @@ namespace Sanakan.Extensions
                 .Include(x => x.GameDeck).ThenInclude(x => x.Figures).Include(x => x.GameDeck).ThenInclude(x => x.Tags).AsNoTracking().AsSplitQuery().FromCacheAsync(context, $"user-full-{userId}", CacheTags.User(userId))).FirstOrDefault();
         }
 
+        // the wishlist views need the deck's wishes, not its collection
+        public static Task<User> GetWishlistOwnerAsync(this Database.DatabaseContext context, ulong userId)
+            => context.Users.AsQueryable().Include(x => x.GameDeck).ThenInclude(x => x.Wishes).AsNoTracking().FirstOrDefaultAsync(x => x.Id == userId);
+
+        public static Task<User> GetWishlistOwnerByShindenIdAsync(this Database.DatabaseContext context, ulong shindenId)
+            => context.Users.AsQueryable().Include(x => x.GameDeck).ThenInclude(x => x.Wishes).AsNoTracking().FirstOrDefaultAsync(x => shindenId != 0 && x.Shinden == shindenId);
+
+        public static async Task<HashSet<ulong>> GetOwnedCharactersAsync(this Database.DatabaseContext context, ulong userId)
+            => (await context.Cards.AsQueryable().Where(x => x.GameDeckId == userId).Select(x => x.Character).Distinct().ToListAsync()).ToHashSet();
+
         public static async Task<User> GetCachedNoGameDeckUserAsync(this Database.DatabaseContext context, ulong userId)
         {
             return (await context.Users.AsQueryable().Where(x => x.Id == userId).Include(x => x.Stats).Include(x => x.SMConfig).Include(x => x.TimeStatuses)

@@ -2238,7 +2238,7 @@ namespace Sanakan.Services.PocketWaifu
             }.Build()).ToList();
         }
 
-        public async Task<IEnumerable<Card>> GetCardsFromWishlistAsync(List<ulong> cardsId, List<ulong> charactersId, List<ulong> titlesId, Database.DatabaseContext db, IEnumerable<Card> userCards)
+        public async Task<IEnumerable<Card>> GetCardsFromWishlistAsync(List<ulong> cardsId, List<ulong> charactersId, List<ulong> titlesId, Database.DatabaseContext db, ICollection<ulong> ownedCharacters)
         {
             var cards = new List<Card>();
             if (cardsId != null)
@@ -2263,7 +2263,7 @@ namespace Sanakan.Services.PocketWaifu
                         charactersInTitles.AddRange(charsFromTitle.Where(x => x.CharacterId.HasValue).Select(x => x.CharacterId.Value));
                     }
                 }
-                characters.AddRange(charactersInTitles.Where(c => !userCards.Any(x => x.Character == c)));
+                characters.AddRange(charactersInTitles.Where(c => !ownedCharacters.Contains(c)));
             }
 
             if (characters.Count > 0)
@@ -2283,9 +2283,9 @@ namespace Sanakan.Services.PocketWaifu
             List<ulong> titlesId, ulong onlyDeckId, bool hideFavs, bool hideBlocked, bool hideInactive)
         {
             var characters = new List<ulong>(charactersId ?? new List<ulong>());
-            if (titlesId != null)
+            if (titlesId != null && titlesId.Count > 0)
             {
-                var owned = owner.GameDeck.Cards.Select(x => x.Character).ToHashSet();
+                var owned = await db.GetOwnedCharactersAsync(owner.Id);
                 foreach (var id in titlesId)
                 {
                     var charsFromTitle = await _shinden.GetCharactersFromTitleAsync(id);
