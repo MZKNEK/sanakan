@@ -351,7 +351,10 @@ namespace Sanakan.Api.Controllers
                 if (_sessions.SessionExist(discordId, typeof(ExchangeSession)))
                     return "User is in an exchange!".ToResponse(409);
 
-                var buser = await db.GetUserOrCreateAsync(discordId, _time);
+                var buser = await db.GetUserOrCreateWithCardsAsync(discordId, _time, wid);
+                var waifuCharacter = buser.GameDeck.Waifu;
+                if (waifuCharacter != 0)
+                    await db.LoadCardsAsync(buser.GameDeck, x => x.Character == waifuCharacter);
                 if (wid == 0)
                 {
                     if (buser.GameDeck.Waifu != 0)

@@ -201,6 +201,31 @@ namespace Artifacts
             Assert.Equal(200, (await controller.SetWaifuAsync(wid)).StatusOf());
             Assert.Equal(77ul, Open().GameDecks.AsQueryable().Single(x => x.Id == DiscordId).Waifu);
         }
+
+        // only the chosen card and the cards of the previous favorite character are loaded
+        [Fact]
+        public async Task SetWaifu_LowersTheCardsOfThePreviousFavorite()
+        {
+            using (var db = Open())
+            {
+                db.GameDecks.AsQueryable().Single(x => x.Id == DiscordId).Waifu = 55;
+                db.Cards.Add(new Card { GameDeckId = DiscordId, Character = 55, Name = "Stara", Affection = 20, Rarity = Rarity.E, Dere = Dere.Deredere, Tags = new List<Tag>() });
+                db.Cards.Add(new Card { GameDeckId = DiscordId, Character = 66, Name = "Inna", Affection = 20, Rarity = Rarity.E, Dere = Dere.Deredere, Tags = new List<Tag>() });
+                db.SaveChanges();
+            }
+            using var client = new Discord.WebSocket.DiscordSocketClient();
+            using var sessions = new SessionManager(client, new FakeExecutor(), new ListLogger());
+            sessions.Initialize(new EmptyServiceProvider());
+            var controller = ControllerHarness.Attach(new TestPlayerController(_executor, _time, sessions, Open));
+            controller.HttpContext.User = new ClaimsPrincipal(new ClaimsIdentity(new[] { new Claim("DiscordId", DiscordId.ToString()), new Claim("Player", "waifu_player") }, "test"));
+            var wid = Open().Cards.AsQueryable().Single(x => x.GameDeckId == DiscordId && x.Character == 77).Id;
+
+            Assert.Equal(200, (await controller.SetWaifuAsync(wid)).StatusOf());
+
+            var cards = Open().Cards.AsQueryable().Where(x => x.GameDeckId == DiscordId).ToList();
+            Assert.Equal(15, cards.Single(x => x.Character == 55).Affection, 6);
+            Assert.Equal(20, cards.Single(x => x.Character == 66).Affection, 6);
+        }
     }
 
     public class BoosterPackValidationTests

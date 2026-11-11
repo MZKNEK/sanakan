@@ -244,7 +244,7 @@ namespace Sanakan.Modules
 
             using (var db = new Database.DatabaseContext(Config))
             {
-                var botuser = await db.GetUserOrCreateAsync(Context.User.Id, _time);
+                var botuser = await db.GetUserOrCreateLightAsync(Context.User.Id, _time);
                 switch (type.ToUpper())
                 {
                     case "BG":
@@ -380,7 +380,7 @@ namespace Sanakan.Modules
 
             using (var db = new Database.DatabaseContext(Config))
             {
-                var botuser = await db.GetUserOrCreateAsync(Context.User.Id, _time);
+                var botuser = await db.GetUserOrCreateWithCardsAsync(Context.User.Id, _time, wid);
                 var thisCard = botuser.GetCard(wid);
                 if (thisCard == null)
                 {
@@ -451,7 +451,7 @@ namespace Sanakan.Modules
 
             using (var db = new Database.DatabaseContext(Config))
             {
-                var botuser = await db.GetUserOrCreateAsync(Context.User.Id, _time);
+                var botuser = await db.GetUserOrCreateWithCardsAsync(Context.User.Id, _time, wid);
                 var thisCard = botuser.GetCard(wid);
                 if (thisCard == null)
                 {

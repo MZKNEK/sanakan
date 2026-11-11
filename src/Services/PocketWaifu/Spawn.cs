@@ -218,7 +218,8 @@ namespace Sanakan.Services.PocketWaifu
 
                 using (var db = new Database.DatabaseContext(_config))
                 {
-                    var botUser = await db.GetUserOrCreateAsync(winner.Id, _time);
+                    var botUser = await db.GetUserOrCreateWithCardsAsync(winner.Id, _time);
+                    await db.LoadCharacterWishAsync(botUser.GameDeck, newCard.Character);
 
                     newCard.FirstIdOwner = winner.Id;
                     newCard.Affection += botUser.GameDeck.AffectionFromKarma();
