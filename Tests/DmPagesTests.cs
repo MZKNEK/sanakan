@@ -51,8 +51,10 @@ namespace Artifacts
         public async Task SeveralPages_WaitOnlyBetweenThem()
         {
             var (user, channel) = Recipient();
+            var helper = NewHelper();
 
-            var res = await NewHelper().SendEmbedsOnDMAsync(user.Object, Pages(3));
+            var res = await helper.SendEmbedsOnDMAsync(user.Object, Pages(3));
+            await helper.LastPagesSending;
 
             Assert.True(res.IsOk());
             Assert.Equal(3, Sent(channel));
@@ -63,6 +65,40 @@ namespace Artifacts
         public void DefaultDelay_StaysUnderFiveMessagesPerFiveSeconds()
         {
             Assert.True(Helper.DmPageDelay >= TimeSpan.FromSeconds(1));
+        }
+
+        [Fact]
+        public async Task Answer_ComesAfterTheFirstPage_TheRestFollows()
+        {
+            var (user, channel) = Recipient();
+            var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var helper = new Helper(new FakeConfig(), null) { Wait = _ => release.Task };
+
+            var res = await helper.SendEmbedsOnDMAsync(user.Object, Pages(3));
+
+            Assert.True(res.IsOk());
+            Assert.Equal(1, Sent(channel));
+            release.SetResult();
+            await helper.LastPagesSending.WaitAsync(TimeSpan.FromSeconds(10));
+            Assert.Equal(3, Sent(channel));
+        }
+
+        [Fact]
+        public async Task FailureAfterTheFirstPage_IsOnlyLogged()
+        {
+            var (user, channel) = Recipient();
+            var sent = 0;
+            channel.Setup(x => x.SendMessageAsync(It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<Embed>(), It.IsAny<RequestOptions>(), It.IsAny<AllowedMentions>(),
+                    It.IsAny<MessageReference>(), It.IsAny<MessageComponent>(), It.IsAny<ISticker[]>(), It.IsAny<Embed[]>(), It.IsAny<MessageFlags>(), It.IsAny<PollProperties>()))
+                .Returns(() => ++sent == 1 ? Task.FromResult(Mock.Of<IUserMessage>()) : Task.FromException<IUserMessage>(new InvalidOperationException("gone")));
+            var logger = new ListLogger();
+            var helper = new Helper(new FakeConfig(), logger) { Wait = _ => Task.CompletedTask };
+
+            var res = await helper.SendEmbedsOnDMAsync(user.Object, Pages(3));
+            await helper.LastPagesSending;
+
+            Assert.True(res.IsOk());
+            Assert.Contains(logger.Messages, x => x.Contains("stopped after 1/3"));
         }
 
         [Fact]

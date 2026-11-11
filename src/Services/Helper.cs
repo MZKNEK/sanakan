@@ -419,33 +419,55 @@ namespace Sanakan.Services
         public async Task<ExecutionResult> SendEmbedsOnDMAsync(IUser user, IEnumerable<Embed> embeds, bool tldr = false)
             => await SendEmbedsOnDMAsync(user, embeds, DmPageDelay, tldr);
 
+        // the remaining pages of the last list, for tests
+        internal Task LastPagesSending { get; private set; } = Task.CompletedTask;
+
+        // the answer comes after the first page, the rest follows in the background at the safe pace;
+        // a closed DM shows up already on the first page
         public async Task<ExecutionResult> SendEmbedsOnDMAsync(IUser user, IEnumerable<Embed> embeds, TimeSpan delay, bool tldr)
         {
+            var pages = embeds.ToList();
+            IDMChannel dm;
             try
             {
-                var dm = await user.CreateDMChannelAsync();
-                if (tldr || embeds.Count() >= 30)
+                dm = await user.CreateDMChannelAsync();
+                if (tldr || pages.Count >= 30)
                 {
-                    using var stream = GenerateStreamFromString(string.Join("\n", embeds.Select(x => x.Description)));
+                    using var stream = GenerateStreamFromString(string.Join("\n", pages.Select(x => x.Description)));
                     await dm.SendFileAsync(stream, "tldr.txt");
+                    return ExecutionResult.FromSuccess("lista poszła na PW!");
                 }
-                else
-                {
-                    var first = true;
-                    foreach (var emb in embeds)
-                    {
-                        if (!first)
-                            await Wait(delay);
 
-                        first = false;
-                        await dm.SendMessageAsync("", embed: emb);
-                    }
-                }
-                return ExecutionResult.FromSuccess("lista poszła na PW!");
+                if (pages.Count > 0)
+                    await dm.SendMessageAsync("", embed: pages[0]);
             }
             catch (Exception ex)
             {
-                return DmFailed(ex, $"list of {embeds.Count()}");
+                return DmFailed(ex, $"list of {pages.Count}");
+            }
+
+            if (pages.Count > 1)
+                LastPagesSending = SendRemainingPagesAsync(dm, pages, delay);
+
+            return ExecutionResult.FromSuccess("lista poszła na PW!");
+        }
+
+        private async Task SendRemainingPagesAsync(IDMChannel dm, List<Embed> pages, TimeSpan delay)
+        {
+            var sent = 1;
+            try
+            {
+                foreach (var emb in pages.Skip(1))
+                {
+                    await Wait(delay);
+                    await dm.SendMessageAsync("", embed: emb);
+                    sent++;
+                }
+            }
+            catch (Exception ex)
+            {
+                if (!IsDmClosed(ex))
+                    _log?.LogError($"Helper: DM list stopped after {sent}/{pages.Count} pages: {ex.Message}");
             }
         }
 
