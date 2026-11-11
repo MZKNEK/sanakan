@@ -77,7 +77,7 @@ namespace Artifacts
             options.Setup(x => x.Get(It.IsAny<string>())).Returns(new AuthenticationSchemeOptions());
 
             var handler = new UserKeyAuthenticationHandler(options.Object, NullLoggerFactory.Instance,
-                UrlEncoder.Default, new SystemClock(), new FakeConfig());
+                UrlEncoder.Default, new FakeConfig());
 
             var scheme = new AuthenticationScheme(UserKeyAuthenticationHandler.SchemeName, null, typeof(UserKeyAuthenticationHandler));
             await handler.InitializeAsync(scheme, context);

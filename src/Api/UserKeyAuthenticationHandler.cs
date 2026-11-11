@@ -26,7 +26,7 @@ namespace Sanakan.Api
         private readonly IConfig _config;
 
         public UserKeyAuthenticationHandler(IOptionsMonitor<AuthenticationSchemeOptions> options, ILoggerFactory logger,
-            UrlEncoder encoder, ISystemClock clock, IConfig config) : base(options, logger, encoder, clock)
+            UrlEncoder encoder, IConfig config) : base(options, logger, encoder)
         {
             _config = config;
         }

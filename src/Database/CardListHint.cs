@@ -21,7 +21,8 @@ namespace Sanakan.Database
 
         public static string Apply(string sql)
         {
-            if (!sql.StartsWith("-- " + Tag, StringComparison.Ordinal))
+            // EF puts the tag comment first, newer versions after an empty line
+            if (!sql.TrimStart().StartsWith("-- " + Tag, StringComparison.Ordinal))
                 return sql;
 
             var select = sql.IndexOf("SELECT", StringComparison.Ordinal);
