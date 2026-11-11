@@ -600,68 +600,39 @@ namespace Sanakan.Api.Controllers
         /// <response code="404">Character not found (and no data given by hand)</response>
         /// <response code="503">Shinden did not answer or the command queue is full, retry after the Retry-After header</response>
         [HttpPost("character/{id}/sync"), Authorize(Policy = "Site")]
-        public Task<IActionResult> SyncCharacterCardsAsync(ulong id, [FromQuery] ulong from = 0,
+        public async Task<IActionResult> SyncCharacterCardsAsync(ulong id, [FromQuery] ulong from = 0,
             [FromBody(EmptyBodyBehavior = Microsoft.AspNetCore.Mvc.ModelBinding.EmptyBodyBehavior.Allow)] Models.CharacterCardInfoUpdate overrides = null)
-            => SyncCharacterCardsAsync(id, from, overrides, useShinden: true);
-
-        /// <summary>
-        /// Przestarzałe, zamiast tego character/{newId}/sync?from={oldId}
-        /// </summary>
-        /// <param name="oldId">id postaci z bazy shindena, która została usunięta</param>
-        /// <param name="newId">id nowej postaci z bazy shindena</param>
-        [HttpPost("character/repair/{oldId}/{newId}"), Authorize(Policy = "Site")]
-        public async Task<IActionResult> RepairCardsAsync(ulong oldId, ulong newId)
-        {
-            // the old route's answers, which the site may still expect
-            var result = await SyncCharacterCardsAsync(newId, oldId, null, useShinden: true);
-            return result switch
-            {
-                ObjectResult { StatusCode: 404 } => "New character ID is invalid!".ToResponse(500),
-                ObjectResult { StatusCode: 200 } => "Success".ToResponse(200),
-                _ => result,
-            };
-        }
-
-        /// <summary>
-        /// Przestarzałe, zamiast tego character/{id}/sync z danymi w treści
-        /// </summary>
-        /// <param name="id">id postaci z bazy shindena</param>
-        /// <param name="newData">nowe dane karty</param>
-        [HttpPost("cards/character/{id}/update"), Authorize(Policy = "Site")]
-        public Task<IActionResult> UpdateCardInfoAsync(ulong id, [FromBody]Models.CharacterCardInfoUpdate newData)
-            => SyncCharacterCardsAsync(id, 0, newData ?? new Models.CharacterCardInfoUpdate(), useShinden: false);
-
-        private async Task<IActionResult> SyncCharacterCardsAsync(ulong id, ulong from, Models.CharacterCardInfoUpdate overrides, bool useShinden)
         {
             if (from == id)
                 return "The character to move cards from is the same as the target one!".ToResponse(400);
 
+            // an empty object ({}) is no data given by hand, so a Shinden failure is still reported
+            if (overrides != null && overrides.ImageUrl == null && overrides.CharacterName == null && overrides.CardSeriesTitle == null)
+                overrides = null;
+
             var setImage = false;
             string image = null, name = null;
-            if (useShinden)
+            Response<ShindenCompat.Models.ICharacterInfo> response = null;
+            try
             {
-                Response<ShindenCompat.Models.ICharacterInfo> response = null;
-                try
-                {
-                    response = await _shClient.GetCharacterInfoAsync(id);
-                }
-                catch (ShindenException) { }
+                response = await _shClient.GetCharacterInfoAsync(id);
+            }
+            catch (ShindenException) { }
 
-                if (response?.IsSuccessStatusCode() == true)
-                {
-                    setImage = true;
-                    image = response.Body.HasImage ? response.Body.PictureUrl : null;
-                    name = response.Body.ToString();
-                }
-                else if (overrides == null)
-                {
-                    if (response?.Code == System.Net.HttpStatusCode.NotFound)
-                        return "Character not found!".ToResponse(404);
+            if (response?.IsSuccessStatusCode() == true)
+            {
+                setImage = true;
+                image = response.Body.HasImage ? response.Body.PictureUrl : null;
+                name = response.Body.ToString();
+            }
+            else if (overrides == null)
+            {
+                if (response?.Code == System.Net.HttpStatusCode.NotFound)
+                    return "Character not found!".ToResponse(404);
 
-                    // a limit, an outage or a timeout on Shinden, the site retries later
-                    Response.Headers["Retry-After"] = "60";
-                    return "Shinden is not available, try again later!".ToResponse(503);
-                }
+                // a limit, an outage or a timeout on Shinden, the site retries later
+                Response.Headers["Retry-After"] = "60";
+                return "Shinden is not available, try again later!".ToResponse(503);
             }
 
             if (overrides?.ImageUrl != null)
@@ -716,15 +687,6 @@ namespace Sanakan.Api.Controllers
 
             return "Started!".ToResponse(200);
         }
-
-        /// <summary>
-        /// Przestarzałe, zamiast tego character/{id}/sync
-        /// </summary>
-        /// <param name="id">id postaci z bazy shindena</param>
-        /// <response code="404">Character not found</response>
-        [HttpPost("users/make/character/{id}"), Authorize(Policy = "Site")]
-        public Task<IActionResult> GenerateCharacterCardAsync(ulong id)
-            => SyncCharacterCardsAsync(id, 0, null, useShinden: true);
 
         /// <summary>
         /// Pobiera listę życzeń użytkownika

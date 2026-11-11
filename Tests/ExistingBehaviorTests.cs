@@ -396,16 +396,16 @@ namespace Artifacts
     public class ControllerBehaviorTests
     {
         private static WaifuController NewWaifuController(FakeExecutor executor)
-            => ControllerHarness.Attach(new WaifuController(null, null, executor, null, new FakeConfig(), new FixedTime(),
+            => ControllerHarness.Attach(new WaifuController(Sanakan.ShindenCompat.ShindenClient.Create(new Sanakan.Config.Model.ConfigShinden { Token = "t", UserAgent = "tests", Marmolade = "m", BaseUri = "http://127.0.0.1:9/" }, null, null, TimeSpan.FromSeconds(5)), null, executor, null, new FakeConfig(), new FixedTime(),
                 new Sanakan.Services.Shinden(null, null, null, new ListLogger(), new FixedTime()), null, null, null));
 
         [Fact]
-        public async Task UpdateCardInfo_EnqueuesTaskAndReturnsOk()
+        public async Task SyncWithDataByHand_EnqueuesTaskAndReturnsOk()
         {
             var executor = new FakeExecutor();
             var controller = NewWaifuController(executor);
 
-            var result = await controller.UpdateCardInfoAsync(5, new Sanakan.Api.Models.CharacterCardInfoUpdate());
+            var result = await controller.SyncCharacterCardsAsync(5, 0, new Sanakan.Api.Models.CharacterCardInfoUpdate { CharacterName = "x" });
 
             Assert.Equal(200, result.StatusOf());
             Assert.Single(executor.Added);

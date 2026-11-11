@@ -164,6 +164,15 @@ namespace Artifacts
             Assert.Equal(before.Values.Select(Describe), Cards().Values.Select(Describe));
         }
 
+        // the site sends {} when it gives no data by hand
+        [Fact]
+        public async Task ShindenFailure_WithAnEmptyObject_StillReturns503()
+        {
+            var result = await _controller.SyncCharacterCardsAsync(500, 0, new CharacterCardInfoUpdate());
+
+            Assert.Equal(503, result.StatusOf());
+        }
+
         [Fact]
         public async Task UnreachableShinden_Returns503()
         {
@@ -214,20 +223,6 @@ namespace Artifacts
             await _controller.SyncCharacterCardsAsync(100, 0, new CharacterCardInfoUpdate { ImageUrl = "https://i.imgur.com/x.png", CardSeriesTitle = "Nowa seria" });
 
             Assert.Equal("100|Nowa Postać|Nowa seria|https://i.imgur.com/x.png", Describe(Cards()[1]));
-        }
-
-        [Fact]
-        public async Task OldRoutes_UseTheSameSync()
-        {
-            Assert.Equal(200, (await _controller.RepairCardsAsync(200, 100)).StatusOf());
-            Assert.Equal($"100|Nowa Postać|Seria B|{NewImage}", Describe(Cards()[3]));
-
-            Assert.Equal(200, (await _controller.GenerateCharacterCardAsync(101)).StatusOf());
-            Assert.Equal("101|Bez Obrazka|Seria D|", Describe(Cards()[5]));
-
-            // the hand-made update does not ask Shinden, only the given fields change
-            Assert.Equal(200, (await _controller.UpdateCardInfoAsync(300, new CharacterCardInfoUpdate { CharacterName = "Ręczna" })).StatusOf());
-            Assert.Equal($"300|Ręczna|Seria C|{OldImage}", Describe(Cards()[4]));
         }
     }
 }

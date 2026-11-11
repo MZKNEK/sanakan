@@ -109,7 +109,7 @@ namespace Artifacts
         public static StringContent Json(string body) => new StringContent(body, Encoding.UTF8, "application/json");
 
         public static Task<HttpResponseMessage> PostSiteEndpointAsync(HttpClient client)
-            => client.PostAsync("/api/waifu/cards/character/5/update", Json("{}"));
+            => client.PostAsync("/api/waifu/character/5/sync", Json("{\"characterName\":\"x\"}"));
 
         public void Dispose()
         {
@@ -258,11 +258,15 @@ namespace Artifacts
             await AssertMessage(await _api.Client.PostAsync("/api/user/find", ApiServer.Json("\"karna\"")), HttpStatusCode.NotFound);
         }
 
-        [Fact]
-        public async Task RepairCards_WhenShindenReturns404_Returns500Json()
+        // the site sends no data by hand, as an empty JSON body or {}; both still report a missing character
+        [Theory]
+        [InlineData("")]
+        [InlineData("{}")]
+        [InlineData("null")]
+        public async Task SyncCharacter_WhenShindenReturns404_Returns404Json(string body)
         {
             var client = await _api.AsSiteAsync();
-            await AssertMessage(await client.PostAsync("/api/waifu/character/repair/1/2", null), HttpStatusCode.InternalServerError);
+            await AssertMessage(await client.PostAsync("/api/waifu/character/2/sync?from=1", ApiServer.Json(body)), HttpStatusCode.NotFound);
         }
 
         [Fact]
@@ -270,14 +274,14 @@ namespace Artifacts
         {
             _api.Executor.Accept = false;
             var client = await _api.AsSiteAsync();
-            await AssertMessage(await client.PostAsync("/api/waifu/cards/character/5/update", ApiServer.Json("{}")), (HttpStatusCode)503);
+            await AssertMessage(await client.PostAsync("/api/waifu/character/5/sync", ApiServer.Json("{\"characterName\":\"x\"}")), (HttpStatusCode)503);
         }
 
         [Fact]
         public async Task UpdateCards_Accepted_Returns200Json()
         {
             var client = await _api.AsSiteAsync();
-            await AssertMessage(await client.PostAsync("/api/waifu/cards/character/5/update", ApiServer.Json("{}")), HttpStatusCode.OK);
+            await AssertMessage(await client.PostAsync("/api/waifu/character/5/sync", ApiServer.Json("{\"characterName\":\"x\"}")), HttpStatusCode.OK);
             Assert.Single(_api.Executor.Added);
         }
     }

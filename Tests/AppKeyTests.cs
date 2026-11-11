@@ -466,7 +466,7 @@ namespace Artifacts
         {
             var client = WithAppKey("site-app");
 
-            Assert.Equal(HttpStatusCode.OK, (await client.PostAsync("/api/waifu/cards/character/5/update", ApiServer.Json("{}"))).StatusCode);
+            Assert.Equal(HttpStatusCode.OK, (await client.PostAsync("/api/waifu/character/5/sync", ApiServer.Json("{\"characterName\":\"x\"}"))).StatusCode);
             Assert.Single(_api.Executor.Added);
         }
 
@@ -477,7 +477,7 @@ namespace Artifacts
         {
             var client = WithAppKey(key);
 
-            Assert.Equal(HttpStatusCode.Forbidden, (await client.PostAsync("/api/waifu/cards/character/5/update", ApiServer.Json("{}"))).StatusCode);
+            Assert.Equal(HttpStatusCode.Forbidden, (await client.PostAsync("/api/waifu/character/5/sync", ApiServer.Json("{\"characterName\":\"x\"}"))).StatusCode);
             Assert.Empty(_api.Executor.Added);
         }
 

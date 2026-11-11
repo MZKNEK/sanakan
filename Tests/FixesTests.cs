@@ -77,13 +77,13 @@ namespace Artifacts
     public class QueueFullApiTests
     {
         [Fact]
-        public async Task UpdateCardInfo_WhenQueueIsFull_Returns503()
+        public async Task CharacterSync_WhenQueueIsFull_Returns503()
         {
             var executor = new FakeExecutor { Accept = false };
-            var controller = ControllerHarness.Attach(new WaifuController(null, null, executor, null, new FakeConfig(), new FixedTime(),
+            var controller = ControllerHarness.Attach(new WaifuController(Sanakan.ShindenCompat.ShindenClient.Create(new Sanakan.Config.Model.ConfigShinden { Token = "t", UserAgent = "tests", Marmolade = "m", BaseUri = "http://127.0.0.1:9/" }, null, null, TimeSpan.FromSeconds(5)), null, executor, null, new FakeConfig(), new FixedTime(),
                 new Sanakan.Services.Shinden(null, null, null, new ListLogger(), new FixedTime()), null, null, null));
 
-            var result = await controller.UpdateCardInfoAsync(5, new Sanakan.Api.Models.CharacterCardInfoUpdate());
+            var result = await controller.SyncCharacterCardsAsync(5, 0, new Sanakan.Api.Models.CharacterCardInfoUpdate { CharacterName = "x" });
 
             Assert.Equal(503, result.StatusOf());
             Assert.Contains("queue is full", result.MessageOf());
