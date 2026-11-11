@@ -28,3 +28,4 @@ src/sanakan_key.pub
 /Tests/obj/
 /Tests/TestResults/
 __pycache__/
+src/deploy/

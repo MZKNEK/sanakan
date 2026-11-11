@@ -117,7 +117,7 @@ namespace Sanakan
             catch (InvalidOperationException ex)
             {
                 Console.Error.WriteLine($"Config: invalid configuration: {ex.Message}");
-                Environment.Exit(1);
+                Environment.Exit(ExitCodes.BadConfig);
             }
         }
 
@@ -245,7 +245,7 @@ namespace Sanakan
                     await BotWebHost.StopAsync(TimeSpan.FromSeconds(5));
                     _executor?.Dispose();
                     await Task.Delay(1000);
-                    Environment.Exit(0);
+                    Environment.Exit(ExitCodes.Stop);
                 });
             };
         }

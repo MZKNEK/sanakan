@@ -30,7 +30,7 @@ namespace Sanakan.Api.Controllers
             await _client.LogoutAsync();
             _logger.Log("API: kill requested from web");
             await Task.Delay(1500);
-            Environment.Exit(0);
+            Environment.Exit(ExitCodes.Stop);
             return Ok();
         }
 
@@ -41,10 +41,9 @@ namespace Sanakan.Api.Controllers
         public async Task<IActionResult> UpdateBotAsync()
         {
             await _client.LogoutAsync();
-            System.IO.File.WriteAllText("./updateNow", string.Empty);
             _logger.Log("API: update requested from web");
             await Task.Delay(1500);
-            Environment.Exit(200);
+            Environment.Exit(ExitCodes.Update);
             return Ok();
         }
     }

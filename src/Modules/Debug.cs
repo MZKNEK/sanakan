@@ -2600,22 +2600,21 @@ namespace Sanakan.Modules
             _eCounter.DumpData();
 
             await Task.Delay(1500);
-            Environment.Exit(0);
+            Environment.Exit(ExitCodes.Stop);
         }
 
         [Command("update", RunMode = RunMode.Async), RequireDev]
-        [Summary("wyłącza bota z kodem 200")]
+        [Summary("wyłącza bota, który pobiera aktualizację i uruchamia się ponownie")]
         [Remarks("")]
         public async Task TurnOffWithUpdateAsync()
         {
             await SafeReplyAsync("", embed: "To już czas?".ToEmbedMessage(EMType.Bot).Build());
             await Context.Client.LogoutAsync();
-            System.IO.File.Create("./updateNow");
             _spawn.DumpData();
             _eCounter.DumpData();
 
             await Task.Delay(1500);
-            Environment.Exit(200);
+            Environment.Exit(ExitCodes.Update);
         }
 
         [Command("bavatar", RunMode = RunMode.Async), RequireDev]
