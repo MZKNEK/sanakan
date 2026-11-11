@@ -114,7 +114,7 @@ namespace Sanakan.Services
             Emote.Parse("<:taka_ramka:1224401085284745428>"),
             Emote.Parse("<:smutna_gumime:479946656842776576>"),
             Emote.Parse("<:uhohouhu:628623605110145035>"),
-        }.Shuffle().ToList();
+        }.RandomOrder().ToList();
 
         private DiscordSocketClient _client;
         private volatile bool _isEnabled;

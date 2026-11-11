@@ -204,7 +204,7 @@ namespace Sanakan.Modules
             }
 
             var emote = Emote.Parse("<a:pinkarrow:826132578016559144>");
-            var allOptions = options.Shuffle().ToList();
+            var allOptions = options.RandomOrder().ToList();
 
             await Task.Delay(Services.Fun.GetRandomValue(100, 500));
 

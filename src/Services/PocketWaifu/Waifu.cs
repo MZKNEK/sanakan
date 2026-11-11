@@ -1544,7 +1544,7 @@ namespace Sanakan.Services.PocketWaifu
             while (fight)
             {
                 var round = new RoundInfo();
-                totalCards = totalCards.Shuffle().ToList();
+                totalCards = totalCards.RandomOrder().ToList();
 
                 foreach (var card in totalCards)
                 {

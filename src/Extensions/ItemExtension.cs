@@ -938,7 +938,7 @@ namespace Sanakan.Extensions
             {
                 list.AddRange(Enumerable.Repeat(item.Item1, item.Item2));
             }
-            return list.Shuffle();
+            return list.RandomOrder();
         }
 
         public static List<T> ToRealList<T>(this IEnumerable<(T, int)> chances) => chances.ToRealEnumerable().ToList();
