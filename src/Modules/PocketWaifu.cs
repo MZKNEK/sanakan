@@ -1002,7 +1002,7 @@ namespace Sanakan.Modules
 
             using (var db = new Database.DatabaseContext(Config))
             {
-                var bUser = await db.GetUserOrCreateAsync(Context.User.Id, _time);
+                var bUser = await db.GetUserOrCreateWithCardsAsync(Context.User.Id, _time, id, cardToSac);
                 var card = bUser.GameDeck.Cards.FirstOrDefault(x => x.Id == id);
 
                 if (card == null)
@@ -1533,7 +1533,7 @@ namespace Sanakan.Modules
 
             using (var db = new Database.DatabaseContext(Config))
             {
-                var botuser = await db.GetUserOrCreateAsync(Context.User.Id, _time);
+                var botuser = await db.GetUserOrCreateWithCardsAsync(Context.User.Id, _time, wid);
                 if (botuser.GameDeck.IsMarketDisabled())
                 {
                     await SafeReplyAsync("", embed: $"{Context.User.Mention} wszyscy na twój widok się rozbiegli, nic dziś nie zdziałasz.".ToEmbedMessage(EMType.Error).Build());
@@ -1663,7 +1663,7 @@ namespace Sanakan.Modules
 
             using (var db = new Database.DatabaseContext(Config))
             {
-                var botuser = await db.GetUserOrCreateAsync(Context.User.Id, _time);
+                var botuser = await db.GetUserOrCreateWithCardsAsync(Context.User.Id, _time, wid);
                 if (botuser.GameDeck.IsBlackMarketDisabled())
                 {
                     await SafeReplyAsync("", embed: $"{Context.User.Mention} halo koleżko, to nie miejsce dla Ciebie!".ToEmbedMessage(EMType.Error).Build());
