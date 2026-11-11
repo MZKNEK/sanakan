@@ -1,19 +1,13 @@
-# 1.4.11.20
+# 1.4.11.21
 
 Data: 2026-11-11
 
-- Naprawiono sortowanie kart na stronie po ataku, obronie i życiu, które teraz uwzględnia wartości widoczne na karcie.
-- Naprawiono kolejność graczy z takim samym wynikiem w rankingach, która znów jest stała.
-- Przyspieszono komendy portfel, subskrypcje, wyprawa status, ulubione, czego brak i jakie.
-- Przyspieszono harem oraz oba profile karcianki.
-- Przyspieszono rozpoczęcie wymiany.
-- Zmieniono dodawanie kart do wymiany, które teraz sprawdza aktualny stan karty w chwili dodania.
-- Przyspieszono wybór zwycięzcy polowania (safari).
-- Przyspieszono panele gracza na stronie: limity, misje, przedmioty, talię, figurki, pakiety, listę życzeń i oznaczenia.
-- Przyspieszono otwieranie i dodawanie pakietów przez stronę.
+- Przyspieszono listy kart na stronie, zwłaszcza sortowane po obrazku, postaci, zmęczeniu i klątwach oraz przeglądane z filtrem po oznaczeniach.
+- Przyspieszono wyszukiwanie kart po tekście na stronie.
+- Przyspieszono profil karcianki.
+- Zmieniono zapisywanie bardzo długich imion postaci i tytułów serii na kartach, które są teraz skracane zamiast powodować błąd.
 
 ## Techniczne
 
-- Bot pobiera z bazy tylko dane potrzebne danej komendzie, co zmniejsza obciążenie bazy.
-- Powiadomienie o wolnym zapytaniu do API przychodzi teraz dopiero powyżej 12 sekund.
-- Stara metoda dodawania pakietów dla strony nie zwraca już całej kolekcji gracza, tylko jego podstawowe dane i token.
+- Baza danych szybciej przelicza siłę talii po zmianach aktywnych kart.
+- Wymaga zmian w bazie danych (nowe kolumny i indeksy kart) wykonanych przed uruchomieniem tej wersji.
