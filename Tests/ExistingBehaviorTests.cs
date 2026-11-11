@@ -411,6 +411,25 @@ namespace Artifacts
             Assert.Single(executor.Added);
         }
 
+        // the card columns are varchar now: a longer name or title is cut by the card, a cut image url would not work
+        [Theory]
+        [InlineData(256, 501, 1, 200)]
+        [InlineData(1, 1, 501, 400)]
+        [InlineData(255, 500, 500, 200)]
+        public async Task SyncWithDataByHand_RejectsOnlyTooLongImageUrl(int name, int title, int image, int status)
+        {
+            var executor = new FakeExecutor();
+            var controller = NewWaifuController(executor);
+
+            var result = await controller.SyncCharacterCardsAsync(5, 0, new Sanakan.Api.Models.CharacterCardInfoUpdate
+            {
+                CharacterName = new string('n', name), CardSeriesTitle = new string('t', title), ImageUrl = new string('i', image)
+            });
+
+            Assert.Equal(status, result.StatusOf());
+            Assert.Equal(status == 200 ? 1 : 0, executor.Added.Count);
+        }
+
         [Fact]
         public async Task BoosterPacks_EmptyList_IsRejected()
         {

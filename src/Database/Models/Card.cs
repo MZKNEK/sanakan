@@ -121,11 +121,25 @@ namespace Sanakan.Database.Models
         public int Defence { get; set; }
         public int Attack { get; set; }
         public int Health { get; set; }
-        public string Name { get; set; }
+        // the index on (Name, Title) must stay within 3072 bytes, 4 per character
+        public const int NameMaxLength = 255;
+        public const int TextMaxLength = 500;
+
+        private string _name;
+        private string _title;
+
+        // longer names and titles from Shinden or given by hand are cut, the columns would reject them
+        public static string Fit(string value, int max)
+        {
+            if (value == null || value.Length <= max) return value;
+            return value.Substring(0, char.IsHighSurrogate(value[max - 1]) ? max - 1 : max);
+        }
+
+        public string Name { get => _name; set => _name = Fit(value, NameMaxLength); }
         public ulong Character { get; set; }
         public DateTime CreationDate { get; set; }
         public CardSource Source { get; set; }
-        public string Title { get; set; }
+        public string Title { get => _title; set => _title = Fit(value, TextMaxLength); }
         public string Image { get; set; }
         public string CustomImage { get; set; }
         public ulong FirstIdOwner { get; set; }

@@ -647,6 +647,10 @@ namespace Sanakan.Api.Controllers
             if (overrides != null && overrides.ImageUrl == null && overrides.CharacterName == null && overrides.CardSeriesTitle == null)
                 overrides = null;
 
+            // a cut url would not work, a too long name or title is cut by the card
+            if (overrides?.ImageUrl?.Length > Card.TextMaxLength)
+                return $"Image url can have at most {Card.TextMaxLength} characters!".ToResponse(400);
+
             var setImage = false;
             string image = null, name = null;
             Response<ShindenCompat.Models.ICharacterInfo> response = null;

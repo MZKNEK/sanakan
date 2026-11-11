@@ -201,6 +201,13 @@ namespace Sanakan.Database
                 // the site's card list sorts by the count and then the character
                 entity.HasIndex(e => new { e.WhoWantsCount, e.Character });
                 entity.HasIndex(e => new { e.AWhoWantsCount, e.Character });
+                // varchar instead of longtext keeps the text in the row, the text search counts its results from this index
+                entity.Property(e => e.Name).HasMaxLength(Card.NameMaxLength);
+                entity.Property(e => e.Title).HasMaxLength(Card.TextMaxLength);
+                entity.Property(e => e.Image).HasMaxLength(Card.TextMaxLength);
+                entity.Property(e => e.CustomImage).HasMaxLength(Card.TextMaxLength);
+                entity.Property(e => e.CustomBorder).HasMaxLength(Card.TextMaxLength);
+                entity.HasIndex(e => new { e.Name, e.Title });
 
                 entity.HasOne(e => e.GameDeck)
                     .WithMany(d => d.Cards);

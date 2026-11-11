@@ -71,6 +71,35 @@ namespace Artifacts
             Assert.Contains(entity.GetIndexes(), i => i.Properties.Select(p => p.Name).SequenceEqual(new[] { nameof(CardPvPStats.GameDeckId), nameof(CardPvPStats.Type), nameof(CardPvPStats.Result) }));
         }
 
+        // varchar keeps the text in the row; Name and Title together must fit the 3072 byte index key in utf8mb4
+        [Fact]
+        public void Cards_TextColumnsHaveMaxLengths()
+        {
+            var entity = new SqliteContext().Model.FindEntityType(typeof(Card));
+            int? Max(string name) => entity.FindProperty(name).GetMaxLength();
+
+            Assert.Equal(255, Max(nameof(Card.Name)));
+            Assert.Equal(500, Max(nameof(Card.Title)));
+            Assert.Equal(500, Max(nameof(Card.Image)));
+            Assert.Equal(500, Max(nameof(Card.CustomImage)));
+            Assert.Equal(500, Max(nameof(Card.CustomBorder)));
+            Assert.True((Max(nameof(Card.Name)) + Max(nameof(Card.Title))) * 4 <= 3072);
+        }
+
+        [Fact]
+        public void Cards_CutTooLongNamesAndTitles_WithoutSplittingACharacter()
+        {
+            var card = new Card { Name = new string('n', 300), Title = new string('t', 254) + "😀" + new string('t', 300) };
+            var emoji = new Card { Title = new string('t', 499) + "😀" };
+
+            Assert.Equal(255, card.Name.Length);
+            Assert.Equal(500, card.Title.Length);
+            Assert.EndsWith("😀", card.Title.Substring(0, 256));
+            Assert.Equal(new string('t', 499), emoji.Title);
+            Assert.Null(new Card { Name = null }.Name);
+            Assert.Equal("Rem", new Card { Name = "Rem" }.Name);
+        }
+
         [Fact]
         public void Cards_HaveTheIndexesTheQueriesUse()
         {
@@ -79,6 +108,7 @@ namespace Artifacts
             Assert.DoesNotContain("GameDeckId,Active", indexes);
             Assert.Contains("GameDeckId,Rarity,FromFigure,Quality,RestartCnt", indexes);
             Assert.Contains("GameDeckId", indexes);
+            Assert.Contains("Name,Title", indexes);
             Assert.Contains("WhoWantsCount,Character", indexes);
             Assert.Contains("AWhoWantsCount,Character", indexes);
         }
