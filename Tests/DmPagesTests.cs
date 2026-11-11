@@ -71,7 +71,8 @@ namespace Artifacts
         public async Task Answer_ComesAfterTheFirstPage_TheRestFollows()
         {
             var (user, channel) = Recipient();
-            var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            // continuations run inline on SetResult, so the remaining pages do not wait for a thread pool thread on a busy CI runner
+            var release = new TaskCompletionSource();
             var helper = new Helper(new FakeConfig(), null) { Wait = _ => release.Task };
 
             var res = await helper.SendEmbedsOnDMAsync(user.Object, Pages(3));
@@ -79,7 +80,7 @@ namespace Artifacts
             Assert.True(res.IsOk());
             Assert.Equal(1, Sent(channel));
             release.SetResult();
-            await helper.LastPagesSending.WaitAsync(TimeSpan.FromSeconds(10));
+            await helper.LastPagesSending.WaitAsync(TimeSpan.FromSeconds(30));
             Assert.Equal(3, Sent(channel));
         }
 

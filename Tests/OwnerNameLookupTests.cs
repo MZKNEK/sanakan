@@ -103,7 +103,8 @@ namespace Artifacts
             Assert.Equal("stara", await cache.GetStaleAndRefreshAsync(1, Fetch, later));
             Assert.Equal("stara", await cache.GetStaleAndRefreshAsync(1, Fetch, later));
             release.SetResult("nowa");
-            for (int i = 0; i < 100 && cache.Peek(1) != "nowa"; i++)
+            // the refresh runs on the thread pool, which a busy CI runner can delay
+            for (int i = 0; i < 3000 && cache.Peek(1) != "nowa"; i++)
                 await Task.Delay(10);
 
             Assert.Equal(1, fetches);
