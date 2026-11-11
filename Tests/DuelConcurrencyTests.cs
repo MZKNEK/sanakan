@@ -155,7 +155,7 @@ namespace Artifacts
             Assert.Equal(expectedEnemy.SeasonalPVPRank, actualEnemy.SeasonalPVPRank);
             foreach (ulong id in new ulong[] { 61, 62 })
             {
-                var player = await read.GetUserOrCreateAsync(id);
+                var player = await read.GetUserOrCreateAsync(id, _time);
                 Assert.Equal(1UL, player.GameDeck.PVPDailyGamesPlayed);
                 Assert.Equal(FightResult.Win, Assert.Single(player.GameDeck.PvPStats).Result);
                 Assert.True(player.GameDeck.PVPCoins > 0);
@@ -168,10 +168,10 @@ namespace Artifacts
             // the duel no longer loads the whole collection and the fight history
             using (var db = Open())
             {
-                var player = await db.GetUserOrCreateAsync(61);
+                var player = await db.GetUserOrCreateAsync(61, _time);
                 for (int i = 0; i < 3; i++)
                     player.GameDeck.PvPStats.Add(new CardPvPStats { Type = FightType.NewVersus, Result = FightResult.Lose });
-                var enemy = await db.GetUserOrCreateAsync(63);
+                var enemy = await db.GetUserOrCreateAsync(63, _time);
                 db.Cards.Add(new Card { Id = 630, GameDeckId = 63, Character = 630, Name = "Inactive", Active = false, Health = 999, Attack = 999, Defence = 99,
                     Rarity = Rarity.SSS, Dere = Dere.Deredere, Tags = new List<Tag>() });
                 enemy.GameDeck.DeckPower = -5;
@@ -186,12 +186,12 @@ namespace Artifacts
             foreach (var job in jobs) await job.ExecuteAsync(new EmptyServiceProvider());
 
             using var read = Open();
-            var after = await read.GetUserOrCreateAsync(61);
+            var after = await read.GetUserOrCreateAsync(61, _time);
             Assert.Equal(4, after.GameDeck.PvPStats.Count);
             Assert.Equal(3, after.GameDeck.PvPStats.Count(x => x.Result == FightResult.Lose));
             Assert.Equal(1UL, after.GameDeck.PVPDailyGamesPlayed);
 
-            var enemyAfter = await read.GetUserOrCreateAsync(63);
+            var enemyAfter = await read.GetUserOrCreateAsync(63, _time);
             Assert.Equal(2, enemyAfter.GameDeck.Cards.Count);
             Assert.Equal(1, enemyAfter.GameDeck.CardsInDeck);
             Assert.Equal(enemyAfter.GameDeck.CalculateDeckPower(), enemyAfter.GameDeck.DeckPower, 6);
@@ -202,7 +202,7 @@ namespace Artifacts
         {
             using (var db = Open())
             {
-                var user = await db.GetUserOrCreateAsync(61);
+                var user = await db.GetUserOrCreateAsync(61, _time);
                 user.GameDeck.PVPDailyGamesPlayed = 9;
                 user.TimeStatuses.Add(new TimeStatus { Type = StatusType.Pvp, EndsAt = _time.Now().AddDays(1) });
                 await db.SaveChangesAsync();
@@ -216,7 +216,7 @@ namespace Artifacts
             await Queue(module);
             foreach (var job in jobs) await job.ExecuteAsync(new EmptyServiceProvider());
             using var read = Open();
-            var player = await read.GetUserOrCreateAsync(61);
+            var player = await read.GetUserOrCreateAsync(61, _time);
             Assert.Equal(10UL, player.GameDeck.PVPDailyGamesPlayed);
             Assert.Single(player.GameDeck.PvPStats);
             Assert.Equal(60, player.GameDeck.PVPCoins);
@@ -237,7 +237,7 @@ namespace Artifacts
             }
             await queued.ExecuteAsync(new EmptyServiceProvider());
             using var read = Open();
-            var player = await read.GetUserOrCreateAsync(61);
+            var player = await read.GetUserOrCreateAsync(61, _time);
             Assert.Equal(0UL, player.GameDeck.PVPDailyGamesPlayed);
             Assert.Empty(player.GameDeck.PvPStats);
             Assert.Equal(0, player.GameDeck.PVPCoins);
@@ -254,7 +254,7 @@ namespace Artifacts
             await Queue(Module(executor.Object, 61));
             foreach (var job in jobs) await job.ExecuteAsync(new EmptyServiceProvider());
             using var read = Open();
-            var player = await read.GetUserOrCreateAsync(61);
+            var player = await read.GetUserOrCreateAsync(61, _time);
             Assert.Equal(new DateTime(2026, 1, 2), player.TimeStatuses.Single(x => x.Type == StatusType.Pvp).EndsAt);
         }
 
@@ -266,7 +266,7 @@ namespace Artifacts
         {
             using (var db = Open())
             {
-                var user = await db.GetUserOrCreateAsync(61);
+                var user = await db.GetUserOrCreateAsync(61, _time);
                 if (reason == 0)
                 {
                     user.GameDeck.PVPDailyGamesPlayed = 10;

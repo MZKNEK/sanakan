@@ -1780,7 +1780,7 @@ namespace Sanakan.Modules
                     return;
                 }
 
-                var duser = await db.GetUserOrCreateSimpleAsync(user.Id);
+                var duser = await db.GetUserOrCreateSimpleAsync(user.Id, _time);
                 var globalRole = user.Guild.GetRole(guildConfig.GlobalEmotesRole);
                 if (globalRole != null)
                 {
@@ -2051,7 +2051,7 @@ namespace Sanakan.Modules
 
                     if (warning)
                     {
-                        var dbUser = await db.GetUserOrCreateSimpleAsync(user.Id);
+                        var dbUser = await db.GetUserOrCreateSimpleAsync(user.Id, _time);
 
                         ++dbUser.Warnings;
                         warningText = $"ostrzeżenie ({dbUser.Warnings}.)";

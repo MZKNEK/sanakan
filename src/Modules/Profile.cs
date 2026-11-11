@@ -318,7 +318,7 @@ namespace Sanakan.Modules
         {
             using (var db = new Database.DatabaseContext(Config))
             {
-                var botuser = await db.GetUserOrCreateLightAsync(Context.User.Id);
+                var botuser = await db.GetUserOrCreateLightAsync(Context.User.Id, _time);
                 var weeklyQuests = botuser.CreateOrGetAllWeeklyQuests();
                 var dailyQuests = botuser.CreateOrGetAllDailyQuests();
 
@@ -393,7 +393,7 @@ namespace Sanakan.Modules
 
             using (var db = new Database.DatabaseContext(Config))
             {
-                var botuser = await db.GetUserOrCreateSimpleAsync(Context.User.Id);
+                var botuser = await db.GetUserOrCreateSimpleAsync(Context.User.Id, _time);
 
                 if (config.ChangesNothing(botuser))
                 {
@@ -555,7 +555,7 @@ namespace Sanakan.Modules
         {
             using (var db = new Database.DatabaseContext(Config))
             {
-                var botuser = await db.GetUserOrCreateSimpleAsync(Context.User.Id);
+                var botuser = await db.GetUserOrCreateSimpleAsync(Context.User.Id, _time);
                 if (config.Code == null)
                 {
                     await ShowProfileCodeAsync(db, botuser, config.WithImages);
@@ -596,7 +596,7 @@ namespace Sanakan.Modules
                 var session = new AcceptSession(Context.User, null, Context.Client.CurrentUser);
                 await _session.KillSessionIfExistAsync(session);
 
-                var actions = new AcceptProfileCode(Config)
+                var actions = new AcceptProfileCode(Config, _time)
                 {
                     User = Context.User,
                     Code = code,
@@ -738,7 +738,7 @@ namespace Sanakan.Modules
 
             using (var db = new Database.DatabaseContext(Config))
             {
-                var botuser = await db.GetUserOrCreateSimpleAsync(user.Id);
+                var botuser = await db.GetUserOrCreateSimpleAsync(user.Id, _time);
                 if (botuser.TcCnt < cost)
                 {
                     await SafeReplyAsync("", embed: $"{user.Mention} nie posiadasz wystarczającej liczby TC!".ToEmbedMessage(EMType.Error).Build());
@@ -801,7 +801,7 @@ namespace Sanakan.Modules
 
             using (var db = new Database.DatabaseContext(Config))
             {
-                var botuser = await db.GetUserOrCreateSimpleAsync(user.Id);
+                var botuser = await db.GetUserOrCreateSimpleAsync(user.Id, _time);
                 var colort = botuser.TimeStatuses.FirstOrDefault(x => x.Type == StatusType.RainbowColor && x.Guild == Context.Guild.Id);
                 if (colort == null)
                 {
@@ -879,7 +879,7 @@ namespace Sanakan.Modules
 
             using (var db = new Database.DatabaseContext(Config))
             {
-                var botuser = await db.GetUserOrCreateSimpleAsync(user.Id);
+                var botuser = await db.GetUserOrCreateSimpleAsync(user.Id, _time);
                 var points = currency == CurrencyType.TC ? botuser.TcCnt : botuser.ScCnt;
                 var gConfig = await db.GetCachedGuildFullConfigAsync(Context.Guild.Id);
                 var hasNitro = gConfig.NitroRole != 0 && ((Context.User as SocketGuildUser)?.Roles?.Any(x => x.Id == gConfig.NitroRole) ?? false);

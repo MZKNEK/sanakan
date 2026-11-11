@@ -180,7 +180,7 @@ namespace Sanakan.Api.Controllers
 
             return RunAsPlayerAsync("tag-create", async (db, discordId) =>
             {
-                var buser = await db.GetUserOrCreateSimpleAsync(discordId);
+                var buser = await db.GetUserOrCreateSimpleAsync(discordId, _time);
                 if (buser.GameDeck.MaxNumberOfTags <= buser.GameDeck.Tags.Count)
                     return "Tag limit reached!".ToResponse(406);
 
@@ -214,7 +214,7 @@ namespace Sanakan.Api.Controllers
 
             return RunAsPlayerAsync("tag-rename", async (db, discordId) =>
             {
-                var buser = await db.GetUserOrCreateSimpleAsync(discordId);
+                var buser = await db.GetUserOrCreateSimpleAsync(discordId, _time);
                 var tag = buser.GameDeck.Tags.FirstOrDefault(x => x.Id == id);
                 if (tag == null)
                     return "Tag not found!".ToResponse(404);
@@ -241,7 +241,7 @@ namespace Sanakan.Api.Controllers
         public Task<IActionResult> DeleteTagAsync(ulong id)
             => RunAsPlayerAsync("tag-delete", async (db, discordId) =>
             {
-                var buser = await db.GetUserOrCreateSimpleAsync(discordId);
+                var buser = await db.GetUserOrCreateSimpleAsync(discordId, _time);
                 var tag = buser.GameDeck.Tags.FirstOrDefault(x => x.Id == id);
                 if (tag == null)
                     return "Tag not found!".ToResponse(404);
@@ -260,7 +260,7 @@ namespace Sanakan.Api.Controllers
         public Task<IActionResult> SetTagsOrderAsync([FromBody] TagsOrder order)
             => RunAsPlayerAsync("tag-order", async (db, discordId) =>
             {
-                var buser = await db.GetUserOrCreateSimpleAsync(discordId);
+                var buser = await db.GetUserOrCreateSimpleAsync(discordId, _time);
                 buser.GameDeck.TagsOrder = order;
                 await db.SaveChangesAsync();
 
@@ -304,7 +304,7 @@ namespace Sanakan.Api.Controllers
 
             return RunAsPlayerAsync("exchange-conditions", async (db, discordId) =>
             {
-                var buser = await db.GetUserOrCreateSimpleAsync(discordId);
+                var buser = await db.GetUserOrCreateSimpleAsync(discordId, _time);
                 buser.GameDeck.ExchangeConditions = string.IsNullOrWhiteSpace(conditions) ? null : conditions;
                 await db.SaveChangesAsync();
 
@@ -330,7 +330,7 @@ namespace Sanakan.Api.Controllers
                 if (owned.Count != unique.Count)
                     return "Some cards are not yours!".ToResponse(400);
 
-                var buser = await db.GetUserOrCreateSimpleAsync(discordId);
+                var buser = await db.GetUserOrCreateSimpleAsync(discordId, _time);
                 buser.GameDeck.GalleryOrderedIds = string.Join(" ", unique);
                 await db.SaveChangesAsync();
 
@@ -351,7 +351,7 @@ namespace Sanakan.Api.Controllers
                 if (_sessions.SessionExist(discordId, typeof(ExchangeSession)))
                     return "User is in an exchange!".ToResponse(409);
 
-                var buser = await db.GetUserOrCreateAsync(discordId);
+                var buser = await db.GetUserOrCreateAsync(discordId, _time);
                 if (wid == 0)
                 {
                     if (buser.GameDeck.Waifu != 0)

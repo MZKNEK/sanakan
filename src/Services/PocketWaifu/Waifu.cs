@@ -1001,7 +1001,7 @@ namespace Sanakan.Services.PocketWaifu
 
             using (var db = new Database.DatabaseContext(config))
             {
-                var bUser = await db.GetUserOrCreateAsync(discordUser.Id);
+                var bUser = await db.GetUserOrCreateAsync(discordUser.Id, _time);
                 if (!CheckIfUserCanBuy(type, bUser, realCost))
                 {
                     return $"{discordUser.Mention} nie posiadasz wystarczającej liczby {GetShopCurrencyName(type)}!".ToEmbedMessage(EMType.Error).Build();

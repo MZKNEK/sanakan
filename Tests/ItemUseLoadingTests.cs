@@ -54,7 +54,7 @@ namespace Artifacts
             _paths.Add(path);
             using var db = new TestDatabase(path);
             db.Database.EnsureCreated();
-            var tags = await TagHelper.CreateAsync(db);
+            var tags = await TagHelper.CreateAsync(db, _time);
 
             var user = new User().Default(Player, _time.Now());
             user.GameDeck.Waifu = Waifu;
@@ -79,7 +79,7 @@ namespace Artifacts
             var (path, waifu) = await SeedAsync();
             using (var db = new TestDatabase(path))
             {
-                var user = narrow ? await db.GetUserOrCreateWithCardsAsync(Player, wid) : await db.GetUserOrCreateAsync(Player);
+                var user = narrow ? await db.GetUserOrCreateWithCardsAsync(Player, _time, wid) : await db.GetUserOrCreateAsync(Player, _time);
                 var number = user.GetAllItems().ToList().FindIndex(x => x.Type == type) + 1;
                 var res = await waifu.UseItemAsync(user, "gracz", number, wid, detail);
                 user.MarkActivity(_time.Now());
@@ -135,7 +135,7 @@ namespace Artifacts
             var (path, _) = await SeedAsync();
             using var db = new TestDatabase(path);
 
-            var user = await db.GetUserOrCreateWithCardsAsync(Player, 502);
+            var user = await db.GetUserOrCreateWithCardsAsync(Player, _time, 502);
 
             Assert.Equal(new ulong[] { 502 }, user.GameDeck.Cards.Select(x => x.Id));
             Assert.Equal(7, user.GameDeck.Items.Count);

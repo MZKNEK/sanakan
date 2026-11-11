@@ -58,7 +58,7 @@ namespace Artifacts
                 await db.MarkUserLeftAsync(10, _now);
 
             using var read = Open();
-            var user = await read.GetUserOrCreateAsync(10);
+            var user = await read.GetUserOrCreateAsync(10, new FixedTime());
             Assert.Equal(_now, user.LeftAt);
             Assert.Equal(1234, user.TcCnt);
             Assert.Single(user.GameDeck.Cards);
@@ -88,11 +88,11 @@ namespace Artifacts
             {
                 Assert.False(await db.ClearUserLeftAsync(10));
                 Assert.Empty(await db.GetUsersLeftBeforeAsync(Cutoff));
-                Assert.False(await db.RemoveUserLeftBeforeAsync(10, Cutoff));
+                Assert.False(await db.RemoveUserLeftBeforeAsync(10, Cutoff, new FixedTime()));
             }
 
             using var read = Open();
-            var user = await read.GetUserOrCreateAsync(10);
+            var user = await read.GetUserOrCreateAsync(10, new FixedTime());
             Assert.Null(user.LeftAt);
             Assert.Single(user.GameDeck.Cards);
         }
@@ -111,9 +111,9 @@ namespace Artifacts
                 Assert.Equal(new ulong[] { 30 }, await db.GetUsersLeftBeforeAsync(Cutoff));
 
             using (var db = Open())
-                Assert.False(await db.RemoveUserLeftBeforeAsync(20, Cutoff));
+                Assert.False(await db.RemoveUserLeftBeforeAsync(20, Cutoff, new FixedTime()));
             using (var db = Open())
-                Assert.True(await db.RemoveUserLeftBeforeAsync(30, Cutoff));
+                Assert.True(await db.RemoveUserLeftBeforeAsync(30, Cutoff, new FixedTime()));
 
             using var read = Open();
             Assert.True(await read.Users.AnyAsync(x => x.Id == 20));
@@ -131,7 +131,7 @@ namespace Artifacts
         public async Task RemovingWithCards_DeletesThem()
         {
             using (var db = Open())
-                await db.RemoveUserAsync(10, removeCards: true);
+                await db.RemoveUserAsync(10, new FixedTime(), removeCards: true);
 
             using var read = Open();
             Assert.False(await read.Users.AnyAsync(x => x.Id == 10));
@@ -163,9 +163,9 @@ namespace Artifacts
 
             using (var db = Open())
             {
-                Assert.False(await db.RemoveUserWithoutLeaveDateAsync(20));
-                Assert.False(await db.RemoveUserWithoutLeaveDateAsync(1));
-                Assert.True(await db.RemoveUserWithoutLeaveDateAsync(10));
+                Assert.False(await db.RemoveUserWithoutLeaveDateAsync(20, new FixedTime()));
+                Assert.False(await db.RemoveUserWithoutLeaveDateAsync(1, new FixedTime()));
+                Assert.True(await db.RemoveUserWithoutLeaveDateAsync(10, new FixedTime()));
             }
 
             using var read = Open();

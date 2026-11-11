@@ -71,7 +71,7 @@ namespace Artifacts
         private async Task<bool> GrantAsync(ulong id, DateTime now, long limit = 3)
         {
             using var db = Open();
-            return await Spawn.TryGrantActivityPacketAsync(db, id, now, limit);
+            return await Spawn.TryGrantActivityPacketAsync(db, id, new FixedTime { Value = now }, limit);
         }
 
         [Fact]

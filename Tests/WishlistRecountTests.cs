@@ -88,7 +88,7 @@ namespace Artifacts
 
             using (var db = Open())
             {
-                var user = await db.GetUserOrCreateAsync(1);
+                var user = await db.GetUserOrCreateAsync(1, new FixedTime());
                 Assert.True(await user.GameDeck.RemoveCharacterFromWishListAsync(100, db));
                 Assert.Empty(user.GameDeck.Wishes);
                 await db.SaveChangesAsync();
@@ -115,7 +115,7 @@ namespace Artifacts
             async Task SetPrivate(bool value)
             {
                 using var db = Open();
-                var user = await db.GetUserOrCreateAsync(1);
+                var user = await db.GetUserOrCreateAsync(1, new FixedTime());
                 await db.ChangeWishlistCountsAsync(user.GameDeck.Wishes, value ? -1 : 1);
                 user.GameDeck.WishlistIsPrivate = value;
                 await db.SaveChangesAsync();

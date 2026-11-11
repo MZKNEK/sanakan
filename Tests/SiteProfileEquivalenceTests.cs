@@ -48,7 +48,7 @@ namespace Artifacts
         {
             if (_tags != null) return _tags;
             using var db = new DatabaseContext(_config);
-            return _tags = await TagHelper.CreateAsync(db);
+            return _tags = await TagHelper.CreateAsync(db, _time);
         }
 
         private Waifu NewWaifu() => new Waifu(null, null, null, new ListLogger(), null, null, null, _time, null, null, _config);

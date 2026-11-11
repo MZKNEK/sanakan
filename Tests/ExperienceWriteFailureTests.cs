@@ -111,7 +111,7 @@ namespace Artifacts
             await Execute(1);
             using (var db = Open())
             {
-                var saved = await db.GetUserOrCreateSimpleAsync(_user.Id);
+                var saved = await db.GetUserOrCreateSimpleAsync(_user.Id, _time);
                 Assert.Equal(18, saved.ExpCnt);
                 Assert.Equal(3UL, saved.MessagesCnt);
                 Assert.Equal(1UL, saved.CommandsCnt);
@@ -144,7 +144,7 @@ namespace Artifacts
             Assert.Equal(2, _jobs.Count);
             await Execute(1);
             using var db = Open();
-            var saved = await db.GetUserOrCreateSimpleAsync(_user.Id);
+            var saved = await db.GetUserOrCreateSimpleAsync(_user.Id, _time);
             Assert.Equal(10, saved.ExpCnt);
             Assert.Equal(4UL, saved.MessagesCnt);
             Assert.Equal(60UL, saved.CharacterCntFromDate);
@@ -165,7 +165,7 @@ namespace Artifacts
             await Execute(1);
             await Execute(2);
             using var db = Open();
-            var saved = await db.GetUserOrCreateSimpleAsync(_user.Id);
+            var saved = await db.GetUserOrCreateSimpleAsync(_user.Id, _time);
             Assert.Equal(20, saved.ExpCnt);
             Assert.Equal(3UL, saved.MessagesCnt);
             Assert.Equal(660UL, saved.CharacterCntFromDate);

@@ -38,7 +38,7 @@ namespace Artifacts
         {
             using var db = new TestDatabase(_path);
             db.Database.EnsureCreated();
-            var tags = await TagHelper.CreateAsync(db);
+            var tags = await TagHelper.CreateAsync(db, _time);
 
             var user = new User().Default(Player, _time.Now());
             user.GameDeck.Karma = 50;
@@ -68,7 +68,7 @@ namespace Artifacts
             foreach (var e in Enum.GetValues<EventType>())
             {
                 using var db = new TestDatabase(_path);
-                var user = await db.GetUserOrCreateWithCardsAsync(Player, Card);
+                var user = await db.GetUserOrCreateWithCardsAsync(Player, _time, Card);
                 var card = user.GetCard(Card);
                 var msg = "";
 
@@ -100,7 +100,7 @@ namespace Artifacts
             for (int i = 0; i < 60; i++)
             {
                 using var db = new TestDatabase(_path);
-                var user = await db.GetUserOrCreateWithCardsAsync(Player, Card);
+                var user = await db.GetUserOrCreateWithCardsAsync(Player, _time, Card);
                 var message = waifu.EndExpedition(user, user.GetCard(Card));
                 Assert.False(string.IsNullOrEmpty(message));
                 if (i == 59)
@@ -117,7 +117,7 @@ namespace Artifacts
 
             using (var db = new TestDatabase(_path))
             {
-                var user = await db.GetUserOrCreateWithCardsAsync(Player, Card);
+                var user = await db.GetUserOrCreateWithCardsAsync(Player, _time, Card);
                 var card = user.GetCard(Card);
                 card.DestroyOrRelease(user, release, 0.14);
                 user.GameDeck.Cards.Remove(card);

@@ -425,8 +425,8 @@ namespace Sanakan.Services.Session.Models
 
         private async Task<string> FinalizeExchangeAsync(Database.DatabaseContext db)
         {
-            var user1 = await db.GetUserOrCreateAsync(P1.User.Id);
-            var user2 = await db.GetUserOrCreateAsync(P2.User.Id);
+            var user1 = await db.GetUserOrCreateAsync(P1.User.Id, _time);
+            var user2 = await db.GetUserOrCreateAsync(P2.User.Id, _time);
             var cards1 = P1.Cards.Select(c => user1.GetCard(c.Id)).ToList();
             var cards2 = P2.Cards.Select(c => user2.GetCard(c.Id)).ToList();
 

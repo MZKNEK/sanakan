@@ -213,7 +213,7 @@ namespace Sanakan.Modules
         {
             using (var db = new Database.DatabaseContext(Config))
             {
-                var botuser = await db.GetUserOrCreateSimpleAsync(Context.User.Id);
+                var botuser = await db.GetUserOrCreateSimpleAsync(Context.User.Id, _time);
                 var charInfo = await _waifu.IsInPoolAsync(botuser.PoolType, id);
 
                 string moreInfo = charInfo is null ? $"{id} nie znajduje się w puli."
@@ -244,7 +244,7 @@ namespace Sanakan.Modules
 
             using (var db = new Database.DatabaseContext(Config))
             {
-                var botuser = await db.GetUserOrCreateAsync(Context.User.Id);
+                var botuser = await db.GetUserOrCreateAsync(Context.User.Id, _time);
                 switch (type.ToUpper())
                 {
                     case "BG":
@@ -380,7 +380,7 @@ namespace Sanakan.Modules
 
             using (var db = new Database.DatabaseContext(Config))
             {
-                var botuser = await db.GetUserOrCreateAsync(Context.User.Id);
+                var botuser = await db.GetUserOrCreateAsync(Context.User.Id, _time);
                 var thisCard = botuser.GetCard(wid);
                 if (thisCard == null)
                 {
@@ -451,7 +451,7 @@ namespace Sanakan.Modules
 
             using (var db = new Database.DatabaseContext(Config))
             {
-                var botuser = await db.GetUserOrCreateAsync(Context.User.Id);
+                var botuser = await db.GetUserOrCreateAsync(Context.User.Id, _time);
                 var thisCard = botuser.GetCard(wid);
                 if (thisCard == null)
                 {

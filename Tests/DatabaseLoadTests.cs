@@ -158,7 +158,7 @@ namespace Artifacts
 
             using (var db = new TestDatabase(path))
             {
-                await db.RemoveUserAsync(30);
+                await db.RemoveUserAsync(30, new FixedTime());
                 Assert.DoesNotContain(db.ChangeTracker.Entries<Card>(), x => x.Entity.Id == 500 || x.Entity.Id == 501);
             }
 
@@ -179,7 +179,7 @@ namespace Artifacts
             }
 
             using (var db = new TestDatabase(path))
-                await db.RemoveUserAsync(30);
+                await db.RemoveUserAsync(30, new FixedTime());
 
             using var read = new TestDatabase(path);
             Assert.True(await read.Users.AnyAsync(x => x.Id == 1));
@@ -327,7 +327,7 @@ namespace Artifacts
 
             using (var db = new TestDatabase(path))
             {
-                var user = await db.GetUserOrCreateLightAsync(10);
+                var user = await db.GetUserOrCreateLightAsync(10, new FixedTime());
 
                 Assert.Single(user.TimeStatuses);
                 Assert.NotNull(user.Stats);
@@ -337,7 +337,7 @@ namespace Artifacts
                 Assert.Null(user.GameDeck.Wishes);
                 Assert.Null(user.GameDeck.Cards);
 
-                var created = await db.GetUserOrCreateLightAsync(30);
+                var created = await db.GetUserOrCreateLightAsync(30, new FixedTime());
                 Assert.Equal(EntityState.Added, db.Entry(created).State);
                 await db.SaveChangesAsync();
             }

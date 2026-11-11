@@ -435,7 +435,7 @@ namespace Sanakan.Api.Controllers
                         return;
                     }
 
-                    botUser = await db.GetUserOrCreateSimpleAsync(id.DiscordUserId);
+                    botUser = await db.GetUserOrCreateSimpleAsync(id.DiscordUserId, _time);
                     botUser.Shinden = id.ShindenUserId;
                     await db.SaveChangesAsync();
                     QueryCache.ExpireTag(new string[] { CacheTags.User(id.DiscordUserId), CacheTags.UserProfile(id.ShindenUserId) });
@@ -603,7 +603,7 @@ namespace Sanakan.Api.Controllers
                 {
                     using (var dbc = CreateDatabaseContext())
                     {
-                        user = await dbc.GetUserOrCreateSimpleAsync(id);
+                        user = await dbc.GetUserOrCreateSimpleAsync(id, _time);
                         var beforeChange = user.TcCnt;
                         user.TcCnt += value;
 

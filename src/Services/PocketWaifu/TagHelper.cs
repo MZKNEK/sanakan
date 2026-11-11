@@ -20,7 +20,7 @@ namespace Sanakan.Services.PocketWaifu
 
         private TagHelper() { }
 
-        public static async Task<TagHelper> CreateAsync(DatabaseContext db)
+        public static async Task<TagHelper> CreateAsync(DatabaseContext db, Services.Time.ISystemTime time)
         {
             var helper = new TagHelper();
 
@@ -33,7 +33,7 @@ namespace Sanakan.Services.PocketWaifu
                 (TagType.TrashBin,    "kosz",       "🗑️", 0),
             };
 
-            var botUser = await db.GetUserOrCreateSimpleAsync(1);
+            var botUser = await db.GetUserOrCreateSimpleAsync(1, time);
             foreach (var tag in setup)
             {
                 var thisTag = botUser.GameDeck.Tags.FirstOrDefault(x => x.Name.Equals(tag.name, System.StringComparison.CurrentCultureIgnoreCase));

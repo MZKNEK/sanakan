@@ -235,7 +235,7 @@ namespace Sanakan.Services
                         {
                             using (var db = new Database.DatabaseContext(_config))
                             {
-                                await db.RemoveUserLeftBeforeAsync(userId, cutoff);
+                                await db.RemoveUserLeftBeforeAsync(userId, cutoff, _time);
                             }
                         }
                         catch (Exception ex)

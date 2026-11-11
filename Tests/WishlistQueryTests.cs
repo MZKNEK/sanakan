@@ -72,7 +72,7 @@ namespace Artifacts
         {
             using var db = new TestDatabase(_path);
             db.Database.EnsureCreated();
-            var tags = await TagHelper.CreateAsync(db);
+            var tags = await TagHelper.CreateAsync(db, _time);
             var favId = tags.GetTagId(TagType.Favorite);
             var fav = await db.Tags.FirstAsync(x => x.Id == favId);
 

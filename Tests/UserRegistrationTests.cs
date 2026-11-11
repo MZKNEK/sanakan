@@ -81,7 +81,7 @@ namespace Artifacts
 
             Assert.Equal(200, result.StatusOf());
             using var db = Open();
-            var user = await db.GetUserOrCreateSimpleAsync(10);
+            var user = await db.GetUserOrCreateSimpleAsync(10, new FixedTime());
             Assert.Equal(42ul, user.Shinden);
             Assert.NotNull(user.Stats);
             Assert.NotNull(user.SMConfig);
@@ -284,7 +284,7 @@ namespace Artifacts
 
             using (var db = Open())
             {
-                var user = await db.GetUserOrCreateSimpleAsync(10);
+                var user = await db.GetUserOrCreateSimpleAsync(10, new FixedTime());
                 Assert.Equal(0ul, user.Shinden);
                 Assert.Equal(1234, user.TcCnt);
                 Assert.NotNull(user.Stats);

@@ -46,7 +46,7 @@ namespace Sanakan.Modules
         {
             using (var db = new Database.DatabaseContext(Config))
             {
-                var botuser = await db.GetUserOrCreateLightAsync(Context.User.Id);
+                var botuser = await db.GetUserOrCreateLightAsync(Context.User.Id, _time);
                 var daily = botuser.TimeStatuses.FirstOrDefault(x => x.Type == Database.Models.StatusType.Daily);
                 if (daily == null)
                 {
@@ -158,7 +158,7 @@ namespace Sanakan.Modules
         {
             using (var db = new Database.DatabaseContext(Config))
             {
-                var botuser = await db.GetUserOrCreateLightAsync(Context.User.Id);
+                var botuser = await db.GetUserOrCreateLightAsync(Context.User.Id, _time);
                 var hourly = botuser.TimeStatuses.FirstOrDefault(x => x.Type == Database.Models.StatusType.Hourly);
                 if (hourly == null)
                 {
@@ -225,7 +225,7 @@ namespace Sanakan.Modules
 
             using (var db = new Database.DatabaseContext(Config))
             {
-                var botuser = await db.GetUserOrCreateLightAsync(Context.User.Id);
+                var botuser = await db.GetUserOrCreateLightAsync(Context.User.Id, _time);
                 if (botuser.ScCnt < amount)
                 {
                     await SafeReplyAsync("", embed: $"{Context.User.Mention} nie posiadasz wystarczającej liczby SC!".ToEmbedMessage(EMType.Error).Build());
@@ -276,7 +276,7 @@ namespace Sanakan.Modules
 
             using (var db = new Database.DatabaseContext(Config))
             {
-                var botuser = await db.GetUserOrCreateSimpleAsync(Context.User.Id);
+                var botuser = await db.GetUserOrCreateSimpleAsync(Context.User.Id, _time);
                 if (!botuser.ApplySlotMachineSetting(setting, value))
                 {
                     await SafeReplyAsync("", embed: $"Podano niewłaściwą wartość parametru!".ToEmbedMessage(EMType.Error).Build());
@@ -305,7 +305,7 @@ namespace Sanakan.Modules
 
             using (var db = new Database.DatabaseContext(Config))
             {
-                var botuser = await db.GetUserOrCreateSimpleAsync(Context.User.Id);
+                var botuser = await db.GetUserOrCreateSimpleAsync(Context.User.Id, _time);
                 var machine = new SlotMachine(botuser);
 
                 var toPay = machine.ToPay();
@@ -351,8 +351,8 @@ namespace Sanakan.Modules
                     return;
                 }
 
-                var targetUser = await db.GetUserOrCreateSimpleAsync(user.Id);
-                var thisUser = await db.GetUserOrCreateSimpleAsync(Context.User.Id);
+                var targetUser = await db.GetUserOrCreateSimpleAsync(user.Id, _time);
+                var thisUser = await db.GetUserOrCreateSimpleAsync(Context.User.Id, _time);
 
                 if (thisUser.ScCnt < value)
                 {

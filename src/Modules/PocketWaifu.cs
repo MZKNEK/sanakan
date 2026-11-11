@@ -418,7 +418,7 @@ namespace Sanakan.Modules
         {
             using (var db = new Database.DatabaseContext(Config))
             {
-                var user = await db.GetUserOrCreateAsync(Context.User.Id);
+                var user = await db.GetUserOrCreateAsync(Context.User.Id, _time);
                 var fig = user.GameDeck.Figures.FirstOrDefault(x => x.IsFocus);
                 if (fig == null)
                 {
@@ -599,7 +599,7 @@ namespace Sanakan.Modules
 
             using (var db = new Database.DatabaseContext(Config))
             {
-                var bUser = await db.GetUserOrCreateWithCardsAsync(Context.User.Id, wid);
+                var bUser = await db.GetUserOrCreateWithCardsAsync(Context.User.Id, _time, wid);
                 var res = await _waifu.UseItemAsync(bUser, Context.User.GetUserNickInGuild(), itemNumber, wid, detail, itemToExp, attachmentUrl);
 
                 if (res.IsError())
@@ -630,7 +630,7 @@ namespace Sanakan.Modules
         {
             using (var db = new Database.DatabaseContext(Config))
             {
-                var bUser = await db.GetUserOrCreateAsync(Context.User.Id);
+                var bUser = await db.GetUserOrCreateAsync(Context.User.Id, _time);
                 if (bUser.PoolType != CharacterPoolType.Anime)
                 {
                     await SafeReplyAsync("", embed: $"{Context.User.Mention} twoja pula postaci została już wcześniej rozszerzona.".ToEmbedMessage(EMType.Error).Build());
@@ -678,7 +678,7 @@ namespace Sanakan.Modules
             using (var db = new Database.DatabaseContext(Config))
             {
                 await db.Database.OpenConnectionAsync();
-                var bUser = await db.GetUserOrCreateAsync(Context.User.Id);
+                var bUser = await db.GetUserOrCreateAsync(Context.User.Id, _time);
 
                 if (bUser.GameDeck.BoosterPacks.Count < 1)
                 {
@@ -867,7 +867,7 @@ namespace Sanakan.Modules
 
             using (var db = new Database.DatabaseContext(Config))
             {
-                var bUser = await db.GetUserOrCreateAsync(Context.User.Id);
+                var bUser = await db.GetUserOrCreateAsync(Context.User.Id, _time);
                 var card = bUser.GameDeck.Cards.FirstOrDefault(x => x.Id == id);
 
                 if (card == null)
@@ -939,7 +939,7 @@ namespace Sanakan.Modules
 
             using (var db = new Database.DatabaseContext(Config))
             {
-                var bUser = await db.GetUserOrCreateAsync(Context.User.Id);
+                var bUser = await db.GetUserOrCreateAsync(Context.User.Id, _time);
                 var card = bUser.GameDeck.Cards.FirstOrDefault(x => x.Id == id);
 
                 if (card == null)
@@ -1002,7 +1002,7 @@ namespace Sanakan.Modules
 
             using (var db = new Database.DatabaseContext(Config))
             {
-                var bUser = await db.GetUserOrCreateAsync(Context.User.Id);
+                var bUser = await db.GetUserOrCreateAsync(Context.User.Id, _time);
                 var card = bUser.GameDeck.Cards.FirstOrDefault(x => x.Id == id);
 
                 if (card == null)
@@ -1180,7 +1180,7 @@ namespace Sanakan.Modules
 
             using (var db = new Database.DatabaseContext(Config))
             {
-                var bUser = await db.GetUserOrCreateAsync(Context.User.Id);
+                var bUser = await db.GetUserOrCreateAsync(Context.User.Id, _time);
                 var res = _waifu.DestroyOrReleaseCards(bUser, ids, true, _tags.GetTagId(Services.PocketWaifu.TagType.TrashBin));
 
                 if (res.IsError())
@@ -1207,7 +1207,7 @@ namespace Sanakan.Modules
 
             using (var db = new Database.DatabaseContext(Config))
             {
-                var bUser = await db.GetUserOrCreateAsync(Context.User.Id);
+                var bUser = await db.GetUserOrCreateAsync(Context.User.Id, _time);
                 var res = _waifu.DestroyOrReleaseCards(bUser, ids, false, _tags.GetTagId(Services.PocketWaifu.TagType.TrashBin));
 
                 if (res.IsError())
@@ -1234,7 +1234,7 @@ namespace Sanakan.Modules
 
             using (var db = new Database.DatabaseContext(Config))
             {
-                var bUser = await db.GetUserOrCreateAsync(Context.User.Id);
+                var bUser = await db.GetUserOrCreateAsync(Context.User.Id, _time);
                 if (bUser.GameDeck.ExpContainer.Level == ExpContainerLevel.Disabled)
                 {
                     await SafeReplyAsync("", embed: $"{Context.User.Mention} nie posiadasz jeszcze skrzyni doświadczenia.".ToEmbedMessage(EMType.Error).Build());
@@ -1317,7 +1317,7 @@ namespace Sanakan.Modules
 
             using (var db = new Database.DatabaseContext(Config))
             {
-                var bUser = await db.GetUserOrCreateAsync(Context.User.Id);
+                var bUser = await db.GetUserOrCreateAsync(Context.User.Id, _time);
                 var cardsToSac = bUser.GetCards(ids).ToList();
 
                 if (cardsToSac.Count < 1)
@@ -1433,7 +1433,7 @@ namespace Sanakan.Modules
 
             using (var db = new Database.DatabaseContext(Config))
             {
-                var botuser = await db.GetUserOrCreateAsync(Context.User.Id);
+                var botuser = await db.GetUserOrCreateWithUltimateCardsAsync(Context.User.Id, _time);
                 var freeCard = botuser.TimeStatuses.FirstOrDefault(x => x.Type == StatusType.Card);
                 if (freeCard == null)
                 {
@@ -1449,7 +1449,7 @@ namespace Sanakan.Modules
                     return;
                 }
 
-                if (botuser.GameDeck.Cards.Count + 1 > botuser.GameDeck.MaxNumberOfCards)
+                if (await db.CountCardsAsync(botuser.Id) + 1 > botuser.GameDeck.MaxNumberOfCards)
                 {
                     await SafeReplyAsync("", embed: $"{Context.User.Mention} nie masz już miejsca na kolejną kartę!".ToEmbedMessage(EMType.Error).Build());
                     return;
@@ -1477,6 +1477,7 @@ namespace Sanakan.Modules
                 var card = _waifu.GenerateNewCard(Context.User, character.CharInfo,
                     new List<Rarity>() { Rarity.SS, Rarity.S, Rarity.A });
 
+                await db.LoadCharacterWishAsync(botuser.GameDeck, card.Character);
                 bool isOnUserWishlist = await botuser.GameDeck.RemoveCharacterFromWishListAsync(card.Character, db);
                 card.Affection += botuser.GameDeck.AffectionFromKarma();
                 card.Source = CardSource.Daily;
@@ -1532,7 +1533,7 @@ namespace Sanakan.Modules
 
             using (var db = new Database.DatabaseContext(Config))
             {
-                var botuser = await db.GetUserOrCreateAsync(Context.User.Id);
+                var botuser = await db.GetUserOrCreateAsync(Context.User.Id, _time);
                 if (botuser.GameDeck.IsMarketDisabled())
                 {
                     await SafeReplyAsync("", embed: $"{Context.User.Mention} wszyscy na twój widok się rozbiegli, nic dziś nie zdziałasz.".ToEmbedMessage(EMType.Error).Build());
@@ -1662,7 +1663,7 @@ namespace Sanakan.Modules
 
             using (var db = new Database.DatabaseContext(Config))
             {
-                var botuser = await db.GetUserOrCreateAsync(Context.User.Id);
+                var botuser = await db.GetUserOrCreateAsync(Context.User.Id, _time);
                 if (botuser.GameDeck.IsBlackMarketDisabled())
                 {
                     await SafeReplyAsync("", embed: $"{Context.User.Mention} halo koleżko, to nie miejsce dla Ciebie!".ToEmbedMessage(EMType.Error).Build());
@@ -1778,7 +1779,7 @@ namespace Sanakan.Modules
 
             using (var db = new Database.DatabaseContext(Config))
             {
-                var bUser = await db.GetUserOrCreateAsync(Context.User.Id);
+                var bUser = await db.GetUserOrCreateAsync(Context.User.Id, _time);
 
                 var cardToUp = bUser.GetCard(idToUp);
                 var cardsToSac = bUser.GetCards(idsToSac).ToList();
@@ -1855,7 +1856,7 @@ namespace Sanakan.Modules
 
             using (var db = new Database.DatabaseContext(Config))
             {
-                var bUser = await db.GetUserOrCreateAsync(user.Id);
+                var bUser = await db.GetUserOrCreateAsync(user.Id, _time);
                 var cardsInCage = bUser.GameDeck.Cards.Where(x => x.InCage);
 
                 var cntIn = cardsInCage.Count();
@@ -1953,7 +1954,7 @@ namespace Sanakan.Modules
         {
             using (var db = new Database.DatabaseContext(Config))
             {
-                var bUser = await db.GetUserOrCreateSimpleAsync(Context.User.Id);
+                var bUser = await db.GetUserOrCreateSimpleAsync(Context.User.Id, _time);
                 var objs = bUser.GameDeck.Wishes.Where(x => x.Type == type && ids.Any(c => c == x.ObjectId)).ToList();
                 if (objs.Count < 1)
                 {
@@ -1989,7 +1990,7 @@ namespace Sanakan.Modules
                 using (var db = new Database.DatabaseContext(Config))
                 {
                     string response = "";
-                    var bUser = await db.GetUserOrCreateSimpleAsync(Context.User.Id);
+                    var bUser = await db.GetUserOrCreateSimpleAsync(Context.User.Id, _time);
                     var objs = bUser.GameDeck.Wishes.Where(x => x.Type == type && ids.Any(c => c == x.ObjectId)).ToList();
                     if (objs.Count >= 1)
                     {
@@ -2096,7 +2097,7 @@ namespace Sanakan.Modules
             using (var db = new Database.DatabaseContext(Config))
             {
                 string response = "";
-                var bUser = await db.GetUserOrCreateSimpleAsync(Context.User.Id);
+                var bUser = await db.GetUserOrCreateSimpleAsync(Context.User.Id, _time);
                 if (bUser.GameDeck.Wishes.Any(x => x.Type == type && x.ObjectId == id))
                 {
                     await SafeReplyAsync("", embed: "Już masz taki wpis na liście życzeń!".ToEmbedMessage(EMType.Error).Build());
@@ -2169,7 +2170,7 @@ namespace Sanakan.Modules
         {
             using (var db = new Database.DatabaseContext(Config))
             {
-                var bUser = await db.GetUserOrCreateAsync(Context.User.Id);
+                var bUser = await db.GetUserOrCreateAsync(Context.User.Id, _time);
                 if (bUser.GameDeck.WishlistIsPrivate == view)
                 {
                     await db.ChangeWishlistCountsAsync(bUser.GameDeck.Wishes, view ? 1 : -1);
@@ -2218,7 +2219,7 @@ namespace Sanakan.Modules
             {
                 using (var db = new Database.DatabaseContext(Config))
                 {
-                    var bUser = await db.GetUserOrCreateSimpleAsync(Context.User.Id);
+                    var bUser = await db.GetUserOrCreateSimpleAsync(Context.User.Id, _time);
                     var removed = bUser.GameDeck.Wishes.Where(x => toRemove.Contains(x.Id)).ToList();
 
                     if (!bUser.GameDeck.WishlistIsPrivate)
@@ -2505,7 +2506,7 @@ namespace Sanakan.Modules
             int cost = 200;
             using (var db = new Database.DatabaseContext(Config))
             {
-                var bUser = await db.GetUserOrCreateAsync(Context.User.Id);
+                var bUser = await db.GetUserOrCreateAsync(Context.User.Id, _time);
                 var thisCard = bUser.GameDeck.Cards.FirstOrDefault(x => x.Id == wid);
 
                 if (thisCard == null)
@@ -2556,7 +2557,7 @@ namespace Sanakan.Modules
         {
             using (var db = new Database.DatabaseContext(Config))
             {
-                var bUser = await db.GetUserOrCreateSimpleAsync(Context.User.Id);
+                var bUser = await db.GetUserOrCreateSimpleAsync(Context.User.Id, _time);
                 if (count < 1)
                 {
                     await SafeReplyAsync("", embed: $"{Context.User.Mention} obecny limit kart to: {bUser.GameDeck.MaxNumberOfCards}.".ToEmbedMessage(EMType.Info).Build());
@@ -2596,7 +2597,7 @@ namespace Sanakan.Modules
             var tcCost = 200;
             using (var db = new Database.DatabaseContext(Config))
             {
-                var botuser = await db.GetUserOrCreateSimpleAsync(Context.User.Id);
+                var botuser = await db.GetUserOrCreateSimpleAsync(Context.User.Id, _time);
                 if (botuser.TcCnt < tcCost)
                 {
                     await SafeReplyAsync("", embed: $"{Context.User.Mention} nie posiadasz wystarczającej liczby TC!".ToEmbedMessage(EMType.Error).Build());
@@ -2634,7 +2635,7 @@ namespace Sanakan.Modules
 
             using (var db = new Database.DatabaseContext(Config))
             {
-                var botuser = await db.GetUserOrCreateSimpleAsync(Context.User.Id);
+                var botuser = await db.GetUserOrCreateSimpleAsync(Context.User.Id, _time);
                 if (string.IsNullOrEmpty(botuser.GameDeck.ForegroundImageUrl))
                 {
                     if (botuser.TcCnt < tcCost)
@@ -2670,7 +2671,7 @@ namespace Sanakan.Modules
 
             using (var db = new Database.DatabaseContext(Config))
             {
-                var botuser = await db.GetUserOrCreateSimpleAsync(Context.User.Id);
+                var botuser = await db.GetUserOrCreateSimpleAsync(Context.User.Id, _time);
                 if (string.IsNullOrEmpty(botuser.GameDeck.BackgroundImageUrl))
                 {
                     if (botuser.TcCnt < tcCost)
@@ -2698,7 +2699,7 @@ namespace Sanakan.Modules
         {
             using (var db = new Database.DatabaseContext(Config))
             {
-                var botuser = await db.GetUserOrCreateSimpleAsync(Context.User.Id);
+                var botuser = await db.GetUserOrCreateSimpleAsync(Context.User.Id, _time);
                 if (position > 100)
                 {
                     await SafeReplyAsync("", embed: $"{Context.User.Mention} podano niepoprawną wartość!".ToEmbedMessage(EMType.Error).Build());
@@ -2721,7 +2722,7 @@ namespace Sanakan.Modules
         {
             using (var db = new Database.DatabaseContext(Config))
             {
-                var botuser = await db.GetUserOrCreateSimpleAsync(Context.User.Id);
+                var botuser = await db.GetUserOrCreateSimpleAsync(Context.User.Id, _time);
                 if (position > 100)
                 {
                     await SafeReplyAsync("", embed: $"{Context.User.Mention} podano niepoprawną wartość!".ToEmbedMessage(EMType.Error).Build());
@@ -2744,7 +2745,7 @@ namespace Sanakan.Modules
         {
             using (var db = new Database.DatabaseContext(Config))
             {
-                var bUser = await db.GetUserOrCreateSimpleAsync(Context.User.Id);
+                var bUser = await db.GetUserOrCreateSimpleAsync(Context.User.Id, _time);
                 if (action == bUser.GameDeck.EndOfExpeditionAction)
                 {
                     await SafeReplyAsync("", embed: $"{Context.User.Mention} obecnie jest już ustawiona taka akcja.".ToEmbedMessage(EMType.Error).Build());
@@ -2776,7 +2777,7 @@ namespace Sanakan.Modules
         {
             using (var db = new Database.DatabaseContext(Config))
             {
-                var bUser = await db.GetUserOrCreateSimpleAsync(Context.User.Id);
+                var bUser = await db.GetUserOrCreateSimpleAsync(Context.User.Id, _time);
                 if (string.IsNullOrEmpty(ids) || !ids.Split(" ").All(x => x.All(c => char.IsDigit(c))))
                 {
                     await SafeReplyAsync("", embed: $"{Context.User.Mention} nie wykryto odpowiedniego sortowania.".ToEmbedMessage(EMType.Error).Build());
@@ -2802,7 +2803,7 @@ namespace Sanakan.Modules
             long cost = UserExtension.CalculatePriceOfIncGallery(count);
             using (var db = new Database.DatabaseContext(Config))
             {
-                var bUser = await db.GetUserOrCreateSimpleAsync(Context.User.Id);
+                var bUser = await db.GetUserOrCreateSimpleAsync(Context.User.Id, _time);
                 if (count < 1)
                 {
                     await SafeReplyAsync("", embed: $"{Context.User.Mention} obecny limit to: {bUser.GameDeck.CardsInGallery}.".ToEmbedMessage(EMType.Info).Build());
@@ -2848,7 +2849,7 @@ namespace Sanakan.Modules
 
             using (var db = new Database.DatabaseContext(Config))
             {
-                var bUser = await db.GetUserOrCreateAsync(Context.User.Id);
+                var bUser = await db.GetUserOrCreateAsync(Context.User.Id, _time);
                 var ticket = bUser.GameDeck.Items.FirstOrDefault(x => x.Type == ItemType.LotteryTicket);
                 if (ticket == null)
                 {
@@ -2925,7 +2926,7 @@ namespace Sanakan.Modules
 
             using (var db = new Database.DatabaseContext(Config))
             {
-                var bUser = await db.GetUserOrCreateAsync(Context.User.Id);
+                var bUser = await db.GetUserOrCreateAsync(Context.User.Id, _time);
                 var dt = bUser.TimeStatuses.FirstOrDefault(x => x.Type == StatusType.Tinkering);
                 if (dt == null)
                 {
@@ -3083,7 +3084,7 @@ namespace Sanakan.Modules
             var itemRecipe = _waifu.GetItemRecipe(recipe);
             using (var db = new Database.DatabaseContext(Config))
             {
-                var bUser = await db.GetUserOrCreateSimpleAsync(Context.User.Id);
+                var bUser = await db.GetUserOrCreateSimpleAsync(Context.User.Id, _time);
                 foreach (var currency in itemRecipe.RequiredPayments)
                 {
                     if (!bUser.Pay(currency, count))
@@ -3136,7 +3137,7 @@ namespace Sanakan.Modules
         {
             using (var db = new Database.DatabaseContext(Config))
             {
-                var user = await db.GetUserOrCreateAsync(Context.User.Id);
+                var user = await db.GetUserOrCreateAsync(Context.User.Id, _time);
                 user.GameDeck.TagsOrder = order;
                 await db.SaveChangesAsync();
 
@@ -3186,7 +3187,7 @@ namespace Sanakan.Modules
 
             using (var db = new Database.DatabaseContext(Config))
             {
-                var buser = await db.GetUserOrCreateSimpleAsync(Context.User.Id);
+                var buser = await db.GetUserOrCreateSimpleAsync(Context.User.Id, _time);
                 if (buser.GameDeck.MaxNumberOfTags <= buser.GameDeck.Tags.Count)
                 {
                     await SafeReplyAsync("", embed: $"{Context.User.Mention} nie możesz utworzyć już więcej oznaczeń, skasuj jakieś lub zwiększ ich limit.".ToEmbedMessage(EMType.Error).Build());
@@ -3234,7 +3235,7 @@ namespace Sanakan.Modules
 
             using (var db = new Database.DatabaseContext(Config))
             {
-                var buser = await db.GetUserOrCreateSimpleAsync(Context.User.Id);
+                var buser = await db.GetUserOrCreateSimpleAsync(Context.User.Id, _time);
                 var thisTag = buser.GameDeck.Tags.FirstOrDefault(x => x.Name.Equals(oldTag, StringComparison.CurrentCultureIgnoreCase));
                 if (thisTag is null)
                 {
@@ -3490,7 +3491,7 @@ namespace Sanakan.Modules
         {
             using (var db = new Database.DatabaseContext(Config))
             {
-                var bUser = await db.GetUserOrCreateSimpleAsync(Context.User.Id);
+                var bUser = await db.GetUserOrCreateSimpleAsync(Context.User.Id, _time);
 
                 bUser.GameDeck.ExchangeConditions = condition;
 
@@ -3527,7 +3528,7 @@ namespace Sanakan.Modules
                     return;
                 }
 
-                var bUser = await db.GetUserOrCreateSimpleAsync(Context.User.Id);
+                var bUser = await db.GetUserOrCreateSimpleAsync(Context.User.Id, _time);
                 var thisCard = db.Cards.AsQueryable().FirstOrDefault(x => x.Id == wid);
 
                 if (thisCard == null || thisCard.GameDeckId != Context.User.Id)
@@ -3972,7 +3973,7 @@ namespace Sanakan.Modules
 
             using (var db = new Database.DatabaseContext(Config))
             {
-                var botUser = await db.GetUserOrCreateWithCardsAsync(Context.User.Id, wid);
+                var botUser = await db.GetUserOrCreateWithCardsAsync(Context.User.Id, _time, wid);
                 var thisCard = botUser.GameDeck.Cards.FirstOrDefault(x => x.Id == wid);
                 if (thisCard == null)
                 {
@@ -4047,7 +4048,7 @@ namespace Sanakan.Modules
 
             using (var db = new Database.DatabaseContext(Config))
             {
-                var botUser = await db.GetUserOrCreateAsync(Context.User.Id);
+                var botUser = await db.GetUserOrCreateAsync(Context.User.Id, _time);
                 var cardsSelected = botUser.GameDeck.Cards.Where(x => wids.Any(c => c == x.Id)).ToList();
                 if (cardsSelected.Count < 1)
                 {
@@ -4231,7 +4232,7 @@ namespace Sanakan.Modules
         public async Task MakeADuelAsync()
         {
             using var db = CreateDuelDatabaseContext();
-            var duser = await db.GetUserOrCreateSimpleAsync(Context.User.Id);
+            var duser = await db.GetUserOrCreateSimpleAsync(Context.User.Id, _time);
             duser.GameDeck.Cards = await db.Entry(duser.GameDeck).Collection(x => x.Cards).Query().Where(x => x.Active).ToListAsync();
             if (!await PrepareDuelAsync(duser)) return;
 
@@ -4330,10 +4331,10 @@ namespace Sanakan.Modules
         {
             using (var db = CreateDuelDatabaseContext())
             {
-                var duser = await db.GetUserOrCreateWithActiveCardsAsync(Context.User.Id);
+                var duser = await db.GetUserOrCreateWithActiveCardsAsync(Context.User.Id, _time);
                 if (!await PrepareDuelAsync(duser)) return;
 
-                var denemy = await db.GetUserOrCreateWithActiveCardsAsync(euser.Id);
+                var denemy = await db.GetUserOrCreateWithActiveCardsAsync(euser.Id, _time);
                 if (!denemy.GameDeck.Cards.Any(x => x.Active))
                 {
                     await SafeReplyAsync("", embed: $"{Context.User.Mention} nie udało się znaleźć przeciwnika, spróbuj później.".ToEmbedMessage(EMType.Error).Build());
@@ -4413,7 +4414,7 @@ namespace Sanakan.Modules
             var tcCost = 1000;
             using (var db = new Database.DatabaseContext(Config))
             {
-                var botuser = await db.GetUserOrCreateAsync(Context.User.Id);
+                var botuser = await db.GetUserOrCreateAsync(Context.User.Id, _time);
                 if (botuser.TcCnt < tcCost)
                 {
                     await SafeReplyAsync("", embed: $"{Context.User.Mention} nie posiadasz wystarczającej liczby TC!".ToEmbedMessage(EMType.Error).Build());
@@ -4464,7 +4465,7 @@ namespace Sanakan.Modules
 
             using (var db = new Database.DatabaseContext(Config))
             {
-                var bUser = await db.GetUserOrCreateAsync(Context.User.Id);
+                var bUser = await db.GetUserOrCreateAsync(Context.User.Id, _time);
                 if (wid == 0)
                 {
                     if (bUser.GameDeck.Waifu != 0)
@@ -4535,7 +4536,7 @@ namespace Sanakan.Modules
 
             using (var db = new Database.DatabaseContext(Config))
             {
-                var bUser = await db.GetUserOrCreateAsync(Context.User.Id);
+                var bUser = await db.GetUserOrCreateAsync(Context.User.Id, _time);
                 if (!bUser.GameDeck.CanCreateDemon() && !bUser.GameDeck.CanCreateAngel())
                 {
                     await SafeReplyAsync("", embed: $"{Context.User.Mention} nie jesteś ani zły, ani dobry - po prostu nijaki.".ToEmbedMessage(EMType.Error).Build());

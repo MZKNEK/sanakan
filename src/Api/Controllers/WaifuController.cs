@@ -800,7 +800,7 @@ namespace Sanakan.Api.Controllers
                 {
                     using (var dbs = new Database.DatabaseContext(_config))
                     {
-                        var botUser = await dbs.GetUserOrCreateSimpleAsync(id);
+                        var botUser = await dbs.GetUserOrCreateSimpleAsync(id, _time);
                         AddBoosterPacks(dbs, botUser, packs);
 
                         await dbs.SaveChangesAsync();
@@ -862,7 +862,7 @@ namespace Sanakan.Api.Controllers
                 {
                     using (var dbs = CreateDatabaseContext())
                     {
-                        var botUser = await dbs.GetUserOrCreateSimpleAsync(discordId);
+                        var botUser = await dbs.GetUserOrCreateSimpleAsync(discordId, _time);
                         AddBoosterPacks(dbs, botUser, packs);
 
                         await dbs.SaveChangesAsync();
@@ -930,7 +930,7 @@ namespace Sanakan.Api.Controllers
                         {
                             using (var dbs = CreateDatabaseContext())
                             {
-                                var botUser = await dbs.GetUserOrCreateSimpleAsync(discordId);
+                                var botUser = await dbs.GetUserOrCreateSimpleAsync(discordId, _time);
                                 AddBoosterPacks(dbs, botUser, packs);
 
                                 dbs.IdempotencyRecords.Add(record);
@@ -1058,7 +1058,7 @@ namespace Sanakan.Api.Controllers
             {
                 using (var db = CreateDatabaseContext())
                 {
-                    var botUser = await db.GetUserOrCreateSimpleAsync(discordId);
+                    var botUser = await db.GetUserOrCreateSimpleAsync(discordId, _time);
 
                     botUser.Stats.OpenedBoosterPacks += packs.Count;
 
@@ -1209,7 +1209,7 @@ namespace Sanakan.Api.Controllers
                     {
                         using (var db = CreateDatabaseContext())
                         {
-                            var botUser = await db.GetUserOrCreateSimpleAsync(discordId);
+                            var botUser = await db.GetUserOrCreateSimpleAsync(discordId, _time);
                             if (await CountCardsAsync(db, discordId) + cards.Count > botUser.GameDeck.MaxNumberOfCards)
                             {
                                 Services.Idempotency.Fail(record, BoosterPackOpenStatus.NoSpace);
@@ -1350,7 +1350,7 @@ namespace Sanakan.Api.Controllers
                     {
                         using (var db = new Database.DatabaseContext(_config))
                         {
-                            var botUser = await db.GetUserOrCreateSimpleAsync(discordId);
+                            var botUser = await db.GetUserOrCreateSimpleAsync(discordId, _time);
                             var pack = await db.BoosterPacks.AsQueryable().Where(x => x.Id == packId && x.GameDeckId == discordId)
                                 .Include(x => x.Characters).Include(x => x.RarityExcludedFromPack).AsSplitQuery().FirstOrDefaultAsync();
                             if (pack == null)
@@ -1444,7 +1444,7 @@ namespace Sanakan.Api.Controllers
                                 return;
                             }
 
-                            var botUser = await db.GetUserOrCreateSimpleAsync(discordId);
+                            var botUser = await db.GetUserOrCreateSimpleAsync(discordId, _time);
                             var active = await db.Cards.AsQueryable().AsNoTracking().Where(x => x.Active && x.GameDeckId == discordId && x.Id != wid).ToListAsync();
 
                             thisCard.Active = !thisCard.Active;

@@ -96,14 +96,14 @@ namespace Sanakan.Extensions
             return all.Where(x => x.UserId != ignore).ToList();
         }
 
-        public static async Task<User> GetUserOrCreateSimpleAsync(this Database.DatabaseContext context, ulong userId)
+        public static async Task<User> GetUserOrCreateSimpleAsync(this Database.DatabaseContext context, ulong userId, Services.Time.ISystemTime time)
         {
             var user = await context.Users.AsQueryable().Where(x => x.Id == userId).Include(x => x.Stats).Include(x => x.SMConfig).Include(x => x.TimeStatuses).Include(x => x.GameDeck).ThenInclude(x => x.Wishes)
                 .Include(x => x.GameDeck).ThenInclude(x => x.ExpContainer).Include(x => x.GameDeck).ThenInclude(x => x.Tags).Include(x => x.GameDeck).ThenInclude(x => x.Items).AsSplitQuery().FirstOrDefaultAsync();
 
             if (user == null)
             {
-                user = user.Default(userId, DateTime.Now);
+                user = user.Default(userId, time.Now());
                 await context.Users.AddAsync(user);
             }
 
@@ -127,7 +127,7 @@ namespace Sanakan.Extensions
                 .ToDictionaryAsync(x => x.Key, x => x.Count);
         }
 
-        public static async Task<User> GetUserOrCreateAsync(this Database.DatabaseContext context, ulong userId)
+        public static async Task<User> GetUserOrCreateAsync(this Database.DatabaseContext context, ulong userId, Services.Time.ISystemTime time)
         {
             var user = await context.Users.AsQueryable().Where(x => x.Id == userId).Include(x => x.Stats).Include(x => x.SMConfig).Include(x => x.TimeStatuses).Include(x => x.GameDeck).ThenInclude(x => x.PvPStats).Include(x => x.GameDeck).ThenInclude(x => x.Wishes)
                 .Include(x => x.GameDeck).ThenInclude(x => x.Items).Include(x => x.GameDeck).ThenInclude(x => x.Cards).ThenInclude(x => x.Tags).Include(x => x.GameDeck)
@@ -137,18 +137,18 @@ namespace Sanakan.Extensions
 
             if (user == null)
             {
-                user = user.Default(userId, DateTime.Now);
+                user = user.Default(userId, time.Now());
                 await context.Users.AddAsync(user);
             }
 
             return user;
         }
 
-        public static async Task RemoveUserAsync(this Database.DatabaseContext context, ulong userId, bool removeCards = false)
+        public static async Task RemoveUserAsync(this Database.DatabaseContext context, ulong userId, Services.Time.ISystemTime time, bool removeCards = false)
         {
             // cards of removed users go to this account; its own cards are not needed here
-            var fakeu = await context.GetUserOrCreateSimpleAsync(1);
-            var user = await context.GetUserOrCreateAsync(userId);
+            var fakeu = await context.GetUserOrCreateSimpleAsync(1, time);
+            var user = await context.GetUserOrCreateAsync(userId, time);
 
             if (!removeCards)
             {
@@ -195,12 +195,12 @@ namespace Sanakan.Extensions
         }
 
         // checked again right before removal, the user could have come back since the scan
-        public static async Task<bool> RemoveUserLeftBeforeAsync(this Database.DatabaseContext context, ulong userId, DateTime cutoff)
+        public static async Task<bool> RemoveUserLeftBeforeAsync(this Database.DatabaseContext context, ulong userId, DateTime cutoff, Services.Time.ISystemTime time)
         {
             if (!await context.Users.AsQueryable().AnyAsync(x => x.Id == userId && x.LeftAt != null && x.LeftAt <= cutoff))
                 return false;
 
-            await context.RemoveUserAsync(userId);
+            await context.RemoveUserAsync(userId, time);
             return true;
         }
 
@@ -227,12 +227,12 @@ namespace Sanakan.Extensions
         }
 
         // checked again right before removal, the user could have come back or got a leave date since the scan
-        public static async Task<bool> RemoveUserWithoutLeaveDateAsync(this Database.DatabaseContext context, ulong userId)
+        public static async Task<bool> RemoveUserWithoutLeaveDateAsync(this Database.DatabaseContext context, ulong userId, Services.Time.ISystemTime time)
         {
             if (userId == 1 || !await context.Users.AsQueryable().AnyAsync(x => x.Id == userId && x.LeftAt == null))
                 return false;
 
-            await context.RemoveUserAsync(userId);
+            await context.RemoveUserAsync(userId, time);
             return true;
         }
 
@@ -257,14 +257,14 @@ namespace Sanakan.Extensions
         }
 
         // the user row with its stats, slot machine settings, time statuses and the deck row, without any deck collection
-        public static async Task<User> GetUserOrCreateLightAsync(this Database.DatabaseContext context, ulong userId)
+        public static async Task<User> GetUserOrCreateLightAsync(this Database.DatabaseContext context, ulong userId, Services.Time.ISystemTime time)
         {
             var user = await context.Users.AsQueryable().Where(x => x.Id == userId).Include(x => x.Stats).Include(x => x.SMConfig)
                 .Include(x => x.TimeStatuses).Include(x => x.GameDeck).FirstOrDefaultAsync();
 
             if (user == null)
             {
-                user = user.Default(userId, DateTime.Now);
+                user = user.Default(userId, time.Now());
                 await context.Users.AddAsync(user);
             }
 
@@ -274,7 +274,7 @@ namespace Sanakan.Extensions
         // For commands working on a few cards: items, figures, the experience container and the packs (without their
         // characters) are loaded, of the cards only the given ones. Collections left out stay null, so code that
         // reaches for them fails loudly instead of acting on missing data.
-        public static async Task<User> GetUserOrCreateWithCardsAsync(this Database.DatabaseContext context, ulong userId, params ulong[] cardIds)
+        public static async Task<User> GetUserOrCreateWithCardsAsync(this Database.DatabaseContext context, ulong userId, Services.Time.ISystemTime time, params ulong[] cardIds)
         {
             var user = await context.Users.AsQueryable().Where(x => x.Id == userId).Include(x => x.Stats).Include(x => x.SMConfig).Include(x => x.TimeStatuses)
                 .Include(x => x.GameDeck).ThenInclude(x => x.Items).Include(x => x.GameDeck).ThenInclude(x => x.Figures)
@@ -284,7 +284,7 @@ namespace Sanakan.Extensions
 
             if (user == null)
             {
-                user = user.Default(userId, DateTime.Now);
+                user = user.Default(userId, time.Now());
                 await context.Users.AddAsync(user);
             }
 
@@ -292,7 +292,7 @@ namespace Sanakan.Extensions
         }
 
         // a duel needs the deck row and its active cards, not the whole collection nor the fight history
-        public static async Task<User> GetUserOrCreateWithActiveCardsAsync(this Database.DatabaseContext context, ulong userId)
+        public static async Task<User> GetUserOrCreateWithActiveCardsAsync(this Database.DatabaseContext context, ulong userId, Services.Time.ISystemTime time)
         {
             var user = await context.Users.AsQueryable().Where(x => x.Id == userId).Include(x => x.Stats).Include(x => x.SMConfig).Include(x => x.TimeStatuses)
                 .Include(x => x.GameDeck).ThenInclude(x => x.ExpContainer)
@@ -301,11 +301,40 @@ namespace Sanakan.Extensions
 
             if (user == null)
             {
-                user = user.Default(userId, DateTime.Now);
+                user = user.Default(userId, time.Now());
                 await context.Users.AddAsync(user);
             }
 
             return user;
+        }
+
+        // the free card needs only the ultimate cards (cooldown reduction); the card limit is checked with CountCardsAsync
+        public static async Task<User> GetUserOrCreateWithUltimateCardsAsync(this Database.DatabaseContext context, ulong userId, Services.Time.ISystemTime time)
+        {
+            var user = await context.Users.AsQueryable().Where(x => x.Id == userId).Include(x => x.Stats).Include(x => x.SMConfig).Include(x => x.TimeStatuses)
+                .Include(x => x.GameDeck).ThenInclude(x => x.ExpContainer)
+                .Include(x => x.GameDeck).ThenInclude(x => x.Cards.Where(c => c.FromFigure))
+                .AsSplitQuery().FirstOrDefaultAsync();
+
+            if (user == null)
+            {
+                user = user.Default(userId, time.Now());
+                await context.Users.AddAsync(user);
+            }
+
+            return user;
+        }
+
+        public static Task<int> CountCardsAsync(this Database.DatabaseContext context, ulong userId)
+            => context.Cards.AsQueryable().CountAsync(x => x.GameDeckId == userId);
+
+        // fills the deck's wishlist with only the entry for this character
+        public static async Task LoadCharacterWishAsync(this Database.DatabaseContext context, GameDeck deck, ulong characterId)
+        {
+            deck.Wishes ??= new List<WishlistObject>();
+            if (context.Entry(deck).State == EntityState.Added) return;
+
+            await context.Wishes.AsQueryable().Where(x => x.GameDeckId == deck.Id && x.Type == WishlistObjectType.Character && x.ObjectId == characterId).LoadAsync();
         }
 
         public static Task<User> GetUserWithItemsAsync(this Database.DatabaseContext context, ulong userId)

@@ -8,6 +8,7 @@ using Discord;
 using Sanakan.Config;
 using Sanakan.Extensions;
 using Sanakan.Services.PocketWaifu;
+using Sanakan.Services.Time;
 using Sanakan.TypeReaders;
 
 namespace Sanakan.Services.Session.Models
@@ -24,10 +25,12 @@ namespace Sanakan.Services.Session.Models
         public Dictionary<ProfileImage, string> PendingImages { get; set; } = new Dictionary<ProfileImage, string>();
 
         private IConfig _config;
+        private ISystemTime _time;
 
-        public AcceptProfileCode(IConfig config)
+        public AcceptProfileCode(IConfig config, ISystemTime time)
         {
             _config = config;
+            _time = time;
         }
 
         public static string FinalPath(ProfileImage image, ulong userId) => image switch
@@ -44,7 +47,7 @@ namespace Sanakan.Services.Session.Models
         {
             using (var db = new Database.DatabaseContext(_config))
             {
-                var botuser = await db.GetUserOrCreateSimpleAsync(User.Id);
+                var botuser = await db.GetUserOrCreateSimpleAsync(User.Id, _time);
 
                 // the profile could have changed since the preview, so the shown price must still be valid
                 var invalid = Code.Validate(botuser, StyleAttachment, ProfileConfigTypeReader.IsSelectableBorder) != null

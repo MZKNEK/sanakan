@@ -62,6 +62,7 @@ namespace Sanakan
             MigrateConfig();
             ValidateConfig();
 
+            _time = new SystemTime();
             await EnsureDbIsCreatedAsync();
 
             CreateModules();
@@ -133,7 +134,7 @@ namespace Sanakan
             using (var db = new Database.DatabaseContext(_config))
             {
                 db.EnsureReady();
-                _tags = await TagHelper.CreateAsync(db);
+                _tags = await TagHelper.CreateAsync(db, _time);
             }
         }
 
@@ -184,7 +185,6 @@ namespace Sanakan
             _health = new HealthMonitor(_client, _shindenClient, _config);
             _heartbeat = new Heartbeat(_health.GetAsync, _config, _logger);
             _ingest = new DiscordIngest(_client, _config, _logger);
-            _time = new SystemTime();
             _apiGuard = new Api.TokenAttemptGuard(_time);
             MemoryReport.StartStoring(_config, _time, _logger, TimeSpan.FromMinutes(5));
             _events = new Events(_time);

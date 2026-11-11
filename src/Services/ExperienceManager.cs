@@ -334,7 +334,7 @@ namespace Sanakan.Services
             using (var db = CreateDatabaseContext())
             {
                 db.SuppressCacheInvalidation = true;
-                var usr = await db.GetUserOrCreateLightAsync(user.Id);
+                var usr = await db.GetUserOrCreateLightAsync(user.Id, _time);
                 if (usr == null) throw new InvalidOperationException("Experience user was not loaded.");
 
                 ApplyProgress(usr, exp, messages, commands, characters);

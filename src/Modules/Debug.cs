@@ -350,7 +350,7 @@ namespace Sanakan.Modules
                             return;
 
                         using var db = new Database.DatabaseContext(Config);
-                        await db.RemoveUserWithoutLeaveDateAsync(userId);
+                        await db.RemoveUserWithoutLeaveDateAsync(userId, _time);
                     }
                     catch (Exception ex)
                     {
@@ -407,7 +407,7 @@ namespace Sanakan.Modules
         {
             using (var db = new Database.DatabaseContext(Config))
             {
-                var targetUser = await db.GetUserOrCreateSimpleAsync(user.Id);
+                var targetUser = await db.GetUserOrCreateSimpleAsync(user.Id, _time);
 
                 targetUser.IsBlacklisted = !targetUser.IsBlacklisted;
                 await db.SaveChangesAsync();
@@ -425,7 +425,7 @@ namespace Sanakan.Modules
         {
             using (var db = new Database.DatabaseContext(Config))
             {
-                var targetUser = await db.GetUserOrCreateSimpleAsync(user.Id);
+                var targetUser = await db.GetUserOrCreateSimpleAsync(user.Id, _time);
 
                 targetUser.PoolType = poolType;
                 await db.SaveChangesAsync();
@@ -994,7 +994,7 @@ namespace Sanakan.Modules
                 return null;
 
             // cards are moved by GameDeckId, only the winner's wishlist is needed
-            var winnerUser = await db.GetUserOrCreateSimpleAsync(winner.Id);
+            var winnerUser = await db.GetUserOrCreateSimpleAsync(winner.Id, time);
 
             var drawn = new List<ulong>();
             for (int i = 0; i < count && idsToSelect.Count > 0; i++)
@@ -1133,7 +1133,7 @@ namespace Sanakan.Modules
         {
             using (var db = new Database.DatabaseContext(Config))
             {
-                var bUser = await db.GetUserOrCreateSimpleAsync(user.Id);
+                var bUser = await db.GetUserOrCreateSimpleAsync(user.Id, _time);
 
                 bUser.BackgroundProfileUri = Dir.GetResource("np/pbg.png");
                 bUser.StatsStyleSettings = ProfileSettings.Default;
@@ -1159,7 +1159,7 @@ namespace Sanakan.Modules
         {
             using (var db = new Database.DatabaseContext(Config))
             {
-                var bUser = await db.GetUserOrCreateSimpleAsync(user.Id);
+                var bUser = await db.GetUserOrCreateSimpleAsync(user.Id, _time);
 
                 bUser.Level = level;
                 bUser.ExpCnt = Services.ExperienceManager.CalculateExpForLevel(level);
@@ -1225,7 +1225,7 @@ namespace Sanakan.Modules
         {
             using (var db = new Database.DatabaseContext(Config))
             {
-                var bUser = await db.GetUserOrCreateAsync(user.Id);
+                var bUser = await db.GetUserOrCreateAsync(user.Id, _time);
                 var thisCards = db.Cards.Include(x => x.Tags).Where(x => (x.LastIdOwner == user.Id || (x.FirstIdOwner == user.Id && x.LastIdOwner == 0)) && x.GameDeckId == 1).ToList();
                 if (thisCards.Count < 1)
                 {
@@ -1294,7 +1294,7 @@ namespace Sanakan.Modules
         {
             using (var db = new Database.DatabaseContext(Config))
             {
-                var user = await db.GetUserOrCreateAsync(id);
+                var user = await db.GetUserOrCreateAsync(id, _time);
                 user.GameDeck.Cards.Clear();
 
                 await db.SaveChangesAsync();
@@ -1312,7 +1312,7 @@ namespace Sanakan.Modules
         {
             using (var db = new Database.DatabaseContext(Config))
             {
-                await db.RemoveUserAsync(id, cards);
+                await db.RemoveUserAsync(id, _time, cards);
             }
 
             await SafeReplyAsync("", embed: $"Użytkownik o id: `{id}` został wymazany.".ToEmbedMessage(EMType.Success).Build());
@@ -2159,7 +2159,7 @@ namespace Sanakan.Modules
             var item = itemType.ToItem(count, quality);
             using (var db = new Database.DatabaseContext(Config))
             {
-                var botuser = await db.GetUserOrCreateAsync(user.Id);
+                var botuser = await db.GetUserOrCreateAsync(user.Id, _time);
                 botuser.GameDeck.AddItem(item);
 
                 await db.SaveChangesAsync();
@@ -2180,7 +2180,7 @@ namespace Sanakan.Modules
             var item = itemType.ToItem(count, quality);
             using (var db = new Database.DatabaseContext(Config))
             {
-                var botuser = await db.GetUserOrCreateAsync(user.Id);
+                var botuser = await db.GetUserOrCreateAsync(user.Id, _time);
                 if (botuser.GameDeck.RemoveItem(item, 1, false))
                 {
                     await db.SaveChangesAsync();
@@ -2216,7 +2216,7 @@ namespace Sanakan.Modules
             card.Source = CardSource.GodIntervention;
             using (var db = new Database.DatabaseContext(Config))
             {
-                var botuser = await db.GetUserOrCreateAsync(user.Id);
+                var botuser = await db.GetUserOrCreateAsync(user.Id, _time);
                 botuser.GameDeck.Cards.Add(card);
 
                 await botuser.GameDeck.RemoveCharacterFromWishListAsync(card.Character, db);
@@ -2265,7 +2265,7 @@ namespace Sanakan.Modules
         private async Task GiveFakeCardAsync(Database.DatabaseContext db, SocketGuildUser user, string name, string title, ulong characterId)
         {
             {
-                var botuser = await db.GetUserOrCreateAsync(user.Id);
+                var botuser = await db.GetUserOrCreateAsync(user.Id, _time);
 
                 var card = _waifu.GenerateNewCard(user, name, title, characterId);
                 card.Source = CardSource.GodIntervention;
@@ -2413,7 +2413,7 @@ namespace Sanakan.Modules
         {
             using (var db = new Database.DatabaseContext(Config))
             {
-                var botuser = await db.GetUserOrCreateSimpleAsync(user.Id);
+                var botuser = await db.GetUserOrCreateSimpleAsync(user.Id, _time);
                 botuser.ScCnt += amount;
 
                 await db.SaveChangesAsync();
@@ -2431,7 +2431,7 @@ namespace Sanakan.Modules
         {
             using (var db = new Database.DatabaseContext(Config))
             {
-                var botuser = await db.GetUserOrCreateSimpleAsync(user.Id);
+                var botuser = await db.GetUserOrCreateSimpleAsync(user.Id, _time);
                 botuser.AcCnt += amount;
 
                 await db.SaveChangesAsync();
@@ -2449,7 +2449,7 @@ namespace Sanakan.Modules
         {
             using (var db = new Database.DatabaseContext(Config))
             {
-                var botuser = await db.GetUserOrCreateSimpleAsync(user.Id);
+                var botuser = await db.GetUserOrCreateSimpleAsync(user.Id, _time);
                 botuser.GameDeck.Karma += amount;
 
                 await db.SaveChangesAsync();
@@ -2467,7 +2467,7 @@ namespace Sanakan.Modules
         {
             using (var db = new Database.DatabaseContext(Config))
             {
-                var botuser = await db.GetUserOrCreateSimpleAsync(user.Id);
+                var botuser = await db.GetUserOrCreateSimpleAsync(user.Id, _time);
                 botuser.TcCnt += amount;
 
                 await db.SaveChangesAsync();
@@ -2485,7 +2485,7 @@ namespace Sanakan.Modules
         {
             using (var db = new Database.DatabaseContext(Config))
             {
-                var botuser = await db.GetUserOrCreateSimpleAsync(user.Id);
+                var botuser = await db.GetUserOrCreateSimpleAsync(user.Id, _time);
                 botuser.GameDeck.PVPCoins += amount;
 
                 await db.SaveChangesAsync();
@@ -2503,7 +2503,7 @@ namespace Sanakan.Modules
         {
             using (var db = new Database.DatabaseContext(Config))
             {
-                var botuser = await db.GetUserOrCreateSimpleAsync(user.Id);
+                var botuser = await db.GetUserOrCreateSimpleAsync(user.Id, _time);
                 botuser.GameDeck.CTCnt += amount;
 
                 await db.SaveChangesAsync();
@@ -2521,7 +2521,7 @@ namespace Sanakan.Modules
         {
             using (var db = new Database.DatabaseContext(Config))
             {
-                var botuser = await db.GetUserOrCreateSimpleAsync(user.Id);
+                var botuser = await db.GetUserOrCreateSimpleAsync(user.Id, _time);
                 botuser.ExpCnt += amount;
 
                 await db.SaveChangesAsync();
@@ -2539,7 +2539,7 @@ namespace Sanakan.Modules
         {
             using (var db = new Database.DatabaseContext(Config))
             {
-                var botuser = await db.GetUserOrCreateSimpleAsync(user.Id);
+                var botuser = await db.GetUserOrCreateSimpleAsync(user.Id, _time);
                 botuser.Warnings += amount;
 
                 await db.SaveChangesAsync();

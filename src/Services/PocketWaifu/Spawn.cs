@@ -218,7 +218,7 @@ namespace Sanakan.Services.PocketWaifu
 
                 using (var db = new Database.DatabaseContext(_config))
                 {
-                    var botUser = await db.GetUserOrCreateAsync(winner.Id);
+                    var botUser = await db.GetUserOrCreateAsync(winner.Id, _time);
 
                     newCard.FirstIdOwner = winner.Id;
                     newCard.Affection += botUser.GameDeck.AffectionFromKarma();
@@ -330,7 +330,7 @@ namespace Sanakan.Services.PocketWaifu
                     var pLimit = _config.Get().PacksPerDay;
                     if (pLimit < 1) pLimit = 3;
 
-                    if (!await TryGrantActivityPacketAsync(db, user.Id, _time.Now(), pLimit)) return;
+                    if (!await TryGrantActivityPacketAsync(db, user.Id, _time, pLimit)) return;
 
                     FireAndForget("Spawn: pakiet", () => channel.SendMessageAsync("", embed: $"{user.Mention} otrzymał pakiet losowych kart.".ToEmbedMessage(EMType.Bot).Build()));
                 }
@@ -339,10 +339,11 @@ namespace Sanakan.Services.PocketWaifu
             _executor.TryAdd(exe, TimeSpan.FromSeconds(1));
         }
 
-        internal static async Task<bool> TryGrantActivityPacketAsync(Database.DatabaseContext db, ulong userId, DateTime now, long packsPerDay)
+        internal static async Task<bool> TryGrantActivityPacketAsync(Database.DatabaseContext db, ulong userId, ISystemTime time, long packsPerDay)
         {
+            var now = time.Now();
             // only time statuses are needed, the full load would read every card of the player
-            var botUser = await db.GetUserOrCreateSimpleAsync(userId);
+            var botUser = await db.GetUserOrCreateSimpleAsync(userId, time);
             if (botUser.IsBlacklisted) return false;
 
             var pCnt = botUser.TimeStatuses.FirstOrDefault(x => x.Type == Database.Models.StatusType.Packet);

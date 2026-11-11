@@ -193,7 +193,7 @@ namespace Artifacts
         {
             TagHelper tags;
             using (var db = new DatabaseContext(_config))
-                tags = await TagHelper.CreateAsync(db);
+                tags = await TagHelper.CreateAsync(db, _time);
 
             var waifu = new Waifu(null, null, null, new ListLogger(), null, null, null, _time, null, null, _config);
             var controller = ControllerHarness.Attach(new WaifuController(null, waifu, new FakeExecutor(), tags, _config, _time, null, null, null, null));
@@ -222,7 +222,7 @@ namespace Artifacts
             const ulong unknown = 96999;
             TagHelper tags;
             using (var db = new DatabaseContext(_config))
-                tags = await TagHelper.CreateAsync(db);
+                tags = await TagHelper.CreateAsync(db, _time);
 
             var waifu = new Waifu(null, null, null, new ListLogger(), null, null, null, _time, null, null, _config);
             var controller = ControllerHarness.Attach(new WaifuController(null, waifu, new FakeExecutor(), tags, _config, _time, null, null, null, null));
