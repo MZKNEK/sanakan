@@ -211,8 +211,9 @@ namespace Sanakan.Api
             });
         }
 
-        // over 2 s on the log channel, over 10 s also pinged
-        public static readonly Services.SlowLog SlowRequests = new Services.SlowLog(ApiTraffic.SlowRequest, TimeSpan.FromSeconds(10), TimeSpan.FromMinutes(10));
+        // over 2 s on the log channel, over 12 s also pinged: above the 10 s Shinden request timeout, so a single
+        // Shinden timeout on a request waiting for one lookup does not ping
+        public static readonly Services.SlowLog SlowRequests = new Services.SlowLog(ApiTraffic.SlowRequest, TimeSpan.FromSeconds(12), TimeSpan.FromMinutes(10));
 
         public static void UseApi(IApplicationBuilder app)
         {

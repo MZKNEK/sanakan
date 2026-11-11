@@ -56,6 +56,18 @@ namespace Artifacts
             Assert.Equal(new[] { LogKind.Error, LogKind.Info, LogKind.Error, LogKind.Error }, logger.Messages.Select(Kind));
         }
 
+        // a request that waited out the 10 s Shinden timeout is slow but does not ping
+        [Fact]
+        public void ApiRequest_PingsOnlyAboveTheShindenTimeout()
+        {
+            var logger = new ListLogger();
+
+            Sanakan.Api.BotWebHost.SlowRequests.Record(logger, "GET test-shinden-timeout", TimeSpan.FromMilliseconds(10087), () => "timeout");
+            Sanakan.Api.BotWebHost.SlowRequests.Record(logger, "GET test-bot-slow", TimeSpan.FromSeconds(13), () => "slow");
+
+            Assert.Equal(new[] { LogKind.Info, LogKind.Error }, logger.Messages.Select(Kind));
+        }
+
         [Fact]
         public void ApiTraffic_ShowsTimesPerRoute()
         {
