@@ -36,6 +36,19 @@ namespace Sanakan.Api.Controllers
 
         /// <summary>Zabezpiecza przesunięcie (uint) przed przepełnieniem rzutowania na int.</summary>
         private static int ClampOffset(uint offset) => (int)Math.Min(offset, int.MaxValue);
+
+        // the page is picked by ids only, so MySQL sorts narrow rows instead of whole cards (a tag can have 200k cards);
+        // then only the cards of the page are loaded, in the picked order
+        private static async Task<List<Card>> LoadPageAsync(Database.DatabaseContext db, IQueryable<Card> filtered, uint offset, uint count, Func<IQueryable<Card>, IQueryable<Card>> load)
+        {
+            var ids = await filtered.Select(x => x.Id).Skip(ClampOffset(offset)).Take((int)Math.Min(count, MaxCardsPerRequest)).ToListAsync();
+            if (ids.Count == 0)
+                return new List<Card>();
+
+            var position = ids.Select((id, index) => (id, index)).ToDictionary(x => x.id, x => x.index);
+            var cards = await load(db.Cards.AsQueryable().Where(x => ids.Contains(x.Id))).ToListAsync();
+            return cards.OrderBy(x => position[x.Id]).ToList();
+        }
         private const int MaxFilterItems = 1000;
         private const int MaxSearchTextLength = 100;
 
@@ -174,7 +187,7 @@ namespace Sanakan.Api.Controllers
 
             using (var db = new Database.DatabaseContext(_config))
             {
-                var query = db.Cards.AsQueryable().AsSplitQuery().Include(x => x.GameDeck).ThenInclude(x => x.User).Include(x => x.Tags).AsNoTrackingWithIdentityResolution();
+                var query = db.Cards.AsQueryable();
                 if (!string.IsNullOrEmpty(filter.SearchText))
                 {
                     query = query.Where(x => x.Name.Contains(filter.SearchText) || x.Title.Contains(filter.SearchText));
@@ -183,7 +196,8 @@ namespace Sanakan.Api.Controllers
                 query = CardsQueryFilter.Use(filter.OrderBy, query);
                 query = FilterCardsByIds(query, filter);
                 query = FilterCardsByTags(query, filter);
-                var cards = await query.Skip(ClampOffset(offset)).Take((int)Math.Min(count, MaxCardsPerRequest)).ToListAsync();
+                var cards = await LoadPageAsync(db, query, offset, count,
+                    page => page.AsSplitQuery().Include(x => x.GameDeck).ThenInclude(x => x.User).Include(x => x.Tags).AsNoTrackingWithIdentityResolution());
 
                 return new FilteredCards{TotalCards = await query.CountAsync(), Cards = await ToViewWithUsernamesAsync(cards)};
             }
@@ -269,7 +283,8 @@ namespace Sanakan.Api.Controllers
                     return "User on blacklist".ToResponse(401);
                 }
 
-                var query = db.Cards.AsQueryable().AsSplitQuery().Where(x => x.GameDeckId == user.GameDeck.Id).Include(x => x.Tags).AsNoTrackingWithIdentityResolution();
+                var deckId = user.GameDeck.Id;
+                var query = db.Cards.AsQueryable().Where(x => x.GameDeckId == deckId);
                 if (!string.IsNullOrEmpty(filter.SearchText))
                 {
                     query = query.Where(x => x.Name.Contains(filter.SearchText) || x.Title.Contains(filter.SearchText));
@@ -280,7 +295,7 @@ namespace Sanakan.Api.Controllers
                 query = FilterCardsByTags(query, filter);
 
                 var username = await GetUsernameAsync(user.Shinden);
-                var cards = await query.Skip(ClampOffset(offset)).Take((int)Math.Min(count, MaxCardsPerRequest)).ToListAsync();
+                var cards = await LoadPageAsync(db, query, offset, count, page => page.AsSplitQuery().Include(x => x.Tags).AsNoTrackingWithIdentityResolution());
 
                 return new FilteredCards{TotalCards = await query.CountAsync(), Cards = cards.ToView(username, id, _time)};
             }
