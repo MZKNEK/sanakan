@@ -1170,6 +1170,18 @@ namespace Sanakan.Modules
             }
         }
 
+        // without ids the cards tagged as trash are discarded
+        private async Task<User> LoadForDiscardingAsync(Database.DatabaseContext db, ulong[] ids)
+        {
+            var user = await db.GetUserOrCreateWithCardsAsync(Context.User.Id, _time, ids);
+            if (ids.IsNullOrEmpty())
+            {
+                var trashTag = _tags.GetTagId(Services.PocketWaifu.TagType.TrashBin);
+                await db.LoadCardsAsync(user.GameDeck, x => x.Tags.Any(t => t.Id == trashTag));
+            }
+            return user;
+        }
+
         [Command("uwolnij")]
         [Alias("release", "puśmje")]
         [Summary("uwalnia posiadaną kartę(niepodanie kart, uwalnia te oznaczone jako kosz)")]
@@ -1180,7 +1192,7 @@ namespace Sanakan.Modules
 
             using (var db = new Database.DatabaseContext(Config))
             {
-                var bUser = await db.GetUserOrCreateAsync(Context.User.Id, _time);
+                var bUser = await LoadForDiscardingAsync(db, ids);
                 var res = _waifu.DestroyOrReleaseCards(bUser, ids, true, _tags.GetTagId(Services.PocketWaifu.TagType.TrashBin));
 
                 if (res.IsError())
@@ -1207,7 +1219,7 @@ namespace Sanakan.Modules
 
             using (var db = new Database.DatabaseContext(Config))
             {
-                var bUser = await db.GetUserOrCreateAsync(Context.User.Id, _time);
+                var bUser = await LoadForDiscardingAsync(db, ids);
                 var res = _waifu.DestroyOrReleaseCards(bUser, ids, false, _tags.GetTagId(Services.PocketWaifu.TagType.TrashBin));
 
                 if (res.IsError())
@@ -1779,7 +1791,7 @@ namespace Sanakan.Modules
 
             using (var db = new Database.DatabaseContext(Config))
             {
-                var bUser = await db.GetUserOrCreateAsync(Context.User.Id, _time);
+                var bUser = await db.GetUserOrCreateWithCardsAsync(Context.User.Id, _time, idsToSac.Append(idToUp).ToArray());
 
                 var cardToUp = bUser.GetCard(idToUp);
                 var cardsToSac = bUser.GetCards(idsToSac).ToList();
@@ -1856,7 +1868,8 @@ namespace Sanakan.Modules
 
             using (var db = new Database.DatabaseContext(Config))
             {
-                var bUser = await db.GetUserOrCreateAsync(user.Id, _time);
+                var bUser = await db.GetUserOrCreateWithCardsAsync(user.Id, _time);
+                await db.LoadCardsAsync(bUser.GameDeck, x => x.InCage);
                 var cardsInCage = bUser.GameDeck.Cards.Where(x => x.InCage);
 
                 var cntIn = cardsInCage.Count();
@@ -2506,7 +2519,7 @@ namespace Sanakan.Modules
             int cost = 200;
             using (var db = new Database.DatabaseContext(Config))
             {
-                var bUser = await db.GetUserOrCreateAsync(Context.User.Id, _time);
+                var bUser = await db.GetUserOrCreateWithCardsAsync(Context.User.Id, _time, wid);
                 var thisCard = bUser.GameDeck.Cards.FirstOrDefault(x => x.Id == wid);
 
                 if (thisCard == null)
@@ -2849,7 +2862,7 @@ namespace Sanakan.Modules
 
             using (var db = new Database.DatabaseContext(Config))
             {
-                var bUser = await db.GetUserOrCreateAsync(Context.User.Id, _time);
+                var bUser = await db.GetUserOrCreateForLotteryAsync(Context.User.Id, _time);
                 var ticket = bUser.GameDeck.Items.FirstOrDefault(x => x.Type == ItemType.LotteryTicket);
                 if (ticket == null)
                 {
@@ -4048,7 +4061,7 @@ namespace Sanakan.Modules
 
             using (var db = new Database.DatabaseContext(Config))
             {
-                var botUser = await db.GetUserOrCreateAsync(Context.User.Id, _time);
+                var botUser = await db.GetUserOrCreateWithCardsAsync(Context.User.Id, _time, wids);
                 var cardsSelected = botUser.GameDeck.Cards.Where(x => wids.Any(c => c == x.Id)).ToList();
                 if (cardsSelected.Count < 1)
                 {
@@ -4056,7 +4069,7 @@ namespace Sanakan.Modules
                     return;
                 }
 
-                var cardsOnExp = botUser.GameDeck.Cards.Count(x => x.Expedition != CardExpedition.None);
+                var cardsOnExp = await db.CountCardsOnExpeditionAsync(botUser.Id);
                 if (cardsOnExp + cardsSelected.Count > botUser.GameDeck.LimitOfCardsOnExpedition())
                 {
                     var limit = botUser.GameDeck.LimitOfCardsOnExpedition();
@@ -4465,7 +4478,10 @@ namespace Sanakan.Modules
 
             using (var db = new Database.DatabaseContext(Config))
             {
-                var bUser = await db.GetUserOrCreateAsync(Context.User.Id, _time);
+                var bUser = await db.GetUserOrCreateWithCardsAsync(Context.User.Id, _time, wid);
+                var waifuCharacter = bUser.GameDeck.Waifu;
+                if (waifuCharacter != 0)
+                    await db.LoadCardsAsync(bUser.GameDeck, x => x.Character == waifuCharacter);
                 if (wid == 0)
                 {
                     if (bUser.GameDeck.Waifu != 0)
@@ -4536,7 +4552,7 @@ namespace Sanakan.Modules
 
             using (var db = new Database.DatabaseContext(Config))
             {
-                var bUser = await db.GetUserOrCreateAsync(Context.User.Id, _time);
+                var bUser = await db.GetUserOrCreateWithCardsAsync(Context.User.Id, _time, wid);
                 if (!bUser.GameDeck.CanCreateDemon() && !bUser.GameDeck.CanCreateAngel())
                 {
                     await SafeReplyAsync("", embed: $"{Context.User.Mention} nie jesteś ani zły, ani dobry - po prostu nijaki.".ToEmbedMessage(EMType.Error).Build());

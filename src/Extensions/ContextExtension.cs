@@ -328,6 +328,26 @@ namespace Sanakan.Extensions
         public static Task<int> CountCardsAsync(this Database.DatabaseContext context, ulong userId)
             => context.Cards.AsQueryable().CountAsync(x => x.GameDeckId == userId);
 
+        public static Task<int> CountCardsOnExpeditionAsync(this Database.DatabaseContext context, ulong userId)
+            => context.Cards.AsQueryable().CountAsync(x => x.GameDeckId == userId && x.Expedition != CardExpedition.None);
+
+        // the karma reversal reward flips the yami and raito cards, no other reward touches the collection
+        public static async Task<User> GetUserOrCreateForLotteryAsync(this Database.DatabaseContext context, ulong userId, Services.Time.ISystemTime time)
+        {
+            var user = await context.GetUserOrCreateWithCardsAsync(userId, time);
+            await context.LoadCardsAsync(user.GameDeck, x => x.Dere == Dere.Yami || x.Dere == Dere.Raito);
+            return user;
+        }
+
+        // adds the player's matching cards to the already loaded part of the collection
+        public static async Task LoadCardsAsync(this Database.DatabaseContext context, GameDeck deck, System.Linq.Expressions.Expression<Func<Card, bool>> filter)
+        {
+            if (context.Entry(deck).State == EntityState.Added) return;
+
+            var deckId = deck.Id;
+            await context.Cards.AsQueryable().Where(x => x.GameDeckId == deckId).Where(filter).Include(x => x.Tags).LoadAsync();
+        }
+
         // fills the deck's wishlist with only the entry for this character
         public static async Task LoadCharacterWishAsync(this Database.DatabaseContext context, GameDeck deck, ulong characterId)
         {

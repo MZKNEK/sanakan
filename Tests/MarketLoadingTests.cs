@@ -1,12 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.Serialization;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Sanakan.Database.Models;
 using Sanakan.Extensions;
-using Sanakan.Services.PocketWaifu;
 using Xunit;
 
 namespace Artifacts
@@ -37,11 +35,7 @@ namespace Artifacts
         }
 
         private Task<string> GoAsync(bool black, ulong wid)
-        {
-            // only the item draws are needed from the waifu service
-            var waifu = (Waifu)FormatterServices.GetUninitializedObject(typeof(Waifu));
-            return _h.RunAsync(Player, x => black ? x.GoToBlackMarketAsync(wid) : x.GoToMarketAsync(wid), waifu);
-        }
+            => _h.RunAsync(Player, x => black ? x.GoToBlackMarketAsync(wid) : x.GoToMarketAsync(wid));
 
         private GameDeck Read()
         {
