@@ -23,6 +23,15 @@ namespace Sanakan.Database
 
         private static Timer _timer;
         private static DateTime _lastReport = DateTime.UtcNow;
+        private static ILogger _logger;
+
+        // over 1 s on the log channel, over 5 s also pinged
+        public static readonly Services.SlowLog Slow = new Services.SlowLog(TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(5), TimeSpan.FromMinutes(10));
+        private const int SqlInLog = 300;
+        private static readonly object _slowLock = new object();
+        private static long _slowQueries;
+        private static long _slowestMs;
+        private static string _slowestSql;
 
         private static readonly Services.RecentLatency _recent = new Services.RecentLatency();
 
@@ -33,6 +42,7 @@ namespace Sanakan.Database
 
         public static void Start(ILogger logger, TimeSpan interval)
         {
+            _logger = logger;
             _lastReport = DateTime.UtcNow;
             _timer = new Timer(_ =>
             {
@@ -52,11 +62,53 @@ namespace Sanakan.Database
             var seconds = Math.Max(1, (now - _lastReport).TotalSeconds);
             _lastReport = now;
 
+            long slow, slowestMs;
+            string slowestSql;
+            lock (_slowLock)
+            {
+                slow = _slowQueries;
+                slowestMs = _slowestMs;
+                slowestSql = _slowestSql;
+                _slowQueries = 0;
+                _slowestMs = 0;
+                _slowestSql = null;
+            }
+
             if (queries == 0 && writes == 0 && saves == 0)
                 return null;
 
-            return System.FormattableString.Invariant($"DB ({seconds / 60:0} min): {queries} queries ({queries / seconds:0.0}/s), ")
+            var report = System.FormattableString.Invariant($"DB ({seconds / 60:0} min): {queries} queries ({queries / seconds:0.0}/s), ")
                 + System.FormattableString.Invariant($"{saves} saves ({saves / seconds:0.0}/s, {entities} entities), {writes} write commands");
+            if (slow > 0)
+                report += System.FormattableString.Invariant($", {slow} over {Slow.LogAfter.TotalSeconds:0} s, slowest {slowestMs}ms: {slowestSql}");
+            return report;
+        }
+
+        public static string DescribeSql(string sql)
+        {
+            var text = System.Text.RegularExpressions.Regex.Replace(sql ?? "", @"\s+", " ").Trim();
+            return text.Length > SqlInLog ? text[..SqlInLog] + "…" : text;
+        }
+
+        private static void CheckSlow(DbCommand command, TimeSpan duration)
+        {
+            if (!Slow.IsSlow(duration))
+                return;
+
+            var sql = DescribeSql(command?.CommandText);
+            var ms = (long)duration.TotalMilliseconds;
+            lock (_slowLock)
+            {
+                _slowQueries++;
+                if (ms > _slowestMs)
+                {
+                    _slowestMs = ms;
+                    _slowestSql = sql;
+                }
+            }
+
+            // queries differing only in their parameters share the alert
+            Slow.Record(_logger, sql.Length > 80 ? sql[..80] : sql, duration, () => $"DB: slow query ({ms}ms): {sql}");
         }
 
         public static string FlushDaily()
@@ -103,6 +155,7 @@ namespace Sanakan.Database
             public override DbDataReader ReaderExecuted(DbCommand command, CommandExecutedEventData eventData, DbDataReader result)
             {
                 CountQuery(eventData.Duration);
+                CheckSlow(command, eventData.Duration);
                 return result;
             }
 
@@ -110,12 +163,14 @@ namespace Sanakan.Database
                 DbDataReader result, CancellationToken cancellationToken = default)
             {
                 CountQuery(eventData.Duration);
+                CheckSlow(command, eventData.Duration);
                 return new ValueTask<DbDataReader>(result);
             }
 
             public override object ScalarExecuted(DbCommand command, CommandExecutedEventData eventData, object result)
             {
                 CountQuery(eventData.Duration);
+                CheckSlow(command, eventData.Duration);
                 return result;
             }
 
@@ -123,12 +178,14 @@ namespace Sanakan.Database
                 object result, CancellationToken cancellationToken = default)
             {
                 CountQuery(eventData.Duration);
+                CheckSlow(command, eventData.Duration);
                 return new ValueTask<object>(result);
             }
 
             public override int NonQueryExecuted(DbCommand command, CommandExecutedEventData eventData, int result)
             {
                 CountWriteCommand(eventData.Duration);
+                CheckSlow(command, eventData.Duration);
                 return result;
             }
 
@@ -136,6 +193,7 @@ namespace Sanakan.Database
                 int result, CancellationToken cancellationToken = default)
             {
                 CountWriteCommand(eventData.Duration);
+                CheckSlow(command, eventData.Duration);
                 return new ValueTask<int>(result);
             }
 

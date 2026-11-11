@@ -15,7 +15,9 @@ namespace Sanakan.Api
     {
         private const int MaxReportLines = 25;
 
-        private readonly ConcurrentDictionary<string, int> _counts = new ConcurrentDictionary<string, int>();
+        public static readonly TimeSpan SlowRequest = TimeSpan.FromSeconds(2);
+
+        private readonly ConcurrentDictionary<string, List<long>> _times = new ConcurrentDictionary<string, List<long>>();
         private readonly Timer _timer;
         private DateTime _lastReport = DateTime.UtcNow;
 
@@ -35,7 +37,13 @@ namespace Sanakan.Api
             return $"{context.Request.Method} {route}";
         }
 
-        public void Add(HttpContext context) => _counts.AddOrUpdate(GetKey(context), 1, (_, v) => v + 1);
+        public void Add(HttpContext context, long elapsedMs = 0)
+        {
+            var times = _times.GetOrAdd(GetKey(context), _ => new List<long>());
+            lock (times) times.Add(elapsedMs);
+        }
+
+        private static long Percentile(List<long> sorted, double p) => sorted[Math.Max(0, (int)Math.Ceiling(p * sorted.Count) - 1)];
 
         public string Flush()
         {
@@ -43,26 +51,34 @@ namespace Sanakan.Api
             var seconds = Math.Max(1, (now - _lastReport).TotalSeconds);
             _lastReport = now;
 
-            var snapshot = new List<KeyValuePair<string, int>>();
-            foreach (var key in _counts.Keys)
-                if (_counts.TryRemove(key, out var count))
-                    snapshot.Add(new KeyValuePair<string, int>(key, count));
+            var snapshot = new List<(string Key, List<long> Times)>();
+            foreach (var key in _times.Keys)
+                if (_times.TryRemove(key, out var times))
+                    lock (times) snapshot.Add((key, times.OrderBy(x => x).ToList()));
 
             if (snapshot.Count == 0)
                 return null;
 
-            var lines = snapshot.OrderByDescending(x => x.Value).ThenBy(x => x.Key, StringComparer.Ordinal).ToList();
-            var rows = lines.Take(MaxReportLines).Select(x =>
+            var slowMs = (long)SlowRequest.TotalMilliseconds;
+            var lines = snapshot.OrderByDescending(x => x.Times.Count).ThenBy(x => x.Key, StringComparer.Ordinal).ToList();
+            var rows = new List<string[]> { new[] { "reqs", "p50", "p95", "max", "slow", "method", "route" } };
+            rows.AddRange(lines.Take(MaxReportLines).Select(x =>
             {
+                var slow = x.Times.Count(t => t >= slowMs);
                 var space = x.Key.IndexOf(' ');
-                return space < 0 ? new[] { x.Value.ToString(), "", x.Key } : new[] { x.Value.ToString(), x.Key.Substring(0, space), x.Key.Substring(space + 1) };
-            }).ToList();
-            var text = string.Join("\n", Services.TextTable.Render(rows, new[] { true, false, false }));
+                return new[]
+                {
+                    x.Times.Count.ToString(), $"{Percentile(x.Times, 0.5)}ms", $"{Percentile(x.Times, 0.95)}ms", $"{x.Times[^1]}ms",
+                    slow > 0 ? slow.ToString() : "-", space < 0 ? "" : x.Key.Substring(0, space), space < 0 ? x.Key : x.Key.Substring(space + 1)
+                };
+            }));
+            var text = string.Join("\n", Services.TextTable.Render(rows, new[] { true, true, true, true, true, false, false }));
             if (lines.Count > MaxReportLines)
-                text += $"\n(+{lines.Count - MaxReportLines} more routes, {lines.Skip(MaxReportLines).Sum(x => x.Value)} requests)";
+                text += $"\n(+{lines.Count - MaxReportLines} more routes, {lines.Skip(MaxReportLines).Sum(x => x.Times.Count)} requests)";
 
-            var total = lines.Sum(x => x.Value);
-            return FormattableString.Invariant($"API traffic ({seconds / 60:0} min): {total} requests ({total / seconds:0.0}/s)\n{text}");
+            var total = lines.Sum(x => x.Times.Count);
+            var totalSlow = lines.Sum(x => x.Times.Count(t => t >= slowMs));
+            return FormattableString.Invariant($"API traffic ({seconds / 60:0} min): {total} requests ({total / seconds:0.0}/s), {totalSlow} over {SlowRequest.TotalSeconds:0} s\n{text}");
         }
 
         public void Dispose() => _timer.Dispose();

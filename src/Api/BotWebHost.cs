@@ -211,6 +211,9 @@ namespace Sanakan.Api
             });
         }
 
+        // over 2 s on the log channel, over 10 s also pinged
+        public static readonly Services.SlowLog SlowRequests = new Services.SlowLog(ApiTraffic.SlowRequest, TimeSpan.FromSeconds(10), TimeSpan.FromMinutes(10));
+
         public static void UseApi(IApplicationBuilder app)
         {
             app.UseSwagger();
@@ -253,10 +256,15 @@ namespace Sanakan.Api
                 {
                     if (!context.Request.Path.StartsWithSegments("/api/health") && !context.Request.Path.StartsWithSegments("/api/alive"))
                     {
+                        var elapsed = watch.Elapsed;
                         ApiStats.Add(context);
-                        var entry = ApiAudit.Describe(context, watch.ElapsedMilliseconds);
+                        var entry = ApiAudit.Describe(context, (long)elapsed.TotalMilliseconds);
                         if (entry != null) auditLogger?.Log(entry);
-                        else traffic.Add(context);
+                        else traffic.Add(context, (long)elapsed.TotalMilliseconds);
+
+                        var route = ApiTraffic.GetKey(context);
+                        SlowRequests.Record(auditLogger, route, elapsed,
+                            () => $"API: slow {route} from {ApiAudit.GetClient(context.User)} -> {context.Response.StatusCode} ({(long)elapsed.TotalMilliseconds}ms)");
                     }
                 }
             });

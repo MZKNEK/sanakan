@@ -138,8 +138,8 @@ namespace Artifacts
                     traffic.Add(new Microsoft.AspNetCore.Http.DefaultHttpContext { Request = { Method = "GET" } });
 
                 var report = traffic.Flush();
-                Assert.Matches(@"^API traffic \(\d+ min\): 3 requests \(\d+\.\d/s\)\n3  GET  \(no route\)$", report);
-                Assert.DoesNotContain(",", report.Split('\n')[0]);
+                Assert.Matches(@"^API traffic \(\d+ min\): 3 requests \(\d+\.\d/s\), 0 over 2 s\n", report);
+                Assert.DoesNotMatch(@"\d,\d", report);
             }
             finally
             {
