@@ -582,6 +582,7 @@ namespace Sanakan.Api.Controllers
         /// <param name="overrides">opcjonalne dane podane ręcznie, mają pierwszeństwo przed danymi z Shindena; tytuł serii zmienia się tylko tak</param>
         /// <response code="400">from is the same as id</response>
         /// <response code="404">Character not found (and no data given by hand)</response>
+        /// <response code="503">Shinden did not answer or the command queue is full, retry after the Retry-After header</response>
         [HttpPost("character/{id}/sync"), Authorize(Policy = "Site")]
         public Task<IActionResult> SyncCharacterCardsAsync(ulong id, [FromQuery] ulong from = 0,
             [FromBody(EmptyBodyBehavior = Microsoft.AspNetCore.Mvc.ModelBinding.EmptyBodyBehavior.Allow)] Models.CharacterCardInfoUpdate overrides = null)
@@ -623,8 +624,14 @@ namespace Sanakan.Api.Controllers
             string image = null, name = null;
             if (useShinden)
             {
-                var response = await _shClient.GetCharacterInfoAsync(id);
-                if (response.IsSuccessStatusCode())
+                Response<ShindenCompat.Models.ICharacterInfo> response = null;
+                try
+                {
+                    response = await _shClient.GetCharacterInfoAsync(id);
+                }
+                catch (ShindenException) { }
+
+                if (response?.IsSuccessStatusCode() == true)
                 {
                     setImage = true;
                     image = response.Body.HasImage ? response.Body.PictureUrl : null;
@@ -632,7 +639,12 @@ namespace Sanakan.Api.Controllers
                 }
                 else if (overrides == null)
                 {
-                    return "Character not found!".ToResponse(404);
+                    if (response?.Code == System.Net.HttpStatusCode.NotFound)
+                        return "Character not found!".ToResponse(404);
+
+                    // a limit, an outage or a timeout on Shinden, the site retries later
+                    Response.Headers["Retry-After"] = "60";
+                    return "Shinden is not available, try again later!".ToResponse(503);
                 }
             }
 
@@ -653,13 +665,17 @@ namespace Sanakan.Api.Controllers
 
                     foreach (var card in cards)
                     {
+                        var newImage = setImage ? image : card.Image;
+                        var newName = name ?? card.Name;
+                        var newTitle = title ?? card.Title;
+                        // the saved card pictures stay when nothing they show has changed
+                        if (card.Character == id && card.Image == newImage && card.Name == newName && card.Title == newTitle)
+                            continue;
+
                         card.Character = id;
-                        if (setImage)
-                            card.Image = image;
-                        if (name != null)
-                            card.Name = name;
-                        if (title != null)
-                            card.Title = title;
+                        card.Image = newImage;
+                        card.Name = newName;
+                        card.Title = newTitle;
 
                         try
                         {
@@ -678,6 +694,7 @@ namespace Sanakan.Api.Controllers
 
             if (!await _executor.TryAdd(exe, TimeSpan.FromSeconds(1)))
             {
+                Response.Headers["Retry-After"] = "10";
                 return "Command queue is full".ToResponse(503);
             }
 
