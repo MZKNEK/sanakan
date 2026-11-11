@@ -54,6 +54,7 @@ public static class CommandCatalog
         ["klatka"] = T(ChannelKind.Waifu, "klatka"),
         ["wyprawa status"] = T(ChannelKind.Fight, "wyprawa status"),
         ["karcianka"] = T(ChannelKind.Waifu, "karcianka"),
+        ["harem"] = T(ChannelKind.Waifu, c => c.Random.Next(3) switch { 0 => "harem", 1 => "harem atak", _ => "harem tag Wymiana" }),
         ["życzenia filtr"] = T(ChannelKind.Waifu, c => $"życzenia filtr {c.OtherPlayer}"),
         ["karta"] = T(ChannelKind.Waifu, c => $"karta {c.Card}"),
         ["życzenia"] = T(ChannelKind.Waifu, "życzenia"),

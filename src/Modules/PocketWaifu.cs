@@ -147,15 +147,15 @@ namespace Sanakan.Modules
 
             using (var db = new Database.DatabaseContext(Config))
             {
-                var user = await db.GetCachedFullUserAsync(Context.User.Id);
-                if (user == null || user.GameDeck == null || user.GameDeck.Cards.IsNullOrEmpty())
+                var cards = await db.GetAllCardsAsync(Context.User.Id);
+                if (cards.Count == 0)
                 {
                     await SafeReplyAsync("", embed: $"{Context.User.Mention} nie masz żadnych kart.".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
                 session.Enumerable = false;
-                session.ListItems = _waifu.GetListInRightOrder(user.GameDeck.Cards, type, tag);
+                session.ListItems = _waifu.GetListInRightOrder(cards, type, tag);
                 if (!string.IsNullOrEmpty(tag) && (tag.Split('|').LastOrDefault()?.Contains("tldr", StringComparison.CurrentCultureIgnoreCase) ?? false))
                 {
                     var res = await _helepr.SendAsFileOnDMAsync(Context.User, session.ListItems
@@ -4675,12 +4675,13 @@ namespace Sanakan.Modules
 
             using (var db = new Database.DatabaseContext(Config))
             {
-                var bUser = await db.GetCachedFullUserAsync(user.Id);
+                var bUser = await db.GetUserWithWaifuCardsAsync(user.Id);
                 if (bUser == null)
                 {
                     await SafeReplyAsync("", embed: "Ta osoba nie ma profilu bota.".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
+                var cardCount = await db.CountCardsAsync(bUser.Id);
 
                 var seasonString = "----";
                 if (bUser.GameDeck.IsPVPSeasonalRankActive(_time.Now()))
@@ -4693,7 +4694,7 @@ namespace Sanakan.Modules
                     Author = new EmbedAuthorBuilder().WithUser(user),
                     Description = $"*{bUser.GameDeck.GetUserNameStatus()}*\n\n"
                         + $"**Skrzynia({(int)bUser.GameDeck.ExpContainer.Level})**: {bUser.GameDeck.ExpContainer.ExpCount:F}\n"
-                        + $"**CT**: {bUser.GameDeck.CTCnt}\n**Karma**: {bUser.GameDeck.Karma:F}\n\n**Posiadane karty**: {bUser.GameDeck.Cards.Count}\n"
+                        + $"**CT**: {bUser.GameDeck.CTCnt}\n**Karma**: {bUser.GameDeck.Karma:F}\n\n**Posiadane karty**: {cardCount}\n"
                         + $"**GR**: {globalString}\n**SR**: {seasonString}"
                 };
 
@@ -4710,25 +4711,55 @@ namespace Sanakan.Modules
             }
         }
 
+        // what the card game profile shows about the collection and the fights, counted in memory or by the database
+        public sealed record CardGameSummary(int Total, IReadOnlyDictionary<Rarity, int> Rarities, IReadOnlyDictionary<Quality, int> UltimateQualities,
+            long Restarts, long Played, long Won)
+        {
+            public int Ultimate => UltimateQualities.Values.Sum();
+
+            public static CardGameSummary From(GameDeck deck) => new CardGameSummary(deck.Cards.Count,
+                deck.Cards.GroupBy(x => x.Rarity).ToDictionary(x => x.Key, x => x.Count()),
+                deck.Cards.Where(x => x.FromFigure).GroupBy(x => x.Quality).ToDictionary(x => x.Key, x => x.Count()),
+                deck.Cards.Sum(x => (long)x.RestartCnt),
+                deck.PvPStats?.Count(x => x.Type == FightType.NewVersus) ?? 0,
+                deck.PvPStats?.Count(x => x.Result == FightResult.Win && x.Type == FightType.NewVersus) ?? 0);
+
+            public static async Task<CardGameSummary> LoadAsync(Database.DatabaseContext db, ulong deckId)
+            {
+                var groups = await db.Cards.AsQueryable().Where(x => x.GameDeckId == deckId)
+                    .GroupBy(x => new { x.Rarity, x.FromFigure, x.Quality })
+                    .Select(x => new { x.Key.Rarity, x.Key.FromFigure, x.Key.Quality, Count = x.Count(), Restarts = x.Sum(c => (long)c.RestartCnt) }).ToListAsync();
+                var fights = await db.CardPvPStats.AsQueryable().Where(x => x.GameDeckId == deckId && x.Type == FightType.NewVersus)
+                    .GroupBy(x => x.Result).Select(x => new { x.Key, Count = x.LongCount() }).ToListAsync();
+
+                return new CardGameSummary(groups.Sum(x => x.Count),
+                    groups.GroupBy(x => x.Rarity).ToDictionary(x => x.Key, x => x.Sum(g => g.Count)),
+                    groups.Where(x => x.FromFigure).GroupBy(x => x.Quality).ToDictionary(x => x.Key, x => x.Sum(g => g.Count)),
+                    groups.Sum(x => x.Restarts), fights.Sum(x => x.Count), fights.Where(x => x.Key == FightResult.Win).Sum(x => x.Count));
+            }
+        }
+
+        public static EmbedBuilder BuildCardGameProfile(User bUser, DateTime now) => BuildCardGameProfile(bUser, CardGameSummary.From(bUser.GameDeck), now);
+
         // the classic look, with every count that is zero left out
-        public static EmbedBuilder BuildCardGameProfile(User bUser, DateTime now)
+        public static EmbedBuilder BuildCardGameProfile(User bUser, CardGameSummary summary, DateTime now)
         {
             var deck = bUser.GameDeck;
             var stats = bUser.Stats;
-            var ultimate = deck.Cards.Count(x => x.FromFigure);
+            var ultimate = summary.Ultimate;
 
             static string Line(string label, long value) => value == 0 ? null : $"**{label}**: {value}";
             static string Block(params string[] lines) => string.Join("\n", lines.Where(x => !string.IsNullOrEmpty(x)));
 
             var rarities = new[] { Rarity.SSS, Rarity.SS, Rarity.S, Rarity.A, Rarity.B, Rarity.C, Rarity.D, Rarity.E }
-                .Select(r => (Name: r.ToString(), Count: deck.Cards.Count(x => x.Rarity == r) - (r == Rarity.SSS ? ultimate : 0)))
+                .Select(r => (Name: r.ToString(), Count: summary.Rarities.GetValueOrDefault(r) - (r == Rarity.SSS ? ultimate : 0)))
                 .Where(x => x.Count > 0).Select(x => $"**{x.Name}**: {x.Count}");
 
-            var qualities = deck.Cards.Where(x => x.FromFigure).GroupBy(x => x.Quality).OrderBy(x => x.Key)
-                .Select(x => $"**{(string.IsNullOrEmpty(x.Key.ToName()) ? x.Key.ToString() : x.Key.ToName())}**: {x.Count()}");
+            var qualities = summary.UltimateQualities.OrderBy(x => x.Key)
+                .Select(x => $"**{(string.IsNullOrEmpty(x.Key.ToName()) ? x.Key.ToString() : x.Key.ToName())}**: {x.Value}");
 
-            var played = deck.PvPStats?.Count(x => x.Type == FightType.NewVersus) ?? 0;
-            var won = deck.PvPStats?.Count(x => x.Result == FightResult.Win && x.Type == FightType.NewVersus) ?? 0;
+            var played = summary.Played;
+            var won = summary.Won;
             var season = deck.IsPVPSeasonalRankActive(now) ? $"{deck.GetRankName()} ({deck.SeasonalPVPRank})" : "----";
 
             var blocks = new[]
@@ -4737,9 +4768,9 @@ namespace Sanakan.Modules
                 Block($"**Skrzynia({(int)deck.ExpContainer.Level})**: {deck.ExpContainer.ExpCount:F}",
                     Line("Uwolnione", stats.ReleasedCards), Line("Zniszczone", stats.DestroyedCards), Line("Poświęcone", stats.SacraficeCards),
                     Line("Ulepszone", stats.UpgaredCards), Line("Wyzwolone", stats.UnleashedCards)),
-                Line("Restartów na kartach", deck.Cards.Sum(x => x.RestartCnt)),
+                Line("Restartów na kartach", summary.Restarts),
                 $"**CT**: {deck.CTCnt}\n**Karma**: {deck.Karma:F}",
-                Block($"**Posiadane karty**: {deck.Cards.Count}", string.Join(" ", rarities),
+                Block($"**Posiadane karty**: {summary.Total}", string.Join(" ", rarities),
                     ultimate > 0 ? $"**[{ultimate}]** {string.Join(" ", qualities)}" : null),
                 Block(played > 0 ? $"**PVP** Rozegrane: {played} Wygrane: {won}" : null,
                     $"**GR**: {deck.GetGlobalRankName()} ({deck.GlobalPVPRank})", $"**SR**: {season}"),
@@ -4763,14 +4794,14 @@ namespace Sanakan.Modules
 
             using (var db = new Database.DatabaseContext(Config))
             {
-                var bUser = await db.GetCachedFullUserAsync(user.Id);
+                var bUser = await db.GetUserWithWaifuCardsAsync(user.Id);
                 if (bUser == null)
                 {
                     await SafeReplyAsync("", embed: "Ta osoba nie ma profilu bota.".ToEmbedMessage(EMType.Error).Build());
                     return;
                 }
 
-                var embed = BuildCardGameProfile(bUser, _time.Now());
+                var embed = BuildCardGameProfile(bUser, await CardGameSummary.LoadAsync(db, bUser.Id), _time.Now());
                 embed.Author = new EmbedAuthorBuilder().WithUser(user);
 
                 if (bUser.GameDeck?.Waifu != 0)

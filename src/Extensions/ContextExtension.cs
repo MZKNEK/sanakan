@@ -339,6 +339,27 @@ namespace Sanakan.Extensions
             return user;
         }
 
+        // the whole collection with tags and nothing else, read only, in id order like the deck include returned it
+        public static async Task<List<Card>> GetAllCardsAsync(this Database.DatabaseContext context, ulong userId)
+            => (await context.Cards.AsQueryable().Where(x => x.GameDeckId == userId).Include(x => x.Tags).AsNoTracking().AsSplitQuery().ToListAsync())
+                .OrderBy(x => x.Id).ToList();
+
+        // the deck row, the statistics and of the cards only those GetWaifuCard picks from, read only
+        public static async Task<User> GetUserWithWaifuCardsAsync(this Database.DatabaseContext context, ulong userId)
+        {
+            var user = await context.Users.AsQueryable().Where(x => x.Id == userId).Include(x => x.Stats)
+                .Include(x => x.GameDeck).ThenInclude(x => x.ExpContainer).AsNoTracking().FirstOrDefaultAsync();
+            if (user?.GameDeck == null) return user;
+
+            var deck = user.GameDeck;
+            var premium = deck.PremiumWaifu;
+            var waifu = deck.Waifu;
+            deck.Cards = premium == 0 && waifu == 0 ? new List<Card>() : await context.Cards.AsQueryable()
+                .Where(x => x.GameDeckId == userId && (x.Id == premium || (waifu != 0 && x.Character == waifu)))
+                .Include(x => x.Tags).AsNoTracking().AsSplitQuery().ToListAsync();
+            return user;
+        }
+
         public static Task<int> CountCardsAsync(this Database.DatabaseContext context, ulong userId)
             => context.Cards.AsQueryable().CountAsync(x => x.GameDeckId == userId);
 
