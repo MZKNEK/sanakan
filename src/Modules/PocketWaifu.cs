@@ -4242,7 +4242,7 @@ namespace Sanakan.Modules
 
             var pvpPlayersInRange = duser.GameDeck.GetPvpOpponentCandidates(allPvpPlayers);
 
-            foreach (var candidate in pvpPlayersInRange.Shuffle())
+            foreach (var candidate in pvpPlayersInRange.RandomOrder())
             {
                 if (!await db.Cards.AsQueryable().AnyAsync(x => x.GameDeckId == candidate.UserId && x.Active))
                     continue;

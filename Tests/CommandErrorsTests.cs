@@ -21,6 +21,9 @@ namespace Artifacts
 
     public class CommandErrorsTests
     {
+        // Discord.Net brings System.Linq.Async, whose AsyncEnumerable clashes with the one in .NET 10
+        private static async IAsyncEnumerable<IReadOnlyCollection<IUser>> NoUsers() { yield break; }
+
         private static async Task<ParseResult> ParseAsync(string input)
         {
             var service = new CommandService();
@@ -28,7 +31,7 @@ namespace Artifacts
 
             var channel = new Mock<IMessageChannel>();
             channel.Setup(x => x.GetUsersAsync(It.IsAny<CacheMode>(), It.IsAny<RequestOptions>()))
-                .Returns(AsyncEnumerable.Empty<IReadOnlyCollection<IUser>>());
+                .Returns(NoUsers());
             var context = new Mock<ICommandContext>();
             context.SetupGet(x => x.Channel).Returns(channel.Object);
 

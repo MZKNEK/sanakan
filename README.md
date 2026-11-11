@@ -4,11 +4,11 @@
 [![CodeFactor](https://www.codefactor.io/repository/github/mzknek/sanakan/badge)](https://www.codefactor.io/repository/github/mzknek/sanakan)
 [![License: MPL 2.0](https://img.shields.io/badge/License-MPL_2.0-brightgreen.svg)](https://github.com/MZKNEK/sanakan/blob/master/LICENSE)
 
-Sanakan is a Discord bot and web API built with [.NET 8](https://dotnet.microsoft.com/download/dotnet/8.0) and [Discord.NET](https://github.com/discord-net/Discord.Net).
+Sanakan is a Discord bot and web API built with [.NET 10](https://dotnet.microsoft.com/download/dotnet/10.0) and [Discord.NET](https://github.com/discord-net/Discord.Net).
 
 ## Requirements
 
-- [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)
+- [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0)
 - MySQL-compatible database, or SQLite (no separate server needed)
 - A Shinden API application token (`shk_…`) and, for operations not yet
   moved to the new API, the legacy Shinden API key
@@ -118,7 +118,7 @@ dotnet build -c Release
 
 Log in as the user the bot will run as (not root), then:
 
-1. Install the [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0) and git.
+1. Install the [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0) and git.
 2. Get the code and enter it:
    ```bash
    git clone <repository address> sanakan
@@ -195,7 +195,7 @@ Without a shell, run a build directly from `src` (the folder under `bin/Release`
 in `Sanakan.csproj`):
 
 ```bash
-dotnet ./bin/Release/net8.0/Sanakan.dll
+dotnet ./bin/Release/net10.0/Sanakan.dll
 ```
 
 ### Bot setup
