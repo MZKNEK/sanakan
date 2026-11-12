@@ -20,7 +20,7 @@ namespace Sanakan.Services.Cache
         }
 
         private readonly SemaphoreSlim _lock = new SemaphoreSlim(1, 1);
-        private readonly object _loadLock = new object();
+        private readonly Lock _loadLock = new();
         private readonly TimeSpan _maxAge;
         private readonly TimeSpan _retryAfter;
         private readonly ILogger _logger;

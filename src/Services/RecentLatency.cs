@@ -1,6 +1,7 @@
 #pragma warning disable 1591
 
 using System;
+using System.Threading;
 
 namespace Sanakan.Services
 {
@@ -8,7 +9,7 @@ namespace Sanakan.Services
     public class RecentLatency
     {
         private readonly Func<long> _clock;
-        private readonly object _lock = new object();
+        private readonly Lock _lock = new();
         private long _minute = -1;
         private long _minMs = -1;
         private long _lastMs = -1;

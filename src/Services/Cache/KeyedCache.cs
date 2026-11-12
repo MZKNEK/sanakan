@@ -28,7 +28,7 @@ namespace Sanakan.Services.Cache
         private ConcurrentDictionary<TKey, Entry> _entries = new ConcurrentDictionary<TKey, Entry>();
         private readonly ConcurrentDictionary<TKey, bool> _refreshing = new ConcurrentDictionary<TKey, bool>();
         private readonly SemaphoreSlim _saveLock = new SemaphoreSlim(1, 1);
-        private readonly object _loadLock = new object();
+        private readonly Lock _loadLock = new();
         private readonly TimeSpan _maxAge;
         private readonly TimeSpan _retryAfter;
         private readonly TimeSpan _keepFor;

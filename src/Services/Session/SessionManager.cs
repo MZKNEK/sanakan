@@ -20,7 +20,7 @@ namespace Sanakan.Services.Session
         private ILogger _logger;
         private Timer _timer;
 
-        private readonly object _lock = new object();
+        private readonly Lock _lock = new();
         private readonly List<ISession> _sessions = new List<ISession>();
         private readonly SemaphoreSlim _autoValidate = new SemaphoreSlim(1, 1);
         private volatile bool _disposed;

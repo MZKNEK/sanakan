@@ -28,7 +28,7 @@ namespace Sanakan.Database
         // over 1 s on the log channel, over 5 s also pinged
         public static readonly Services.SlowLog Slow = new Services.SlowLog(TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(5), TimeSpan.FromMinutes(10));
         private const int SqlInLog = 300;
-        private static readonly object _slowLock = new object();
+        private static readonly Lock _slowLock = new();
         private static long _slowQueries;
         private static long _slowestMs;
         private static string _slowestSql;
