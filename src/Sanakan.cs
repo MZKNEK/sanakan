@@ -189,10 +189,11 @@ namespace Sanakan
             _apiGuard = new Api.TokenAttemptGuard(_time);
             MemoryReport.StartStoring(_config, _time, _logger, TimeSpan.FromMinutes(5));
             _events = new Events(_time);
-            _helper = new Helper(_config, _logger);
+            var fetchProxy = new FetchProxy(_config, _logger);
+            _helper = new Helper(_config, _logger, fetchProxy.CreateHandler(new System.Net.Http.HttpClientHandler { AllowAutoRedirect = false }));
             _expedition = new Expedition(_time);
             _img = new ImageProcessing(_shindenClient,
-                _tags.GetTag(Services.PocketWaifu.TagType.Gallery), logger: _logger);
+                _tags.GetTag(Services.PocketWaifu.TagType.Gallery), logger: _logger, handler: fetchProxy.CreateHandler());
             _scamImages = new ScamImageScanner(_img,
                 new ScamImageStore(Services.Dir.GetResource("ScamHashes.txt")), _logger,
                 () => _config.Get().ScamImageMaxDistance);

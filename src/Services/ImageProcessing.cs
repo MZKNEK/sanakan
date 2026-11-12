@@ -63,13 +63,13 @@ namespace Sanakan.Services
         // old picture url -> the current one, so the other cards still holding the old url skip its failing download
         private readonly ConcurrentDictionary<string, string> _movedPictures = new ConcurrentDictionary<string, string>();
 
-        public ImageProcessing(ShindenClient shinden, TagIcon gallery, bool allowPrivateHosts = false, ILogger logger = null)
+        public ImageProcessing(ShindenClient shinden, TagIcon gallery, bool allowPrivateHosts = false, ILogger logger = null, HttpMessageHandler handler = null)
         {
             _logger = logger;
             _shclient = shinden;
             _galleryTag = gallery;
             _allowPrivateHosts = allowPrivateHosts;
-            _httpClient = new HttpClient { Timeout = TimeSpan.FromSeconds(30) };
+            _httpClient = new HttpClient(handler ?? new HttpClientHandler()) { Timeout = TimeSpan.FromSeconds(30) };
             _fonts = new ConcurrentDictionary<(FontFamily, float), Font>();
             _colors = new ConcurrentDictionary<string, Color>();
             _siteImageServices = new List<DomainData>

@@ -101,6 +101,25 @@ case and accents. External SQLite tools do not know these rules, so change
 text columns only through the bot, or run `REINDEX NOCASE;` after editing
 them elsewhere.
 
+#### Downloads from players' links (fetch proxy)
+
+The bot downloads pictures from links players give (custom card images and borders, profile pictures). Such a
+download shows the server's address to whoever runs the linked site. To hide it, send these downloads through
+a fetch proxy:
+
+```json
+  "FetchProxy": {
+    "Url": "http://<proxy host>/fetch",
+    "Key": "<key from the proxy's owner>"
+  },
+```
+
+Without `Url` everything is downloaded directly, as before. Hosts in `DirectHosts` are still downloaded directly,
+together with their subdomains; without it they are `cdn.discordapp.com`, `media.discordapp.net` and
+`cdn.shinden.eu` (card pictures, far too many for the proxy). `MaxBytes` is the largest file the proxy is asked
+for (5 MB by default). The bot sends at most 4 downloads to the proxy at once. When the proxy refuses the key or
+cannot be reached, the log channel gets one error, and one line when it works again.
+
 Keep `Config.json` out of source control. It contains bot credentials,
 database credentials, and API keys. The repository's `.gitignore` should be
 used to prevent accidental commits of local configuration.
@@ -125,7 +144,9 @@ Log in as the user the bot will run as (not root), then:
    ```
 3. Put the configuration in `src/Config.json` (see [Configuration](#configuration)).
 4. Check the server; it lists everything to fix (no `origin`, a branch `origin` does not have, no .NET SDK of the
-   bot's framework, no config, an old bot still running) and changes nothing:
+   bot's framework, no config, a connection the bot needs that does not work, an old bot still running) and changes
+   nothing. The connections are checked with `curl`, the addresses from the config (Shinden API, fetch proxy,
+   heartbeat, ingest) also need `python3`:
    ```bash
    tools/check-server.sh
    ```
