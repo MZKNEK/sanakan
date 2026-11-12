@@ -38,6 +38,8 @@ namespace Sanakan.Api.Controllers
         private static int ClampOffset(uint offset) => (int)Math.Min(offset, int.MaxValue);
 
         private static readonly TimeSpan SearchCountLifetime = TimeSpan.FromMinutes(5);
+        private static readonly TimeSpan CardImageWait = TimeSpan.FromSeconds(3);
+        private const string CardImageRetryAfter = "3";
 
         // a text search has to scan every card to count its results, so the count is kept while the same results are paged
         // or sorted; other filters are counted every time. A player's list drops it when the player's cards change.
@@ -709,7 +711,7 @@ namespace Sanakan.Api.Controllers
 
                         try
                         {
-                            _waifu.DeleteCardImageIfExist(card);
+                            _waifu.DeleteCardImageIfExist(card, false);
                         }
                         catch (Exception) { }
 
@@ -778,11 +780,13 @@ namespace Sanakan.Api.Controllers
         /// Wymusza na bocie wygenerowanie obrazka jeśli nie istnieje
         /// </summary>
         /// <param name="id">id karty (wid)</param>
+        /// <param name="type">zwracany obrazek: Normal (ze statystykami), Profile (bez statystyk) lub Small (miniatura)</param>
         /// <response code="403">Card already exist</response>
         /// <response code="404">Card not found</response>
         /// <response code="500">Card not generated</response>
+        /// <response code="503">Card is still being generated, try again after Retry-After seconds</response>
         [HttpGet("card/{id}"), AllowAnonymous]
-        public async Task<IActionResult> GetCardAsync(ulong id)
+        public async Task<IActionResult> GetCardAsync(ulong id, [FromQuery] CardImageType type = CardImageType.Normal)
         {
             bool miniature = System.IO.File.Exists($"{Services.Dir.CardsMiniatures}/{id}.webp") || System.IO.File.Exists($"{Services.Dir.CardsMiniatures}/{id}.gif");
             bool normal = System.IO.File.Exists($"{Services.Dir.Cards}/{id}.webp") || System.IO.File.Exists($"{Services.Dir.Cards}/{id}.gif");
@@ -801,7 +805,13 @@ namespace Sanakan.Api.Controllers
                     return "Card not found!".ToResponse(404);
                 }
 
-                var cardImage = await _waifu.GenerateAndSaveCardAsync(card, CardImageType.Normal, true);
+                var cardImage = await _waifu.GetCardImageAsync(card, type, CardImageWait);
+                if (cardImage == null)
+                {
+                    Response.Headers["Retry-After"] = CardImageRetryAfter;
+                    return "Card is being generated, try again later!".ToResponse(503);
+                }
+
                 if (!System.IO.File.Exists(cardImage))
                 {
                     return "Card not generated!".ToResponse(500);

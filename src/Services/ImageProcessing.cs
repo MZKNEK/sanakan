@@ -414,6 +414,8 @@ namespace Sanakan.Services
             internal bool TryGet(string url, out byte[] picture) => _pictures.TryGetValue(url, out picture);
 
             internal void Add(string url, Stream picture) => _pictures[url] = (picture as MemoryStream)?.ToArray();
+
+            internal bool HasFailure => _pictures.ContainsValue(null);
         }
 
         private async Task<Image> GetImageFromUrlOrLocalAsync(string uri, CardPictureCache pictures = null)
