@@ -78,5 +78,8 @@ public static class CommandCatalog
         ["czego brak"] = T(ChannelKind.Waifu, c => $"czego brak {c.Title} tak"),
         ["ulubione"] = T(ChannelKind.Waifu, "ulubione"),
         ["subskrypcje"] = T(ChannelKind.Command, "subskrypcje"),
+        // a player's link: the bot downloads it through the fetch proxy; now and then the linked picture is gone
+        ["konfiguracja profilu"] = T(ChannelKind.Command, c =>
+            $"konfiguracja profilu tło https://{FakeFetchProxy.ImageHost}/{(c.Random.Next(5) == 0 ? "missing" : "bg")}/{c.Random.Next(1, 1000)}.png"),
     };
 }

@@ -6,6 +6,10 @@ The bot itself is unchanged; it only gets `DiscordGatewayUrl` / `DiscordApiUrl` 
 
 Outgoing traffic of the bot is contained: `HTTPS_PROXY` points to a closed local port, `HTTP_PROXY` to the
 simulator, which serves Shinden pictures (`cdn.shinden.eu` is plain http) and answers 404 to anything else.
+Downloads from players' links go through a fake fetch proxy (`/fetch`, `FetchProxy` in the bot's config) like on
+the production server: it answers a picture for any address, 404 for addresses with `missing` in them, and `busy`
+above 4 requests at once. `--extra "konfiguracja profilu"` sends profile backgrounds linked to `img.sim.test`
+through it.
 
 ## Modes
 

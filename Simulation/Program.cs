@@ -22,6 +22,7 @@ var baseUrl = $"http://127.0.0.1:{options.Port}";
 var gateway = new Gateway(world, log, membersInline: 100) { ResumeUrl = $"ws://127.0.0.1:{options.Port}/gateway" };
 var rest = new RestApi(world, gateway, log, replies);
 var shinden = new FakeShinden(log);
+var fetchProxy = new FakeFetchProxy(log);
 
 var builder = WebApplication.CreateSlimBuilder();
 builder.Logging.SetMinimumLevel(LogLevel.Warning);
@@ -40,6 +41,7 @@ app.Run(async context =>
         context.Response.StatusCode = 404;
     }
     else if (context.WebSockets.IsWebSocketRequest && path.StartsWith("/gateway")) await gateway.HandleAsync(context);
+    else if (path == FakeFetchProxy.Path) await fetchProxy.HandleAsync(context);
     else if (path.StartsWith(RestApi.Prefix + "/")) await rest.HandleAsync(context);
     else if (path.StartsWith(FakeShinden.Prefix + "/")) await shinden.HandleAsync(context);
     else
