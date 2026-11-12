@@ -12,6 +12,8 @@ public sealed class FakeShinden
 {
     public const string Prefix = "/shinden";
     public const string ImageHost = "cdn.shinden.eu";
+    // the pictures under this prefix on the simulator, as the bot's FetchProxy.Mirrors points there
+    public const string MirrorPrefix = "/cdn";
 
     private const ulong FirstTitle = 1000;
 

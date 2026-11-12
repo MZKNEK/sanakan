@@ -116,14 +116,15 @@ check_url() {
         ok "$1 answers ($2)"
     fi
 }
-# Newtonsoft reads the config with any letter case, so the keys are matched the same way
+# Newtonsoft reads the config with any letter case, so the keys are matched the same way; the path is split on /,
+# because keys like cdn.shinden.eu have dots in them
 config_value() {
     python3 - "$REPO/src/$CONFIG" "$1" 2>/dev/null <<'EOF'
 import json, sys
 value = json.load(open(sys.argv[1], encoding="utf-8-sig"))
-for key in sys.argv[2].split("."):
+for key in sys.argv[2].split("/"):
     value = next((v for k, v in value.items() if k.lower() == key.lower()), None) if isinstance(value, dict) else None
-print(value if isinstance(value, str) else "")
+print(value.strip() if isinstance(value, str) else "")
 EOF
 }
 PROXY_TEST_IMAGE=https://cdn.discordapp.com/embed/avatars/0.png
@@ -151,19 +152,22 @@ else
     if [ -z "$gateway" ]; then check_url "Discord gateway" https://gateway.discord.gg/ "" problem; fi
     check_url "Discord CDN (avatars, attachments)" "$PROXY_TEST_IMAGE" 200 problem
     check_url "Discord media proxy" https://media.discordapp.net/ "" problem
-    check_url "Shinden pictures for cards" http://cdn.shinden.eu/cdn1/other/placeholders/title/225x350.jpg 200 problem
+    # with a mirror for cdn.shinden.eu (FetchProxy.Mirrors) the pictures come from there, under the same paths
+    pictures=$(value FetchProxy/Mirrors/cdn.shinden.eu)
+    pictures=${pictures:-http://cdn.shinden.eu/}
+    check_url "Shinden pictures for cards" "${pictures%/}/cdn1/other/placeholders/title/225x350.jpg" 200 problem
     check_url "NuGet (updates build the bot here)" https://api.nuget.org/v3/index.json 200 problem
 
-    shinden=$(value Shinden.BaseUri)
+    shinden=$(value Shinden/BaseUri)
     check_url "Shinden API" "${shinden:-https://shinden.pl/}" "" problem
     for name in Heartbeat Ingest; do
-        url=$(value "$name.Url")
+        url=$(value "$name/Url")
         if [ -n "$url" ]; then check_url "$name" "$url" "" warning; fi
     done
 
-    proxy=$(value FetchProxy.Url)
+    proxy=$(value FetchProxy/Url)
     if [ -n "$proxy" ]; then
-        key=$(value FetchProxy.Key)
+        key=$(value FetchProxy/Key)
         key=${key//\\/\\\\}
         key=${key//\"/\\\"}
         # the key goes through curl's stdin config, not the command line other accounts can see
