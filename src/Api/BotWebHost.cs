@@ -237,7 +237,7 @@ namespace Sanakan.Api
                 catch (Microsoft.AspNetCore.Http.BadHttpRequestException ex)
                 {
                     // the client sent a broken request, e.g. closed the connection before sending the whole body
-                    auditLogger?.LogRoutine($"API: {context.Request.Method} {context.Request.Path} - bad request from {ApiAudit.GetClient(context.User)} after {watch.ElapsedMilliseconds}ms: {ex.Message}");
+                    auditLogger?.LogRoutine($"API: {context.Request.Method} {context.Request.Path} - bad request from {ApiAudit.GetClient(context)} after {watch.ElapsedMilliseconds}ms: {ex.Message}");
                     if (context.Response.HasStarted || context.RequestAborted.IsCancellationRequested) return;
 
                     context.Response.Clear();
@@ -265,7 +265,7 @@ namespace Sanakan.Api
 
                         var route = ApiTraffic.GetKey(context);
                         SlowRequests.Record(auditLogger, route, elapsed,
-                            () => $"API: slow {route} from {ApiAudit.GetClient(context.User)} -> {context.Response.StatusCode} ({(long)elapsed.TotalMilliseconds}ms)");
+                            () => $"API: slow {route} from {ApiAudit.GetClient(context)} ->{context.Response.StatusCode} ({(long)elapsed.TotalMilliseconds}ms)");
                     }
                 }
             });
