@@ -174,8 +174,10 @@ namespace Sanakan.Api.Controllers
         /// </summary>
         /// <param name="name">nazwa (bez spacji)</param>
         /// <response code="400">Invalid tag name</response>
-        /// <response code="409">Tag already exists / too similar to default tag</response>
-        /// <response code="406">Tag limit reached</response>
+        /// <response code="409">
+        /// Pole code: tag_exists (details.tagId - istniejące oznaczenie o tej nazwie, np. po powtórzeniu żądania),
+        /// tag_too_similar (za podobne do domyślnego) albo tag_limit (osiągnięto limit oznaczeń)
+        /// </response>
         [HttpPost("tags"), ProducesResponseType(typeof(UserTag), 201)]
         public Task<IActionResult> CreateTagAsync([FromBody] string name)
         {
@@ -185,14 +187,15 @@ namespace Sanakan.Api.Controllers
             return RunAsPlayerAsync("tag-create", async (db, discordId) =>
             {
                 var buser = await db.GetUserOrCreateSimpleAsync(discordId, _time);
+                var existing = buser.GameDeck.Tags.FirstOrDefault(x => x.Name.Equals(name, StringComparison.CurrentCultureIgnoreCase));
+                if (existing != null)
+                    return TagExists(existing);
+
                 if (buser.GameDeck.MaxNumberOfTags <= buser.GameDeck.Tags.Count)
-                    return "Tag limit reached!".ToResponse(406);
+                    return ApiResponses.Conflict(TagLimitCode, "Tag limit reached!");
 
                 if (_tags.IsSimilar(name))
-                    return "Tag is too similar to default tag!".ToResponse(409);
-
-                if (buser.GameDeck.Tags.Any(x => x.Name.Equals(name, StringComparison.CurrentCultureIgnoreCase)))
-                    return "Tag already exists!".ToResponse(409);
+                    return TagTooSimilar();
 
                 var tag = new Tag { Name = name };
                 buser.GameDeck.Tags.Add(tag);
@@ -209,7 +212,7 @@ namespace Sanakan.Api.Controllers
         /// <param name="name">nowa nazwa (bez spacji)</param>
         /// <response code="400">Invalid tag name</response>
         /// <response code="404">Tag not found</response>
-        /// <response code="409">Tag already exists / too similar to default tag</response>
+        /// <response code="409">Pole code: tag_exists (details.tagId - inne oznaczenie o tej nazwie) albo tag_too_similar</response>
         [HttpPut("tags/{id}")]
         public Task<IActionResult> RenameTagAsync(ulong id, [FromBody] string name)
         {
@@ -224,10 +227,11 @@ namespace Sanakan.Api.Controllers
                     return "Tag not found!".ToResponse(404);
 
                 if (_tags.IsSimilar(name))
-                    return "Tag is too similar to default tag!".ToResponse(409);
+                    return TagTooSimilar();
 
-                if (buser.GameDeck.Tags.Any(x => x.Id != id && x.Name.Equals(name, StringComparison.CurrentCultureIgnoreCase)))
-                    return "Tag already exists!".ToResponse(409);
+                var other = buser.GameDeck.Tags.FirstOrDefault(x => x.Id != id && x.Name.Equals(name, StringComparison.CurrentCultureIgnoreCase));
+                if (other != null)
+                    return TagExists(other);
 
                 tag.Name = name;
                 await db.SaveChangesAsync();
@@ -346,8 +350,9 @@ namespace Sanakan.Api.Controllers
         /// Ustawia ulubioną postać na profilu (0 - reset)
         /// </summary>
         /// <param name="wid">WID posiadanej karty z postacią (karta nie może być w klatce)</param>
+        /// <response code="200">Waifu changed / reset / unchanged (the character was already set)</response>
         /// <response code="404">Card not found or in cage</response>
-        /// <response code="409">Character already set / User is in an exchange</response>
+        /// <response code="409">User is in an exchange</response>
         [HttpPut("waifu/{wid}")]
         public Task<IActionResult> SetWaifuAsync(ulong wid)
             => RunAsPlayerAsync("waifu", async (db, discordId) =>
@@ -376,7 +381,7 @@ namespace Sanakan.Api.Controllers
                     return "Card not found or in cage!".ToResponse(404);
 
                 if (buser.GameDeck.Waifu == card.Character)
-                    return "Character already set!".ToResponse(409);
+                    return "Waifu unchanged!".ToResponse(200);
 
                 LowerPreviousWaifusAffection(buser);
                 buser.GameDeck.Waifu = card.Character;
@@ -482,7 +487,7 @@ namespace Sanakan.Api.Controllers
             }), discordId);
 
             if (!await _executor.TryAdd(exe, TimeSpan.FromSeconds(1)))
-                return "Command queue is full".ToResponse(503);
+                return ApiResponses.QueueFull(Response);
 
             if (!await exe.WaitAsync(Executable.ApiMaxWait))
                 return "Command timed out".ToResponse(504);
@@ -499,5 +504,13 @@ namespace Sanakan.Api.Controllers
         }
 
         private static IActionResult NoClaim() => "The appropriate claim was not found".ToResponse(403);
+
+        public const string TagExistsCode = "tag_exists";
+        public const string TagTooSimilarCode = "tag_too_similar";
+        public const string TagLimitCode = "tag_limit";
+
+        private static IActionResult TagExists(Tag tag) => ApiResponses.Conflict(TagExistsCode, "Tag already exists!", new { tagId = tag.Id });
+
+        private static IActionResult TagTooSimilar() => ApiResponses.Conflict(TagTooSimilarCode, "Tag is too similar to default tag!");
     }
 }

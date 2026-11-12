@@ -47,7 +47,7 @@ namespace Sanakan.Api.Controllers
             {
                 var hours = (int)retryAfter.TotalHours;
                 var minutes = retryAfter.Minutes;
-                return $"Zbyt wiele nieudanych prób. Spróbuj ponownie za {hours}h {minutes}m.".ToResponse(429);
+                return ApiResponses.TooManyAttempts(Response, retryAfter, $"Zbyt wiele nieudanych prób. Spróbuj ponownie za {hours}h {minutes}m.");
             }
 
             var user = Authenticate(apikey);
