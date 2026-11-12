@@ -44,6 +44,14 @@ public static class ApiCatalog
 
     private static Template Player(string path) => new($"GET api/waifu/{path}", HttpMethod.Get, Auth.Player, _ => $"api/waifu/{path}");
 
+    // the site asks for the image of a card it shows; a player without sampled cards asks for a card that does not exist
+    private static string CardImage(Context c)
+    {
+        var id = c.User.Cards.Count > 0 ? c.User.Cards[c.Random.Next(c.User.Cards.Count)] : 1;
+        var type = new[] { "", "", "?type=profile", "?type=small" }[c.Random.Next(4)];
+        return $"api/Waifu/card/{id}{type}";
+    }
+
     public static readonly IReadOnlyDictionary<string, Template> Templates = new Dictionary<string, Template>
     {
         ["api:limits"] = Player("limits"),
@@ -60,6 +68,7 @@ public static class ApiCatalog
             c => $"api/Waifu/discord/{c.User.Id}/boosterpack", Pack, GivesPacks: true),
         ["api:give-packs-shinden"] = new("POST /api/waifu/shinden/{n}/boosterpack", HttpMethod.Post, Auth.Site,
             c => $"api/Waifu/shinden/{c.Shinden}/boosterpack", Pack, NeedsShinden: true),
+        ["api:card-image"] = new("GET api/Waifu/card/{id}", HttpMethod.Get, Auth.Site, CardImage),
         ["api:user"] = new("GET api/User/discord/{id}", HttpMethod.Get, Auth.Site, c => $"api/User/discord/{c.User.Id}"),
         ["api:user-shinden"] = new("GET api/User/shinden/{id}", HttpMethod.Get, Auth.Site, c => $"api/User/shinden/{c.Shinden}", NeedsShinden: true),
         ["api:user-cards"] = new("POST api/Waifu/user/{id}/cards/{offset}/{count}", HttpMethod.Post, Auth.Site,

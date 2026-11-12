@@ -1113,7 +1113,7 @@ namespace Sanakan.Modules
                 var userRelease = new List<string>();
                 foreach (var thisCard in thisCards)
                 {
-                    _waifu.DeleteCardImageIfExist(thisCard);
+                    _waifu.DeleteCardImageIfExist(thisCard, false);
                     db.Cards.Remove(thisCard);
                     userRelease.Add(CacheTags.User(thisCard.GameDeckId));
                 }

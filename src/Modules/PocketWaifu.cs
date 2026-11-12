@@ -1835,7 +1835,7 @@ namespace Sanakan.Modules
                     totalExp += exp;
 
                     bUser.GameDeck.Cards.Remove(card);
-                    _waifu.DeleteCardImageIfExist(card);
+                    _waifu.DeleteCardImageIfExist(card, false);
                 }
 
                 _ = cardToUp.CalculateCardPower();
@@ -4001,7 +4001,7 @@ namespace Sanakan.Modules
                     action = addMsg ? $"\n\n{trashTag.Icon} Wykonano akcję: **{botUser.GameDeck.EndOfExpeditionAction.ToName()}** na karcie powracającej z wyprawy.\nWieść o twoim okrucieństwie się rozeszła."
                         : $"\n\n{trashTag.Icon} Wykonano akcję: **{botUser.GameDeck.EndOfExpeditionAction.ToName()}** na karcie powracającej z wyprawy.";
 
-                    _waifu.DeleteCardImageIfExist(thisCard);
+                    _waifu.DeleteCardImageIfExist(thisCard, false);
                     botUser.GameDeck.Cards.Remove(thisCard);
                 }
 

@@ -1907,7 +1907,40 @@ namespace Sanakan.Services.PocketWaifu
             return cardsFromPack;
         }
 
-        public async Task<string> GenerateAndSaveCardAsync(Card card, CardImageType type = CardImageType.Normal, bool fromApi = false)
+        public async Task<string> GenerateAndSaveCardAsync(Card card, CardImageType type = CardImageType.Normal)
+            => (await GenerateAndSaveCardAsync(card, type, false, false)).Path;
+
+        // Returns null when the image is not ready within the wait; the drawing goes on and saves it.
+        public async Task<string> GetCardImageAsync(Card card, CardImageType type, TimeSpan wait)
+        {
+            try
+            {
+                return await GenerateAndSaveCardAsync(card, type).WaitAsync(wait);
+            }
+            catch (TimeoutException)
+            {
+                ImageQueue?.CountLateRequest();
+                return null;
+            }
+        }
+
+        public async Task<CardDrawing> DrawInBackgroundAsync(ulong cardId, bool force)
+        {
+            Card card;
+            using (var db = new Database.DatabaseContext(_config))
+            {
+                card = await db.Cards.AsNoTracking().FirstOrDefaultAsync(x => x.Id == cardId);
+            }
+
+            return card == null ? CardDrawing.Removed : await DrawInBackgroundAsync(card, force);
+        }
+
+        internal async Task<CardDrawing> DrawInBackgroundAsync(Card card, bool force)
+            => (await GenerateAndSaveCardAsync(card, CardImageType.Normal, force, true)).Result;
+
+        // background: a card whose picture could not be downloaded is not saved, so it is not left without it for good;
+        // it is drawn when someone wants to see it
+        private async Task<(string Path, CardDrawing Result)> GenerateAndSaveCardAsync(Card card, CardImageType type, bool force, bool background)
         {
             var ext = card.IsCardAnimated() ? AnimatedCardExtension : NormalCardExtension;
             string imageLocation = $"{Dir.Cards}/{card.Id}.{ext}";
@@ -1921,16 +1954,13 @@ namespace Sanakan.Services.PocketWaifu
                 _ => imageLocation,
             };
 
-            if (fromApi && _cardGenLocker.IsInUse(card.Id))
-                return toReturn;
-
             using (await _cardGenLocker.LockAsync(card.Id))
             {
                 // a generation that failed half way leaves some files missing, so all of them are checked, not just the requested one
-                var cardMissing = !File.Exists(imageLocation) || !File.Exists(sImageLocation);
-                var profileMissing = !File.Exists(pImageLocation);
+                var cardMissing = force || !File.Exists(imageLocation) || !File.Exists(sImageLocation);
+                var profileMissing = force || !File.Exists(pImageLocation);
                 if (!cardMissing && !profileMissing)
-                    return toReturn;
+                    return (toReturn, CardDrawing.AlreadyDrawn);
 
                 var pictures = new ImageProcessing.CardPictureCache();
                 try
@@ -1939,6 +1969,13 @@ namespace Sanakan.Services.PocketWaifu
                     {
                         using (var image = await _img.GetWaifuCardAsync(card, pictures))
                         {
+                            if (background && pictures.HasFailure)
+                            {
+                                if (force)
+                                    DeleteCardFiles(card);
+                                return (toReturn, CardDrawing.NoPicture);
+                            }
+
                             image.SaveToPath(imageLocation);
                             image.SaveToPath(sImageLocation, 133);
                         }
@@ -1948,6 +1985,13 @@ namespace Sanakan.Services.PocketWaifu
                     {
                         using (var cardImage = await _img.GetWaifuInProfileCardAsync(card, pictures))
                         {
+                            if (background && pictures.HasFailure)
+                            {
+                                if (force)
+                                    DeleteCardFiles(card);
+                                return (toReturn, CardDrawing.NoPicture);
+                            }
+
                             cardImage.SaveToPath(pImageLocation);
                         }
                     }
@@ -1955,10 +1999,11 @@ namespace Sanakan.Services.PocketWaifu
                 catch (Exception ex)
                 {
                     _logger.LogError($"Waifu: generating card {card.Id}: {ex.Message}");
+                    return (toReturn, CardDrawing.Failed);
                 }
             }
 
-            return toReturn;
+            return (toReturn, CardDrawing.Drawn);
         }
 
         // The picture of the character was replaced on Shinden: cards still holding the old url get the current one, and their
@@ -1973,14 +2018,27 @@ namespace Sanakan.Services.PocketWaifu
             foreach (var card in cards)
             {
                 card.Image = newUrl;
-                DeleteCardImageIfExist(card);
+                DeleteCardImageIfExist(card, false);
             }
 
             await db.SaveChangesAsync();
             QueryCache.ExpireTag(cards.Select(x => CacheTags.User(x.GameDeckId)).Distinct().ToArray());
         }
 
-        public void DeleteCardImageIfExist(Card card)
+        public CardImageQueue ImageQueue { get; set; }
+
+        // redraw: the card stays and is drawn again in the background; not for removed cards or many cards at once
+        public void DeleteCardImageIfExist(Card card, bool redraw = true)
+        {
+            // a drawing in progress may have read the card before this change and save its images after the files are deleted
+            var drawing = _cardGenLocker.IsInUse(card.Id);
+            DeleteCardFiles(card);
+
+            if (redraw)
+                ImageQueue?.Enqueue(card.Id, drawing || _cardGenLocker.IsInUse(card.Id));
+        }
+
+        private void DeleteCardFiles(Card card)
         {
             var toRemove = new List<string>()
             {
@@ -2565,7 +2623,7 @@ namespace Sanakan.Services.PocketWaifu
                 card.DestroyOrRelease(user, release);
 
                 user.GameDeck.Cards.Remove(card);
-                DeleteCardImageIfExist(card);
+                DeleteCardImageIfExist(card, false);
             }
 
             string actionStr = release ? "uwolni" : "zniszczy";

@@ -90,6 +90,7 @@ namespace Sanakan
 
             _heartbeat.Start();
             _ingest.Start();
+            _waifu.ImageQueue.Start();
 
             _logger.Log($"Bot: Sanakan {HealthMonitor.GetVersion()} started, API: {BotWebHost.Url}");
 
@@ -215,6 +216,7 @@ namespace Sanakan
                  _expedition, _client, _helper, _time, _shinden, _tags, _config);
             _img.CurrentCharacterPicture = id => _shinden.GetCurrentPictureAsync(id);
             _img.CharacterPictureMoved = (id, oldUrl, newUrl) => _waifu.MoveCharacterPictureAsync(id, oldUrl, newUrl);
+            _waifu.ImageQueue = new CardImageQueue((id, force) => _waifu.DrawInBackgroundAsync(id, force), _logger);
             WishlistRecount.Start(_config, _time, _logger);
             _supervisor = new Supervisor(_client, _config, _logger, _mod, _time, _scamImages);
             _greeting = new Greeting(_client, _logger, _config, _executor, _time);
