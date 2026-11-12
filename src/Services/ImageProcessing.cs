@@ -17,6 +17,7 @@ using Sanakan.ShindenCompat.Models;
 using SixLabors.Fonts;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Drawing.Processing;
+using SixLabors.ImageSharp.Formats;
 using SixLabors.ImageSharp.PixelFormats;
 using SixLabors.ImageSharp.Processing;
 using System.Numerics;
@@ -458,18 +459,18 @@ namespace Sanakan.Services
             => _fonts.GetOrAdd((family, size), key => new Font(key.Item1, key.Item2));
 
         private Color GetOrCreateColor(string hex)
-            => _colors.GetOrAdd(hex, Color.ParseHex);
+            => _colors.GetOrAdd(hex, x => Color.ParseHex(x));
 
         private Font GetFontSize(FontFamily fontFamily, float size, string text, float maxWidth)
         {
             var font = GetOrCreateFont(fontFamily, size);
-            var measured = TextMeasurer.MeasureSize(text, new TextOptions(font));
+            var measured = TextMeasurer.MeasureBounds(text, new TextOptions(font));
 
             while (measured.Width > maxWidth)
             {
                 if (--size < 1) break;
                 font = GetOrCreateFont(fontFamily, size);
-                measured = TextMeasurer.MeasureSize(text, new TextOptions(font));
+                measured = TextMeasurer.MeasureBounds(text, new TextOptions(font));
             }
 
             return font;
@@ -587,7 +588,7 @@ namespace Sanakan.Services
 
         private Image<Rgba32> GetTopLevelImage(long topPos, User user)
         {
-            var image = new Image<Rgba32>(195, 19, Color.Transparent);
+            var image = new Image<Rgba32>(195, 19, Color.Transparent.ToPixel<Rgba32>());
 
             using var topImage = Image.Load(Dir.GetResource("np/mtop.png"));
             using var lvlImage = Image.Load(Dir.GetResource("np/mlvl.png"));
@@ -595,9 +596,9 @@ namespace Sanakan.Services
             var font = GetOrCreateFont(_latoRegular, 16);
             var topp = topPos > 999 ? $">1K" : ToShortSI(topPos);
             image.Mutate(x => x.DrawImage(topImage, new Point(0, 0), 1));
-            image.Mutate(x => x.DrawText(topp, font, GetOrCreateColor("#a7a7a7"), new PointF(19.5f, 0)));
+            image.Mutate(x => x.Paint(c => c.DrawText(new RichTextOptions(font) { Origin = new PointF(19.5f, 0) }, topp, Brushes.Solid(GetOrCreateColor("#a7a7a7")), null)));
             image.Mutate(x => x.DrawImage(lvlImage, new Point(60, 0), 1));
-            image.Mutate(x => x.DrawText(ToShortSI(user.Level), font, GetOrCreateColor("#a7a7a7"), new PointF(79.5f, 0)));
+            image.Mutate(x => x.Paint(c => c.DrawText(new RichTextOptions(font) { Origin = new PointF(79.5f, 0) }, ToShortSI(user.Level), Brushes.Solid(GetOrCreateColor("#a7a7a7")), null)));
 
             var prevLvlExp = ExperienceManager.CalculateExpForLevel(user.Level);
             var nextLvlExp = ExperienceManager.CalculateExpForLevel(user.Level + 1);
@@ -608,14 +609,14 @@ namespace Sanakan.Services
             lvlExp = lvlExp < 0 ? expOnLvl + 1 : lvlExp;
 
             var barH = 14;
-            using var backBar = new Image<Rgba32>(74, barH, GetOrCreateColor("#3f3f3f"));
+            using var backBar = new Image<Rgba32>(74, barH, GetOrCreateColor("#3f3f3f").ToPixel<Rgba32>());
             backBar.Mutate(x => x.Round(3));
             image.Mutate(x => x.DrawImage(backBar, new Point(114, 1), 1));
 
             int progressBarLength = (int)(72d * (expOnLvl / (double)lvlExp));
             if (progressBarLength > 0)
             {
-                using var progressBar = new Image<Rgba32>(progressBarLength, barH - 2, GetOrCreateColor("#145DA0"));
+                using var progressBar = new Image<Rgba32>(progressBarLength, barH - 2, GetOrCreateColor("#145DA0").ToPixel<Rgba32>());
                 progressBar.Mutate(x => x.Round(3));
                 image.Mutate(x => x.DrawImage(progressBar, new Point(115, 2), 1));
             }
@@ -623,20 +624,20 @@ namespace Sanakan.Services
             var expY = 3;
             var fontSmall = GetOrCreateFont(_latoBold, 10);
             string exp = $"{expOnLvl} / {lvlExp}";
-            var mExp = TextMeasurer.MeasureSize(exp, new TextOptions(fontSmall));
-            image.Mutate(x => x.DrawText(exp, fontSmall, GetOrCreateColor("#FFFFFF"), new Point(114 + ((int)(74 - mExp.Width) / 2), expY)));
+            var mExp = TextMeasurer.MeasureBounds(exp, new TextOptions(fontSmall));
+            image.Mutate(x => x.Paint(c => c.DrawText(new RichTextOptions(fontSmall) { Origin = new Point(114 + ((int)(74 - mExp.Width) / 2), expY) }, exp, Brushes.Solid(GetOrCreateColor("#FFFFFF")), null)));
 
             return image;
         }
 
         private Image<Rgba32> GetCurrencyImage(long currency, string coin)
         {
-            var image = new Image<Rgba32>(74, 19, Color.Transparent);
+            var image = new Image<Rgba32>(74, 19, Color.Transparent.ToPixel<Rgba32>());
             using var coinImage = Image.Load(coin);
 
             var font = GetOrCreateFont(_latoRegular, 16);
             image.Mutate(x => x.DrawImage(coinImage, new Point(0, 0), 1));
-            image.Mutate(x => x.DrawText(ToShortSI(currency), font, GetOrCreateColor("#a7a7a7"), new PointF(coinImage.Width + 3.5f, 0)));
+            image.Mutate(x => x.Paint(c => c.DrawText(new RichTextOptions(font) { Origin = new PointF(coinImage.Width + 3.5f, 0) }, ToShortSI(currency), Brushes.Solid(GetOrCreateColor("#a7a7a7")), null)));
             return image;
         }
 
@@ -662,9 +663,9 @@ namespace Sanakan.Services
             var barTop = user.StatsStyleSettings.HasFlag(ProfileSettings.BarOnTop);
             var customBarOpacity = user.StatsStyleSettings.HasFlag(ProfileSettings.BarOpacity);
 
-            var image = new Image<Rgba32>(750, 500, Color.Transparent);
+            var image = new Image<Rgba32>(750, 500, Color.Transparent.ToPixel<Rgba32>());
 
-            using var bar = new Image<Rgba32>(700, 40, GetOrCreateColor("#000000"));
+            using var bar = new Image<Rgba32>(700, 40, GetOrCreateColor("#000000").ToPixel<Rgba32>());
             bar.Mutate(x => x.Round(10));
             image.Mutate(x => x.DrawImage(bar, new Point(25, barTop ? -16 : 476), customBarOpacity ? user.ProfileShadowsOpacity : 0.75f));
 
@@ -702,7 +703,7 @@ namespace Sanakan.Services
         {
             bool alreadyAnimated = false;
             var shadowsOpacity = botUser.ProfileShadowsOpacity;
-            var image = new Image<Rgba32>(750, 340, Color.Transparent);
+            var image = new Image<Rgba32>(750, 340, Color.Transparent.ToPixel<Rgba32>());
             switch (botUser.ProfileType)
             {
                 case ProfileType.Img:
@@ -742,7 +743,7 @@ namespace Sanakan.Services
                         {
                             if (isOnImg)
                             {
-                                using var shadow = new Image<Rgba32>(331, 275, GetOrCreateColor("#000000"));
+                                using var shadow = new Image<Rgba32>(331, 275, GetOrCreateColor("#000000").ToPixel<Rgba32>());
                                 shadow.Mutate(x => x.Round(10));
                                 image.Mutate(x => x.DrawImage(shadow, new Point(statsX - 3, statsY - 3), shadowsOpacity));
                             }
@@ -783,7 +784,7 @@ namespace Sanakan.Services
                     {
                         if (shindenUser != null)
                         {
-                            using var shadow = new Image<Rgba32>(331, 128, GetOrCreateColor("#000000"));
+                            using var shadow = new Image<Rgba32>(331, 128, GetOrCreateColor("#000000").ToPixel<Rgba32>());
                             shadow.Mutate(x => x.Round(10));
 
                             if (shindenUser?.ListStats?.AnimeStatus != null && botUser.StatsStyleSettings.HasFlag(ProfileSettings.ShowAnime))
@@ -813,7 +814,7 @@ namespace Sanakan.Services
                     {
                         if (isOnImg)
                         {
-                            using var shadow = new Image<Rgba32>(370, 275, GetOrCreateColor("#000000"));
+                            using var shadow = new Image<Rgba32>(370, 275, GetOrCreateColor("#000000").ToPixel<Rgba32>());
                             shadow.Mutate(x => x.Round(10));
                             image.Mutate(x => x.DrawImage(shadow, new Point(statsX - 3, statsY - 3), shadowsOpacity));
                         }
@@ -881,10 +882,10 @@ namespace Sanakan.Services
             var oGap = 60;
             var startY = 18;
             var startX = 213;
-            image.Mutate(x => x.DrawText($"Posiadane", fontDetail, fontColorDetail, new Point(startX, startY - 10)));
-            image.Mutate(x => x.DrawText($"Limit", fontDetail, fontColorDetail, new Point(startX + oGap, startY - 10)));
-            image.Mutate(x => x.DrawText($"{botUser.GameDeck.Cards.Count}", font, fontColor, new Point(startX, startY)));
-            image.Mutate(x => x.DrawText($"{botUser.GameDeck.MaxNumberOfCards}", font, fontColor, new Point(startX + oGap, startY)));
+            image.Mutate(x => x.Paint(c => c.DrawText(new RichTextOptions(fontDetail) { Origin = new Point(startX, startY - 10) }, $"Posiadane", Brushes.Solid(fontColorDetail), null)));
+            image.Mutate(x => x.Paint(c => c.DrawText(new RichTextOptions(fontDetail) { Origin = new Point(startX + oGap, startY - 10) }, $"Limit", Brushes.Solid(fontColorDetail), null)));
+            image.Mutate(x => x.Paint(c => c.DrawText(new RichTextOptions(font) { Origin = new Point(startX, startY) }, $"{botUser.GameDeck.Cards.Count}", Brushes.Solid(fontColor), null)));
+            image.Mutate(x => x.Paint(c => c.DrawText(new RichTextOptions(font) { Origin = new Point(startX + oGap, startY) }, $"{botUser.GameDeck.MaxNumberOfCards}", Brushes.Solid(fontColor), null)));
 
             if (botUser.GameDeck.CanCreateDemon() || botUser.GameDeck.CanCreateAngel() || botUser.GameDeck.IsNeutral())
             {
@@ -907,7 +908,7 @@ namespace Sanakan.Services
                 {
                     using var cimg = Image.Load(Dir.GetResource($"np/r{rarity}.png"));
                     image.Mutate(x => x.DrawImage(cimg, new Point(startX, startY), 1));
-                    image.Mutate(x => x.DrawText(cardCount.ToString(), fontCards, fontColor, new Point(startX + cGap, startY + 1)));
+                    image.Mutate(x => x.Paint(c => c.DrawText(new RichTextOptions(fontCards) { Origin = new Point(startX + cGap, startY + 1) }, cardCount.ToString(), Brushes.Solid(fontColor), null)));
                     startY += jumpY;
                 }
             }
@@ -967,7 +968,7 @@ namespace Sanakan.Services
             var rangFont = GetOrCreateFont(_latoRegular, 16);
 
             using var template = Image.Load(Dir.GetResource("np/pbase.png"));
-            var profilePic = new Image<Rgba32>(template.Width, template.Height, GetOrCreateColor("#313338"));
+            var profilePic = new Image<Rgba32>(template.Width, template.Height, GetOrCreateColor("#313338").ToPixel<Rgba32>());
 
             using (var userBg = await GetImageFromUrlOrLocalAsync(botUser.BackgroundProfileUri))
             {
@@ -1004,8 +1005,8 @@ namespace Sanakan.Services
 
             var nY = 103;
             var defFontColor = GetOrCreateColor("#7f7f7f");
-            profilePic.Mutate(x => x.DrawText(nickname, nickFont, GetOrCreateColor("#a7a7a7"), new Point(nX, nY + (int)((30 - nickFont.Size) / 2))));
-            profilePic.Mutate(x => x.DrawText(rangName, rangFont, defFontColor, new Point(nX, nY + 32)));
+            profilePic.Mutate(x => x.Paint(c => c.DrawText(new RichTextOptions(nickFont) { Origin = new Point(nX, nY + (int)((30 - nickFont.Size) / 2)) }, nickname, Brushes.Solid(GetOrCreateColor("#a7a7a7")), null)));
+            profilePic.Mutate(x => x.Paint(c => c.DrawText(new RichTextOptions(rangFont) { Origin = new Point(nX, nY + 32) }, rangName, Brushes.Solid(defFontColor), null)));
 
             if (botUser.StatsStyleSettings.HasFlag(ProfileSettings.ShowOverlay) && !string.IsNullOrEmpty(botUser.CustomProfileOverlayUrl))
             {
@@ -1024,11 +1025,11 @@ namespace Sanakan.Services
                 using var webpAvatarStream = avatar.ToWebpStream();
                 using var userAvatar = Image.Load<Rgba32>(webpAvatarStream);
 
-                using var avBack = new Image<Rgba32>(tSize, tSize, GetOrCreateColor("#3f3f3f"));
+                using var avBack = new Image<Rgba32>(tSize, tSize, GetOrCreateColor("#3f3f3f").ToPixel<Rgba32>());
                 if (hasRoundAvatar) avBack.Mutate(x => x.Round(hasAvBorder ? 40 : 44));
                 profilePic.Mutate(x => x.DrawImage(avBack, new Point(aX, aY), 1));
 
-                using var rang = new Image<Rgba32>(aSize + gOff, aSize + gOff, GetOrCreateColor(colorRank));
+                using var rang = new Image<Rgba32>(aSize + gOff, aSize + gOff, GetOrCreateColor(colorRank).ToPixel<Rgba32>());
                 if (hasRoundAvatar) rang.Mutate(x => x.Round(hasAvBorder ? 40 : 44));
                 profilePic.Mutate(x => x.DrawImage(rang, new Point(aX + gSize, aY + gSize), 1));
 
@@ -1044,7 +1045,7 @@ namespace Sanakan.Services
                 {
                     using var cardImage = await LoadOrGetNewWaifuProfileCardAsync(waifuCard);
                     cardImage.Mutate(x => x.Resize(new ResizeOptions { Mode = ResizeMode.Max, Size = new Size(0, 120) }));
-                    using var cardBg = new Image<Rgba32>(cardImage.Width + 8, cardImage.Height + 8, GetOrCreateColor("#000000"));
+                    using var cardBg = new Image<Rgba32>(cardImage.Width + 8, cardImage.Height + 8, GetOrCreateColor("#000000").ToPixel<Rgba32>());
                     cardBg.Mutate(x => x.Round(10));
 
                     profilePic.Mutate(x => x.DrawImage(cardBg, new Point(618, 30), 0.32f));
@@ -1159,7 +1160,7 @@ namespace Sanakan.Services
             ulong?[] rowArr = { status?.InProgress, status?.Completed, status?.Skipped, status?.OnHold, status?.Dropped, status?.InPlan };
             for (int i = 0; i < rowArr.Length; i++)
             {
-                baseImg.Mutate(x => x.DrawText($"{rowArr[i]}", font, fontColor, new Point(startPointX, startPointY)));
+                baseImg.Mutate(x => x.Paint(c => c.DrawText(new RichTextOptions(font) { Origin = new Point(startPointX, startPointY) }, $"{rowArr[i]}", Brushes.Solid(fontColor), null)));
                 startPointY += fontSizeAndInterline;
             }
 
@@ -1169,15 +1170,15 @@ namespace Sanakan.Services
                 Origin = new Point(xSecondRow, ySecondStart)
             };
 
-            baseImg.Mutate(x => x.DrawText(gOptions, $"{more?.Score?.Rating.Value:0.0}", fontColor));
+            baseImg.Mutate(x => x.Paint(c => c.DrawText(gOptions, $"{more?.Score?.Rating.Value:0.0}", Brushes.Solid(fontColor), null)));
             ySecondStart += fontSizeAndInterline;
             gOptions.Origin = new Point(xSecondRow, ySecondStart);
 
-            baseImg.Mutate(x => x.DrawText(gOptions, $"{status?.Total}", fontColor));
+            baseImg.Mutate(x => x.Paint(c => c.DrawText(gOptions, $"{status?.Total}", Brushes.Solid(fontColor), null)));
             ySecondStart += fontSizeAndInterline;
             gOptions.Origin = new Point(xSecondRow, ySecondStart);
 
-            baseImg.Mutate(x => x.DrawText(gOptions, $"{more?.Count}", fontColor));
+            baseImg.Mutate(x => x.Paint(c => c.DrawText(gOptions, $"{more?.Count}", Brushes.Solid(fontColor), null)));
             ySecondStart += fontSizeAndInterline;
 
             var listTime = new List<string>();
@@ -1197,15 +1198,15 @@ namespace Sanakan.Services
             {
                 string fs = listTime.First(); listTime.Remove(fs);
                 string sc = listTime.First(); listTime.Remove(sc);
-                baseImg.Mutate(x => x.DrawText(gOptions, $"{fs} {sc}", fontColor));
+                baseImg.Mutate(x => x.Paint(c => c.DrawText(gOptions, $"{fs} {sc}", Brushes.Solid(fontColor), null)));
 
                 ySecondStart += fontSizeAndInterline;
                 gOptions.Origin = new Point(xSecondRow, ySecondStart);
-                baseImg.Mutate(x => x.DrawText(gOptions, $"{string.Join<string>(" ", listTime)}", fontColor));
+                baseImg.Mutate(x => x.Paint(c => c.DrawText(gOptions, $"{string.Join<string>(" ", listTime)}", Brushes.Solid(fontColor), null)));
             }
             else
             {
-                baseImg.Mutate(x => x.DrawText(gOptions, $"{string.Join<string>(" ", listTime)}", fontColor));
+                baseImg.Mutate(x => x.Paint(c => c.DrawText(gOptions, $"{string.Join<string>(" ", listTime)}", Brushes.Solid(fontColor), null)));
             }
 
             return baseImg;
@@ -1253,51 +1254,36 @@ namespace Sanakan.Services
             return bar;
         }
 
-        private bool Animate(Image staleImage, Image animation, Point point)
+        private void Animate(Image staleImage, Image animation, Point point)
         {
             staleImage.Metadata.GetWebpMetadata().RepeatCount = 0;
             for (int i = 0; i < animation.Frames.Count; i++)
             {
                 using var newFrame = staleImage.CloneAs<Rgba32>();
                 using var oldFrame = animation.Frames.CloneFrame(i);
-                if (!TransferFrameData(newFrame, oldFrame))
-                {
-                    return false;
-                }
+                TransferFrameData(newFrame, oldFrame);
                 newFrame.Mutate(x => x.DrawImage(oldFrame, point, 1));
                 staleImage.Frames.AddFrame(newFrame.Frames.RootFrame);
             }
             staleImage.Frames.RemoveFrame(0);
-            return true;
         }
 
-        private bool TransferFrameData(Image newFrame, Image sourceFrame)
+        private static void TransferFrameData(Image newFrame, Image sourceFrame)
         {
-            bool isOK = false;
-            uint frameDelayMs = 100;
-            if (sourceFrame.Frames.RootFrame.Metadata.TryGetWebpFrameMetadata(out var webpMeta))
-            {
-                frameDelayMs = webpMeta.FrameDelay;
-                isOK = true;
-            }
-            if (sourceFrame.Frames.RootFrame.Metadata.TryGetGifMetadata(out var gifMeta))
-            {
-                frameDelayMs = (uint)gifMeta.FrameDelay * 10;
-                isOK = true;
-            }
+            // gives the delay in milliseconds whatever format the frame came from (a gif counts in hundredths)
+            var frameDelayMs = sourceFrame.Frames.RootFrame.Metadata.GetWebpMetadata().FrameDelay;
 
             var newFrameMetadata = newFrame.Frames.RootFrame.Metadata.GetWebpMetadata();
-            newFrameMetadata.DisposalMethod = WebpDisposalMethod.DoNotDispose;
-            newFrameMetadata.BlendMethod = WebpBlendMethod.Source;
+            newFrameMetadata.DisposalMode = FrameDisposalMode.DoNotDispose;
+            newFrameMetadata.BlendMode = FrameBlendMode.Source;
             newFrameMetadata.FrameDelay = frameDelayMs;
-            return isOK;
         }
 
         public Image<Rgba32> GetFColorsView(CurrencyType currency)
         {
             var message = GetOrCreateFont(_latoRegular, 16);
-            var firstColumnMaxLength = TextMeasurer.MeasureSize("A", new TextOptions(message));
-            var secondColumnMaxLength = TextMeasurer.MeasureSize("A", new TextOptions(message));
+            var firstColumnMaxLength = TextMeasurer.MeasureBounds("A", new TextOptions(message));
+            var secondColumnMaxLength = TextMeasurer.MeasureBounds("A", new TextOptions(message));
 
             var arrayOfColours = Enum.GetValues(typeof(FColor));
             var inFirstColumn = arrayOfColours.Length / 2;
@@ -1310,7 +1296,7 @@ namespace Sanakan.Services
                 if (thisColor == FColor.None) continue;
 
                 var name = $"{thisColor} ({thisColor.Price(currency)} {currency})";
-                var nLen = TextMeasurer.MeasureSize(name, new TextOptions(message));
+                var nLen = TextMeasurer.MeasureBounds(name, new TextOptions(message));
 
                 if (i < inFirstColumn + 1)
                 {
@@ -1331,7 +1317,7 @@ namespace Sanakan.Services
 
             var imgBase = new Image<Rgba32>(realWidth, realHeight);
             imgBase.Mutate(x => x.BackgroundColor(GetOrCreateColor("#313338")));
-            imgBase.Mutate(x => x.DrawText("Lista:", message, GetOrCreateColor("#000000"), new Point(0, 0)));
+            imgBase.Mutate(x => x.Paint(c => c.DrawText(new RichTextOptions(message) { Origin = new Point(0, 0) }, "Lista:", Brushes.Solid(GetOrCreateColor("#000000")), null)));
 
             for (int i = 0; i < arrayOfColours.Length; i++)
             {
@@ -1348,7 +1334,7 @@ namespace Sanakan.Services
 
                 posY += (int)firstColumnMaxLength.Height + 2;
                 var tname = $"{thisColor} ({thisColor.Price(currency)} {currency.ToString().ToUpper()})";
-                imgBase.Mutate(x => x.DrawText(tname, message, GetOrCreateColor(val.ToString("X6")), new Point(posX, posY)));
+                imgBase.Mutate(x => x.Paint(c => c.DrawText(new RichTextOptions(message) { Origin = new Point(posX, posY) }, tname, Brushes.Solid(GetOrCreateColor(val.ToString("X6"))), null)));
             }
 
             return imgBase;
@@ -1574,9 +1560,15 @@ namespace Sanakan.Services
                     new PointF(325, 623),
             });
 
-            image.Mutate(x => x.Clip(polyhp, x => x.DrawImage(blurredImage, 1)));
-            image.Mutate(x => x.Clip(polyatk, x => x.DrawImage(blurredImage, 1)));
-            image.Mutate(x => x.Clip(polydef, x => x.DrawImage(blurredImage, 1)));
+            // the operation works on the area of the path, so the blurred copy is moved back to its place on the card
+            image.Mutate(x => x.Paint(c =>
+            {
+                foreach (var poly in new[] { polyhp, polyatk, polydef })
+                {
+                    var at = new Point(-(int)MathF.Floor(poly.Bounds.X), -(int)MathF.Floor(poly.Bounds.Y));
+                    c.Apply(poly, y => y.DrawImage(blurredImage, at, 1));
+                }
+            }));
 
             using var statsImg = Image.Load(Dir.GetResource("PW/CG/Alpha/hStats.png"));
             image.Mutate(x => x.DrawImage(statsImg, 1));
@@ -1586,11 +1578,11 @@ namespace Sanakan.Services
             int def = card.GetDefenceWithBonus();
             int atk = card.GetAttackWithBonus();
 
-            image.Mutate(x => x.DrawText($"{hp}", font, GetOrCreateColor("#ffffff"), new Point(220, 48)));
+            image.Mutate(x => x.Paint(c => c.DrawText(new RichTextOptions(font) { Origin = new Point(220, 48) }, $"{hp}", Brushes.Solid(GetOrCreateColor("#ffffff")), null)));
 
             using (var defImg = new Image<Rgba32>(120, 40))
             {
-                defImg.Mutate(x => x.DrawText($"{def}", font, GetOrCreateColor("#ffffff"), new Point(1)));
+                defImg.Mutate(x => x.Paint(c => c.DrawText(new RichTextOptions(font) { Origin = new Point(1) }, $"{def}", Brushes.Solid(GetOrCreateColor("#ffffff")), null)));
                 defImg.Mutate(x => x.Rotate(-25));
 
                 image.Mutate(x => x.DrawImage(defImg, new Point(360, 516), 1));
@@ -1598,7 +1590,7 @@ namespace Sanakan.Services
 
             using (var atkImg = new Image<Rgba32>(120, 40))
             {
-                atkImg.Mutate(x => x.DrawText($"{atk}", font, GetOrCreateColor("#ffffff"), new Point(1)));
+                atkImg.Mutate(x => x.Paint(c => c.DrawText(new RichTextOptions(font) { Origin = new Point(1) }, $"{atk}", Brushes.Solid(GetOrCreateColor("#ffffff")), null)));
                 atkImg.Mutate(x => x.Rotate(25));
 
                 image.Mutate(x => x.DrawImage(atkImg, new Point(68, 553), 1));
@@ -1615,7 +1607,7 @@ namespace Sanakan.Services
 
             using (var hpImg = new Image<Rgba32>(120, 40))
             {
-                hpImg.Mutate(x => x.DrawText($"{hp}", font, GetOrCreateColor("#ffffff"), new Point(1)));
+                hpImg.Mutate(x => x.Paint(c => c.DrawText(new RichTextOptions(font) { Origin = new Point(1) }, $"{hp}", Brushes.Solid(GetOrCreateColor("#ffffff")), null)));
                 hpImg.Mutate(x => x.Rotate(-13));
 
                 image.Mutate(x => x.DrawImage(hpImg, new Point(30, 419), 1));
@@ -1623,7 +1615,7 @@ namespace Sanakan.Services
 
             using (var atkImg = new Image<Rgba32>(120, 40))
             {
-                atkImg.Mutate(x => x.DrawText($"{atk}", font, GetOrCreateColor("#ffffff"), new Point(1)));
+                atkImg.Mutate(x => x.Paint(c => c.DrawText(new RichTextOptions(font) { Origin = new Point(1) }, $"{atk}", Brushes.Solid(GetOrCreateColor("#ffffff")), null)));
                 atkImg.Mutate(x => x.Rotate(14));
 
                 image.Mutate(x => x.DrawImage(atkImg, new Point(374, 430), 1));
@@ -1631,7 +1623,7 @@ namespace Sanakan.Services
 
             using (var defImg = new Image<Rgba32>(120, 40))
             {
-                defImg.Mutate(x => x.DrawText($"{def}", font, GetOrCreateColor("#ffffff"), new Point(1)));
+                defImg.Mutate(x => x.Paint(c => c.DrawText(new RichTextOptions(font) { Origin = new Point(1) }, $"{def}", Brushes.Solid(GetOrCreateColor("#ffffff")), null)));
                 defImg.Mutate(x => x.Rotate(14));
 
                 image.Mutate(x => x.DrawImage(defImg, new Point(358, 502), 1));
@@ -1656,19 +1648,19 @@ namespace Sanakan.Services
 
             using (var atkImg = new Image<Rgba32>(120, 40))
             {
-                atkImg.Mutate(x => x.DrawText(ops, $"{atk}", GetOrCreateColor("#c9282c")));
+                atkImg.Mutate(x => x.Paint(c => c.DrawText(ops, $"{atk}", Brushes.Solid(GetOrCreateColor("#c9282c")), null)));
                 atkImg.Mutate(x => x.Rotate(22));
 
                 image.Mutate(x => x.DrawImage(atkImg, new Point(40, 514), 1));
             }
 
             ops.Origin = new Point(238, 563);
-            image.Mutate(x => x.DrawText(ops, $"{hp}", GetOrCreateColor("#318b19")));
+            image.Mutate(x => x.Paint(c => c.DrawText(ops, $"{hp}", Brushes.Solid(GetOrCreateColor("#318b19")), null)));
 
             using (var defImg = new Image<Rgba32>(120, 40))
             {
                 ops.Origin = new Point(60, 1);
-                defImg.Mutate(x => x.DrawText(ops, $"{def}", GetOrCreateColor("#00527f")));
+                defImg.Mutate(x => x.Paint(c => c.DrawText(ops, $"{def}", Brushes.Solid(GetOrCreateColor("#00527f")), null)));
                 defImg.Mutate(x => x.Rotate(-22));
 
                 image.Mutate(x => x.DrawImage(defImg, new Point(311, 513), 1));
@@ -1684,7 +1676,7 @@ namespace Sanakan.Services
             int def = card.GetDefenceWithBonus();
             int atk = card.GetAttackWithBonus();
 
-            var drOps = new DrawingOptions() { Transform = Matrix3x2.CreateRotation(-0.46f) };
+            var drOps = new DrawingOptions() { Transform = new Matrix4x4(Matrix3x2.CreateRotation(-0.46f)) };
             var hpOps = new RichTextOptions(hpFont) { HorizontalAlignment = HorizontalAlignment.Center, Origin = new Point(114, 630) };
             bool hasVariants = !string.IsNullOrEmpty(card.GetCardVariantString());
             var customColor = GetOrCreateColor("#000000");
@@ -1705,11 +1697,11 @@ namespace Sanakan.Services
                 return;
             }
 
-            image.Mutate(x => x.DrawText(drOps, hpOps, $"{hp}", hpBrush, null));
+            image.Mutate(x => x.Paint(drOps, c => c.DrawText(hpOps, $"{hp}", hpBrush, null)));
             var ops = new RichTextOptions(adFont) { HorizontalAlignment = HorizontalAlignment.Center, Origin = new Point(92, 597)};
-            image.Mutate(x => x.DrawText(ops, $"{atk}", atkBrush));
+            image.Mutate(x => x.Paint(c => c.DrawText(ops, $"{atk}", atkBrush, null)));
             ops.Origin = new Point(382, 597);
-            image.Mutate(x => x.DrawText(ops, $"{def}", defBrush));
+            image.Mutate(x => x.Paint(c => c.DrawText(ops, $"{def}", defBrush, null)));
         }
 
         private static void DrawTextOnRotatedCard(Image<Rgba32> image, Font font, string text, PointF origin, Brush brush, float rotation = 0)
@@ -1722,8 +1714,8 @@ namespace Sanakan.Services
             var target = new Vector2(image.Width - center.X, image.Height - center.Y);
 
             ops.Origin = target - offset;
-            var drOps = new DrawingOptions() { Transform = Matrix3x2.CreateRotation(rotation, target) };
-            image.Mutate(x => x.DrawText(drOps, ops, text, brush, null));
+            var drOps = new DrawingOptions() { Transform = new Matrix4x4(Matrix3x2.CreateRotation(rotation, target)) };
+            image.Mutate(x => x.Paint(drOps, c => c.DrawText(ops, text, brush, null)));
         }
 
         private void ApplyEpsilonStats(Image<Rgba32> image, Card card)
@@ -1743,19 +1735,19 @@ namespace Sanakan.Services
 
             using (var atkImg = new Image<Rgba32>(120, 40))
             {
-                atkImg.Mutate(x => x.DrawText(ops, $"{atk}", GetOrCreateColor("#ffffff")));
+                atkImg.Mutate(x => x.Paint(c => c.DrawText(ops, $"{atk}", Brushes.Solid(GetOrCreateColor("#ffffff")), null)));
                 atkImg.Mutate(x => x.Rotate(28));
 
                 image.Mutate(x => x.DrawImage(atkImg, new Point(52, 554), 1));
             }
 
             ops.Origin = new Point(238, 592);
-            image.Mutate(x => x.DrawText(ops, $"{hp}", GetOrCreateColor("#ffffff")));
+            image.Mutate(x => x.Paint(c => c.DrawText(ops, $"{hp}", Brushes.Solid(GetOrCreateColor("#ffffff")), null)));
 
             using (var defImg = new Image<Rgba32>(120, 40))
             {
                 ops.Origin = new Point(60, 1);
-                defImg.Mutate(x => x.DrawText(ops, $"{def}", GetOrCreateColor("#ffffff")));
+                defImg.Mutate(x => x.Paint(c => c.DrawText(ops, $"{def}", Brushes.Solid(GetOrCreateColor("#ffffff")), null)));
                 defImg.Mutate(x => x.Rotate(-26));
 
                 image.Mutate(x => x.DrawImage(defImg, new Point(300, 554), 1));
@@ -1776,11 +1768,11 @@ namespace Sanakan.Services
                 Dpi = 80,
                 Origin = new Point(370, 532)
             };
-            image.Mutate(x => x.DrawText(ops, atk.ToString("D4"), GetOrCreateColor("#da4e00")));
+            image.Mutate(x => x.Paint(c => c.DrawText(ops, atk.ToString("D4"), Brushes.Solid(GetOrCreateColor("#da4e00")), null)));
             ops.Origin = new Point(370, 559);
-            image.Mutate(x => x.DrawText(ops, def.ToString("D4"), GetOrCreateColor("#00a4ff")));
+            image.Mutate(x => x.Paint(c => c.DrawText(ops, def.ToString("D4"), Brushes.Solid(GetOrCreateColor("#00a4ff")), null)));
             ops.Origin = new Point(363, 587);
-            image.Mutate(x => x.DrawText(ops, hp.ToString("D5"), GetOrCreateColor("#40ff40")));
+            image.Mutate(x => x.Paint(c => c.DrawText(ops, hp.ToString("D5"), Brushes.Solid(GetOrCreateColor("#40ff40")), null)));
         }
 
         private void ApplyEtaStats(Image<Rgba32> image, Card card)
@@ -1800,19 +1792,19 @@ namespace Sanakan.Services
 
             using (var atkImg = new Image<Rgba32>(120, 40))
             {
-                atkImg.Mutate(x => x.DrawText(ops, $"{atk}", GetOrCreateColor("#ffffff")));
+                atkImg.Mutate(x => x.Paint(c => c.DrawText(ops, $"{atk}", Brushes.Solid(GetOrCreateColor("#ffffff")), null)));
                 atkImg.Mutate(x => x.Rotate(22));
 
                 image.Mutate(x => x.DrawImage(atkImg, new Point(57, 535), 1));
             }
 
             ops.Origin = new Point(238, 577);
-            image.Mutate(x => x.DrawText(ops, $"{hp}", GetOrCreateColor("#ffffff")));
+            image.Mutate(x => x.Paint(c => c.DrawText(ops, $"{hp}", Brushes.Solid(GetOrCreateColor("#ffffff")), null)));
 
             using (var defImg = new Image<Rgba32>(120, 40))
             {
                 ops.Origin = new Point(60, 1);
-                defImg.Mutate(x => x.DrawText(ops, $"{def}", GetOrCreateColor("#ffffff")));
+                defImg.Mutate(x => x.Paint(c => c.DrawText(ops, $"{def}", Brushes.Solid(GetOrCreateColor("#ffffff")), null)));
                 defImg.Mutate(x => x.Rotate(-22));
 
                 image.Mutate(x => x.DrawImage(defImg, new Point(290, 535), 1));
@@ -1862,7 +1854,7 @@ namespace Sanakan.Services
 
             using (var atkImg = new Image<Rgba32>(120, 40))
             {
-                atkImg.Mutate(x => x.DrawText($"{atk}", aphFont, GetOrCreateColor(jotaColor), new Point(1)));
+                atkImg.Mutate(x => x.Paint(c => c.DrawText(new RichTextOptions(aphFont) { Origin = new Point(1) }, $"{atk}", Brushes.Solid(GetOrCreateColor(jotaColor)), null)));
                 atkImg.Mutate(x => x.Rotate(-10));
 
                 image.Mutate(x => x.DrawImage(atkImg, new Point(106, 545), 1));
@@ -1870,14 +1862,14 @@ namespace Sanakan.Services
 
             using (var defImg = new Image<Rgba32>(120, 40))
             {
-                defImg.Mutate(x => x.DrawText($"{def}", aphFont, GetOrCreateColor(jotaColor), new Point(1)));
+                defImg.Mutate(x => x.Paint(c => c.DrawText(new RichTextOptions(aphFont) { Origin = new Point(1) }, $"{def}", Brushes.Solid(GetOrCreateColor(jotaColor)), null)));
                 defImg.Mutate(x => x.Rotate(10));
 
                 image.Mutate(x => x.DrawImage(defImg, new Point(310, 557), 1));
             }
 
             var ops = new RichTextOptions(aphFont) { HorizontalAlignment = HorizontalAlignment.Center, Origin = new Point(238, 585) };
-            image.Mutate(x => x.DrawText(ops, $"{hp}", GetOrCreateColor(jotaColor)));
+            image.Mutate(x => x.Paint(c => c.DrawText(ops, $"{hp}", Brushes.Solid(GetOrCreateColor(jotaColor)), null)));
         }
 
         private void ApplyLambdaStats(Image<Rgba32> image, Card card)
@@ -1890,7 +1882,7 @@ namespace Sanakan.Services
 
             using (var hpImg = new Image<Rgba32>(120, 40))
             {
-                hpImg.Mutate(x => x.DrawText($"{hp}", aphFont, GetOrCreateColor("#6bedc8"), new Point(1)));
+                hpImg.Mutate(x => x.Paint(c => c.DrawText(new RichTextOptions(aphFont) { Origin = new Point(1) }, $"{hp}", Brushes.Solid(GetOrCreateColor("#6bedc8")), null)));
                 hpImg.Mutate(x => x.Rotate(-19));
 
                 image.Mutate(x => x.DrawImage(hpImg, new Point(57, 552), 1));
@@ -1898,13 +1890,13 @@ namespace Sanakan.Services
 
             using (var atkImg = new Image<Rgba32>(120, 40))
             {
-                atkImg.Mutate(x => x.DrawText($"{atk}", aphFont, GetOrCreateColor("#fda9fd"), new Point(1)));
+                atkImg.Mutate(x => x.Paint(c => c.DrawText(new RichTextOptions(aphFont) { Origin = new Point(1) }, $"{atk}", Brushes.Solid(GetOrCreateColor("#fda9fd")), null)));
                 atkImg.Mutate(x => x.Rotate(34));
 
                 image.Mutate(x => x.DrawImage(atkImg, new Point(80, 482), 1));
             }
 
-            image.Mutate(x => x.DrawText($"{def}", aphFont, GetOrCreateColor("#49deff"), new Point(326, 573)));
+            image.Mutate(x => x.Paint(c => c.DrawText(new RichTextOptions(aphFont) { Origin = new Point(326, 573) }, $"{def}", Brushes.Solid(GetOrCreateColor("#49deff")), null)));
         }
 
         private String GetThetaStatColorString(Card card)
@@ -1955,11 +1947,11 @@ namespace Sanakan.Services
                 HorizontalAlignment = HorizontalAlignment.Right,
                 Origin = new Point(410, 511)
             };
-            image.Mutate(x => x.DrawText(ops, $"{atk}", GetOrCreateColor(thetaColor)));
+            image.Mutate(x => x.Paint(c => c.DrawText(ops, $"{atk}", Brushes.Solid(GetOrCreateColor(thetaColor)), null)));
             ops.Origin = new Point(410, 548);
-            image.Mutate(x => x.DrawText(ops, $"{def}", GetOrCreateColor(thetaColor)));
+            image.Mutate(x => x.Paint(c => c.DrawText(ops, $"{def}", Brushes.Solid(GetOrCreateColor(thetaColor)), null)));
             ops.Origin = new Point(410, 585);
-            image.Mutate(x => x.DrawText(ops, $"{hp}", GetOrCreateColor(thetaColor)));
+            image.Mutate(x => x.Paint(c => c.DrawText(ops, $"{hp}", Brushes.Solid(GetOrCreateColor(thetaColor)), null)));
         }
 
         private string GetStatsString(Card card)
@@ -2110,9 +2102,9 @@ namespace Sanakan.Services
             if (health > 99) startXHp -= 15;
 
             var numFont = GetOrCreateFont(_latoBold, 54);
-            image.Mutate(x => x.DrawText($"{health}", numFont, GetOrCreateColor("#000000"), new Point(startXHp, 182)));
-            image.Mutate(x => x.DrawText($"{attack}", numFont, GetOrCreateColor("#000000"), new Point(startXAtk, 314)));
-            image.Mutate(x => x.DrawText($"{defence}", numFont, GetOrCreateColor("#000000"), new Point(startXDef, 434)));
+            image.Mutate(x => x.Paint(c => c.DrawText(new RichTextOptions(numFont) { Origin = new Point(startXHp, 182) }, $"{health}", Brushes.Solid(GetOrCreateColor("#000000")), null)));
+            image.Mutate(x => x.Paint(c => c.DrawText(new RichTextOptions(numFont) { Origin = new Point(startXAtk, 314) }, $"{attack}", Brushes.Solid(GetOrCreateColor("#000000")), null)));
+            image.Mutate(x => x.Paint(c => c.DrawText(new RichTextOptions(numFont) { Origin = new Point(startXDef, 434) }, $"{defence}", Brushes.Solid(GetOrCreateColor("#000000")), null)));
 
             if (applyNegativeStats)
             {
@@ -2241,9 +2233,9 @@ namespace Sanakan.Services
             img.Mutate(x => x.DrawImage(los, new Point(Xil, Yi), 1));
 
             var options = new RichTextOptions(nameFont) { HorizontalAlignment = HorizontalAlignment.Center, WrappingLength = win.Width, Origin = new Point(Xiw, Yt)};
-            img.Mutate(x => x.DrawText(options, info.Winner.Name, GetOrCreateColor(image != null ? image.Color : DuelImage.DefaultColor())));
+            img.Mutate(x => x.Paint(c => c.DrawText(options, info.Winner.Name, Brushes.Solid(GetOrCreateColor(image != null ? image.Color : DuelImage.DefaultColor())), null)));
             options.Origin = new Point(Xil, Yt);
-            img.Mutate(x => x.DrawText(options, info.Loser.Name, GetOrCreateColor(image != null ? image.Color : DuelImage.DefaultColor())));
+            img.Mutate(x => x.Paint(c => c.DrawText(options, info.Loser.Name, Brushes.Solid(GetOrCreateColor(image != null ? image.Color : DuelImage.DefaultColor())), null)));
 
             return img;
         }
@@ -2312,7 +2304,7 @@ namespace Sanakan.Services
                 using var bottomImg = await LoadWebpFromDiskAsync(Dir.GetResource($"PW/CG/{card.Quality}/BorderBack.webp"));
                 using var topImg = await LoadWebpFromDiskAsync(Dir.GetResource($"PW/CG/{card.Quality}/Border.webp"));
 
-                var animation = new Image<Rgba32>(475, 667, Color.Transparent);
+                var animation = new Image<Rgba32>(475, 667, Color.Transparent.ToPixel<Rgba32>());
                 animation.Metadata.GetWebpMetadata().RepeatCount = 0;
 
                 bool allowAnimation = topImg.Frames.Count == (card.IsAnimatedImage ? image.Frames.Count : 1);
@@ -2321,7 +2313,7 @@ namespace Sanakan.Services
                     using var topImageFrame = topImg.Frames.CloneFrame(i);
                     using var bottomImageFrame = bottomImg.Frames.CloneFrame(i);
 
-                    using var newFrame = new Image<Rgba32>(475, 667, Color.Transparent);
+                    using var newFrame = new Image<Rgba32>(475, 667, Color.Transparent.ToPixel<Rgba32>());
                     TransferFrameData(newFrame, topImageFrame);
 
                     using var charFrame = allowAnimation ? image.Frames.CloneFrame(i) : image.CloneAs<Rgba32>();
@@ -2364,12 +2356,12 @@ namespace Sanakan.Services
                             startY = (characterImg.Height / 2) - (image.Height / 2);
                     }
 
-                    var animation = new Image<Rgba32>(475, 667, Color.Transparent);
+                    var animation = new Image<Rgba32>(475, 667, Color.Transparent.ToPixel<Rgba32>());
                     animation.Metadata.GetWebpMetadata().RepeatCount = 0;
 
                     for (int i = 0; i < image.Frames.Count; i++)
                     {
-                        using var newFrame = new Image<Rgba32>(475, 667, Color.Transparent);
+                        using var newFrame = new Image<Rgba32>(475, 667, Color.Transparent.ToPixel<Rgba32>());
                         using var oldFrame = image.Frames.CloneFrame(i);
                         TransferFrameData(newFrame, oldFrame);
 

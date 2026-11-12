@@ -7,12 +7,13 @@ using Sanakan.Extensions;
 using SixLabors.Fonts;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Drawing.Processing;
+using SixLabors.ImageSharp.Formats;
 using SixLabors.ImageSharp.Formats.Webp;
 using SixLabors.ImageSharp.PixelFormats;
 using SixLabors.ImageSharp.Processing;
 using EllipsePolygon = SixLabors.ImageSharp.Drawing.EllipsePolygon;
-using EndCapStyle = SixLabors.ImageSharp.Drawing.EndCapStyle;
-using JointStyle = SixLabors.ImageSharp.Drawing.JointStyle;
+using LineCap = SixLabors.ImageSharp.Drawing.LineCap;
+using LineJoin = SixLabors.ImageSharp.Drawing.LineJoin;
 
 namespace Sanakan.Services
 {
@@ -58,7 +59,7 @@ namespace Sanakan.Services
         private void DrawLevelUpText(Image image, string text, Font font, string color, float x, float y)
         {
             var options = new RichTextOptions(font) { Origin = new PointF(x, y), VerticalAlignment = VerticalAlignment.Center };
-            image.Mutate(c => c.DrawText(options, text, GetOrCreateColor(color)));
+            image.Mutate(x => x.Paint(c => c.DrawText(options, text, Brushes.Solid(GetOrCreateColor(color)), null)));
         }
 
         private void DrawLevelUpMark(Image image, LevelUpPalette palette, float lift = 0)
@@ -66,11 +67,13 @@ namespace Sanakan.Services
             var cx = LS(LevelUpAvatarX + LevelUpAvatarSize - 8);
             var cy = LS(LevelUpAvatarY + LevelUpAvatarSize - 8) - lift;
             var arm = LS(LevelUpMarkRadius * 0.45f);
-            var pen = new SolidPen(new PenOptions(Color.White, LS(LevelUpMarkRadius * 0.2f)) { JointStyle = JointStyle.Round, EndCapStyle = EndCapStyle.Round });
+            var pen = new SolidPen(new PenOptions(Color.White, LS(LevelUpMarkRadius * 0.2f)) { StrokeOptions = new StrokeOptions { LineJoin = LineJoin.Round, LineCap = LineCap.Round } });
 
-            image.Mutate(x => x
-                .Fill(GetOrCreateColor(palette.Accent), new EllipsePolygon(cx, cy, LS(LevelUpMarkRadius)))
-                .DrawLine(pen, new PointF(cx - arm, cy + arm / 2), new PointF(cx, cy - arm / 2), new PointF(cx + arm, cy + arm / 2)));
+            image.Mutate(x => x.Paint(c =>
+            {
+                c.Fill(Brushes.Solid(GetOrCreateColor(palette.Accent)), new EllipsePolygon(cx, cy, LS(LevelUpMarkRadius)));
+                c.DrawLine(pen, new PointF(cx - arm, cy + arm / 2), new PointF(cx, cy - arm / 2), new PointF(cx + arm, cy + arm / 2));
+            }));
         }
 
         // a still avatar gets a short loop: the mark hops twice and rests; the first frame is the resting badge
@@ -98,8 +101,8 @@ namespace Sanakan.Services
         private static void SetLevelUpFrameDelay(ImageFrame frame, uint delayMs)
         {
             var meta = frame.Metadata.GetWebpMetadata();
-            meta.DisposalMethod = WebpDisposalMethod.DoNotDispose;
-            meta.BlendMethod = WebpBlendMethod.Source;
+            meta.DisposalMode = FrameDisposalMode.DoNotDispose;
+            meta.BlendMode = FrameBlendMode.Source;
             meta.FrameDelay = delayMs;
         }
 
@@ -118,10 +121,10 @@ namespace Sanakan.Services
             var levelTextFont = GetOrCreateFont(_latoRegular, LS(12));
 
             var lvl = $"{ulvl}";
-            var lvlWidth = TextMeasurer.MeasureSize(lvl, new TextOptions(lvlFont)).Width;
-            var textWidth = Math.Max(TextMeasurer.MeasureSize(name, new TextOptions(nameFont)).Width,
-                lvlWidth + LS(6) + TextMeasurer.MeasureSize(levelText, new TextOptions(levelTextFont)).Width);
-            textWidth = Math.Max(textWidth, TextMeasurer.MeasureSize(promoteText, new TextOptions(promoteFont)).Width);
+            var lvlWidth = TextMeasurer.MeasureBounds(lvl, new TextOptions(lvlFont)).Width;
+            var textWidth = Math.Max(TextMeasurer.MeasureBounds(name, new TextOptions(nameFont)).Width,
+                lvlWidth + LS(6) + TextMeasurer.MeasureBounds(levelText, new TextOptions(levelTextFont)).Width);
+            textWidth = Math.Max(textWidth, TextMeasurer.MeasureBounds(promoteText, new TextOptions(promoteFont)).Width);
 
             var width = (int)(LS(LevelUpTextX + 20) + textWidth);
             var height = (int)LS(LevelUpHeight);
@@ -134,11 +137,13 @@ namespace Sanakan.Services
             var ringWidth = LS(2.5f);
 
             // Discord's embed surface with a side bar, like a native embed
-            baseImg.Mutate(x => x
-                .Fill(GetOrCreateColor("#2B2D31"), GetRoundedRectPath(0, 0, width, height, LS(6)))
-                .Fill(GetOrCreateColor(palette.Accent), GetRoundedRectPath(0, 0, LS(4), height, LS(2)))
-                .Draw(new SolidPen(GetOrCreateColor($"#{color.RawValue:X6}"), ringWidth),
-                    new EllipsePolygon(avatarCenter, avatarSize / 2f + ringWidth / 2f)));
+            baseImg.Mutate(x => x.Paint(c =>
+            {
+                c.Fill(Brushes.Solid(GetOrCreateColor("#2B2D31")), GetRoundedRectPath(0, 0, width, height, LS(6)));
+                c.Fill(Brushes.Solid(GetOrCreateColor(palette.Accent)), GetRoundedRectPath(0, 0, LS(4), height, LS(2)));
+                c.Draw(new SolidPen(GetOrCreateColor($"#{color.RawValue:X6}"), ringWidth),
+                    new EllipsePolygon(avatarCenter, avatarSize / 2f + ringWidth / 2f));
+            }));
 
             DrawLevelUpText(baseImg, name, nameFont, "#F2F0F7", LS(LevelUpTextX), LS(17));
             DrawLevelUpText(baseImg, promoteText, promoteFont, "#A09AAE", LS(LevelUpTextX), LS(34));
@@ -150,7 +155,7 @@ namespace Sanakan.Services
             {
                 if (stream is null || stream == Stream.Null)
                 {
-                    baseImg.Mutate(x => x.Fill(GetOrCreateColor("#3F4147"), new EllipsePolygon(avatarCenter, avatarSize / 2f)));
+                    baseImg.Mutate(x => x.Paint(c => c.Fill(Brushes.Solid(GetOrCreateColor("#3F4147")), new EllipsePolygon(avatarCenter, avatarSize / 2f))));
                 }
                 else
                 {
