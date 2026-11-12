@@ -212,7 +212,8 @@ namespace Sanakan.Api.Controllers
                 var query = db.Cards.AsQueryable().TagWith(Database.CardListHint.Tag);
                 if (!string.IsNullOrEmpty(filter.SearchText))
                 {
-                    query = query.Where(x => x.Name.Contains(filter.SearchText) || x.Title.Contains(filter.SearchText));
+                    query = query.TagWith(Database.CardListHint.SearchTag)
+                        .Where(x => x.Name.Contains(filter.SearchText) || x.Title.Contains(filter.SearchText));
                 }
 
                 query = CardsQueryFilter.Use(filter.OrderBy, query);

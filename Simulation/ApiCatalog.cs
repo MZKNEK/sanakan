@@ -33,6 +33,15 @@ public static class ApiCatalog
         return $"{{\"orderBy\":\"{sort}\",\"searchText\":{search},\"includeTags\":{tag},\"filterTagsMethod\":\"and\"}}";
     }
 
+    // only for --extra: a MixKey the traffic mix does not have, so the route's mix rate stays with api:total-cards
+    private static Template RarityPage(bool search) => new($"extra total cards by rarity{(search ? " with search" : "")}", HttpMethod.Post, Auth.Site,
+        c => $"api/Waifu/total/cards/{(c.Random.Next(4) == 0 ? 500 : 0)}/50", c =>
+        {
+            var sort = c.Random.Next(2) == 0 ? "rarity" : "rarityDes";
+            var text = search ? $"\"{new[] { "rem", "naruto", "zzqx" }[c.Random.Next(3)]}\"" : "null";
+            return $"{{\"orderBy\":\"{sort}\",\"searchText\":{text},\"includeTags\":null,\"filterTagsMethod\":\"and\"}}";
+        });
+
     private static Template Player(string path) => new($"GET api/waifu/{path}", HttpMethod.Get, Auth.Player, _ => $"api/waifu/{path}");
 
     public static readonly IReadOnlyDictionary<string, Template> Templates = new Dictionary<string, Template>
@@ -57,6 +66,9 @@ public static class ApiCatalog
             c => $"api/Waifu/user/{c.Shinden}/cards/{(c.Random.Next(4) == 0 ? 50 : 0)}/50", c => CardFilter(c, false), NeedsShinden: true),
         ["api:total-cards"] = new("POST api/Waifu/total/cards/{offset}/{count}", HttpMethod.Post, Auth.Site,
             c => $"api/Waifu/total/cards/{(c.Random.Next(4) == 0 ? 500 : 0)}/50", c => CardFilter(c, true)),
+        // the rarity sort over all cards has its own index, a text search has to keep off it
+        ["api:total-cards-rarity"] = RarityPage(false),
+        ["api:total-cards-rarity-search"] = RarityPage(true),
         // they end the bot, only for checking its exit code (ExitCodes.Update, ExitCodes.Stop)
         ["api:debug-update"] = new("POST api/Debug/update", HttpMethod.Post, Auth.Site, _ => "api/Debug/update"),
         ["api:debug-kill"] = new("POST api/Debug/kill", HttpMethod.Post, Auth.Site, _ => "api/Debug/kill"),

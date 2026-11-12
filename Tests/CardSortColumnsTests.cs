@@ -101,6 +101,25 @@ namespace Artifacts
             Assert.Equal("\r\n-- card-list\r\n\r\nSELECT " + CardListHint.Hint + " 1", CardListHint.Apply("\r\n-- card-list\r\n\r\nSELECT 1"));
             Assert.Equal("SELECT 1", CardListHint.Apply("SELECT 1"));
             Assert.Equal("-- other\r\n\r\nSELECT 1", CardListHint.Apply("-- other\r\n\r\nSELECT 1"));
+            Assert.Equal("-- card-list\r\n-- card-search\r\n\r\nSELECT " + CardListHint.SearchHint + " 1",
+                CardListHint.Apply("-- card-list\r\n-- card-search\r\n\r\nSELECT 1"));
+        }
+
+        [Fact]
+        public void SearchOverAllCards_KeepsMySqlOffTheRarityIndex()
+        {
+            using var db = new ModelIndexTests.MySqlContext();
+            var text = "rem";
+
+            var sql = CardListHint.Apply(db.Cards.AsQueryable().TagWith(CardListHint.Tag).TagWith(CardListHint.SearchTag)
+                .Where(x => x.Name.Contains(text) || x.Title.Contains(text))
+                .OrderByDescending(x => x.Rarity).ThenBy(x => x.Quality).ThenBy(x => x.BorderOverflow)
+                .Select(x => x.Id).Skip(0).Take(30).ToQueryString());
+
+            // the hint names the table by the alias EF gives it
+            Assert.Contains("SELECT " + CardListHint.SearchHint + " `c`.`Id`", sql);
+            Assert.Contains("FROM `Cards` AS `c`", sql);
+            Assert.Contains("NO_ORDER_INDEX(c IX_Cards_Rarity_Quality_BorderOverflow)", CardListHint.SearchHint);
         }
 
         [Fact]
