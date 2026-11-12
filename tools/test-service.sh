@@ -92,7 +92,7 @@ systemctl stop "$NAME" > /dev/null 2>&1 || true
 rm -rf "$T"
 mkdir -p "$REPO/src" "$REPO/tools"
 cp "$SOURCE/src/Run.sh" "$REPO/src/"
-cp "$SOURCE/tools/install-service.sh" "$REPO/tools/"
+cp "$SOURCE/tools/install-service.sh" "$SOURCE/tools/check-server.sh" "$REPO/tools/"
 TFM=${TFM_OPT:-$(sed -n 's:.*<TargetFramework>\(.*\)</TargetFramework>.*:\1:p' "$SOURCE/src/Sanakan.csproj" | tr -d '\r')}
 DOTNET=${SANAKAN_DOTNET:-dotnet}
 echo "fake bot framework: $TFM, dotnet $(as_user "'$DOTNET' --version" 2>/dev/null || echo 'not found') ($DOTNET)"
@@ -120,6 +120,12 @@ touch "$REPO/GOut/picture.webp"
 echo "== installing $NAME.service"
 "$REPO/tools/install-service.sh" --permissions --user "$RUN_AS" --data "$REPO/inside" > /dev/null 2>&1 \
     && fail "--data inside the repository was accepted" || pass "--data inside the repository refused"
+as_user "cd '$REPO' && git remote rename origin away"
+"$REPO/tools/install-service.sh" --name "$NAME" --user "$RUN_AS" > /dev/null 2>&1 \
+    && fail "installed without an origin" || pass "install refused without an origin"
+[ ! -f "/etc/systemd/system/$NAME.service" ] && pass "no unit written after the refusal" || fail "unit written after the refusal"
+as_user "cd '$REPO' && git remote rename away origin"
+as_user "'$REPO/tools/check-server.sh'" > /dev/null && pass "check-server.sh passes" || fail "check-server.sh: $(as_user "'$REPO/tools/check-server.sh'" | grep PROBLEM)"
 if "$REPO/tools/install-service.sh" --name "$NAME" --user "$RUN_AS" --data "$T/data/GOut"; then pass "install script"; else fail "install script"; exit 1; fi
 
 [ "$(stat -c %U "$REPO/src/Run.sh")" = "$RUN_AS" ] && pass "files belong to $RUN_AS" || fail "files do not belong to $RUN_AS"

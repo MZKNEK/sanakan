@@ -59,6 +59,14 @@ build() {
 update() {
     local branch
     branch=$(git rev-parse --abbrev-ref HEAD)
+    if [ "$branch" = HEAD ]; then
+        log "update: no branch is checked out (tools/check-server.sh), staying on $(current)"
+        return 1
+    fi
+    if ! git remote get-url origin > /dev/null 2>&1; then
+        log "update: the repository has no origin (tools/check-server.sh), staying on $(current)"
+        return 1
+    fi
     log "update: pulling $branch from origin"
     if ! git pull --ff-only origin "$branch"; then
         log "update: pull failed, staying on $(current)"
