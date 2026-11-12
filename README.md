@@ -117,7 +117,10 @@ a fetch proxy:
 Without `Url` everything is downloaded directly, as before. Hosts in `DirectHosts` are still downloaded directly,
 together with their subdomains; without it they are `cdn.discordapp.com`, `media.discordapp.net` and
 `cdn.shinden.eu` (card pictures, far too many for the proxy). `MaxBytes` is the largest file the proxy is asked
-for (5 MB by default). The bot sends at most 4 downloads to the proxy at once. When the proxy refuses the key or
+for (5 MB by default). `Mirrors` maps a host to an address its files are downloaded from instead, under the same
+paths, e.g. `"Mirrors": { "cdn.shinden.eu": "http://<mirror host>/cdn/" }` when the server cannot reach that host
+directly; it works without `Url` too, and the addresses kept in the database do not change. The bot sends at most
+4 downloads to the proxy at once. When the proxy refuses the key or
 cannot be reached, the log channel gets one error, and one line when it works again.
 
 Keep `Config.json` out of source control. It contains bot credentials,

@@ -47,6 +47,18 @@ namespace Sanakan.Services
                 && (host.Equals(x.Trim(), StringComparison.OrdinalIgnoreCase) || host.EndsWith("." + x.Trim(), StringComparison.OrdinalIgnoreCase)));
         }
 
+        public static Uri Mirrored(Uri uri, FetchProxyConfig config)
+        {
+            if (uri == null || config?.Mirrors == null)
+                return null;
+
+            var mirror = config.Mirrors.FirstOrDefault(x => uri.Host.Equals(x.Key?.Trim(), StringComparison.OrdinalIgnoreCase)).Value;
+            if (string.IsNullOrWhiteSpace(mirror) || !Uri.TryCreate(mirror.Trim().TrimEnd('/') + "/" + uri.PathAndQuery.TrimStart('/'), UriKind.Absolute, out var mirrored))
+                return null;
+
+            return mirrored;
+        }
+
         private sealed class Handler : DelegatingHandler
         {
             private readonly FetchProxy _proxy;
@@ -56,6 +68,13 @@ namespace Sanakan.Services
             protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
             {
                 var cfg = _proxy._config.Get()?.FetchProxy;
+                var mirrored = Mirrored(request.RequestUri, cfg);
+                if (mirrored != null)
+                {
+                    request.RequestUri = mirrored;
+                    return base.SendAsync(request, cancellationToken);
+                }
+
                 if (string.IsNullOrWhiteSpace(cfg?.Url) || IsDirect(request.RequestUri?.Host, cfg))
                     return base.SendAsync(request, cancellationToken);
 

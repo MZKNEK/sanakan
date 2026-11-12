@@ -271,6 +271,70 @@ namespace Artifacts
             Assert.Equal(7, _proxy.Requests.Count);
         }
 
+        [Theory]
+        [InlineData("http://local.test:81/cdn/")]
+        [InlineData("http://local.test:81/cdn")]
+        public async Task MirroredHostIsDownloadedFromItsMirror(string mirror)
+        {
+            Enable();
+            _config.Model.FetchProxy.Mirrors = new Dictionary<string, string> { [" CDN.shinden.eu "] = mirror };
+
+            using var client = Client();
+            using var response = await client.GetAsync("http://cdn.shinden.eu/cdn1/avatars/225x350/5.jpg?v7");
+
+            Assert.Empty(_proxy.Requests);
+            Assert.Equal("http://local.test:81/cdn/cdn1/avatars/225x350/5.jpg?v7", Assert.Single(_direct.Requests).Request.RequestUri.ToString());
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        }
+
+        [Fact]
+        public async Task MirrorsWorkWithoutTheProxy()
+        {
+            _config.Model.FetchProxy = new FetchProxyConfig { Mirrors = new Dictionary<string, string> { ["cdn.shinden.eu"] = "http://local.test/cdn/" } };
+
+            using var client = Client();
+            await client.GetAsync("http://cdn.shinden.eu/cdn1/images/genuine/1.jpg");
+            await client.GetAsync("https://i.imgur.com/a.png");
+
+            Assert.Equal(new[] { "http://local.test/cdn/cdn1/images/genuine/1.jpg", "https://i.imgur.com/a.png" },
+                _direct.Requests.Select(x => x.Request.RequestUri.ToString()));
+        }
+
+        [Fact]
+        public async Task OnlyTheMirroredHostItselfIsMapped()
+        {
+            Enable();
+            _config.Model.FetchProxy.Mirrors = new Dictionary<string, string> { ["cdn.shinden.eu"] = "http://local.test/cdn/", ["broken.test"] = " " };
+            ProxyAnswers(new { status = 200, body = "" });
+
+            using var client = Client();
+            await client.GetAsync("https://img.cdn.shinden.eu/a.png");
+            await client.GetAsync("https://shinden.eu/a.png");
+            await client.GetAsync("https://broken.test/a.png");
+
+            // a subdomain of a direct host stays direct and keeps its address
+            Assert.Equal("https://img.cdn.shinden.eu/a.png", Assert.Single(_direct.Requests).Request.RequestUri.ToString());
+            Assert.Equal(new[] { "https://shinden.eu/a.png", "https://broken.test/a.png" }, _proxy.Requests.Select(x => JObject.Parse(x.Body).Value<string>("url")));
+        }
+
+        [Fact]
+        public async Task CardPicturesComeFromTheMirror()
+        {
+            _config.Model.FetchProxy = new FetchProxyConfig { Mirrors = new Dictionary<string, string> { ["cdn.shinden.eu"] = "http://local.test/cdn/" } };
+            var png = Png();
+            _direct.Respond = request => Task.FromResult(new HttpResponseMessage(request.RequestUri.Host == "local.test" ? HttpStatusCode.OK : HttpStatusCode.NotFound)
+            {
+                Content = new ByteArrayContent(png),
+            });
+            var images = new ImageProcessing(null, null, handler: Create().CreateHandler(_direct));
+
+            using var picture = await images.LoadCharacterPictureAsync("http://cdn.shinden.eu/cdn1/images/genuine/77.jpg", 1);
+
+            Assert.NotNull(picture);
+            Assert.Equal(4, picture.Width);
+            Assert.Equal("http://local.test/cdn/cdn1/images/genuine/77.jpg", Assert.Single(_direct.Requests).Request.RequestUri.ToString());
+        }
+
         [Fact]
         public async Task ImageProcessingDownloadsPlayerLinksThroughProxy()
         {

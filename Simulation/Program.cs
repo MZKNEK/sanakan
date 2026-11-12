@@ -42,6 +42,7 @@ app.Run(async context =>
     }
     else if (context.WebSockets.IsWebSocketRequest && path.StartsWith("/gateway")) await gateway.HandleAsync(context);
     else if (path == FakeFetchProxy.Path) await fetchProxy.HandleAsync(context);
+    else if (path.StartsWith(FakeShinden.MirrorPrefix + "/")) await shinden.HandleImageAsync(context);
     else if (path.StartsWith(RestApi.Prefix + "/")) await rest.HandleAsync(context);
     else if (path.StartsWith(FakeShinden.Prefix + "/")) await shinden.HandleAsync(context);
     else

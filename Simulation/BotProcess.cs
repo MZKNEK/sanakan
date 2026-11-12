@@ -102,7 +102,13 @@ public sealed class BotProcess : IDisposable
             ["LogChannel"] = new JsonObject { ["GuildId"] = 0, ["ChannelId"] = 0, ["ErrorRoleId"] = 0 },
             ["Heartbeat"] = null,
             ["Ingest"] = null,
-            ["FetchProxy"] = new JsonObject { ["Url"] = $"{baseUrl}{FakeFetchProxy.Path}", ["Key"] = FakeFetchProxy.Key },
+            ["FetchProxy"] = new JsonObject
+            {
+                ["Url"] = $"{baseUrl}{FakeFetchProxy.Path}",
+                ["Key"] = FakeFetchProxy.Key,
+                // like on the production server, Shinden's pictures come from a local mirror with the same paths
+                ["Mirrors"] = new JsonObject { [FakeShinden.ImageHost] = $"{baseUrl}{FakeShinden.MirrorPrefix}/" },
+            },
             ["DiscordGatewayUrl"] = $"{baseUrl.Replace("http://", "ws://")}/gateway",
             ["DiscordApiUrl"] = $"{baseUrl}{RestApi.Prefix}/",
         };
