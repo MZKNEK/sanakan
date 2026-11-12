@@ -1,6 +1,7 @@
 #pragma warning disable 1591
 
 using System;
+using System.Threading;
 
 namespace Sanakan.Services
 {
@@ -19,7 +20,7 @@ namespace Sanakan.Services
         public static readonly MinuteStats RejectedCommands = new MinuteStats();
 
         private readonly Func<long> _clock;
-        private readonly object _lock = new object();
+        private readonly Lock _lock = new();
         private readonly long[] _minutes = new long[Buckets];
         private readonly int[] _total = new int[Buckets];
         private readonly int[] _errors = new int[Buckets];

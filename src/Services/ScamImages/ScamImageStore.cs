@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Threading;
 
 namespace Sanakan.Services.ScamImages
 {
@@ -12,7 +13,7 @@ namespace Sanakan.Services.ScamImages
     {
         private const string Header = "# pHash (16 hex chars) of known scam images, one per line. Lines starting with # are ignored.";
 
-        private readonly object _lock = new object();
+        private readonly Lock _lock = new();
         private readonly HashSet<ulong> _hashes = new HashSet<ulong>();
         private readonly string _path;
 

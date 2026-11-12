@@ -183,7 +183,7 @@ namespace Sanakan.Api
         {
             private readonly Func<Task<T>> _factory;
             private readonly long _ttlMs;
-            private readonly object _lock = new object();
+            private readonly Lock _lock = new();
             private Task<T> _task;
             private long _expiresAt;
 

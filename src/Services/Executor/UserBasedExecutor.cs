@@ -25,7 +25,7 @@ namespace Sanakan.Services.Executor
         private Timer _timer;
         private readonly TimeSpan _globalMaxWait;
 
-        private readonly object _lock = new object();
+        private readonly Lock _lock = new();
         private readonly List<QueuedTask> _queue = new List<QueuedTask>();
         private readonly HashSet<ulong> _busyOwners = new HashSet<ulong>();
         private readonly SemaphoreSlim _freeSlots = new SemaphoreSlim(QueueLength, QueueLength);

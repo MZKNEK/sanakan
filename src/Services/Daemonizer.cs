@@ -13,7 +13,7 @@ namespace Sanakan.Services
     {
         private static readonly TimeSpan _defaultTimeout = TimeSpan.FromSeconds(40);
 
-        private readonly object _lock = new object();
+        private readonly Lock _lock = new();
         private CancellationTokenSource _cts { get; set; }
         private Func<ConnectionState> _state { get; set; }
         private Action<int> _exit { get; set; }
