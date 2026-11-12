@@ -90,7 +90,7 @@ namespace Sanakan.Api
 
         private static readonly ConcurrentDictionary<string, long> _clients = new ConcurrentDictionary<string, long>();
 
-        public static void Add(HttpContext context) => _clients.AddOrUpdate(ApiAudit.GetClient(context.User), 1, (_, v) => v + 1);
+        public static void Add(HttpContext context) => _clients.AddOrUpdate(ApiAudit.GetClient(context), 1, (_, v) => v + 1);
 
         public static string FlushDaily()
         {
@@ -111,8 +111,17 @@ namespace Sanakan.Api
             return $"API: {total} requests ({text})";
         }
     }
+    // An anonymous endpoint that changes data: its calls are logged one by one like those of known callers.
+    [AttributeUsage(AttributeTargets.Method)]
+    public sealed class AuditAnonymousAttribute : Attribute { }
+
     public static class ApiAudit
     {
+        public const string Anonymous = "anonymous";
+        // an endpoint that checks the app key by itself names the app here
+        public const string AppItem = "AuditApp";
+        private const int MaxUserAgentLength = 40;
+
         public static string Describe(HttpContext context, long elapsedMs)
         {
             if (HttpMethods.IsGet(context.Request.Method) || HttpMethods.IsHead(context.Request.Method)
@@ -120,10 +129,19 @@ namespace Sanakan.Api
                 return null;
 
             var who = GetCaller(context.User);
+            if (who == null && context.GetEndpoint()?.Metadata.GetMetadata<AuditAnonymousAttribute>() != null)
+                who = context.Items[AppItem] is string app ? $"app:{app}" : GetClient(context);
+
             if (who == null)
                 return null;
 
             return $"API: {who} {context.Request.Method} {context.Request.Path} -> {context.Response.StatusCode} ({elapsedMs}ms)";
+        }
+
+        public static string GetClient(HttpContext context)
+        {
+            var client = GetClient(context.User);
+            return client == Anonymous ? $"{Anonymous}:{UserAgentKind(context.Request.Headers.UserAgent)}" : client;
         }
 
         public static string GetClient(ClaimsPrincipal user)
@@ -133,7 +151,27 @@ namespace Sanakan.Api
                 return $"app:{app}";
 
             var site = user?.Claims.FirstOrDefault(x => x.Type == ClaimTypes.Webpage)?.Value;
-            return site != null ? $"site:{site}" : "anonymous";
+            return site != null ? $"site:{site}" : Anonymous;
+        }
+
+        // Browsers differ only by version, so they are one group; any other client goes by its first product token.
+        // The header is set by the caller, so only a short run of safe characters reaches the log.
+        public static string UserAgentKind(string userAgent)
+        {
+            if (string.IsNullOrWhiteSpace(userAgent))
+                return "none";
+
+            if (userAgent.StartsWith("Mozilla/", StringComparison.Ordinal))
+            {
+                var lower = userAgent.ToLowerInvariant();
+                return lower.Contains("bot") || lower.Contains("spider") || lower.Contains("crawl") ? "crawler" : "browser";
+            }
+
+            var token = userAgent.Trim().Split(' ', 2)[0];
+            if (token.Length > MaxUserAgentLength)
+                token = token.Substring(0, MaxUserAgentLength);
+
+            return new string(token.Select(c => char.IsAsciiLetterOrDigit(c) || "._/-+".IndexOf(c) >= 0 ? c : '?').ToArray());
         }
 
         private static string GetCaller(ClaimsPrincipal user)

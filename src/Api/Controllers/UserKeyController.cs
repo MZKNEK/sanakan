@@ -35,7 +35,7 @@ namespace Sanakan.Api.Controllers
         /// <response code="401">App Key Not Provided</response>
         /// <response code="403">App Key Is Invalid or app has no UserKeys permission</response>
         /// <response code="404">User not found</response>
-        [HttpPost("discord/{id}"), AllowAnonymous]
+        [HttpPost("discord/{id}"), AllowAnonymous, AuditAnonymous]
         public async Task<IActionResult> GenerateUserKeyAsync(ulong id, [FromHeader(Name = "x-app-key")]string appKey)
         {
             if (string.IsNullOrEmpty(appKey)) return "App Key Not Provided".ToResponse(401);
@@ -45,6 +45,7 @@ namespace Sanakan.Api.Controllers
 
             var app = Authenticate(appKey, clientKey);
             if (app == null) return "App Key Is Invalid".ToResponse(403);
+            HttpContext.Items[ApiAudit.AppItem] = app;
 
             using (var db = new Database.DatabaseContext(_config))
             {
@@ -78,7 +79,7 @@ namespace Sanakan.Api.Controllers
         /// <response code="401">App Key Not Provided</response>
         /// <response code="403">App Key Is Invalid or app has no UserKeys permission</response>
         /// <response code="404">Key not found</response>
-        [HttpDelete("discord/{id}"), AllowAnonymous]
+        [HttpDelete("discord/{id}"), AllowAnonymous, AuditAnonymous]
         public async Task<IActionResult> RevokeUserKeyAsync(ulong id, [FromHeader(Name = "x-app-key")]string appKey)
         {
             if (string.IsNullOrEmpty(appKey)) return "App Key Not Provided".ToResponse(401);
@@ -88,6 +89,7 @@ namespace Sanakan.Api.Controllers
 
             var app = Authenticate(appKey, clientKey);
             if (app == null) return "App Key Is Invalid".ToResponse(403);
+            HttpContext.Items[ApiAudit.AppItem] = app;
 
             using (var db = new Database.DatabaseContext(_config))
             {
