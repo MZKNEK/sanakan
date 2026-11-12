@@ -103,14 +103,14 @@ namespace Sanakan.Extensions
         {
             var size = img.GetCurrentSize();
             var gOptions = new DrawingOptions{ GraphicsOptions = new GraphicsOptions { Antialias = true, AlphaCompositionMode = PixelAlphaCompositionMode.DestOut } };
-            img.Fill(gOptions, Color.Black, BuildCorners(size.Width, size.Height, radius));
+            img.Paint(gOptions, c => c.Fill(Brushes.Solid(Color.Black), BuildCorners(size.Width, size.Height, radius)));
         }
 
         private static IPathCollection BuildCorners(int imageWidth, int imageHeight, float cornerRadius)
         {
-            var rect = new RectangularPolygon(-0.5f, -0.5f, cornerRadius, cornerRadius);
+            var rect = new RectanglePolygon(-0.5f, -0.5f, cornerRadius, cornerRadius);
 
-            IPath cornerToptLeft = rect.Clip(new EllipsePolygon(cornerRadius - 0.5f, cornerRadius - 0.5f, cornerRadius));
+            IPath cornerToptLeft = rect.Clip(BooleanOperation.Difference, new EllipsePolygon(cornerRadius - 0.5f, cornerRadius - 0.5f, cornerRadius));
 
             float rightPos = imageWidth - cornerToptLeft.Bounds.Width + 1;
             float bottomPos = imageHeight - cornerToptLeft.Bounds.Height + 1;

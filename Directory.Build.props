@@ -1,0 +1,7 @@
+<Project>
+  <PropertyGroup>
+    <!-- Six Labors community license for the assemblies named in it (Sanakan, Sanakan.Simulation, Sanakan.Tests);
+         ImageSharp 3.2 and later check it when building. Assembly-scoped keys may be public. -->
+    <SixLaborsLicenseFile>$(MSBuildThisFileDirectory)sixlabors.lic</SixLaborsLicenseFile>
+  </PropertyGroup>
+</Project>
