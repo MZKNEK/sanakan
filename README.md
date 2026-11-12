@@ -125,11 +125,17 @@ Log in as the user the bot will run as (not root), then:
    cd sanakan
    ```
 3. Put the configuration in `src/Config.json` (see [Configuration](#configuration)).
-4. Register the bot as the `sanakan` service; this also gives your user the files and hides the config from others:
+4. Check the server; it lists everything to fix (no `origin`, a branch `origin` does not have, no .NET SDK of the
+   bot's framework, no config, an old bot still running) and changes nothing:
+   ```bash
+   tools/check-server.sh
+   ```
+5. Register the bot as the `sanakan` service; this also gives your user the files and hides the config from others.
+   It runs the same check first and stops when something is wrong:
    ```bash
    sudo tools/install-service.sh
    ```
-5. Start it and watch the log:
+6. Start it and watch the log:
    ```bash
    sudo systemctl start sanakan
    journalctl -u sanakan -f
@@ -182,6 +188,21 @@ An update pulls the current branch from `origin` (fast-forward only) and builds 
 `src/deploy/`. The bot switches to it only when the build succeeded; if the new build fails within a minute of
 starting, the previous one is started again. The last three builds are kept. If the bot crashes 10 times within
 10 minutes, systemd stops trying; `systemctl status sanakan` shows why.
+
+#### Moving from the old Run.sh
+
+Older versions ran `bin/Release/net6.0/Sanakan.dll` from a `Run.sh` loop that updated when it found the `updateNow`
+file. That loop does not know the exit codes above: an update request (100) ends it and the bot stays down, so the
+switch is done once by hand:
+
+1. Install the .NET SDK of the bot's framework next to the old one; `dotnet --list-sdks` shows both.
+2. Stop the old bot and the `Run.sh` loop that restarts it.
+3. Check out the branch the server should follow (`git fetch origin && git checkout master`) and run
+   `tools/check-server.sh`.
+4. Go on with registering the service (step 5 of [First start on a server](#first-start-on-a-server-linux)).
+
+To go back, stop the service (`sudo systemctl disable --now sanakan`), check out the old version and start the old
+`Run.sh`; its build in `bin/Release/net6.0` is left as it was, the new builds go to `src/deploy/`.
 
 ### Run by hand
 

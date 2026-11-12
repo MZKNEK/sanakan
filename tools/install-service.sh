@@ -11,6 +11,8 @@
 #                                                 repository, and leaves a link in GOut's place; an existing GOut
 #                                                 is moved there when it is on the same disk
 #
+# Before installing it runs tools/check-server.sh (git origin and branch, .NET SDK, config, an old bot still running)
+# and stops when something is wrong.
 # Run it with sudo from the account the bot runs as (or as root with --user). The service runs as that user in src, so the bot finds its
 # config, Pictures and ../GOut like before. Exit codes (src/ExitCodes.cs): 0 stop and 78 bad config keep it down,
 # an update (100) is done by Run.sh itself, anything else restarts it after 5 s; after 10 starts in 10 minutes
@@ -100,7 +102,7 @@ mkdir -p "$GOUT"
 # given to the bot, the files in it already belong to it
 find "$REPO" -mindepth 1 -maxdepth 1 ! -name GOut -exec chown -R "$OWNER" {} +
 chown "$OWNER" "$REPO" "$(readlink -f "$GOUT")"
-chmod 755 "$REPO/src/Run.sh" "$REPO/tools/install-service.sh"
+chmod 755 "$REPO/src/Run.sh" "$REPO/tools/install-service.sh" "$REPO/tools/check-server.sh"
 for config in Config.json ConfigDebug.json; do
     if [ -f "$config" ]; then chmod 600 "$config"; fi
 done
@@ -112,6 +114,14 @@ if [ "$MODE" = permissions ]; then exit 0; fi
 DOTNET=${SANAKAN_DOTNET:-$(sudo -u "$RUN_AS" bash -lc 'command -v dotnet' || true)}
 if [ -z "$DOTNET" ]; then echo "dotnet not found for $RUN_AS" >&2; exit 1; fi
 DOTNET_DIR=$(dirname "$(readlink -f "$DOTNET")")
+
+# what the service needs, as the bot's account sees it; the running bots once more as root, which sees an old bot of
+# any account
+CHECK="$REPO/tools/check-server.sh"
+FAILED=0
+if ! sudo -u "$RUN_AS" env SANAKAN_DOTNET="$DOTNET" "$CHECK"$ARGS; then FAILED=1; fi
+if ! PROCESSES=$("$CHECK" --processes); then echo "$PROCESSES" | grep PROBLEM; FAILED=1; fi
+if [ "$FAILED" -ne 0 ]; then echo "fix the problems above and run this again" >&2; exit 1; fi
 
 if [ -f "$UNIT" ]; then
     BACKUP="$UNIT.bak-$(date '+%Y%m%d-%H%M%S')"
