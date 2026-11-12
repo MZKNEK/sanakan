@@ -1,7 +1,6 @@
 # Sanakan
 
 [![tests](https://github.com/MZKNEK/sanakan/actions/workflows/tests.yml/badge.svg)](https://github.com/MZKNEK/sanakan/actions/workflows/tests.yml)
-[![CodeFactor](https://www.codefactor.io/repository/github/mzknek/sanakan/badge)](https://www.codefactor.io/repository/github/mzknek/sanakan)
 [![License: MPL 2.0](https://img.shields.io/badge/License-MPL_2.0-brightgreen.svg)](https://github.com/MZKNEK/sanakan/blob/master/LICENSE)
 
 Sanakan is a Discord bot and web API built with [.NET 10](https://dotnet.microsoft.com/download/dotnet/10.0) and [Discord.NET](https://github.com/discord-net/Discord.Net).
