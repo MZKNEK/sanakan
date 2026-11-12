@@ -192,6 +192,14 @@ the same disk (stop the bot first); for another disk the script prints the comma
 take long with millions of files. `GOut` lies outside `src`, so its files do not slow down building the bot, and git
 ignores it.
 
+#### Behind nginx
+
+`tools/nginx-sanakan.conf` is a sample site for a server where the bot sits behind another nginx: it serves the
+generated cards (`GOut/Cards`, never the players' pictures in `GOut/Saved`) for the CDN names in any letter case,
+asks the bot to draw a card whose picture is missing (`api/waifu/card/{id}`), passes the API names to Kestrel on
+`127.0.0.1:5000` with the client's address, and answers nothing for other names. The file says how to install it and
+which values to fill in.
+
 #### How updates and restarts work
 
 The bot tells `src/Run.sh` what to do next with its exit code (`src/ExitCodes.cs`):
