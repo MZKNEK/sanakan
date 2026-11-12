@@ -415,14 +415,15 @@ namespace Artifacts
 
         // the files are checked before the database, which the test server does not have
         [Theory]
-        [InlineData("")]
-        [InlineData("?type=profile")]
-        [InlineData("?type=Small")]
-        public async Task ExistingImages_StillReturn403_ForEveryType(string query)
+        [InlineData("", "", "webp")]
+        [InlineData("?type=profile", "profile/", "webp")]
+        [InlineData("?type=Small", "small/", "webp")]
+        [InlineData("?type=Profile", "profile/", "gif")]
+        public async Task ExistingImages_RedirectToTheCdn_ForEveryType(string query, string folder, string ext)
         {
             Dir.Create();
             var id = 960000000000UL + (ulong)Environment.TickCount64 % 1000000;
-            var files = new[] { $"{Dir.Cards}/{id}.webp", $"{Dir.CardsMiniatures}/{id}.webp", $"{Dir.CardsInProfiles}/{id}.webp" };
+            var files = new[] { $"{Dir.Cards}/{id}.{ext}", $"{Dir.CardsMiniatures}/{id}.{ext}", $"{Dir.CardsInProfiles}/{id}.{ext}" };
             try
             {
                 foreach (var path in files)
@@ -430,7 +431,8 @@ namespace Artifacts
 
                 var res = await _api.Client.GetAsync($"/api/waifu/card/{id}{query}");
 
-                Assert.Equal(HttpStatusCode.Forbidden, res.StatusCode);
+                Assert.Equal(HttpStatusCode.Redirect, res.StatusCode);
+                Assert.Equal($"https://cdn2.shinden.eu/{folder}{id}.{ext}", res.Headers.Location?.ToString());
             }
             finally
             {

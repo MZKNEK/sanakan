@@ -212,14 +212,21 @@ namespace Sanakan.Api.Models
         public static string GetProfileUrl(ulong userId)
             => $"https://cdn2.shinden.eu/prof/{userId}.webp";
 
-        public static string GetCardMiniInShindenUrl(Card card)
-            => $"https://cdn2.shinden.eu/small/{card.Id}.{(card.IsCardAnimated() ? Waifu.AnimatedCardExtension : Waifu.NormalCardExtension)}";
+        public static string GetCardImageInShindenUrl(ulong cardId, string extension, CardImageType type) => type switch
+        {
+            CardImageType.Small => $"https://cdn2.shinden.eu/small/{cardId}.{extension}",
+            CardImageType.Profile => $"https://cdn2.shinden.eu/profile/{cardId}.{extension}",
+            _ => $"https://cdn2.shinden.eu/{cardId}.{extension}",
+        };
 
-        public static string GetCardBaseInShindenUrl(Card card)
-            => $"https://cdn2.shinden.eu/{card.Id}.{(card.IsCardAnimated() ? Waifu.AnimatedCardExtension : Waifu.NormalCardExtension)}";
+        private static string GetCardImageInShindenUrl(Card card, CardImageType type)
+            => GetCardImageInShindenUrl(card.Id, card.IsCardAnimated() ? Waifu.AnimatedCardExtension : Waifu.NormalCardExtension, type);
 
-        public static string GetCardProfileInShindenUrl(Card card)
-            => $"https://cdn2.shinden.eu/profile/{card.Id}.{(card.IsCardAnimated() ? Waifu.AnimatedCardExtension : Waifu.NormalCardExtension)}";
+        public static string GetCardMiniInShindenUrl(Card card) => GetCardImageInShindenUrl(card, CardImageType.Small);
+
+        public static string GetCardBaseInShindenUrl(Card card) => GetCardImageInShindenUrl(card, CardImageType.Normal);
+
+        public static string GetCardProfileInShindenUrl(Card card) => GetCardImageInShindenUrl(card, CardImageType.Profile);
 
         private static CardFinalView ConvertFromRaw(Card card, ulong shindenId = 0, ISystemTime time = null)
         {
