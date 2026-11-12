@@ -244,7 +244,7 @@ namespace Sanakan.Api.Controllers
                 // as the profile is drawn: the colour of the highest role, grey without one
                 var member = _client.GetGuild(MainGuildId)?.GetUser(id);
                 var account = (Discord.IUser)member ?? _client.GetUser(id);
-                var color = member?.Roles.OrderByDescending(x => x.Position).FirstOrDefault()?.Color ?? Discord.Color.Default;
+                var color = member?.Roles.OrderByDescending(x => x.Position).FirstOrDefault()?.Colors.PrimaryColor ?? Discord.Color.Default;
                 if (color == Discord.Color.Default)
                     color = Discord.Color.DarkerGrey;
 

@@ -422,7 +422,7 @@ namespace Sanakan.Services
             }
 
             return await _img.GetUserProfileAsync(shindenUser, botUser, user.GetUserOrDefaultAvatarUrl(true),
-                topPosition, user.GetUserNickInGuild(), user.Roles.OrderByDescending(x => x.Position).FirstOrDefault()?.Color ?? Discord.Color.DarkerGrey);
+                topPosition, user.GetUserNickInGuild(), user.Roles.OrderByDescending(x => x.Position).FirstOrDefault()?.Colors.PrimaryColor ?? Discord.Color.DarkerGrey);
         }
 
         private static readonly TimeSpan ReuseSentImage = TimeSpan.FromHours(12);

@@ -386,15 +386,22 @@ namespace Artifacts
             await tcp.ConnectAsync(_api.KestrelUrl.Host, _api.KestrelUrl.Port);
             var stream = tcp.GetStream();
             var request = "POST /api/waifu/unique/cards/0/500 HTTP/1.1\r\nHost: localhost\r\nContent-Type: application/json\r\n"
-                + "Content-Length: 100\r\n\r\n{\"orderBy\":";
+                + "Expect: 100-continue\r\nContent-Length: 100\r\n\r\n";
             await stream.WriteAsync(Encoding.ASCII.GetBytes(request));
-            // .NET 10 does not start a request whose client is already gone when it reads the headers, so the
-            // connection is closed only once the bot is reading the body
-            await Task.Delay(500);
+
+            // .NET 10 does not start a request whose client is already gone when it reads the headers; Kestrel sends
+            // 100 Continue only once the bot reads the body, so the connection is cut while it does
+            var reader = new StreamReader(stream, Encoding.ASCII);
+            Assert.StartsWith("HTTP/1.1 100", await reader.ReadLineAsync());
+            Assert.Equal("", await reader.ReadLineAsync());
+            await stream.WriteAsync(Encoding.ASCII.GetBytes("{\"orderBy\":"));
             tcp.Client.Shutdown(System.Net.Sockets.SocketShutdown.Send);
 
-            // the client is gone, so the connection is closed without a response
-            Assert.Equal("", await new StreamReader(stream, Encoding.ASCII).ReadToEndAsync());
+            // the client is gone, so the connection is closed or reset without a response
+            string rest;
+            try { rest = await reader.ReadToEndAsync(); }
+            catch (IOException) { rest = ""; }
+            Assert.Equal("", rest);
             for (var i = 0; i < 100 && !_api.Logger.Messages.Any(x => x.Contains("/api/waifu/unique/cards/0/500")); i++)
                 await Task.Delay(50);
 

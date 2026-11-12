@@ -424,7 +424,7 @@ namespace Sanakan.Services
         }
 
         private static Discord.Color GetSiteStatisticColor(SocketGuildUser user)
-            => user.Roles.OrderByDescending(x => x.Position).FirstOrDefault()?.Color ?? Discord.Color.DarkerGrey;
+            => user.Roles.OrderByDescending(x => x.Position).FirstOrDefault()?.Colors.PrimaryColor ?? Discord.Color.DarkerGrey;
 
         private sealed class PartialUserInfo : IUserInfo
         {

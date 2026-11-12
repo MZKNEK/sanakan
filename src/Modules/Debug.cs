@@ -2059,7 +2059,7 @@ namespace Sanakan.Modules
             }
 
             using (var badge = await _img.GetLevelUpBadgeAsync(nickname ?? "Very very long nickname of trolly user",
-                level, usr.GetUserOrDefaultAvatarUrl(), usr.Roles.OrderByDescending(x => x.Position).First().Color, highlight))
+                level, usr.GetUserOrDefaultAvatarUrl(), usr.Roles.OrderByDescending(x => x.Position).First().Colors.PrimaryColor, highlight))
             {
                 using (var badgeStream = badge.ToWebpStream())
                 {
