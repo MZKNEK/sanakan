@@ -41,7 +41,7 @@ namespace Sanakan.Api.Controllers
             if (string.IsNullOrEmpty(appKey)) return "App Key Not Provided".ToResponse(401);
 
             var clientKey = TokenAttemptGuard.ClientKey(HttpContext);
-            if (_guard.IsLocked(clientKey, out _)) return "Too many failed attempts".ToResponse(429);
+            if (_guard.IsLocked(clientKey, out var retryAfter)) return ApiResponses.TooManyAttempts(Response, retryAfter);
 
             var app = Authenticate(appKey, clientKey);
             if (app == null) return "App Key Is Invalid".ToResponse(403);
@@ -85,7 +85,7 @@ namespace Sanakan.Api.Controllers
             if (string.IsNullOrEmpty(appKey)) return "App Key Not Provided".ToResponse(401);
 
             var clientKey = TokenAttemptGuard.ClientKey(HttpContext);
-            if (_guard.IsLocked(clientKey, out _)) return "Too many failed attempts".ToResponse(429);
+            if (_guard.IsLocked(clientKey, out var retryAfter)) return ApiResponses.TooManyAttempts(Response, retryAfter);
 
             var app = Authenticate(appKey, clientKey);
             if (app == null) return "App Key Is Invalid".ToResponse(403);

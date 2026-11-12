@@ -248,18 +248,17 @@ namespace Artifacts
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        public async Task WithoutHeader_ReturnsBeforeSave_AndEachRequestChangesTc(bool byDiscord)
+        public async Task WithoutHeader_Returns400_AndChangesNothing(bool byDiscord)
         {
-            Assert.Equal(200, (await Send(byDiscord, null)).StatusOf());
-            Assert.Equal(InitialTc, Balance());
-            await RunQueuedAsync();
-            Assert.Equal(InitialTc + 100, Balance());
-
             _executor.RunImmediately = true;
-            Assert.Equal(200, (await Send(byDiscord, null)).StatusOf());
-            Assert.Equal(InitialTc + 200, Balance());
-            Assert.Equal(2, TransferCount());
-            Assert.Equal(0, RecordCount());
+
+            var res = await Send(byDiscord, null);
+
+            Assert.Equal(400, res.StatusOf());
+            Assert.Equal("Idempotency-Key is required", ApiBody.Message(res));
+            Assert.Empty(_executor.Added);
+            Assert.Equal(InitialTc, Balance());
+            Assert.Equal(0, TransferCount());
         }
 
         [Theory]

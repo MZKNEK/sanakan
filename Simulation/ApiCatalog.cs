@@ -8,9 +8,10 @@ public static class ApiCatalog
 {
     public enum Auth { Player, Site, Info }
 
-    // GivesPacks/NeedsPacks: opening goes to players the simulation gave packs to, most random players have none
+    // GivesPacks/NeedsPacks: opening goes to players the simulation gave packs to, most random players have none;
+    // Idempotent: the request carries a new Idempotency-Key, which these routes require
     public sealed record Template(string MixKey, HttpMethod Method, Auth Auth, Func<Context, string> Path, Func<Context, string> Body = null, bool NeedsShinden = false,
-        bool GivesPacks = false, bool NeedsPacks = false);
+        bool GivesPacks = false, bool NeedsPacks = false, bool Idempotent = false);
 
     public sealed class Context
     {
@@ -63,11 +64,20 @@ public static class ApiCatalog
         ["api:wishlist"] = Player("wishlist"),
         ["api:tags"] = Player("tags"),
         ["api:pack-open"] = new("POST api/Waifu/boosterpack/open/{packNumber}", HttpMethod.Post, Auth.Player,
-            _ => "api/Waifu/boosterpack/open/1", NeedsPacks: true),
+            _ => "api/Waifu/boosterpack/open/1", NeedsPacks: true, Idempotent: true),
         ["api:give-packs"] = new("POST /api/waifu/discord/{n}/boosterpack", HttpMethod.Post, Auth.Site,
-            c => $"api/Waifu/discord/{c.User.Id}/boosterpack", Pack, GivesPacks: true),
+            c => $"api/Waifu/discord/{c.User.Id}/boosterpack", Pack, GivesPacks: true, Idempotent: true),
         ["api:give-packs-shinden"] = new("POST /api/waifu/shinden/{n}/boosterpack", HttpMethod.Post, Auth.Site,
-            c => $"api/Waifu/shinden/{c.Shinden}/boosterpack", Pack, NeedsShinden: true),
+            c => $"api/Waifu/shinden/{c.Shinden}/boosterpack", Pack, NeedsShinden: true, Idempotent: true),
+        // the site opens the packs it grants in the background and picks the result up under the key
+        ["api:open-packs-shinden"] = new("POST /api/waifu/shinden/{n}/boosterpack/open", HttpMethod.Post, Auth.Site,
+            c => $"api/Waifu/shinden/{c.Shinden}/boosterpack/open", Pack, NeedsShinden: true, Idempotent: true),
+        ["api:tc-shinden"] = new("PUT /api/user/shinden/{n}/tc", HttpMethod.Put, Auth.Site,
+            c => $"api/User/shinden/{c.Shinden}/tc", _ => "1", NeedsShinden: true, Idempotent: true),
+        // only for --extra: a new route the traffic mix does not have yet
+        ["api:deck-card"] = new("extra set card active", HttpMethod.Put, Auth.Player,
+            c => $"api/Waifu/deck/card/{(c.User.Cards.Count > 0 ? c.User.Cards[c.Random.Next(c.User.Cards.Count)] : 1)}",
+            c => c.Random.Next(2) == 0 ? "true" : "false"),
         ["api:card-image"] = new("GET api/Waifu/card/{id}", HttpMethod.Get, Auth.Site, CardImage),
         ["api:user"] = new("GET api/User/discord/{id}", HttpMethod.Get, Auth.Site, c => $"api/User/discord/{c.User.Id}"),
         ["api:user-shinden"] = new("GET api/User/shinden/{id}", HttpMethod.Get, Auth.Site, c => $"api/User/shinden/{c.Shinden}", NeedsShinden: true),

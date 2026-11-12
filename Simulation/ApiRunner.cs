@@ -104,6 +104,8 @@ public sealed class ApiRunner : IDisposable
             request.Content = new StringContent(requestBody, Encoding.UTF8, "application/json");
         else if (template.Method == HttpMethod.Post)
             request.Content = new StringContent("", Encoding.UTF8, "application/json");
+        if (template.Idempotent)
+            request.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("N"));
         if (template.Auth == ApiCatalog.Auth.Player)
             request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", PlayerToken(context.User.Id));
         else

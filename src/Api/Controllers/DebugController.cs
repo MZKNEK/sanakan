@@ -21,30 +21,39 @@ namespace Sanakan.Api.Controllers
             _logger = logger;
         }
 
+        internal static Action<int> Exit = Environment.Exit;
+        internal static TimeSpan ExitDelay = TimeSpan.FromMilliseconds(1500);
+
         /// <summary>
         /// Zabija bota
         /// </summary>
+        /// <response code="202">Bot kończy pracę zaraz po wysłaniu tej odpowiedzi</response>
         [HttpPost("kill"), Authorize(Policy = "Site")]
-        public async Task<IActionResult> RestartBotAsync()
-        {
-            await _client.LogoutAsync();
-            _logger.Log("API: kill requested from web");
-            await Task.Delay(1500);
-            Environment.Exit(ExitCodes.Stop);
-            return Ok();
-        }
+        public Task<IActionResult> RestartBotAsync() => StopAsync("kill", ExitCodes.Stop);
 
         /// <summary>
         /// Aktualizuje bota
         /// </summary>
+        /// <response code="202">Bot kończy pracę zaraz po wysłaniu tej odpowiedzi</response>
         [HttpPost("update"), Authorize(Policy = "Site")]
-        public async Task<IActionResult> UpdateBotAsync()
+        public Task<IActionResult> UpdateBotAsync() => StopAsync("update", ExitCodes.Update);
+
+        // The process ends only after the answer went out; a broken connection instead would make the caller retry
+        // and stop the bot again after its restart.
+        private async Task<IActionResult> StopAsync(string action, int exitCode)
         {
             await _client.LogoutAsync();
-            _logger.Log("API: update requested from web");
-            await Task.Delay(1500);
-            Environment.Exit(ExitCodes.Update);
-            return Ok();
+            _logger.Log($"API: {action} requested from web");
+            Response.OnCompleted(() =>
+            {
+                _ = Task.Run(async () =>
+                {
+                    await Task.Delay(ExitDelay);
+                    Exit(exitCode);
+                });
+                return Task.CompletedTask;
+            });
+            return Accepted();
         }
     }
 }

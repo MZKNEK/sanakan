@@ -294,10 +294,10 @@ namespace Artifacts
         }
 
         [Fact]
-        public async Task BlacklistedAndUnknown_KeepStatusCodes()
+        public async Task Blacklisted_Returns403_Unknown404()
         {
             await SeedAsync(5, blacklisted: true);
-            Assert.Equal(401, (await CurrentAsync()).Result.StatusOf());
+            Assert.Equal(403, (await CurrentAsync()).Result.StatusOf());
 
             var controller = ControllerHarness.Attach(new WaifuController(null, NewWaifu(), new FakeExecutor(), await TagsAsync(), _config, _time,
                 null, null, new Expedition(_time), null));

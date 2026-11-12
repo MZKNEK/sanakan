@@ -186,18 +186,22 @@ namespace Artifacts
         }
 
         [Fact]
-        public async Task OpenShindenPacks_EmptyList_Returns500Json()
+        public async Task OpenShindenPacks_EmptyList_Returns400Json()
+            => await AssertInvalidModel("/api/waifu/shinden/5/boosterpack/open");
+
+        // the key is valid, so the 400 comes from the packs
+        private async Task AssertInvalidModel(string path)
         {
             var client = await _api.AsSiteAsync();
-            await AssertMessage(await client.PostAsync("/api/waifu/shinden/5/boosterpack/open", ApiServer.Json("[]")), HttpStatusCode.InternalServerError);
+            var req = new HttpRequestMessage(HttpMethod.Post, path) { Content = ApiServer.Json("[]") };
+            req.Headers.Add("Idempotency-Key", "key-1");
+            var json = await AssertMessage(await client.SendAsync(req), HttpStatusCode.BadRequest);
+            Assert.Equal("Model is Invalid", (string)json["message"]);
         }
 
         [Fact]
-        public async Task GiveShindenPacks_EmptyList_Returns500Json()
-        {
-            var client = await _api.AsSiteAsync();
-            await AssertMessage(await client.PostAsync("/api/waifu/shinden/5/boosterpack", ApiServer.Json("[]")), HttpStatusCode.InternalServerError);
-        }
+        public async Task GiveShindenPacks_EmptyList_Returns400Json()
+            => await AssertInvalidModel("/api/waifu/shinden/5/boosterpack");
 
         [Fact]
         public async Task GiveShindenPacks_InvalidIdempotencyKey_Returns400Json()
@@ -240,11 +244,8 @@ namespace Artifacts
         }
 
         [Fact]
-        public async Task GiveDiscordPacks_EmptyList_Returns500Json()
-        {
-            var client = await _api.AsSiteAsync();
-            await AssertMessage(await client.PostAsync("/api/waifu/discord/5/boosterpack", ApiServer.Json("[]")), HttpStatusCode.InternalServerError);
-        }
+        public async Task GiveDiscordPacks_EmptyList_Returns400Json()
+            => await AssertInvalidModel("/api/waifu/discord/5/boosterpack");
 
         [Fact]
         public async Task ShindenUsername_WhenShindenReturns404_Returns404Json()

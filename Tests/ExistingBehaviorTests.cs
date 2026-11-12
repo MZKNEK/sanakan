@@ -436,9 +436,10 @@ namespace Artifacts
             var executor = new FakeExecutor();
             var controller = NewWaifuController(executor);
 
-            var result = await controller.GiveUserAPacksAsync(5, new List<Sanakan.Api.Models.CardBoosterPack>());
+            var result = await controller.GiveUserAPacksAsync(5, new List<Sanakan.Api.Models.CardBoosterPack>(), "key-1");
 
-            Assert.Equal(500, result.StatusOf());
+            Assert.Equal(400, result.StatusOf());
+            Assert.Equal("Model is Invalid", ApiBody.Message(result));
             Assert.Empty(executor.Added);
         }
 
@@ -447,9 +448,10 @@ namespace Artifacts
         {
             var controller = NewWaifuController(new FakeExecutor());
 
-            var result = await controller.GiveShindenUserAPacksAndOpenAsync(5, new List<Sanakan.Api.Models.CardBoosterPack>());
+            var result = await controller.GiveShindenUserAPacksAndOpenAsync(5, new List<Sanakan.Api.Models.CardBoosterPack>(), "key-1");
             Assert.Null(result.Value);
-            Assert.Equal(500, result.StatusOf());
+            Assert.Equal(400, result.StatusOf());
+            Assert.Equal("Model is Invalid", ApiBody.Message(result.Result));
         }
     }
 }

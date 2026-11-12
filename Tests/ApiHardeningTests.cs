@@ -249,9 +249,14 @@ namespace Artifacts
         {
             var controller = Controller();
 
-            Assert.Equal(500, (await controller.GiveShindenUserAPacksAsync(5, packs)).StatusOf());
-            Assert.Equal(500, (await controller.GiveShindenUserAPacksAndOpenAsync(5, packs)).StatusOf());
-            Assert.Equal(500, StatusOf(await controller.GiveUserAPacksAsync(5, packs)));
+            var give = await controller.GiveShindenUserAPacksAsync(5, packs, "key-1");
+            var open = await controller.GiveShindenUserAPacksAndOpenAsync(5, packs, "key-2");
+            var giveDiscord = await controller.GiveUserAPacksAsync(5, packs, "key-3");
+
+            Assert.Equal(400, give.StatusOf());
+            Assert.Equal(400, open.StatusOf());
+            Assert.Equal(400, StatusOf(giveDiscord));
+            Assert.All(new[] { give.Result, open.Result, giveDiscord }, x => Assert.Equal("Model is Invalid", ApiBody.Message(x)));
         }
 
         private static int? StatusOf(Microsoft.AspNetCore.Mvc.IActionResult result) => (result as Microsoft.AspNetCore.Mvc.ObjectResult)?.StatusCode;

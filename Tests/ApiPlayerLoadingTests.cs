@@ -161,12 +161,42 @@ namespace Artifacts
             await SeedAsync();
 
             // numbering groups the packs by name: 1 and 2 are both "Pierwszy", 3 is "Drugi"
-            var result = await NewWaifuController().OpenAPackAsync(1);
+            var result = await NewWaifuController().OpenAPackAsync(1, "open-1");
 
             Assert.Equal(2, result.Value.Count);
             using var db = _h.Open();
             Assert.Equal(7, db.Cards.Count(x => x.GameDeckId == Player));
             Assert.Equal(new[] { "Drugi", "Pierwszy" }, db.BoosterPacks.Where(x => x.GameDeckId == Player).Select(x => x.Name).ToList().OrderBy(x => x));
+        }
+
+        // after the first opening the numbers moved, a retry with the same key must not open the next pack
+        [Fact]
+        public async Task OpeningAPack_RetryWithTheSameKey_ReturnsTheSameCards_WithoutOpeningAnother()
+        {
+            await SeedAsync();
+            var first = await NewWaifuController().OpenAPackAsync(1, "open-1");
+
+            var controller = NewWaifuController();
+            var retry = await controller.OpenAPackAsync(1, "open-1");
+
+            Assert.Equal(first.Value.Select(x => x.Id).OrderBy(x => x), retry.Value.Select(x => x.Id).OrderBy(x => x));
+            Assert.Equal("true", controller.Response.Headers[Sanakan.Services.Idempotency.ReplayedHeader].ToString());
+            using var db = _h.Open();
+            Assert.Equal(7, db.Cards.Count(x => x.GameDeckId == Player));
+            Assert.Equal(2, db.BoosterPacks.Count(x => x.GameDeckId == Player));
+        }
+
+        [Fact]
+        public async Task OpeningAPack_WithoutKeyOrWithAKeyOfOtherRequest_IsRejected()
+        {
+            await SeedAsync();
+            Assert.Equal(400, (await NewWaifuController().OpenAPackAsync(1)).StatusOf());
+
+            await NewWaifuController().OpenAPackAsync(1, "open-1");
+            Assert.Equal(422, (await NewWaifuController().OpenAPackAsync(2, "open-1")).StatusOf());
+
+            using var db = _h.Open();
+            Assert.Equal(2, db.BoosterPacks.Count(x => x.GameDeckId == Player));
         }
 
         [Fact]
@@ -175,9 +205,11 @@ namespace Artifacts
             await SeedAsync(maxCards: 6);
             var controller = NewWaifuController();
 
-            Assert.Equal(404, (await controller.OpenAPackAsync(4)).StatusOf());
-            Assert.Equal(406, (await controller.OpenAPackAsync(1)).StatusOf());
-            Assert.Single((await controller.OpenAPackAsync(3)).Value);
+            Assert.Equal(404, (await controller.OpenAPackAsync(4, "open-1")).StatusOf());
+            var noSpace = await controller.OpenAPackAsync(1, "open-2");
+            Assert.Equal(409, noSpace.StatusOf());
+            Assert.Equal(WaifuController.NoSpaceCode, ApiBody.Code(noSpace.Result));
+            Assert.Single((await controller.OpenAPackAsync(3, "open-3")).Value);
         }
 
         [Fact]
@@ -186,8 +218,145 @@ namespace Artifacts
             await SeedAsync();
             var packs = new List<CardBoosterPack> { new CardBoosterPack { Name = "x", Count = 1, Pool = new BoosterPackPool { Type = CardsPoolType.Random } } };
 
-            Assert.Equal(404, (await NewWaifuController().GiveUserAPacksAsync(12345, packs)).StatusOf());
-            Assert.Equal(200, (await NewWaifuController().GiveUserAPacksAsync(Player, packs)).StatusOf());
+            Assert.Equal(404, (await NewWaifuController().GiveUserAPacksAsync(12345, packs, "give-1")).StatusOf());
+            Assert.Equal(200, (await NewWaifuController().GiveUserAPacksAsync(Player, packs, "give-1")).StatusOf());
+        }
+
+        [Fact]
+        public async Task GivingPacks_RetryWithTheSameKey_AddsThemOnce()
+        {
+            await SeedAsync();
+            var packs = new List<CardBoosterPack> { new CardBoosterPack { Name = "x", Count = 1, Pool = new BoosterPackPool { Type = CardsPoolType.Random } } };
+            await NewWaifuController().GiveUserAPacksAsync(Player, packs, "give-1");
+
+            var controller = NewWaifuController();
+            Assert.Equal(200, (await controller.GiveUserAPacksAsync(Player, packs, "give-1")).StatusOf());
+            Assert.Equal("true", controller.Response.Headers[Sanakan.Services.Idempotency.ReplayedHeader].ToString());
+            Assert.Equal(400, (await NewWaifuController().GiveUserAPacksAsync(Player, packs)).StatusOf());
+
+            using var db = _h.Open();
+            Assert.Equal(1, db.BoosterPacks.Count(x => x.GameDeckId == Player && x.Name == "x"));
+        }
+
+        private DeckState Deck()
+        {
+            using var db = _h.Open();
+            var deck = db.GameDecks.Single(x => x.Id == Player);
+            return new DeckState(deck.CardsInDeck, deck.DeckPower, db.Cards.Where(x => x.GameDeckId == Player && x.Active).Select(x => x.Id).ToList().OrderBy(x => x).ToList());
+        }
+
+        private record DeckState(long CardsInDeck, double DeckPower, List<ulong> Active);
+
+        [Fact]
+        public async Task SettingCardActive_SetsTheState_AndARetryChangesNothing()
+        {
+            await SeedAsync();
+
+            var on = await NewWaifuController().SetCardActiveAsync(905, true);
+            Assert.Equal("Card activated", ApiBody.Message(on));
+            var afterOn = Deck();
+            Assert.Equal(new ulong[] { 901, 902, 905 }, afterOn.Active);
+            Assert.Equal(3, afterOn.CardsInDeck);
+
+            var again = await NewWaifuController().SetCardActiveAsync(905, true);
+            Assert.Equal(200, again.StatusOf());
+            Assert.Equal("Card unchanged", ApiBody.Message(again));
+            var afterAgain = Deck();
+            Assert.Equal(afterOn.Active, afterAgain.Active);
+            Assert.Equal(afterOn.CardsInDeck, afterAgain.CardsInDeck);
+            Assert.Equal(afterOn.DeckPower, afterAgain.DeckPower);
+
+            Assert.Equal("Card deactivated", ApiBody.Message(await NewWaifuController().SetCardActiveAsync(905, false)));
+            Assert.Equal("Card unchanged", ApiBody.Message(await NewWaifuController().SetCardActiveAsync(905, false)));
+            var afterOff = Deck();
+            Assert.Equal(new ulong[] { 901, 902 }, afterOff.Active);
+            Assert.Equal(2, afterOff.CardsInDeck);
+            Assert.Equal(404, (await NewWaifuController().SetCardActiveAsync(12345, true)).StatusOf());
+        }
+
+        [Fact]
+        public async Task SettingCardActive_InCageOrOnExpedition_Returns409WithCode()
+        {
+            await SeedAsync();
+            using (var db = _h.Open())
+            {
+                db.Cards.Single(x => x.Id == 904).InCage = true;
+                db.Cards.Single(x => x.Id == 905).Expedition = CardExpedition.NormalItemWithExp;
+                db.SaveChanges();
+            }
+
+            var caged = await NewWaifuController().SetCardActiveAsync(904, true);
+            var away = await NewWaifuController().SetCardActiveAsync(905, true);
+
+            Assert.Equal(409, caged.StatusOf());
+            Assert.Equal(WaifuController.CardInCageCode, ApiBody.Code(caged));
+            Assert.Equal(409, away.StatusOf());
+            Assert.Equal(WaifuController.CardOnExpeditionCode, ApiBody.Code(away));
+            Assert.Equal(new ulong[] { 901, 902 }, Deck().Active);
+        }
+
+        [Fact]
+        public async Task SettingCardActive_FullQueue_Returns503WithRetryAfter()
+        {
+            await SeedAsync();
+            _executor.Accept = false;
+            var controller = NewWaifuController();
+
+            Assert.Equal(503, (await controller.SetCardActiveAsync(905, true)).StatusOf());
+            Assert.Equal(Sanakan.Api.ApiResponses.QueueFullRetryAfter.ToString(), controller.Response.Headers["Retry-After"].ToString());
+        }
+
+        [Fact]
+        public async Task SettingTheSameWaifuAgain_Returns200_WithoutLoweringAffectionTwice()
+        {
+            await SeedAsync();
+            using var client = new Discord.WebSocket.DiscordSocketClient();
+            using var sessions = new Sanakan.Services.Session.SessionManager(client, new FakeExecutor(), new ListLogger());
+            sessions.Initialize(new EmptyServiceProvider());
+            PlayerController Controller() => AsPlayer(new PlayerController(_h.Config, _h.Time, _executor, _h.Tags, null, sessions));
+
+            Assert.Equal("Waifu changed!", ApiBody.Message(await Controller().SetWaifuAsync(905)));
+            double Affection()
+            {
+                using var db = _h.Open();
+                return db.Cards.Single(x => x.Id == 905).Affection;
+            }
+            var before = Affection();
+
+            var again = await Controller().SetWaifuAsync(905);
+
+            Assert.Equal(200, again.StatusOf());
+            Assert.Equal("Waifu unchanged!", ApiBody.Message(again));
+            Assert.Equal(before, Affection());
+        }
+
+        [Fact]
+        public async Task CreatingATag_Conflicts_HaveCodes_AndARetryPointsAtTheCreatedTag()
+        {
+            await SeedAsync();
+            var created = await NewPlayerController().CreateTagAsync("nowy");
+            var tag = Assert.IsType<UserTag>(Assert.IsType<ObjectResult>(created).Value);
+
+            var retry = await NewPlayerController().CreateTagAsync("NOWY");
+            Assert.Equal(409, retry.StatusOf());
+            Assert.Equal(PlayerController.TagExistsCode, ApiBody.Code(retry));
+            Assert.Equal(tag.Id, (ulong)ApiBody.Detail(retry, "tagId"));
+
+            var similar = await NewPlayerController().CreateTagAsync(_h.Tags.GetTag(TagType.Gallery).Name);
+            Assert.Equal(PlayerController.TagTooSimilarCode, ApiBody.Code(similar));
+
+            using (var db = _h.Open())
+            {
+                db.GameDecks.Single(x => x.Id == Player).MaxNumberOfTags = 2;
+                db.SaveChanges();
+            }
+            Assert.Equal(PlayerController.TagLimitCode, ApiBody.Code(await NewPlayerController().CreateTagAsync("trzeci")));
+            // at the limit a retry of a tag that was created still says it exists
+            Assert.Equal(PlayerController.TagExistsCode, ApiBody.Code(await NewPlayerController().CreateTagAsync("nowy")));
+
+            var rename = await NewPlayerController().RenameTagAsync(tag.Id, "konie");
+            Assert.Equal(PlayerController.TagExistsCode, ApiBody.Code(rename));
+            Assert.Equal(200, (await NewPlayerController().RenameTagAsync(tag.Id, "nowy")).StatusOf());
         }
     }
 }
