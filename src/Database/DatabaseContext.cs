@@ -76,6 +76,7 @@ namespace Sanakan.Database
 
         public const string PictureKindSql = "CASE WHEN CustomImage IS NULL THEN (CASE WHEN Image IS NULL THEN 0 ELSE 1 END) ELSE (CASE WHEN IsAnimatedImage THEN 3 ELSE 2 END) END";
         public const string CursedSql = "CASE WHEN Curse <> 0 THEN 1 ELSE 0 END";
+        public const string CardsRarityIndex = "IX_Cards_Rarity_Quality_BorderOverflow";
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
@@ -220,6 +221,8 @@ namespace Sanakan.Database
                 entity.HasIndex(e => new { e.GameDeckId, e.Character });
                 entity.HasIndex(e => new { e.GameDeckId, e.Fatigue });
                 entity.HasIndex(e => new { e.GameDeckId, e.Cursed });
+                // all cards sorted by rarity, read backwards for the reverse order
+                entity.HasIndex(e => new { e.Rarity, e.Quality, e.BorderOverflow }).IsDescending(true, false, false).HasDatabaseName(CardsRarityIndex);
 
                 entity.HasOne(e => e.GameDeck)
                     .WithMany(d => d.Cards);
