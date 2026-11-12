@@ -1,7 +1,9 @@
 #!/bin/bash
 # Checks what the bot needs on this server to start as the service and to update itself, and lists every problem:
-# git with an origin that has the checked out branch, the .NET SDK of src/Sanakan.csproj, the config, and no bot of
-# the old layout (bin/Release/net6.0 started by the old Run.sh loop) still running from this repository.
+# git with an origin that has the checked out branch, the .NET SDK of src/Sanakan.csproj, the config, the bot's
+# connections (Discord, Shinden, NuGet, the fetch proxy and the addresses from the config; needs curl, and python3 to
+# read the config) and no bot of the old layout (bin/Release/net6.0 started by the old Run.sh loop) still running
+# from this repository.
 #
 #   tools/check-server.sh              for the Release service (src/Config.json)
 #   tools/check-server.sh debug        for the Debug one (src/ConfigDebug.json)
@@ -97,6 +99,92 @@ elif [ ! -r "$REPO/src/$CONFIG" ]; then
     problem "src/$CONFIG is not readable by $(id -un): sudo tools/install-service.sh --permissions"
 else
     ok "src/$CONFIG is there"
+    CONFIG_READABLE=1
+fi
+
+# the bot's connections; a server that lets out only listed domains shows here what is missing from the list
+http_code() { curl -s -o /dev/null -w '%{http_code}' --connect-timeout 5 --max-time 15 "$@" 2>/dev/null || true; }
+# $1 what, $2 address, $3 the expected code (empty: any answer will do), $4 problem or warning
+check_url() {
+    local code
+    code=$(http_code "$2")
+    if [ "$code" = 000 ]; then
+        "$4" "$1 ($2) cannot be reached; behind a domain allowlist ask for its domain"
+    elif [ -n "$3" ] && [ "$code" != "$3" ]; then
+        "$4" "$1 ($2) answered HTTP $code instead of $3"
+    else
+        ok "$1 answers ($2)"
+    fi
+}
+# Newtonsoft reads the config with any letter case, so the keys are matched the same way
+config_value() {
+    python3 - "$REPO/src/$CONFIG" "$1" 2>/dev/null <<'EOF'
+import json, sys
+value = json.load(open(sys.argv[1], encoding="utf-8-sig"))
+for key in sys.argv[2].split("."):
+    value = next((v for k, v in value.items() if k.lower() == key.lower()), None) if isinstance(value, dict) else None
+print(value if isinstance(value, str) else "")
+EOF
+}
+PROXY_TEST_IMAGE=https://cdn.discordapp.com/embed/avatars/0.png
+
+if [ "$ONLY_PROCESSES" -eq 1 ]; then
+    :
+elif ! command -v curl > /dev/null 2>&1; then
+    warning "curl is not installed, the bot's connections were not checked"
+else
+    CONFIGURED=0
+    if [ "${CONFIG_READABLE:-0}" -eq 1 ]; then
+        if ! command -v python3 > /dev/null 2>&1; then
+            warning "python3 is not installed, the addresses from src/$CONFIG were not checked"
+        elif ! python3 -c 'import json, sys; json.load(open(sys.argv[1], encoding="utf-8-sig"))' "$REPO/src/$CONFIG" 2>/dev/null; then
+            warning "src/$CONFIG is not plain JSON for python3, the addresses from it were not checked"
+        else
+            CONFIGURED=1
+        fi
+    fi
+    value() { if [ "$CONFIGURED" -eq 1 ]; then config_value "$1"; fi; }
+
+    api=$(value DiscordApiUrl)
+    if [ -n "$api" ]; then check_url "Discord API" "$api" "" problem; else check_url "Discord API" https://discord.com/api/v10/gateway 200 problem; fi
+    gateway=$(value DiscordGatewayUrl)
+    if [ -z "$gateway" ]; then check_url "Discord gateway" https://gateway.discord.gg/ "" problem; fi
+    check_url "Discord CDN (avatars, attachments)" "$PROXY_TEST_IMAGE" 200 problem
+    check_url "Discord media proxy" https://media.discordapp.net/ "" problem
+    check_url "Shinden pictures for cards" http://cdn.shinden.eu/cdn1/other/placeholders/title/225x350.jpg 200 problem
+    check_url "NuGet (updates build the bot here)" https://api.nuget.org/v3/index.json 200 problem
+
+    shinden=$(value Shinden.BaseUri)
+    check_url "Shinden API" "${shinden:-https://shinden.pl/}" "" problem
+    for name in Heartbeat Ingest; do
+        url=$(value "$name.Url")
+        if [ -n "$url" ]; then check_url "$name" "$url" "" warning; fi
+    done
+
+    proxy=$(value FetchProxy.Url)
+    if [ -n "$proxy" ]; then
+        key=$(value FetchProxy.Key)
+        key=${key//\\/\\\\}
+        key=${key//\"/\\\"}
+        # the key goes through curl's stdin config, not the command line other accounts can see
+        answer=$(printf 'header = "X-Internal-Key: %s"\n' "$key" | curl -s --config - -w '\n%{http_code}' --connect-timeout 5 --max-time 20 \
+            -H 'Content-Type: application/json' \
+            --data "{\"url\":\"$PROXY_TEST_IMAGE\",\"method\":\"GET\",\"kind\":\"image\",\"max_bytes\":5242880,\"timeout_ms\":8000,\"purpose\":\"sanakan\",\"any\":true}" \
+            "$proxy" 2>/dev/null)
+        code=${answer##*$'\n'}
+        body=${answer%$'\n'*}
+        if [ "$code" = 200 ] && echo "$body" | grep -Eq '"status" *: *200'; then
+            ok "fetch proxy downloads players' links ($proxy)"
+        elif [ "$code" = 401 ]; then
+            problem "the fetch proxy ($proxy) refuses FetchProxy.Key"
+        elif [ -z "$code" ] || [ "$code" = 000 ]; then
+            problem "the fetch proxy ($proxy) cannot be reached"
+        else
+            problem "the fetch proxy ($proxy) did not download a test picture: HTTP $code $(echo "$body" | head -c 200)"
+        fi
+    elif [ "$CONFIGURED" -eq 1 ]; then
+        ok "no fetch proxy: players' links are downloaded directly from this server"
+    fi
 fi
 
 # the old layout runs bin/<config>/<framework>/Sanakan.dll in src and restarts it from a Run.sh loop; next to the

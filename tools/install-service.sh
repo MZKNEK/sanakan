@@ -11,7 +11,7 @@
 #                                                 repository, and leaves a link in GOut's place; an existing GOut
 #                                                 is moved there when it is on the same disk
 #
-# Before installing it runs tools/check-server.sh (git origin and branch, .NET SDK, config, an old bot still running)
+# Before installing it runs tools/check-server.sh (git origin and branch, .NET SDK, config, connections, an old bot still running)
 # and stops when something is wrong.
 # Run it with sudo from the account the bot runs as (or as root with --user). The service runs as that user in src, so the bot finds its
 # config, Pictures and ../GOut like before. Exit codes (src/ExitCodes.cs): 0 stop and 78 bad config keep it down,

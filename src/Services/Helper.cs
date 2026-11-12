@@ -25,11 +25,11 @@ namespace Sanakan.Services
         public IEnumerable<ModuleInfo> PublicModulesInfo { get; set; }
         public Dictionary<string, ModuleInfo> PrivateModulesInfo { get; set; }
 
-        public Helper(IConfig config, ILogger log)
+        public Helper(IConfig config, ILogger log, HttpMessageHandler handler = null)
         {
             _log = log;
             _config = config;
-            _httpClient = new HttpClient(new HttpClientHandler { AllowAutoRedirect = false });
+            _httpClient = new HttpClient(handler ?? new HttpClientHandler { AllowAutoRedirect = false });
 
             PublicModulesInfo = new List<ModuleInfo>();
             PrivateModulesInfo = new Dictionary<string, ModuleInfo>();
