@@ -13,7 +13,8 @@ public sealed class ApiRunner : IDisposable
 {
     public const string BaseUrl = "http://localhost:5000/";
 
-    private readonly HttpClient _client = new(new HttpClientHandler { UseProxy = false }) { BaseAddress = new Uri(BaseUrl), Timeout = TimeSpan.FromSeconds(60) };
+    // a redirect points at the real CDN, the status is what is measured
+    private readonly HttpClient _client = new(new HttpClientHandler { UseProxy = false, AllowAutoRedirect = false }) { BaseAddress = new Uri(BaseUrl), Timeout = TimeSpan.FromSeconds(60) };
     private readonly BotProcess _bot;
     private readonly SimLog _log;
     private readonly List<SimUser> _players;

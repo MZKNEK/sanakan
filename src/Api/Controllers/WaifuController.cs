@@ -781,7 +781,7 @@ namespace Sanakan.Api.Controllers
         /// </summary>
         /// <param name="id">id karty (wid)</param>
         /// <param name="type">zwracany obrazek: Normal (ze statystykami), Profile (bez statystyk) lub Small (miniatura)</param>
-        /// <response code="403">Card already exist</response>
+        /// <response code="302">Card already exist, the image is on the CDN</response>
         /// <response code="404">Card not found</response>
         /// <response code="500">Card not generated</response>
         /// <response code="503">Card is still being generated, try again after Retry-After seconds</response>
@@ -794,7 +794,15 @@ namespace Sanakan.Api.Controllers
 
             if (miniature && normal && profile)
             {
-                return "Card already exist!".ToResponse(403);
+                var dir = type switch
+                {
+                    CardImageType.Small => Services.Dir.CardsMiniatures,
+                    CardImageType.Profile => Services.Dir.CardsInProfiles,
+                    _ => Services.Dir.Cards,
+                };
+                // cards drawn long ago may still have only a gif
+                var ext = System.IO.File.Exists($"{dir}/{id}.webp") ? "webp" : "gif";
+                return Redirect(Models.CardFinalView.GetCardImageInShindenUrl(id, ext, type));
             }
 
             using (var db = new Database.DatabaseContext(_config))
