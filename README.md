@@ -136,6 +136,26 @@ that changes one of them has to expect both forms:
 - the foreign keys of `ExpContainers`, `TagCardRelations` and `Tags` have MySQL's own names (`*_ibfk_*`);
 - `Tags.Name` is `text NOT NULL`, `WishlistCountData.Id` has no `AUTO_INCREMENT`.
 
+#### Game statistics
+
+The bot keeps statistics of the game for charts (e.g. Grafana with a MySQL data source):
+
+- `GameStats (Date, Metric, Label, Value)`, one value per day. Counted from what the saves really write, labelled
+  with the command or API call (`api:Controller.Action`): `currency_in`/`currency_out` (`SC:drobne`),
+  `card_in` (`A:Activity`, rarity and source), `card_out`, `card_upgrade` (`A>S`), `item_in`/`item_out`,
+  `pack_in`/`pack_out`, `command`, `command_failed`, `command_error_reply`, `players_new`. Taken once a day for the
+  day before: `players_active` (`30d` for the last 30 days), `retention` (`d1`, `d7`, `d30`, per mille of the new
+  players of that day who came back), `newbies_d7`, `balance` (`TC:p50`… of the players of the last 30 days),
+  `can_afford` (per mille of them who can pay for each shop item), `circulation`, `cards_total`, `items_total`,
+  `packs_unopened`, `tc_transfer`.
+- `PlayerDays (Date, UserId, Commands, IsNew)`: who used the bot on which day.
+- `DuelResults`: every PvP duel with both decks' power, rank, MMR and rarities, the win chance the game gave the
+  attacker and the outcome, without the players.
+
+Counters are written every 10 minutes and when the bot stops; the daily values just after midnight, or a minute
+after the start when the bot was down then. `PlayerDays`, `DuelResults` and the RAM measurements (`SystemData`) are
+kept for a year.
+
 #### Downloads from players' links (fetch proxy)
 
 The bot downloads pictures from links players give (custom card images and borders, profile pictures). Such a

@@ -13,6 +13,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Sanakan.Config;
 using Sanakan.Database.Models;
+using Sanakan.Database.Models.Analytics;
 using Sanakan.Extensions;
 using Sanakan.Preconditions;
 using Sanakan.Services;
@@ -4380,8 +4381,23 @@ namespace Sanakan.Modules
                 mission.Count(_time.Now());
 
                 denemy.GameDeck.RecalculateDeck();
+                var duel = new DuelResult
+                {
+                    Outcome = res switch { FightResult.Win => DuelOutcome.AttackerWon, FightResult.Draw => DuelOutcome.Draw, _ => DuelOutcome.DefenderWon },
+                    AttackerWinChance = duser.GameDeck.GetPvpWinChance(denemy.GameDeck),
+                    AttackerPower = duser.GameDeck.DeckPower,
+                    DefenderPower = denemy.GameDeck.DeckPower,
+                    AttackerRank = duser.GameDeck.GlobalPVPRank,
+                    DefenderRank = denemy.GameDeck.GlobalPVPRank,
+                    AttackerMmr = duser.GameDeck.MatachMakingRatio,
+                    DefenderMmr = denemy.GameDeck.MatachMakingRatio,
+                    AttackerCards = GameTelemetry.Rarities(players[0].Cards),
+                    DefenderCards = GameTelemetry.Rarities(players[1].Cards),
+                    Rounds = fight.Rounds?.Count ?? 0,
+                };
                 var info = duser.GameDeck.CalculatePVPParams(denemy.GameDeck, res);
                 await db.SaveChangesAsync();
+                GameTelemetry.Default.Duel(duel);
                 var trash = await GetFightTrashChannelAsync(db);
 
                 _ = Task.Run(async () =>

@@ -15,6 +15,8 @@ namespace Sanakan.Services.Executor
         private readonly string _name;
         private readonly Priority _priority;
         private readonly List<ulong> _owners;
+        // the command or API call that queued it, its saves are counted under that (GameTelemetry)
+        private readonly string _reason = GameTelemetry.Reason;
 
         /// <summary>Maksymalny czas oczekiwania API na wykonanie zakolejkowanego zadania.</summary>
         public static readonly TimeSpan ApiMaxWait = TimeSpan.FromSeconds(30);
@@ -72,6 +74,7 @@ namespace Sanakan.Services.Executor
 
         public async Task<bool> ExecuteAsync(IServiceProvider provider)
         {
+            GameTelemetry.Reason = _reason;
             try
             {
                 try

@@ -22,7 +22,7 @@ namespace Sanakan.Database.Migrations
 
             MySqlModelBuilderExtensions.AutoIncrementColumns(modelBuilder);
 
-            modelBuilder.Entity("Sanakan.Database.Models.Analytics.CommandsAnalytics", b =>
+            modelBuilder.Entity("Sanakan.Database.Models.Analytics.DuelResult", b =>
                 {
                     b.Property<ulong>("Id")
                         .ValueGeneratedOnAdd()
@@ -30,28 +30,89 @@ namespace Sanakan.Database.Migrations
 
                     MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<ulong>("Id"));
 
-                    b.Property<string>("CmdName")
-                        .HasColumnType("longtext");
+                    b.Property<string>("AttackerCards")
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
 
-                    b.Property<string>("CmdParams")
-                        .HasColumnType("longtext");
+                    b.Property<double>("AttackerMmr")
+                        .HasColumnType("double");
+
+                    b.Property<double>("AttackerPower")
+                        .HasColumnType("double");
+
+                    b.Property<long>("AttackerRank")
+                        .HasColumnType("bigint");
+
+                    b.Property<double>("AttackerWinChance")
+                        .HasColumnType("double");
 
                     b.Property<DateTime>("Date")
                         .HasColumnType("datetime(6)");
 
-                    b.Property<ulong>("GuildId")
-                        .HasColumnType("bigint unsigned");
+                    b.Property<string>("DefenderCards")
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
+
+                    b.Property<double>("DefenderMmr")
+                        .HasColumnType("double");
+
+                    b.Property<double>("DefenderPower")
+                        .HasColumnType("double");
+
+                    b.Property<long>("DefenderRank")
+                        .HasColumnType("bigint");
+
+                    b.Property<int>("Outcome")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Rounds")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Date");
+
+                    b.ToTable("DuelResults");
+                });
+
+            modelBuilder.Entity("Sanakan.Database.Models.Analytics.GameStat", b =>
+                {
+                    b.Property<DateTime>("Date")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("Metric")
+                        .HasMaxLength(64)
+                        .HasColumnType("varchar(64)");
+
+                    b.Property<string>("Label")
+                        .HasMaxLength(128)
+                        .HasColumnType("varchar(128)");
+
+                    b.Property<long>("Value")
+                        .HasColumnType("bigint");
+
+                    b.HasKey("Date", "Metric", "Label");
+
+                    b.ToTable("GameStats");
+                });
+
+            modelBuilder.Entity("Sanakan.Database.Models.Analytics.PlayerDay", b =>
+                {
+                    b.Property<DateTime>("Date")
+                        .HasColumnType("datetime(6)");
 
                     b.Property<ulong>("UserId")
                         .HasColumnType("bigint unsigned");
 
-                    b.HasKey("Id");
+                    b.Property<int>("Commands")
+                        .HasColumnType("int");
 
-                    b.HasIndex("GuildId", "Date");
+                    b.Property<bool>("IsNew")
+                        .HasColumnType("tinyint(1)");
 
-                    b.HasIndex("UserId", "Date");
+                    b.HasKey("Date", "UserId");
 
-                    b.ToTable("CommandsData");
+                    b.ToTable("PlayerDays");
                 });
 
             modelBuilder.Entity("Sanakan.Database.Models.Analytics.SystemAnalytics", b =>
@@ -114,38 +175,6 @@ namespace Sanakan.Database.Migrations
                     b.HasIndex("DiscordId", "Date");
 
                     b.ToTable("TransferData");
-                });
-
-            modelBuilder.Entity("Sanakan.Database.Models.Analytics.UserAnalytics", b =>
-                {
-                    b.Property<ulong>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint unsigned");
-
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<ulong>("Id"));
-
-                    b.Property<ulong>("GuildId")
-                        .HasColumnType("bigint unsigned");
-
-                    b.Property<DateTime>("MeasureDate")
-                        .HasColumnType("datetime(6)");
-
-                    b.Property<int>("Type")
-                        .HasColumnType("int");
-
-                    b.Property<ulong>("UserId")
-                        .HasColumnType("bigint unsigned");
-
-                    b.Property<long>("Value")
-                        .HasColumnType("bigint");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("GuildId", "MeasureDate");
-
-                    b.HasIndex("UserId", "MeasureDate");
-
-                    b.ToTable("UsersData");
                 });
 
             modelBuilder.Entity("Sanakan.Database.Models.Analytics.WishlistCount", b =>

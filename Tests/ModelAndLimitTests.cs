@@ -60,13 +60,6 @@ namespace Artifacts
         public void MuteModifier_HasUserGuildIndex()
             => Assert.True(HasCompositeIndex<MuteModifier>(new SqliteContext(), nameof(MuteModifier.User), nameof(MuteModifier.Guild)));
 
-        [Fact]
-        public void UserAnalytics_HasUserAndGuildIndexes()
-        {
-            var ctx = new SqliteContext();
-            Assert.True(HasCompositeIndex<UserAnalytics>(ctx, nameof(UserAnalytics.UserId), nameof(UserAnalytics.MeasureDate)));
-            Assert.True(HasCompositeIndex<UserAnalytics>(ctx, nameof(UserAnalytics.GuildId), nameof(UserAnalytics.MeasureDate)));
-        }
 
         [Fact]
         public void SystemAnalytics_HasMeasureDateIndex()
@@ -147,11 +140,14 @@ namespace Artifacts
         }
 
         [Fact]
-        public void CommandsAnalytics_HasUserAndGuildIndexes()
+        public void TelemetryTables_HaveKeysForTheirQueries()
         {
             var ctx = new SqliteContext();
-            Assert.True(HasCompositeIndex<CommandsAnalytics>(ctx, nameof(CommandsAnalytics.UserId), nameof(CommandsAnalytics.Date)));
-            Assert.True(HasCompositeIndex<CommandsAnalytics>(ctx, nameof(CommandsAnalytics.GuildId), nameof(CommandsAnalytics.Date)));
+            Assert.Equal(new[] { nameof(GameStat.Date), nameof(GameStat.Metric), nameof(GameStat.Label) },
+                ctx.Model.FindEntityType(typeof(GameStat)).FindPrimaryKey().Properties.Select(p => p.Name));
+            Assert.Equal(new[] { nameof(PlayerDay.Date), nameof(PlayerDay.UserId) },
+                ctx.Model.FindEntityType(typeof(PlayerDay)).FindPrimaryKey().Properties.Select(p => p.Name));
+            Assert.True(HasSimpleIndex<DuelResult>(ctx, nameof(DuelResult.Date)));
         }
     }
 
