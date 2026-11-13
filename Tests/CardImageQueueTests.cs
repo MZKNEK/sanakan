@@ -215,7 +215,7 @@ namespace Artifacts
 
         private static string[] Files(Card card) => new[]
         {
-            $"{Dir.Cards}/{card.Id}.webp", $"{Dir.CardsMiniatures}/{card.Id}.webp", $"{Dir.CardsInProfiles}/{card.Id}.webp",
+            $"{Dir.Cards}/{card.Id}.webp", $"{Dir.CardsInProfiles}/{card.Id}.webp",
         };
 
         private static void Cleanup(Card card)
@@ -385,10 +385,11 @@ namespace Artifacts
                 var second = waifu.GetCardImageAsync(card, CardImageType.Profile, TimeSpan.FromSeconds(10));
                 images.Gate.SetResult();
 
-                Assert.Equal(Files(card)[2], await second);
+                Assert.Equal(Files(card)[1], await second);
                 Assert.All(Files(card), path => Assert.True(File.Exists(path), path));
                 Assert.Equal(1, images.CardRenders);
-                Assert.Equal(Files(card)[1], await waifu.GetCardImageAsync(card, CardImageType.Small, TimeSpan.FromSeconds(1)));
+                Assert.Equal(Files(card)[0], await waifu.GetCardImageAsync(card, CardImageType.Small, TimeSpan.FromSeconds(1)));
+                Assert.False(File.Exists($"{Dir.CardsMiniatures}/{card.Id}.webp"));
             }
             finally
             {
@@ -417,13 +418,13 @@ namespace Artifacts
         [Theory]
         [InlineData("", "", "webp")]
         [InlineData("?type=profile", "profile/", "webp")]
-        [InlineData("?type=Small", "small/", "webp")]
+        [InlineData("?type=Small", "", "webp")]
         [InlineData("?type=Profile", "profile/", "gif")]
         public async Task ExistingImages_RedirectToTheCdn_ForEveryType(string query, string folder, string ext)
         {
             Dir.Create();
             var id = 960000000000UL + (ulong)Environment.TickCount64 % 1000000;
-            var files = new[] { $"{Dir.Cards}/{id}.{ext}", $"{Dir.CardsMiniatures}/{id}.{ext}", $"{Dir.CardsInProfiles}/{id}.{ext}" };
+            var files = new[] { $"{Dir.Cards}/{id}.{ext}", $"{Dir.CardsInProfiles}/{id}.{ext}" };
             try
             {
                 foreach (var path in files)

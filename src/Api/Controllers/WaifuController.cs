@@ -782,7 +782,7 @@ namespace Sanakan.Api.Controllers
         /// Wymusza na bocie wygenerowanie obrazka jeśli nie istnieje
         /// </summary>
         /// <param name="id">id karty (wid)</param>
-        /// <param name="type">zwracany obrazek: Normal (ze statystykami), Profile (bez statystyk) lub Small (miniatura)</param>
+        /// <param name="type">zwracany obrazek: Normal (ze statystykami) lub Profile (bez statystyk); Small daje to samo co Normal</param>
         /// <response code="302">Card already exist, the image is on the CDN</response>
         /// <response code="404">Card not found</response>
         /// <response code="500">Card not generated</response>
@@ -790,18 +790,15 @@ namespace Sanakan.Api.Controllers
         [HttpGet("card/{id}"), AllowAnonymous]
         public async Task<IActionResult> GetCardAsync(ulong id, [FromQuery] CardImageType type = CardImageType.Normal)
         {
-            bool miniature = System.IO.File.Exists($"{Services.Dir.CardsMiniatures}/{id}.webp") || System.IO.File.Exists($"{Services.Dir.CardsMiniatures}/{id}.gif");
+            if (type == CardImageType.Small)
+                type = CardImageType.Normal;
+
             bool normal = System.IO.File.Exists($"{Services.Dir.Cards}/{id}.webp") || System.IO.File.Exists($"{Services.Dir.Cards}/{id}.gif");
             bool profile = System.IO.File.Exists($"{Services.Dir.CardsInProfiles}/{id}.webp") || System.IO.File.Exists($"{Services.Dir.CardsInProfiles}/{id}.gif");
 
-            if (miniature && normal && profile)
+            if (normal && profile)
             {
-                var dir = type switch
-                {
-                    CardImageType.Small => Services.Dir.CardsMiniatures,
-                    CardImageType.Profile => Services.Dir.CardsInProfiles,
-                    _ => Services.Dir.Cards,
-                };
+                var dir = type == CardImageType.Profile ? Services.Dir.CardsInProfiles : Services.Dir.Cards;
                 // cards drawn long ago may still have only a gif
                 var ext = System.IO.File.Exists($"{dir}/{id}.webp") ? "webp" : "gif";
                 return Redirect(Models.CardFinalView.GetCardImageInShindenUrl(id, ext, type));

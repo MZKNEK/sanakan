@@ -212,9 +212,9 @@ namespace Sanakan.Api.Models
         public static string GetProfileUrl(ulong userId)
             => $"https://cdn2.shinden.eu/prof/{userId}.webp";
 
+        // no miniatures any more, Small points at the full card
         public static string GetCardImageInShindenUrl(ulong cardId, string extension, CardImageType type) => type switch
         {
-            CardImageType.Small => $"https://cdn2.shinden.eu/small/{cardId}.{extension}",
             CardImageType.Profile => $"https://cdn2.shinden.eu/profile/{cardId}.{extension}",
             _ => $"https://cdn2.shinden.eu/{cardId}.{extension}",
         };

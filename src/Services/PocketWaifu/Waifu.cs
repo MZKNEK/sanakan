@@ -498,13 +498,10 @@ namespace Sanakan.Services.PocketWaifu
                     if (createdAt < dateToCheck)
                     {
                         var fileName = Path.GetFileName(filePath);
-                        var miniFilePath = $"{Dir.CardsMiniatures}/{fileName}";
                         var profileFilePath = $"{Dir.CardsInProfiles}/{fileName}";
 
                         File.Delete(filePath);
                         deletedImages.Add(filePath);
-                        File.Delete(miniFilePath);
-                        deletedImages.Add(miniFilePath);
                         File.Delete(profileFilePath);
                         deletedImages.Add(profileFilePath);
 
@@ -1944,20 +1941,15 @@ namespace Sanakan.Services.PocketWaifu
         {
             var ext = card.IsCardAnimated() ? AnimatedCardExtension : NormalCardExtension;
             string imageLocation = $"{Dir.Cards}/{card.Id}.{ext}";
-            string sImageLocation = $"{Dir.CardsMiniatures}/{card.Id}.{ext}";
             string pImageLocation = $"{Dir.CardsInProfiles}/{card.Id}.{ext}";
 
-            var toReturn = type switch
-            {
-                CardImageType.Small => sImageLocation,
-                CardImageType.Profile => pImageLocation,
-                _ => imageLocation,
-            };
+            // no miniatures are drawn any more, Small gets the full card
+            var toReturn = type == CardImageType.Profile ? pImageLocation : imageLocation;
 
             using (await _cardGenLocker.LockAsync(card.Id))
             {
                 // a generation that failed half way leaves some files missing, so all of them are checked, not just the requested one
-                var cardMissing = force || !File.Exists(imageLocation) || !File.Exists(sImageLocation);
+                var cardMissing = force || !File.Exists(imageLocation);
                 var profileMissing = force || !File.Exists(pImageLocation);
                 if (!cardMissing && !profileMissing)
                     return (toReturn, CardDrawing.AlreadyDrawn);
@@ -1981,12 +1973,11 @@ namespace Sanakan.Services.PocketWaifu
                             if (pictures.TemporaryFailure)
                             {
                                 if (type != CardImageType.Profile)
-                                    return (SaveTemporaryCard(image, card.Id, ext, type == CardImageType.Small ? 133 : 0), CardDrawing.NoPicture);
+                                    return (SaveTemporaryCard(image, card.Id, ext), CardDrawing.NoPicture);
                             }
                             else
                             {
                                 image.SaveToPath(imageLocation);
-                                image.SaveToPath(sImageLocation, 133);
                             }
                         }
                     }
@@ -2083,7 +2074,7 @@ namespace Sanakan.Services.PocketWaifu
         public static readonly TimeSpan TemporaryCardLifetime = TimeSpan.FromMinutes(15);
 
         // a card without its picture, for this one reply; files older than TemporaryCardLifetime go away on the way
-        private string SaveTemporaryCard(SixLabors.ImageSharp.Image image, ulong cardId, string ext, int width = 0)
+        private string SaveTemporaryCard(SixLabors.ImageSharp.Image image, ulong cardId, string ext)
         {
             try
             {
@@ -2098,15 +2089,14 @@ namespace Sanakan.Services.PocketWaifu
 
             Directory.CreateDirectory(Dir.TemporaryCards);
             var path = $"{Dir.TemporaryCards}/{cardId}-{Guid.NewGuid():N}.{ext}";
-            return width > 0 ? image.SaveToPath(path, width) : image.SaveToPath(path);
+            return image.SaveToPath(path);
         }
 
         private async Task<string> GetCardUrlIfExistAsync(Card card, bool force = false)
         {
             string ext = card.IsCardAnimated() ? AnimatedCardExtension : NormalCardExtension;
             string imageLocation = $"{Dir.Cards}/{card.Id}.{ext}";
-            string sImageLocation = $"{Dir.CardsMiniatures}/{card.Id}.{ext}";
-            bool generate = (!File.Exists(imageLocation) || !File.Exists(sImageLocation) || force) && card.Id != 0;
+            bool generate = (!File.Exists(imageLocation) || force) && card.Id != 0;
             return generate ? await GenerateAndSaveCardAsync(card) : imageLocation;
         }
 

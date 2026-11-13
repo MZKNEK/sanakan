@@ -277,8 +277,34 @@ namespace Artifacts
 
         private static string[] Files(Card card) => new[]
         {
-            $"{Dir.Cards}/{card.Id}.webp", $"{Dir.CardsMiniatures}/{card.Id}.webp", $"{Dir.CardsInProfiles}/{card.Id}.webp",
+            $"{Dir.Cards}/{card.Id}.webp", $"{Dir.CardsInProfiles}/{card.Id}.webp",
         };
+
+        [Fact]
+        public async Task CardWithoutMiniature_IsNotRedrawnAndSmallGetsTheFullCard()
+        {
+            Dir.Create();
+            var card = new Card { Id = 991000000000UL + (ulong)Environment.TickCount64 % 1000000, Quality = Quality.Broken };
+            var images = new FakeImages();
+            var waifu = new Waifu(images, null, null, new ListLogger(), null, null, null, new FixedTime(), null, null, new FakeConfig());
+            try
+            {
+                foreach (var path in Files(card))
+                    File.WriteAllBytes(path, new byte[] { 1 });
+
+                Assert.Equal(Files(card)[0], await waifu.GenerateAndSaveCardAsync(card, CardImageType.Small));
+                Assert.Equal(Files(card)[0], await waifu.GenerateAndSaveCardAsync(card));
+
+                Assert.Equal(0, images.CardRenders);
+                Assert.Equal(0, images.ProfileRenders);
+                Assert.False(File.Exists($"{Dir.CardsMiniatures}/{card.Id}.webp"));
+            }
+            finally
+            {
+                foreach (var path in Files(card).Where(File.Exists))
+                    File.Delete(path);
+            }
+        }
 
         [Fact]
         public async Task HalfFailedGeneration_LaterCreatesMissingProfileImage_WithoutRedrawingTheCard()
@@ -291,7 +317,7 @@ namespace Artifacts
             {
                 await waifu.GenerateAndSaveCardAsync(card);
                 Assert.True(File.Exists(Files(card)[0]));
-                Assert.False(File.Exists(Files(card)[2]));
+                Assert.False(File.Exists(Files(card)[1]));
 
                 await waifu.GenerateAndSaveCardAsync(card);
 

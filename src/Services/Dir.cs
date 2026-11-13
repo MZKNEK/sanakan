@@ -12,7 +12,6 @@ namespace Sanakan.Services
         public static void Create()
         {
             Directory.CreateDirectory(LocalCardData);
-            Directory.CreateDirectory(CardsMiniatures);
             Directory.CreateDirectory(CardsInProfiles);
             Directory.CreateDirectory(FakeCardsAsProfiles);
             Directory.CreateDirectory(SiteStatistics);
