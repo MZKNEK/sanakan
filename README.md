@@ -91,7 +91,8 @@ string at a database file:
 ```
 
 A relative path is resolved against the working directory. The database
-schema is created on the first start for both providers. Data is not moved
+schema is created on the first start for both providers: on SQLite straight
+from the model, on MySQL by the migrations (below). Data is not moved
 between providers automatically. SQLite runs in WAL mode, so recent changes
 may still be in the `-wal` file next to the database: back up all files
 together, or only while the bot is stopped.
@@ -100,6 +101,40 @@ On SQLite the bot compares text like MySQL's default collation, ignoring
 case and accents. External SQLite tools do not know these rules, so change
 text columns only through the bot, or run `REINDEX NOCASE;` after editing
 them elsewhere.
+
+#### MySQL migrations
+
+On MySQL the bot applies the pending migrations (`src/Database/Migrations`) when it starts and logs what it applied.
+A database made before the migrations (an older bot, a dump of one) is recognised by its tables and taken as the
+first migration, `Baseline`, without changing it. To apply them by hand instead, set `"MigrateOnStart": false`; the
+bot then only logs which ones are missing.
+
+The bot's MySQL account needs all rights on its own database, and the migrations create triggers. With binary
+logging on (the MySQL 8 default) an account without `SUPER` may do that only with this in the server's `my.cnf`:
+
+```ini
+[mysqld]
+log_bin_trust_function_creators = 1
+```
+
+A change to the model needs a migration, otherwise a test fails:
+
+```bash
+dotnet tool restore
+dotnet ef migrations add <Name> --project src/Sanakan.csproj --output-dir Database/Migrations --namespace Sanakan.Database.Migrations
+```
+
+Keep migrations additive (new tables, columns, indexes) and drop things one version later: after a failed update
+`Run.sh` starts the previous build, which then runs on the new schema.
+
+A database from before the migrations differs from `Baseline` in a few details nothing depends on today. A migration
+that changes one of them has to expect both forms:
+
+- boolean columns are `bit(1)` there, `tinyint(1)` in the model;
+- some columns have default values the model does not set (`Cards`/`Figures.CritChance`, `GameDecks` dates,
+  `Guilds.AlwaysBanChannel`);
+- the foreign keys of `ExpContainers`, `TagCardRelations` and `Tags` have MySQL's own names (`*_ibfk_*`);
+- `Tags.Name` is `text NOT NULL`, `WishlistCountData.Id` has no `AUTO_INCREMENT`.
 
 #### Downloads from players' links (fetch proxy)
 
