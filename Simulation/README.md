@@ -43,7 +43,8 @@ status codes and times per route under `api`.
 5. `dotnet run --project Simulation -- load --world Simulation/run/world.json --mix Simulation/run/mix.json`
 
 Results go to `Simulation/run/results/load-*.json`: commands sent and answered, reply times (only replies that
-mention the author are timed), bot memory and CPU, requests the bot made, grouped bot errors.
+mention the author are timed), bot memory and CPU in cores (with `--mysql` also the local
+mysqld's and both together; 5 s samples), requests the bot made, grouped bot errors.
 
 `Simulation/run/` holds real player ids and the database copy; it is ignored by git and must stay local.
 

@@ -6,7 +6,7 @@ using Sanakan.Simulation.FakeDiscord;
 namespace Sanakan.Simulation;
 
 // Replays the production traffic mix: commands by name and hour of day from tools/traffic_mix.py --json,
-// players weighted by their activity, chat messages between commands; samples the bot's memory and CPU.
+// players weighted by their activity, chat messages between commands; samples the bot's memory and CPU (and the local MySQL's CPU).
 public sealed class LoadRunner
 {
     // Extra: commands sent on top of the mix, one every ExtraEvery, so rare ones get exercised; api: names go to the
@@ -38,15 +38,18 @@ public sealed class LoadRunner
     private readonly double[] _playerWeights;
     private readonly List<SimUser> _chatters;
     private readonly Dictionary<string, int> _sent = new();
-    private readonly List<(double Seconds, long WorkingSet, double Cpu)> _samples = new();
+    private readonly List<(double Seconds, long WorkingSet, double BotCores, double? DatabaseCores)> _samples = new();
     private int _chatSent;
     private readonly ApiRunner _api;
     private readonly Dictionary<string, double> _apiRates;
     private readonly List<string> _extraCommands;
     private readonly List<string> _extraApi;
+    private readonly ProcessCpu _database;
 
-    public LoadRunner(World world, Gateway gateway, RestApi rest, ReplyTracker replies, BotProcess bot, SimLog log, JsonNode mix, Settings settings)
+    public LoadRunner(World world, Gateway gateway, RestApi rest, ReplyTracker replies, BotProcess bot, SimLog log, JsonNode mix, Settings settings,
+        ProcessCpu database = null)
     {
+        _database = database;
         _world = world;
         _gateway = gateway;
         _rest = rest;
@@ -99,6 +102,7 @@ public sealed class LoadRunner
         var nextApiExtra = ApiExtraEvery;
         var apiExtraIndex = 0;
         var lastCpu = TimeSpan.Zero;
+        TimeSpan? lastDatabaseCpu = null;
         var lastCpuAt = TimeSpan.Zero;
 
         while (watch.Elapsed < duration && !_bot.HasExited)
@@ -133,11 +137,15 @@ public sealed class LoadRunner
                 var process = _bot.Process;
                 process.Refresh();
                 var cpu = process.TotalProcessorTime;
-                var cpuPercent = lastCpuAt == TimeSpan.Zero ? 0
-                    : (cpu - lastCpu).TotalMilliseconds / (watch.Elapsed - lastCpuAt).TotalMilliseconds / Environment.ProcessorCount * 100;
+                var databaseCpu = _database?.Total();
+                var wall = (watch.Elapsed - lastCpuAt).TotalMilliseconds;
+                var botCores = lastCpuAt == TimeSpan.Zero ? 0 : (cpu - lastCpu).TotalMilliseconds / wall;
+                double? databaseCores = lastCpuAt == TimeSpan.Zero || databaseCpu == null || lastDatabaseCpu == null ? null
+                    : Math.Max(0, (databaseCpu.Value - lastDatabaseCpu.Value).TotalMilliseconds / wall);
                 lastCpu = cpu;
+                lastDatabaseCpu = databaseCpu;
                 lastCpuAt = watch.Elapsed;
-                _samples.Add((watch.Elapsed.TotalSeconds, process.WorkingSet64, cpuPercent));
+                _samples.Add((watch.Elapsed.TotalSeconds, process.WorkingSet64, botCores, databaseCores));
                 nextSample += TimeSpan.FromSeconds(5);
             }
 
@@ -145,7 +153,8 @@ public sealed class LoadRunner
             {
                 var last = _samples.LastOrDefault();
                 _log.Info($"load: {watch.Elapsed:mm\\:ss} virtual {virtualTime:HH:mm}, commands {_sent.Values.Sum()}, chat {_chatSent}, " +
-                    $"replies {_replies.Answered.Count}, waiting {_replies.Waiting}, bot {last.WorkingSet / 1024 / 1024} MiB, CPU {last.Cpu:0}%");
+                    $"replies {_replies.Answered.Count}, waiting {_replies.Waiting}, bot {last.WorkingSet / 1024 / 1024} MiB, CPU cores: bot {last.BotCores:0.00}" +
+                    (last.DatabaseCores is double db ? $", MySQL {db:0.00}" : ""));
                 nextStatus += TimeSpan.FromMinutes(1);
             }
 
@@ -255,7 +264,8 @@ public sealed class LoadRunner
         }
 
         var memory = _samples.Select(x => x.WorkingSet / 1024.0 / 1024).ToList();
-        var cpu = _samples.Skip(1).Select(x => x.Cpu).ToList();
+        var measured = _samples.Skip(1).ToList();
+        var database = measured.Where(x => x.DatabaseCores != null).ToList();
         return new JsonObject
         {
             ["settings"] = JsonSerializer.SerializeToNode(_settings),
@@ -267,9 +277,27 @@ public sealed class LoadRunner
             ["unanswered"] = _replies.Waiting,
             ["bot_errors"] = _bot.Errors.Count,
             ["memory_mib"] = memory.Count == 0 ? null : new JsonObject { ["min"] = Math.Round(memory.Min()), ["avg"] = Math.Round(memory.Average()), ["max"] = Math.Round(memory.Max()), ["last"] = Math.Round(memory[^1]) },
-            ["cpu_percent"] = cpu.Count == 0 ? null : new JsonObject { ["avg"] = Math.Round(cpu.Average(), 1), ["max"] = Math.Round(cpu.Max(), 1) },
+            ["cpu_cores"] = measured.Count == 0 ? null : new JsonObject
+            {
+                ["machine"] = Environment.ProcessorCount,
+                ["bot"] = Cores(measured.Select(x => x.BotCores)),
+                ["mysql"] = database.Count == 0 ? null : Cores(database.Select(x => x.DatabaseCores!.Value)),
+                ["together"] = database.Count == 0 ? null : Cores(database.Select(x => x.BotCores + x.DatabaseCores!.Value)),
+            },
             ["commands"] = commands,
             ["api"] = _api?.Result(),
+        };
+    }
+
+    // Cores busy on average over each 5 s sample; short bursts inside a sample are averaged out.
+    private static JsonObject Cores(IEnumerable<double> samples)
+    {
+        var sorted = samples.OrderBy(x => x).ToList();
+        return new JsonObject
+        {
+            ["avg"] = Math.Round(sorted.Average(), 2),
+            ["p95"] = Math.Round(sorted[(int)Math.Min(sorted.Count - 1, sorted.Count * 0.95)], 2),
+            ["max"] = Math.Round(sorted[^1], 2),
         };
     }
 }
