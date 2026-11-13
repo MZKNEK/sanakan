@@ -827,6 +827,10 @@ namespace Sanakan.Api.Controllers
                     return "Card not generated!".ToResponse(500);
                 }
 
+                // drawn without its picture for now, a cache must not keep it
+                if (Services.Dir.IsTemporary(cardImage))
+                    Response.Headers.CacheControl = "no-store";
+
                 return CardImageFile(cardImage);
             }
         }
