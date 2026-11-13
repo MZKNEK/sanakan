@@ -107,7 +107,10 @@ if (options.Mode == "load")
     // give the bot a moment to finish its startup work before measuring
     await Task.Delay(TimeSpan.FromSeconds(10));
     var settings = new LoadRunner.Settings(options.Minutes, options.Speed, options.Scale, options.ChatPerHour, options.StartHour, prefix, options.Extra, options.Api);
-    var runner = new LoadRunner(world, gateway, rest, replies, bot, log, JsonNode.Parse(File.ReadAllText(options.Mix)), settings);
+    var database = options.MySql ? ProcessCpu.Find("mysqld") : null;
+    if (options.MySql)
+        log.Info(database != null ? "load: measuring the CPU of the local mysqld too" : "load: no local mysqld, its CPU is not measured");
+    var runner = new LoadRunner(world, gateway, rest, replies, bot, log, JsonNode.Parse(File.ReadAllText(options.Mix)), settings, database);
     var result = await runner.RunAsync();
     result["requests"] = new JsonObject(log.Routes.OrderBy(x => x.Key).Select(x => KeyValuePair.Create(x.Key, (JsonNode)x.Value)));
     result["errors"] = new JsonArray(bot.Errors.Select(x => x.Length > 300 ? x[..300] : x).GroupBy(x => System.Text.RegularExpressions.Regex.Replace(x, @"^\[[^\]]+\] |https?://\S+|u\d+|\d+", "#"))
@@ -167,7 +170,13 @@ void PrintLoad(JsonObject result)
     Console.WriteLine();
     Console.WriteLine($"== load: {result["elapsed_minutes"]} min real, {result["virtual_hours"]} h virtual; commands {result["commands_sent"]}, chat {result["chat_sent"]}, " +
         $"bot messages {result["bot_messages"]}, unanswered {result["unanswered"]}, bot errors {result["bot_errors"]}");
-    Console.WriteLine($"   memory MiB {result["memory_mib"]?.ToJsonString()}, CPU % {result["cpu_percent"]?.ToJsonString()}");
+    Console.WriteLine($"   memory MiB {result["memory_mib"]?.ToJsonString()}");
+    if (result["cpu_cores"] is JsonObject cores)
+    {
+        Console.WriteLine($"   CPU cores (of {cores["machine"]} logical): bot {cores["bot"]?.ToJsonString()}");
+        if (cores["mysql"] != null)
+            Console.WriteLine($"   CPU cores: MySQL {cores["mysql"].ToJsonString()}, together {cores["together"]?.ToJsonString()}");
+    }
     Console.WriteLine($"   {"command",-16} {"sent",6} {"reply",6} {"timed",6} {"p50",7} {"p95",7} {"max",7}");
     foreach (var (name, c) in result["commands"]!.AsObject())
         Console.WriteLine($"   {name,-16} {c!["sent"],6} {c["replied"],6} {c["timed"],6} {c["p50_ms"],7} {c["p95_ms"],7} {c["max_ms"],7}");
