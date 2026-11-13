@@ -8,6 +8,8 @@ namespace Sanakan.Config.Model
     {
         public string Url { get; set; }
         public string Key { get; set; }
+        // a plain HTTP proxy (http and https links): for everything without Url, with it only for files over MaxBytes
+        public string HttpProxy { get; set; }
         public long MaxBytes { get; set; } = 5 * 1024 * 1024;
         // null keeps FetchProxy.DefaultDirectHosts; a host also matches its subdomains
         public List<string> DirectHosts { get; set; }

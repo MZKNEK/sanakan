@@ -378,5 +378,190 @@ namespace Artifacts
             Assert.Single(_proxy.Requests);
             Assert.Empty(_direct.Requests);
         }
+
+        // a minimal HTTP proxy: records each request line and answers with whatever Answer returns
+        private sealed class LocalHttpProxy : IDisposable
+        {
+            private readonly System.Net.Sockets.TcpListener _listener = new(IPAddress.Loopback, 0);
+            public ConcurrentQueue<string> RequestLines { get; } = new();
+            public Func<string, (int Status, string Headers, byte[] Body)> Answer { get; set; } = _ => (200, "", Array.Empty<byte>());
+            public string Url => $"http://127.0.0.1:{((IPEndPoint)_listener.LocalEndpoint).Port}/";
+
+            public LocalHttpProxy()
+            {
+                _listener.Start();
+                _ = Task.Run(ServeAsync);
+            }
+
+            private async Task ServeAsync()
+            {
+                while (true)
+                {
+                    System.Net.Sockets.TcpClient client;
+                    try { client = await _listener.AcceptTcpClientAsync(); }
+                    catch (Exception) { return; }
+
+                    using (client)
+                    {
+                        var stream = client.GetStream();
+                        var reader = new StreamReader(stream, Encoding.ASCII);
+                        var line = await reader.ReadLineAsync();
+                        while (!string.IsNullOrEmpty(await reader.ReadLineAsync())) { }
+                        RequestLines.Enqueue(line);
+
+                        var (status, headers, body) = Answer(line);
+                        var head = $"HTTP/1.1 {status} X\r\nContent-Length: {body.Length}\r\nConnection: close\r\n{headers}\r\n";
+                        await stream.WriteAsync(Encoding.ASCII.GetBytes(head));
+                        await stream.WriteAsync(body);
+                    }
+                }
+            }
+
+            public void Dispose() => _listener.Stop();
+        }
+
+        private static string ClosedPortUrl()
+        {
+            var listener = new System.Net.Sockets.TcpListener(IPAddress.Loopback, 0);
+            listener.Start();
+            var url = $"http://127.0.0.1:{((IPEndPoint)listener.LocalEndpoint).Port}/";
+            listener.Stop();
+            return url;
+        }
+
+        [Fact]
+        public async Task HttpProxyAloneCarriesPlayerLinks()
+        {
+            using var local = new LocalHttpProxy();
+            var png = Png();
+            local.Answer = _ => (200, "Content-Type: image/png\r\n", png);
+            _config.Model.FetchProxy = new FetchProxyConfig { HttpProxy = local.Url };
+
+            using var client = Client();
+            using var response = await client.GetAsync("http://img.example/a.png?x=1");
+
+            Assert.Equal("GET http://img.example/a.png?x=1 HTTP/1.1", Assert.Single(local.RequestLines));
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            Assert.Equal(png, await response.Content.ReadAsByteArrayAsync());
+            Assert.Empty(_proxy.Requests);
+            Assert.Empty(_direct.Requests);
+        }
+
+        [Fact]
+        public async Task WithBothTheFetchProxyGoesFirst()
+        {
+            using var local = new LocalHttpProxy();
+            _config.Model.FetchProxy = new FetchProxyConfig { HttpProxy = local.Url, Url = ProxyUrl, Key = "secret-key" };
+            ProxyAnswers(new { status = 200, content_type = "image/png", body = Convert.ToBase64String(Png()) });
+
+            using var client = Client();
+            using var response = await client.GetAsync("http://img.example/a.png");
+
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            Assert.Single(_proxy.Requests);
+            Assert.Empty(local.RequestLines);
+        }
+
+        [Fact]
+        public async Task FileTooLargeForTheFetchProxyGoesThroughHttpProxy()
+        {
+            using var local = new LocalHttpProxy();
+            var big = new byte[] { 1, 2, 3 };
+            local.Answer = _ => (200, "Content-Type: image/gif\r\n", big);
+            _config.Model.FetchProxy = new FetchProxyConfig { HttpProxy = local.Url, Url = ProxyUrl, Key = "secret-key" };
+            ProxyAnswers(new { status = 200, body = "", truncated = true });
+
+            using var client = Client();
+            using var response = await client.GetAsync("http://img.example/big.gif");
+
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            Assert.Equal(big, await response.Content.ReadAsByteArrayAsync());
+            Assert.Single(_proxy.Requests);
+            Assert.Equal("GET http://img.example/big.gif HTTP/1.1", Assert.Single(local.RequestLines));
+        }
+
+        [Fact]
+        public async Task HttpProxySkipsDirectAndMirroredHosts()
+        {
+            using var local = new LocalHttpProxy();
+            _config.Model.FetchProxy = new FetchProxyConfig
+            {
+                HttpProxy = local.Url,
+                Mirrors = new Dictionary<string, string> { ["cdn.shinden.eu"] = "http://local.test/cdn/" },
+            };
+
+            using var client = Client();
+            (await client.GetAsync("https://cdn.discordapp.com/attachments/1/2/a.png")).Dispose();
+            (await client.GetAsync("http://cdn.shinden.eu/cdn1/images/genuine/1.jpg")).Dispose();
+
+            Assert.Empty(local.RequestLines);
+            Assert.Equal(new[] { "cdn.discordapp.com", "local.test" }, _direct.Requests.Select(x => x.Request.RequestUri.Host));
+        }
+
+        [Fact]
+        public async Task HttpProxyKeepsTheCallersRedirectChoice()
+        {
+            using var local = new LocalHttpProxy();
+            local.Answer = line => line.Contains("/old.png") ? (302, "Location: http://img.example/new.png\r\n", Array.Empty<byte>()) : (200, "", new byte[] { 1 });
+            _config.Model.FetchProxy = new FetchProxyConfig { HttpProxy = local.Url };
+            var proxy = Create();
+
+            using (var following = new HttpClient(proxy.CreateHandler(new HttpClientHandler())))
+            using (var response = await following.GetAsync("http://img.example/old.png"))
+                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            Assert.Equal(2, local.RequestLines.Count);
+
+            using (var checking = new HttpClient(proxy.CreateHandler(new HttpClientHandler { AllowAutoRedirect = false })))
+            using (var response = await checking.GetAsync("http://img.example/old.png"))
+                Assert.Equal(HttpStatusCode.Found, response.StatusCode);
+            Assert.Equal(3, local.RequestLines.Count);
+        }
+
+        [Fact]
+        public async Task UnreachableHttpProxyThrowsAndIsLoggedOnce()
+        {
+            _config.Model.FetchProxy = new FetchProxyConfig { HttpProxy = ClosedPortUrl() };
+
+            using var client = Client();
+            await Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync("http://img.example/a.png"));
+            await Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync("http://img.example/b.png"));
+            Assert.Contains("http proxy", Assert.Single(_logger.Messages));
+            Assert.Empty(_direct.Requests);
+
+            using var local = new LocalHttpProxy();
+            _config.Model.FetchProxy.HttpProxy = local.Url;
+            (await client.GetAsync("http://img.example/c.png")).Dispose();
+            Assert.Contains("works again", _logger.Messages.Last());
+        }
+
+        [Fact]
+        public async Task SiteTheHttpProxyCannotReachIsNotLogged()
+        {
+            using var local = new LocalHttpProxy();
+            local.Answer = _ => (502, "", Array.Empty<byte>());
+            _config.Model.FetchProxy = new FetchProxyConfig { HttpProxy = local.Url };
+
+            using var client = Client();
+            using var response = await client.GetAsync("http://gone.example/a.png");
+
+            Assert.Equal(HttpStatusCode.BadGateway, response.StatusCode);
+            Assert.Empty(_logger.Messages);
+        }
+
+        [Fact]
+        public async Task ImageProcessingDownloadsPlayerLinksThroughHttpProxy()
+        {
+            using var local = new LocalHttpProxy();
+            var png = Png();
+            local.Answer = _ => (200, "Content-Type: image/png\r\n", png);
+            _config.Model.FetchProxy = new FetchProxyConfig { HttpProxy = local.Url };
+            var images = new ImageProcessing(null, null, handler: Create().CreateHandler(_direct));
+
+            using var stream = await images.TryGetImageStreamAsync("http://example.com/a.png");
+
+            Assert.Equal(png.Length, stream.Length);
+            Assert.Single(local.RequestLines);
+            Assert.Empty(_direct.Requests);
+        }
     }
 }

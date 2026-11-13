@@ -107,7 +107,8 @@ http_code() { curl -s -o /dev/null -w '%{http_code}' --connect-timeout 5 --max-t
 # $1 what, $2 address, $3 the expected code (empty: any answer will do), $4 problem or warning
 check_url() {
     local code
-    code=$(http_code "$2")
+    # the bot connects directly, so a proxy from HTTPS_PROXY/HTTP_PROXY must not hide a blocked connection
+    code=$(http_code --noproxy '*' "$2")
     if [ "$code" = 000 ]; then
         "$4" "$1 ($2) cannot be reached; behind a domain allowlist ask for its domain"
     elif [ -n "$3" ] && [ "$code" != "$3" ]; then
@@ -165,7 +166,18 @@ else
         if [ -n "$url" ]; then check_url "$name" "$url" "" warning; fi
     done
 
+    http_proxy_url=$(value FetchProxy/HttpProxy)
     proxy=$(value FetchProxy/Url)
+    if [ -n "$http_proxy_url" ]; then
+        code=$(http_code -x "$http_proxy_url" "$PROXY_TEST_IMAGE")
+        if [ "$code" = 200 ]; then
+            ok "http proxy downloads players' links ($http_proxy_url)"
+        elif [ "$code" = 000 ]; then
+            problem "the http proxy ($http_proxy_url) cannot be reached or could not connect to $PROXY_TEST_IMAGE"
+        else
+            problem "the http proxy ($http_proxy_url) did not download a test picture: HTTP $code"
+        fi
+    fi
     if [ -n "$proxy" ]; then
         key=$(value FetchProxy/Key)
         key=${key//\\/\\\\}
@@ -186,7 +198,7 @@ else
         else
             problem "the fetch proxy ($proxy) did not download a test picture: HTTP $code $(echo "$body" | head -c 200)"
         fi
-    elif [ "$CONFIGURED" -eq 1 ]; then
+    elif [ -z "$http_proxy_url" ] && [ "$CONFIGURED" -eq 1 ]; then
         ok "no fetch proxy: players' links are downloaded directly from this server"
     fi
 fi
