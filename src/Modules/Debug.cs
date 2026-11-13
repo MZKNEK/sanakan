@@ -2043,6 +2043,51 @@ namespace Sanakan.Modules
             await Context.Channel.SendFileAsync(stream, "tldr.txt");
         }
 
+        [Command("orphans", RunMode = RunMode.Async), Priority(1), RequireDev]
+        [Summary("liczy obrazki kart i profili, których karty lub gracza nie ma już w bazie (niczego nie usuwa)")]
+        [Remarks("7")]
+        public async Task CountOrphanFilesAsync([Summary("pomija pliki młodsze niż tyle dni")]uint days = 7)
+        {
+            var msg = await SafeReplyAsync("", embed: "Wczytuję karty i graczy z bazy...".ToEmbedMessage(EMType.Info).Build());
+
+            // the message shows the progress, edited every few seconds to stay within Discord's limits
+            var status = new System.Runtime.CompilerServices.StrongBox<string>();
+            using var done = new CancellationTokenSource();
+            var updates = Task.Run(async () =>
+            {
+                string shown = null;
+                while (msg != null)
+                {
+                    try { await Task.Delay(TimeSpan.FromSeconds(3), done.Token); }
+                    catch (OperationCanceledException) { return; }
+
+                    var now = Volatile.Read(ref status.Value);
+                    if (now == null || now == shown) continue;
+                    shown = now;
+                    try { await msg.ModifyAsync(x => x.Embed = now.ToEmbedMessage(EMType.Info).Build()); }
+                    catch (Exception ex) { Logger?.LogError($"Cmd: orphans progress: {ex.Message}"); }
+                }
+            });
+
+            List<OrphanFiles.Result> results;
+            try
+            {
+                results = await OrphanFiles.ScanAsync(() => new Database.DatabaseContext(Config), _time.Now().ToUniversalTime().AddDays(-days),
+                    progress: (name, files) => Volatile.Write(ref status.Value, $"Liczę **{name}**: przejrzano {files} plików..."));
+            }
+            finally
+            {
+                done.Cancel();
+                await updates;
+            }
+
+            var report = OrphanFiles.Describe(results, (int)days).ToEmbedMessage(EMType.Info).Build();
+            if (msg != null)
+                await msg.ModifyAsync(x => x.Embed = report);
+            else
+                await SafeReplyAsync("", embed: report);
+        }
+
         [Command("lvlbadge", RunMode = RunMode.Async), RequireDevOrTester]
         [Summary("generuje przykładowy obrazek otrzymania poziomu")]
         [Remarks("2150 \"Krótki nick\"")]
