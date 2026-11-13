@@ -22,7 +22,6 @@ namespace Sanakan.Services
         public static IReadOnlyList<Location> Default() => new[]
         {
             new Location("karty", Dir.Cards, CardFile, Owner.Card),
-            new Location("miniatury", Dir.CardsMiniatures, CardFile, Owner.Card),
             new Location("karty w profilu", Dir.CardsInProfiles, CardFile, Owner.Card),
             new Location("własne obrazki i ramki kart", Dir.LocalCardData, new Regex(@"^C[IB](?<id>\d+)\.\w+$", RegexOptions.Compiled), Owner.Card),
             new Location("profile (Prof)", Dir.FakeCardsAsProfiles, IdFile, Owner.User),

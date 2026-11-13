@@ -87,7 +87,7 @@ namespace Artifacts
 
         private static string[] Files(Card card) => new[]
         {
-            $"{Dir.Cards}/{card.Id}.webp", $"{Dir.CardsMiniatures}/{card.Id}.webp", $"{Dir.CardsInProfiles}/{card.Id}.webp",
+            $"{Dir.Cards}/{card.Id}.webp", $"{Dir.CardsInProfiles}/{card.Id}.webp",
         };
 
         private static void Clean(Card card)
@@ -104,7 +104,7 @@ namespace Artifacts
 
         [Theory]
         [InlineData(CardImageType.Normal, 475)]
-        [InlineData(CardImageType.Small, 133)]
+        [InlineData(CardImageType.Small, 475)]
         [InlineData(CardImageType.Profile, 475)]
         public async Task CardIsShownFromATemporaryFileAndDrawnAgainWhenThePictureIsBack(CardImageType type, int width)
         {
