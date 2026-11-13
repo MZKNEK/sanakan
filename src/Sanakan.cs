@@ -134,7 +134,7 @@ namespace Sanakan
         {
             using (var db = new Database.DatabaseContext(_config))
             {
-                db.EnsureReady();
+                db.EnsureReady(new ConsoleLogger(_config));
                 _tags = await TagHelper.CreateAsync(db, _time);
             }
         }

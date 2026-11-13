@@ -17,6 +17,8 @@ namespace Sanakan.Config.Model
         [JsonConverter(typeof(StringEnumConverter))]
         public DatabaseProvider DatabaseProvider { get; set; } = DatabaseProvider.MySql;
         public string ConnectionString { get; set; }
+        // MySQL only: apply the pending migrations when the bot starts
+        public bool MigrateOnStart { get; set; } = true;
         public long CharPerPacket { get; set; }
         public long PacksPerDay { get; set; }
         public ConfigShinden Shinden { get; set; }

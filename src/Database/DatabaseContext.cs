@@ -1,6 +1,8 @@
 ﻿#pragma warning disable 1591
 
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Sanakan.Config;
 using Sanakan.Database.Models;
 using Sanakan.Database.Models.Analytics;
@@ -102,13 +104,66 @@ namespace Sanakan.Database
             await connection.OpenAsync();
         }
 
-        public void EnsureReady()
-        {
-            Database.EnsureCreated();
+        public const string BaselineMigration = "20261113000443_Baseline";
+        private const int MySqlTriggerNeedsSuper = 1419;
 
-            // WAL lets reads run while a write is in progress; the mode is stored in the database file
+        // SQLite gets its schema straight from the model; MySQL from the migrations
+        public void EnsureReady(ILogger logger = null)
+        {
             if (Database.IsSqlite())
+            {
+                Database.EnsureCreated();
+                // WAL lets reads run while a write is in progress; the mode is stored in the database file
                 Database.ExecuteSqlRaw("PRAGMA journal_mode=WAL;");
+                return;
+            }
+
+            if (!_config.Get().MigrateOnStart)
+            {
+                var waiting = Database.GetPendingMigrations().ToList();
+                if (waiting.Count > 0)
+                    logger?.Log($"Database: {waiting.Count} migration(s) not applied, MigrateOnStart is off: {string.Join(", ", waiting)}");
+                return;
+            }
+
+            MarkBaselineOnOldDatabase(logger);
+            var pending = Database.GetPendingMigrations().ToList();
+            if (pending.Count == 0)
+                return;
+
+            logger?.Log($"Database: applying migration(s) {string.Join(", ", pending)}");
+            var watch = System.Diagnostics.Stopwatch.StartNew();
+            try
+            {
+                Database.Migrate();
+            }
+            catch (MySqlConnector.MySqlException ex) when (ex.Number == MySqlTriggerNeedsSuper)
+            {
+                logger?.Log("Database: with binary logging on, MySQL lets an account without SUPER create triggers only after "
+                    + "log_bin_trust_function_creators = 1 (my.cnf, [mysqld]); set it and start the bot again");
+                throw;
+            }
+            logger?.Log($"Database: migration(s) applied in {watch.Elapsed.TotalSeconds:0.0} s");
+        }
+
+        // a database made before the migrations (EnsureCreated, a dump of one) already has the baseline's tables
+        private void MarkBaselineOnOldDatabase(ILogger logger)
+        {
+            if (!Database.CanConnect())
+                return;
+
+            var history = this.GetService<IHistoryRepository>();
+            if (history.Exists() && history.GetAppliedMigrations().Count > 0)
+                return;
+
+            var hasUsers = Database.SqlQueryRaw<int>("SELECT COUNT(*) AS `Value` FROM information_schema.tables WHERE table_schema = DATABASE() AND LOWER(table_name) = 'users'")
+                .AsEnumerable().First() > 0;
+            if (!hasUsers)
+                return;
+
+            Database.ExecuteSqlRaw(history.GetCreateIfNotExistsScript());
+            Database.ExecuteSqlRaw(history.GetInsertScript(new HistoryRow(BaselineMigration, ProductInfo.GetVersion())));
+            logger?.Log($"Database: the existing schema is taken as {BaselineMigration}");
         }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
