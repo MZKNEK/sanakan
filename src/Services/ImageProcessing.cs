@@ -280,16 +280,30 @@ namespace Sanakan.Services
             // every request since StartAttempt answered 404 or 410, so the picture does not exist
             public bool OnlyMissing { get; private set; } = true;
 
-            public void StartAttempt() => OnlyMissing = true;
+            // a request since StartAttempt failed in a way that passes (no connection, timeout, 5xx, 429, 408), so the
+            // picture may be there a moment later
+            public bool Temporary { get; private set; }
+
+            public void StartAttempt()
+            {
+                OnlyMissing = true;
+                Temporary = false;
+            }
 
             public void Set(string reason, HttpStatusCode? statusCode = null)
             {
                 Reason = reason;
                 StatusCode = statusCode;
                 OnlyMissing &= statusCode is HttpStatusCode.NotFound or HttpStatusCode.Gone;
+                Temporary |= statusCode is HttpStatusCode.TooManyRequests or HttpStatusCode.RequestTimeout || (int?)statusCode >= 500;
             }
 
-            public void Set(Exception ex) => Set(ex is OperationCanceledException ? "timeout" : $"{ex.GetType().Name}: {ex.Message}");
+            public void Set(Exception ex)
+            {
+                Set(ex is OperationCanceledException ? "timeout" : $"{ex.GetType().Name}: {ex.Message}");
+                // the network or a timeout; a picture that downloads but cannot be read stays broken
+                Temporary |= ex is HttpRequestException or OperationCanceledException or IOException;
+            }
         }
 
         private static Stream Fail(DownloadFailure failure, Stream result, string reason, HttpStatusCode? statusCode = null)
@@ -416,6 +430,9 @@ namespace Sanakan.Services
             internal void Add(string url, Stream picture) => _pictures[url] = (picture as MemoryStream)?.ToArray();
 
             internal bool HasFailure => _pictures.ContainsValue(null);
+
+            // a picture failed in a way that passes, the card drawn now is not kept (Waifu.GenerateAndSaveCardAsync)
+            internal bool TemporaryFailure { get; set; }
         }
 
         private async Task<Image> GetImageFromUrlOrLocalAsync(string uri, CardPictureCache pictures = null)
@@ -1390,6 +1407,8 @@ namespace Sanakan.Services
             }
 
             pictures?.Add(url, null);
+            if (pictures != null && failure.Temporary)
+                pictures.TemporaryFailure = true;
             var message = $"Images: character picture for card {cardId} could not be downloaded ({failure.Reason ?? "unknown"}): {url}";
             // a rate limit on the image host is temporary and nothing can be done about it, and a picture that no longer exists
             // (on Shinden or set by the player) is missing data, not a bot error, so both stay off the log channel

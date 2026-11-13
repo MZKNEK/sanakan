@@ -1976,8 +1976,18 @@ namespace Sanakan.Services.PocketWaifu
                                 return (toReturn, CardDrawing.NoPicture);
                             }
 
-                            image.SaveToPath(imageLocation);
-                            image.SaveToPath(sImageLocation, 133);
+                            // the picture is likely there a moment later (e.g. the image host restarts): the card is shown
+                            // from a temporary file and drawn again next time, the saved files stay as they were
+                            if (pictures.TemporaryFailure)
+                            {
+                                if (type != CardImageType.Profile)
+                                    return (SaveTemporaryCard(image, card.Id, ext, type == CardImageType.Small ? 133 : 0), CardDrawing.NoPicture);
+                            }
+                            else
+                            {
+                                image.SaveToPath(imageLocation);
+                                image.SaveToPath(sImageLocation, 133);
+                            }
                         }
                     }
 
@@ -1991,6 +2001,9 @@ namespace Sanakan.Services.PocketWaifu
                                     DeleteCardFiles(card);
                                 return (toReturn, CardDrawing.NoPicture);
                             }
+
+                            if (pictures.TemporaryFailure)
+                                return (type == CardImageType.Profile ? SaveTemporaryCard(cardImage, card.Id, ext) : toReturn, CardDrawing.NoPicture);
 
                             cardImage.SaveToPath(pImageLocation);
                         }
@@ -2065,6 +2078,27 @@ namespace Sanakan.Services.PocketWaifu
             {
                 _logger.LogError($"Waifu: deleting card image {card.Id}: {ex.Message}");
             }
+        }
+
+        public static readonly TimeSpan TemporaryCardLifetime = TimeSpan.FromMinutes(15);
+
+        // a card without its picture, for this one reply; files older than TemporaryCardLifetime go away on the way
+        private string SaveTemporaryCard(SixLabors.ImageSharp.Image image, ulong cardId, string ext, int width = 0)
+        {
+            try
+            {
+                var old = DateTime.UtcNow - TemporaryCardLifetime;
+                foreach (var file in Directory.EnumerateFiles(Dir.TemporaryCards).Where(x => File.GetLastWriteTimeUtc(x) < old))
+                    File.Delete(file);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Waifu: removing old temporary cards: {ex.Message}");
+            }
+
+            Directory.CreateDirectory(Dir.TemporaryCards);
+            var path = $"{Dir.TemporaryCards}/{cardId}-{Guid.NewGuid():N}.{ext}";
+            return width > 0 ? image.SaveToPath(path, width) : image.SaveToPath(path);
         }
 
         private async Task<string> GetCardUrlIfExistAsync(Card card, bool force = false)

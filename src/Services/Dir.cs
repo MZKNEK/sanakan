@@ -16,6 +16,7 @@ namespace Sanakan.Services
             Directory.CreateDirectory(CardsInProfiles);
             Directory.CreateDirectory(FakeCardsAsProfiles);
             Directory.CreateDirectory(SiteStatistics);
+            Directory.CreateDirectory(TemporaryCards);
         }
 
         public static string Cards = $"{BaseOutput}/Cards";
@@ -27,6 +28,10 @@ namespace Sanakan.Services
         public static string LocalCardData = $"{SavedData}/Card";
         public static string ShindenCache = $"{SavedData}/Shinden";
         public static string SiteStatistics = $"{SavedData}/Site";
+
+        // cards drawn while their picture could not be downloaded: sent once, never served by the CDN
+        public static string TemporaryCards = $"{BaseOutput}/Temp";
+        public static bool IsTemporary(string path) => !string.IsNullOrEmpty(path) && path.StartsWith(TemporaryCards + "/");
 
         public static string GetResource(string path) => $"{PicDir}/{path}";
         public static bool IsLocal(string path) => !string.IsNullOrEmpty(path) && (path.StartsWith(BaseOutput) || path.StartsWith(PicDir));
