@@ -43,6 +43,54 @@ namespace Artifacts
             }
         }
 
+        private static Image<Rgba32> Noise(int frames)
+        {
+            var rnd = new Random(3);
+            var img = new Image<Rgba32>(64, 64);
+            for (int f = 1; f < frames; f++)
+                img.Frames.AddFrame(img.Frames.RootFrame);
+            foreach (var frame in img.Frames)
+                for (int y = 0; y < 64; y++)
+                    for (int x = 0; x < 64; x++)
+                        frame[x, y] = new Rgba32((byte)rnd.Next(256), (byte)rnd.Next(256), (byte)rnd.Next(256), 255);
+            return img;
+        }
+
+        private static byte[] Encode(Image img, int quality)
+        {
+            using var ms = new MemoryStream();
+            img.Save(ms, new SixLabors.ImageSharp.Formats.Webp.WebpEncoder
+            {
+                FileFormat = SixLabors.ImageSharp.Formats.Webp.WebpFileFormatType.Lossy,
+                Quality = quality,
+                Method = SixLabors.ImageSharp.Formats.Webp.WebpEncodingMethod.Level2,
+            });
+            return ms.ToArray();
+        }
+
+        [Theory]
+        [InlineData(1, 88)]
+        [InlineData(3, 85)]
+        public void StillImagesAreSavedAtQuality88AndAnimationsAt85(int frames, int quality)
+        {
+            var dir = NewDir();
+            var path = Path.Combine(dir, "card.webp");
+            try
+            {
+                using var img = Noise(frames);
+                img.SaveToPath(path);
+                using var stream = (MemoryStream)img.ToWebpStream();
+
+                var expected = Encode(img, quality);
+                Assert.Equal(expected, File.ReadAllBytes(path));
+                Assert.Equal(expected, stream.ToArray());
+            }
+            finally
+            {
+                Directory.Delete(dir, true);
+            }
+        }
+
         [Fact]
         public void SaveToPath_CreatesMissingDirectory()
         {
