@@ -222,6 +222,13 @@ namespace Sanakan.Api
             app.UseForwardedHeaders(new ForwardedHeadersOptions { ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto });
             app.UseStaticFiles();
             app.UseRouting();
+            // the saves of a call are counted under its controller and action (GameTelemetry)
+            app.Use((context, next) =>
+            {
+                var action = context.GetEndpoint()?.Metadata.GetMetadata<Microsoft.AspNetCore.Mvc.Controllers.ControllerActionDescriptor>();
+                Services.GameTelemetry.Reason = action == null ? "api" : $"api:{action.ControllerName}.{action.ActionName}";
+                return next();
+            });
             app.UseAuthentication();
             app.UseAuthorization();
 

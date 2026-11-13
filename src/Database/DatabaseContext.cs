@@ -30,6 +30,9 @@ namespace Sanakan.Database
         // decks whose stored power is refreshed after the save (used by PowerActivity)
         public HashSet<ulong> PendingPowerDecks { get; set; }
 
+        // what the save changes in the game, counted after it succeeds (GameTelemetry)
+        public List<(string Metric, string Label, long Value, ulong NewPlayer)> PendingTelemetry { get; set; }
+
         public DatabaseContext(IConfig config) : base()
         {
             _config = config;
@@ -65,10 +68,11 @@ namespace Sanakan.Database
         public DbSet<PenaltyInfo> Penalties { get; set; }
         public DbSet<OwnedRole> OwnedRoles { get; set; }
         public DbSet<MuteModifier> MuteModifiers { get; set; }
-        public DbSet<UserAnalytics> UsersData { get; set; }
         public DbSet<SystemAnalytics> SystemData { get; set; }
         public DbSet<TransferAnalytics> TransferData { get; set; }
-        public DbSet<CommandsAnalytics> CommandsData { get; set; }
+        public DbSet<GameStat> GameStats { get; set; }
+        public DbSet<PlayerDay> PlayerDays { get; set; }
+        public DbSet<DuelResult> DuelResults { get; set; }
         public DbSet<WishlistCount> WishlistCountData { get; set; }
         public DbSet<UserActivity> UserActivities { get; set; }
         public DbSet<TagCardRelation> TagCardRelations { get; set; }
@@ -88,7 +92,8 @@ namespace Sanakan.Database
                 : optionsBuilder.UseMySql(config.ConnectionString,
                     new MySqlServerVersion(new System.Version(8, 0, 43)), opt => opt.EnableRetryOnFailure());
 
-            builder.AddInterceptors(DbActivity.Commands, DbActivity.Saves, PowerActivity.Interceptor, CacheActivity.Interceptor);
+            builder.AddInterceptors(DbActivity.Commands, DbActivity.Saves, PowerActivity.Interceptor, CacheActivity.Interceptor,
+                Services.GameTelemetry.Default.Interceptor);
             if (config.DatabaseProvider == global::Sanakan.Config.Model.DatabaseProvider.Sqlite)
                 builder.AddInterceptors(SqliteText.Interceptor);
             else
@@ -478,13 +483,6 @@ namespace Sanakan.Database
             });
 
             // Analytics
-            modelBuilder.Entity<UserAnalytics>(entity =>
-            {
-                entity.HasKey(e => e.Id);
-                entity.HasIndex(e => new { e.UserId, e.MeasureDate });
-                entity.HasIndex(e => new { e.GuildId, e.MeasureDate });
-            });
-
             modelBuilder.Entity<SystemAnalytics>(entity =>
             {
                 entity.HasKey(e => e.Id);
@@ -498,11 +496,24 @@ namespace Sanakan.Database
                 entity.HasIndex(e => e.ShindenId);
             });
 
-            modelBuilder.Entity<CommandsAnalytics>(entity =>
+            modelBuilder.Entity<GameStat>(entity =>
+            {
+                entity.HasKey(e => new { e.Date, e.Metric, e.Label });
+                entity.Property(e => e.Metric).HasMaxLength(64);
+                entity.Property(e => e.Label).HasMaxLength(Services.GameTelemetry.LabelLength);
+            });
+
+            modelBuilder.Entity<PlayerDay>(entity =>
+            {
+                entity.HasKey(e => new { e.Date, e.UserId });
+            });
+
+            modelBuilder.Entity<DuelResult>(entity =>
             {
                 entity.HasKey(e => e.Id);
-                entity.HasIndex(e => new { e.UserId, e.Date });
-                entity.HasIndex(e => new { e.GuildId, e.Date });
+                entity.HasIndex(e => e.Date);
+                entity.Property(e => e.AttackerCards).HasMaxLength(100);
+                entity.Property(e => e.DefenderCards).HasMaxLength(100);
             });
 
             // Other
