@@ -211,10 +211,6 @@ namespace Sanakan.Api
             });
         }
 
-        // over 2 s on the log channel, over 12 s also pinged: above the 10 s Shinden request timeout, so a single
-        // Shinden timeout on a request waiting for one lookup does not ping
-        public static readonly Services.SlowLog SlowRequests = new Services.SlowLog(ApiTraffic.SlowRequest, TimeSpan.FromSeconds(12), TimeSpan.FromMinutes(10));
-
         public static void UseApi(IApplicationBuilder app)
         {
             app.UseSwagger();
@@ -269,10 +265,6 @@ namespace Sanakan.Api
                         var entry = ApiAudit.Describe(context, (long)elapsed.TotalMilliseconds);
                         if (entry != null) auditLogger?.Log(entry);
                         else traffic.Add(context, (long)elapsed.TotalMilliseconds);
-
-                        var route = ApiTraffic.GetKey(context);
-                        SlowRequests.Record(auditLogger, route, elapsed,
-                            () => $"API: slow {route} from {ApiAudit.GetClient(context)} ->{context.Response.StatusCode} ({(long)elapsed.TotalMilliseconds}ms)");
                     }
                 }
             });

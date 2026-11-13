@@ -12,7 +12,8 @@ using Xunit;
 
 namespace Artifacts
 {
-    // slow API requests and database queries go to the log channel, very slow ones ping, at most once per key and interval
+    // slow database queries go to the log channel, very slow ones ping, at most once per key and interval;
+    // slow API requests are only counted in the hourly traffic report
     public class SlowLogTests
     {
         private DateTime _now = new DateTime(2026, 1, 1);
@@ -54,18 +55,6 @@ namespace Artifacts
             log.Record(logger, "GET a", TimeSpan.FromSeconds(12), () => "4");
 
             Assert.Equal(new[] { LogKind.Error, LogKind.Info, LogKind.Error, LogKind.Error }, logger.Messages.Select(Kind));
-        }
-
-        // a request that waited out the 10 s Shinden timeout is slow but does not ping
-        [Fact]
-        public void ApiRequest_PingsOnlyAboveTheShindenTimeout()
-        {
-            var logger = new ListLogger();
-
-            Sanakan.Api.BotWebHost.SlowRequests.Record(logger, "GET test-shinden-timeout", TimeSpan.FromMilliseconds(10087), () => "timeout");
-            Sanakan.Api.BotWebHost.SlowRequests.Record(logger, "GET test-bot-slow", TimeSpan.FromSeconds(13), () => "slow");
-
-            Assert.Equal(new[] { LogKind.Info, LogKind.Error }, logger.Messages.Select(Kind));
         }
 
         [Fact]
