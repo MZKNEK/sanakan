@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Text;
@@ -64,6 +65,37 @@ namespace Artifacts
             Assert.Equal(1200ul, info.ListStats.EpisodesCount);
             Assert.Equal("Solo: 12/200", Assert.Single(read).ToString());
             Assert.Equal("Code Geass: 3/25", Assert.Single(watched).ToString());
+        }
+
+        [Fact]
+        public async Task AnimeOnly_DoesNotAskForTheReadList_AndMangaOnlyNotForTheWatchedList()
+        {
+            var (_, read, watched) = await Service(new GateHandler(2)).GetSiteStatisticDataAsync(42, anime: true, manga: false);
+            Assert.Null(read);
+            Assert.Single(watched);
+
+            (_, read, watched) = await Service(new GateHandler(2)).GetSiteStatisticDataAsync(42, anime: false, manga: true);
+            Assert.Single(read);
+            Assert.Null(watched);
+        }
+
+        [Theory]
+        [InlineData(Sanakan.Services.ImageProcessing.SiteStatsKind.All, "strona", "7.webp")]
+        [InlineData(Sanakan.Services.ImageProcessing.SiteStatsKind.Anime, "ilea", "A7.webp")]
+        [InlineData(Sanakan.Services.ImageProcessing.SiteStatsKind.Manga, "ilem", "M7.webp")]
+        public void EachKind_HasItsOwnCooldownAndSavedFile(Sanakan.Services.ImageProcessing.SiteStatsKind kind, string command, string file)
+            => Assert.Equal((command, file), Sanakan.Modules.Shinden.SiteVariant(kind, 7));
+
+        [Theory]
+        [InlineData("7.webp")]
+        [InlineData("A7.webp")]
+        [InlineData("M7.webp")]
+        public void SavedSiteStatistics_AreCountedAsTheUsersFiles(string file)
+        {
+            var site = Sanakan.Services.OrphanFiles.Default().Single(x => x.Folder == Sanakan.Services.Dir.SiteStatistics);
+            var match = site.Pattern.Match(file);
+            Assert.True(match.Success);
+            Assert.Equal("7", match.Groups["id"].Value);
         }
 
         [Fact]

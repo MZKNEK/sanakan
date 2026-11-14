@@ -382,11 +382,14 @@ namespace Sanakan.Services
             }
         }
 
-        public async Task<Stream> GetSiteStatisticAsync(ulong shindenId, SocketGuildUser user)
+        public async Task<Stream> GetSiteStatisticAsync(ulong shindenId, SocketGuildUser user, ImageProcessing.SiteStatsKind kind = ImageProcessing.SiteStatsKind.All)
         {
-            var (info, resLR, resLW) = await GetSiteStatisticDataAsync(shindenId);
+            var anime = kind != ImageProcessing.SiteStatsKind.Manga;
+            var manga = kind != ImageProcessing.SiteStatsKind.Anime;
+            var (info, resLR, resLW) = await GetSiteStatisticDataAsync(shindenId, anime, manga);
+            var shown = kind == ImageProcessing.SiteStatsKind.All ? info : new PartialUserInfo(info, anime, manga);
 
-            using (var image = await _img.GetSiteStatisticAsync(info, GetSiteStatisticColor(user), resLR, resLW))
+            using (var image = await _img.GetSiteStatisticAsync(shown, GetSiteStatisticColor(user), resLR, resLW, kind))
             {
                 return image.ToWebpStream();
             }
@@ -409,12 +412,13 @@ namespace Sanakan.Services
             return images;
         }
 
-        internal async Task<(IUserInfo Info, List<ILastReaded> LastReaded, List<ILastWatched> LastWatched)> GetSiteStatisticDataAsync(ulong shindenId)
+        internal async Task<(IUserInfo Info, List<ILastReaded> LastReaded, List<ILastWatched> LastWatched)> GetSiteStatisticDataAsync(ulong shindenId,
+            bool anime = true, bool manga = true)
         {
             // the requests do not depend on each other and none of them throws, failures are logged and give null
             var info = GetUserInfoAsync(shindenId);
-            var lastReaded = GetUserLastReadedAsync(shindenId);
-            var lastWatched = GetUserLastWatchedAsync(shindenId);
+            var lastReaded = manga ? GetUserLastReadedAsync(shindenId) : Task.FromResult<List<ILastReaded>>(null);
+            var lastWatched = anime ? GetUserLastWatchedAsync(shindenId) : Task.FromResult<List<ILastWatched>>(null);
             await Task.WhenAll(info, lastReaded, lastWatched);
 
             var userInfo = await info;

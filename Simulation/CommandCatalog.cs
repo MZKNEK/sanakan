@@ -64,6 +64,8 @@ public static class CommandCatalog
         ["wymiana"] = new(ChannelKind.Market, c => $"wymiana {c.OtherPlayer}", c => $"dodaj {c.Card} {c.Card}"),
         ["barter"] = T(ChannelKind.Waifu, c => $"barter {c.Item}:1"),
         ["strona"] = T(ChannelKind.Command, "strona"),
+        ["ilea"] = T(ChannelKind.Command, "ilea"),
+        ["ilem"] = T(ChannelKind.Command, "ilem"),
         ["portfel"] = T(ChannelKind.Command, "portfel"),
         ["profil"] = T(ChannelKind.Command, "profil"),
         ["karta obrazek"] = T(ChannelKind.Command, c => $"karta obrazek {c.Card}"),

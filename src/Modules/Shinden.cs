@@ -155,11 +155,37 @@ namespace Sanakan.Modules
         public static string SavedSiteOnErrorNote(DateTime savedAt)
             => $"Shinden nie odpowiada, pokazuję zapisane statystyki z {savedAt.ToRemTime()}.";
 
+        public const string SiteAnimeCommand = "ilea";
+        public const string SiteMangaCommand = "ilem";
+
         [Command(SiteCommand, RunMode = RunMode.Async)]
         [Alias("ile", "otaku", "site", "mangozjeb")]
         [Summary("wyświetla statystyki użytkownika ze strony")]
         [Remarks("Karna")]
-        public async Task ShowSiteStatisticAsync([Summary("nazwa użytkownika")]SocketGuildUser user = null)
+        public Task ShowSiteStatisticAsync([Summary("nazwa użytkownika")]SocketGuildUser user = null)
+            => SendSiteStatisticAsync(user, Services.ImageProcessing.SiteStatsKind.All);
+
+        [Command(SiteAnimeCommand, RunMode = RunMode.Async)]
+        [Summary("wyświetla statystyki anime użytkownika ze strony")]
+        [Remarks("Karna")]
+        public Task ShowSiteAnimeStatisticAsync([Summary("nazwa użytkownika")]SocketGuildUser user = null)
+            => SendSiteStatisticAsync(user, Services.ImageProcessing.SiteStatsKind.Anime);
+
+        [Command(SiteMangaCommand, RunMode = RunMode.Async)]
+        [Summary("wyświetla statystyki mangi użytkownika ze strony")]
+        [Remarks("Karna")]
+        public Task ShowSiteMangaStatisticAsync([Summary("nazwa użytkownika")]SocketGuildUser user = null)
+            => SendSiteStatisticAsync(user, Services.ImageProcessing.SiteStatsKind.Manga);
+
+        // each kind has its own cooldown and its own saved image, shown while the cooldown lasts or Shinden does not answer
+        public static (string Command, string FileName) SiteVariant(Services.ImageProcessing.SiteStatsKind kind, ulong userId) => kind switch
+        {
+            Services.ImageProcessing.SiteStatsKind.Anime => (SiteAnimeCommand, $"A{userId}.webp"),
+            Services.ImageProcessing.SiteStatsKind.Manga => (SiteMangaCommand, $"M{userId}.webp"),
+            _ => (SiteCommand, $"{userId}.webp"),
+        };
+
+        private async Task SendSiteStatisticAsync(SocketGuildUser user, Services.ImageProcessing.SiteStatsKind kind)
         {
             var usr = user ?? Context.User as SocketGuildUser;
             if (usr == null || Context.User is not SocketGuildUser caller) return;
@@ -186,8 +212,9 @@ namespace Sanakan.Modules
                     .WithButton("Lista mangi", style: Discord.ButtonStyle.Link, url: Shden.Url.GetMangaListURL(botUser.Shinden))
                     .Build();
 
-                var savedPath = $"{Services.Dir.SiteStatistics}/{usr.Id}.webp";
-                var availableAt = await DelayNextUseBy.TryUseAsync(caller, SiteCommand, SiteCooldown, Config, _time);
+                var (command, fileName) = SiteVariant(kind, usr.Id);
+                var savedPath = $"{Services.Dir.SiteStatistics}/{fileName}";
+                var availableAt = await DelayNextUseBy.TryUseAsync(caller, command, SiteCooldown, Config, _time);
                 if (availableAt != null)
                 {
                     if (!await TrySendSavedImageAsync(savedPath, savedAt => SavedSiteNote(savedAt, availableAt.Value), link))
@@ -198,12 +225,12 @@ namespace Sanakan.Modules
                 Stream stream;
                 try
                 {
-                    stream = await _shinden.GetSiteStatisticAsync(botUser.Shinden, usr);
+                    stream = await _shinden.GetSiteStatisticAsync(botUser.Shinden, usr, kind);
                 }
                 catch(Exception ex)
                 {
                     Logger?.LogError($"Shinden: user stats u{usr.Id}: {ex}");
-                    DelayNextUseBy.Release(SiteCommand, caller.Id);
+                    DelayNextUseBy.Release(command, caller.Id);
 
                     if (!await TrySendSavedImageAsync(savedPath, SavedSiteOnErrorNote, link))
                         await SafeReplyAsync("", embed: "Brak połączenia z Shindenem! Spróbuj ponownie za chwilę.".ToEmbedMessage(EMType.Error).Build());
@@ -223,7 +250,7 @@ namespace Sanakan.Modules
                     }
 
                     stream.Position = 0;
-                    await Context.Channel.SendFileAsync(stream, $"{usr.Id}.webp", components: link);
+                    await Context.Channel.SendFileAsync(stream, fileName, components: link);
                 }
             }
         }

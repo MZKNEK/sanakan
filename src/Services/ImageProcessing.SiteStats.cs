@@ -227,7 +227,7 @@ namespace Sanakan.Services
             return bar;
         }
 
-        private void DrawSiteStatsHeader(Image image, Image avatar, string name, string rank, string color)
+        private void DrawSiteStatsHeader(Image image, Image avatar, string name, string rank, string color, SiteStatsKind kind)
         {
             var background = GetOrCreateColor(SiteStatsBackground);
             if (avatar != null)
@@ -261,7 +261,13 @@ namespace Sanakan.Services
 
             var nameFont = GetFontSize(_latoBold, 42, name, SiteStatsWidth - 520);
             DrawSiteStatsText(image, name, nameFont, SiteStatsTextBright, 134, 33);
-            DrawSiteStatsText(image, "Statystyki anime i mangi", GetOrCreateFont(_latoRegular, 22), "#CFCBD8", 135, 69);
+            var subtitle = kind switch
+            {
+                SiteStatsKind.Anime => "Statystyki anime",
+                SiteStatsKind.Manga => "Statystyki mangi",
+                _ => "Statystyki anime i mangi",
+            };
+            DrawSiteStatsText(image, subtitle, GetOrCreateFont(_latoRegular, 22), "#CFCBD8", 135, 69);
 
             if (string.IsNullOrWhiteSpace(rank))
                 return;
@@ -434,7 +440,9 @@ namespace Sanakan.Services
             DrawSiteStatsList(image, divider, w - SiteStatsPanelWidth, py + 68, py + height, data);
         }
 
-        private void DrawSiteStatsEmpty(Image image, int height)
+        public enum SiteStatsKind { All, Anime, Manga }
+
+        private void DrawSiteStatsEmpty(Image image, int height, SiteStatsKind kind)
         {
             const int py = SiteStatsPanelY;
             const int px = 16;
@@ -448,15 +456,35 @@ namespace Sanakan.Services
             }));
 
             var accent = GetOrCreateColor(SiteStatsAccent);
-            DrawSiteStatsClapperIcon(image, SiteStatsWidth / 2f - 20, py + 32, accent);
-            DrawSiteStatsBookIcon(image, SiteStatsWidth / 2f + 20, py + 32, accent);
+            switch (kind)
+            {
+                case SiteStatsKind.Anime:
+                    DrawSiteStatsClapperIcon(image, SiteStatsWidth / 2f, py + 32, accent);
+                    break;
+
+                case SiteStatsKind.Manga:
+                    DrawSiteStatsBookIcon(image, SiteStatsWidth / 2f, py + 32, accent);
+                    break;
+
+                default:
+                    DrawSiteStatsClapperIcon(image, SiteStatsWidth / 2f - 20, py + 32, accent);
+                    DrawSiteStatsBookIcon(image, SiteStatsWidth / 2f + 20, py + 32, accent);
+                    break;
+            }
+
+            var text = kind switch
+            {
+                SiteStatsKind.Anime => "Na liście nie ma jeszcze żadnego obejrzanego anime.",
+                SiteStatsKind.Manga => "Na liście nie ma jeszcze żadnej przeczytanej mangi.",
+                _ => "Na liście nie ma jeszcze żadnego obejrzanego anime ani przeczytanej mangi.",
+            };
 
             DrawSiteStatsText(image, "Nic tu jeszcze nie ma", GetOrCreateFont(_latoBold, 26), SiteStatsTextBright, SiteStatsWidth / 2f, py + 66, HorizontalAlignment.Center);
-            DrawSiteStatsText(image, "Na liście nie ma jeszcze żadnego obejrzanego anime ani przeczytanej mangi.",
-                GetOrCreateFont(_latoRegular, 20), SiteStatsTextDim, SiteStatsWidth / 2f, py + 98, HorizontalAlignment.Center);
+            DrawSiteStatsText(image, text, GetOrCreateFont(_latoRegular, 20), SiteStatsTextDim, SiteStatsWidth / 2f, py + 98, HorizontalAlignment.Center);
         }
 
-        public async Task<Image<Rgba32>> GetSiteStatisticAsync(IUserInfo shindenInfo, Discord.Color color, List<ILastReaded> lastRead = null, List<ILastWatched> lastWatch = null)
+        public async Task<Image<Rgba32>> GetSiteStatisticAsync(IUserInfo shindenInfo, Discord.Color color, List<ILastReaded> lastRead = null, List<ILastWatched> lastWatch = null,
+            SiteStatsKind kind = SiteStatsKind.All)
         {
             if (color == Discord.Color.Default)
                 color = Discord.Color.DarkerGrey;
@@ -502,12 +530,12 @@ namespace Sanakan.Services
                 };
 
                 var image = new Image<Rgba32>(SiteStatsWidth, SiteStatsPanelY + panelHeight + 16, GetOrCreateColor(SiteStatsBackground).ToPixel<Rgba32>());
-                DrawSiteStatsHeader(image, avatar, shindenInfo?.Name ?? "", shindenInfo?.Rank, color.RawValue.ToString("X6"));
+                DrawSiteStatsHeader(image, avatar, shindenInfo?.Name ?? "", shindenInfo?.Rank, color.RawValue.ToString("X6"), kind);
 
                 switch (withData.Count)
                 {
                     case 0:
-                        DrawSiteStatsEmpty(image, panelHeight);
+                        DrawSiteStatsEmpty(image, panelHeight, kind);
                         break;
 
                     case 1:

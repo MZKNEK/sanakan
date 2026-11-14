@@ -273,6 +273,16 @@ namespace Artifacts
             await Render("sitestats_full", async () => await img.GetSiteStatisticAsync(shinden, new Discord.Color(0x1ABC9C), readed, watched));
             await Render("sitestats_empty", async () => await img.GetSiteStatisticAsync(new ShindenUser { Id = 6, Name = "pusty", AvatarUrl = U("avatar.png") }, Discord.Color.Default));
 
+            var animeOnly = new ShindenUser { Id = 5, Name = "gracz", Rank = "Ranga testowa", AvatarUrl = U("avatar.png"),
+                ListStats = new ListStats { AnimeStatus = stats.AnimeStatus, EpisodesCount = stats.EpisodesCount, AnimeTime = stats.AnimeTime, AnimeMeanScore = stats.AnimeMeanScore } };
+            var mangaOnly = new ShindenUser { Id = 5, Name = "gracz", Rank = "Ranga testowa", AvatarUrl = U("avatar.png"),
+                ListStats = new ListStats { MangaStatus = stats.MangaStatus, ChaptersCount = stats.ChaptersCount, MangaTime = stats.MangaTime, MangaMeanScore = stats.MangaMeanScore } };
+            var empty = new ShindenUser { Id = 6, Name = "pusty", AvatarUrl = U("avatar.png") };
+            await Render("sitestats_anime", async () => await img.GetSiteStatisticAsync(animeOnly, new Discord.Color(0x1ABC9C), null, watched, ImageProcessing.SiteStatsKind.Anime));
+            await Render("sitestats_manga", async () => await img.GetSiteStatisticAsync(mangaOnly, new Discord.Color(0x1ABC9C), readed, null, ImageProcessing.SiteStatsKind.Manga));
+            await Render("sitestats_empty_anime", async () => await img.GetSiteStatisticAsync(empty, Discord.Color.Default, null, null, ImageProcessing.SiteStatsKind.Anime));
+            await Render("sitestats_empty_manga", async () => await img.GetSiteStatisticAsync(empty, Discord.Color.Default, null, null, ImageProcessing.SiteStatsKind.Manga));
+
             foreach (var currency in Enum.GetValues<CurrencyType>())
                 await Render($"fcolors_{currency}", () => Task.FromResult<Image>(img.GetFColorsView(currency)));
 

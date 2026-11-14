@@ -26,7 +26,7 @@ namespace Sanakan.Services
             new Location("własne obrazki i ramki kart", Dir.LocalCardData, new Regex(@"^C[IB](?<id>\d+)\.\w+$", RegexOptions.Compiled), Owner.Card),
             new Location("profile (Prof)", Dir.FakeCardsAsProfiles, IdFile, Owner.User),
             new Location("obrazki profili graczy", Dir.SavedData, new Regex(@"^(BG|SR|OV|UOV)(?<id>\d+)\.\w+$", RegexOptions.Compiled), Owner.User),
-            new Location("statystyki strony", Dir.SiteStatistics, IdFile, Owner.User),
+            new Location("statystyki strony", Dir.SiteStatistics, new Regex(@"^[AM]?(?<id>\d+)\.\w+$", RegexOptions.Compiled), Owner.User),
         };
 
         private static readonly Regex CardFile = new Regex(@"^(?<id>\d+)\.(webp|gif|png)$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
