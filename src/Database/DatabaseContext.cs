@@ -79,6 +79,7 @@ namespace Sanakan.Database
         public DbSet<Tag> Tags { get; set; }
         public DbSet<UserApiKey> UserApiKeys { get; set; }
         public DbSet<IdempotencyRecord> IdempotencyRecords { get; set; }
+        public DbSet<LiftedPenalty> LiftedPenalties { get; set; }
 
         public const string PictureKindSql = "CASE WHEN CustomImage IS NULL THEN (CASE WHEN Image IS NULL THEN 0 ELSE 1 END) ELSE (CASE WHEN IsAnimatedImage THEN 3 ELSE 2 END) END";
         public const string CursedSql = "CASE WHEN Curse <> 0 THEN 1 ELSE 0 END";
@@ -553,6 +554,14 @@ namespace Sanakan.Database
                 entity.Property(e => e.RequestHash).HasMaxLength(64).IsRequired();
                 entity.HasIndex(e => new { e.Scope, e.Key }).IsUnique();
                 entity.HasIndex(e => e.CreatedAt);
+            });
+
+            modelBuilder.Entity<LiftedPenalty>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Key).HasMaxLength(64).IsRequired();
+                entity.Property(e => e.Roles).HasMaxLength(1000);
+                entity.HasIndex(e => e.Key).IsUnique();
             });
 
             if (Database.IsSqlite())

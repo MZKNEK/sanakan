@@ -1179,6 +1179,52 @@ namespace Sanakan.Database.Migrations
                     b.ToTable("Items");
                 });
 
+            modelBuilder.Entity("Sanakan.Database.Models.Management.LiftedPenalty", b =>
+                {
+                    b.Property<ulong>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint unsigned");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<ulong>("Id"));
+
+                    b.Property<long>("DurationInHours")
+                        .HasColumnType("bigint");
+
+                    b.Property<ulong>("Guild")
+                        .HasColumnType("bigint unsigned");
+
+                    b.Property<string>("Key")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("varchar(64)");
+
+                    b.Property<DateTime>("LiftedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("Reason")
+                        .HasColumnType("longtext");
+
+                    b.Property<DateTime?>("RestoredAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("Roles")
+                        .HasMaxLength(1000)
+                        .HasColumnType("varchar(1000)");
+
+                    b.Property<DateTime>("StartDate")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<ulong>("User")
+                        .HasColumnType("bigint unsigned");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Key")
+                        .IsUnique();
+
+                    b.ToTable("LiftedPenalties");
+                });
+
             modelBuilder.Entity("Sanakan.Database.Models.Management.MuteModifier", b =>
                 {
                     b.Property<ulong>("Id")

@@ -560,11 +560,157 @@ namespace Sanakan.Services
 
         public async Task UnmuteUserAsync(SocketGuildUser user, SocketRole muteRole, SocketRole muteModRole, Database.DatabaseContext db)
         {
-            var penalty = await db.Penalties.Include(x => x.Roles).FirstOrDefaultAsync(x => x.User == user.Id
-                && x.Type == PenaltyType.Mute && x.Guild == user.Guild.Id);
+            // the sweep could otherwise put the mute role back right after it is taken off, with no penalty left to end it
+            await _penaltySweep.WaitAsync();
+            try
+            {
+                var penalty = await db.Penalties.Include(x => x.Roles).FirstOrDefaultAsync(x => x.User == user.Id
+                    && x.Type == PenaltyType.Mute && x.Guild == user.Guild.Id);
 
-            await UnmuteUserGuildAsync(user, muteRole, muteModRole, penalty?.Roles);
-            await RemovePenaltyFromDb(db, penalty);
+                await UnmuteUserGuildAsync(user, muteRole, muteModRole, penalty?.Roles);
+                await RemovePenaltyFromDb(db, penalty);
+            }
+            finally
+            {
+                _penaltySweep.Release();
+            }
+        }
+
+        public static readonly TimeSpan AppealLockWait = TimeSpan.FromSeconds(20);
+
+        public async Task<MuteAppeals.Lift> LiftMuteAfterAppealAsync(ulong guildId, ulong userId, string key, string byWho)
+        {
+            var guild = _client.GetGuild(guildId);
+            if (guild == null)
+                return new MuteAppeals.Lift { Result = MuteAppeals.Result.NoGuild };
+
+            if (!await _penaltySweep.WaitAsync(AppealLockWait))
+                throw new TimeoutException("penalty sweep is still running");
+
+            try
+            {
+                using var db = new Database.DatabaseContext(_config);
+                var gconfig = await db.GetCachedGuildFullConfigAsync(guild.Id);
+                if (gconfig == null)
+                    return new MuteAppeals.Lift { Result = MuteAppeals.Result.NoGuild };
+
+                var now = _time.Now();
+                var lift = await MuteAppeals.PrepareLiftAsync(db, guild.Id, userId, key, now);
+                if (lift.Result != MuteAppeals.Result.Ok)
+                    return lift;
+
+                var user = guild.GetUser(userId);
+                if (user != null)
+                {
+                    try
+                    {
+                        await UnmuteUserGuildAsync(user, guild.GetRole(gconfig.MuteRole), guild.GetRole(gconfig.ModMuteRole), lift.Penalty.Roles);
+                    }
+                    catch (Discord.Net.HttpException ex) when (ex.DiscordCode == DiscordErrorCode.UnknownMember)
+                    {
+                        user = null;
+                    }
+                }
+
+                await MuteAppeals.SaveLiftAsync(db, lift.Penalty, key, now);
+                QueryCache.ExpireTag(new string[] { CacheTags.Mute });
+
+                _logger.Log($"Mod: appeal {key}: mute of u{userId} on g{guild.Id} lifted by {byWho}, it would end {lift.End:yyyy-MM-dd HH:mm}");
+                await SendAppealNoticeAsync(guild.GetTextChannel(gconfig.NotificationChannel), new EmbedBuilder
+                {
+                    Title = "🔓 Wyciszenie zdjęte · odwołanie",
+                    Color = EMType.Success.Color(),
+                    Description = $"**Powód kary:** {PenaltyFormat.Reason(lift.Penalty.Reason)}".TrimToLength(2500),
+                    Footer = new EmbedFooterBuilder().WithText($"Zdjął: {byWho}"),
+                    Timestamp = new DateTimeOffset(now),
+                }
+                .AddField("Użytkownik", $"<@{userId}>\n`{userId}`", true)
+                .AddField("Odwołanie", $"`{key}`", true)
+                .AddField("Miało się skończyć", PenaltyFormat.Timestamp(lift.End, 'f'), true));
+
+                return lift;
+            }
+            finally
+            {
+                _penaltySweep.Release();
+            }
+        }
+
+        public async Task<MuteAppeals.Restore> RestoreMuteAfterAppealAsync(ulong guildId, ulong userId, string key, string byWho)
+        {
+            var guild = _client.GetGuild(guildId);
+            if (guild == null)
+                return new MuteAppeals.Restore { Result = MuteAppeals.Result.NoGuild };
+
+            if (!await _penaltySweep.WaitAsync(AppealLockWait))
+                throw new TimeoutException("penalty sweep is still running");
+
+            try
+            {
+                using var db = new Database.DatabaseContext(_config);
+                var gconfig = await db.GetCachedGuildFullConfigAsync(guild.Id);
+                if (gconfig == null)
+                    return new MuteAppeals.Restore { Result = MuteAppeals.Result.NoGuild };
+
+                var now = _time.Now();
+                var restore = await MuteAppeals.RestoreAsync(db, guild.Id, userId, key, now);
+                if (restore.Result != MuteAppeals.Result.Ok)
+                    return restore;
+
+                QueryCache.ExpireTag(new string[] { CacheTags.Mute });
+
+                // if this fails, the sweep puts the mute on within 30 seconds
+                var user = guild.GetUser(userId);
+                if (user != null)
+                {
+                    try
+                    {
+                        var muteMod = restore.Penalty.Roles.Any(x => gconfig.ModeratorRoles.Any(z => z.Role == x.Role)) ? guild.GetRole(gconfig.ModMuteRole) : null;
+                        await MuteUserGuildAsync(user, guild.GetRole(gconfig.MuteRole), restore.Penalty.Roles, muteMod);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError($"Mod: appeal {key}: re-mute: {ex.Message}");
+                    }
+                }
+
+                var left = PenaltyFormat.Duration(restore.Remaining);
+                _logger.Log($"Mod: appeal {key}: mute of u{userId} on g{guild.Id} restored by {byWho}, {left} "
+                    + (restore.Extended ? "added to the current mute" : "left") + $", ends {restore.End:yyyy-MM-dd HH:mm}");
+                await SendAppealNoticeAsync(guild.GetTextChannel(gconfig.NotificationChannel), new EmbedBuilder
+                {
+                    Title = "🔇 Wyciszenie przywrócone · odwołanie",
+                    Color = PenaltyFormat.MuteColor,
+                    Description = $"**Powód kary:** {PenaltyFormat.Reason(restore.Penalty.Reason)}".TrimToLength(2500),
+                    Footer = new EmbedFooterBuilder().WithText($"Przywrócił: {byWho}"),
+                    Timestamp = new DateTimeOffset(now),
+                }
+                .AddField("Użytkownik", $"<@{userId}>\n`{userId}`", true)
+                .AddField("Odwołanie", $"`{key}`", true)
+                .AddField(restore.Extended ? "Doliczono do trwającej kary" : "Pozostało", left, true)
+                .AddField("Koniec", $"{PenaltyFormat.Timestamp(restore.End, 'f')}\n{PenaltyFormat.Timestamp(restore.End, 'R')}", true));
+
+                return restore;
+            }
+            finally
+            {
+                _penaltySweep.Release();
+            }
+        }
+
+        private async Task SendAppealNoticeAsync(ITextChannel channel, EmbedBuilder embed)
+        {
+            if (channel == null)
+                return;
+
+            try
+            {
+                await channel.SendMessageAsync("", embed: embed.Build());
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Mod: appeal notice: {ex.Message}");
+            }
         }
 
         private async Task RemovePenaltyFromDb(Database.DatabaseContext db, PenaltyInfo penalty)

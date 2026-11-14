@@ -29,6 +29,16 @@ namespace Sanakan.Services
             return rest == 0 ? daysText : $"{daysText} {hoursText}";
         }
 
+        public static string Duration(TimeSpan time)
+        {
+            var minutes = (long)Math.Ceiling(time.TotalMinutes);
+            if (minutes < 60)
+                return Polish.Count(Math.Max(minutes, 1), "minuta", "minuty", "minut");
+
+            var hours = Duration(minutes / 60);
+            return minutes % 60 == 0 ? hours : $"{hours} {Polish.Count(minutes % 60, "minuta", "minuty", "minut")}";
+        }
+
         public static string Title(PenaltyType type, bool automatic)
             => (type == PenaltyType.Ban ? "🔨 Ban" : "🔇 Wyciszenie") + (automatic ? " · automat" : "");
 
