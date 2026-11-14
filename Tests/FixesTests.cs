@@ -392,25 +392,27 @@ namespace Artifacts
                 new Sanakan.Services.Shinden(null, null, null, new ListLogger(), new FixedTime()), null, null, null));
 
         [Fact]
-        public async Task GivePacks_NullBody_Returns500WithoutException()
+        public async Task GivePacks_NullBody_Returns400WithoutException()
         {
             var executor = new FakeExecutor();
             var controller = NewController(executor);
 
-            var result = await controller.GiveUserAPacksAsync(5, null);
+            var result = await controller.GiveUserAPacksAsync(5, null, "key-1");
 
-            Assert.Equal(500, result.StatusOf());
+            Assert.Equal(400, result.StatusOf());
+            Assert.Equal("Model is Invalid", ApiBody.Message(result));
             Assert.Empty(executor.Added);
         }
 
         [Fact]
-        public async Task OpenPacks_NullBody_Returns500WithoutException()
+        public async Task OpenPacks_NullBody_Returns400WithoutException()
         {
             var controller = NewController(new FakeExecutor());
 
-            var result = await controller.GiveShindenUserAPacksAndOpenAsync(5, null);
+            var result = await controller.GiveShindenUserAPacksAndOpenAsync(5, null, "key-1");
             Assert.Null(result.Value);
-            Assert.Equal(500, result.StatusOf());
+            Assert.Equal(400, result.StatusOf());
+            Assert.Equal("Model is Invalid", ApiBody.Message(result.Result));
         }
     }
 
@@ -448,7 +450,7 @@ namespace Artifacts
             daemon.HandleDisconnected();
             await UserBasedExecutorBehaviorTests.WaitUntil(() => exits.Count > 0);
 
-            Assert.Equal(new[] { 1 }, exits);
+            Assert.Equal(new[] { Sanakan.ExitCodes.Restart }, exits);
         }
 
         [Fact]

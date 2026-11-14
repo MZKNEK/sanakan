@@ -66,7 +66,7 @@ namespace Sanakan.Services
                 return null;
 
             return config.RolesPerLevel.Where(x => x.Level == (ulong)level).Select(x => guild.GetRole(x.Role))
-                .Where(x => x != null).OrderByDescending(x => x.Position).FirstOrDefault()?.Color;
+                .Where(x => x != null).OrderByDescending(x => x.Position).FirstOrDefault()?.Colors.PrimaryColor;
         }
 
         public async Task NotifyAboutLevelAsync(SocketGuildUser user, ISocketMessageChannel channel, long level)
@@ -78,7 +78,7 @@ namespace Sanakan.Services
             }
 
             using (var badge = await _img.GetLevelUpBadgeAsync(user.GetUserNickInGuild(),
-                level, user.GetUserOrDefaultAvatarUrl(true), user.Roles.OrderByDescending(x => x.Position).First().Color, highlight))
+                level, user.GetUserOrDefaultAvatarUrl(true), user.Roles.OrderByDescending(x => x.Position).First().Colors.PrimaryColor, highlight))
             {
                 using (var badgeStream = badge.ToWebpStream())
                 {

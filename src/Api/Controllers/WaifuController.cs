@@ -38,6 +38,8 @@ namespace Sanakan.Api.Controllers
         private static int ClampOffset(uint offset) => (int)Math.Min(offset, int.MaxValue);
 
         private static readonly TimeSpan SearchCountLifetime = TimeSpan.FromMinutes(5);
+        private static readonly TimeSpan CardImageWait = TimeSpan.FromSeconds(3);
+        private const string CardImageRetryAfter = "3";
 
         // a text search has to scan every card to count its results, so the count is kept while the same results are paged
         // or sorted; other filters are counted every time. A player's list drops it when the player's cards change.
@@ -91,6 +93,8 @@ namespace Sanakan.Api.Controllers
 
         private const string ShindenPacksIdempotencyScope = "shinden-boosterpack";
         private const string ShindenOpenIdempotencyScope = "shinden-boosterpack-open";
+        private const string DiscordPacksIdempotencyScope = "discord-boosterpack";
+        private const string PlayerOpenIdempotencyScope = "player-boosterpack-open";
 
         public WaifuController(ShindenClient shClient, Waifu waifu, IExecutor executor, TagHelper tags,
             IConfig config, ISystemTime time, Services.Shinden shinden, DiscordSocketClient client, Expedition expedition,
@@ -212,7 +216,8 @@ namespace Sanakan.Api.Controllers
                 var query = db.Cards.AsQueryable().TagWith(Database.CardListHint.Tag);
                 if (!string.IsNullOrEmpty(filter.SearchText))
                 {
-                    query = query.Where(x => x.Name.Contains(filter.SearchText) || x.Title.Contains(filter.SearchText));
+                    query = query.TagWith(Database.CardListHint.SearchTag)
+                        .Where(x => x.Name.Contains(filter.SearchText) || x.Title.Contains(filter.SearchText));
                 }
 
                 query = CardsQueryFilter.Use(filter.OrderBy, query);
@@ -284,6 +289,7 @@ namespace Sanakan.Api.Controllers
         /// <param name="count">liczba kart</param>
         /// <param name="filter">filtry listy</param>
         /// <returns>lista kart</returns>
+        /// <response code="403">User on blacklist</response>
         /// <response code="404">User not found</response>
         [HttpPost("user/{id}/cards/{offset}/{count}"), AllowAnonymous]
         public async Task<ActionResult<FilteredCards>> GetUsersCardsByShindenIdWithOffsetAndFilterAsync(ulong id, uint offset, uint count, [FromBody]CardsQueryFilter filter)
@@ -302,7 +308,7 @@ namespace Sanakan.Api.Controllers
 
                 if (user.IsBlacklisted)
                 {
-                    return "User on blacklist".ToResponse(401);
+                    return "User on blacklist".ToResponse(403);
                 }
 
                 var deckId = user.GameDeck.Id;
@@ -330,6 +336,7 @@ namespace Sanakan.Api.Controllers
         /// <param name="offset">przesunięcie</param>
         /// <param name="count">liczba kart</param>
         /// <returns>lista kart</returns>
+        /// <response code="403">User on blacklist</response>
         /// <response code="404">User not found</response>
         [HttpGet("user/{id}/cards/{offset}/{count}"), AllowAnonymous]
         public async Task<ActionResult<IEnumerable<CardFinalView>>> GetUsersCardsByShindenIdWithOffsetAsync(ulong id, uint offset, uint count)
@@ -345,7 +352,7 @@ namespace Sanakan.Api.Controllers
 
                 if (user.IsBlacklisted)
                 {
-                    return "User on blacklist".ToResponse(401);
+                    return "User on blacklist".ToResponse(403);
                 }
 
                 var cards = await db.Cards.AsQueryable().AsSplitQuery().Where(x => x.GameDeckId == user.GameDeck.Id).Include(x => x.Tags).OrderBy(x => x.Id).Skip(ClampOffset(offset)).Take((int)Math.Min(count, MaxCardsPerRequest)).AsNoTrackingWithIdentityResolution().ToListAsync();
@@ -385,7 +392,7 @@ namespace Sanakan.Api.Controllers
         /// <param name="id">id użytkownika shindena</param>
         /// <returns>lista życzeń</returns>
         /// <response code="404">User not found</response>
-        /// <response code="401">User wishlist is private</response>
+        /// <response code="403">User on blacklist / User wishlist is private</response>
         [HttpGet("user/shinden/{id}/wishlist/raw"), AllowAnonymous]
         public async Task<ActionResult<IEnumerable<WishlistObject>>> GetUsersRawWishlistByShindenIdAsync(ulong id)
         {
@@ -400,12 +407,12 @@ namespace Sanakan.Api.Controllers
 
                 if (user.IsBlacklisted)
                 {
-                    return "User on blacklist".ToResponse(401);
+                    return "User on blacklist".ToResponse(403);
                 }
 
                 if (user.GameDeck.WishlistIsPrivate)
                 {
-                    return "User wishlist is private".ToResponse(401);
+                    return "User wishlist is private".ToResponse(403);
                 }
 
                 return Ok(user.GameDeck.Wishes);
@@ -434,6 +441,7 @@ namespace Sanakan.Api.Controllers
         /// </summary>
         /// <param name="id">id użytkownika shindena</param>
         /// <returns>profil</returns>
+        /// <response code="403">User on blacklist</response>
         /// <response code="404">User not found</response>
         [HttpGet("user/{id}/profile"), AllowAnonymous]
         public async Task<ActionResult<UserSiteProfile>> GetUserWaifuProfileAsync(ulong id)
@@ -466,7 +474,7 @@ namespace Sanakan.Api.Controllers
 
                 if (user.IsBlacklisted)
                 {
-                    return "User on blacklist".ToResponse(401);
+                    return "User on blacklist".ToResponse(403);
                 }
 
                 var pvp = (await QueryCache.GetOrLoadAsync(db, $"user-site-pvp-{id}", () => CountSiteProfilePvpAsync(db, user.GameDeck.Id), expireTime, profileTags)).First();
@@ -708,7 +716,7 @@ namespace Sanakan.Api.Controllers
 
                         try
                         {
-                            _waifu.DeleteCardImageIfExist(card);
+                            _waifu.DeleteCardImageIfExist(card, false);
                         }
                         catch (Exception) { }
 
@@ -722,10 +730,7 @@ namespace Sanakan.Api.Controllers
             }), 0, Priority.High);
 
             if (!await _executor.TryAdd(exe, TimeSpan.FromSeconds(1)))
-            {
-                Response.Headers["Retry-After"] = "10";
-                return "Command queue is full".ToResponse(503);
-            }
+                return ApiResponses.QueueFull(Response);
 
             return "Started!".ToResponse(200);
         }
@@ -777,19 +782,26 @@ namespace Sanakan.Api.Controllers
         /// Wymusza na bocie wygenerowanie obrazka jeśli nie istnieje
         /// </summary>
         /// <param name="id">id karty (wid)</param>
-        /// <response code="403">Card already exist</response>
+        /// <param name="type">zwracany obrazek: Normal (ze statystykami) lub Profile (bez statystyk); Small daje to samo co Normal</param>
+        /// <response code="302">Card already exist, the image is on the CDN</response>
         /// <response code="404">Card not found</response>
         /// <response code="500">Card not generated</response>
+        /// <response code="503">Card is still being generated, try again after Retry-After seconds</response>
         [HttpGet("card/{id}"), AllowAnonymous]
-        public async Task<IActionResult> GetCardAsync(ulong id)
+        public async Task<IActionResult> GetCardAsync(ulong id, [FromQuery] CardImageType type = CardImageType.Normal)
         {
-            bool miniature = System.IO.File.Exists($"{Services.Dir.CardsMiniatures}/{id}.webp") || System.IO.File.Exists($"{Services.Dir.CardsMiniatures}/{id}.gif");
+            if (type == CardImageType.Small)
+                type = CardImageType.Normal;
+
             bool normal = System.IO.File.Exists($"{Services.Dir.Cards}/{id}.webp") || System.IO.File.Exists($"{Services.Dir.Cards}/{id}.gif");
             bool profile = System.IO.File.Exists($"{Services.Dir.CardsInProfiles}/{id}.webp") || System.IO.File.Exists($"{Services.Dir.CardsInProfiles}/{id}.gif");
 
-            if (miniature && normal && profile)
+            if (normal && profile)
             {
-                return "Card already exist!".ToResponse(403);
+                var dir = type == CardImageType.Profile ? Services.Dir.CardsInProfiles : Services.Dir.Cards;
+                // cards drawn long ago may still have only a gif
+                var ext = System.IO.File.Exists($"{dir}/{id}.webp") ? "webp" : "gif";
+                return Redirect(Models.CardFinalView.GetCardImageInShindenUrl(id, ext, type));
             }
 
             using (var db = new Database.DatabaseContext(_config))
@@ -800,11 +812,21 @@ namespace Sanakan.Api.Controllers
                     return "Card not found!".ToResponse(404);
                 }
 
-                var cardImage = await _waifu.GenerateAndSaveCardAsync(card, CardImageType.Normal, true);
+                var cardImage = await _waifu.GetCardImageAsync(card, type, CardImageWait);
+                if (cardImage == null)
+                {
+                    Response.Headers["Retry-After"] = CardImageRetryAfter;
+                    return "Card is being generated, try again later!".ToResponse(503);
+                }
+
                 if (!System.IO.File.Exists(cardImage))
                 {
                     return "Card not generated!".ToResponse(500);
                 }
+
+                // drawn without its picture for now, a cache must not keep it
+                if (Services.Dir.IsTemporary(cardImage))
+                    Response.Headers.CacheControl = "no-store";
 
                 return CardImageFile(cardImage);
             }
@@ -813,116 +835,86 @@ namespace Sanakan.Api.Controllers
         /// <summary>
         /// Daje użytkownikowi pakiety kart
         /// </summary>
+        /// <remarks>
+        /// Odpowiedź przychodzi dopiero po zapisie pakietów, a powtórka z tym samym Idempotency-Key w ciągu 48 h
+        /// nie dodaje ich ponownie (nagłówek Idempotent-Replayed: true). Zapamiętywany jest tylko sukces.
+        /// </remarks>
         /// <param name="id">id użytkownika discorda</param>
         /// <param name="boosterPacks">model pakietu</param>
-        /// <returns>użytkownik bota</returns>
+        /// <param name="idempotencyKey">wymagany unikalny klucz odbioru (do 64 znaków ASCII)</param>
+        /// <response code="400">Model is Invalid / missing or invalid Idempotency-Key</response>
         /// <response code="404">User/Season not found</response>
-        /// <response code="500">Model is Invalid</response>
-        /// <response code="503">Command queue is full / Can't connect to shinden</response>
+        /// <response code="409">Request with this Idempotency-Key is in progress</response>
+        /// <response code="422">Idempotency-Key was used with a different request</response>
+        /// <response code="500">Boosterpack not added</response>
+        /// <response code="503">Command queue is full / Can't connect to shinden, retry after the Retry-After header</response>
+        /// <response code="504">Command timed out, boosterpacks will still be added</response>
         [HttpPost("discord/{id}/boosterpack"), Authorize(Policy = "Site")]
-        public async Task<IActionResult> GiveUserAPacksAsync(ulong id, [FromBody]List<Models.CardBoosterPack> boosterPacks)
+        public async Task<IActionResult> GiveUserAPacksAsync(ulong id, [FromBody]List<Models.CardBoosterPack> boosterPacks,
+            [FromHeader(Name = Services.Idempotency.KeyHeader)] string idempotencyKey = null)
         {
+            var invalidKey = ValidateRequiredKey(idempotencyKey);
+            if (invalidKey != null) return invalidKey;
+
             var (invalid, packs) = await GetBoosterPacksAsync(boosterPacks);
             if (invalid != null) return invalid;
 
-            using (var db = new Database.DatabaseContext(_config))
-            {
-                if (!await db.Users.AsQueryable().AnyAsync(x => x.Id == id))
-                {
-                    return "User not found!".ToResponse(404);
-                }
+            return (await GiveUserAPacksOnceAsync<object>(DiscordPacksIdempotencyScope, id, boosterPacks, packs, idempotencyKey,
+                db => db.Users.AsQueryable().AsNoTracking().FirstOrDefaultAsync(x => x.Id == id),
+                _ => "Boosterpack added!".ToResponse(200))).Result;
+        }
 
-                var exe = new Executable($"api-packet u{id}", new Func<Task>(async () =>
-                {
-                    using (var dbs = new Database.DatabaseContext(_config))
-                    {
-                        var botUser = await dbs.GetUserOrCreateSimpleAsync(id, _time);
-                        AddBoosterPacks(dbs, botUser, packs);
+        public const string NoSpaceCode = "no_space";
+        public const string PackOpenedCode = "pack_opened";
 
-                        await dbs.SaveChangesAsync();
+        private static ObjectResult NoSpace() => ApiResponses.Conflict(NoSpaceCode, "User has no space left in deck!");
 
-                        QueryCache.ExpireTag(new string[] { CacheTags.User(botUser.Id) });
-                    }
-                }), id);
-
-                if (!await _executor.TryAdd(exe, TimeSpan.FromSeconds(1)))
-                {
-                    return "Command queue is full".ToResponse(503);
-                }
-
-                return "Boosterpack added!".ToResponse(200);
-            }
+        private static ObjectResult ValidateRequiredKey(string key)
+        {
+            if (key == null)
+                return ApiResponses.KeyRequired();
+            return Services.Idempotency.IsValidKey(key) ? null : "Invalid Idempotency-Key".ToResponse(400);
         }
 
         /// <summary>
         /// Daje użytkownikowi pakiety kart
         /// </summary>
         /// <remarks>
-        /// Z nagłówkiem Idempotency-Key odpowiedź przychodzi dopiero po zapisie pakietów, a powtórka z tym samym kluczem
-        /// w ciągu 48 h nie dodaje ich ponownie (nagłówek Idempotent-Replayed: true). Zapamiętywany jest tylko sukces.
+        /// Odpowiedź przychodzi dopiero po zapisie pakietów, a powtórka z tym samym Idempotency-Key w ciągu 48 h
+        /// nie dodaje ich ponownie (nagłówek Idempotent-Replayed: true). Zapamiętywany jest tylko sukces.
         /// </remarks>
         /// <param name="id">id użytkownika shindena</param>
         /// <param name="boosterPacks">model pakietu</param>
-        /// <param name="idempotencyKey">unikalny klucz odbioru (do 64 znaków ASCII)</param>
+        /// <param name="idempotencyKey">wymagany unikalny klucz odbioru (do 64 znaków ASCII)</param>
         /// <returns>użytkownik bota</returns>
-        /// <response code="400">Invalid Idempotency-Key</response>
+        /// <response code="400">Model is Invalid / missing or invalid Idempotency-Key</response>
         /// <response code="404">User/Season not found</response>
         /// <response code="409">Request with this Idempotency-Key is in progress</response>
         /// <response code="422">Idempotency-Key was used with a different request</response>
-        /// <response code="500">Model is Invalid</response>
-        /// <response code="503">Command queue is full / Can't connect to shinden</response>
+        /// <response code="500">Boosterpack not added</response>
+        /// <response code="503">Command queue is full / Can't connect to shinden, retry after the Retry-After header</response>
         /// <response code="504">Command timed out, boosterpacks will still be added</response>
         [HttpPost("shinden/{id}/boosterpack"), Authorize(Policy = "Site")]
         public async Task<ActionResult<UserWithToken>> GiveShindenUserAPacksAsync(ulong id, [FromBody]List<Models.CardBoosterPack> boosterPacks,
             [FromHeader(Name = Services.Idempotency.KeyHeader)] string idempotencyKey = null)
         {
-            if (idempotencyKey != null && !Services.Idempotency.IsValidKey(idempotencyKey))
-                return "Invalid Idempotency-Key".ToResponse(400);
+            var invalidKey = ValidateRequiredKey(idempotencyKey);
+            if (invalidKey != null) return invalidKey;
 
             var (invalid, packs) = await GetBoosterPacksAsync(boosterPacks);
             if (invalid != null) return invalid;
 
-            if (idempotencyKey != null)
-                return await GiveShindenUserAPacksOnceAsync(id, boosterPacks, packs, idempotencyKey);
-
-            using (var db = CreateDatabaseContext())
-            {
-                var user = await db.GetUserWithDeckByShindenIdAsync(id);
-                if (user == null)
-                {
-                    return "User not found!".ToResponse(404);
-                }
-
-                var discordId = user.Id;
-                var exe = new Executable($"api-packet u{discordId}", new Func<Task>(async () =>
-                {
-                    using (var dbs = CreateDatabaseContext())
-                    {
-                        var botUser = await dbs.GetUserOrCreateSimpleAsync(discordId, _time);
-                        AddBoosterPacks(dbs, botUser, packs);
-
-                        await dbs.SaveChangesAsync();
-
-                        QueryCache.ExpireTag(new string[] { CacheTags.User(botUser.Id) });
-                    }
-                }), user.Id);
-
-                if (!await _executor.TryAdd(exe, TimeSpan.FromSeconds(1)))
-                {
-                    return "Command queue is full".ToResponse(503);
-                }
-
-                return ShindenPacksResponse(user);
-            }
+            return await GiveUserAPacksOnceAsync<UserWithToken>(ShindenPacksIdempotencyScope, id, boosterPacks, packs, idempotencyKey,
+                db => db.GetUserWithDeckByShindenIdAsync(id), user => ShindenPacksResponse(user));
         }
 
         // Any error response means nothing was saved, so only a success is remembered under the key.
-        private async Task<ActionResult<UserWithToken>> GiveShindenUserAPacksOnceAsync(ulong id, List<Models.CardBoosterPack> request,
-            List<BoosterPack> packs, string key)
+        private async Task<ActionResult<T>> GiveUserAPacksOnceAsync<T>(string scope, ulong id, List<Models.CardBoosterPack> request,
+            List<BoosterPack> packs, string key, Func<Database.DatabaseContext, Task<User>> findUser, Func<User, ActionResult<T>> success)
         {
             var record = new IdempotencyRecord
             {
-                Scope = ShindenPacksIdempotencyScope,
+                Scope = scope,
                 Key = key,
                 OwnerId = id,
                 RequestHash = Services.Idempotency.Hash(request),
@@ -949,10 +941,10 @@ namespace Sanakan.Api.Controllers
                             return IdempotencyKeyReused();
 
                         Response.Headers[Services.Idempotency.ReplayedHeader] = "true";
-                        return ShindenPacksResponse(await db.GetUserWithDeckByShindenIdAsync(id));
+                        return success(await findUser(db));
                     }
 
-                    var user = await db.GetUserWithDeckByShindenIdAsync(id);
+                    var user = await findUser(db);
                     if (user == null)
                     {
                         return "User not found!".ToResponse(404);
@@ -985,9 +977,7 @@ namespace Sanakan.Api.Controllers
                     }), discordId);
 
                     if (!await _executor.TryAdd(exe, TimeSpan.FromSeconds(1)))
-                    {
-                        return "Command queue is full".ToResponse(503);
-                    }
+                        return ApiResponses.QueueFull(Response);
                     handedOff = true;
 
                     try
@@ -1001,7 +991,7 @@ namespace Sanakan.Api.Controllers
                             return "Boosterpack not added".ToResponse(500);
                     }
 
-                    return ShindenPacksResponse(user);
+                    return success(user);
                 }
             }
             finally
@@ -1035,87 +1025,34 @@ namespace Sanakan.Api.Controllers
         /// Otwiera pakiety i dodaje użytkownikowi karty wylosowane z nich
         /// </summary>
         /// <remarks>
-        /// Z nagłówkiem Idempotency-Key od razu zwraca 202 ze stanem pending, a losowanie idzie w tle - wynik pod
-        /// GET shinden/{id}/boosterpack/open/{key}. Powtórka z tym samym kluczem w ciągu 48 h nie losuje ponownie, tylko
-        /// zwraca bieżący stan (nagłówek Idempotent-Replayed: true). Karty są dodawane wszystkie albo żadna.
+        /// Od razu zwraca 202 ze stanem pending, a losowanie idzie w tle - wynik pod GET shinden/{id}/boosterpack/open/{key}.
+        /// Powtórka z tym samym Idempotency-Key w ciągu 48 h nie losuje ponownie, tylko zwraca bieżący stan
+        /// (nagłówek Idempotent-Replayed: true). Karty są dodawane wszystkie albo żadna.
         /// </remarks>
         /// <param name="id">id użytkownika shindena</param>
         /// <param name="boosterPacks">model pakietu</param>
-        /// <param name="idempotencyKey">unikalny klucz odbioru (do 64 znaków ASCII)</param>
-        /// <returns>karty</returns>
-        /// <response code="202">Opening started or still in progress (with Idempotency-Key)</response>
-        /// <response code="400">Invalid Idempotency-Key</response>
+        /// <param name="idempotencyKey">wymagany unikalny klucz odbioru (do 64 znaków ASCII)</param>
+        /// <returns>stan otwierania</returns>
+        /// <response code="200">Already done under this key (state done with the cards)</response>
+        /// <response code="202">Opening started or still in progress</response>
+        /// <response code="400">Model/Data is Invalid / missing or invalid Idempotency-Key</response>
         /// <response code="404">User/Season not found</response>
-        /// <response code="406">User has no space</response>
+        /// <response code="409">Pole code: no_space - the user has no space left in deck</response>
         /// <response code="422">Idempotency-Key was used with a different request</response>
-        /// <response code="500">Model/Data is Invalid</response>
-        /// <response code="503">Command queue is full / Can't connect to shinden</response>
+        /// <response code="503">Can't connect to shinden, retry after the Retry-After header</response>
         [HttpPost("shinden/{id}/boosterpack/open"), Authorize(Policy = "Site")]
         [ProducesResponseType(typeof(BoosterPackOpenStatus), 202)]
-        public async Task<ActionResult<List<Card>>> GiveShindenUserAPacksAndOpenAsync(ulong id, [FromBody]List<Models.CardBoosterPack> boosterPacks,
+        public async Task<ActionResult<BoosterPackOpenStatus>> GiveShindenUserAPacksAndOpenAsync(ulong id, [FromBody]List<Models.CardBoosterPack> boosterPacks,
             [FromHeader(Name = Services.Idempotency.KeyHeader)] string idempotencyKey = null)
         {
             var timer = System.Diagnostics.Stopwatch.StartNew();
-            if (idempotencyKey != null && !Services.Idempotency.IsValidKey(idempotencyKey))
-                return "Invalid Idempotency-Key".ToResponse(400);
+            var invalidKey = ValidateRequiredKey(idempotencyKey);
+            if (invalidKey != null) return invalidKey;
 
             var (invalid, packs) = await GetBoosterPacksAsync(boosterPacks);
             if (invalid != null) return invalid;
 
-            if (idempotencyKey != null)
-                return await OpenShindenUserPacksOnceAsync(id, boosterPacks, packs, idempotencyKey, timer);
-
-            ulong discordId = 0;
-            CharacterPoolType poolType = CharacterPoolType.Anime;
-            using (var db = CreateDatabaseContext())
-            {
-                var bUser = await db.Users.AsQueryable().Where(x => id != 0 && x.Shinden == id).Include(x => x.GameDeck).ThenInclude(x => x.Cards).AsNoTracking().AsSplitQuery().FirstOrDefaultAsync();
-                if (bUser == null)
-                {
-                    return "User not found".ToResponse(404);
-                }
-                if (bUser.GameDeck.Cards.Count + packs.Sum(x => (long)x.CardCnt) > bUser.GameDeck.MaxNumberOfCards)
-                {
-                    return "User has no space left in deck".ToResponse(406);
-                }
-                discordId = bUser.Id;
-                poolType = bUser.PoolType;
-            }
-
-            var drawStart = timer.ElapsedMilliseconds;
-            var cards = await DrawCardsAsync(packs, poolType);
-            if (cards == null)
-            {
-                return "Can't connect to shinden!".ToResponse(503);
-            }
-            var drawMs = timer.ElapsedMilliseconds - drawStart;
-
-            var exe = new Executable($"api-packet-open u{discordId}", new Func<Task>(async () =>
-            {
-                using (var db = CreateDatabaseContext())
-                {
-                    var botUser = await db.GetUserOrCreateSimpleAsync(discordId, _time);
-
-                    botUser.Stats.OpenedBoosterPacks += packs.Count;
-
-                    await UpdateWishlistCountAsync(db, cards, botUser);
-
-                    await db.SaveChangesAsync();
-
-                    QueryCache.ExpireTag(new string[] { CacheTags.User(botUser.Id) });
-                }
-            }), discordId);
-
-            if (!await _executor.TryAdd(exe, TimeSpan.FromSeconds(1)))
-            {
-                return "Command queue is full".ToResponse(503);
-            }
-
-            if (!await exe.WaitAsync(Executable.ApiMaxWait))
-                return "Command timed out".ToResponse(504);
-
-            _logger?.Log($"API: opened {packs.Count} packs ({cards.Count} cards) s{id} u{discordId} in {timer.ElapsedMilliseconds}ms (draw {drawMs}ms)");
-            return cards;
+            return await OpenShindenUserPacksOnceAsync(id, boosterPacks, packs, idempotencyKey, timer);
         }
 
         /// <summary>
@@ -1155,7 +1092,7 @@ namespace Sanakan.Api.Controllers
         }
 
         // Cards are drawn and saved in the background; under the key only a complete grant is ever stored.
-        private async Task<ActionResult<List<Card>>> OpenShindenUserPacksOnceAsync(ulong id, List<Models.CardBoosterPack> request,
+        private async Task<ActionResult<BoosterPackOpenStatus>> OpenShindenUserPacksOnceAsync(ulong id, List<Models.CardBoosterPack> request,
             List<BoosterPack> packs, string key, System.Diagnostics.Stopwatch timer)
         {
             var record = new IdempotencyRecord
@@ -1202,7 +1139,7 @@ namespace Sanakan.Api.Controllers
                     }
                     if (bUser.Cards + packs.Sum(x => (long)x.CardCnt) > bUser.MaxNumberOfCards)
                     {
-                        return "User has no space left in deck".ToResponse(406);
+                        return NoSpace();
                     }
                     discordId = bUser.Id;
                     poolType = bUser.PoolType;
@@ -1332,74 +1269,111 @@ namespace Sanakan.Api.Controllers
         /// <summary>
         /// Otwiera pakiet użytkownika (wymagany Bearer od użytkownika)
         /// </summary>
+        /// <remarks>
+        /// Numer pakietu odnosi się do listy pakietów w chwili żądania; po otwarciu kolejne pakiety zmieniają numery.
+        /// Powtórka z tym samym Idempotency-Key w ciągu 48 h nie otwiera kolejnego pakietu, tylko zwraca karty z pierwszego
+        /// otwarcia (nagłówek Idempotent-Replayed: true).
+        /// </remarks>
         /// <param name="packNumber">numer pakietu</param>
+        /// <param name="idempotencyKey">wymagany unikalny klucz otwarcia (do 64 znaków ASCII)</param>
+        /// <response code="400">Missing or invalid Idempotency-Key</response>
         /// <response code="403">The appropriate claim was not found</response>
-        /// <response code="404">User not found</response>
-        /// <response code="406">User has no space</response>
-        /// <response code="409">Boosterpack already opened</response>
-        /// <response code="503">Command queue is full / Can't connect to shinden</response>
+        /// <response code="404">User not found / Boosterpack not found</response>
+        /// <response code="409">Pole code: no_space albo pack_opened; bez pola code - żądanie z tym kluczem jest w trakcie</response>
+        /// <response code="422">Idempotency-Key was used with a different request</response>
+        /// <response code="500">Boosterpack not opened</response>
+        /// <response code="503">Command queue is full / Can't connect to shinden, retry after the Retry-After header</response>
+        /// <response code="504">Command timed out, the pack may still be opened - retry with the same key</response>
         [HttpPost("boosterpack/open/{packNumber}"), Authorize(Policy = "Player")]
-        public async Task<ActionResult<List<Card>>> OpenAPackAsync(int packNumber)
+        public async Task<ActionResult<List<Card>>> OpenAPackAsync(int packNumber,
+            [FromHeader(Name = Services.Idempotency.KeyHeader)] string idempotencyKey = null)
         {
             var timer = System.Diagnostics.Stopwatch.StartNew();
-            var currUser = ControllerContext.HttpContext.User;
-            if (currUser.HasClaim(x => x.Type == "DiscordId"))
+            if (!TryGetDiscordId(out var discordId))
+                return "The appropriate claim was not found".ToResponse(403);
+
+            var invalidKey = ValidateRequiredKey(idempotencyKey);
+            if (invalidKey != null) return invalidKey;
+
+            var record = new IdempotencyRecord
             {
-                if (ulong.TryParse(currUser.Claims.First(x => x.Type == "DiscordId").Value, out var discordId))
+                Scope = PlayerOpenIdempotencyScope,
+                Key = idempotencyKey,
+                OwnerId = discordId,
+                RequestHash = Services.Idempotency.Hash(packNumber),
+                CreatedAt = _time.Now(),
+            };
+
+            var running = Services.Idempotency.TryBegin(record);
+            if (running != null)
+            {
+                return Services.Idempotency.SameRequest(running, record)
+                    ? "Request with this Idempotency-Key is in progress".ToResponse(409)
+                    : IdempotencyKeyReused();
+            }
+
+            var handedOff = false;
+            try
+            {
+                ulong packId;
+                long drawMs;
+                List<Card> opened;
+                using (var db = CreateDatabaseContext())
                 {
-                    ulong packId = 0;
-                    long drawMs = 0;
-                    var opened = new List<Card>();
-                    using (var db = new Database.DatabaseContext(_config))
+                    var done = await Services.Idempotency.FindAsync(db, record.Scope, record.Key, record.CreatedAt);
+                    if (done != null)
                     {
-                        var botUserCh = await db.Users.AsQueryable().Where(x => x.Id == discordId).Include(x => x.GameDeck).ThenInclude(x => x.BoosterPacks)
-                            .ThenInclude(x => x.Characters).Include(x => x.GameDeck).ThenInclude(x => x.BoosterPacks).ThenInclude(x => x.RarityExcludedFromPack)
-                            .AsNoTracking().AsSplitQuery().FirstOrDefaultAsync();
-                        if (botUserCh == null)
-                        {
-                            return "User not found!".ToResponse(404);
-                        }
+                        if (!Services.Idempotency.SameRequest(done, record))
+                            return IdempotencyKeyReused();
 
-                        var packs = Waifu.OrderPacksForNumbering(botUserCh.GameDeck.BoosterPacks);
-                        if (packs.Count < packNumber || packNumber <= 0)
-                        {
-                            return "Boosterpack not found!".ToResponse(404);
-                        }
-
-                        var packCh = packs[packNumber - 1];
-                        if (await CountCardsAsync(db, discordId) + packCh.CardCnt > botUserCh.GameDeck.MaxNumberOfCards)
-                        {
-                            return "User has no space left in deck!".ToResponse(406);
-                        }
-
-                        var drawStart = timer.ElapsedMilliseconds;
-                        opened = await _waifu.OpenBoosterPackAsync(null, packCh, botUserCh.PoolType);
-                        if (opened.Count < packCh.CardCnt)
-                        {
-                            return "Can't connect to shinden!".ToResponse(503);
-                        }
-                        drawMs = timer.ElapsedMilliseconds - drawStart;
-                        packId = packCh.Id;
+                        Response.Headers[Services.Idempotency.ReplayedHeader] = "true";
+                        return (await OpenDoneStatusAsync(db, done)).Cards;
                     }
 
-                    ObjectResult error = null;
-                    var cards = new List<Card>();
-                    var exe = new Executable($"api-packet-open u{discordId}", new Func<Task>(async () =>
+                    var botUserCh = await db.Users.AsQueryable().Where(x => x.Id == discordId).Include(x => x.GameDeck).ThenInclude(x => x.BoosterPacks)
+                        .ThenInclude(x => x.Characters).Include(x => x.GameDeck).ThenInclude(x => x.BoosterPacks).ThenInclude(x => x.RarityExcludedFromPack)
+                        .AsNoTracking().AsSplitQuery().FirstOrDefaultAsync();
+                    if (botUserCh == null)
+                        return "User not found!".ToResponse(404);
+
+                    var packs = Waifu.OrderPacksForNumbering(botUserCh.GameDeck.BoosterPacks);
+                    if (packs.Count < packNumber || packNumber <= 0)
+                        return "Boosterpack not found!".ToResponse(404);
+
+                    var packCh = packs[packNumber - 1];
+                    if (await CountCardsAsync(db, discordId) + packCh.CardCnt > botUserCh.GameDeck.MaxNumberOfCards)
+                        return NoSpace();
+
+                    var drawStart = timer.ElapsedMilliseconds;
+                    opened = await _waifu.OpenBoosterPackAsync(null, packCh, botUserCh.PoolType);
+                    if (opened.Count < packCh.CardCnt)
+                        return ApiResponses.ShindenUnavailable(Response);
+
+                    drawMs = timer.ElapsedMilliseconds - drawStart;
+                    packId = packCh.Id;
+                }
+
+                ObjectResult error = null;
+                List<Card> cards = null;
+                var committed = false;
+                var exe = new Executable($"api-packet-open u{discordId}", new Func<Task>(async () =>
+                {
+                    try
                     {
-                        using (var db = new Database.DatabaseContext(_config))
+                        using (var db = CreateDatabaseContext())
                         {
                             var botUser = await db.GetUserOrCreateSimpleAsync(discordId, _time);
                             var pack = await db.BoosterPacks.AsQueryable().Where(x => x.Id == packId && x.GameDeckId == discordId)
                                 .Include(x => x.Characters).Include(x => x.RarityExcludedFromPack).AsSplitQuery().FirstOrDefaultAsync();
                             if (pack == null)
                             {
-                                error = "Boosterpack already opened!".ToResponse(409);
+                                error = ApiResponses.Conflict(PackOpenedCode, "Boosterpack already opened!");
                                 return;
                             }
 
                             if (await CountCardsAsync(db, discordId) + opened.Count > botUser.GameDeck.MaxNumberOfCards)
                             {
-                                error = "User has no space left in deck!".ToResponse(406);
+                                error = NoSpace();
                                 return;
                             }
 
@@ -1416,99 +1390,133 @@ namespace Sanakan.Api.Controllers
 
                             await UpdateWishlistCountAsync(db, opened, botUser);
 
+                            db.IdempotencyRecords.Add(record);
                             await db.SaveChangesAsync();
+                            committed = true;
+                            cards = opened;
 
                             QueryCache.ExpireTag(new string[] { CacheTags.User(botUser.Id) });
-                            cards = opened;
+
+                            // card ids exist only after the first save; if this one fails the pack is still opened once
+                            record.Result = Services.Idempotency.ToResult(opened.Select(x => x.Id).ToList());
+                            await db.SaveChangesAsync();
+                            await Services.Idempotency.CleanupIfDueAsync(db, record.CreatedAt);
                         }
-                    }), discordId);
-
-                    if (!await _executor.TryAdd(exe, TimeSpan.FromSeconds(1)))
-                    {
-                        return "Command queue is full".ToResponse(503);
                     }
+                    finally
+                    {
+                        Services.Idempotency.End(record);
+                    }
+                }), discordId);
 
+                if (!await _executor.TryAdd(exe, TimeSpan.FromSeconds(1)))
+                    return ApiResponses.QueueFull(Response);
+                handedOff = true;
+
+                try
+                {
                     if (!await exe.WaitAsync(Executable.ApiMaxWait))
                         return "Command timed out".ToResponse(504);
-
-                    if (error != null)
-                    {
-                        return error;
-                    }
-
-                    _logger?.Log($"API: opened pack {packNumber} ({cards.Count} cards) u{discordId} in {timer.ElapsedMilliseconds}ms (draw {drawMs}ms)");
-                    return cards;
                 }
+                catch (Exception)
+                {
+                    if (!committed)
+                        return "Boosterpack not opened".ToResponse(500);
+                }
+
+                if (error != null)
+                    return error;
+
+                _logger?.Log($"API: opened pack {packNumber} ({cards.Count} cards) u{discordId} key {idempotencyKey} in {timer.ElapsedMilliseconds}ms (draw {drawMs}ms)");
+                return cards;
             }
-            return "The appropriate claim was not found".ToResponse(403);
+            finally
+            {
+                if (!handedOff)
+                    Services.Idempotency.End(record);
+            }
         }
 
         /// <summary>
-        /// Aktywuje lub dezaktywuje kartę (wymagany Bearer od użytkownika)
+        /// Ustawia, czy karta jest aktywna w talii (wymagany Bearer od użytkownika)
         /// </summary>
+        /// <remarks>Powtórka z tym samym stanem niczego nie zmienia i też zwraca 200.</remarks>
         /// <param name="wid">id karty</param>
-        /// <response code="403">The appropriate claim was not found / Card is in cage / Card is on expedition</response>
+        /// <param name="active">true - aktywna, false - nieaktywna</param>
+        /// <response code="200">Card activated / Card deactivated / Card unchanged</response>
+        /// <response code="403">The appropriate claim was not found</response>
         /// <response code="404">Card not found</response>
-        /// <response code="503">Command queue is full</response>
-        [HttpPut("deck/toggle/card/{wid}"), Authorize(Policy = "Player")]
-        public async Task<IActionResult> ToggleCardStatusAsync(ulong wid)
+        /// <response code="409">Pole code: card_in_cage albo card_on_expedition</response>
+        /// <response code="503">Command queue is full, retry after the Retry-After header</response>
+        /// <response code="504">Command timed out</response>
+        [HttpPut("deck/card/{wid}"), Authorize(Policy = "Player")]
+        public async Task<IActionResult> SetCardActiveAsync(ulong wid, [FromBody] bool active)
         {
-            var currUser = ControllerContext.HttpContext.User;
-            if (currUser.HasClaim(x => x.Type == "DiscordId"))
+            if (!TryGetDiscordId(out var discordId))
+                return "The appropriate claim was not found".ToResponse(403);
+
+            IActionResult result = null;
+            var exe = new Executable($"api-deck u{discordId}", new Func<Task>(async () =>
             {
-                if (ulong.TryParse(currUser.Claims.First(x => x.Type == "DiscordId").Value, out var discordId))
+                using (var db = CreateDatabaseContext())
                 {
-                    IActionResult result = null;
-                    var exe = new Executable($"api-deck u{discordId}", new Func<Task>(async () =>
+                    var thisCard = await db.Cards.AsQueryable().FirstOrDefaultAsync(x => x.Id == wid && x.GameDeckId == discordId);
+                    if (thisCard == null)
                     {
-                        using (var db = new Database.DatabaseContext(_config))
-                        {
-                            var thisCard = await db.Cards.AsQueryable().FirstOrDefaultAsync(x => x.Id == wid && x.GameDeckId == discordId);
-                            if (thisCard == null)
-                            {
-                                result = "Card not found!".ToResponse(404);
-                                return;
-                            }
-
-                            if (thisCard.InCage)
-                            {
-                                result = "Card is in cage!".ToResponse(403);
-                                return;
-                            }
-
-                            if (thisCard.Expedition != CardExpedition.None)
-                            {
-                                result = "Card is on expedition!".ToResponse(403);
-                                return;
-                            }
-
-                            var botUser = await db.GetUserOrCreateSimpleAsync(discordId, _time);
-                            var active = await db.Cards.AsQueryable().AsNoTracking().Where(x => x.Active && x.GameDeckId == discordId && x.Id != wid).ToListAsync();
-
-                            thisCard.Active = !thisCard.Active;
-                            if (thisCard.Active) active.Add(thisCard);
-
-                            botUser.GameDeck.DeckPower = UserExtension.CombineCardPowers(active.Select(x => x.CalculateCardPower()));
-                            botUser.GameDeck.CardsInDeck = active.Count;
-
-                            await db.SaveChangesAsync();
-
-                            QueryCache.ExpireTag(new string[] { CacheTags.User(botUser.Id) });
-                            result = "Card status toggled".ToResponse(200);
-                        }
-                    }), discordId);
-
-                    if (!await _executor.TryAdd(exe, TimeSpan.FromSeconds(1)))
-                    {
-                        return "Command queue is full".ToResponse(503);
+                        result = "Card not found!".ToResponse(404);
+                        return;
                     }
 
-                    if (!await exe.WaitAsync(Executable.ApiMaxWait))
-                        return "Command timed out".ToResponse(504);
-                    return result;
+                    if (thisCard.InCage)
+                    {
+                        result = ApiResponses.Conflict(CardInCageCode, "Card is in cage!");
+                        return;
+                    }
+
+                    if (thisCard.Expedition != CardExpedition.None)
+                    {
+                        result = ApiResponses.Conflict(CardOnExpeditionCode, "Card is on expedition!");
+                        return;
+                    }
+
+                    if (thisCard.Active == active)
+                    {
+                        result = "Card unchanged".ToResponse(200);
+                        return;
+                    }
+
+                    var botUser = await db.GetUserOrCreateSimpleAsync(discordId, _time);
+                    var activeCards = await db.Cards.AsQueryable().AsNoTracking().Where(x => x.Active && x.GameDeckId == discordId && x.Id != wid).ToListAsync();
+
+                    thisCard.Active = active;
+                    if (active) activeCards.Add(thisCard);
+
+                    botUser.GameDeck.DeckPower = UserExtension.CombineCardPowers(activeCards.Select(x => x.CalculateCardPower()));
+                    botUser.GameDeck.CardsInDeck = activeCards.Count;
+
+                    await db.SaveChangesAsync();
+
+                    QueryCache.ExpireTag(new string[] { CacheTags.User(botUser.Id) });
+                    result = (active ? "Card activated" : "Card deactivated").ToResponse(200);
                 }
-            }
-            return "The appropriate claim was not found".ToResponse(403);
+            }), discordId);
+
+            if (!await _executor.TryAdd(exe, TimeSpan.FromSeconds(1)))
+                return ApiResponses.QueueFull(Response);
+
+            if (!await exe.WaitAsync(Executable.ApiMaxWait))
+                return "Command timed out".ToResponse(504);
+            return result;
+        }
+
+        public const string CardInCageCode = "card_in_cage";
+        public const string CardOnExpeditionCode = "card_on_expedition";
+
+        private bool TryGetDiscordId(out ulong discordId)
+        {
+            discordId = 0;
+            var claim = HttpContext?.User?.Claims.FirstOrDefault(x => x.Type == "DiscordId");
+            return claim != null && ulong.TryParse(claim.Value, out discordId);
         }
 
         // one cached list serves every filter, so anonymous callers cannot fill the cache with filter variants
@@ -1574,22 +1582,22 @@ namespace Sanakan.Api.Controllers
             packs = new List<BoosterPack>();
             if (boosterPacks.IsNullOrEmpty())
             {
-                return "Model is Invalid".ToResponse(500);
+                return "Model is Invalid".ToResponse(400);
             }
 
             if (boosterPacks.Count > MaxPacksPerRequest)
-                return "Model is Invalid".ToResponse(500);
+                return "Model is Invalid".ToResponse(400);
 
             foreach (var pack in boosterPacks)
             {
                 if (pack == null || pack.Count < 1 || pack.Count > MaxCardsPerRequest)
-                    return "Model is Invalid".ToResponse(500);
+                    return "Model is Invalid".ToResponse(400);
 
                 if (!Enum.IsDefined(pack.Rarity) || (pack.RarityExcluded?.Any(x => !Enum.IsDefined(x)) ?? false))
-                    return "Model is Invalid".ToResponse(500);
+                    return "Model is Invalid".ToResponse(400);
 
                 if (pack.RarityExcluded != null && Waifu.DrawableRarities.All(pack.RarityExcluded.Contains))
-                    return "Model is Invalid".ToResponse(500);
+                    return "Model is Invalid".ToResponse(400);
 
                 var rPack = pack.ToRealPack();
                 if (rPack != null) packs.Add(rPack);
@@ -1597,7 +1605,7 @@ namespace Sanakan.Api.Controllers
 
             if (packs.Count < 1)
             {
-                return "Data is Invalid".ToResponse(500);
+                return "Data is Invalid".ToResponse(400);
             }
             return null;
         }
@@ -1618,7 +1626,7 @@ namespace Sanakan.Api.Controllers
                 var current = string.IsNullOrEmpty(key);
                 var season = current ? await _shinden.GetCurrentSeasonAsync() : _shinden.GetSeason(key);
                 if (season == null || season.Characters.Count == 0)
-                    return (current ? "Can't connect to shinden!".ToResponse(503) : "Season not found!".ToResponse(404), packs);
+                    return (current ? ApiResponses.ShindenUnavailable(Response) : "Season not found!".ToResponse(404), packs);
 
                 packs[i].Season = season.Key;
             }

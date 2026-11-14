@@ -89,7 +89,7 @@ namespace Sanakan.Api.Controllers
             }
             catch (Exception)
             {
-                return "Can't connect to shinden!".ToResponse(503);
+                return ApiResponses.ShindenUnavailable(Response);
             }
 
             if (!res.IsSuccessStatusCode())
@@ -114,7 +114,7 @@ namespace Sanakan.Api.Controllers
             }
             catch (Exception)
             {
-                return "Can't connect to shinden!".ToResponse(503);
+                return ApiResponses.ShindenUnavailable(Response);
             }
 
             if (username == null)
@@ -244,7 +244,7 @@ namespace Sanakan.Api.Controllers
                 // as the profile is drawn: the colour of the highest role, grey without one
                 var member = _client.GetGuild(MainGuildId)?.GetUser(id);
                 var account = (Discord.IUser)member ?? _client.GetUser(id);
-                var color = member?.Roles.OrderByDescending(x => x.Position).FirstOrDefault()?.Color ?? Discord.Color.Default;
+                var color = member?.Roles.OrderByDescending(x => x.Position).FirstOrDefault()?.Colors.PrimaryColor ?? Discord.Color.Default;
                 if (color == Discord.Color.Default)
                     color = Discord.Color.DarkerGrey;
 
@@ -384,7 +384,7 @@ namespace Sanakan.Api.Controllers
         /// Lista accounts zawiera discordUserId, shindenUserId, username, nickname i avatarUrl dla istniejących powiązań.
         /// Identyfikatory są tekstem; przy niedostępnym koncie Discord nazwy i awatar mają wartość null.
         /// </response>
-        /// <response code="503">Kolejka poleceń jest pełna.</response>
+        /// <response code="503">Kolejka poleceń jest pełna, ponów po czasie z nagłówka Retry-After.</response>
         /// <response code="504">Przekroczono 30 sekund oczekiwania; zadanie może nadal się wykonać.</response>
         [HttpPut("register"), Authorize(Policy = "Site")]
         public async Task<IActionResult> RegisterUserAsync([FromBody, Required]UserRegistration id)
@@ -448,7 +448,7 @@ namespace Sanakan.Api.Controllers
             }), id.DiscordUserId, Priority.High);
 
             if (!await _executor.TryAdd(exe, TimeSpan.FromSeconds(1)))
-                return "Command queue is full".ToResponse(503);
+                return ApiResponses.QueueFull(Response);
 
             if (!await exe.WaitAsync(Executable.ApiMaxWait))
                 return "Command timed out".ToResponse(504);
@@ -465,7 +465,7 @@ namespace Sanakan.Api.Controllers
         /// <response code="400">Identyfikator Discord lub Shinden ma wartość zero.</response>
         /// <response code="404">Nie znaleziono gracza w bazie.</response>
         /// <response code="409">Kod account_link_mismatch: konto Discord jest teraz połączone z innym Shindenem. Lista accounts zawiera aktualne powiązanie; nie usunięto go.</response>
-        /// <response code="503">Kolejka poleceń jest pełna.</response>
+        /// <response code="503">Kolejka poleceń jest pełna, ponów po czasie z nagłówka Retry-After.</response>
         /// <response code="504">Przekroczono 30 sekund oczekiwania; zadanie może nadal się wykonać.</response>
         [HttpDelete("discord/{discordUserId}/shinden/{shindenUserId}"), Authorize(Policy = "Site")]
         public async Task<IActionResult> DisconnectUserAsync(ulong discordUserId, ulong shindenUserId)
@@ -509,7 +509,7 @@ namespace Sanakan.Api.Controllers
             }), discordUserId, Priority.High);
 
             if (!await _executor.TryAdd(exe, TimeSpan.FromSeconds(1)))
-                return "Command queue is full".ToResponse(503);
+                return ApiResponses.QueueFull(Response);
 
             if (!await exe.WaitAsync(Executable.ApiMaxWait))
                 return "Command timed out".ToResponse(504);
@@ -566,145 +566,54 @@ namespace Sanakan.Api.Controllers
         /// Zmiana ilości punktów TC użytkownika
         /// </summary>
         /// <remarks>
-        /// Z nagłówkiem Idempotency-Key odpowiedź przychodzi po zapisie TC; powtórka tej samej operacji w ciągu 48 h
-        /// nie zmienia salda ponownie i zwraca Idempotent-Replayed: true. Bez nagłówka każde żądanie dodaje TC jak wcześniej.
-        /// Klucze są osobne dla operacji po ID Discord i po ID Shinden.
+        /// Odpowiedź przychodzi po zapisie TC; powtórka tej samej operacji z tym samym Idempotency-Key w ciągu 48 h
+        /// nie zmienia salda ponownie i zwraca Idempotent-Replayed: true. Klucze są osobne dla operacji po ID Discord i po ID Shinden.
         /// </remarks>
         /// <param name="id">id użytkownika discorda</param>
         /// <param name="value">liczba TC</param>
-        /// <param name="idempotencyKey">Opcjonalny identyfikator transakcji, do 64 znaków ASCII bez spacji.</param>
-        /// <response code="400">Nieprawidłowy Idempotency-Key.</response>
+        /// <param name="idempotencyKey">Wymagany identyfikator transakcji, do 64 znaków ASCII bez spacji.</param>
+        /// <response code="400">Brak lub nieprawidłowy Idempotency-Key.</response>
         /// <response code="404">User not found</response>
         /// <response code="409">Transakcja z tym kluczem jest w trakcie wykonywania.</response>
         /// <response code="422">Klucz został użyty z innym użytkownikiem lub inną kwotą.</response>
         /// <response code="500">Nie zapisano zmiany TC.</response>
-        /// <response code="503">Kolejka poleceń jest pełna.</response>
+        /// <response code="503">Kolejka poleceń jest pełna, ponów po czasie z nagłówka Retry-After.</response>
         /// <response code="504">Przekroczono czas oczekiwania; transakcja może nadal się wykonać.</response>
         [HttpPut("discord/{id}/tc"), Authorize(Policy = "Site")]
-        public async Task<IActionResult> ModifyPointsTCDiscordAsync(ulong id, [FromBody, Required]long value,
+        public Task<IActionResult> ModifyPointsTCDiscordAsync(ulong id, [FromBody, Required]long value,
             [FromHeader(Name = Services.Idempotency.KeyHeader)] string idempotencyKey = null)
+            => ModifyPointsTCWithKeyAsync(id, value, idempotencyKey, Database.Models.Analytics.TransferSource.ByDiscordId);
+
+        private async Task<IActionResult> ModifyPointsTCWithKeyAsync(ulong id, long value, string idempotencyKey, Database.Models.Analytics.TransferSource source)
         {
-            if (idempotencyKey != null || HttpContext?.Request.Headers.ContainsKey(Services.Idempotency.KeyHeader) == true)
-            {
-                if (!Services.Idempotency.IsValidKey(idempotencyKey))
-                    return "Invalid Idempotency-Key".ToResponse(400);
-                return await ModifyPointsTCOnceAsync(id, value, idempotencyKey, Database.Models.Analytics.TransferSource.ByDiscordId);
-            }
-
-            using (var db = CreateDatabaseContext())
-            {
-                var user = await db.Users.AsQueryable().FirstOrDefaultAsync(x => x.Id == id);
-                if (user == null)
-                {
-                    return "User not found!".ToResponse(404);
-                }
-
-                var exe = new Executable($"api-tc u{id} ({value})", new Func<Task>(async () =>
-                {
-                    using (var dbc = CreateDatabaseContext())
-                    {
-                        user = await dbc.GetUserOrCreateSimpleAsync(id, _time);
-                        var beforeChange = user.TcCnt;
-                        user.TcCnt += value;
-
-                        dbc.TransferData.Add(new Database.Models.Analytics.TransferAnalytics()
-                        {
-                            Value = value,
-                            DiscordId = user.Id,
-                            Date = _time.Now(),
-                            ShindenId = user.Shinden,
-                            ValueBefore = beforeChange,
-                            ExpectedValue = user.TcCnt,
-                            Source = Database.Models.Analytics.TransferSource.ByDiscordId,
-                        });
-
-                        await dbc.SaveChangesAsync();
-
-                        QueryCache.ExpireTag(new string[] { CacheTags.User(user.Id) });
-                    }
-                }), id, Priority.High);
-
-                if (!await _executor.TryAdd(exe, TimeSpan.FromSeconds(1)))
-                {
-                    return "Command queue is full".ToResponse(503);
-                }
-
-                return "TC added!".ToResponse(200);
-            }
+            if (idempotencyKey == null)
+                return ApiResponses.KeyRequired();
+            if (!Services.Idempotency.IsValidKey(idempotencyKey))
+                return "Invalid Idempotency-Key".ToResponse(400);
+            return await ModifyPointsTCOnceAsync(id, value, idempotencyKey, source);
         }
 
         /// <summary>
         /// Zmiana ilości punktów TC użytkownika
         /// </summary>
         /// <remarks>
-        /// Z nagłówkiem Idempotency-Key odpowiedź przychodzi po zapisie TC; powtórka tej samej operacji w ciągu 48 h
-        /// nie zmienia salda ponownie i zwraca Idempotent-Replayed: true. Bez nagłówka każde żądanie dodaje TC jak wcześniej.
-        /// Klucze są osobne dla operacji po ID Discord i po ID Shinden.
+        /// Odpowiedź przychodzi po zapisie TC; powtórka tej samej operacji z tym samym Idempotency-Key w ciągu 48 h
+        /// nie zmienia salda ponownie i zwraca Idempotent-Replayed: true. Klucze są osobne dla operacji po ID Discord i po ID Shinden.
         /// </remarks>
         /// <param name="id">id użytkownika shindena</param>
         /// <param name="value">liczba TC</param>
-        /// <param name="idempotencyKey">Opcjonalny identyfikator transakcji, do 64 znaków ASCII bez spacji.</param>
-        /// <response code="400">Nieprawidłowy Idempotency-Key.</response>
+        /// <param name="idempotencyKey">Wymagany identyfikator transakcji, do 64 znaków ASCII bez spacji.</param>
+        /// <response code="400">Brak lub nieprawidłowy Idempotency-Key.</response>
         /// <response code="404">User not found</response>
         /// <response code="409">Transakcja z tym kluczem jest w trakcie wykonywania.</response>
         /// <response code="422">Klucz został użyty z innym użytkownikiem lub inną kwotą.</response>
         /// <response code="500">Nie zapisano zmiany TC.</response>
-        /// <response code="503">Kolejka poleceń jest pełna.</response>
+        /// <response code="503">Kolejka poleceń jest pełna, ponów po czasie z nagłówka Retry-After.</response>
         /// <response code="504">Przekroczono czas oczekiwania; transakcja może nadal się wykonać.</response>
         [HttpPut("shinden/{id}/tc"), Authorize(Policy = "Site")]
-        public async Task<IActionResult> ModifyPointsTCAsync(ulong id, [FromBody, Required]long value,
+        public Task<IActionResult> ModifyPointsTCAsync(ulong id, [FromBody, Required]long value,
             [FromHeader(Name = Services.Idempotency.KeyHeader)] string idempotencyKey = null)
-        {
-            if (idempotencyKey != null || HttpContext?.Request.Headers.ContainsKey(Services.Idempotency.KeyHeader) == true)
-            {
-                if (!Services.Idempotency.IsValidKey(idempotencyKey))
-                    return "Invalid Idempotency-Key".ToResponse(400);
-                return await ModifyPointsTCOnceAsync(id, value, idempotencyKey, Database.Models.Analytics.TransferSource.ByShindenId);
-            }
-
-            using (var db = CreateDatabaseContext())
-            {
-                var user = await db.Users.AsQueryable().FirstOrDefaultAsync(x => id != 0 && x.Shinden == id);
-                if (user == null)
-                {
-                    return "User not found!".ToResponse(404);
-                }
-
-                var exe = new Executable($"api-tc su{id} ({value})", new Func<Task>(async () =>
-                {
-                    using (var dbs = CreateDatabaseContext())
-                    {
-                        user = await dbs.Users.AsQueryable().FirstOrDefaultAsync(x => id != 0 && x.Shinden == id);
-                        if (user == null) return;
-
-                        var beforeChange = user.TcCnt;
-                        user.TcCnt += value;
-
-                        dbs.TransferData.Add(new Database.Models.Analytics.TransferAnalytics()
-                        {
-                            Value = value,
-                            DiscordId = user.Id,
-                            Date = _time.Now(),
-                            ShindenId = user.Shinden,
-                            ValueBefore = beforeChange,
-                            ExpectedValue = user.TcCnt,
-                            Source = Database.Models.Analytics.TransferSource.ByShindenId,
-                        });
-
-                        await dbs.SaveChangesAsync();
-
-                        QueryCache.ExpireTag(new string[] { CacheTags.User(user.Id) });
-                    }
-                }), user.Id, Priority.High);
-
-                if (!await _executor.TryAdd(exe, TimeSpan.FromSeconds(1)))
-                {
-                    return "Command queue is full".ToResponse(503);
-                }
-
-                return "TC added!".ToResponse(200);
-            }
-        }
+            => ModifyPointsTCWithKeyAsync(id, value, idempotencyKey, Database.Models.Analytics.TransferSource.ByShindenId);
 
         private async Task<IActionResult> ModifyPointsTCOnceAsync(ulong id, long value, string key, Database.Models.Analytics.TransferSource source)
         {
@@ -784,7 +693,7 @@ namespace Sanakan.Api.Controllers
                 }), discordId, Priority.High);
 
                 if (!await _executor.TryAdd(exe, TimeSpan.FromSeconds(1)))
-                    return "Command queue is full".ToResponse(503);
+                    return ApiResponses.QueueFull(Response);
                 handedOff = true;
 
                 if (!await exe.WaitAsync(Executable.ApiMaxWait))

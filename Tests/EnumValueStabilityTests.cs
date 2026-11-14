@@ -46,7 +46,7 @@ namespace Artifacts
         [Fact] public void WishlistEntryType_IsStable() => AssertDense(typeof(WishlistEntryType));
         [Fact] public void SystemAnalyticsEventType_IsStable() => AssertDense(typeof(SystemAnalyticsEventType));
         [Fact] public void TransferSource_IsStable() => AssertDense(typeof(TransferSource));
-        [Fact] public void UserAnalyticsEventType_IsStable() => AssertDense(typeof(UserAnalyticsEventType));
+        [Fact] public void DuelOutcome_IsStable() => AssertDense(typeof(DuelOutcome));
         [Fact] public void StatusType_IsStable() => AssertDense(typeof(StatusType));
 
         [Fact]

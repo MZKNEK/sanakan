@@ -1113,7 +1113,7 @@ namespace Sanakan.Modules
                 var userRelease = new List<string>();
                 foreach (var thisCard in thisCards)
                 {
-                    _waifu.DeleteCardImageIfExist(thisCard);
+                    _waifu.DeleteCardImageIfExist(thisCard, false);
                     db.Cards.Remove(thisCard);
                     userRelease.Add(CacheTags.User(thisCard.GameDeckId));
                 }
@@ -2043,6 +2043,51 @@ namespace Sanakan.Modules
             await Context.Channel.SendFileAsync(stream, "tldr.txt");
         }
 
+        [Command("orphans", RunMode = RunMode.Async), Priority(1), RequireDev]
+        [Summary("liczy obrazki kart i profili, których karty lub gracza nie ma już w bazie (niczego nie usuwa)")]
+        [Remarks("7")]
+        public async Task CountOrphanFilesAsync([Summary("pomija pliki młodsze niż tyle dni")]uint days = 7)
+        {
+            var msg = await SafeReplyAsync("", embed: "Wczytuję karty i graczy z bazy...".ToEmbedMessage(EMType.Info).Build());
+
+            // the message shows the progress, edited every few seconds to stay within Discord's limits
+            var status = new System.Runtime.CompilerServices.StrongBox<string>();
+            using var done = new CancellationTokenSource();
+            var updates = Task.Run(async () =>
+            {
+                string shown = null;
+                while (msg != null)
+                {
+                    try { await Task.Delay(TimeSpan.FromSeconds(3), done.Token); }
+                    catch (OperationCanceledException) { return; }
+
+                    var now = Volatile.Read(ref status.Value);
+                    if (now == null || now == shown) continue;
+                    shown = now;
+                    try { await msg.ModifyAsync(x => x.Embed = now.ToEmbedMessage(EMType.Info).Build()); }
+                    catch (Exception ex) { Logger?.LogError($"Cmd: orphans progress: {ex.Message}"); }
+                }
+            });
+
+            List<OrphanFiles.Result> results;
+            try
+            {
+                results = await OrphanFiles.ScanAsync(() => new Database.DatabaseContext(Config), _time.Now().ToUniversalTime().AddDays(-days),
+                    progress: (name, files) => Volatile.Write(ref status.Value, $"Liczę **{name}**: przejrzano {files} plików..."));
+            }
+            finally
+            {
+                done.Cancel();
+                await updates;
+            }
+
+            var report = OrphanFiles.Describe(results, (int)days).ToEmbedMessage(EMType.Info).Build();
+            if (msg != null)
+                await msg.ModifyAsync(x => x.Embed = report);
+            else
+                await SafeReplyAsync("", embed: report);
+        }
+
         [Command("lvlbadge", RunMode = RunMode.Async), RequireDevOrTester]
         [Summary("generuje przykładowy obrazek otrzymania poziomu")]
         [Remarks("2150 \"Krótki nick\"")]
@@ -2059,7 +2104,7 @@ namespace Sanakan.Modules
             }
 
             using (var badge = await _img.GetLevelUpBadgeAsync(nickname ?? "Very very long nickname of trolly user",
-                level, usr.GetUserOrDefaultAvatarUrl(), usr.Roles.OrderByDescending(x => x.Position).First().Color, highlight))
+                level, usr.GetUserOrDefaultAvatarUrl(), usr.Roles.OrderByDescending(x => x.Position).First().Colors.PrimaryColor, highlight))
             {
                 using (var badgeStream = badge.ToWebpStream())
                 {
@@ -2600,22 +2645,21 @@ namespace Sanakan.Modules
             _eCounter.DumpData();
 
             await Task.Delay(1500);
-            Environment.Exit(0);
+            Environment.Exit(ExitCodes.Stop);
         }
 
         [Command("update", RunMode = RunMode.Async), RequireDev]
-        [Summary("wyłącza bota z kodem 200")]
+        [Summary("wyłącza bota, który pobiera aktualizację i uruchamia się ponownie")]
         [Remarks("")]
         public async Task TurnOffWithUpdateAsync()
         {
             await SafeReplyAsync("", embed: "To już czas?".ToEmbedMessage(EMType.Bot).Build());
             await Context.Client.LogoutAsync();
-            System.IO.File.Create("./updateNow");
             _spawn.DumpData();
             _eCounter.DumpData();
 
             await Task.Delay(1500);
-            Environment.Exit(200);
+            Environment.Exit(ExitCodes.Update);
         }
 
         [Command("bavatar", RunMode = RunMode.Async), RequireDev]

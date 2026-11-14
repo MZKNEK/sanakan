@@ -20,7 +20,8 @@ namespace Sanakan.Extensions
             }
         }
 
-        public static IEnumerable<T> Shuffle<T> (this IEnumerable<T> list)
+        // with the game's random numbers; .NET 10 brought its own Shuffle() with the same signature
+        public static IEnumerable<T> RandomOrder<T> (this IEnumerable<T> list)
         {
             var buffer = list.ToList();
             for (int i = 0; i < buffer.Count; i++)

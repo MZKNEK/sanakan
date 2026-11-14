@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
 using Sanakan.Config;
+using Sanakan.Extensions;
 
 namespace Sanakan.Services.Commands
 {
@@ -16,8 +17,21 @@ namespace Sanakan.Services.Commands
         public IConfig Config { get; set; }
         public ILogger Logger { get; set; }
 
+        private string _command;
+
+        // the saves of this command are counted under its name, also those it queues for later (Executable)
+        protected override void BeforeExecute(CommandInfo command)
+        {
+            _command = command.Name;
+            GameTelemetry.Reason = command.Name;
+            base.BeforeExecute(command);
+        }
+
         public async Task<IUserMessage> SafeReplyAsync(string message = null, bool isTTS = false, Embed embed = null, RequestOptions options = null, AllowedMentions allowedMentions = null, MessageReference messageReference = null, MessageComponent components = null, ISticker[] stickers = null, Embed[] embeds = null, MessageFlags flags = MessageFlags.None)
         {
+            if (_command != null && embed?.Color == EMType.Error.Color())
+                GameTelemetry.Default.ErrorReply(_command);
+
             IUserMessage msg = null;
             Exception last = null;
             for (int i = 0; i < MAX_SNED_ATTEMPTS; i++)

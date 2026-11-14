@@ -10,10 +10,15 @@ namespace Sanakan.Config
     {
         private const string DEFAULT = "./file.json";
         private readonly string _path;
+        private readonly bool _indented;
 
         public JsonFileReader() => _path = null;
 
-        public JsonFileReader(string path) => _path = path;
+        public JsonFileReader(string path, bool indented = false)
+        {
+            _path = path;
+            _indented = indented;
+        }
 
         public bool Exist() => File.Exists(_path ?? DEFAULT);
 
@@ -53,7 +58,7 @@ namespace Sanakan.Config
             var temp = path + ".tmp";
             using (StreamWriter sw = File.CreateText(temp))
             {
-                using (JsonWriter writer = new JsonTextWriter(sw))
+                using (JsonWriter writer = new JsonTextWriter(sw) { Formatting = _indented ? Formatting.Indented : Formatting.None })
                 {
                     new JsonSerializer().Serialize(writer, obj);
                 }

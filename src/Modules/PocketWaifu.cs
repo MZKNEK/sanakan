@@ -13,6 +13,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Sanakan.Config;
 using Sanakan.Database.Models;
+using Sanakan.Database.Models.Analytics;
 using Sanakan.Extensions;
 using Sanakan.Preconditions;
 using Sanakan.Services;
@@ -1835,7 +1836,7 @@ namespace Sanakan.Modules
                     totalExp += exp;
 
                     bUser.GameDeck.Cards.Remove(card);
-                    _waifu.DeleteCardImageIfExist(card);
+                    _waifu.DeleteCardImageIfExist(card, false);
                 }
 
                 _ = cardToUp.CalculateCardPower();
@@ -4001,7 +4002,7 @@ namespace Sanakan.Modules
                     action = addMsg ? $"\n\n{trashTag.Icon} Wykonano akcję: **{botUser.GameDeck.EndOfExpeditionAction.ToName()}** na karcie powracającej z wyprawy.\nWieść o twoim okrucieństwie się rozeszła."
                         : $"\n\n{trashTag.Icon} Wykonano akcję: **{botUser.GameDeck.EndOfExpeditionAction.ToName()}** na karcie powracającej z wyprawy.";
 
-                    _waifu.DeleteCardImageIfExist(thisCard);
+                    _waifu.DeleteCardImageIfExist(thisCard, false);
                     botUser.GameDeck.Cards.Remove(thisCard);
                 }
 
@@ -4242,7 +4243,7 @@ namespace Sanakan.Modules
 
             var pvpPlayersInRange = duser.GameDeck.GetPvpOpponentCandidates(allPvpPlayers);
 
-            foreach (var candidate in pvpPlayersInRange.Shuffle())
+            foreach (var candidate in pvpPlayersInRange.RandomOrder())
             {
                 if (!await db.Cards.AsQueryable().AnyAsync(x => x.GameDeckId == candidate.UserId && x.Active))
                     continue;
@@ -4380,8 +4381,23 @@ namespace Sanakan.Modules
                 mission.Count(_time.Now());
 
                 denemy.GameDeck.RecalculateDeck();
+                var duel = new DuelResult
+                {
+                    Outcome = res switch { FightResult.Win => DuelOutcome.AttackerWon, FightResult.Draw => DuelOutcome.Draw, _ => DuelOutcome.DefenderWon },
+                    AttackerWinChance = duser.GameDeck.GetPvpWinChance(denemy.GameDeck),
+                    AttackerPower = duser.GameDeck.DeckPower,
+                    DefenderPower = denemy.GameDeck.DeckPower,
+                    AttackerRank = duser.GameDeck.GlobalPVPRank,
+                    DefenderRank = denemy.GameDeck.GlobalPVPRank,
+                    AttackerMmr = duser.GameDeck.MatachMakingRatio,
+                    DefenderMmr = denemy.GameDeck.MatachMakingRatio,
+                    AttackerCards = GameTelemetry.Rarities(players[0].Cards),
+                    DefenderCards = GameTelemetry.Rarities(players[1].Cards),
+                    Rounds = fight.Rounds?.Count ?? 0,
+                };
                 var info = duser.GameDeck.CalculatePVPParams(denemy.GameDeck, res);
                 await db.SaveChangesAsync();
+                GameTelemetry.Default.Duel(duel);
                 var trash = await GetFightTrashChannelAsync(db);
 
                 _ = Task.Run(async () =>

@@ -1,7 +1,8 @@
 ﻿#pragma warning disable 1591
 
 using Microsoft.EntityFrameworkCore;
-using Pomelo.EntityFrameworkCore.MySql.Infrastructure;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Sanakan.Config;
 using Sanakan.Database.Models;
 using Sanakan.Database.Models.Analytics;
@@ -28,6 +29,9 @@ namespace Sanakan.Database
 
         // decks whose stored power is refreshed after the save (used by PowerActivity)
         public HashSet<ulong> PendingPowerDecks { get; set; }
+
+        // what the save changes in the game, counted after it succeeds (GameTelemetry)
+        public List<(string Metric, string Label, long Value, ulong NewPlayer)> PendingTelemetry { get; set; }
 
         public DatabaseContext(IConfig config) : base()
         {
@@ -64,10 +68,11 @@ namespace Sanakan.Database
         public DbSet<PenaltyInfo> Penalties { get; set; }
         public DbSet<OwnedRole> OwnedRoles { get; set; }
         public DbSet<MuteModifier> MuteModifiers { get; set; }
-        public DbSet<UserAnalytics> UsersData { get; set; }
         public DbSet<SystemAnalytics> SystemData { get; set; }
         public DbSet<TransferAnalytics> TransferData { get; set; }
-        public DbSet<CommandsAnalytics> CommandsData { get; set; }
+        public DbSet<GameStat> GameStats { get; set; }
+        public DbSet<PlayerDay> PlayerDays { get; set; }
+        public DbSet<DuelResult> DuelResults { get; set; }
         public DbSet<WishlistCount> WishlistCountData { get; set; }
         public DbSet<UserActivity> UserActivities { get; set; }
         public DbSet<TagCardRelation> TagCardRelations { get; set; }
@@ -77,6 +82,7 @@ namespace Sanakan.Database
 
         public const string PictureKindSql = "CASE WHEN CustomImage IS NULL THEN (CASE WHEN Image IS NULL THEN 0 ELSE 1 END) ELSE (CASE WHEN IsAnimatedImage THEN 3 ELSE 2 END) END";
         public const string CursedSql = "CASE WHEN Curse <> 0 THEN 1 ELSE 0 END";
+        public const string CardsRarityIndex = "IX_Cards_Rarity_Quality_BorderOverflow";
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
@@ -84,9 +90,10 @@ namespace Sanakan.Database
             var builder = config.DatabaseProvider == global::Sanakan.Config.Model.DatabaseProvider.Sqlite
                 ? optionsBuilder.UseSqlite(config.ConnectionString)
                 : optionsBuilder.UseMySql(config.ConnectionString,
-                    new MySqlServerVersion(new System.Version(8, 0, 43)), opt => opt.EnableRetryOnFailure());
+                    new MySqlServerVersion(new System.Version(8, 4, 0)), opt => opt.EnableRetryOnFailure());
 
-            builder.AddInterceptors(DbActivity.Commands, DbActivity.Saves, PowerActivity.Interceptor, CacheActivity.Interceptor);
+            builder.AddInterceptors(DbActivity.Commands, DbActivity.Saves, PowerActivity.Interceptor, CacheActivity.Interceptor,
+                Services.GameTelemetry.Default.Interceptor);
             if (config.DatabaseProvider == global::Sanakan.Config.Model.DatabaseProvider.Sqlite)
                 builder.AddInterceptors(SqliteText.Interceptor);
             else
@@ -102,13 +109,66 @@ namespace Sanakan.Database
             await connection.OpenAsync();
         }
 
-        public void EnsureReady()
-        {
-            Database.EnsureCreated();
+        public const string BaselineMigration = "20261113000443_Baseline";
+        private const int MySqlTriggerNeedsSuper = 1419;
 
-            // WAL lets reads run while a write is in progress; the mode is stored in the database file
+        // SQLite gets its schema straight from the model; MySQL from the migrations
+        public void EnsureReady(ILogger logger = null)
+        {
             if (Database.IsSqlite())
+            {
+                Database.EnsureCreated();
+                // WAL lets reads run while a write is in progress; the mode is stored in the database file
                 Database.ExecuteSqlRaw("PRAGMA journal_mode=WAL;");
+                return;
+            }
+
+            if (!_config.Get().MigrateOnStart)
+            {
+                var waiting = Database.GetPendingMigrations().ToList();
+                if (waiting.Count > 0)
+                    logger?.Log($"Database: {waiting.Count} migration(s) not applied, MigrateOnStart is off: {string.Join(", ", waiting)}");
+                return;
+            }
+
+            MarkBaselineOnOldDatabase(logger);
+            var pending = Database.GetPendingMigrations().ToList();
+            if (pending.Count == 0)
+                return;
+
+            logger?.Log($"Database: applying migration(s) {string.Join(", ", pending)}");
+            var watch = System.Diagnostics.Stopwatch.StartNew();
+            try
+            {
+                Database.Migrate();
+            }
+            catch (MySqlConnector.MySqlException ex) when (ex.Number == MySqlTriggerNeedsSuper)
+            {
+                logger?.Log("Database: with binary logging on, MySQL lets an account without SUPER create triggers only after "
+                    + "log_bin_trust_function_creators = 1 (my.cnf, [mysqld]); set it and start the bot again");
+                throw;
+            }
+            logger?.Log($"Database: migration(s) applied in {watch.Elapsed.TotalSeconds:0.0} s");
+        }
+
+        // a database made before the migrations (EnsureCreated, a dump of one) already has the baseline's tables
+        private void MarkBaselineOnOldDatabase(ILogger logger)
+        {
+            if (!Database.CanConnect())
+                return;
+
+            var history = this.GetService<IHistoryRepository>();
+            if (history.Exists() && history.GetAppliedMigrations().Count > 0)
+                return;
+
+            var hasUsers = Database.SqlQueryRaw<int>("SELECT COUNT(*) AS `Value` FROM information_schema.tables WHERE table_schema = DATABASE() AND LOWER(table_name) = 'users'")
+                .AsEnumerable().First() > 0;
+            if (!hasUsers)
+                return;
+
+            Database.ExecuteSqlRaw(history.GetCreateIfNotExistsScript());
+            Database.ExecuteSqlRaw(history.GetInsertScript(new HistoryRow(BaselineMigration, ProductInfo.GetVersion())));
+            logger?.Log($"Database: the existing schema is taken as {BaselineMigration}");
         }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -221,6 +281,8 @@ namespace Sanakan.Database
                 entity.HasIndex(e => new { e.GameDeckId, e.Character });
                 entity.HasIndex(e => new { e.GameDeckId, e.Fatigue });
                 entity.HasIndex(e => new { e.GameDeckId, e.Cursed });
+                // all cards sorted by rarity, read backwards for the reverse order
+                entity.HasIndex(e => new { e.Rarity, e.Quality, e.BorderOverflow }).IsDescending(true, false, false).HasDatabaseName(CardsRarityIndex);
 
                 entity.HasOne(e => e.GameDeck)
                     .WithMany(d => d.Cards);
@@ -421,13 +483,6 @@ namespace Sanakan.Database
             });
 
             // Analytics
-            modelBuilder.Entity<UserAnalytics>(entity =>
-            {
-                entity.HasKey(e => e.Id);
-                entity.HasIndex(e => new { e.UserId, e.MeasureDate });
-                entity.HasIndex(e => new { e.GuildId, e.MeasureDate });
-            });
-
             modelBuilder.Entity<SystemAnalytics>(entity =>
             {
                 entity.HasKey(e => e.Id);
@@ -441,11 +496,24 @@ namespace Sanakan.Database
                 entity.HasIndex(e => e.ShindenId);
             });
 
-            modelBuilder.Entity<CommandsAnalytics>(entity =>
+            modelBuilder.Entity<GameStat>(entity =>
+            {
+                entity.HasKey(e => new { e.Date, e.Metric, e.Label });
+                entity.Property(e => e.Metric).HasMaxLength(64);
+                entity.Property(e => e.Label).HasMaxLength(Services.GameTelemetry.LabelLength);
+            });
+
+            modelBuilder.Entity<PlayerDay>(entity =>
+            {
+                entity.HasKey(e => new { e.Date, e.UserId });
+            });
+
+            modelBuilder.Entity<DuelResult>(entity =>
             {
                 entity.HasKey(e => e.Id);
-                entity.HasIndex(e => new { e.UserId, e.Date });
-                entity.HasIndex(e => new { e.GuildId, e.Date });
+                entity.HasIndex(e => e.Date);
+                entity.Property(e => e.AttackerCards).HasMaxLength(100);
+                entity.Property(e => e.DefenderCards).HasMaxLength(100);
             });
 
             // Other

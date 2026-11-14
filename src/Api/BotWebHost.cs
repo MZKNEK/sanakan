@@ -51,7 +51,7 @@ namespace Sanakan.Api
             catch (Exception ex)
             {
                 logger.LogError($"API: failed to start: {ex}");
-                Environment.Exit(1);
+                Environment.Exit(ExitCodes.Restart);
             }
 
             _host = host;
@@ -211,10 +211,6 @@ namespace Sanakan.Api
             });
         }
 
-        // over 2 s on the log channel, over 12 s also pinged: above the 10 s Shinden request timeout, so a single
-        // Shinden timeout on a request waiting for one lookup does not ping
-        public static readonly Services.SlowLog SlowRequests = new Services.SlowLog(ApiTraffic.SlowRequest, TimeSpan.FromSeconds(12), TimeSpan.FromMinutes(10));
-
         public static void UseApi(IApplicationBuilder app)
         {
             app.UseSwagger();
@@ -222,6 +218,13 @@ namespace Sanakan.Api
             app.UseForwardedHeaders(new ForwardedHeadersOptions { ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto });
             app.UseStaticFiles();
             app.UseRouting();
+            // the saves of a call are counted under its controller and action (GameTelemetry)
+            app.Use((context, next) =>
+            {
+                var action = context.GetEndpoint()?.Metadata.GetMetadata<Microsoft.AspNetCore.Mvc.Controllers.ControllerActionDescriptor>();
+                Services.GameTelemetry.Reason = action == null ? "api" : $"api:{action.ControllerName}.{action.ActionName}";
+                return next();
+            });
             app.UseAuthentication();
             app.UseAuthorization();
 
@@ -237,7 +240,7 @@ namespace Sanakan.Api
                 catch (Microsoft.AspNetCore.Http.BadHttpRequestException ex)
                 {
                     // the client sent a broken request, e.g. closed the connection before sending the whole body
-                    auditLogger?.LogRoutine($"API: {context.Request.Method} {context.Request.Path} - bad request from {ApiAudit.GetClient(context.User)} after {watch.ElapsedMilliseconds}ms: {ex.Message}");
+                    auditLogger?.LogRoutine($"API: {context.Request.Method} {context.Request.Path} - bad request from {ApiAudit.GetClient(context)} after {watch.ElapsedMilliseconds}ms: {ex.Message}");
                     if (context.Response.HasStarted || context.RequestAborted.IsCancellationRequested) return;
 
                     context.Response.Clear();
@@ -262,10 +265,6 @@ namespace Sanakan.Api
                         var entry = ApiAudit.Describe(context, (long)elapsed.TotalMilliseconds);
                         if (entry != null) auditLogger?.Log(entry);
                         else traffic.Add(context, (long)elapsed.TotalMilliseconds);
-
-                        var route = ApiTraffic.GetKey(context);
-                        SlowRequests.Record(auditLogger, route, elapsed,
-                            () => $"API: slow {route} from {ApiAudit.GetClient(context.User)} -> {context.Response.StatusCode} ({(long)elapsed.TotalMilliseconds}ms)");
                     }
                 }
             });

@@ -15,6 +15,7 @@ using Sanakan.Services.Supervisor;
 using Sanakan.Services.Time;
 using Sanakan.ShindenCompat;
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace Sanakan
@@ -90,6 +91,7 @@ namespace Sanakan
 
             _heartbeat.Start();
             _ingest.Start();
+            _waifu.ImageQueue.Start();
 
             _logger.Log($"Bot: Sanakan {HealthMonitor.GetVersion()} started, API: {BotWebHost.Url}");
 
@@ -117,7 +119,7 @@ namespace Sanakan
             catch (InvalidOperationException ex)
             {
                 Console.Error.WriteLine($"Config: invalid configuration: {ex.Message}");
-                Environment.Exit(1);
+                Environment.Exit(ExitCodes.BadConfig);
             }
         }
 
@@ -133,7 +135,7 @@ namespace Sanakan
         {
             using (var db = new Database.DatabaseContext(_config))
             {
-                db.EnsureReady();
+                db.EnsureReady(new ConsoleLogger(_config));
                 _tags = await TagHelper.CreateAsync(db, _time);
             }
         }
@@ -188,10 +190,11 @@ namespace Sanakan
             _apiGuard = new Api.TokenAttemptGuard(_time);
             MemoryReport.StartStoring(_config, _time, _logger, TimeSpan.FromMinutes(5));
             _events = new Events(_time);
-            _helper = new Helper(_config, _logger);
+            var fetchProxy = new FetchProxy(_config, _logger);
+            _helper = new Helper(_config, _logger, fetchProxy.CreateHandler(new System.Net.Http.HttpClientHandler { AllowAutoRedirect = false }));
             _expedition = new Expedition(_time);
             _img = new ImageProcessing(_shindenClient,
-                _tags.GetTag(Services.PocketWaifu.TagType.Gallery), logger: _logger);
+                _tags.GetTag(Services.PocketWaifu.TagType.Gallery), logger: _logger, handler: fetchProxy.CreateHandler());
             _scamImages = new ScamImageScanner(_img,
                 new ScamImageStore(Services.Dir.GetResource("ScamHashes.txt")), _logger,
                 () => _config.Get().ScamImageMaxDistance);
@@ -215,13 +218,35 @@ namespace Sanakan
                  _expedition, _client, _helper, _time, _shinden, _tags, _config);
             _img.CurrentCharacterPicture = id => _shinden.GetCurrentPictureAsync(id);
             _img.CharacterPictureMoved = (id, oldUrl, newUrl) => _waifu.MoveCharacterPictureAsync(id, oldUrl, newUrl);
+            _waifu.ImageQueue = new CardImageQueue((id, force) => _waifu.DrawInBackgroundAsync(id, force), _logger);
             WishlistRecount.Start(_config, _time, _logger);
+            StartTelemetry();
             _supervisor = new Supervisor(_client, _config, _logger, _mod, _time, _scamImages);
             _greeting = new Greeting(_client, _logger, _config, _executor, _time);
             _exp = new ExperienceManager(_client, _executor, _config, _img, _time, _logger);
             _spawn = new Spawn(_client, _executor, _waifu, _config, _logger, _time);
             _handler = new CommandHandler(_client, _config, _logger, _executor, _time);
             _profile = new Profile(_client, _shindenClient, _img, _logger, _config, _time, _executor);
+        }
+
+        private void StartTelemetry()
+        {
+            var shops = new[] { (ShopType.Normal, CurrencyType.TC), (ShopType.Pvp, CurrencyType.PC), (ShopType.Activity, CurrencyType.AC) };
+            GameTelemetry.Default.Start(() => new Database.DatabaseContext(_config), _time, _logger,
+                () => shops.SelectMany(shop => _waifu.GetItemsWithCostForShop(shop.Item1).Select((x, i) => new GameTelemetry.ShopPrice
+                {
+                    Shop = _waifu.GetShopName(shop.Item1),
+                    Item = $"{i + 1}:{x.Item.Name}",
+                    Currency = shop.Item2,
+                    Cost = x.Cost,
+                })).ToList());
+
+            // what was counted since the last flush
+            AppDomain.CurrentDomain.ProcessExit += (_, _) =>
+            {
+                try { GameTelemetry.Default.FlushAsync(() => new Database.DatabaseContext(_config)).GetAwaiter().GetResult(); }
+                catch (Exception ex) { Console.Error.WriteLine($"Telemetry: flush on exit: {ex.Message}"); }
+            };
         }
 
         private void LoadConfig()
@@ -245,7 +270,7 @@ namespace Sanakan
                     await BotWebHost.StopAsync(TimeSpan.FromSeconds(5));
                     _executor?.Dispose();
                     await Task.Delay(1000);
-                    Environment.Exit(0);
+                    Environment.Exit(ExitCodes.Stop);
                 });
             };
         }

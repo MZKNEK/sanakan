@@ -36,7 +36,7 @@ namespace Sanakan.Services
         private readonly Timer _timer;
         private readonly SemaphoreSlim _sending = new SemaphoreSlim(1, 1);
 
-        private readonly object _lock = new object();
+        private readonly Lock _lock = new();
         private readonly Queue<string> _pending = new Queue<string>();
         private readonly ErrorPingLimiter _errorPing = new ErrorPingLimiter();
         private int _dropped = 0;

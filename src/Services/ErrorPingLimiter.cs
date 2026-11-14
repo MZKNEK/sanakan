@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Threading;
 
 namespace Sanakan.Services
 {
@@ -12,7 +13,7 @@ namespace Sanakan.Services
         public static readonly TimeSpan FloodPingInterval = TimeSpan.FromMinutes(30);
         public const int FloodThreshold = 10;
 
-        private readonly object _lock = new object();
+        private readonly Lock _lock = new();
         private readonly Queue<DateTime> _recent = new Queue<DateTime>();
         private DateTime _lastPing = DateTime.MinValue;
         private int _sinceLastPing;

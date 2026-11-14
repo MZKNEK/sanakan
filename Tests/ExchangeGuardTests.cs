@@ -81,7 +81,7 @@ namespace Artifacts
 
             await Run(module, command);
 
-            var reply = Assert.Single(channel.Invocations.Where(x => x.Method.Name == "SendMessageAsync"));
+            var reply = Assert.Single(channel.Invocations, x => x.Method.Name == "SendMessageAsync");
             Assert.Contains("w trakcie wymiany", ((Embed)reply.Arguments[2]).Description);
         }
 

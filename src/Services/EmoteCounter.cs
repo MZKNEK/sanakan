@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using Discord;
 using Discord.WebSocket;
@@ -16,7 +17,7 @@ namespace Sanakan.Services
         private ILogger _logger;
         private DiscordSocketClient _client;
         private EmotesStats _stats;
-        private readonly object _lock = new object();
+        private readonly Lock _lock = new();
 
         public class EmotesStats
         {

@@ -186,18 +186,22 @@ namespace Artifacts
         }
 
         [Fact]
-        public async Task OpenShindenPacks_EmptyList_Returns500Json()
+        public async Task OpenShindenPacks_EmptyList_Returns400Json()
+            => await AssertInvalidModel("/api/waifu/shinden/5/boosterpack/open");
+
+        // the key is valid, so the 400 comes from the packs
+        private async Task AssertInvalidModel(string path)
         {
             var client = await _api.AsSiteAsync();
-            await AssertMessage(await client.PostAsync("/api/waifu/shinden/5/boosterpack/open", ApiServer.Json("[]")), HttpStatusCode.InternalServerError);
+            var req = new HttpRequestMessage(HttpMethod.Post, path) { Content = ApiServer.Json("[]") };
+            req.Headers.Add("Idempotency-Key", "key-1");
+            var json = await AssertMessage(await client.SendAsync(req), HttpStatusCode.BadRequest);
+            Assert.Equal("Model is Invalid", (string)json["message"]);
         }
 
         [Fact]
-        public async Task GiveShindenPacks_EmptyList_Returns500Json()
-        {
-            var client = await _api.AsSiteAsync();
-            await AssertMessage(await client.PostAsync("/api/waifu/shinden/5/boosterpack", ApiServer.Json("[]")), HttpStatusCode.InternalServerError);
-        }
+        public async Task GiveShindenPacks_EmptyList_Returns400Json()
+            => await AssertInvalidModel("/api/waifu/shinden/5/boosterpack");
 
         [Fact]
         public async Task GiveShindenPacks_InvalidIdempotencyKey_Returns400Json()
@@ -240,11 +244,8 @@ namespace Artifacts
         }
 
         [Fact]
-        public async Task GiveDiscordPacks_EmptyList_Returns500Json()
-        {
-            var client = await _api.AsSiteAsync();
-            await AssertMessage(await client.PostAsync("/api/waifu/discord/5/boosterpack", ApiServer.Json("[]")), HttpStatusCode.InternalServerError);
-        }
+        public async Task GiveDiscordPacks_EmptyList_Returns400Json()
+            => await AssertInvalidModel("/api/waifu/discord/5/boosterpack");
 
         [Fact]
         public async Task ShindenUsername_WhenShindenReturns404_Returns404Json()
@@ -386,12 +387,22 @@ namespace Artifacts
             await tcp.ConnectAsync(_api.KestrelUrl.Host, _api.KestrelUrl.Port);
             var stream = tcp.GetStream();
             var request = "POST /api/waifu/unique/cards/0/500 HTTP/1.1\r\nHost: localhost\r\nContent-Type: application/json\r\n"
-                + "Content-Length: 100\r\n\r\n{\"orderBy\":";
+                + "Expect: 100-continue\r\nContent-Length: 100\r\n\r\n";
             await stream.WriteAsync(Encoding.ASCII.GetBytes(request));
+
+            // .NET 10 does not start a request whose client is already gone when it reads the headers; Kestrel sends
+            // 100 Continue only once the bot reads the body, so the connection is cut while it does
+            var reader = new StreamReader(stream, Encoding.ASCII);
+            Assert.StartsWith("HTTP/1.1 100", await reader.ReadLineAsync());
+            Assert.Equal("", await reader.ReadLineAsync());
+            await stream.WriteAsync(Encoding.ASCII.GetBytes("{\"orderBy\":"));
             tcp.Client.Shutdown(System.Net.Sockets.SocketShutdown.Send);
 
-            // the client is gone, so the connection is closed without a response
-            Assert.Equal("", await new StreamReader(stream, Encoding.ASCII).ReadToEndAsync());
+            // the client is gone, so the connection is closed or reset without a response
+            string rest;
+            try { rest = await reader.ReadToEndAsync(); }
+            catch (IOException) { rest = ""; }
+            Assert.Equal("", rest);
             for (var i = 0; i < 100 && !_api.Logger.Messages.Any(x => x.Contains("/api/waifu/unique/cards/0/500")); i++)
                 await Task.Delay(50);
 

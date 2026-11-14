@@ -11,7 +11,8 @@ namespace Sanakan.Config
 
         public ConfigManager(string path, bool isDebug = false)
         {
-            _reader = new JsonFileReader(path);
+            // people edit the config by hand, so it is kept readable when the bot saves it
+            _reader = new JsonFileReader(path, indented: true);
             _config = isDebug ? LoadOrCreateTemplate() : Load();
         }
 

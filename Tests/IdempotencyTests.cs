@@ -171,18 +171,15 @@ namespace Artifacts
         }
 
         // the response carries the player row and the deck row for the token, not the collections
-        [Theory]
-        [InlineData(false)]
-        [InlineData(true)]
-        public async Task Response_HasTheUserWithoutCollections_AndTheToken(bool withKey)
+        [Fact]
+        public async Task Response_HasTheUserWithoutCollections_AndTheToken()
         {
             _executor.RunImmediately = true;
             var controller = Controller();
             controller.HttpContext.User = new System.Security.Claims.ClaimsPrincipal(new System.Security.Claims.ClaimsIdentity(
                 new[] { new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Webpage, "Shinden") }, "test"));
 
-            var res = withKey ? await Send(NewKey(), controller: controller)
-                : await controller.GiveShindenUserAPacksAsync(ShindenId, Packs());
+            var res = await Send(NewKey(), controller: controller);
 
             Assert.Equal(DiscordId, res.Value.User.Id);
             Assert.Equal(ShindenId, res.Value.User.Shinden);
@@ -326,20 +323,13 @@ namespace Artifacts
         }
 
         [Fact]
-        public async Task WithoutKey_BehavesAsBefore()
+        public async Task WithoutKey_Returns400_AndAddsNothing()
         {
-            var res = await Send(null);
-
-            Assert.IsType<UserWithToken>(res.Value);
-            Assert.Equal(0, PackCount(DiscordId));
-
-            await RunQueuedAsync();
-            Assert.Equal(1, PackCount(DiscordId));
-            Assert.Equal(0, RecordCount());
-
             _executor.RunImmediately = true;
-            await Send(null);
-            Assert.Equal(2, PackCount(DiscordId));
+
+            Assert.Equal(400, (await Send(null)).StatusOf());
+            Assert.Empty(_executor.Added);
+            Assert.Equal(0, PackCount(DiscordId));
         }
 
         [Fact]
@@ -358,10 +348,10 @@ namespace Artifacts
             Assert.Equal(1, RecordCount());
         }
 
-        private async Task<ActionResult<List<Card>>> SendOpen(string key, ulong shindenId = ShindenId, int count = 1, TestController controller = null)
+        private async Task<ActionResult<BoosterPackOpenStatus>> SendOpen(string key, ulong shindenId = ShindenId, int count = 1, TestController controller = null)
             => await (controller ?? Controller()).GiveShindenUserAPacksAndOpenAsync(shindenId, Packs(count), key);
 
-        private static BoosterPackOpenStatus Body(ActionResult<List<Card>> res) => (BoosterPackOpenStatus)((ObjectResult)res.Result).Value;
+        private static BoosterPackOpenStatus Body(ActionResult<BoosterPackOpenStatus> res) => (BoosterPackOpenStatus)((ObjectResult)res.Result).Value;
 
         private async Task<BoosterPackOpenStatus> StatusOf(string key, ulong shindenId = ShindenId)
             => (await Controller().GetShindenUserPacksOpenStatusAsync(shindenId, key)).Value;
@@ -505,11 +495,13 @@ namespace Artifacts
         }
 
         [Fact]
-        public async Task Open_NoSpace_Returns406()
+        public async Task Open_NoSpace_Returns409WithCode()
         {
             SetMaxCards(DiscordId, cards => cards);
 
-            Assert.Equal(406, (await SendOpen(NewKey())).StatusOf());
+            var res = await SendOpen(NewKey());
+            Assert.Equal(409, res.StatusOf());
+            Assert.Equal(Sanakan.Api.Controllers.WaifuController.NoSpaceCode, ApiBody.Code(res.Result));
             Assert.Empty(_executor.Added);
         }
 
@@ -586,7 +578,7 @@ namespace Artifacts
             _executor.RunImmediately = true;
             var before = Total();
             await Send(NewKey());
-            await Send(null);
+            await Send(NewKey());
 
             Assert.Equal(before + 2, Total());
         }
@@ -640,23 +632,14 @@ namespace Artifacts
         }
 
         [Fact]
-        public async Task OpenWithoutKey_IncompleteDraw_Returns503()
-        {
-            _drawFails = true;
-
-            Assert.Equal(503, (await SendOpen(null)).StatusOf());
-            Assert.Empty(_executor.Added);
-        }
-
-        [Fact]
-        public async Task OpenWithoutKey_ReturnsCards()
+        public async Task OpenWithoutKey_Returns400_AndDrawsNothing()
         {
             _executor.RunImmediately = true;
-            var res = await SendOpen(null, count: 2);
 
-            Assert.Equal(2, res.Value.Count);
-            Assert.Equal(2, CardCount(DiscordId));
-            Assert.Equal(0, RecordCount());
+            Assert.Equal(400, (await SendOpen(null, count: 2)).StatusOf());
+            await RunBackgroundAsync();
+            Assert.Empty(_executor.Added);
+            Assert.Equal(0, CardCount(DiscordId));
         }
 
         [Fact]

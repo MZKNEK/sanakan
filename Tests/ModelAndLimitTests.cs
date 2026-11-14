@@ -1,6 +1,9 @@
+using System;
 using System.Linq;
 using System.Reflection;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Metadata;
 using Sanakan.Api.Controllers;
 using Sanakan.Database;
 using Sanakan.Database.Models;
@@ -18,6 +21,15 @@ namespace Artifacts
 
             protected override void OnConfiguring(DbContextOptionsBuilder builder)
                 => builder.UseSqlite("Data Source=:memory:");
+        }
+
+        // builds SQL only, never connects
+        internal class MySqlContext : DatabaseContext
+        {
+            public MySqlContext() : base(new FakeConfig()) { }
+
+            protected override void OnConfiguring(DbContextOptionsBuilder builder)
+                => builder.UseMySql("Server=localhost;Database=sanakan", new MySqlServerVersion(new Version(8, 4, 0)));
         }
 
         private static bool HasSimpleIndex<T>(DatabaseContext ctx, string property)
@@ -48,13 +60,6 @@ namespace Artifacts
         public void MuteModifier_HasUserGuildIndex()
             => Assert.True(HasCompositeIndex<MuteModifier>(new SqliteContext(), nameof(MuteModifier.User), nameof(MuteModifier.Guild)));
 
-        [Fact]
-        public void UserAnalytics_HasUserAndGuildIndexes()
-        {
-            var ctx = new SqliteContext();
-            Assert.True(HasCompositeIndex<UserAnalytics>(ctx, nameof(UserAnalytics.UserId), nameof(UserAnalytics.MeasureDate)));
-            Assert.True(HasCompositeIndex<UserAnalytics>(ctx, nameof(UserAnalytics.GuildId), nameof(UserAnalytics.MeasureDate)));
-        }
 
         [Fact]
         public void SystemAnalytics_HasMeasureDateIndex()
@@ -116,14 +121,33 @@ namespace Artifacts
             Assert.Contains("GameDeckId,Cursed", indexes);
             Assert.Contains("WhoWantsCount,Character", indexes);
             Assert.Contains("AWhoWantsCount,Character", indexes);
+            Assert.Contains("Rarity,Quality,BorderOverflow", indexes);
         }
 
         [Fact]
-        public void CommandsAnalytics_HasUserAndGuildIndexes()
+        public void Cards_RarityIndex_FollowsTheSortDirections()
+        {
+            // index directions live only in the design-time model
+            var index = new SqliteContext().GetService<IDesignTimeModel>().Model.FindEntityType(typeof(Card)).GetIndexes()
+                .Single(i => i.GetDatabaseName() == DatabaseContext.CardsRarityIndex);
+
+            Assert.Equal(new[] { nameof(Card.Rarity), nameof(Card.Quality), nameof(Card.BorderOverflow) }, index.Properties.Select(p => p.Name));
+            Assert.Equal(new[] { true, false, false }, index.IsDescending);
+
+            using var mySql = new MySqlContext();
+            Assert.Contains("CREATE INDEX `IX_Cards_Rarity_Quality_BorderOverflow` ON `Cards` (`Rarity` DESC, `Quality`, `BorderOverflow`);",
+                mySql.Database.GenerateCreateScript());
+        }
+
+        [Fact]
+        public void TelemetryTables_HaveKeysForTheirQueries()
         {
             var ctx = new SqliteContext();
-            Assert.True(HasCompositeIndex<CommandsAnalytics>(ctx, nameof(CommandsAnalytics.UserId), nameof(CommandsAnalytics.Date)));
-            Assert.True(HasCompositeIndex<CommandsAnalytics>(ctx, nameof(CommandsAnalytics.GuildId), nameof(CommandsAnalytics.Date)));
+            Assert.Equal(new[] { nameof(GameStat.Date), nameof(GameStat.Metric), nameof(GameStat.Label) },
+                ctx.Model.FindEntityType(typeof(GameStat)).FindPrimaryKey().Properties.Select(p => p.Name));
+            Assert.Equal(new[] { nameof(PlayerDay.Date), nameof(PlayerDay.UserId) },
+                ctx.Model.FindEntityType(typeof(PlayerDay)).FindPrimaryKey().Properties.Select(p => p.Name));
+            Assert.True(HasSimpleIndex<DuelResult>(ctx, nameof(DuelResult.Date)));
         }
     }
 

@@ -42,6 +42,9 @@ namespace Sanakan.Services.Commands
                 {
                     MinuteStats.Commands.Add(result.Error is CommandError.Exception or CommandError.Unsuccessful);
                     CommandLog.Finished(_logger, cmd.Value.Name, context, result);
+                    // staff commands are not playing
+                    if (cmd.Value.Module.Name is not ("Debug" or "Moderacja"))
+                        GameTelemetry.Default.Command(context.User.Id, cmd.Value.Name, result.Error is CommandError.Exception or CommandError.Unsuccessful);
                 }
                 return Task.CompletedTask;
             };

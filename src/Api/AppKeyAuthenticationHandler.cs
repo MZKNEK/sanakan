@@ -28,7 +28,7 @@ namespace Sanakan.Api
         private readonly ITokenAttemptGuard _guard;
 
         public AppKeyAuthenticationHandler(IOptionsMonitor<AuthenticationSchemeOptions> options, ILoggerFactory logger,
-            UrlEncoder encoder, ISystemClock clock, IConfig config, ITokenAttemptGuard guard) : base(options, logger, encoder, clock)
+            UrlEncoder encoder, IConfig config, ITokenAttemptGuard guard) : base(options, logger, encoder)
         {
             _config = config;
             _guard = guard;

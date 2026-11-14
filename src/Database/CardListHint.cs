@@ -15,17 +15,29 @@ namespace Sanakan.Database
     {
         public const string Tag = "card-list";
 
+        // A text search over all cards sorted by rarity would walk the whole rarity index and read every row when
+        // few cards match; scanning the table and sorting the matches keeps it as fast as without that index.
+        public const string SearchTag = "card-search";
+
         public const string Hint = "/*+ SET_VAR(optimizer_switch='prefer_ordering_index=off') */";
+
+        public const string SearchHint = "/*+ SET_VAR(optimizer_switch='prefer_ordering_index=off') NO_ORDER_INDEX(c "
+            + DatabaseContext.CardsRarityIndex + ") */";
 
         public static readonly DbCommandInterceptor Interceptor = new HintInterceptor();
 
         public static string Apply(string sql)
         {
-            if (!sql.StartsWith("-- " + Tag, StringComparison.Ordinal))
+            // EF puts the tag comment first, newer versions after an empty line
+            if (!sql.TrimStart().StartsWith("-- " + Tag, StringComparison.Ordinal))
                 return sql;
 
             var select = sql.IndexOf("SELECT", StringComparison.Ordinal);
-            return select < 0 ? sql : sql.Insert(select + "SELECT".Length, " " + Hint);
+            if (select < 0)
+                return sql;
+
+            var search = sql.IndexOf("-- " + SearchTag, 0, select, StringComparison.Ordinal) >= 0;
+            return sql.Insert(select + "SELECT".Length, " " + (search ? SearchHint : Hint));
         }
 
         private class HintInterceptor : DbCommandInterceptor

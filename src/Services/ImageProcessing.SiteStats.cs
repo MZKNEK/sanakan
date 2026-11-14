@@ -16,7 +16,7 @@ using EllipsePolygon = SixLabors.ImageSharp.Drawing.EllipsePolygon;
 using IPath = SixLabors.ImageSharp.Drawing.IPath;
 using LinearLineSegment = SixLabors.ImageSharp.Drawing.LinearLineSegment;
 using Polygon = SixLabors.ImageSharp.Drawing.Polygon;
-using RectangularPolygon = SixLabors.ImageSharp.Drawing.RectangularPolygon;
+using RectanglePolygon = SixLabors.ImageSharp.Drawing.RectanglePolygon;
 
 namespace Sanakan.Services
 {
@@ -109,17 +109,17 @@ namespace Sanakan.Services
                 HorizontalAlignment = alignment,
                 VerticalAlignment = VerticalAlignment.Center
             };
-            image.Mutate(c => c.DrawText(options, text, GetOrCreateColor(color)));
+            image.Mutate(x => x.Paint(c => c.DrawText(options, text, Brushes.Solid(GetOrCreateColor(color)), null)));
         }
 
         private string TrimSiteStatsText(string text, Font font, float maxWidth)
         {
             text ??= "";
-            if (TextMeasurer.MeasureSize(text, new TextOptions(font)).Width <= maxWidth)
+            if (TextMeasurer.MeasureBounds(text, new TextOptions(font)).Width <= maxWidth)
                 return text;
 
             var length = text.Length;
-            while (length > 1 && TextMeasurer.MeasureSize($"{text.Substring(0, length).TrimEnd()}…", new TextOptions(font)).Width > maxWidth)
+            while (length > 1 && TextMeasurer.MeasureBounds($"{text.Substring(0, length).TrimEnd()}…", new TextOptions(font)).Width > maxWidth)
                 --length;
 
             return $"{text.Substring(0, length).TrimEnd()}…";
@@ -153,13 +153,16 @@ namespace Sanakan.Services
 
         private void DrawSiteStatsClapperIcon(Image image, float cx, float cy, Color color)
         {
-            image.Mutate(x => x
-                .Draw(color, 2f, GetRoundedRectPath(cx - 13, cy - 4, 26, 14, 2))
-                .Draw(color, 2f, new RectangularPolygon(cx - 13, cy - 10, 26, 6))
-                .DrawLine(color, 2f, new PointF(cx - 8, cy - 4), new PointF(cx - 4, cy - 10))
-                .DrawLine(color, 2f, new PointF(cx - 1, cy - 4), new PointF(cx + 3, cy - 10))
-                .DrawLine(color, 2f, new PointF(cx + 6, cy - 4), new PointF(cx + 10, cy - 10))
-                .DrawLine(color, 2f, new PointF(cx - 7, cy + 4), new PointF(cx + 2, cy + 4)));
+            var pen = Pens.Solid(color, 2f);
+            image.Mutate(x => x.Paint(c =>
+            {
+                c.Draw(pen, GetRoundedRectPath(cx - 13, cy - 4, 26, 14, 2));
+                c.Draw(pen, new RectanglePolygon(cx - 13, cy - 10, 26, 6));
+                c.DrawLine(pen, new PointF(cx - 8, cy - 4), new PointF(cx - 4, cy - 10));
+                c.DrawLine(pen, new PointF(cx - 1, cy - 4), new PointF(cx + 3, cy - 10));
+                c.DrawLine(pen, new PointF(cx + 6, cy - 4), new PointF(cx + 10, cy - 10));
+                c.DrawLine(pen, new PointF(cx - 7, cy + 4), new PointF(cx + 2, cy + 4));
+            }));
         }
 
         private void DrawSiteStatsBookIcon(Image image, float cx, float cy, Color color)
@@ -169,14 +172,22 @@ namespace Sanakan.Services
             var right = new Polygon(new LinearLineSegment(new PointF(cx + 1, cy - 7), new PointF(cx + 13, cy - 10),
                 new PointF(cx + 13, cy + 7), new PointF(cx + 1, cy + 10)));
 
-            image.Mutate(x => x.Draw(color, 2f, left).Draw(color, 2f, right));
+            var pen = Pens.Solid(color, 2f);
+            image.Mutate(x => x.Paint(c =>
+            {
+                c.Draw(pen, left);
+                c.Draw(pen, right);
+            }));
         }
 
         private void DrawSiteStatsClockIcon(Image image, float cx, float cy, Color color)
         {
-            image.Mutate(x => x
-                .Draw(color, 2f, new EllipsePolygon(cx, cy, 11))
-                .DrawLine(color, 2f, new PointF(cx, cy - 6), new PointF(cx, cy), new PointF(cx + 4, cy + 3)));
+            var pen = Pens.Solid(color, 2f);
+            image.Mutate(x => x.Paint(c =>
+            {
+                c.Draw(pen, new EllipsePolygon(cx, cy, 11));
+                c.DrawLine(pen, new PointF(cx, cy - 6), new PointF(cx, cy), new PointF(cx + 4, cy + 3));
+            }));
         }
 
         private Image<Rgba32> GetSiteStatsBar(ISeriesStatus status, int width, int height)
@@ -184,7 +195,7 @@ namespace Sanakan.Services
             const int gap = 3;
             const int minSegment = 4;
 
-            var bar = new Image<Rgba32>(width, height, GetOrCreateColor(SiteStatsTrack));
+            var bar = new Image<Rgba32>(width, height, GetOrCreateColor(SiteStatsTrack).ToPixel<Rgba32>());
             ulong[] values = { status?.InProgress ?? 0, status?.Completed ?? 0, status?.Skipped ?? 0,
                 status?.OnHold ?? 0, status?.Dropped ?? 0, status?.InPlan ?? 0 };
 
@@ -198,16 +209,18 @@ namespace Sanakan.Services
                 var longest = Array.IndexOf(lengths, lengths.Max());
                 lengths[longest] += available - lengths.Sum();
 
-                bar.Mutate(x => x.Clear(Color.Transparent));
-                var offset = 0;
-                for (int i = 0; i < lengths.Length; i++)
+                bar.Mutate(x => x.Paint(c =>
                 {
-                    if (lengths[i] <= 0) continue;
+                    c.Clear(Brushes.Solid(Color.Transparent));
+                    var offset = 0;
+                    for (int i = 0; i < lengths.Length; i++)
+                    {
+                        if (lengths[i] <= 0) continue;
 
-                    var segment = new RectangularPolygon(offset, 0, lengths[i], height);
-                    bar.Mutate(x => x.Fill(GetOrCreateColor(SiteStatsStatusColors[i]), segment));
-                    offset += lengths[i] + gap;
-                }
+                        c.Fill(Brushes.Solid(GetOrCreateColor(SiteStatsStatusColors[i])), new RectanglePolygon(offset, 0, lengths[i], height));
+                        offset += lengths[i] + gap;
+                    }
+                }));
             }
 
             bar.Mutate(x => x.Round(height / 2f));
@@ -228,10 +241,12 @@ namespace Sanakan.Services
             var fade = new LinearGradientBrush(new PointF(0, 0), new PointF(SiteStatsWidth, 0), GradientRepetitionMode.None,
                 new ColorStop(0.2f, background), new ColorStop(1f, background.WithAlpha(0.3f)));
 
-            image.Mutate(x => x
-                .Fill(fade, new RectangularPolygon(0, 0, SiteStatsWidth, SiteStatsHeaderHeight))
-                .Fill(GetOrCreateColor("#2A2733"), new RectangularPolygon(0, SiteStatsHeaderHeight - 2, SiteStatsWidth, 2))
-                .Fill(GetOrCreateColor($"#{color}"), GetRoundedRectPath(19, 5, 82, 82, 13)));
+            image.Mutate(x => x.Paint(c =>
+            {
+                c.Fill(fade, new RectanglePolygon(0, 0, SiteStatsWidth, SiteStatsHeaderHeight));
+                c.Fill(Brushes.Solid(GetOrCreateColor("#2A2733")), new RectanglePolygon(0, SiteStatsHeaderHeight - 2, SiteStatsWidth, 2));
+                c.Fill(Brushes.Solid(GetOrCreateColor($"#{color}")), GetRoundedRectPath(19, 5, 82, 82, 13));
+            }));
 
             if (avatar != null)
             {
@@ -239,10 +254,10 @@ namespace Sanakan.Services
             }
             else
             {
-                image.Mutate(x => x.Fill(GetOrCreateColor(SiteStatsTrack), GetRoundedRectPath(22, 8, 76, 76, 10)));
+                image.Mutate(x => x.Paint(c => c.Fill(Brushes.Solid(GetOrCreateColor(SiteStatsTrack)), GetRoundedRectPath(22, 8, 76, 76, 10))));
             }
 
-            image.Mutate(x => x.Fill(GetOrCreateColor(SiteStatsTextBright), new RectangularPolygon(118, 16, 3, 60)));
+            image.Mutate(x => x.Paint(c => c.Fill(Brushes.Solid(GetOrCreateColor(SiteStatsTextBright)), new RectanglePolygon(118, 16, 3, 60))));
 
             var nameFont = GetFontSize(_latoBold, 42, name, SiteStatsWidth - 520);
             DrawSiteStatsText(image, name, nameFont, SiteStatsTextBright, 134, 33);
@@ -254,12 +269,16 @@ namespace Sanakan.Services
             var rankFont = GetOrCreateFont(_latoBold, 22);
             rank = TrimSiteStatsText(rank.Trim(), rankFont, 300);
 
-            var rankWidth = TextMeasurer.MeasureSize(rank, new TextOptions(rankFont)).Width;
+            var rankWidth = TextMeasurer.MeasureBounds(rank, new TextOptions(rankFont)).Width;
             var pillWidth = rankWidth + 34;
             var pillX = SiteStatsWidth - 24 - pillWidth;
             var pill = GetRoundedRectPath(pillX, 26, pillWidth, 40, 20);
 
-            image.Mutate(x => x.Fill(background.WithAlpha(0.85f), pill).Draw(GetOrCreateColor($"#{color}"), 2, pill));
+            image.Mutate(x => x.Paint(c =>
+            {
+                c.Fill(Brushes.Solid(background.WithAlpha(0.85f)), pill);
+                c.Draw(Pens.Solid(GetOrCreateColor($"#{color}"), 2), pill);
+            }));
             DrawSiteStatsText(image, rank, rankFont, SiteStatsTextBright, pillX + pillWidth / 2, 45, HorizontalAlignment.Center);
         }
 
@@ -268,9 +287,11 @@ namespace Sanakan.Services
             var fill = Math.Max(6, (float)Math.Min(1, ratio) * width);
             var color = GetOrCreateColor(ratio >= 1 ? SiteStatsCompleted : SiteStatsAccent);
 
-            image.Mutate(c => c
-                .Fill(GetOrCreateColor(SiteStatsTrack), GetRoundedRectPath(x, y, width, 6, 3))
-                .Fill(color, GetRoundedRectPath(x, y, fill, 6, 3)));
+            image.Mutate(ctx => ctx.Paint(c =>
+            {
+                c.Fill(Brushes.Solid(GetOrCreateColor(SiteStatsTrack)), GetRoundedRectPath(x, y, width, 6, 3));
+                c.Fill(Brushes.Solid(color), GetRoundedRectPath(x, y, fill, 6, 3));
+            }));
         }
 
         private void DrawSiteStatsFrame(Image image, int px, int w, int height, SiteStatsPanel data)
@@ -280,11 +301,13 @@ namespace Sanakan.Services
             var accent = GetOrCreateColor(SiteStatsAccent);
             var panel = GetRoundedRectPath(px, py, w, height, 14);
 
-            image.Mutate(x => x
-                .Fill(GetOrCreateColor("#1B1A21"), panel)
-                .Fill(GetOrCreateColor("#23212B"), GetRoundedRectPath(px + 1, py + 1, w - 2, 40, 13))
-                .Fill(GetOrCreateColor("#23212B"), new RectangularPolygon(px + 1, py + 21, w - 2, 20))
-                .Draw(GetOrCreateColor(SiteStatsLine), 2, panel));
+            image.Mutate(x => x.Paint(c =>
+            {
+                c.Fill(Brushes.Solid(GetOrCreateColor("#1B1A21")), panel);
+                c.Fill(Brushes.Solid(GetOrCreateColor("#23212B")), GetRoundedRectPath(px + 1, py + 1, w - 2, 40, 13));
+                c.Fill(Brushes.Solid(GetOrCreateColor("#23212B")), new RectanglePolygon(px + 1, py + 21, w - 2, 20));
+                c.Draw(Pens.Solid(GetOrCreateColor(SiteStatsLine), 2), panel);
+            }));
 
             if (data.Manga) DrawSiteStatsBookIcon(image, px + 36, py + 21, accent);
             else DrawSiteStatsClapperIcon(image, px + 36, py + 21, accent);
@@ -310,7 +333,7 @@ namespace Sanakan.Services
                 if (i > 0)
                 {
                     var divider = px + 10 + columnWidth * i;
-                    image.Mutate(x => x.DrawLine(line, 2, new PointF(divider, py + 56), new PointF(divider, py + 110)));
+                    image.Mutate(x => x.Paint(c => c.DrawLine(Pens.Solid(line, 2), new PointF(divider, py + 56), new PointF(divider, py + 110))));
                 }
             }
 
@@ -323,7 +346,7 @@ namespace Sanakan.Services
                 data.Status?.OnHold ?? 0, data.Status?.Dropped ?? 0, data.Status?.InPlan ?? 0 };
 
             var legendFont = GetOrCreateFont(_latoRegular, 20);
-            var labelWidths = data.StatusLabels.Select(x => TextMeasurer.MeasureSize(x, new TextOptions(legendFont)).Width).ToArray();
+            var labelWidths = data.StatusLabels.Select(x => TextMeasurer.MeasureBounds(x, new TextOptions(legendFont)).Width).ToArray();
             for (int i = 0; i < values.Length; i++)
             {
                 var colX = px + (i < 3 ? 22 : 256);
@@ -332,7 +355,7 @@ namespace Sanakan.Services
                 var valueEnd = px + (i < 3 ? 244 : w - 14);
                 var value = FormatSiteStatsNumber(values[i]);
 
-                image.Mutate(x => x.Fill(GetOrCreateColor(SiteStatsStatusColors[i]), new EllipsePolygon(colX + 8, rowY, 8)));
+                image.Mutate(x => x.Paint(c => c.Fill(Brushes.Solid(GetOrCreateColor(SiteStatsStatusColors[i])), new EllipsePolygon(colX + 8, rowY, 8))));
                 DrawSiteStatsText(image, data.StatusLabels[i], legendFont, "#D6D2DE", colX + 26, rowY);
                 DrawSiteStatsText(image, value, GetFontSize(_latoBold, 20, value, valueEnd - valueX), SiteStatsTextBright, valueX, rowY);
             }
@@ -365,7 +388,7 @@ namespace Sanakan.Services
                 }
                 else
                 {
-                    image.Mutate(x => x.Fill(rowLine, GetRoundedRectPath(px + 22, top + 5, 50, 50, 6)));
+                    image.Mutate(x => x.Paint(c => c.Fill(Brushes.Solid(rowLine), GetRoundedRectPath(px + 22, top + 5, 50, 50, 6))));
                 }
 
                 DrawSiteStatsText(image, TrimSiteStatsText(entry.Title, titleFont, w - 108), titleFont, SiteStatsTextBright, px + 86, top + 19);
@@ -376,7 +399,7 @@ namespace Sanakan.Services
 
                 if (i < data.Entries.Count - 1)
                 {
-                    image.Mutate(x => x.DrawLine(rowLine, 1.5f, new PointF(px + 22, top + SiteStatsRowHeight), new PointF(px + w - 22, top + SiteStatsRowHeight)));
+                    image.Mutate(x => x.Paint(c => c.DrawLine(Pens.Solid(rowLine, 1.5f), new PointF(px + 22, top + SiteStatsRowHeight), new PointF(px + w - 22, top + SiteStatsRowHeight))));
                 }
             }
         }
@@ -392,7 +415,7 @@ namespace Sanakan.Services
             DrawSiteStatsFrame(image, px, w, height, data);
             DrawSiteStatsSummary(image, px, data);
 
-            image.Mutate(x => x.DrawLine(GetOrCreateColor(SiteStatsLine), 2, new PointF(px + 22, py + 244), new PointF(px + w - 22, py + 244)));
+            image.Mutate(x => x.Paint(c => c.DrawLine(Pens.Solid(GetOrCreateColor(SiteStatsLine), 2), new PointF(px + 22, py + 244), new PointF(px + w - 22, py + 244))));
             DrawSiteStatsList(image, px, w, py + SiteStatsListHeaderY, py + height, data);
         }
 
@@ -407,7 +430,7 @@ namespace Sanakan.Services
             DrawSiteStatsFrame(image, px, w, height, data);
             DrawSiteStatsSummary(image, px, data);
 
-            image.Mutate(x => x.DrawLine(GetOrCreateColor(SiteStatsLine), 2, new PointF(divider, py + 56), new PointF(divider, py + height - 16)));
+            image.Mutate(x => x.Paint(c => c.DrawLine(Pens.Solid(GetOrCreateColor(SiteStatsLine), 2), new PointF(divider, py + 56), new PointF(divider, py + height - 16))));
             DrawSiteStatsList(image, divider, w - SiteStatsPanelWidth, py + 68, py + height, data);
         }
 
@@ -418,7 +441,11 @@ namespace Sanakan.Services
             const int w = SiteStatsWidth - 32;
 
             var panel = GetRoundedRectPath(px, py, w, height, 14);
-            image.Mutate(x => x.Fill(GetOrCreateColor("#1B1A21"), panel).Draw(GetOrCreateColor(SiteStatsLine), 2, panel));
+            image.Mutate(x => x.Paint(c =>
+            {
+                c.Fill(Brushes.Solid(GetOrCreateColor("#1B1A21")), panel);
+                c.Draw(Pens.Solid(GetOrCreateColor(SiteStatsLine), 2), panel);
+            }));
 
             var accent = GetOrCreateColor(SiteStatsAccent);
             DrawSiteStatsClapperIcon(image, SiteStatsWidth / 2f - 20, py + 32, accent);
@@ -474,7 +501,7 @@ namespace Sanakan.Services
                     _ => SiteStatsListHeaderY + withData.Max(GetSiteStatsListHeight),
                 };
 
-                var image = new Image<Rgba32>(SiteStatsWidth, SiteStatsPanelY + panelHeight + 16, GetOrCreateColor(SiteStatsBackground));
+                var image = new Image<Rgba32>(SiteStatsWidth, SiteStatsPanelY + panelHeight + 16, GetOrCreateColor(SiteStatsBackground).ToPixel<Rgba32>());
                 DrawSiteStatsHeader(image, avatar, shindenInfo?.Name ?? "", shindenInfo?.Rank, color.RawValue.ToString("X6"));
 
                 switch (withData.Count)
