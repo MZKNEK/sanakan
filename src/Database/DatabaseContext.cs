@@ -90,7 +90,7 @@ namespace Sanakan.Database
             var builder = config.DatabaseProvider == global::Sanakan.Config.Model.DatabaseProvider.Sqlite
                 ? optionsBuilder.UseSqlite(config.ConnectionString)
                 : optionsBuilder.UseMySql(config.ConnectionString,
-                    new MySqlServerVersion(new System.Version(8, 0, 43)), opt => opt.EnableRetryOnFailure());
+                    new MySqlServerVersion(new System.Version(8, 4, 0)), opt => opt.EnableRetryOnFailure());
 
             builder.AddInterceptors(DbActivity.Commands, DbActivity.Saves, PowerActivity.Interceptor, CacheActivity.Interceptor,
                 Services.GameTelemetry.Default.Interceptor);

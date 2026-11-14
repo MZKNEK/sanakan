@@ -29,7 +29,7 @@ namespace Artifacts
             public MySqlContext() : base(new FakeConfig()) { }
 
             protected override void OnConfiguring(DbContextOptionsBuilder builder)
-                => builder.UseMySql("Server=localhost;Database=sanakan", new MySqlServerVersion(new Version(8, 0, 43)));
+                => builder.UseMySql("Server=localhost;Database=sanakan", new MySqlServerVersion(new Version(8, 4, 0)));
         }
 
         private static bool HasSimpleIndex<T>(DatabaseContext ctx, string property)
