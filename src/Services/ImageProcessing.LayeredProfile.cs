@@ -17,6 +17,7 @@ using IPath = SixLabors.ImageSharp.Drawing.IPath;
 using LinearLineSegment = SixLabors.ImageSharp.Drawing.LinearLineSegment;
 using Polygon = SixLabors.ImageSharp.Drawing.Polygon;
 using RectanglePolygon = SixLabors.ImageSharp.Drawing.RectanglePolygon;
+using PathExtensions = SixLabors.ImageSharp.Drawing.PathExtensions;
 
 namespace Sanakan.Services
 {
@@ -352,6 +353,39 @@ namespace Sanakan.Services
             }
         }
 
+        // the blur of what lies under the shape (from the first frame when the canvas already moves), tinted, with a thin edge
+        private static void DrawGlass(Image image, IPath shape, float tint)
+        {
+            var b = shape.Bounds;
+            var area = new Rectangle((int)Math.Floor(b.X), (int)Math.Floor(b.Y), (int)Math.Ceiling(b.Width) + 2, (int)Math.Ceiling(b.Height) + 2);
+            area.Intersect(new Rectangle(0, 0, image.Width, image.Height));
+            if (area.Width <= 0 || area.Height <= 0)
+                return;
+
+            using var under = image.Frames.CloneFrame(0);
+            under.Mutate(c => c.Crop(area).GaussianBlur(10));
+            using var glass = under.CloneAs<Rgba32>();
+            using var mask = new Image<Rgba32>(area.Width, area.Height);
+            var local = PathExtensions.Translate(shape, -area.X, -area.Y);
+            mask.Mutate(c => c.Paint(p => p.Fill(Brushes.Solid(Color.White), local)));
+            glass.ProcessPixelRows(mask, (g, m) =>
+            {
+                for (int y = 0; y < g.Height; y++)
+                {
+                    var gr = g.GetRowSpan(y);
+                    var mr = m.GetRowSpan(y);
+                    for (int x = 0; x < gr.Length; x++)
+                        gr[x].A = (byte)(gr[x].A * mr[x].A / 255);
+                }
+            });
+            image.Mutate(c => c.DrawImage(glass, area.Location, 1));
+            image.Mutate(c => c.Paint(p =>
+            {
+                p.Fill(Brushes.Solid(Color.ParseHex("#201E28").WithAlpha(tint)), shape);
+                p.Draw(Pens.Solid(Color.White.WithAlpha(0.16f), 1), shape);
+            }));
+        }
+
         private float TextWidth(string text, Font font) => string.IsNullOrEmpty(text) ? 0 : TextMeasurer.MeasureAdvance(text, new TextOptions(font)).Width;
 
         private float LpWrite(Image image, string text, Font font, string color, float x, float y, HorizontalAlignment align = HorizontalAlignment.Left)
@@ -361,11 +395,14 @@ namespace Sanakan.Services
             return TextWidth(text, font);
         }
 
-        private static string LpShort(long n)
+        // rounded to a tenth as Profilator does it; a thousand K is shown as 1M
+        internal static string LpShort(long n)
         {
             var pl = System.Globalization.CultureInfo.InvariantCulture;
-            if (n >= 1_000_000) return (n / 1_000_000d).ToString("0.#", pl).Replace('.', ',') + "M";
-            if (n >= 10_000) return (n / 1_000d).ToString("0.#", pl).Replace('.', ',') + "K";
+            var thousands = Math.Round(n / 100d, MidpointRounding.AwayFromZero) / 10;
+            if (n >= 1_000_000 || thousands >= 1000)
+                return (Math.Round(n / 100_000d, MidpointRounding.AwayFromZero) / 10).ToString("0.#", pl).Replace('.', ',') + "M";
+            if (n >= 10_000) return thousands.ToString("0.#", pl).Replace('.', ',') + "K";
             return FormatSiteStatsNumber((ulong)Math.Max(0, n));
         }
 
@@ -809,22 +846,31 @@ namespace Sanakan.Services
             using var picture = await LoadProfileCardAsync(card, sticker.H);
             int w = picture.Width, h = picture.Height;
             const int margin = 14;
+            var center = new PointF(sticker.X + w / 2f, sticker.Y + h / 2f);
 
-            // the card on its own canvas with room for the ground and the shadow, then tilted as a whole
-            using var piece = new Image<Rgba32>(w + 2 * margin, h + 2 * margin);
-            if (sticker.Background)
+            // the panel or the glass lies on the profile itself, tilted with the card
+            if (sticker.Ground is StickerGround.Panel or StickerGround.Glass)
             {
-                var ground = GetRoundedRectPath(margin - 4, margin - 4, w + 8, h + 8, 10);
-                piece.Mutate(c => c.Paint(p =>
-                {
-                    p.Fill(Brushes.Solid(GetOrCreateColor(LpBackground).WithAlpha(0.45f)), ground);
-                    p.Draw(Pens.Solid(Color.White.WithAlpha(0.16f), 1), ground);
-                }));
+                var pad = Math.Clamp(sticker.Pad, 0, StickerLayer.MaxPad);
+                var ground = GetRoundedRectPath(center.X - w / 2f - pad, center.Y - h / 2f - pad, w + 2 * pad, h + 2 * pad, 10);
+                if (sticker.Tilt != 0)
+                    ground = ground.Transform(new System.Numerics.Matrix4x4(System.Numerics.Matrix3x2.CreateRotation(sticker.Tilt * MathF.PI / 180f, center)));
+                if (sticker.Ground == StickerGround.Glass)
+                    DrawGlass(canvas.Image, ground, sticker.GroundAlpha);
+                else
+                    canvas.Image.Mutate(c => c.Paint(p =>
+                    {
+                        p.Fill(Brushes.Solid(GetOrCreateColor(LpBackground).WithAlpha(sticker.GroundAlpha)), ground);
+                        p.Draw(Pens.Solid(Color.White.WithAlpha(0.16f), 1), ground);
+                    }));
             }
-            else
+
+            // the card on its own canvas with room for its shadow, then tilted as a whole
+            using var piece = new Image<Rgba32>(w + 2 * margin, h + 2 * margin);
+            if (sticker.Ground == StickerGround.Shadow)
             {
                 using var shadow = new Image<Rgba32>(w + 2 * margin, h + 2 * margin);
-                shadow.Mutate(c => c.Paint(p => p.Fill(Brushes.Solid(Color.Black.WithAlpha(0.5f)), GetRoundedRectPath(margin, margin + 3, w, h, 8))).GaussianBlur(6));
+                shadow.Mutate(c => c.Paint(p => p.Fill(Brushes.Solid(Color.Black.WithAlpha(sticker.GroundAlpha)), GetRoundedRectPath(margin, margin + 3, w, h, 8))).GaussianBlur(6));
                 piece.Mutate(c => c.DrawImage(shadow, new Point(0, 0), 1));
             }
 
@@ -848,7 +894,6 @@ namespace Sanakan.Services
                 if (sticker.Tilt != 0)
                     moving.Mutate(c => c.Rotate(sticker.Tilt));
 
-                var center = new PointF(sticker.X + w / 2f, sticker.Y + h / 2f);
                 var at = new Point((int)Math.Round(center.X - moving.Width / 2f), (int)Math.Round(center.Y - moving.Height / 2f));
                 Place(canvas, moving, at, target);
             }
@@ -932,11 +977,14 @@ namespace Sanakan.Services
             var y0 = bar.At == BarPlace.Top ? 4 : 468;
             float cy = y0 + 13;
             var strip = GetRoundedRectPath(12, y0, 726, 26, 13);
-            image.Mutate(c => c.Paint(p =>
-            {
-                p.Fill(Brushes.Solid(GetOrCreateColor(LpBackground).WithAlpha(Math.Clamp(bar.Opacity, 20, 100) / 100f)), strip);
-                p.Draw(Pens.Solid(Color.White.WithAlpha(0.08f), 1), strip);
-            }));
+            if (bar.Look == BarLook.Glass)
+                DrawGlass(image, strip, Math.Clamp(bar.Opacity, 20, 100) / 100f);
+            else
+                image.Mutate(c => c.Paint(p =>
+                {
+                    p.Fill(Brushes.Solid(GetOrCreateColor(LpBackground).WithAlpha(Math.Clamp(bar.Opacity, 20, 100) / 100f)), strip);
+                    p.Draw(Pens.Solid(Color.White.WithAlpha(0.08f), 1), strip);
+                }));
 
             var bold15 = GetOrCreateFont(_latoBold, 15);
             var regular12 = GetOrCreateFont(_latoRegular, 12);

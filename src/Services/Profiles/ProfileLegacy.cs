@@ -134,7 +134,7 @@ namespace Sanakan.Services.Profiles
 
             if (Has(user, ProfileSettings.ShowWaifu) && waifuCardId != 0)
             {
-                Add(new StickerLayer { X = 622, Y = 30, H = 120, Card = waifuCardId, Background = true });
+                Add(new StickerLayer { X = 622, Y = 30, H = 120, Card = waifuCardId });
                 unlocks.Add(ProfileCatalog.Sticker(1));
             }
 

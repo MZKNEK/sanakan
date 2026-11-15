@@ -224,6 +224,10 @@ namespace Sanakan.Services.Profiles
                         fail($"karta-naklejka: pochylenie najwyżej {StickerLayer.MaxTilt}°");
                     if (!context.OwnsCard(sticker.Card))
                         fail("karta-naklejka: to nie twoja karta");
+                    if (sticker.Pad < 0 || sticker.Pad > StickerLayer.MaxPad)
+                        fail($"karta-naklejka: odstęp tła od 0 do {StickerLayer.MaxPad} px");
+                    if (sticker.GroundOpacity is < 0 or > 100)
+                        fail("karta-naklejka: krycie tła od 0 do 100%");
                     break;
             }
 
@@ -297,7 +301,8 @@ namespace Sanakan.Services.Profiles
 
             if (!IsReadyLayout(layout)) needs.Add(ProfileCatalog.Layout);
             if (layout.Accent != null) needs.Add(ProfileCatalog.Accent);
-            if (layout.Panels != PanelLook.Solid) needs.Add(ProfileCatalog.PanelLook);
+            if (layout.Panels != PanelLook.Solid || layout.Bar.Look == BarLook.Glass || layout.LayersOf<StickerLayer>().Any(x => x.Ground == StickerGround.Glass))
+                needs.Add(ProfileCatalog.PanelLook);
             if (layout.Bar.Hide?.Count > 0) needs.Add(ProfileCatalog.BarHide);
             if (layout.Bar.At != BarPlace.Bottom) needs.Add(ProfileCatalog.BarPlace);
             if (layout.Nick.Hidden) needs.Add(ProfileCatalog.NickHide);

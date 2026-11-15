@@ -25,6 +25,11 @@ namespace Sanakan.Services.Profiles
     // what darkens the header under the nick: the old profile's band, a fade or nothing
     public enum HeaderShade { Fade, Band, None }
 
+    // what lies under a card-sticker
+    public enum StickerGround { Panel, Glass, Shadow, None }
+
+    public enum BarLook { Solid, Glass }
+
     // The look of a profile: fixed parts (header and style images, avatar, nick, ultra overlay, bar)
     // and free layers drawn between the nick and the ultra overlay, bottom to top.
     // Stored as JSON; unknown fields and layer types are skipped, so newer layouts still load.
@@ -104,6 +109,7 @@ namespace Sanakan.Services.Profiles
 
         [JsonProperty("at")] public BarPlace At { get; set; } = BarPlace.Bottom;
         [JsonProperty("opacity")] public int Opacity { get; set; } = 85;
+        [JsonProperty("look")] public BarLook Look { get; set; } = BarLook.Solid;
         [JsonProperty("hide")] public List<string> Hide { get; set; } = new List<string>();
 
         public bool Shows(string item) => Hide == null || !Hide.Contains(item);
@@ -243,11 +249,29 @@ namespace Sanakan.Services.Profiles
         public const int MinHeight = 60;
         public const int MaxHeight = 300;
         public const int MaxTilt = 15;
+        public const int MaxPad = 40;
+
+        private StickerGround _ground = StickerGround.Panel;
+        private bool _groundSet;
 
         [JsonProperty("card")] public ulong Card { get; set; }
         [JsonProperty("h")] public int H { get; set; } = 140;
         [JsonProperty("tilt")] public int Tilt { get; set; }
-        [JsonProperty("bg")] public bool Background { get; set; } = true;
+        [JsonProperty("ground")] public StickerGround Ground { get => _ground; set { _ground = value; _groundSet = true; } }
+        // 0-100, or null for the kind's own: 45 for the panel, 55 for the glass's tint, 50 for the shadow
+        [JsonProperty("groundOpacity")] public int? GroundOpacity { get; set; }
+        // how far the panel or glass reaches past the card
+        [JsonProperty("pad")] public int Pad { get; set; } = 4;
+
+        // layouts saved before the ground had kinds: "bg": false was the shadow
+        [JsonProperty("bg")]
+        private bool? LegacyBackground
+        {
+            get => null;
+            set { if (value == false && !_groundSet) _ground = StickerGround.Shadow; }
+        }
+
+        public float GroundAlpha => Math.Clamp(GroundOpacity ?? (Ground switch { StickerGround.Glass => 55, StickerGround.Shadow => 50, _ => 45 }), 0, 100) / 100f;
 
         public override string Type => "sticker";
     }

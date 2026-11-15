@@ -200,6 +200,42 @@ namespace Artifacts
             return ProfileRules.Validate(layout, Context(cards));
         }
 
+        [Theory]
+        [InlineData("{\"t\":\"sticker\",\"id\":5,\"card\":1,\"bg\":false}", StickerGround.Shadow)]
+        [InlineData("{\"t\":\"sticker\",\"id\":5,\"card\":1,\"bg\":true}", StickerGround.Panel)]
+        [InlineData("{\"t\":\"sticker\",\"id\":5,\"card\":1}", StickerGround.Panel)]
+        [InlineData("{\"t\":\"sticker\",\"id\":5,\"card\":1,\"bg\":false,\"ground\":\"glass\"}", StickerGround.Glass)]
+        [InlineData("{\"t\":\"sticker\",\"id\":5,\"card\":1,\"ground\":\"none\",\"bg\":false}", StickerGround.None)]
+        public void OldStickersWithoutTheirGroundBecomeShadows(string sticker, StickerGround expected)
+        {
+            var layout = ProfileLayout.FromJson("{\"layers\":[" + sticker + "]}");
+
+            var read = layout.LayersOf<StickerLayer>().Single();
+            Assert.Equal(expected, read.Ground);
+            Assert.DoesNotContain("\"bg\"", layout.ToJson());
+            Assert.Equal(expected, ProfileLayout.FromJson(layout.ToJson()).LayersOf<StickerLayer>().Single().Ground);
+        }
+
+        [Fact]
+        public void GlassUnderCardsAndTheBarIsPartOfThePanelLook()
+        {
+            var plain = Stats();
+            plain.Layers.Add(new StickerLayer { Id = 20, Card = 1, X = 600, Y = 20, Ground = StickerGround.Shadow, GroundOpacity = 30, Pad = 20 });
+            Assert.DoesNotContain(ProfileCatalog.PanelLook, ProfileRules.RequiredUnlocks(plain));
+
+            var sticker = plain.Clone();
+            sticker.LayersOf<StickerLayer>().Single().Ground = StickerGround.Glass;
+            Assert.Contains(ProfileCatalog.PanelLook, ProfileRules.RequiredUnlocks(sticker));
+
+            var bar = Stats();
+            bar.Bar.Look = BarLook.Glass;
+            Assert.Contains(ProfileCatalog.PanelLook, ProfileRules.RequiredUnlocks(bar));
+
+            Assert.Empty(Errors(l => l.Layers.Add(new StickerLayer { Id = 20, Card = 1, X = 600, Y = 20, Pad = StickerLayer.MaxPad, GroundOpacity = 100 }), 1));
+            Assert.NotEmpty(Errors(l => l.Layers.Add(new StickerLayer { Id = 20, Card = 1, X = 600, Y = 20, Pad = StickerLayer.MaxPad + 1 }), 1));
+            Assert.NotEmpty(Errors(l => l.Layers.Add(new StickerLayer { Id = 20, Card = 1, X = 600, Y = 20, GroundOpacity = 101 }), 1));
+        }
+
         [Fact]
         public void AnOverlayMustReachIntoItsFieldAndOnlyTheUltraOneCoversTheTop()
         {

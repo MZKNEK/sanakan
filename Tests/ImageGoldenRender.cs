@@ -280,8 +280,8 @@ namespace Artifacts
             var moving = ProfileCatalog.FindPreset("cardsCenter").Make();
             moving.Style = new SlotImage { Image = 2, Y = 160 };
             moving.Panels = PanelLook.Glass;
-            moving.Layers.Add(new StickerLayer { Id = 20, Card = movingCard.Id, X = 30, Y = 200, H = 200, Tilt = -6, Background = false });
-            moving.Layers.Add(new StickerLayer { Id = 21, Card = layeredCards[2].Id, X = 580, Y = 200, H = 200, Tilt = 6, Background = false });
+            moving.Layers.Add(new StickerLayer { Id = 20, Card = movingCard.Id, X = 30, Y = 200, H = 200, Tilt = -6, Ground = StickerGround.Shadow });
+            moving.Layers.Add(new StickerLayer { Id = 21, Card = layeredCards[2].Id, X = 580, Y = 200, H = 200, Tilt = 6, Ground = StickerGround.Shadow });
             moving.Animate = ProfileLayout.AnimateLayer(20);
             await Render("layered_moving_sticker", () => img.GetLayeredProfileAsync(moving, layeredData));
 

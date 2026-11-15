@@ -71,7 +71,7 @@ namespace Sanakan.Services.Profiles
                 new ProfileFeature(BarPlace, "Położenie paska", "pasek na górze albo ukryty", 6000, 99),
                 new ProfileFeature(PanelHide, "Ukrywanie pozycji paneli", "karcianka, anime i manga", 6000, 99),
                 new ProfileFeature(NickHide, "Ukrycie nicka", "np. dla własnego nicka na nakładce", 6000, 99),
-                new ProfileFeature(PanelLook, "Wygląd paneli", "szkło i cień zamiast pełnych paneli", 12000, 199),
+                new ProfileFeature(PanelLook, "Wygląd paneli", "szkło i cień paneli, szkło pod paskiem i kartami", 12000, 199),
                 new ProfileFeature(AvatarLook, "Awatar: rozmiar i kształt", "większy awatar, zaokrąglony i kwadrat", 12000, 199),
                 new ProfileFeature(Recent, "Ostatnio oglądane i czytane", "ostatnie tytuły w panelach anime i mangi", 12000, 199),
                 new ProfileFeature(Accent, "Kolor akcentu", "dowolny kolor zamiast koloru roli", 18000, 299),

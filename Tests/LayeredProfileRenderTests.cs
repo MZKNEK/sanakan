@@ -92,6 +92,18 @@ namespace Artifacts
         }
 
         [Theory]
+        [InlineData(9999, "9 999")]
+        [InlineData(237960, "238K")]
+        [InlineData(237940, "237,9K")]
+        [InlineData(999960, "1M")]
+        [InlineData(3650000, "3,7M")]
+        [InlineData(100000000, "100M")]
+        public void BarNumbersAreRoundedToATenth(long value, string expected)
+        {
+            Assert.Equal(expected, ImageProcessing.LpShort(value));
+        }
+
+        [Theory]
         [InlineData(200f, 300f, 14f, 90f)]
         [InlineData(250f, 330f, 11.2f, 90f)]
         [InlineData(250f, 370f, 8f, 66f)]
@@ -99,6 +111,23 @@ namespace Artifacts
         public void LargeNumbersCloseUpTheBar(float left, float currencies, float gap, float track)
         {
             Assert.Equal((gap, track), ImageProcessing.BarSpacing(left, currencies, 5, true));
+        }
+
+        [Theory]
+        [InlineData(StickerGround.Panel, 0)]
+        [InlineData(StickerGround.Glass, 0)]
+        [InlineData(StickerGround.Glass, 9)]
+        [InlineData(StickerGround.Shadow, -7)]
+        [InlineData(StickerGround.None, 5)]
+        public async Task EveryGroundUnderACardDraws(StickerGround ground, int tilt)
+        {
+            var layout = ProfileCatalog.FindPreset("minimal").Make();
+            layout.Bar.Look = BarLook.Glass;
+            layout.Layers.Add(new StickerLayer { Id = 30, Card = 2, X = 300, Y = 200, H = 200, Tilt = tilt, Ground = ground, Pad = 24, GroundOpacity = 70 });
+
+            using var image = await _img.GetLayeredProfileAsync(layout, Data(new Dictionary<long, string>()));
+
+            Assert.Equal((750, 500), (image.Width, image.Height));
         }
 
         [Theory]
@@ -160,7 +189,7 @@ namespace Artifacts
                 list.Legend = LegendMode.All;
             }
             layout.Layers.Add(new OverlayLayer { Id = 20, Image = 3, X = 500, Y = 20, Opacity = 0.8 });
-            layout.Layers.Add(new StickerLayer { Id = 21, Card = 3, X = 620, Y = 180, H = 150, Tilt = 6, Background = false });
+            layout.Layers.Add(new StickerLayer { Id = 21, Card = 3, X = 620, Y = 180, H = 150, Tilt = 6, Ground = StickerGround.Shadow });
             layout.Layers.Add(new StickerLayer { Id = 22, Card = 4, X = 300, Y = 330, H = 120, Tilt = -4 });
             layout.Layers.Add(new CardsPanelLayer { Id = 23, X = 190, Y = 182, Hide = new List<string> { CardsPanelLayer.Waifu } });
             layout.Layers.RemoveAll(x => x is ListPanelLayer { Manga: true });
