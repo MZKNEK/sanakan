@@ -68,6 +68,30 @@ namespace Artifacts
         }
 
         [Fact]
+        public async Task AnOverlayCoversTheNickButStaysInItsField()
+        {
+            var path = $"{_dir}/solid.png";
+            var green = new Rgba32(10, 200, 30, 255);
+            using (var solid = new Image<Rgba32>(750, 500, green))
+                solid.SaveAsPng(path);
+            var data = Data(new Dictionary<long, string> { [1] = path });
+
+            var layout = ProfileCatalog.FindPreset("minimal").Make();
+            layout.Layers.Add(new OverlayLayer { Id = 50, Image = 1, X = 0, Y = 0 });
+            using (var image = (await _img.GetLayeredProfileAsync(layout, data)).CloneAs<Rgba32>())
+            {
+                Assert.NotEqual(green, image[400, 60]);
+                Assert.Equal(green, image[300, 116]);
+                Assert.Equal(green, image[400, 300]);
+            }
+
+            layout.Layers.Clear();
+            layout.Ultra = new UltraLayer { Id = 50, Image = 1, X = 0, Y = 0 };
+            using (var image = (await _img.GetLayeredProfileAsync(layout, data)).CloneAs<Rgba32>())
+                Assert.Equal(green, image[400, 60]);
+        }
+
+        [Fact]
         public async Task EveryPresetDraws()
         {
             var data = Data(new Dictionary<long, string>());

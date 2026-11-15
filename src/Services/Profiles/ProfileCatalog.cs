@@ -70,7 +70,7 @@ namespace Sanakan.Services.Profiles
                 new ProfileFeature(BarHide, "Ukrywanie pozycji paska", "dowolne pozycje paska", 6000, 99),
                 new ProfileFeature(BarPlace, "Położenie paska", "pasek na górze albo ukryty", 6000, 99),
                 new ProfileFeature(PanelHide, "Ukrywanie pozycji paneli", "karcianka, anime i manga", 6000, 99),
-                new ProfileFeature(NickHide, "Ukrycie nicka", "np. dla własnego nicka na ultra nakładce", 6000, 99),
+                new ProfileFeature(NickHide, "Ukrycie nicka", "np. dla własnego nicka na nakładce", 6000, 99),
                 new ProfileFeature(PanelLook, "Wygląd paneli", "szkło i cień zamiast pełnych paneli", 12000, 199),
                 new ProfileFeature(AvatarLook, "Awatar: rozmiar i kształt", "większy awatar, zaokrąglony i kwadrat", 12000, 199),
                 new ProfileFeature(Recent, "Ostatnio oglądane i czytane", "ostatnie tytuły w panelach anime i mangi", 12000, 199),
@@ -82,12 +82,12 @@ namespace Sanakan.Services.Profiles
             for (int i = 0; i < MaxStickers; i++)
                 list.Add(new ProfileFeature(Sticker(i + 1), $"Miejsce na kartę-naklejkę {i + 1}", "karta postawiona w dowolnym miejscu", StickerPrices[i][0], StickerPrices[i][1]));
             for (int i = 0; i < MaxOverlays; i++)
-                list.Add(new ProfileFeature(Overlay(i + 1), $"Miejsce na nakładkę {i + 1}", "obrazek w dowolnym miejscu pod nickiem, zmiany za darmo", OverlayPrices[i][0], OverlayPrices[i][1]));
+                list.Add(new ProfileFeature(Overlay(i + 1), $"Miejsce na nakładkę {i + 1}", "obrazek od wysokości nicka w dół, zmiany za darmo", OverlayPrices[i][0], OverlayPrices[i][1]));
             list.Add(new ProfileFeature(Layout, "Własny układ", "przesuwanie paneli, nicka, rangi i awatara", 48000, 799));
             foreach (var border in PaidFrames)
                 list.Add(new ProfileFeature(Frame(border), $"Ramka awatara: {FrameName(border)}", "ramka z bota, na zawsze", 36000, 599));
             list.Add(new ProfileFeature(CustomFrame, "Własna ramka awatara", "własny obrazek wokół awatara, zmiany za darmo", 72000, 1199));
-            list.Add(new ProfileFeature(Ultra, "Ultra nakładka", "jedyna warstwa nad nickiem, zmiany za darmo", 240000, 3999));
+            list.Add(new ProfileFeature(Ultra, "Ultra nakładka", "obrazek na całym profilu, zmiany za darmo", 240000, 3999));
             return list;
         }
 
@@ -134,6 +134,8 @@ namespace Sanakan.Services.Profiles
 
         public static readonly (int X, int Y, int W, int H) HeaderSlot = (0, 0, 750, 160);
         public static readonly (int X, int Y, int W, int H) StyleSlot = (0, 160, 750, 340);
+        // an overlay is cut to it, the old overlay's place; only the ultra overlay covers the whole profile
+        public static readonly (int X, int Y, int W, int H) OverlayField = (0, 98, 750, 402);
 
         public const int SmallListHeight = 130;
         public const int LargeListHeight = 276;

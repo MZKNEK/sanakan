@@ -199,6 +199,14 @@ namespace Artifacts
         }
 
         [Fact]
+        public void AnOverlayMustReachIntoItsFieldAndOnlyTheUltraOneCoversTheTop()
+        {
+            Assert.Empty(Errors(l => l.Layers.Add(new OverlayLayer { Id = 20, Image = 5, X = 0, Y = -100 })));
+            Assert.NotEmpty(Errors(l => l.Layers.Add(new OverlayLayer { Id = 20, Image = 5, X = 0, Y = -220 })));
+            Assert.Empty(Errors(l => l.Ultra = new UltraLayer { Id = 20, Image = 5, X = 0, Y = -220 }));
+        }
+
+        [Fact]
         public void TheHeaderMustCoverItsField()
         {
             Assert.Empty(Errors(l => l.Header = new SlotImage { Image = 1 }));
@@ -321,6 +329,8 @@ namespace Artifacts
             Assert.Equal(16, layout.LayersOf<CardsPanelLayer>().Single().X);
             Assert.Equal(777UL, layout.LayersOf<StickerLayer>().Single().Card);
             Assert.Equal(98, layout.LayersOf<OverlayLayer>().Single().Y);
+            // drawn as before: the rank under the overlay, the waifu over it
+            Assert.Equal(new[] { "rank", "overlay", "sticker" }, layout.Layers.Where(x => x is RankLayer or OverlayLayer or StickerLayer).Select(x => x.Type));
             Assert.NotNull(layout.Ultra);
             Assert.Equal("Water", layout.Avatar.Frame);
             Assert.True(ProfileRules.IsReadyLayout(layout));

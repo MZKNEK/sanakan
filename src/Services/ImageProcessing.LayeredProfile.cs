@@ -21,7 +21,8 @@ using RectanglePolygon = SixLabors.ImageSharp.Drawing.RectanglePolygon;
 namespace Sanakan.Services
 {
     // The profile drawn from a layout of layers (Services/Profiles): the header and style pictures in their fields,
-    // the free layers bottom to top, the nick, the ultra overlay, the bar and the avatar with its frame on top.
+    // the nick, the free layers bottom to top (overlays cut to their field), the ultra overlay, the bar and the avatar
+    // with its frame on top.
     // At most one part moves: everything under it is drawn once, its frames go over copies of that,
     // and every part above it is drawn on each frame.
     public partial class ImageProcessing
@@ -143,11 +144,11 @@ namespace Sanakan.Services
                 else
                     canvas.Image.Mutate(x => x.Paint(c => c.Fill(Brushes.Solid(GetOrCreateColor(LpLine)), new RectanglePolygon(0, 159, 750, 1))));
 
-                foreach (var layer in layout.Layers.Where(x => !x.Hidden))
-                    await DrawLayerAsync(canvas, layout, layer, data, accent);
-
                 if (!layout.Nick.Hidden)
                     DrawNick(canvas.Image, layout.Nick, data.Nick);
+
+                foreach (var layer in layout.Layers.Where(x => !x.Hidden))
+                    await DrawLayerAsync(canvas, layout, layer, data, accent);
 
                 if (layout.Ultra != null && !layout.Ultra.Hidden)
                     await DrawImageLayerAsync(canvas, layout.Ultra, data, ProfileLayout.AnimateUltra);
@@ -258,7 +259,7 @@ namespace Sanakan.Services
                     break;
 
                 case OverlayLayer overlay:
-                    await DrawImageLayerAsync(canvas, overlay, data, target);
+                    await DrawImageLayerAsync(canvas, overlay, data, target, ProfileCatalog.OverlayField);
                     break;
 
                 case StickerLayer sticker:
@@ -271,7 +272,8 @@ namespace Sanakan.Services
             }
         }
 
-        private async Task DrawImageLayerAsync(LayeredCanvas canvas, ImageLayerBase layer, ProfileRenderData data, string target)
+        private async Task DrawImageLayerAsync(LayeredCanvas canvas, ImageLayerBase layer, ProfileRenderData data, string target,
+            (int X, int Y, int W, int H)? field = null)
         {
             var path = data.ImagePath(layer.Image);
             if (path == null)
@@ -285,7 +287,18 @@ namespace Sanakan.Services
             var h = Math.Max(1, (int)Math.Round(picture.Height * layer.Scale));
             if (w != picture.Width || h != picture.Height)
                 picture.Mutate(x => x.Resize(w, h));
-            Place(canvas, picture, new Point(layer.X, layer.Y), target, (float)Math.Clamp(layer.Opacity, 0, 1));
+
+            var at = new Point(layer.X, layer.Y);
+            if (field is var (fx, fy, fw, fh))
+            {
+                var part = Rectangle.Intersect(new Rectangle(layer.X, layer.Y, w, h), new Rectangle(fx, fy, fw, fh));
+                if (part.Width <= 0 || part.Height <= 0)
+                    return;
+                if (part.Width != w || part.Height != h)
+                    picture.Mutate(x => x.Crop(new Rectangle(part.X - layer.X, part.Y - layer.Y, part.Width, part.Height)));
+                at = part.Location;
+            }
+            Place(canvas, picture, at, target, (float)Math.Clamp(layer.Opacity, 0, 1));
         }
 
         private void PanelGround(Image image, ProfileLayout layout, int x, int y, int w, int h)

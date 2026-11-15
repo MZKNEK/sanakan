@@ -277,11 +277,11 @@ namespace Artifacts
         public async Task ReplacedPicturesGoAwayAfterAnHour()
         {
             var old = (await Controller().UploadPictureAsync(PlayerId, Upload(Png(100, 100, 50)), "overlay")).Value;
-            await Controller().SaveAsync(PlayerId, Save(Layout(l => l.Layers.Add(new OverlayLayer { Id = 30, Image = (long)old.Id, X = 10, Y = 10 }))), "key-1");
+            await Controller().SaveAsync(PlayerId, Save(Layout(l => l.Layers.Add(new OverlayLayer { Id = 30, Image = (long)old.Id, X = 10, Y = 200 }))), "key-1");
 
             _time.Value = _time.Value.AddHours(2);
             var fresh = (await Controller().UploadPictureAsync(PlayerId, Upload(Png(100, 100, 90)), "overlay")).Value;
-            var saved = await Controller().SaveAsync(PlayerId, Save(Layout(l => l.Layers.Add(new OverlayLayer { Id = 30, Image = (long)fresh.Id, X = 10, Y = 10 })), version: 1), "key-2");
+            var saved = await Controller().SaveAsync(PlayerId, Save(Layout(l => l.Layers.Add(new OverlayLayer { Id = 30, Image = (long)fresh.Id, X = 10, Y = 200 })), version: 1), "key-2");
 
             Assert.Equal(200, Status(saved));
             using var db = Open();

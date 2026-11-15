@@ -53,9 +53,12 @@ namespace Sanakan.Services.Profiles
         }
 
         private static bool Inside(int x, int y, int w, int h)
+            => Inside(x, y, w, h, (0, 0, ProfileLayout.Width, ProfileLayout.Height));
+
+        private static bool Inside(int x, int y, int w, int h, (int X, int Y, int W, int H) field)
         {
             var m = ProfileCatalog.MinInside;
-            return x + w >= m && x <= ProfileLayout.Width - m && y + h >= m && y <= ProfileLayout.Height - m;
+            return x + w >= field.X + m && x <= field.X + field.W - m && y + h >= field.Y + m && y <= field.Y + field.H - m;
         }
 
         // the reasons the layout cannot be saved, empty when it can
@@ -171,7 +174,8 @@ namespace Sanakan.Services.Profiles
             }
         }
 
-        private static void CheckImageLayer(ImageLayerBase layer, string name, ProfileRulesContext context, Action<string> fail)
+        private static void CheckImageLayer(ImageLayerBase layer, string name, ProfileRulesContext context, Action<string> fail,
+            (int X, int Y, int W, int H)? field = null)
         {
             var image = context.Image(layer.Image);
             if (image == null)
@@ -183,8 +187,9 @@ namespace Sanakan.Services.Profiles
                 fail($"{name}: skala poza zakresem");
             if (layer.Opacity < 0.1 || layer.Opacity > 1)
                 fail($"{name}: krycie poza zakresem");
-            if (!Inside(layer.X, layer.Y, (int)Math.Round(image.Width * layer.Scale), (int)Math.Round(image.Height * layer.Scale)))
-                fail($"{name}: wychodzi poza obrazek");
+            if (!Inside(layer.X, layer.Y, (int)Math.Round(image.Width * layer.Scale), (int)Math.Round(image.Height * layer.Scale),
+                    field ?? (0, 0, ProfileLayout.Width, ProfileLayout.Height)))
+                fail($"{name}: wychodzi poza {(field == null ? "obrazek" : "swoje pole")}");
         }
 
         private static void CheckLayer(ProfileLayer layer, ProfileRulesContext context, Action<string> fail)
@@ -192,7 +197,7 @@ namespace Sanakan.Services.Profiles
             switch (layer)
             {
                 case OverlayLayer overlay:
-                    CheckImageLayer(overlay, "nakładka", context, fail);
+                    CheckImageLayer(overlay, "nakładka", context, fail, ProfileCatalog.OverlayField);
                     return;
 
                 case ListPanelLayer list:

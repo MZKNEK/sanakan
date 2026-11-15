@@ -112,6 +112,9 @@ namespace Sanakan.Services.Profiles
             }
             layout.ShadowOpacity = Math.Clamp((int)Math.Round(user.ProfileShadowsOpacity * 100), 0, 100);
 
+            // the old profile drew the rank under the overlays
+            Add(new RankLayer { X = 163, Y = 135 });
+
             int overlays = 0;
             if (styleImage && imageOver)
             {
@@ -131,8 +134,6 @@ namespace Sanakan.Services.Profiles
                 Add(new StickerLayer { X = 622, Y = 30, H = 120, Card = waifuCardId, Background = true });
                 unlocks.Add(ProfileCatalog.Sticker(1));
             }
-
-            Add(new RankLayer { X = 163, Y = 135 });
 
             if (!string.IsNullOrEmpty(user.PremiumCustomProfileOverlayUrl))
             {
