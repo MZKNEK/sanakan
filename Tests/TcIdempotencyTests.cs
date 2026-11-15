@@ -36,7 +36,7 @@ namespace Artifacts
         {
             private readonly Func<DatabaseContext> _factory;
             public TestController(FakeExecutor executor, FixedTime time, Func<DatabaseContext> factory)
-                : base(null, null, new ListLogger(), executor, new FakeConfig(), time, null, null, null)
+                : base(null, null, new ListLogger(), executor, new FakeConfig(), time, null)
                 => _factory = factory;
             protected override DatabaseContext CreateDatabaseContext() => _factory();
         }

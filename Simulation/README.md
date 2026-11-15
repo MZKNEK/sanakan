@@ -10,8 +10,7 @@ Like on the production server, the bot gets Shinden's pictures from a local mirr
 simulator's `/cdn/`.
 Downloads from players' links go through a fake fetch proxy (`/fetch`, `FetchProxy` in the bot's config) like on
 the production server: it answers a picture for any address, 404 for addresses with `missing` in them, and `busy`
-above 4 requests at once. `--extra "konfiguracja profilu"` sends profile backgrounds linked to `img.sim.test`
-through it.
+above 4 requests at once.
 
 ## Modes
 
@@ -26,7 +25,6 @@ dotnet run --project Simulation -- load --world W --mix M # replays the producti
 profile), `--scale 1` (traffic multiplier), `--chat 2300` (chat messages per hour at the average hour),
 `--start-hour 20`, `--extra "jakie,czego brak"` (commands sent on top of the mix, one every 10 s, so the rare ones
 changed in a commit are exercised; each needs a template in `CommandCatalog.cs`).
-`--layered` switches the profile of layers on (`LayeredProfiles` in the bot's config), so `profil` draws it.
 
 Web API: `--api` adds the API traffic of the mix (hourly API reports and logged writes) for the routes with a template
 in `ApiCatalog.cs`, at the same speed and scale as the commands. `--extra` also takes `api:` names (e.g.

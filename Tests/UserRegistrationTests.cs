@@ -34,7 +34,7 @@ namespace Artifacts
 
             public TestController(SqliteConnection connection, FakeExecutor executor,
                 Func<ulong, Task<Discord.IUser>> userLookup)
-                : base(null, null, new ListLogger(), executor, new FakeConfig(), new FixedTime(), null, null, null)
+                : base(null, null, new ListLogger(), executor, new FakeConfig(), new FixedTime(), null)
             {
                 _connection = connection;
                 _userLookup = userLookup;

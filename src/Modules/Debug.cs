@@ -1127,29 +1127,14 @@ namespace Sanakan.Modules
         }
 
         [Command("prst"), RequireDev]
-        [Summary("resetuje profil użytkownika")]
+        [Summary("resetuje profil użytkownika do domyślnego i usuwa jego obrazki; odblokowania zostają")]
         [Remarks("Karna")]
         public async Task ResetUserProfileAsync([Summary("nazwa użytkownika")]SocketGuildUser user)
         {
             using (var db = new Database.DatabaseContext(Config))
-            {
-                var bUser = await db.GetUserOrCreateSimpleAsync(user.Id, _time);
+                await new Services.Profiles.ProfileStore(_img, _time).ResetAsync(db, await db.GetUserOrCreateSimpleAsync(user.Id, _time), removePictures: true);
 
-                bUser.BackgroundProfileUri = Dir.GetResource("np/pbg.png");
-                bUser.StatsStyleSettings = ProfileSettings.Default;
-                bUser.PremiumCustomProfileOverlayUrl = null;
-                bUser.StatsReplacementProfileUri = null;
-                bUser.AvatarBorder = AvatarBorder.Base;
-                bUser.ProfileType = ProfileType.Stats;
-                bUser.CustomProfileOverlayUrl = null;
-                bUser.ProfileShadowsOpacity = 0.7f;
-
-                await db.SaveChangesAsync();
-
-                QueryCache.ExpireTag(new string[] { CacheTags.User(user.Id) });
-
-                await SafeReplyAsync("", embed: $"Zresetowano profil użytkownika: {user.Mention}".ToEmbedMessage(EMType.Success).Build());
-            }
+            await SafeReplyAsync("", embed: $"Zresetowano profil użytkownika: {user.Mention}".ToEmbedMessage(EMType.Success).Build());
         }
 
         [Command("level"), RequireDev]

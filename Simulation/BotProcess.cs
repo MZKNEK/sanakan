@@ -52,7 +52,7 @@ public sealed class BotProcess : IDisposable
         => Environment.GetEnvironmentVariable(MySqlVariable)
             ?? (OperatingSystem.IsWindows() ? Environment.GetEnvironmentVariable(MySqlVariable, EnvironmentVariableTarget.User) : null);
 
-    public void Prepare(World world, string baseUrl, bool fresh, string mySql = null, bool layered = false)
+    public void Prepare(World world, string baseUrl, bool fresh, string mySql = null)
     {
         _simulatorUrl = baseUrl;
         Directory.CreateDirectory(BotDir);
@@ -81,7 +81,6 @@ public sealed class BotProcess : IDisposable
             ["AutoCleanCards"] = false,
             ["DatabaseProvider"] = mySql != null ? "MySql" : "Sqlite",
             ["ConnectionString"] = mySql ?? "Data Source=sim.db",
-            ["LayeredProfiles"] = layered,
             ["CharPerPacket"] = 250000,
             ["PacksPerDay"] = 4,
             ["Shinden"] = new JsonObject

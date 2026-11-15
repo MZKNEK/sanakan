@@ -295,9 +295,7 @@ namespace Sanakan.Modules
                 }
 
                 dataUser.GameDeck.Cards = (await db.GetCachedUserGameDeckAsync(searchId)).Cards;
-                using (var image = Config.Get().LayeredProfiles
-                    ? await _profile.GetLayeredProfileImageAsync(db, dataUser, usr, rankingPosition)
-                    : await _profile.GetProfileImageAsync(usr, dataUser, rankingPosition))
+                using (var image = await _profile.GetLayeredProfileImageAsync(db, dataUser, usr, rankingPosition))
                 {
                     image.SaveToPath(profileUri);
                     try
@@ -375,364 +373,20 @@ namespace Sanakan.Modules
             }
         }
 
+        private const string ProfilatorUrl = "https://sanakan.pl/profilator/";
+        private const string ProfilatorLabel = "Kliknij tutaj, by przejść do Profilatora";
+
+        // the old settings of the profile with any arguments end here too, pointed to Profilator
         [Command("konfiguracja profilu")]
         [Alias("configure profile", "konprof", "conprof", "conp", "konp")]
-        [Summary("pozwala konfigurować profil użytkownika")]
-        [Remarks("konfiguracja profilu info"), RequireCommandChannel]
-        public async Task ConfigureProfileAsync([Summary("konfiguracja (podanie info wyświetla dodatkowe informacje)")][Remainder]ProfileConfig config)
+        [Summary("wskazuje Profilator, w którym ustawia się wygląd profilu")]
+        [Remarks(""), RequireCommandChannel]
+        public async Task ConfigureProfileAsync([Summary("dawne ustawienia (nieużywane)")][Remainder]string old = null)
         {
-            if (Config.Get().LayeredProfiles)
-            {
-                var button = new ComponentBuilder().WithButton(ProfilatorLabel, style: ButtonStyle.Link, url: LayeredProfilatorUrl).Build();
-                await SafeReplyAsync("", embed: ($"{Context.User.Mention} profil ustawiasz teraz w Profilatorze, po zalogowaniu kontem Discord. "
-                    + "Powrót do domyślnego wyglądu: `konfiguracja profilu domyślny tak`.").ToEmbedMessage(EMType.Info).Build(), components: button);
-                return;
-            }
-
-            if (config.Type == ProfileConfigType.ShowInfo)
-            {
-                await SafeReplyAsync("", embed: config.GetHelp().ToEmbedMessage(EMType.Info).Build());
-                return;
-            }
-
-            if (config.Type == ProfileConfigType.Code)
-            {
-                await ConfigureProfileFromCodeAsync(config);
-                return;
-            }
-
-            using (var db = new Database.DatabaseContext(Config))
-            {
-                var botuser = await db.GetUserOrCreateSimpleAsync(Context.User.Id, _time);
-
-                if (config.ChangesNothing(botuser))
-                {
-                    await SafeReplyAsync("", embed: $"{Context.User.Mention} masz już to ustawione.".ToEmbedMessage(EMType.Error).Build());
-                    return;
-                }
-
-                var toPay = config.ToPay();
-                if (config.NeedPay(botuser) && !botuser.Pay(toPay))
-                {
-                    await SafeReplyAsync("", embed: $"{Context.User.Mention} nie masz wystarczającej liczby **{toPay.Type}**, potrzebujesz {toPay.Cost}.".ToEmbedMessage(EMType.Error).Build());
-                    return;
-                }
-
-                switch (config.Type)
-                {
-                    case ProfileConfigType.BackgroundAndStyle:
-                    {
-                        if (!config.StyleNeedUrl())
-                        {
-                            await SafeReplyAsync("", embed: $"{Context.User.Mention} tym poleceniem możesz ustawić tylko style wymagające obrazka!".ToEmbedMessage(EMType.Error).Build());
-                            return;
-                        }
-
-                        var bgUri = $"{Dir.SavedData}/BG{botuser.Id}.webp";
-                        var styleUri = $"{Dir.SavedData}/SR{botuser.Id}.webp";
-                        var res = await _profile.SaveProfileAndStyleImageAsync(config.Url, bgUri, 750, 160, styleUri, 750, 340);
-                        if (res != SaveResult.Success)
-                        {
-                            await SafeReplyAsync("", embed: $"{Context.User.Mention} nie wykryto obrazka! Upewnij się, że podałeś poprawny adres!".ToEmbedMessage(EMType.Error).Build());
-                            return;
-                        }
-
-                        botuser.StatsReplacementProfileUri = styleUri;
-                        botuser.BackgroundProfileUri = bgUri;
-                        botuser.ProfileType = config.Style;
-                    }
-                    break;
-
-                    case ProfileConfigType.Background:
-                    {
-                        var bgUri = $"{Dir.SavedData}/BG{botuser.Id}.webp";
-                        var res = await _profile.SaveProfileImageAsync(config.Url, bgUri, 750, 160, true);
-                        if (res != SaveResult.Success)
-                        {
-                            await SafeReplyAsync("", embed: $"{Context.User.Mention} nie wykryto obrazka! Upewnij się, że podałeś poprawny adres!".ToEmbedMessage(EMType.Error).Build());
-                            return;
-                        }
-
-                        botuser.BackgroundProfileUri = bgUri;
-                    }
-                    break;
-
-                    case ProfileConfigType.Style:
-                    {
-                        if (config.StyleNeedUrl())
-                        {
-                            var styleUri = $"{Dir.SavedData}/SR{botuser.Id}.webp";
-                            var res = await _profile.SaveProfileImageAsync(config.Url, styleUri, 750, 340);
-                            if (res != SaveResult.Success)
-                            {
-                                await SafeReplyAsync("", embed: $"{Context.User.Mention} nie wykryto obrazka! Upewnij się, że podałeś poprawny adres!".ToEmbedMessage(EMType.Error).Build());
-                                return;
-                            }
-
-                            botuser.StatsReplacementProfileUri = styleUri;
-                        }
-
-                        botuser.ProfileType = config.Style;
-                    }
-                    break;
-
-                    case ProfileConfigType.Overlay:
-                    {
-                        var ovUri = $"{Dir.SavedData}/OV{botuser.Id}.webp";
-                        var res = await _profile.SaveProfileImageAsync(config.Url, ovUri, 750, 402);
-                        if (res != SaveResult.Success)
-                        {
-                            await SafeReplyAsync("", embed: $"{Context.User.Mention} nie wykryto obrazka! Upewnij się, że podałeś poprawny adres!".ToEmbedMessage(EMType.Error).Build());
-                            return;
-                        }
-
-                        botuser.CustomProfileOverlayUrl = ovUri;
-                    }
-                    break;
-
-                    case ProfileConfigType.PremiumOverlay:
-                    {
-                        var uovUri = $"{Dir.SavedData}/UOV{botuser.Id}.webp";
-                        var res = await _profile.SaveProfileImageAsync(config.Url, uovUri, 750, 500);
-                        if (res != SaveResult.Success)
-                        {
-                            await SafeReplyAsync("", embed: $"{Context.User.Mention} nie wykryto obrazka! Upewnij się, że podałeś poprawny adres!".ToEmbedMessage(EMType.Error).Build());
-                            return;
-                        }
-
-                        botuser.PremiumCustomProfileOverlayUrl = uovUri;
-                    }
-                    break;
-
-                    case ProfileConfigType.AvatarBorder:
-                    {
-                        botuser.AvatarBorder = config.Border;
-                    }
-                    break;
-
-                    case ProfileConfigType.ShadowsOpacity:
-                    {
-                        if (!config.IsConfigurableStyle(botuser.ProfileType))
-                        {
-                            await SafeReplyAsync("", embed: $"{Context.User.Mention} nie możesz zmienić tej opcji na obecnie ustawionym stylu!".ToEmbedMessage(EMType.Error).Build());
-                            return;
-                        }
-
-                        botuser.ProfileShadowsOpacity = config.PercentToOpacity();
-                    }
-                    break;
-
-                    case ProfileConfigType.Bar:
-                    case ProfileConfigType.MiniFavCard:
-                    case ProfileConfigType.AnimeStats:
-                    case ProfileConfigType.MangaStats:
-                    case ProfileConfigType.CardsStats:
-                    case ProfileConfigType.MiniGallery:
-                    case ProfileConfigType.CardCntInMiniGallery:
-                    case ProfileConfigType.FlipPanels:
-                    case ProfileConfigType.LevelAvatarBorder:
-                    case ProfileConfigType.RoundAvatarWithoutBorder:
-                    case ProfileConfigType.CustomBarOpacity:
-                    case ProfileConfigType.OverlayVisibility:
-                    case ProfileConfigType.PremiumOverlayVisibility:
-                    {
-                        if (!config.CanUseSettingOnStyle(botuser.ProfileType))
-                        {
-                            await SafeReplyAsync("", embed: $"{Context.User.Mention} nie możesz zmienić tej opcji na obecnie ustawionym stylu!".ToEmbedMessage(EMType.Error).Build());
-                            return;
-                        }
-
-                        if (config.ToggleCurentValue)
-                        {
-                            botuser.StatsStyleSettings ^= config.Settings;
-                        }
-                    }
-                    break;
-
-                    default:
-                    break;
-                }
-
-                await db.SaveChangesAsync();
-
-                QueryCache.ExpireTag(new string[] { CacheTags.User(botuser.Id) });
-
-                await SafeReplyAsync("", embed: $"{Context.User.Mention} {config.What()}".ToEmbedMessage(EMType.Success).Build());
-            }
+            var button = new ComponentBuilder().WithButton(ProfilatorLabel, style: ButtonStyle.Link, url: ProfilatorUrl).Build();
+            await SafeReplyAsync("", embed: ($"{Context.User.Mention} profil ustawiasz w Profilatorze, po zalogowaniu kontem Discord. "
+                + "Powrót do domyślnego wyglądu: `konfiguracja profilu domyślny tak`.").ToEmbedMessage(EMType.Info).Build(), components: button);
         }
-
-        private async Task ConfigureProfileFromCodeAsync(ProfileConfig config)
-        {
-            using (var db = new Database.DatabaseContext(Config))
-            {
-                var botuser = await db.GetUserOrCreateSimpleAsync(Context.User.Id, _time);
-                if (config.Code == null)
-                {
-                    await ShowProfileCodeAsync(db, botuser, config.WithImages);
-                    return;
-                }
-
-                var code = ProfileCode.Decode(config.Code);
-                if (code == null)
-                {
-                    await SafeReplyAsync("", embed: $"{Context.User.Mention} podany kod jest niepoprawny.".ToEmbedMessage(EMType.Error).Build());
-                    return;
-                }
-
-                var styleAttachment = config.Url != null;
-                var error = code.Validate(botuser, styleAttachment, TypeReaders.ProfileConfigTypeReader.IsSelectableBorder);
-                if (error != null)
-                {
-                    await SafeReplyAsync("", embed: $"{Context.User.Mention} {error}".ToEmbedMessage(EMType.Error).Build());
-                    return;
-                }
-
-                if (!code.ChangesAnything(botuser, styleAttachment))
-                {
-                    await SafeReplyAsync("", embed: $"{Context.User.Mention} twój profil ma już te ustawienia.".ToEmbedMessage(EMType.Error).Build());
-                    return;
-                }
-
-                var costs = code.GetCosts(botuser, styleAttachment, config.Currency);
-                var total = costs.Sum(x => x.Cost.Cost);
-
-                // the context is never saved here, Pay only checks the balance
-                if (total > 0 && !botuser.Pay(new CurrencyCost((int)total, config.Currency)))
-                {
-                    await SafeReplyAsync("", embed: $"{Context.User.Mention} nie masz wystarczającej liczby **{config.Currency}**, potrzebujesz {total}.".ToEmbedMessage(EMType.Error).Build());
-                    return;
-                }
-
-                var session = new AcceptSession(Context.User, null, Context.Client.CurrentUser);
-                await _session.KillSessionIfExistAsync(session);
-
-                var actions = new AcceptProfileCode(Config, _time)
-                {
-                    User = Context.User,
-                    Code = code,
-                    Currency = config.Currency,
-                    Total = total,
-                    StyleAttachment = styleAttachment,
-                };
-
-                var failed = await DownloadCodeImagesAsync(actions, code, config.Url, botuser.Id);
-                if (failed != null)
-                {
-                    actions.DeletePending();
-                    var why = failed == AttachmentName ? "nie wykryto obrazka w załączniku! Upewnij się, że podałeś poprawny adres!"
-                        : $"nie udało się pobrać obrazka z kodu ({failed}), link mógł wygasnąć.";
-                    await SafeReplyAsync("", embed: $"{Context.User.Mention} {why}".ToEmbedMessage(EMType.Error).Build());
-                    return;
-                }
-
-                var withImages = code.Images.Keys.OrderBy(x => x).Select(x => ImageNames[x]).ToList();
-                if (styleAttachment)
-                    withImages.Add("obrazek stylu z załącznika");
-
-                var price = costs.Count == 0 ? "bez opłat"
-                    : string.Join("\n", costs.Select(x => $"{x.What}: {x.Cost}")) + $"\n**Razem:** {total} {config.Currency}";
-
-                var msg = await SafeReplyAsync("", embed: $"{Context.User.Mention} ustawić profil z kodu{(withImages.Count > 0 ? " z obrazkami: " + string.Join(", ", withImages) : "")}?\n\n**Koszt:**\n{price}".ToEmbedMessage(EMType.Bot).Build());
-                await msg.AddReactionsAsync(session.StartReactions);
-                actions.Message = msg;
-                session.Actions = actions;
-                session.Message = msg;
-
-                await _session.TryAddSession(session);
-            }
-        }
-
-        private static readonly Dictionary<ProfileImage, string> ImageNames = new Dictionary<ProfileImage, string>
-        {
-            { ProfileImage.Background, "tło" },
-            { ProfileImage.Style, "obrazek stylu" },
-            { ProfileImage.Overlay, "nakładka" },
-            { ProfileImage.Premium, "ultra nakładka" },
-            { ProfileImage.BackgroundAndStyle, "tło i styl" },
-        };
-
-        private const string AttachmentName = "załącznik";
-
-        // every image of the code downloaded before the price is shown, as the commands for each image do;
-        // null when all came, otherwise the name of the one that did not
-        private async Task<string> DownloadCodeImagesAsync(AcceptProfileCode actions, ProfileCode code, string attachment, ulong userId)
-        {
-            async Task<bool> Save(ProfileImage image, string url, int width, int height, bool stretch = false)
-            {
-                var path = AcceptProfileCode.PendingPath(image, userId);
-                actions.PendingImages[image] = path;
-                return await _profile.SaveProfileImageAsync(url, path, width, height, stretch) == SaveResult.Success;
-            }
-
-            if (attachment != null && !await Save(ProfileImage.Style, attachment, 750, 340))
-                return AttachmentName;
-
-            foreach (var (image, url) in code.Images.OrderBy(x => x.Key))
-            {
-                var ok = image switch
-                {
-                    ProfileImage.Background => await Save(ProfileImage.Background, url, 750, 160, true),
-                    ProfileImage.Style => await Save(ProfileImage.Style, url, 750, 340),
-                    ProfileImage.Overlay => await Save(ProfileImage.Overlay, url, 750, 402),
-                    ProfileImage.Premium => await Save(ProfileImage.Premium, url, 750, 500),
-                    _ => await SaveBackgroundAndStyleAsync(actions, url, userId),
-                };
-                if (!ok)
-                    return ImageNames[image];
-            }
-            return null;
-        }
-
-        private async Task<bool> SaveBackgroundAndStyleAsync(AcceptProfileCode actions, string url, ulong userId)
-        {
-            var background = AcceptProfileCode.PendingPath(ProfileImage.Background, userId);
-            var style = AcceptProfileCode.PendingPath(ProfileImage.Style, userId);
-            actions.PendingImages[ProfileImage.Background] = background;
-            actions.PendingImages[ProfileImage.Style] = style;
-            return await _profile.SaveProfileAndStyleImageAsync(url, background, 750, 160, style, 750, 340) == SaveResult.Success;
-        }
-
-        // the code of the profile, with images links to the account's pictures sent to the trash channel
-        private async Task ShowProfileCodeAsync(Database.DatabaseContext db, User botuser, bool withImages)
-        {
-            var code = ProfileCode.FromUser(botuser);
-            var note = "";
-            if (withImages)
-            {
-                var gConfig = await db.GetCachedGuildFullConfigAsync(Context.Guild.Id);
-                var trash = Context.Guild.GetTextChannel(gConfig?.WaifuConfig?.TrashCommandsChannel ?? 0);
-                if (trash == null)
-                {
-                    note = "\n\nNa tym serwerze nie ma kanału na obrazki, więc kod jest bez obrazków.";
-                }
-                else
-                {
-                    code = await _profile.GetProfileCodeWithImagesAsync(botuser, trash, false);
-                    note = code.Images.Count > 0 ? "\n\nKod z obrazkami działa przez 24 godziny, potem linki do obrazków wygasną. Każdy obrazek z kodu jest płatny przy ustawianiu."
-                        : "\n\nNie masz własnych obrazków, więc kod jest bez nich.";
-                }
-            }
-
-            var text = code.Encode();
-            var how = code.Images.Count > 0 ? $"```{text}```\n*Ustawisz go poleceniem* `konfiguracja profilu kod <kod>`"
-                : $"`{text}`\n\n*Ustawisz go poleceniem* `konfiguracja profilu kod {text}`";
-            var embed = $"{Context.User.Mention} kod twojego profilu: {how}{note}".ToEmbedMessage(EMType.Info).Build();
-
-            // a link button takes at most 512 characters, a longer code goes as a link in a message of its own
-            var profilator = ProfilatorUrl + text;
-            if (profilator.Length <= MaxButtonUrl)
-            {
-                var button = new ComponentBuilder().WithButton(ProfilatorLabel, style: ButtonStyle.Link, url: profilator).Build();
-                await SafeReplyAsync("", embed: embed, components: button);
-                return;
-            }
-
-            await SafeReplyAsync("", embed: embed);
-            await SafeReplyAsync("", embed: $"[{ProfilatorLabel}]({profilator})".ToEmbedMessage(EMType.Info).Build());
-        }
-
-        private const string ProfilatorUrl = "https://sanakan.pl/profilator/#";
-        private const string LayeredProfilatorUrl = "https://sanakan.pl/profilator/";
 
         [Command("konfiguracja profilu domyślny"), Priority(1)]
         [Alias("konfiguracja profilu domyslny", "konprof domyślny", "konprof domyslny", "konp domyślny", "konp domyslny", "conp default", "configure profile default")]
@@ -740,12 +394,6 @@ namespace Sanakan.Modules
         [Remarks("tak"), RequireCommandChannel]
         public async Task ResetLayeredProfileAsync([Summary("potwierdzenie (tak)")]string confirm = null)
         {
-            if (!Config.Get().LayeredProfiles)
-            {
-                await SafeReplyAsync("", embed: $"{Context.User.Mention} to polecenie działa z nowym profilem, który nie jest jeszcze włączony.".ToEmbedMessage(EMType.Error).Build());
-                return;
-            }
-
             if (!string.Equals(confirm, "tak", StringComparison.OrdinalIgnoreCase))
             {
                 await SafeReplyAsync("", embed: ($"{Context.User.Mention} to ustawi domyślny wygląd profilu zamiast twojego układu. Odblokowania zostają, "
@@ -754,29 +402,10 @@ namespace Sanakan.Modules
             }
 
             using (var db = new Database.DatabaseContext(Config))
-            {
-                var user = await db.GetUserOrCreateSimpleAsync(Context.User.Id, _time);
-                var row = await db.UserProfiles.AsQueryable().FirstOrDefaultAsync(x => x.UserId == user.Id);
-                var layout = Services.Profiles.ProfileCatalog.Default().ToJson();
-                if (row == null)
-                    db.UserProfiles.Add(new UserProfile { UserId = user.Id, Layout = layout, Version = 1, UpdatedAt = _time.Now() });
-                else
-                {
-                    row.Layout = layout;
-                    row.Version++;
-                    row.UpdatedAt = _time.Now();
-                }
-                await db.SaveChangesAsync();
-                QueryCache.ExpireTag(new string[] { CacheTags.User(user.Id) });
-            }
-
-            try { File.Delete($"{Dir.FakeCardsAsProfiles}/{Context.User.Id}.webp"); }
-            catch (IOException) { }
+                await _profile.Store.ResetAsync(db, await db.GetUserOrCreateSimpleAsync(Context.User.Id, _time), removePictures: false);
 
             await SafeReplyAsync("", embed: $"{Context.User.Mention} przywrócono domyślny wygląd profilu.".ToEmbedMessage(EMType.Success).Build());
         }
-        private const string ProfilatorLabel = "Kliknij tutaj, by przejść do Profilatora";
-        private const int MaxButtonUrl = 512;
 
 
         [Command("globalki")]

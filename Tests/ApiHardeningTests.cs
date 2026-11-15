@@ -106,7 +106,7 @@ namespace Artifacts
         {
             private readonly Func<DatabaseContext> _factory;
             public TestUserController(IExecutor executor, ISystemTime time, Func<DatabaseContext> factory)
-                : base(null, null, new ListLogger(), executor, new FakeConfig(), time, null, null, null) => _factory = factory;
+                : base(null, null, new ListLogger(), executor, new FakeConfig(), time, null) => _factory = factory;
             protected override DatabaseContext CreateDatabaseContext() => _factory();
         }
 

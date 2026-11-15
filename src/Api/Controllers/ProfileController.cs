@@ -92,7 +92,6 @@ namespace Sanakan.Api.Controllers
         [HttpGet("catalog"), AllowAnonymous]
         public ActionResult<ProfileCatalogView> GetCatalog() => new ProfileCatalogView
         {
-            Enabled = _config.Get().LayeredProfiles,
             LayoutVersion = ProfileLayout.CurrentVersion,
             MaxStickers = ProfileCatalog.MaxStickers,
             MaxOverlays = ProfileCatalog.MaxOverlays,
@@ -427,10 +426,7 @@ namespace Sanakan.Api.Controllers
                 return "User not found!".ToResponse(404);
 
             var top = await TopAsync(db, id);
-            var account = Account(id);
-            if (_config.Get().LayeredProfiles || account is not SocketGuildUser member)
-                return await DrawAsync(id, () => _profile.GetLayeredProfileImageAsync(db, user, account, top));
-            return await DrawAsync(id, () => _profile.GetProfileImageAsync(member, user, top));
+            return await DrawAsync(id, () => _profile.GetLayeredProfileImageAsync(db, user, Account(id), top));
         }
 
         /// <summary>

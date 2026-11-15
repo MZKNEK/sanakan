@@ -6,7 +6,7 @@ namespace Sanakan.Simulation;
 // reports or the logged writes), its weight there drives --api; every template can be forced in with --extra api:name.
 public static class ApiCatalog
 {
-    public enum Auth { Player, Site, Info }
+    public enum Auth { Player, Site }
 
     // GivesPacks/NeedsPacks: opening goes to players the simulation gave packs to, most random players have none;
     // Idempotent: the request carries a new Idempotency-Key, which these routes require
@@ -99,8 +99,7 @@ public static class ApiCatalog
         // they end the bot, only for checking its exit code (ExitCodes.Update, ExitCodes.Stop)
         ["api:debug-update"] = new("POST api/Debug/update", HttpMethod.Post, Auth.Site, _ => "api/Debug/update"),
         ["api:debug-kill"] = new("POST api/Debug/kill", HttpMethod.Post, Auth.Site, _ => "api/Debug/kill"),
-        ["api:profile-preview"] = new("GET api/User/discord/{id}/profile", HttpMethod.Get, Auth.Info, c => $"api/User/discord/{c.User.Id}/profile"),
-        // only for --extra: the profile of layers for the new Profilator
+        // only for --extra: the profile of layers for Profilator
         ["api:layers-catalog"] = new("extra profile catalog", HttpMethod.Get, Auth.Site, _ => "api/Profile/catalog"),
         ["api:layers-editor"] = new("extra profile editor", HttpMethod.Get, Auth.Site, c => $"api/Profile/discord/{c.User.Id}"),
         ["api:layers-quote"] = new("extra profile quote", HttpMethod.Post, Auth.Site, c => $"api/Profile/discord/{c.User.Id}/quote", LayersBody),

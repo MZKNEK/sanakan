@@ -49,7 +49,7 @@ namespace Sanakan.Services
             [BarLayout.Sc] = "#E8B83A", [BarLayout.Tc] = "#A77BF3", [BarLayout.Ac] = "#6FD47E", [BarLayout.Ct] = "#F0525C", [BarLayout.Pc] = "#4FC3E8",
         };
 
-        // where the bot puts each border for the avatar box at 52, 68 of size 84 (as GetProfileAvatarBorder())
+        // where each border goes for the avatar box at 52, 68 of size 84 (as the old profile put them)
         private static Point FrameAt(AvatarBorder border) => border switch
         {
             AvatarBorder.Bow => new Point(26, 48),

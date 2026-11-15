@@ -180,6 +180,42 @@ namespace Sanakan.Services.Profiles
             return Convert.ToHexString(await SHA256.HashDataAsync(stream)).ToLowerInvariant();
         }
 
+        // the default layout instead of the player's; an old profile is converted first, so its unlocks stay.
+        // With removePictures (a moderator's reset) the player's pictures go too, their files with them.
+        public async Task ResetAsync(DatabaseContext db, User user, bool removePictures)
+        {
+            await LoadAsync(db, user);
+            var now = _time.Now();
+            var layout = ProfileCatalog.Default().ToJson();
+            var row = await db.UserProfiles.FirstOrDefaultAsync(x => x.UserId == user.Id);
+            if (row == null)
+                db.UserProfiles.Add(new UserProfile { UserId = user.Id, Layout = layout, Version = 1, UpdatedAt = now });
+            else
+            {
+                row.Layout = layout;
+                row.Version++;
+                row.UpdatedAt = now;
+            }
+
+            var files = new List<string>();
+            if (removePictures)
+            {
+                var pictures = await db.ProfilePictures.Where(x => x.UserId == user.Id).ToListAsync();
+                files.AddRange(pictures.Select(x => x.File).Distinct());
+                db.ProfilePictures.RemoveRange(pictures);
+            }
+            await db.SaveChangesAsync();
+
+            foreach (var file in files.Append($"{Dir.FakeCardsAsProfiles}/{user.Id}.webp"))
+            {
+                if (!Dir.IsLocal(file))
+                    continue;
+                try { File.Delete(file); }
+                catch (IOException) { }
+            }
+            QueryCache.ExpireTag(new[] { CacheTags.User(user.Id) });
+        }
+
         // ---- all at once ----
 
         public sealed class MigrationReport

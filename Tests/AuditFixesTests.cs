@@ -115,26 +115,6 @@ namespace Artifacts
             };
         }
 
-        [Theory]
-        [InlineData(1920, 1080)]
-        [InlineData(500, 1200)]
-        [InlineData(800, 500)]
-        [InlineData(300, 200)]
-        public async Task BackgroundAndStyle_AnyAspectRatio_IsSplitToExactSizes(int width, int height)
-        {
-            using var server = new LocalHttpServer(ServePng(width, height));
-            var top = Path.Combine(_dir, "top.webp");
-            var bot = Path.Combine(_dir, "bot.webp");
-
-            await new ImageProcessing(null, null, true).SplitImageToBackgroundAndStyleAsync(server.BaseUrl + "img.png",
-                top, new Size(750, 160), bot, new Size(750, 340));
-
-            using (var image = Image.Load(top))
-                Assert.Equal((750, 160), (image.Width, image.Height));
-            using (var image = Image.Load(bot))
-                Assert.Equal((750, 340), (image.Width, image.Height));
-        }
-
         [Fact]
         public async Task RejectedDownload_DoesNotSetCustomBorder()
         {
@@ -238,37 +218,6 @@ namespace Artifacts
             }
 
             Assert.NotNull((await controller.GetUserWaifuProfileAsync(unknown)).Value);
-        }
-    }
-
-    public class ProfileConfigAliasTests
-    {
-        private static TypeReaderResult Read(string input)
-        {
-            var message = new Mock<Discord.IUserMessage>();
-            message.SetupGet(x => x.Attachments).Returns(new List<Discord.IAttachment>());
-            var context = new Mock<ICommandContext>();
-            context.SetupGet(x => x.Message).Returns(message.Object);
-            return new ProfileConfigTypeReader().ReadAsync(context.Object, input, null).GetAwaiter().GetResult();
-        }
-
-        [Theory]
-        [InlineData("overlay visibility", "widoczność nakładki")]
-        [InlineData("ultra overlay visibility", "widoczność ultra nakładki")]
-        public void EnglishAlias_WorksLikePolishName(string english, string polish)
-        {
-            var en = Read(english);
-            var pl = Read(polish);
-
-            Assert.True(pl.IsSuccess);
-            Assert.True(en.IsSuccess, en.ErrorReason);
-            Assert.Equal(((ProfileConfig)pl.Values.First().Value).Type, ((ProfileConfig)en.Values.First().Value).Type);
-        }
-
-        [Fact]
-        public void ShortAlias_StillWorks()
-        {
-            Assert.Equal(ProfileConfigType.Overlay, ((ProfileConfig)Read("overlay https://sanakan.pl/a.png").Values.First().Value).Type);
         }
     }
 

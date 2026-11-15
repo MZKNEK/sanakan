@@ -141,13 +141,12 @@ that changes one of them has to expect both forms:
 The new profile is a layout of layers set in Profilator on the site, kept in `UserProfiles` (the layout as JSON),
 `ProfileUnlocks` (one-time paid options) and `ProfilePictures` (the players' pictures under `GOut/Saved/Profile`).
 Profilator reads and saves it through `api/Profile`, with the site's app key and its `Sansite` permission (named
-`Info` before; configs with the old name still read, and `Site` includes it). The `profil` command keeps drawing the old profile until it is switched on for everyone:
+`Info` before; configs with the old name still read, and `Site` includes it). `konfiguracja profilu` points to
+Profilator, and `konfiguracja profilu domyślny tak` sets the default look back.
 
-1. deploy the version with the migration `ProfileLayers`;
-2. run `dev profile migrate`, which converts every old customised profile with its pictures and what it used
-   unlocked (it only takes the missing ones, so it can run again; any other profile is converted when first read);
-3. set `"LayeredProfiles": true` in the config. `konfiguracja profilu` then points to Profilator, and
-   `konfiguracja profilu domyślny tak` sets the default look back.
+Deploying the version with the migration `ProfileLayers` switches everyone. A player's old profile is converted,
+with its pictures and what it used unlocked, the first time it is read; `dev profile migrate` converts all of them
+at once (it only takes the missing ones, so it can run again).
 
 #### Game statistics
 

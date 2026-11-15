@@ -56,7 +56,6 @@ namespace Sanakan.Services.Commands
             commands.AddTypeReader<SlotMachineSetting>(new TypeReaders.SlotMachineSettingTypeReader());
             commands.AddTypeReader<ModifyTagActionType>(new TypeReaders.ModifyTagActionTypeReader());
             commands.AddTypeReader<WishlistObjectType>(new TypeReaders.WishlistObjectTypeReader());
-            commands.AddTypeReader<ProfileConfig>(new TypeReaders.ProfileConfigTypeReader());
             commands.AddTypeReader<ItemCountPair>(new TypeReaders.ItemCountPairTypeReader());
             commands.AddTypeReader<CardExpedition>(new TypeReaders.ExpeditionTypeReader());
             commands.AddTypeReader<FigurePart>(new TypeReaders.FigurePartTypeReader());

@@ -235,27 +235,6 @@ namespace Artifacts
                 return user;
             }
 
-            var profiles = new List<(string, ProfileType, ProfileSettings, AvatarBorder)>
-            {
-                ("stats_default", ProfileType.Stats, ProfileSettings.Default, AvatarBorder.Base),
-                ("stats_flip_waifu_round", ProfileType.Stats, ProfileSettings.Default | ProfileSettings.Flip | ProfileSettings.ShowWaifu | ProfileSettings.RoundAvatar, AvatarBorder.None),
-                ("img", ProfileType.Img, ProfileSettings.Default, AvatarBorder.Fire),
-                ("stats_with_img", ProfileType.StatsWithImg, ProfileSettings.Default, AvatarBorder.Gold),
-                ("cards", ProfileType.Cards, ProfileSettings.Default | ProfileSettings.BarOnTop, AvatarBorder.Ice),
-                ("cards_on_img", ProfileType.CardsOnImg, ProfileSettings.Default | ProfileSettings.BarOpacity, AvatarBorder.Rainbow),
-                ("stats_on_img", ProfileType.StatsOnImg, ProfileSettings.Default, AvatarBorder.Water),
-                ("mini_gallery", ProfileType.MiniGallery, ProfileSettings.Default, AvatarBorder.Skull),
-                ("mini_gallery_half_on_img", ProfileType.MiniGalleryOnImg, ProfileSettings.Default | ProfileSettings.HalfGallery, AvatarBorder.PurpleLeaves),
-                ("no_overlays", ProfileType.Stats, ProfileSettings.ShowAnime | ProfileSettings.ShowCards, AvatarBorder.None),
-            };
-            foreach (var (name, type, settings, avBorder) in profiles)
-            {
-                var user = NewUser(type, settings, avBorder);
-                await Render($"profile_{name}", () => img.GetUserProfileAsync(shinden, user, U("avatar.png"), 17, "Bardzo długi nick gracza Żółć", new Discord.Color(0x9B59B6)));
-            }
-            var animatedAvatarUser = NewUser(ProfileType.Stats, ProfileSettings.Default, AvatarBorder.Bow);
-            await Render("profile_gif_avatar_no_shinden", () => img.GetUserProfileAsync(null, animatedAvatarUser, U("avatar.gif"), 1, "krótki", Discord.Color.Default));
-
             // the profile of layers: every ready layout, everything at once, an old profile converted and one moving card
             var layeredUser = NewUser(ProfileType.Stats, ProfileSettings.Default, AvatarBorder.Base);
             var layeredCards = layeredUser.GameDeck.Cards.ToList();
@@ -364,13 +343,11 @@ namespace Artifacts
             if (Environment.GetEnvironmentVariable("SANAKAN_GOLDEN_BENCH") == "1")
             {
                 var bench = new StringBuilder();
-                var benchUser = NewUser(ProfileType.Stats, ProfileSettings.Default | ProfileSettings.ShowWaifu, AvatarBorder.Base);
                 var benches = new List<(string, Func<Task<Image>>)>
                 {
                     ("card", () => img.GetWaifuCardAsync(cards[0].card)),
                     ("card_ultimate_Alpha", () => img.GetWaifuCardAsync(cards.First(x => x.name == "ultimate_Alpha").card)),
                     ("profilecard", () => img.GetWaifuInProfileCardAsync(cards[0].card)),
-                    ("profile", () => img.GetUserProfileAsync(shinden, benchUser, U("avatar.png"), 17, "gracz", new Discord.Color(0x9B59B6))),
                     ("profile_layered", () => img.GetLayeredProfileAsync(ProfileCatalog.Default(), layeredData)),
                     ("profile_layered_full_glass", () => img.GetLayeredProfileAsync(full, layeredData)),
                     ("badge", async () => await img.GetLevelUpBadgeAsync("gracz", 42, U("avatar.png"), new Discord.Color(30, 200, 30))),

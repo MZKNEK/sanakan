@@ -19,8 +19,6 @@ namespace Sanakan.Config.Model
         public string ConnectionString { get; set; }
         // MySQL only: apply the pending migrations when the bot starts
         public bool MigrateOnStart { get; set; } = true;
-        // the profile command draws the profile of layers, set in Profilator; off keeps the old profile and its commands
-        public bool LayeredProfiles { get; set; }
         public long CharPerPacket { get; set; }
         public long PacksPerDay { get; set; }
         public ConfigShinden Shinden { get; set; }

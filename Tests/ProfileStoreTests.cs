@@ -192,5 +192,38 @@ namespace Artifacts
             Assert.False(await check.UserProfiles.AnyAsync(x => x.UserId == 91008));
             Assert.False(await check.ProfileUnlocks.AnyAsync(x => x.UserId == 91008));
         }
+
+        [Fact]
+        public async Task ResettingGivesTheDefaultLayoutAndKeepsWhatWasPaid()
+        {
+            var bg = Picture("BG9.png", 750, 160);
+            await AddUserAsync(91009, u =>
+            {
+                u.BackgroundProfileUri = bg;
+                u.AvatarBorder = AvatarBorder.Fire;
+            });
+
+            using (var db = Open())
+                await _store.ResetAsync(db, await db.Users.Include(x => x.GameDeck).FirstAsync(x => x.Id == 91009), removePictures: false);
+
+            var kept = await LoadAsync(91009);
+            Assert.Equal(2, kept.Version);
+            Assert.Equal(ProfileCatalog.Default().ToJson(), kept.Layout.ToJson());
+            string file;
+            using (var db = Open())
+            {
+                Assert.Equal(new[] { "frame:Fire", "headerImg" }, (await db.ProfileUnlocks.Where(x => x.UserId == 91009).Select(x => x.Feature).ToListAsync()).OrderBy(x => x, StringComparer.Ordinal));
+                file = (await db.ProfilePictures.SingleAsync(x => x.UserId == 91009)).File;
+                Assert.True(File.Exists(file));
+
+                await _store.ResetAsync(db, await db.Users.Include(x => x.GameDeck).FirstAsync(x => x.Id == 91009), removePictures: true);
+            }
+
+            using var check = Open();
+            Assert.Equal(3, (await check.UserProfiles.SingleAsync(x => x.UserId == 91009)).Version);
+            Assert.False(await check.ProfilePictures.AnyAsync(x => x.UserId == 91009));
+            Assert.Equal(2, await check.ProfileUnlocks.CountAsync(x => x.UserId == 91009));
+            Assert.False(File.Exists(file));
+        }
     }
 }

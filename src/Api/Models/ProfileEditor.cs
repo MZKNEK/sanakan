@@ -32,8 +32,6 @@ namespace Sanakan.Api.Models
     // everything Profilator needs to know without a player: prices, ready layouts, frames, limits
     public class ProfileCatalogView
     {
-        // whether the profile command already draws the profile of layers
-        public bool Enabled { get; set; }
         public int LayoutVersion { get; set; }
         public int MaxStickers { get; set; }
         public int MaxOverlays { get; set; }
