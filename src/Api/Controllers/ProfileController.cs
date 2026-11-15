@@ -97,7 +97,7 @@ namespace Sanakan.Api.Controllers
             MaxOverlays = ProfileCatalog.MaxOverlays,
             MaxLayoutJson = ProfileCatalog.MaxLayoutJson,
             MaxPictureBytes = MaxPictureBytes,
-            Features = ProfileCatalog.Features.Select(x => new ProfileFeatureView { Key = x.Key, Name = x.Name, Description = x.Description, Sc = x.Sc, Tc = x.Tc }).ToList(),
+            Features = ProfileCatalog.Features.Select(FeatureView).ToList(),
             Presets = ProfileCatalog.Presets.Select(x => new ProfilePresetView { Key = x.Key, Name = x.Name, Layout = ToJson(x.Make()) }).ToList(),
             Frames = Enum.GetValues<AvatarBorder>().Select(x => new ProfileFrameView
             {
@@ -354,7 +354,7 @@ namespace Sanakan.Api.Controllers
             return (errors, missing);
         }
 
-        private static ProfileFeatureView FeatureView(ProfileFeature x) => new ProfileFeatureView { Key = x.Key, Name = x.Name, Description = x.Description, Sc = x.Sc, Tc = x.Tc };
+        private static ProfileFeatureView FeatureView(ProfileFeature x) => new ProfileFeatureView { Key = x.Key, Name = x.Name, Description = x.Description, Sc = x.Sc, Tc = x.Tc, TcOnly = x.TcOnly };
 
         /// <summary>
         /// Wycena układu: błędy, brakujące odblokowania i ich koszt w SC i TC
@@ -381,6 +381,7 @@ namespace Sanakan.Api.Controllers
                 Tc = ProfileRules.Cost(missing, CurrencyType.TC),
                 WalletSc = user.ScCnt,
                 WalletTc = user.TcCnt,
+                TcOnly = ProfileRules.NeedsTc(missing),
             };
         }
 
@@ -570,6 +571,9 @@ namespace Sanakan.Api.Controllers
             var (errors, missing) = await CheckAsync(db, user, layout);
             if (errors.Count > 0)
                 return new BadRequestObjectResult(errors);
+
+            if (currency != CurrencyType.TC && ProfileRules.NeedsTc(missing))
+                return "This profile needs TC".ToResponse(400);
 
             var cost = ProfileRules.Cost(missing, currency);
             if (cost > 0)

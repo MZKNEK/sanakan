@@ -12,6 +12,7 @@ namespace Sanakan.Api.Models
         public string Description { get; set; }
         public long Sc { get; set; }
         public long Tc { get; set; }
+        public bool TcOnly { get; set; }
     }
 
     public class ProfilePresetView
@@ -127,6 +128,8 @@ namespace Sanakan.Api.Models
         public long Tc { get; set; }
         public long WalletSc { get; set; }
         public long WalletTc { get; set; }
+        // something of the layout is sold only for TC, so the save is paid in TC
+        public bool TcOnly { get; set; }
     }
 
     public class ProfileSaveRequest

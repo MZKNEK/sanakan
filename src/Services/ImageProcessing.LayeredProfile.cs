@@ -82,6 +82,34 @@ namespace Sanakan.Services
             public bool Moves(string target) => !Moved && Moving == target;
         }
 
+        // A profile of twice the size keeps the layout's coordinates: every surface of the drawing knows its scale,
+        // shapes and texts are scaled while they are drawn, pictures are loaded, cut and placed at the scale.
+        // At the scale of 1 every step is the plain one.
+        private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<Image, System.Runtime.CompilerServices.StrongBox<float>> LpScales = new();
+
+        private static float LpK(Image image) => image != null && LpScales.TryGetValue(image, out var box) ? box.Value : 1f;
+
+        private static Image<Rgba32> LpSurface(int w, int h, float k, Rgba32? fill = null)
+        {
+            var image = fill.HasValue ? new Image<Rgba32>(LpR(w, k), LpR(h, k), fill.Value) : new Image<Rgba32>(LpR(w, k), LpR(h, k));
+            if (k != 1)
+                LpScales.AddOrUpdate(image, new System.Runtime.CompilerServices.StrongBox<float>(k));
+            return image;
+        }
+
+        private static int LpR(double v, double k) => (int)Math.Round(v * k);
+
+        private static int LpI(float v, float k) => (int)(v * k);
+
+        private static void LpPaint(Image image, CanvasAction draw)
+        {
+            var k = LpK(image);
+            if (k == 1)
+                image.Mutate(x => x.Paint(draw));
+            else
+                image.Mutate(x => x.Paint(new DrawingOptions { Transform = System.Numerics.Matrix4x4.CreateScale(k, k, 1) }, draw));
+        }
+
         // the cards of the player's profile gallery, in the order the player set
         public List<Card> ProfileGalleryCards(User user, int count) => GetOrdertedCardsForGallery(user, count).ToList();
 
@@ -125,7 +153,7 @@ namespace Sanakan.Services
         {
             var canvas = new LayeredCanvas
             {
-                Image = new Image<Rgba32>(ProfileLayout.Width, ProfileLayout.Height, GetOrCreateColor(LpBackground).ToPixel<Rgba32>()),
+                Image = LpSurface(ProfileLayout.Width, ProfileLayout.Height, layout.Hd ? 2 : 1, GetOrCreateColor(LpBackground).ToPixel<Rgba32>()),
                 Moving = layout.Animate,
             };
             var accent = layout.Accent ?? data.RoleColor ?? "#546E7A";
@@ -145,7 +173,7 @@ namespace Sanakan.Services
                 if (layout.Style != null && !layout.Style.Hidden)
                     await DrawSlotAsync(canvas, layout.Style, ProfileCatalog.StyleSlot, data, ProfileLayout.AnimateStyle);
                 else
-                    canvas.Image.Mutate(x => x.Paint(c => c.Fill(Brushes.Solid(GetOrCreateColor(LpLine)), new RectanglePolygon(0, 159, 750, 1))));
+                    LpPaint(canvas.Image, c => c.Fill(Brushes.Solid(GetOrCreateColor(LpLine)), new RectanglePolygon(0, 159, 750, 1)));
 
                 if (!layout.Nick.Hidden)
                     DrawNick(canvas.Image, layout.Nick, data.Nick);
@@ -205,7 +233,8 @@ namespace Sanakan.Services
             if (header.Width <= 1)
                 return;
 
-            header.Mutate(x => x.Resize(750, 160));
+            var k = LpK(canvas.Image);
+            header.Mutate(x => x.Resize(LpR(750, k), LpR(160, k)));
             canvas.Image.Mutate(x => x.DrawImage(header, new Point(0, 0), 1));
         }
 
@@ -214,8 +243,8 @@ namespace Sanakan.Services
         {
             Brush Band(float alpha) => new LinearGradientBrush(new PointF(510, 0), new PointF(726, 0), GradientRepetitionMode.None,
                 new ColorStop(0, Color.Black.WithAlpha(alpha)), new ColorStop(1, Color.Black.WithAlpha(0)));
-            image.Mutate(x => x.Paint(c => c.Fill(Band(0.75f), new RectanglePolygon(0, 98, 750, 61))));
-            image.Mutate(x => x.Paint(c => c.Fill(Band(1f), new RectanglePolygon(0, 159, 750, 1))));
+            LpPaint(image, c => c.Fill(Band(0.75f), new RectanglePolygon(0, 98, 750, 61)));
+            LpPaint(image, c => c.Fill(Band(1f), new RectanglePolygon(0, 159, 750, 1)));
         }
 
         private void DrawHeaderFade(Image image)
@@ -223,7 +252,7 @@ namespace Sanakan.Services
             var bg = GetOrCreateColor(LpBackground);
             var fade = new LinearGradientBrush(new PointF(0, 56), new PointF(0, 160), GradientRepetitionMode.None,
                 new ColorStop(0, bg.WithAlpha(0)), new ColorStop(1, bg.WithAlpha(0.92f)));
-            image.Mutate(x => x.Paint(c => c.Fill(fade, new RectanglePolygon(0, 56, 750, 104))));
+            LpPaint(image, c => c.Fill(fade, new RectanglePolygon(0, 56, 750, 104)));
         }
 
         private async Task DrawSlotAsync(LayeredCanvas canvas, SlotImage slot, (int X, int Y, int W, int H) field, ProfileRenderData data, string target)
@@ -241,8 +270,9 @@ namespace Sanakan.Services
             var h = Math.Max(field.H, (int)Math.Round(picture.Height * scale));
             var left = Math.Clamp(field.X - slot.X, 0, w - field.W);
             var top = Math.Clamp(field.Y - slot.Y, 0, h - field.H);
-            picture.Mutate(x => x.Resize(w, h).Crop(new Rectangle(left, top, field.W, field.H)));
-            Place(canvas, picture, new Point(field.X, field.Y), target);
+            var k = LpK(canvas.Image);
+            picture.Mutate(x => x.Resize(LpR(w, k), LpR(h, k)).Crop(new Rectangle(LpR(left, k), LpR(top, k), LpR(field.W, k), LpR(field.H, k))));
+            Place(canvas, picture, new Point(LpR(field.X, k), LpR(field.Y, k)), target);
         }
 
         // ---- free layers ----
@@ -295,19 +325,20 @@ namespace Sanakan.Services
             if (picture.Width <= 1)
                 return;
 
-            var w = Math.Max(1, (int)Math.Round(picture.Width * layer.Scale));
-            var h = Math.Max(1, (int)Math.Round(picture.Height * layer.Scale));
+            var k = LpK(canvas.Image);
+            var w = Math.Max(1, (int)Math.Round(picture.Width * layer.Scale * k));
+            var h = Math.Max(1, (int)Math.Round(picture.Height * layer.Scale * k));
             if (w != picture.Width || h != picture.Height)
                 picture.Mutate(x => x.Resize(w, h));
 
-            var at = new Point(layer.X, layer.Y);
+            var at = new Point(LpR(layer.X, k), LpR(layer.Y, k));
             if (field is var (fx, fy, fw, fh))
             {
-                var part = Rectangle.Intersect(new Rectangle(layer.X, layer.Y, w, h), new Rectangle(fx, fy, fw, fh));
+                var part = Rectangle.Intersect(new Rectangle(at.X, at.Y, w, h), new Rectangle(LpR(fx, k), LpR(fy, k), LpR(fw, k), LpR(fh, k)));
                 if (part.Width <= 0 || part.Height <= 0)
                     return;
                 if (part.Width != w || part.Height != h)
-                    picture.Mutate(x => x.Crop(new Rectangle(part.X - layer.X, part.Y - layer.Y, part.Width, part.Height)));
+                    picture.Mutate(x => x.Crop(new Rectangle(part.X - at.X, part.Y - at.Y, part.Width, part.Height)));
                 at = part.Location;
             }
             Place(canvas, picture, at, target, (float)Math.Clamp(layer.Opacity, 0, 1));
@@ -321,34 +352,35 @@ namespace Sanakan.Services
                 case PanelLook.Glass:
                 {
                     // the blur of what lies under the panel, from the first frame when the canvas already moves
-                    var area = new Rectangle(x, y, w, h);
+                    var k = LpK(image);
+                    var area = new Rectangle(LpR(x, k), LpR(y, k), LpR(w, k), LpR(h, k));
                     area.Intersect(new Rectangle(0, 0, image.Width, image.Height));
                     if (area.Width <= 0 || area.Height <= 0)
                         return;
 
                     using var under = image.Frames.CloneFrame(0);
-                    under.Mutate(c => c.Crop(area).GaussianBlur(10));
-                    using var glass = new Image<Rgba32>(w, h);
-                    glass.Mutate(c => c.DrawImage(under, new Point(area.X - x, area.Y - y), 1).Round(12));
-                    image.Mutate(c => c.DrawImage(glass, new Point(x, y), 1));
-                    image.Mutate(c => c.Paint(p =>
+                    under.Mutate(c => c.Crop(area).GaussianBlur(10 * k));
+                    using var glass = new Image<Rgba32>(LpR(w, k), LpR(h, k));
+                    glass.Mutate(c => c.DrawImage(under, new Point(area.X - LpR(x, k), area.Y - LpR(y, k)), 1).Round(12 * k));
+                    image.Mutate(c => c.DrawImage(glass, new Point(LpR(x, k), LpR(y, k)), 1));
+                    LpPaint(image, p =>
                     {
                         p.Fill(Brushes.Solid(Color.ParseHex("#201E28").WithAlpha(0.55f)), panel);
                         p.Draw(Pens.Solid(Color.White.WithAlpha(0.16f), 1), GetRoundedRectPath(x + 0.5f, y + 0.5f, w - 1, h - 1, 12));
-                    }));
+                    });
                     break;
                 }
 
                 case PanelLook.Shadow:
-                    image.Mutate(c => c.Paint(p => p.Fill(Brushes.Solid(Color.Black.WithAlpha(Math.Clamp(layout.ShadowOpacity, 0, 100) / 100f)), panel)));
+                    LpPaint(image, p => p.Fill(Brushes.Solid(Color.Black.WithAlpha(Math.Clamp(layout.ShadowOpacity, 0, 100) / 100f)), panel));
                     break;
 
                 default:
-                    image.Mutate(c => c.Paint(p =>
+                    LpPaint(image, p =>
                     {
                         p.Fill(Brushes.Solid(GetOrCreateColor(LpPanel)), panel);
                         p.Draw(Pens.Solid(GetOrCreateColor(LpLine), 1.5f), panel);
-                    }));
+                    });
                     break;
             }
         }
@@ -356,18 +388,21 @@ namespace Sanakan.Services
         // the blur of what lies under the shape (from the first frame when the canvas already moves), tinted, with a thin edge
         private static void DrawGlass(Image image, IPath shape, float tint)
         {
+            var k = LpK(image);
             var b = shape.Bounds;
-            var area = new Rectangle((int)Math.Floor(b.X), (int)Math.Floor(b.Y), (int)Math.Ceiling(b.Width) + 2, (int)Math.Ceiling(b.Height) + 2);
+            var area = new Rectangle((int)Math.Floor(b.X * k), (int)Math.Floor(b.Y * k), (int)Math.Ceiling(b.Width * k) + 2, (int)Math.Ceiling(b.Height * k) + 2);
             area.Intersect(new Rectangle(0, 0, image.Width, image.Height));
             if (area.Width <= 0 || area.Height <= 0)
                 return;
 
             using var under = image.Frames.CloneFrame(0);
-            under.Mutate(c => c.Crop(area).GaussianBlur(10));
+            under.Mutate(c => c.Crop(area).GaussianBlur(10 * k));
             using var glass = under.CloneAs<Rgba32>();
             using var mask = new Image<Rgba32>(area.Width, area.Height);
-            var local = PathExtensions.Translate(shape, -area.X, -area.Y);
-            mask.Mutate(c => c.Paint(p => p.Fill(Brushes.Solid(Color.White), local)));
+            if (k != 1)
+                LpScales.AddOrUpdate(mask, new System.Runtime.CompilerServices.StrongBox<float>(k));
+            var local = PathExtensions.Translate(shape, -area.X / k, -area.Y / k);
+            LpPaint(mask, p => p.Fill(Brushes.Solid(Color.White), local));
             glass.ProcessPixelRows(mask, (g, m) =>
             {
                 for (int y = 0; y < g.Height; y++)
@@ -379,11 +414,11 @@ namespace Sanakan.Services
                 }
             });
             image.Mutate(c => c.DrawImage(glass, area.Location, 1));
-            image.Mutate(c => c.Paint(p =>
+            LpPaint(image, p =>
             {
                 p.Fill(Brushes.Solid(Color.ParseHex("#201E28").WithAlpha(tint)), shape);
                 p.Draw(Pens.Solid(Color.White.WithAlpha(0.16f), 1), shape);
-            }));
+            });
         }
 
         private float TextWidth(string text, Font font) => string.IsNullOrEmpty(text) ? 0 : TextMeasurer.MeasureAdvance(text, new TextOptions(font)).Width;
@@ -391,7 +426,10 @@ namespace Sanakan.Services
         private float LpWrite(Image image, string text, Font font, string color, float x, float y, HorizontalAlignment align = HorizontalAlignment.Left)
         {
             if (!string.IsNullOrEmpty(text))
-                DrawSiteStatsText(image, text, font, color, x, y, align);
+            {
+                var options = new RichTextOptions(font) { Origin = new PointF(x, y), HorizontalAlignment = align, VerticalAlignment = VerticalAlignment.Center };
+                LpPaint(image, c => c.DrawText(options, text, Brushes.Solid(GetOrCreateColor(color)), null));
+            }
             return TextWidth(text, font);
         }
 
@@ -411,14 +449,14 @@ namespace Sanakan.Services
         private void IconClapper(Image image, float cx, float cy, Color color)
         {
             var pen = Pens.Solid(color, 1.6f);
-            image.Mutate(x => x.Paint(c =>
+            LpPaint(image, c =>
             {
                 c.Draw(pen, GetRoundedRectPath(cx - 9, cy - 2, 18, 10, 2));
                 c.Draw(pen, new RectanglePolygon(cx - 9, cy - 7, 18, 4));
                 c.DrawLine(pen, new PointF(cx - 6, cy - 2), new PointF(cx - 3, cy - 7));
                 c.DrawLine(pen, new PointF(cx - 1, cy - 2), new PointF(cx + 2, cy - 7));
                 c.DrawLine(pen, new PointF(cx + 4, cy - 2), new PointF(cx + 7, cy - 7));
-            }));
+            });
         }
 
         private void IconBook(Image image, float cx, float cy, Color color)
@@ -426,7 +464,7 @@ namespace Sanakan.Services
             var pen = Pens.Solid(color, 1.6f);
             var left = new Polygon(new LinearLineSegment(new PointF(cx - 1, cy - 5), new PointF(cx - 9, cy - 7), new PointF(cx - 9, cy + 5), new PointF(cx - 1, cy + 7)));
             var right = new Polygon(new LinearLineSegment(new PointF(cx + 1, cy - 5), new PointF(cx + 9, cy - 7), new PointF(cx + 9, cy + 5), new PointF(cx + 1, cy + 7)));
-            image.Mutate(x => x.Paint(c => { c.Draw(pen, left); c.Draw(pen, right); }));
+            LpPaint(image, c => { c.Draw(pen, left); c.Draw(pen, right); });
         }
 
         private void IconCards(Image image, float cx, float cy, Color color)
@@ -436,41 +474,42 @@ namespace Sanakan.Services
             IPath front = GetRoundedRectPath(-2, -8, 11, 15, 2);
             back = SixLabors.ImageSharp.Drawing.PathExtensions.Translate(SixLabors.ImageSharp.Drawing.PathExtensions.RotateDegree(back, -11.5f), cx, cy);
             front = SixLabors.ImageSharp.Drawing.PathExtensions.Translate(SixLabors.ImageSharp.Drawing.PathExtensions.RotateDegree(front, 11.5f), cx, cy);
-            image.Mutate(x => x.Paint(c => { c.Draw(pen, back); c.Draw(pen, front); }));
+            LpPaint(image, c => { c.Draw(pen, back); c.Draw(pen, front); });
         }
 
         private void IconClock(Image image, float cx, float cy, Color color)
         {
             var pen = Pens.Solid(color, 1.5f);
-            image.Mutate(x => x.Paint(c =>
+            LpPaint(image, c =>
             {
                 c.Draw(pen, new EllipsePolygon(cx, cy, 6.5f));
                 c.DrawLine(pen, new PointF(cx, cy - 3.5f), new PointF(cx, cy), new PointF(cx + 2.5f, cy + 2));
-            }));
+            });
         }
 
         private void IconCrown(Image image, float cx, float cy, Color color)
         {
             var crown = new Polygon(new LinearLineSegment(new PointF(cx - 7, cy + 5), new PointF(cx - 7, cy - 4), new PointF(cx - 3, cy),
                 new PointF(cx, cy - 6), new PointF(cx + 3, cy), new PointF(cx + 7, cy - 4), new PointF(cx + 7, cy + 5)));
-            image.Mutate(x => x.Paint(c => c.Fill(Brushes.Solid(color), crown)));
+            LpPaint(image, c => c.Fill(Brushes.Solid(color), crown));
         }
 
         private void IconEnvelope(Image image, float x0, float cy, Color color)
         {
             var pen = Pens.Solid(color, 1.5f);
-            image.Mutate(x => x.Paint(c =>
+            LpPaint(image, c =>
             {
                 c.Draw(pen, GetRoundedRectPath(x0, cy - 6, 18, 12, 2));
                 c.DrawLine(pen, new PointF(x0 + 1, cy - 5), new PointF(x0 + 9, cy + 1), new PointF(x0 + 17, cy - 5));
-            }));
+            });
         }
 
         // ---- anime and manga ----
 
         private void LpSegments(Image image, ulong[] values, float x, float y, int w, int h)
         {
-            using var bar = new Image<Rgba32>(w, h, GetOrCreateColor(LpTrack).ToPixel<Rgba32>());
+            var k = LpK(image);
+            using var bar = LpSurface(w, h, k, GetOrCreateColor(LpTrack).ToPixel<Rgba32>());
             var total = values.Aggregate(0UL, (a, b) => a + b);
             if (total > 0)
             {
@@ -480,7 +519,7 @@ namespace Sanakan.Services
                 var lengths = values.Select(v => v == 0 ? 0 : Math.Max(3, (int)Math.Round(available * (double)v / total))).ToArray();
                 var longest = Array.IndexOf(lengths, lengths.Max());
                 lengths[longest] += available - lengths.Sum();
-                bar.Mutate(b => b.Paint(c =>
+                LpPaint(bar, c =>
                 {
                     c.Clear(Brushes.Solid(Color.Transparent));
                     var offset = 0;
@@ -490,14 +529,14 @@ namespace Sanakan.Services
                         c.Fill(Brushes.Solid(GetOrCreateColor(LpStatus[i])), new RectanglePolygon(offset, 0, lengths[i], h));
                         offset += lengths[i] + gap;
                     }
-                }));
+                });
             }
-            bar.Mutate(b => b.Round(h / 2f));
-            image.Mutate(c => c.DrawImage(bar, new Point((int)x, (int)y), 1));
+            bar.Mutate(b => b.Round(h * k / 2f));
+            image.Mutate(c => c.DrawImage(bar, new Point(LpI(x, k), LpI(y, k)), 1));
         }
 
         private void LpDot(Image image, float cx, float cy, string color)
-            => image.Mutate(x => x.Paint(c => c.Fill(Brushes.Solid(GetOrCreateColor(color)), new EllipsePolygon(cx, cy, 4))));
+            => LpPaint(image, c => c.Fill(Brushes.Solid(GetOrCreateColor(color)), new EllipsePolygon(cx, cy, 4)));
 
         // where each item of a legend row starts: in equal columns while every item fits its own,
         // otherwise spread over the row with equal gaps
@@ -585,7 +624,7 @@ namespace Sanakan.Services
                     if (i > 0)
                     {
                         var divider = (int)(x + 14 + columnWidth * i);
-                        image.Mutate(c => c.Paint(p => p.Fill(Brushes.Solid(GetOrCreateColor(LpLine)), new RectanglePolygon(divider, cy + 4, 1.5f, 38))));
+                        LpPaint(image, p => p.Fill(Brushes.Solid(GetOrCreateColor(LpLine)), new RectanglePolygon(divider, cy + 4, 1.5f, 38)));
                     }
                 }
                 cy += 49;
@@ -636,14 +675,15 @@ namespace Sanakan.Services
             if (recent.Count == 0)
                 return;
 
-            image.Mutate(c => c.Paint(p => p.Fill(Brushes.Solid(GetOrCreateColor(LpLine)), new RectanglePolygon(x + 14, cy + 1, w - 28, 1.5f))));
+            LpPaint(image, p => p.Fill(Brushes.Solid(GetOrCreateColor(LpLine)), new RectanglePolygon(x + 14, cy + 1, w - 28, 1.5f)));
             IconClock(image, x + 21, cy + 16, accentColor);
             LpWrite(image, list.Manga ? "Ostatnio czytane" : "Ostatnio oglądane", GetOrCreateFont(_latoBold, 13), LpText, x + 33, cy + 16);
 
             var rowY = cy + 29;
             var fits = Math.Max(0, (int)((y + h - 6 - rowY) / 30));
             var rows = recent.Take(fits).ToList();
-            var covers = await Task.WhenAll(rows.Select(r => GetSiteStatsImageAsync(r.CoverUrl, new Size(26, 26), 5, true)));
+            var ks = LpK(image);
+            var covers = await Task.WhenAll(rows.Select(r => GetSiteStatsImageAsync(r.CoverUrl, new Size(LpR(26, ks), LpR(26, ks)), 5 * ks, true)));
             try
             {
                 for (int i = 0; i < rows.Count; i++)
@@ -651,9 +691,9 @@ namespace Sanakan.Services
                     var r = rows[i];
                     var ry = rowY + i * 30;
                     if (covers[i] != null)
-                        image.Mutate(c => c.DrawImage(covers[i], new Point(x + 14, (int)ry), 1));
+                        image.Mutate(c => c.DrawImage(covers[i], new Point(LpR(x + 14, ks), LpI(ry, ks)), 1));
                     else
-                        image.Mutate(c => c.Paint(p => p.Fill(Brushes.Solid(GetOrCreateColor(LpTrack)), GetRoundedRectPath(x + 14, ry, 26, 26, 5))));
+                        LpPaint(image, p => p.Fill(Brushes.Solid(GetOrCreateColor(LpTrack)), GetRoundedRectPath(x + 14, ry, 26, 26, 5)));
 
                     var titleFont = GetOrCreateFont(_latoBold, 13);
                     LpWrite(image, TrimSiteStatsText(r.Title, titleFont, w - 128), titleFont, LpText, x + 48, ry + 8);
@@ -662,11 +702,11 @@ namespace Sanakan.Services
                     {
                         var ratio = Math.Clamp(r.Ratio.Value, 0, 1);
                         var color = GetOrCreateColor(ratio >= 1 ? LpStatus[1] : LpStatus[0]);
-                        image.Mutate(c => c.Paint(p =>
+                        LpPaint(image, p =>
                         {
                             p.Fill(Brushes.Solid(GetOrCreateColor(LpTrack)), GetRoundedRectPath(x + w - 74, ry + 18, 60, 5, 2.5f));
                             p.Fill(Brushes.Solid(color), GetRoundedRectPath(x + w - 74, ry + 18, Math.Max(5, 60 * (float)ratio), 5, 2.5f));
-                        }));
+                        });
                     }
                 }
             }
@@ -679,38 +719,42 @@ namespace Sanakan.Services
 
         // ---- cards ----
 
-        private async Task<Image> LoadProfileCardAsync(Card card, int height)
+        private async Task<Image> LoadProfileCardAsync(Card card, int height, float k)
         {
             var image = await LoadOrGetNewWaifuProfileCardAsync(card);
-            image.Mutate(x => x.Resize(new ResizeOptions { Mode = ResizeMode.Max, Size = new Size(0, height) }));
+            image.Mutate(x => x.Resize(new ResizeOptions { Mode = ResizeMode.Max, Size = new Size(0, LpR(height, k)) }));
             return image;
         }
 
         private void LpChip(Image image, Rarity rarity, float x, float y, float opacity)
         {
             const int w = 34, h = 18;
-            using var chip = new Image<Rgba32>(w, h);
+            var k = LpK(image);
+            using var chip = LpSurface(w, h, k);
             var (bg, fg) = LpRarity[(int)rarity];
             Brush brush = bg == null
                 ? new LinearGradientBrush(new PointF(0, 0), new PointF(w, 0), GradientRepetitionMode.None,
                     new ColorStop(0, Color.ParseHex("#F0525C")), new ColorStop(0.25f, Color.ParseHex("#F5C445")), new ColorStop(0.5f, Color.ParseHex("#6FD47E")),
                     new ColorStop(0.75f, Color.ParseHex("#4FC3E8")), new ColorStop(1, Color.ParseHex("#A77BF3")))
                 : Brushes.Solid(GetOrCreateColor(bg));
-            chip.Mutate(c => c.Paint(p => p.Fill(brush, GetRoundedRectPath(0, 0, w, h, 5))));
+            LpPaint(chip, p => p.Fill(brush, GetRoundedRectPath(0, 0, w, h, 5)));
             LpWrite(chip, rarity.ToString(), GetOrCreateFont(_latoBold, 11), fg, w / 2f, h / 2f + 0.5f, HorizontalAlignment.Center);
-            image.Mutate(c => c.DrawImage(chip, new Point((int)x, (int)y), opacity));
+            image.Mutate(c => c.DrawImage(chip, new Point(LpI(x, k), LpI(y, k)), opacity));
         }
 
         private async Task DrawCardsPanelAsync(LayeredCanvas canvas, ProfileLayout layout, CardsPanelLayer panel, ProfileRenderData data, string accent, string target)
         {
-            const int w = ProfileCatalog.CardsPanelWidth;
+            var (w, h) = ProfileCatalog.Size(panel);
             int x = panel.X, y = panel.Y;
             var image = canvas.Image;
+            var narrow = panel.Size == CardsPanelSize.Narrow;
 
-            PanelGround(image, layout, x, y, w, ProfileCatalog.PanelHeight);
+            if (panel.Panel)
+                PanelGround(image, layout, x, y, w, h);
             IconCards(image, x + 22, y + 19, GetOrCreateColor(accent));
-            LpWrite(image, "Karcianka", GetOrCreateFont(_latoBold, 16), LpText, x + 38, y + 19);
 
+            // a narrow panel leaves the title out when the karma's pill would run into it
+            float pillLeft = x + w - 14;
             if (panel.Shows(CardsPanelLayer.Karma) && data.Karma != KarmaLook.None)
             {
                 var (name, color) = data.Karma switch
@@ -720,25 +764,50 @@ namespace Sanakan.Services
                     _ => ("neutralna", "#8A8A8F"),
                 };
                 var font = GetOrCreateFont(_latoBold, 12);
-                var text = $"Karma: {name}";
+                var text = narrow ? name : $"Karma: {name}";
                 var kw = TextWidth(text, font) + 18;
+                pillLeft = x + w - 14 - kw;
                 var pill = GetRoundedRectPath(x + w - 14 - kw, y + 9, kw, 20, 10);
-                image.Mutate(c => c.Paint(p =>
+                LpPaint(image, p =>
                 {
                     p.Fill(Brushes.Solid(GetOrCreateColor(color).WithAlpha(0.18f)), pill);
                     p.Draw(Pens.Solid(GetOrCreateColor(color), 1.2f), pill);
-                }));
+                });
                 LpWrite(image, text, font, LpText, x + w - 14 - kw / 2, y + 19.5f, HorizontalAlignment.Center);
+            }
+            var titleFont = GetOrCreateFont(_latoBold, 16);
+            if (!narrow || x + 38 + TextWidth("Karcianka", titleFont) + 8 <= pillLeft)
+                LpWrite(image, "Karcianka", titleFont, LpText, x + 38, y + 19);
+
+            if (panel.Size == CardsPanelSize.Low)
+            {
+                DrawLowCardsPanel(image, panel, data, accent, x, y, w);
+                return;
             }
 
             float rx = x + 14;
-            if (panel.Shows(CardsPanelLayer.Waifu))
+            var columns = 4;
+            if (narrow)
             {
+                // the waifu alone, or the numbers one under another when there is no card to show
+                if (panel.Shows(CardsPanelLayer.Waifu) && data.Waifu != null)
+                {
+                    var k = LpK(canvas.Image);
+                    using var card = await LoadProfileCardAsync(data.Waifu, 226, k);
+                    Place(canvas, card, new Point(LpR(x + (w - ProfileCatalog.StickerWidth(226)) / 2, k), LpR(y + 40, k)), target);
+                    return;
+                }
+                columns = 2;
+            }
+            else if (panel.Shows(CardsPanelLayer.Waifu))
+            {
+                columns = 2;
                 var cw = ProfileCatalog.StickerWidth(226);
                 if (data.Waifu != null)
                 {
-                    using var card = await LoadProfileCardAsync(data.Waifu, 226);
-                    Place(canvas, card, new Point(x + 12, y + 40), target);
+                    var k = LpK(canvas.Image);
+                    using var card = await LoadProfileCardAsync(data.Waifu, 226, k);
+                    Place(canvas, card, new Point(LpR(x + 12, k), LpR(y + 40, k)), target);
                     image = canvas.Image;
                 }
                 rx = x + 12 + cw + 14;
@@ -752,17 +821,16 @@ namespace Sanakan.Services
                 var vw = LpWrite(image, FormatSiteStatsNumber((ulong)Math.Max(0, data.Cards)), GetOrCreateFont(_latoBold, 20), LpText, rx, cy + 27);
                 LpWrite(image, $" / {FormatSiteStatsNumber((ulong)Math.Max(0, data.Limit))}", GetOrCreateFont(_latoRegular, 14), LpDim, rx + vw, cy + 28);
                 var ratio = data.Limit > 0 ? Math.Clamp(data.Cards / (double)data.Limit, 0, 1) : 0;
-                image.Mutate(c => c.Paint(p =>
+                LpPaint(image, p =>
                 {
                     p.Fill(Brushes.Solid(GetOrCreateColor(LpTrack)), GetRoundedRectPath(rx, cy + 41, rw, 6, 3));
                     p.Fill(Brushes.Solid(GetOrCreateColor(accent)), GetRoundedRectPath(rx, cy + 41, Math.Max(6, rw * (float)ratio), 6, 3));
-                }));
+                });
                 cy += 60;
             }
 
             if (panel.Shows(CardsPanelLayer.Rarities))
             {
-                var columns = panel.Shows(CardsPanelLayer.Waifu) ? 2 : 4;
                 var rarities = Enum.GetValues<Rarity>();
                 for (int i = 0; i < rarities.Length; i++)
                 {
@@ -770,7 +838,8 @@ namespace Sanakan.Services
                     var gy = cy + (i / columns) * 25;
                     var count = data.Rarities.TryGetValue(rarities[i], out var n) ? n : 0;
                     LpChip(image, rarities[i], gx, gy, count > 0 ? 1 : 0.35f);
-                    LpWrite(image, FormatSiteStatsNumber((ulong)count), GetOrCreateFont(_latoBold, 14), count > 0 ? LpText : LpDim, gx + 42, gy + 9.5f);
+                    // the narrow panel's columns are tight for four digits
+                    LpWrite(image, FormatSiteStatsNumber((ulong)count), GetOrCreateFont(_latoBold, narrow ? 13 : 14), count > 0 ? LpText : LpDim, gx + (narrow ? 39 : 42), gy + 9.5f);
                 }
                 cy += (int)Math.Ceiling(rarities.Length / (double)columns) * 25 + 4;
             }
@@ -785,7 +854,7 @@ namespace Sanakan.Services
             if (cy > y + 40)
             {
                 var lineY = cy;
-                image.Mutate(c => c.Paint(p => p.Fill(Brushes.Solid(GetOrCreateColor(LpLine)), new RectanglePolygon(rx, lineY, rw, 1.5f))));
+                LpPaint(image, p => p.Fill(Brushes.Solid(GetOrCreateColor(LpLine)), new RectanglePolygon(rx, lineY, rw, 1.5f)));
                 cy += 17;
             }
             else
@@ -798,6 +867,56 @@ namespace Sanakan.Services
                 LpWrite(image, extras[i].Label, GetOrCreateFont(_latoRegular, 12), LpDim, rx, cy + i * 20);
                 LpWrite(image, FormatSiteStatsNumber((ulong)Math.Max(0, extras[i].Value)), GetOrCreateFont(_latoBold, 13), extras[i].Value > 0 ? LpText : LpDim, rx + rw, cy + i * 20, HorizontalAlignment.Right);
             }
+        }
+
+        // the low card game: the count with its bar in one row, the rarities in two, the rest in one line
+        private void DrawLowCardsPanel(Image image, CardsPanelLayer panel, ProfileRenderData data, string accent, int x, int y, int w)
+        {
+            float rx = x + 14, rw = w - 28, cy = y + 40;
+            var regular12 = GetOrCreateFont(_latoRegular, 12);
+            if (panel.Shows(CardsPanelLayer.Count))
+            {
+                var lw = LpWrite(image, "Karty", regular12, LpDim, rx, cy + 8) + 6;
+                var vw = LpWrite(image, FormatSiteStatsNumber((ulong)Math.Max(0, data.Cards)), GetOrCreateFont(_latoBold, 16), LpText, rx + lw, cy + 8);
+                var tw = LpWrite(image, $" / {FormatSiteStatsNumber((ulong)Math.Max(0, data.Limit))}", GetOrCreateFont(_latoRegular, 13), LpDim, rx + lw + vw, cy + 8);
+                var bx = rx + lw + vw + tw + 12;
+                var bw = rx + rw - bx;
+                if (bw >= 20)
+                {
+                    var ratio = data.Limit > 0 ? Math.Clamp(data.Cards / (double)data.Limit, 0, 1) : 0;
+                    LpPaint(image, p =>
+                    {
+                        p.Fill(Brushes.Solid(GetOrCreateColor(LpTrack)), GetRoundedRectPath(bx, cy + 5, bw, 6, 3));
+                        p.Fill(Brushes.Solid(GetOrCreateColor(accent)), GetRoundedRectPath(bx, cy + 5, Math.Max(6, bw * (float)ratio), 6, 3));
+                    });
+                }
+                cy += 22;
+            }
+
+            if (panel.Shows(CardsPanelLayer.Rarities))
+            {
+                var rarities = Enum.GetValues<Rarity>();
+                for (int i = 0; i < rarities.Length; i++)
+                {
+                    var gx = rx + (i % 4) * (rw / 4);
+                    var gy = cy + (i / 4) * 24;
+                    var count = data.Rarities.TryGetValue(rarities[i], out var n) ? n : 0;
+                    LpChip(image, rarities[i], gx, gy, count > 0 ? 1 : 0.35f);
+                    LpWrite(image, FormatSiteStatsNumber((ulong)count), GetOrCreateFont(_latoBold, 14), count > 0 ? LpText : LpDim, gx + 42, gy + 9.5f);
+                }
+                cy += 50;
+            }
+
+            var ex = rx;
+            void Extra(string label, int value)
+            {
+                var lw = LpWrite(image, label, regular12, LpDim, ex, cy + 8) + 5;
+                var vw = LpWrite(image, FormatSiteStatsNumber((ulong)Math.Max(0, value)), GetOrCreateFont(_latoBold, 13), value > 0 ? LpText : LpDim, ex + lw, cy + 8);
+                ex += lw + vw + 16;
+            }
+            if (panel.Shows(CardsPanelLayer.Ultimates)) Extra("Ultimate", data.Ultimates);
+            if (panel.Shows(CardsPanelLayer.CustomImages)) Extra("Własne obrazki", data.CustomImages);
+            if (panel.Shows(CardsPanelLayer.CustomBorders)) Extra("Własne ramki", data.CustomBorders);
         }
 
         private async Task DrawGalleryAsync(LayeredCanvas canvas, ProfileLayout layout, GalleryLayer gallery, ProfileRenderData data, string target)
@@ -828,27 +947,30 @@ namespace Sanakan.Services
 
                 if (cards[i] == null)
                     continue;
-                using var card = await LoadProfileCardAsync(cards[i], cardHeight);
-                Place(canvas, card, at, target);
+                var k = LpK(canvas.Image);
+                using var card = await LoadProfileCardAsync(cards[i], cardHeight, k);
+                Place(canvas, card, new Point(LpR(at.X, k), LpR(at.Y, k)), target);
             }
         }
 
         private async Task DrawBigGalleryAsync(LayeredCanvas canvas, ProfileLayout layout, BigGalleryLayer big, ProfileRenderData data, string target)
         {
             int x = big.X, y = big.Y;
+            var (pw, ph) = ProfileCatalog.Size(big);
             if (big.Panel)
-                PanelGround(canvas.Image, layout, x, y, ProfileCatalog.BigGalleryWidth, ProfileCatalog.BigGalleryHeight);
+                PanelGround(canvas.Image, layout, x, y, pw, ph);
 
             const int cardHeight = 140;
             var cardWidth = ProfileCatalog.StickerWidth(cardHeight);
             var gap = (ProfileCatalog.BigGalleryWidth - 24 - 6 * cardWidth) / 5;
-            var cards = data.Gallery.Take(12).ToList();
+            var cards = data.Gallery.Take(big.Count is 3 or 6 ? big.Count : 12).ToList();
             for (int i = 0; i < cards.Count; i++)
             {
                 if (cards[i] == null)
                     continue;
-                using var card = await LoadProfileCardAsync(cards[i], cardHeight);
-                Place(canvas, card, new Point(x + 12 + (i % 6) * (cardWidth + gap), y + 12 + (i / 6) * (cardHeight + 4)), target);
+                var k = LpK(canvas.Image);
+                using var card = await LoadProfileCardAsync(cards[i], cardHeight, k);
+                Place(canvas, card, new Point(LpR(x + 12 + (i % 6) * (cardWidth + gap), k), LpR(y + 12 + (i / 6) * (cardHeight + 4), k)), target);
             }
         }
 
@@ -858,9 +980,12 @@ namespace Sanakan.Services
             if (card == null)
                 return;
 
-            using var picture = await LoadProfileCardAsync(card, sticker.H);
-            int w = picture.Width, h = picture.Height;
+            var k = LpK(canvas.Image);
+            using var picture = await LoadProfileCardAsync(card, sticker.H, k);
+            int pw = picture.Width, ph = picture.Height;
+            float w = pw / k, h = ph / k;
             const int margin = 14;
+            var pm = LpR(margin, k);
             var center = new PointF(sticker.X + w / 2f, sticker.Y + h / 2f);
 
             // the panel or the glass lies on the profile itself, tilted with the card
@@ -873,19 +998,22 @@ namespace Sanakan.Services
                 if (sticker.Ground == StickerGround.Glass)
                     DrawGlass(canvas.Image, ground, sticker.GroundAlpha);
                 else
-                    canvas.Image.Mutate(c => c.Paint(p =>
+                    LpPaint(canvas.Image, p =>
                     {
                         p.Fill(Brushes.Solid(GetOrCreateColor(LpBackground).WithAlpha(sticker.GroundAlpha)), ground);
                         p.Draw(Pens.Solid(Color.White.WithAlpha(0.16f), 1), ground);
-                    }));
+                    });
             }
 
             // the card on its own canvas with room for its shadow, then tilted as a whole
-            using var piece = new Image<Rgba32>(w + 2 * margin, h + 2 * margin);
+            using var piece = new Image<Rgba32>(pw + 2 * pm, ph + 2 * pm);
             if (sticker.Ground == StickerGround.Shadow)
             {
-                using var shadow = new Image<Rgba32>(w + 2 * margin, h + 2 * margin);
-                shadow.Mutate(c => c.Paint(p => p.Fill(Brushes.Solid(Color.Black.WithAlpha(sticker.GroundAlpha)), GetRoundedRectPath(margin, margin + 3, w, h, 8))).GaussianBlur(6));
+                using var shadow = new Image<Rgba32>(pw + 2 * pm, ph + 2 * pm);
+                if (k != 1)
+                    LpScales.AddOrUpdate(shadow, new System.Runtime.CompilerServices.StrongBox<float>(k));
+                LpPaint(shadow, p => p.Fill(Brushes.Solid(Color.Black.WithAlpha(sticker.GroundAlpha)), GetRoundedRectPath(margin, margin + 3, w, h, 8)));
+                shadow.Mutate(c => c.GaussianBlur(6 * k));
                 piece.Mutate(c => c.DrawImage(shadow, new Point(0, 0), 1));
             }
 
@@ -897,19 +1025,19 @@ namespace Sanakan.Services
                 {
                     LimitFrames(picture);
                     framed = piece.Clone(c => { });
-                    Animate(framed, picture, new Point(margin, margin));
+                    Animate(framed, picture, new Point(pm, pm));
                     moving = framed;
                 }
                 else
                 {
                     using var still = picture.Frames.CloneFrame(0);
-                    piece.Mutate(c => c.DrawImage(still, new Point(margin, margin), 1));
+                    piece.Mutate(c => c.DrawImage(still, new Point(pm, pm), 1));
                 }
 
                 if (sticker.Tilt != 0)
                     moving.Mutate(c => c.Rotate(sticker.Tilt));
 
-                var at = new Point((int)Math.Round(center.X - moving.Width / 2f), (int)Math.Round(center.Y - moving.Height / 2f));
+                var at = new Point((int)Math.Round(center.X * k - moving.Width / 2f), (int)Math.Round(center.Y * k - moving.Height / 2f));
                 Place(canvas, moving, at, target);
             }
             finally
@@ -930,11 +1058,11 @@ namespace Sanakan.Services
             var w = TextWidth(text, font) + 22;
             var x = rank.Align == NickAlign.Center ? rank.X - w / 2 : rank.X;
             var pill = GetRoundedRectPath(x, rank.Y, w, ProfileCatalog.RankHeight, 11);
-            image.Mutate(c => c.Paint(p =>
+            LpPaint(image, p =>
             {
                 p.Fill(Brushes.Solid(GetOrCreateColor(LpBackground).WithAlpha(0.72f)), pill);
                 p.Draw(Pens.Solid(GetOrCreateColor(accent), 1.5f), pill);
-            }));
+            });
             LpWrite(image, text, font, LpText, x + w / 2, rank.Y + 11.5f, HorizontalAlignment.Center);
         }
 
@@ -950,11 +1078,12 @@ namespace Sanakan.Services
 
             // a soft shadow under the letters, so the nick reads on any background
             const int pad = 12;
-            using var shadow = new Image<Rgba32>(nick.W + 2 * pad, NickLayer.Height + 2 * pad);
-            var sx = nick.Align == NickAlign.Center ? shadow.Width / 2f : pad;
-            LpWrite(shadow, text, font, "#000000", sx, shadow.Height / 2f + 1, align);
-            shadow.Mutate(c => c.GaussianBlur(3));
-            image.Mutate(c => c.DrawImage(shadow, new Point(nick.X - pad, nick.Y - pad), 0.8f));
+            var k = LpK(image);
+            using var shadow = LpSurface(nick.W + 2 * pad, NickLayer.Height + 2 * pad, k);
+            var sx = nick.Align == NickAlign.Center ? (nick.W + 2 * pad) / 2f : pad;
+            LpWrite(shadow, text, font, "#000000", sx, (NickLayer.Height + 2 * pad) / 2f + 1, align);
+            shadow.Mutate(c => c.GaussianBlur(3 * k));
+            image.Mutate(c => c.DrawImage(shadow, new Point(LpR(nick.X - pad, k), LpR(nick.Y - pad, k)), 0.8f));
 
             LpWrite(image, text, font, LpText, x, cy, align);
         }
@@ -995,11 +1124,11 @@ namespace Sanakan.Services
             if (bar.Look == BarLook.Glass)
                 DrawGlass(image, strip, Math.Clamp(bar.Opacity, 20, 100) / 100f);
             else
-                image.Mutate(c => c.Paint(p =>
+                LpPaint(image, p =>
                 {
                     p.Fill(Brushes.Solid(GetOrCreateColor(LpBackground).WithAlpha(Math.Clamp(bar.Opacity, 20, 100) / 100f)), strip);
                     p.Draw(Pens.Solid(Color.White.WithAlpha(0.08f), 1), strip);
-                }));
+                });
 
             var bold15 = GetOrCreateFont(_latoBold, 15);
             var regular12 = GetOrCreateFont(_latoRegular, 12);
@@ -1031,11 +1160,11 @@ namespace Sanakan.Services
             if (bar.Shows(BarLayout.Exp))
             {
                 var bx = x;
-                image.Mutate(c => c.Paint(p =>
+                LpPaint(image, p =>
                 {
                     p.Fill(Brushes.Solid(GetOrCreateColor(LpTrack)), GetRoundedRectPath(bx, cy - 4, track, 8, 4));
                     p.Fill(Brushes.Solid(GetOrCreateColor(accent)), GetRoundedRectPath(bx, cy - 4, Math.Max(8, track * progress), 8, 4));
-                }));
+                });
                 x += track + 6;
                 LpWrite(image, percent, regular12, LpDim, x, cy);
             }
@@ -1052,7 +1181,7 @@ namespace Sanakan.Services
                 else
                 {
                     var tx = ix;
-                    image.Mutate(c => c.Paint(p => p.Fill(Brushes.Solid(GetOrCreateColor(LpCurrency[key])), GetRoundedRectPath(tx, cy - 8, 24, 16, 4))));
+                    LpPaint(image, p => p.Fill(Brushes.Solid(GetOrCreateColor(LpCurrency[key])), GetRoundedRectPath(tx, cy - 8, 24, 16, 4)));
                     LpWrite(image, key.ToUpperInvariant(), tagFont, "#131217", ix + 12, cy + 0.5f, HorizontalAlignment.Center);
                 }
                 LpWrite(image, LpShort(value), bold15, LpText, ix + (key == BarLayout.Messages ? 18 : 24) + 5, cy);
@@ -1069,12 +1198,14 @@ namespace Sanakan.Services
             float radius = shape switch { AvatarShape.Circle => s / 2f, AvatarShape.Rounded => s * 0.21f, _ => 5 };
             var inset = (int)Math.Round(3 * s / 84.0);
 
-            using (var shadow = new Image<Rgba32>(s + 24, s + 24))
+            var ks = LpK(canvas.Image);
+            using (var shadow = LpSurface(s + 24, s + 24, ks))
             {
-                shadow.Mutate(c => c.Paint(p => p.Fill(Brushes.Solid(Color.Black.WithAlpha(0.45f)), GetRoundedRectPath(12, 12, s, s, radius))).GaussianBlur(5));
-                canvas.Image.Mutate(c => c.DrawImage(shadow, new Point(avatar.X - 12, avatar.Y - 12), 1));
+                LpPaint(shadow, p => p.Fill(Brushes.Solid(Color.Black.WithAlpha(0.45f)), GetRoundedRectPath(12, 12, s, s, radius)));
+                shadow.Mutate(c => c.GaussianBlur(5 * ks));
+                canvas.Image.Mutate(c => c.DrawImage(shadow, new Point(LpR(avatar.X - 12, ks), LpR(avatar.Y - 12, ks)), 1));
             }
-            canvas.Image.Mutate(c => c.Paint(p => p.Fill(Brushes.Solid(GetOrCreateColor(accent)), GetRoundedRectPath(avatar.X, avatar.Y, s, s, radius))));
+            LpPaint(canvas.Image, p => p.Fill(Brushes.Solid(GetOrCreateColor(accent)), GetRoundedRectPath(avatar.X, avatar.Y, s, s, radius)));
 
             if (!string.IsNullOrEmpty(data.AvatarUrl))
             {
@@ -1082,8 +1213,8 @@ namespace Sanakan.Services
                 if (picture.Width > 1)
                 {
                     var inner = s - 2 * inset;
-                    picture.Mutate(c => c.Resize(new ResizeOptions { Mode = ResizeMode.Crop, Size = new Size(inner, inner) }).Round(Math.Max(2, radius - inset)));
-                    Place(canvas, picture, new Point(avatar.X + inset, avatar.Y + inset), ProfileLayout.AnimateAvatar);
+                    picture.Mutate(c => c.Resize(new ResizeOptions { Mode = ResizeMode.Crop, Size = new Size(LpR(inner, ks), LpR(inner, ks)) }).Round(Math.Max(2, radius - inset) * ks));
+                    Place(canvas, picture, new Point(LpR(avatar.X + inset, ks), LpR(avatar.Y + inset, ks)), ProfileLayout.AnimateAvatar);
                 }
             }
 
@@ -1100,8 +1231,8 @@ namespace Sanakan.Services
 
                 var fw = Math.Max(1, (int)Math.Round(s * 1.45 * avatar.CustomScale));
                 var fh = Math.Max(1, (int)Math.Round(fw * frame.Height / (double)frame.Width));
-                frame.Mutate(c => c.Resize(fw, fh));
-                var at = new Point((int)Math.Round(avatar.X + s / 2.0 - fw / 2.0 + avatar.CustomX * k), (int)Math.Round(avatar.Y + s / 2.0 - fh / 2.0 + avatar.CustomY * k));
+                frame.Mutate(c => c.Resize(LpR(fw, ks), LpR(fh, ks)));
+                var at = new Point(LpR(avatar.X + s / 2.0 - fw / 2.0 + avatar.CustomX * k, ks), LpR(avatar.Y + s / 2.0 - fh / 2.0 + avatar.CustomY * k, ks));
                 Place(canvas, frame, at, ProfileLayout.AnimateFrame);
                 return;
             }
@@ -1120,10 +1251,11 @@ namespace Sanakan.Services
                 return;
 
             using var borderImage = Image.Load(file);
-            if (Math.Abs(k - 1) > 0.001)
-                borderImage.Mutate(c => c.Resize((int)Math.Round(borderImage.Width * k), (int)Math.Round(borderImage.Height * k)));
+            var kb = k * ks;
+            if (Math.Abs(kb - 1) > 0.001)
+                borderImage.Mutate(c => c.Resize((int)Math.Round(borderImage.Width * kb), (int)Math.Round(borderImage.Height * kb)));
             var spot = FrameAt(border);
-            canvas.Image.Mutate(c => c.DrawImage(borderImage, new Point((int)Math.Round(avatar.X + (spot.X - 52) * k), (int)Math.Round(avatar.Y + (spot.Y - 68) * k)), 1));
+            canvas.Image.Mutate(c => c.DrawImage(borderImage, new Point(LpR(avatar.X + (spot.X - 52) * k, ks), LpR(avatar.Y + (spot.Y - 68) * k, ks)), 1));
         }
     }
 }

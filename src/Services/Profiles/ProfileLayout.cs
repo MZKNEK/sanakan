@@ -30,6 +30,9 @@ namespace Sanakan.Services.Profiles
 
     public enum BarLook { Solid, Glass }
 
+    // the card game's panel: full, narrow (the waifu alone, or the numbers one under another) or low (the numbers in rows)
+    public enum CardsPanelSize { Full, Narrow, Low }
+
     // The look of a profile: fixed parts (header and style images, avatar, nick, ultra overlay, bar)
     // and free layers drawn between the nick and the ultra overlay, bottom to top.
     // Stored as JSON; unknown fields and layer types are skipped, so newer layouts still load.
@@ -45,6 +48,8 @@ namespace Sanakan.Services.Profiles
         [JsonProperty("panels")] public PanelLook Panels { get; set; } = PanelLook.Solid;
         [JsonProperty("shadow")] public int ShadowOpacity { get; set; } = 70;
         [JsonProperty("shade")] public HeaderShade Shade { get; set; } = HeaderShade.Fade;
+        // drawn at twice the size, 1500 x 1000; the layout itself stays in 750 x 500
+        [JsonProperty("hd")] public bool Hd { get; set; }
         [JsonProperty("bar")] public BarLayout Bar { get; set; } = new BarLayout();
         [JsonProperty("header")] public SlotImage Header { get; set; }
         [JsonProperty("style")] public SlotImage Style { get; set; }
@@ -214,6 +219,9 @@ namespace Sanakan.Services.Profiles
         public static readonly string[] Parts = { Karma, Waifu, Count, Rarities, Ultimates, CustomImages, CustomBorders };
 
         [JsonProperty("hide")] public List<string> Hide { get; set; } = new List<string>();
+        // the panel's ground, off for the card game alone on the picture
+        [JsonProperty("panel")] public bool Panel { get; set; } = true;
+        [JsonProperty("size")] public CardsPanelSize Size { get; set; } = CardsPanelSize.Full;
 
         public override string Type => "cards";
 
@@ -233,6 +241,8 @@ namespace Sanakan.Services.Profiles
     // twelve cards of the profile gallery in two rows
     public class BigGalleryLayer : ProfileLayer
     {
+        // 12 in two rows, 6 in one, 3 in half of one; the panel fits them
+        [JsonProperty("count")] public int Count { get; set; } = 12;
         [JsonProperty("panel")] public bool Panel { get; set; } = true;
 
         public override string Type => "bigGallery";

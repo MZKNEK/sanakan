@@ -187,7 +187,7 @@ namespace Artifacts
                 Assert.NotNull(ProfileCatalog.Feature(ProfileCatalog.Sticker(i)));
             for (int i = 1; i <= ProfileCatalog.MaxOverlays; i++)
                 Assert.NotNull(ProfileCatalog.Feature(ProfileCatalog.Overlay(i)));
-            Assert.All(ProfileCatalog.Features, f => Assert.True(f.Sc > 0 && f.Tc > 0, f.Key));
+            Assert.All(ProfileCatalog.Features, f => Assert.True((f.TcOnly ? f.Sc == 0 : f.Sc > 0) && f.Tc > 0, f.Key));
             Assert.Equal(ProfileCatalog.Features.Count, ProfileCatalog.Features.Select(x => x.Key).Distinct().Count());
         }
 
@@ -255,6 +255,42 @@ namespace Artifacts
 
             Assert.Empty(ProfileRules.Validate(layout, Context()));
             Assert.Equal(new[] { ProfileCatalog.HeaderImage, ProfileCatalog.StyleImage }, ProfileRules.RequiredUnlocks(layout).OrderBy(z => z, StringComparer.Ordinal));
+        }
+
+        [Fact]
+        public void TwiceTheSizeIsAnUnlockSoldOnlyForTc()
+        {
+            var layout = Stats();
+            layout.Hd = true;
+            Assert.Contains(ProfileCatalog.HighResolution, ProfileRules.RequiredUnlocks(layout));
+
+            var feature = ProfileCatalog.Feature(ProfileCatalog.HighResolution);
+            Assert.True(feature.TcOnly);
+            Assert.Equal(5000, feature.Tc);
+            Assert.True(ProfileRules.NeedsTc(new[] { feature }));
+            Assert.False(ProfileRules.NeedsTc(new[] { ProfileCatalog.Feature(ProfileCatalog.Ultra) }));
+            Assert.Contains("\"hd\":true", layout.ToJson());
+        }
+
+        [Theory]
+        [InlineData(CardsPanelSize.Full, 370, 276)]
+        [InlineData(CardsPanelSize.Narrow, 186, 276)]
+        [InlineData(CardsPanelSize.Low, 370, 130)]
+        public void TheCardGameHasThreeSizes(CardsPanelSize size, int w, int h)
+        {
+            Assert.Equal((w, h), ProfileCatalog.Size(new CardsPanelLayer { Size = size }));
+        }
+
+        [Theory]
+        [InlineData(12, 718, 304, true)]
+        [InlineData(6, 718, 164, true)]
+        [InlineData(3, 360, 164, true)]
+        [InlineData(4, 718, 304, false)]
+        public void TheBigGalleryFitsThreeSixOrTwelveCards(int count, int w, int h, bool valid)
+        {
+            Assert.Equal((w, h), ProfileCatalog.Size(new BigGalleryLayer { Count = count }));
+            var errors = Errors(l => { l.Layers.Clear(); l.Layers.Add(new BigGalleryLayer { Id = 1, X = 16, Y = 164, Count = count }); });
+            Assert.Equal(valid, errors.Count == 0);
         }
 
         [Fact]

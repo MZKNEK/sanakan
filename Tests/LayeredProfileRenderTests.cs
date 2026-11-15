@@ -164,6 +164,33 @@ namespace Artifacts
         }
 
         [Fact]
+        public async Task TwiceTheSizeDrawsTheSameLayoutAt1500By1000()
+        {
+            var layout = ProfileCatalog.FindPreset("stats").Make();
+            layout.Layers.Add(new StickerLayer { Id = 30, Card = 2, X = 600, Y = 20, H = 120, Tilt = 5, Ground = StickerGround.Glass });
+            layout.LayersOf<CardsPanelLayer>().Single().Panel = false;
+            layout.Hd = true;
+
+            using var image = await _img.GetLayeredProfileAsync(layout, Data(new Dictionary<long, string>()));
+
+            Assert.Equal((1500, 1000), (image.Width, image.Height));
+        }
+
+        [Fact]
+        public async Task EveryCardGameSizeAndBigGalleryDraws()
+        {
+            var layout = new ProfileLayout();
+            layout.Layers.Add(new CardsPanelLayer { Id = 1, X = 16, Y = 175, Size = CardsPanelSize.Narrow });
+            layout.Layers.Add(new CardsPanelLayer { Id = 2, X = 210, Y = 175, Size = CardsPanelSize.Narrow, Hide = new List<string> { CardsPanelLayer.Waifu } });
+            layout.Layers.Add(new CardsPanelLayer { Id = 3, X = 380, Y = 175, Size = CardsPanelSize.Low, Panel = false });
+            layout.Layers.Add(new BigGalleryLayer { Id = 4, X = 16, Y = 320, Count = 3 });
+
+            using var image = await _img.GetLayeredProfileAsync(layout, Data(new Dictionary<long, string>()));
+
+            Assert.Equal((750, 500), (image.Width, image.Height));
+        }
+
+        [Fact]
         public async Task EveryPresetDraws()
         {
             var data = Data(new Dictionary<long, string>());

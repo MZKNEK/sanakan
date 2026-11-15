@@ -110,6 +110,7 @@ namespace Artifacts
             var catalog = Controller().GetCatalog().Value;
 
             Assert.Equal(ProfileCatalog.Features.Count, catalog.Features.Count);
+            Assert.True(catalog.Features.Single(x => x.Key == ProfileCatalog.HighResolution).TcOnly);
             Assert.All(catalog.Presets, p => Assert.NotNull(ProfileLayout.FromJson(p.Layout.ToString())));
             Assert.Contains(catalog.Frames, f => f.Key == "Base" && f.Free);
             Assert.Contains(catalog.Frames, f => f.Key == "TurqLeaves" && !f.Selectable);
@@ -136,6 +137,27 @@ namespace Artifacts
             Assert.Equal(18000 + 12000, quote.Sc);
             Assert.Equal(299 + 199, quote.Tc);
             Assert.Equal(50000, quote.WalletSc);
+        }
+
+        [Fact]
+        public async Task TheProfileOfTwiceTheSizeIsBoughtOnlyWithTc()
+        {
+            using (var db = Open())
+            {
+                var user = await db.Users.FirstAsync(x => x.Id == PlayerId);
+                user.TcCnt = 6000;
+                await db.SaveChangesAsync();
+            }
+            var layout = Layout(l => l.Hd = true);
+
+            var quote = (await Controller().QuoteAsync(PlayerId, layout)).Value;
+            Assert.True(quote.TcOnly);
+            Assert.Equal(5000, quote.Tc);
+
+            Assert.Equal(400, Status(await Controller().SaveAsync(PlayerId, Save(layout, "sc"), "key-hd1")));
+            Assert.Equal(200, Status(await Controller().SaveAsync(PlayerId, Save(layout, "tc"), "key-hd2")));
+            var player = await PlayerAsync();
+            Assert.Equal((50000L, 1000L), (player.ScCnt, player.TcCnt));
         }
 
         [Fact]

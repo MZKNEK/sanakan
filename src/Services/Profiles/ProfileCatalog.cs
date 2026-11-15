@@ -9,13 +9,14 @@ namespace Sanakan.Services.Profiles
 {
     public class ProfileFeature
     {
-        public ProfileFeature(string key, string name, string description, long sc, long tc)
+        public ProfileFeature(string key, string name, string description, long sc, long tc, bool tcOnly = false)
         {
             Key = key;
             Name = name;
             Description = description;
             Sc = sc;
             Tc = tc;
+            TcOnly = tcOnly;
         }
 
         public string Key { get; }
@@ -23,6 +24,8 @@ namespace Sanakan.Services.Profiles
         public string Description { get; }
         public long Sc { get; }
         public long Tc { get; }
+        // bought only with TC; a save that buys it is paid in TC whole
+        public bool TcOnly { get; }
     }
 
     // The one-time unlocks with their prices, the limits, the sizes of the parts and the ready layouts.
@@ -48,6 +51,7 @@ namespace Sanakan.Services.Profiles
         public const string Layout = "layout";
         public const string CustomFrame = "customFrame";
         public const string Ultra = "ultra";
+        public const string HighResolution = "hd";
         public const string StickerPrefix = "sticker:";
         public const string OverlayPrefix = "overlay:";
         public const string FramePrefix = "frame:";
@@ -88,6 +92,7 @@ namespace Sanakan.Services.Profiles
                 list.Add(new ProfileFeature(Frame(border), $"Ramka awatara: {FrameName(border)}", "ramka z bota, na zawsze", 36000, 599));
             list.Add(new ProfileFeature(CustomFrame, "Własna ramka awatara", "własny obrazek wokół awatara, zmiany za darmo", 72000, 1199));
             list.Add(new ProfileFeature(Ultra, "Ultra nakładka", "obrazek na całym profilu, zmiany za darmo", 240000, 3999));
+            list.Add(new ProfileFeature(HighResolution, "Profil w podwójnej rozdzielczości", "1500 × 1000 zamiast 750 × 500, tylko za TC", 0, 5000, tcOnly: true));
             return list;
         }
 
@@ -144,6 +149,10 @@ namespace Sanakan.Services.Profiles
         public const int PanelHeight = 276;
         public const int BigGalleryWidth = 718;
         public const int BigGalleryHeight = 304;
+        public const int NarrowCardsPanelWidth = 186;
+        public const int LowCardsPanelHeight = 130;
+        public const int BigGalleryRowHeight = 164;
+        public const int BigGalleryHalfWidth = 360;
         public const int RankHeight = 22;
         public const double CardRatio = 475.0 / 667.0;
 
@@ -156,9 +165,19 @@ namespace Sanakan.Services.Profiles
         public static (int W, int H) Size(ProfileLayer layer, Func<long, (int W, int H)?> imageSize = null, int rankWidth = 0) => layer switch
         {
             ListPanelLayer l => (ListWidth, l.Size == ListPanelSize.Large ? LargeListHeight : SmallListHeight),
-            CardsPanelLayer => (CardsPanelWidth, PanelHeight),
+            CardsPanelLayer c => c.Size switch
+            {
+                CardsPanelSize.Narrow => (NarrowCardsPanelWidth, PanelHeight),
+                CardsPanelSize.Low => (CardsPanelWidth, LowCardsPanelHeight),
+                _ => (CardsPanelWidth, PanelHeight),
+            },
             GalleryLayer => (ListWidth, PanelHeight),
-            BigGalleryLayer => (BigGalleryWidth, BigGalleryHeight),
+            BigGalleryLayer g => g.Count switch
+            {
+                3 => (BigGalleryHalfWidth, BigGalleryRowHeight),
+                6 => (BigGalleryWidth, BigGalleryRowHeight),
+                _ => (BigGalleryWidth, BigGalleryHeight),
+            },
             StickerLayer s => (StickerWidth(s.H), s.H),
             RankLayer => (rankWidth, RankHeight),
             ImageLayerBase i => imageSize?.Invoke(i.Image) is (int w, int h) ? ((int)Math.Round(w * i.Scale), (int)Math.Round(h * i.Scale)) : (0, 0),

@@ -217,6 +217,11 @@ namespace Sanakan.Services.Profiles
                         fail("galeria ma 2 albo 6 kart");
                     break;
 
+                case BigGalleryLayer big:
+                    if (big.Count is not (3 or 6 or 12))
+                        fail("duża galeria ma 3, 6 albo 12 kart");
+                    break;
+
                 case StickerLayer sticker:
                     if (sticker.H < StickerLayer.MinHeight || sticker.H > StickerLayer.MaxHeight)
                         fail($"karta-naklejka: rozmiar od {StickerLayer.MinHeight} do {StickerLayer.MaxHeight} px");
@@ -309,6 +314,7 @@ namespace Sanakan.Services.Profiles
             if (layout.Header != null) needs.Add(ProfileCatalog.HeaderImage);
             if (layout.Style != null) needs.Add(ProfileCatalog.StyleImage);
             if (layout.Ultra != null) needs.Add(ProfileCatalog.Ultra);
+            if (layout.Hd) needs.Add(ProfileCatalog.HighResolution);
 
             var avatar = layout.Avatar;
             if (avatar.Size != ProfileCatalog.DefaultAvatarSize || (!avatar.HasFrame && avatar.Shape != AvatarShape.Circle))
@@ -340,5 +346,8 @@ namespace Sanakan.Services.Profiles
 
         public static long Cost(IEnumerable<ProfileFeature> features, Services.PocketWaifu.CurrencyType currency)
             => features.Sum(x => currency == Services.PocketWaifu.CurrencyType.TC ? x.Tc : x.Sc);
+
+        // a save buying anything sold only for TC is paid in TC
+        public static bool NeedsTc(IEnumerable<ProfileFeature> features) => features.Any(x => x.TcOnly);
     }
 }
