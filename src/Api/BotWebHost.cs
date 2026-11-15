@@ -166,6 +166,14 @@ namespace Sanakan.Api
                     policy.RequireAssertion(context => AppKeyAuthenticationHandler.IsAllowed(context.User, ApiAppPermission.Site));
                 });
 
+                op.AddPolicy("Profile", policy =>
+                {
+                    policy.AddAuthenticationSchemes(JwtBearerDefaults.AuthenticationScheme, AppKeyAuthenticationHandler.SchemeName);
+                    policy.RequireAuthenticatedUser();
+
+                    policy.RequireAssertion(context => AppKeyAuthenticationHandler.IsAllowed(context.User, ApiAppPermission.Profile));
+                });
+
                 op.AddPolicy("Info", policy =>
                 {
                     policy.AddAuthenticationSchemes(JwtBearerDefaults.AuthenticationScheme, AppKeyAuthenticationHandler.SchemeName);

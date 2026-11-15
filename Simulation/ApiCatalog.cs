@@ -43,6 +43,14 @@ public static class ApiCatalog
             return $"{{\"orderBy\":\"{sort}\",\"searchText\":{text},\"includeTags\":null,\"filterTagsMethod\":\"and\"}}";
         });
 
+    // a ready layout, sometimes with paid options, so the quote has something to price
+    private static string LayersBody(Context c)
+    {
+        var accent = c.Random.Next(2) == 0 ? "\"accent\":\"#4fc3e8\",\"panels\":\"glass\"," : "";
+        return $"{{\"v\":1,{accent}\"layers\":[{{\"t\":\"anime\",\"id\":1,\"x\":16,\"y\":182}},{{\"t\":\"manga\",\"id\":2,\"x\":16,\"y\":328}},"
+            + "{\"t\":\"cards\",\"id\":3,\"x\":368,\"y\":182},{\"t\":\"rank\",\"id\":4,\"x\":163,\"y\":135}]}";
+    }
+
     private static Template Player(string path) => new($"GET api/waifu/{path}", HttpMethod.Get, Auth.Player, _ => $"api/waifu/{path}");
 
     // the site asks for the image of a card it shows; a player without sampled cards asks for a card that does not exist
@@ -92,5 +100,11 @@ public static class ApiCatalog
         ["api:debug-update"] = new("POST api/Debug/update", HttpMethod.Post, Auth.Site, _ => "api/Debug/update"),
         ["api:debug-kill"] = new("POST api/Debug/kill", HttpMethod.Post, Auth.Site, _ => "api/Debug/kill"),
         ["api:profile-preview"] = new("GET api/User/discord/{id}/profile", HttpMethod.Get, Auth.Info, c => $"api/User/discord/{c.User.Id}/profile"),
+        // only for --extra: the profile of layers for the new Profilator
+        ["api:layers-catalog"] = new("extra profile catalog", HttpMethod.Get, Auth.Site, _ => "api/Profile/catalog"),
+        ["api:layers-editor"] = new("extra profile editor", HttpMethod.Get, Auth.Site, c => $"api/Profile/discord/{c.User.Id}"),
+        ["api:layers-quote"] = new("extra profile quote", HttpMethod.Post, Auth.Site, c => $"api/Profile/discord/{c.User.Id}/quote", LayersBody),
+        ["api:layers-draw"] = new("extra profile drawn by the bot", HttpMethod.Post, Auth.Site, c => $"api/Profile/discord/{c.User.Id}/preview", LayersBody),
+        ["api:layers-image"] = new("extra current profile image", HttpMethod.Get, Auth.Site, c => $"api/Profile/discord/{c.User.Id}/image"),
     };
 }

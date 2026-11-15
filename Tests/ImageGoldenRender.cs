@@ -371,6 +371,8 @@ namespace Artifacts
                     ("card_ultimate_Alpha", () => img.GetWaifuCardAsync(cards.First(x => x.name == "ultimate_Alpha").card)),
                     ("profilecard", () => img.GetWaifuInProfileCardAsync(cards[0].card)),
                     ("profile", () => img.GetUserProfileAsync(shinden, benchUser, U("avatar.png"), 17, "gracz", new Discord.Color(0x9B59B6))),
+                    ("profile_layered", () => img.GetLayeredProfileAsync(ProfileCatalog.Default(), layeredData)),
+                    ("profile_layered_full_glass", () => img.GetLayeredProfileAsync(full, layeredData)),
                     ("badge", async () => await img.GetLevelUpBadgeAsync("gracz", 42, U("avatar.png"), new Discord.Color(30, 200, 30))),
                     ("sitestats", async () => await img.GetSiteStatisticAsync(shinden, new Discord.Color(0x1ABC9C), readed, watched)),
                 };

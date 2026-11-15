@@ -136,6 +136,19 @@ that changes one of them has to expect both forms:
 - the foreign keys of `ExpContainers`, `TagCardRelations` and `Tags` have MySQL's own names (`*_ibfk_*`);
 - `Tags.Name` is `text NOT NULL`, `WishlistCountData.Id` has no `AUTO_INCREMENT`.
 
+#### Profile of layers
+
+The new profile is a layout of layers set in Profilator on the site, kept in `UserProfiles` (the layout as JSON),
+`ProfileUnlocks` (one-time paid options) and `ProfilePictures` (the players' pictures under `GOut/Saved/Profile`).
+Profilator reads and saves it through `api/Profile`, with an app key that has the `Profile` permission (`Site`
+includes it). The `profil` command keeps drawing the old profile until it is switched on for everyone:
+
+1. deploy the version with the migration `ProfileLayers`;
+2. run `dev profile migrate`, which converts every old customised profile with its pictures and what it used
+   unlocked (it only takes the missing ones, so it can run again; any other profile is converted when first read);
+3. set `"LayeredProfiles": true` in the config. `konfiguracja profilu` then points to Profilator, and
+   `konfiguracja profilu domyślny tak` sets the default look back.
+
 #### Game statistics
 
 The bot keeps statistics of the game for charts (e.g. Grafana with a MySQL data source):

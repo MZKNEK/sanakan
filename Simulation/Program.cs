@@ -80,7 +80,7 @@ if (options.MySql)
     }
     log.Info("database: MySQL (reset it with tools/mysql_sim_db.py reset before comparable runs)");
 }
-bot.Prepare(world, baseUrl, fresh: !options.KeepDb, mySql);
+bot.Prepare(world, baseUrl, fresh: !options.KeepDb, mySql, options.Layered);
 bot.Start(dll);
 
 var ready = Task.WhenAll(gateway.Identified.Task, bot.Started.Task);
@@ -214,14 +214,14 @@ void Report()
 
 sealed record Options(string Mode, int Port, int Users, bool KeepDb, string Repo, string World,
     string Mix = null, double Minutes = 10, double Speed = 1, double Scale = 1, double ChatPerHour = 2300, int StartHour = 20, bool MySql = false,
-    IReadOnlyList<string> Extra = null, bool Api = false)
+    IReadOnlyList<string> Extra = null, bool Api = false, bool Layered = false)
 {
     public static Options Parse(string[] args)
     {
         if (args.Length == 0 || args[0] is not ("smoke" or "init" or "load")) return null;
 
         int port = 5199, users = 50, startHour = 20;
-        bool keepDb = false, mySql = false, api = false;
+        bool keepDb = false, mySql = false, api = false, layered = false;
         string repo = Directory.GetCurrentDirectory();
         string world = null, mix = null;
         List<string> extra = null;
@@ -244,6 +244,8 @@ sealed record Options(string Mode, int Port, int Users, bool KeepDb, string Repo
                 case "--start-hour": startHour = int.Parse(args[++i]); break;
                 case "--mysql": mySql = true; break;
                 case "--api": api = true; break;
+                // the profile command draws the profile of layers (LayeredProfiles in the bot's config)
+                case "--layered": layered = true; break;
                 case "--extra": extra = args[++i].Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList(); break;
                 default: return null;
             }
@@ -254,7 +256,7 @@ sealed record Options(string Mode, int Port, int Users, bool KeepDb, string Repo
         // relative paths are relative to the repository, dotnet run changes the working directory
         string Resolve(string path) => path == null || Path.IsPathRooted(path) ? path : Path.Combine(root, path);
         return new Options(args[0], port, users, keepDb && args[0] != "init", root, Resolve(world),
-            Resolve(mix), minutes, speed, scale, chat, startHour, mySql, extra, api);
+            Resolve(mix), minutes, speed, scale, chat, startHour, mySql, extra, api, layered);
     }
 
     // dotnet run starts in the project directory, the repository is the first parent with the bot project

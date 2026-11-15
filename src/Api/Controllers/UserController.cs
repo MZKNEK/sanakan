@@ -30,7 +30,7 @@ namespace Sanakan.Api.Controllers
     [Route("api/[controller]")]
     public class UserController : ControllerBase
     {
-        private const ulong MainGuildId = 245931283031523330;
+        internal const ulong MainGuildId = 245931283031523330;
         private static readonly SemaphoreSlim AccountLinkLock = new SemaphoreSlim(1, 1);
 
         private readonly IConfig _config;

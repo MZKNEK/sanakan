@@ -68,6 +68,7 @@ public static class CommandCatalog
         ["ilem"] = T(ChannelKind.Command, "ilem"),
         ["portfel"] = T(ChannelKind.Command, "portfel"),
         ["profil"] = T(ChannelKind.Command, "profil"),
+        ["konfiguracja profilu domyślny"] = T(ChannelKind.Command, c => c.Random.Next(2) == 0 ? "konfiguracja profilu domyślny" : "konfiguracja profilu domyślny tak"),
         ["karta obrazek"] = T(ChannelKind.Command, c => $"karta obrazek {c.Card}"),
         ["żdodaj"] = T(ChannelKind.Waifu, c => $"żdodaj postać {c.Character}"),
         ["karcianka-"] = T(ChannelKind.Command, "karcianka-"),

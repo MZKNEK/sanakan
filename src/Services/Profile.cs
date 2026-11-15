@@ -404,6 +404,114 @@ namespace Sanakan.Services
             }
         }
 
+        private Profiles.ProfileStore _store;
+        public Profiles.ProfileStore Store => _store ??= new Profiles.ProfileStore(_img, _time);
+
+        // the colour of the account's highest role on the guild, grey without one
+        public static string RoleColorHex(IUser account)
+        {
+            var color = (account as SocketGuildUser)?.Roles.OrderByDescending(x => x.Position).FirstOrDefault()?.Colors.PrimaryColor ?? Color.Default;
+            if (color == Color.Default)
+                color = Color.DarkerGrey;
+            return "#" + color.RawValue.ToString("X6");
+        }
+
+        private async Task<T> FromShindenAsync<T>(string what, Func<Task<T>> request) where T : class
+        {
+            try
+            {
+                return await request();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Profile: shinden {what}: {ex.Message}");
+                return null;
+            }
+        }
+
+        // what the profile of layers shows of a player; the user needs its deck with all cards
+        public async Task<Profiles.ProfileRenderData> GetLayeredDataAsync(Database.Models.User botUser, Profiles.ProfileLayout layout, IUser account, long topPosition,
+            IReadOnlyDictionary<long, string> pictures = null)
+        {
+            var deck = botUser.GameDeck;
+            var cards = deck?.Cards?.ToList() ?? new List<Card>();
+            var lists = layout.LayersOf<Profiles.ListPanelLayer>().Where(x => !x.Hidden).ToList();
+            var wantsRecent = lists.Where(x => x.Recent > 0).ToList();
+
+            ShindenCompat.Models.IUserInfo shinden = null;
+            List<ShindenCompat.Models.ILastWatched> watched = null;
+            List<ShindenCompat.Models.ILastReaded> read = null;
+            if (botUser.Shinden != 0)
+            {
+                var info = FromShindenAsync("user", async () => { var r = await _shClient.User.GetAsync(botUser.Shinden); return r.IsSuccessStatusCode() ? r.Body : null; });
+                var lastWatched = wantsRecent.Any(x => !x.Manga)
+                    ? FromShindenAsync("last watched", async () => { var r = await _shClient.User.GetLastWatchedAsync(botUser.Shinden, 50); return r.IsSuccessStatusCode() ? r.Body : null; })
+                    : Task.FromResult<List<ShindenCompat.Models.ILastWatched>>(null);
+                var lastRead = wantsRecent.Any(x => x.Manga)
+                    ? FromShindenAsync("last read", async () => { var r = await _shClient.User.GetLastReadedAsync(botUser.Shinden, 50); return r.IsSuccessStatusCode() ? r.Body : null; })
+                    : Task.FromResult<List<ShindenCompat.Models.ILastReaded>>(null);
+                await Task.WhenAll(info, lastWatched, lastRead);
+                (shinden, watched, read) = (await info, await lastWatched, await lastRead);
+            }
+
+            var level = botUser.Level;
+            var from = ExperienceManager.CalculateExpForLevel(level);
+            var to = ExperienceManager.CalculateExpForLevel(level + 1);
+            var progress = to > from ? Math.Clamp((botUser.ExpCnt - from) / (double)(to - from), 0, 1) : 0;
+
+            var karma = deck == null ? Profiles.KarmaLook.None
+                : deck.CanCreateDemon() ? Profiles.KarmaLook.Demon
+                : deck.CanCreateAngel() ? Profiles.KarmaLook.Angel
+                : deck.IsNeutral() ? Profiles.KarmaLook.Neutral : Profiles.KarmaLook.None;
+
+            var byId = cards.GroupBy(x => x.Id).ToDictionary(x => x.Key, x => x.First());
+            pictures ??= new Dictionary<long, string>();
+
+            return new Profiles.ProfileRenderData
+            {
+                Nick = account?.GetUserNickInGuild() ?? shinden?.Name ?? "",
+                Rank = botUser.Id == 1 ? "Safeguard" : shinden?.Rank ?? "",
+                AvatarUrl = account?.GetUserOrDefaultAvatarUrl(true),
+                RoleColor = RoleColorHex(account),
+                Top = topPosition,
+                Level = level,
+                LevelProgress = progress,
+                Messages = botUser.MessagesCnt,
+                Sc = botUser.ScCnt,
+                Tc = botUser.TcCnt,
+                Ac = botUser.AcCnt,
+                Ct = deck?.CTCnt ?? 0,
+                Pc = deck?.PVPCoins ?? 0,
+                Cards = cards.Count,
+                Limit = deck?.MaxNumberOfCards ?? 0,
+                Karma = karma,
+                Rarities = cards.Where(x => !x.FromFigure).GroupBy(x => x.Rarity).ToDictionary(x => x.Key, x => x.Count()),
+                Ultimates = cards.Count(x => x.FromFigure),
+                CustomImages = cards.Count(x => !string.IsNullOrEmpty(x.CustomImage)),
+                CustomBorders = cards.Count(x => !string.IsNullOrEmpty(x.CustomBorder)),
+                Waifu = deck != null && (deck.Waifu != 0 || deck.PremiumWaifu != 0) ? deck.GetWaifuCard() : null,
+                Gallery = deck == null ? new List<Card>() : _img.ProfileGalleryCards(botUser, 12),
+                Card = id => byId.TryGetValue(id, out var card) ? card : null,
+                Anime = ImageProcessing.ToProfileAnime(shinden?.ListStats, watched),
+                Manga = ImageProcessing.ToProfileManga(shinden?.ListStats, read),
+                ImagePath = id => pictures.TryGetValue(id, out var path) ? path : null,
+            };
+        }
+
+        public List<Card> GalleryCards(Database.Models.User botUser, int count) => _img.ProfileGalleryCards(botUser, count);
+
+        public static async Task<Dictionary<long, string>> GetPicturePathsAsync(Database.DatabaseContext db, ulong userId)
+            => (await Profiles.ProfileStore.GetPicturesAsync(db, userId)).ToDictionary(x => (long)x.Id, x => x.File);
+
+        // the profile of layers of a player as stored, converted from the old one on the way; the user needs its deck with all cards
+        public async Task<SixLabors.ImageSharp.Image> GetLayeredProfileImageAsync(Database.DatabaseContext db, Database.Models.User botUser, IUser account, long topPosition,
+            Profiles.ProfileLayout layout = null)
+        {
+            layout ??= (await Store.LoadAsync(db, botUser)).Layout;
+            var data = await GetLayeredDataAsync(botUser, layout, account, topPosition, await GetPicturePathsAsync(db, botUser.Id));
+            return await _img.GetLayeredProfileAsync(layout, data);
+        }
+
         public async Task<SixLabors.ImageSharp.Image> GetProfileImageAsync(SocketGuildUser user, Database.Models.User botUser, long topPosition)
         {
             global::Sanakan.ShindenCompat.Models.IUserInfo shindenUser = null;

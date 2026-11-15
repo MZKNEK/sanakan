@@ -295,7 +295,9 @@ namespace Sanakan.Modules
                 }
 
                 dataUser.GameDeck.Cards = (await db.GetCachedUserGameDeckAsync(searchId)).Cards;
-                using (var image = await _profile.GetProfileImageAsync(usr, dataUser, rankingPosition))
+                using (var image = Config.Get().LayeredProfiles
+                    ? await _profile.GetLayeredProfileImageAsync(db, dataUser, usr, rankingPosition)
+                    : await _profile.GetProfileImageAsync(usr, dataUser, rankingPosition))
                 {
                     image.SaveToPath(profileUri);
                     try
@@ -379,6 +381,14 @@ namespace Sanakan.Modules
         [Remarks("konfiguracja profilu info"), RequireCommandChannel]
         public async Task ConfigureProfileAsync([Summary("konfiguracja (podanie info wyświetla dodatkowe informacje)")][Remainder]ProfileConfig config)
         {
+            if (Config.Get().LayeredProfiles)
+            {
+                var button = new ComponentBuilder().WithButton(ProfilatorLabel, style: ButtonStyle.Link, url: LayeredProfilatorUrl).Build();
+                await SafeReplyAsync("", embed: ($"{Context.User.Mention} profil ustawiasz teraz w Profilatorze, po zalogowaniu kontem Discord. "
+                    + "Powrót do domyślnego wyglądu: `konfiguracja profilu domyślny tak`.").ToEmbedMessage(EMType.Info).Build(), components: button);
+                return;
+            }
+
             if (config.Type == ProfileConfigType.ShowInfo)
             {
                 await SafeReplyAsync("", embed: config.GetHelp().ToEmbedMessage(EMType.Info).Build());
@@ -722,6 +732,49 @@ namespace Sanakan.Modules
         }
 
         private const string ProfilatorUrl = "https://sanakan.pl/profilator/#";
+        private const string LayeredProfilatorUrl = "https://sanakan.pl/profilator/";
+
+        [Command("konfiguracja profilu domyślny"), Priority(1)]
+        [Alias("konfiguracja profilu domyslny", "konprof domyślny", "konprof domyslny", "konp domyślny", "konp domyslny", "conp default", "configure profile default")]
+        [Summary("przywraca domyślny wygląd profilu; odblokowania zostają")]
+        [Remarks("tak"), RequireCommandChannel]
+        public async Task ResetLayeredProfileAsync([Summary("potwierdzenie (tak)")]string confirm = null)
+        {
+            if (!Config.Get().LayeredProfiles)
+            {
+                await SafeReplyAsync("", embed: $"{Context.User.Mention} to polecenie działa z nowym profilem, który nie jest jeszcze włączony.".ToEmbedMessage(EMType.Error).Build());
+                return;
+            }
+
+            if (!string.Equals(confirm, "tak", StringComparison.OrdinalIgnoreCase))
+            {
+                await SafeReplyAsync("", embed: ($"{Context.User.Mention} to ustawi domyślny wygląd profilu zamiast twojego układu. Odblokowania zostają, "
+                    + "a twoje obrazki zostają w Profilatorze do najbliższego zapisu. Potwierdź: `konfiguracja profilu domyślny tak`.").ToEmbedMessage(EMType.Warning).Build());
+                return;
+            }
+
+            using (var db = new Database.DatabaseContext(Config))
+            {
+                var user = await db.GetUserOrCreateSimpleAsync(Context.User.Id, _time);
+                var row = await db.UserProfiles.AsQueryable().FirstOrDefaultAsync(x => x.UserId == user.Id);
+                var layout = Services.Profiles.ProfileCatalog.Default().ToJson();
+                if (row == null)
+                    db.UserProfiles.Add(new UserProfile { UserId = user.Id, Layout = layout, Version = 1, UpdatedAt = _time.Now() });
+                else
+                {
+                    row.Layout = layout;
+                    row.Version++;
+                    row.UpdatedAt = _time.Now();
+                }
+                await db.SaveChangesAsync();
+                QueryCache.ExpireTag(new string[] { CacheTags.User(user.Id) });
+            }
+
+            try { File.Delete($"{Dir.FakeCardsAsProfiles}/{Context.User.Id}.webp"); }
+            catch (IOException) { }
+
+            await SafeReplyAsync("", embed: $"{Context.User.Mention} przywrócono domyślny wygląd profilu.".ToEmbedMessage(EMType.Success).Build());
+        }
         private const string ProfilatorLabel = "Kliknij tutaj, by przejść do Profilatora";
         private const int MaxButtonUrl = 512;
 

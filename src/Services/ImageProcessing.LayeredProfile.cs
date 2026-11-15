@@ -80,6 +80,45 @@ namespace Sanakan.Services
             public bool Moves(string target) => !Moved && Moving == target;
         }
 
+        // the cards of the player's profile gallery, in the order the player set
+        public List<Card> ProfileGalleryCards(User user, int count) => GetOrdertedCardsForGallery(user, count).ToList();
+
+        // a list on Shinden as the anime panel shows it, formatted as in the site statistics; null without the list
+        public static ProfileListStats ToProfileAnime(ShindenCompat.Models.IListStats stats, IEnumerable<ShindenCompat.Models.ILastWatched> watched)
+        {
+            var status = stats?.AnimeStatus;
+            if (status == null)
+                return null;
+
+            return ToProfileList(status, stats.EpisodesCount ?? 0, stats.AnimeTime, stats.AnimeMeanScore?.Rating,
+                (watched ?? Enumerable.Empty<ShindenCompat.Models.ILastWatched>()).Select(x => new SiteStatsEntry(x.TitleId, x.AnimeTitle,
+                    $"{x.EpisodeNo} / {(x.EpisodesCnt > 0 ? x.EpisodesCnt.ToString() : "?")}", x.EpisodesCnt > 0 ? (double)x.EpisodeNo / x.EpisodesCnt : null, x.AnimeCoverUrl)));
+        }
+
+        public static ProfileListStats ToProfileManga(ShindenCompat.Models.IListStats stats, IEnumerable<ShindenCompat.Models.ILastReaded> read)
+        {
+            var status = stats?.MangaStatus;
+            if (status == null)
+                return null;
+
+            return ToProfileList(status, stats.ChaptersCount ?? 0, stats.MangaTime, stats.MangaMeanScore?.Rating,
+                (read ?? Enumerable.Empty<ShindenCompat.Models.ILastReaded>()).Select(x => new SiteStatsEntry(x.TitleId, x.MangaTitle,
+                    $"{x.ChapterNo.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture).Replace('.', ',')} / {(x.ChaptersCnt > 0 ? x.ChaptersCnt.ToString() : "?")}",
+                    x.ChaptersCnt > 0 ? (double)x.ChapterNo / x.ChaptersCnt : null, x.MangaCoverUrl)));
+        }
+
+        private static ProfileListStats ToProfileList(ShindenCompat.Models.ISeriesStatus status, ulong units, ShindenCompat.Models.IDedicatedTime time, double? rating, IEnumerable<SiteStatsEntry> recent)
+            => new ProfileListStats
+            {
+                Statuses = new[] { status.InProgress ?? 0, status.Completed ?? 0, status.Skipped ?? 0, status.OnHold ?? 0, status.Dropped ?? 0, status.InPlan ?? 0 },
+                Total = FormatSiteStatsShortNumber(status.Total ?? 0),
+                Units = FormatSiteStatsShortNumber(units),
+                Time = FormatSiteStatsTime(time),
+                Mean = FormatSiteStatsRating(rating),
+                Recent = GetSiteStatsUniqueEntries(recent).Take(ListPanelLayer.MaxRecent)
+                    .Select(x => new ProfileRecentTitle { Title = x.Title, Progress = x.Progress, Ratio = x.Ratio, CoverUrl = x.CoverUrl }).ToList(),
+            };
+
         public async Task<Image> GetLayeredProfileAsync(ProfileLayout layout, ProfileRenderData data)
         {
             var canvas = new LayeredCanvas

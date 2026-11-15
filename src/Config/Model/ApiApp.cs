@@ -13,6 +13,8 @@ namespace Sanakan.Config.Model
         UserKeys = 1,
         Info = 2,
         Site = 4,
+        // reading and saving the profiles of layers for Profilator, with their payments
+        Profile = 8,
     }
 
     public class ApiApp : SanakanApiKey
