@@ -58,6 +58,8 @@ using System.Threading;
 
 Console.WriteLine("fake bot $version started");
 if ($crash) { Console.WriteLine("fake bot $version crashes on start"); return 134; }
+var ready = Environment.GetEnvironmentVariable("SANAKAN_READY_FILE");
+if (!string.IsNullOrEmpty(ready)) File.WriteAllText(ready, "ready");
 while (true)
 {
     if (File.Exists("fake-exit-code"))

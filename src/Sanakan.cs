@@ -70,9 +70,11 @@ namespace Sanakan
             WarnAboutWeakAppKeys();
             AddSigTermHandler();
 
+            var connected = new TaskCompletionSource();
             _client.Ready += () =>
             {
                 _logger.Log($"Discord: connected as {_client.CurrentUser}, guilds: {_client.Guilds.Count}");
+                connected.TrySetResult();
                 return Task.CompletedTask;
             };
 
@@ -94,6 +96,9 @@ namespace Sanakan
             _waifu.ImageQueue.Start();
 
             _logger.Log($"Bot: Sanakan {HealthMonitor.GetVersion()} started, API: {BotWebHost.Url}");
+
+            await connected.Task;
+            ReadyMarker.Write(Environment.GetEnvironmentVariable(ReadyMarker.Variable), _logger);
 
             await Task.Delay(-1);
         }

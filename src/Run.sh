@@ -10,8 +10,9 @@
 # Bot exit codes (src/ExitCodes.cs): 0 stop, 75 restart, 78 bad config (stays down), 100 update; anything else is
 # a crash and is restarted like 75. 200 is the update code of older versions.
 # An update pulls the current branch from origin (fast-forward only) and publishes it into deploy/<config>/<time>;
-# the bot switches to it only when the build succeeded. A new build that fails within ROLLBACK_SECONDS of its first
-# start is replaced by the previous one.
+# the bot switches to it only when the build succeeded. A new build that exits on its first start before it is ready
+# (connected to Discord, API started: it writes the file named in SANAKAN_READY_FILE) is replaced by the previous one;
+# a crash after that, like a player's picture taking all the memory, is not the build's fault and keeps it.
 
 set -u
 cd "$(dirname "$(readlink -f "$0")")" || exit 1
@@ -29,7 +30,7 @@ done
 
 DEPLOY="deploy/${CONFIG,,}"
 KEEP_BUILDS=3
-ROLLBACK_SECONDS=60
+READY="$PWD/$DEPLOY/ready"
 STOP=0
 BAD_CONFIG=78
 
@@ -84,15 +85,16 @@ run() {
         stamp=$(current)
         started=$(date +%s)
         log "starting $stamp"
-        dotnet "$DEPLOY/$stamp/Sanakan.dll"
+        rm -f "$READY"
+        SANAKAN_READY_FILE="$READY" dotnet "$DEPLOY/$stamp/Sanakan.dll"
         code=$?
         ran=$(( $(date +%s) - started ))
-        log "bot exited with code $code after ${ran}s"
+        log "bot exited with code $code after ${ran}s$([ -f "$READY" ] || echo ', before it was ready')"
 
         if [ -f "$DEPLOY/pending" ]; then
             # the first build has nothing to go back to
             previous=$(cat "$DEPLOY/previous" 2>/dev/null)
-            if [ "$code" -ne "$STOP" ] && ! is_update "$code" && [ "$ran" -lt "$ROLLBACK_SECONDS" ] \
+            if [ "$code" -ne "$STOP" ] && ! is_update "$code" && [ ! -f "$READY" ] \
                 && [ -n "$previous" ] && [ -d "$DEPLOY/$previous" ]; then
                 log "new build $stamp failed on start, going back to $previous"
                 echo "$previous" > "$DEPLOY/current"
