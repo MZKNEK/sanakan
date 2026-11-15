@@ -136,8 +136,10 @@ namespace Sanakan.Services
                 else if (!layout.Header.Hidden)
                     await DrawSlotAsync(canvas, layout.Header, ProfileCatalog.HeaderSlot, data, ProfileLayout.AnimateHeader);
 
-                if (layout.Header == null || layout.Header.Fade)
+                if (layout.Shade == HeaderShade.Fade)
                     DrawHeaderFade(canvas.Image);
+                else if (layout.Shade == HeaderShade.Band)
+                    DrawHeaderBand(canvas.Image);
 
                 if (layout.Style != null && !layout.Style.Hidden)
                     await DrawSlotAsync(canvas, layout.Style, ProfileCatalog.StyleSlot, data, ProfileLayout.AnimateStyle);
@@ -204,6 +206,15 @@ namespace Sanakan.Services
 
             header.Mutate(x => x.Resize(750, 160));
             canvas.Image.Mutate(x => x.DrawImage(header, new Point(0, 0), 1));
+        }
+
+        // as the old profile's template: 75% black from 98 px down, fading out to the right, a darker last row
+        private static void DrawHeaderBand(Image image)
+        {
+            Brush Band(float alpha) => new LinearGradientBrush(new PointF(510, 0), new PointF(726, 0), GradientRepetitionMode.None,
+                new ColorStop(0, Color.Black.WithAlpha(alpha)), new ColorStop(1, Color.Black.WithAlpha(0)));
+            image.Mutate(x => x.Paint(c => c.Fill(Band(0.75f), new RectanglePolygon(0, 98, 750, 61))));
+            image.Mutate(x => x.Paint(c => c.Fill(Band(1f), new RectanglePolygon(0, 159, 750, 1))));
         }
 
         private void DrawHeaderFade(Image image)
@@ -888,6 +899,22 @@ namespace Sanakan.Services
             LpWrite(image, text, font, LpText, x, cy, align);
         }
 
+        // the gap between the currencies (14 down to 8) and the experience bar (90 down to 36) that let both sides fit
+        internal static (float Gap, float Track) BarSpacing(float left, float currencies, int gaps, bool exp)
+        {
+            float gap = 14, track = exp ? 90 : 0;
+            var overflow = left + track + currencies + gap * gaps - 726;
+            if (overflow > 0 && gaps > 0)
+            {
+                var less = Math.Min(overflow, (gap - 8) * gaps);
+                gap -= less / gaps;
+                overflow -= less;
+            }
+            if (overflow > 0 && track > 0)
+                track = Math.Max(36, track - overflow);
+            return (gap, track);
+        }
+
         private void DrawBar(Image image, BarLayout bar, ProfileRenderData data, string accent)
         {
             if (bar.At == BarPlace.Hidden)
@@ -913,13 +940,25 @@ namespace Sanakan.Services
 
             var bold15 = GetOrCreateFont(_latoBold, 15);
             var regular12 = GetOrCreateFont(_latoRegular, 12);
+            var top = $"#{(data.Top > 9999 ? ">10K" : FormatSiteStatsNumber((ulong)Math.Max(0, data.Top)))}";
+            var progress = (float)Math.Clamp(data.LevelProgress, 0, 1);
+            var percent = $"{(int)Math.Floor(progress * 100)}%";
+            var widths = currencies.Select(item => (item.Key == BarLayout.Messages ? 18 : 24) + 5 + TextWidth(LpShort(item.Value), bold15)).ToList();
+
+            // large numbers: the currencies close up first, then the experience bar gets shorter
+            var left = 24 + 12f
+                + (bar.Shows(BarLayout.Top) ? 18 + TextWidth(top, bold15) + 14 : 0)
+                + (bar.Shows(BarLayout.Level) ? TextWidth("Poz.", regular12) + 5 + TextWidth(LpShort(data.Level), bold15) + 8 : 0)
+                + (bar.Shows(BarLayout.Exp) ? 6 + TextWidth(percent, regular12) : 0);
+            var gaps = Math.Max(0, currencies.Count - 1);
+            var (gap, track) = BarSpacing(left, widths.Sum(), gaps, bar.Shows(BarLayout.Exp));
+
             float x = 24;
             if (bar.Shows(BarLayout.Top))
             {
                 IconCrown(image, x + 7, cy, GetOrCreateColor(LpGold));
                 x += 18;
-                var top = data.Top > 9999 ? ">10K" : FormatSiteStatsNumber((ulong)Math.Max(0, data.Top));
-                x += LpWrite(image, $"#{top}", bold15, LpText, x, cy) + 14;
+                x += LpWrite(image, top, bold15, LpText, x, cy) + 14;
             }
             if (bar.Shows(BarLayout.Level))
             {
@@ -928,20 +967,18 @@ namespace Sanakan.Services
             }
             if (bar.Shows(BarLayout.Exp))
             {
-                var progress = (float)Math.Clamp(data.LevelProgress, 0, 1);
                 var bx = x;
                 image.Mutate(c => c.Paint(p =>
                 {
-                    p.Fill(Brushes.Solid(GetOrCreateColor(LpTrack)), GetRoundedRectPath(bx, cy - 4, 90, 8, 4));
-                    p.Fill(Brushes.Solid(GetOrCreateColor(accent)), GetRoundedRectPath(bx, cy - 4, Math.Max(8, 90 * progress), 8, 4));
+                    p.Fill(Brushes.Solid(GetOrCreateColor(LpTrack)), GetRoundedRectPath(bx, cy - 4, track, 8, 4));
+                    p.Fill(Brushes.Solid(GetOrCreateColor(accent)), GetRoundedRectPath(bx, cy - 4, Math.Max(8, track * progress), 8, 4));
                 }));
-                x += 96;
-                LpWrite(image, $"{(int)Math.Floor(progress * 100)}%", regular12, LpDim, x, cy);
+                x += track + 6;
+                LpWrite(image, percent, regular12, LpDim, x, cy);
             }
 
             var tagFont = GetOrCreateFont(_latoBold, 10);
-            var widths = currencies.Select(item => (item.Key == BarLayout.Messages ? 18 : 24) + 5 + TextWidth(LpShort(item.Value), bold15)).ToList();
-            var ix = 726 - widths.Sum() - 14 * Math.Max(0, currencies.Count - 1);
+            var ix = 726 - widths.Sum() - gap * gaps;
             for (int i = 0; i < currencies.Count; i++)
             {
                 var (key, value) = currencies[i];
@@ -956,7 +993,7 @@ namespace Sanakan.Services
                     LpWrite(image, key.ToUpperInvariant(), tagFont, "#131217", ix + 12, cy + 0.5f, HorizontalAlignment.Center);
                 }
                 LpWrite(image, LpShort(value), bold15, LpText, ix + (key == BarLayout.Messages ? 18 : 24) + 5, cy);
-                ix += widths[i] + 14;
+                ix += widths[i] + gap;
             }
         }
 

@@ -91,6 +91,37 @@ namespace Artifacts
                 Assert.Equal(green, image[400, 60]);
         }
 
+        [Theory]
+        [InlineData(200f, 300f, 14f, 90f)]
+        [InlineData(250f, 330f, 11.2f, 90f)]
+        [InlineData(250f, 370f, 8f, 66f)]
+        [InlineData(300f, 500f, 8f, 36f)]
+        public void LargeNumbersCloseUpTheBar(float left, float currencies, float gap, float track)
+        {
+            Assert.Equal((gap, track), ImageProcessing.BarSpacing(left, currencies, 5, true));
+        }
+
+        [Theory]
+        [InlineData(HeaderShade.Band, 120, true)]
+        [InlineData(HeaderShade.Fade, 140, true)]
+        [InlineData(HeaderShade.None, 120, false)]
+        public async Task TheHeaderShadeIsChosenAndFree(HeaderShade shade, int y, bool darker)
+        {
+            var path = $"{_dir}/white.png";
+            using (var white = new Image<Rgba32>(750, 160, new Rgba32(255, 255, 255, 255)))
+                white.SaveAsPng(path);
+            var layout = ProfileCatalog.FindPreset("minimal").Make();
+            layout.Header = new SlotImage { Image = 1 };
+            layout.Nick.Hidden = true;
+            layout.Shade = shade;
+
+            using var image = (await _img.GetLayeredProfileAsync(layout, Data(new Dictionary<long, string> { [1] = path }))).CloneAs<Rgba32>();
+
+            Assert.Equal(darker, image[400, y].R < 250);
+            Assert.Equal(255, image[400, 20].R);
+            Assert.DoesNotContain(ProfileRules.RequiredUnlocks(layout), x => x.Contains("shade"));
+        }
+
         [Fact]
         public async Task EveryPresetDraws()
         {
@@ -117,7 +148,7 @@ namespace Artifacts
             layout.Panels = PanelLook.Glass;
             layout.Bar.At = BarPlace.Top;
             layout.Bar.Hide.Add(BarLayout.Messages);
-            layout.Header = new SlotImage { Image = 1, X = 0, Y = -40, Scale = 2.5, Fade = true };
+            layout.Header = new SlotImage { Image = 1, X = 0, Y = -40, Scale = 2.5 };
             layout.Style = new SlotImage { Image = 2, X = 0, Y = 160 };
             layout.Ultra = new UltraLayer { Image = 4 };
             layout.Avatar.Frame = AvatarLayer.CustomFrame;
@@ -163,7 +194,7 @@ namespace Artifacts
         public async Task MissingPicturesAndCardsLeaveTheirPlaceEmpty()
         {
             var layout = ProfileCatalog.Default();
-            layout.Header = new SlotImage { Image = 9, Fade = true };
+            layout.Header = new SlotImage { Image = 9 };
             layout.Layers.Add(new StickerLayer { Id = 20, Card = 999, X = 10, Y = 10 });
             layout.Layers.Add(new OverlayLayer { Id = 21, Image = 8, X = 10, Y = 10 });
 

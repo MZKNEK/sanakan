@@ -47,6 +47,9 @@ namespace Sanakan.Services.Profiles
                 return layer;
             }
 
+            // the old profile always darkened the header under the nick with its band
+            layout.Shade = HeaderShade.Band;
+
             var type = user.ProfileType;
             var flip = Has(user, ProfileSettings.Flip);
             var onImage = type is ProfileType.Img or ProfileType.StatsOnImg or ProfileType.CardsOnImg or ProfileType.MiniGalleryOnImg;
@@ -56,7 +59,7 @@ namespace Sanakan.Services.Profiles
             if (!IsDefaultBackground(user.BackgroundProfileUri))
             {
                 // the old background was always stretched to exactly 750 x 160
-                layout.Header = new SlotImage { Image = registerImage(ProfileImageUse.Header, user.BackgroundProfileUri), X = 0, Y = 0, Scale = 1, Fade = true };
+                layout.Header = new SlotImage { Image = registerImage(ProfileImageUse.Header, user.BackgroundProfileUri), X = 0, Y = 0, Scale = 1 };
                 unlocks.Add(ProfileCatalog.HeaderImage);
             }
 

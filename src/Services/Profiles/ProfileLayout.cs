@@ -22,8 +22,11 @@ namespace Sanakan.Services.Profiles
 
     public enum LegendMode { Main, All }
 
+    // what darkens the header under the nick: the old profile's band, a fade or nothing
+    public enum HeaderShade { Fade, Band, None }
+
     // The look of a profile: fixed parts (header and style images, avatar, nick, ultra overlay, bar)
-    // and free layers drawn between the style image and the nick, bottom to top.
+    // and free layers drawn between the nick and the ultra overlay, bottom to top.
     // Stored as JSON; unknown fields and layer types are skipped, so newer layouts still load.
     public class ProfileLayout
     {
@@ -36,6 +39,7 @@ namespace Sanakan.Services.Profiles
         [JsonProperty("accent")] public string Accent { get; set; }
         [JsonProperty("panels")] public PanelLook Panels { get; set; } = PanelLook.Solid;
         [JsonProperty("shadow")] public int ShadowOpacity { get; set; } = 70;
+        [JsonProperty("shade")] public HeaderShade Shade { get; set; } = HeaderShade.Fade;
         [JsonProperty("bar")] public BarLayout Bar { get; set; } = new BarLayout();
         [JsonProperty("header")] public SlotImage Header { get; set; }
         [JsonProperty("style")] public SlotImage Style { get; set; }
@@ -112,7 +116,6 @@ namespace Sanakan.Services.Profiles
         [JsonProperty("x")] public int X { get; set; }
         [JsonProperty("y")] public int Y { get; set; }
         [JsonProperty("scale")] public double Scale { get; set; } = 1;
-        [JsonProperty("fade")] public bool Fade { get; set; }
         [JsonProperty("hidden")] public bool Hidden { get; set; }
     }
 
@@ -123,7 +126,7 @@ namespace Sanakan.Services.Profiles
         [JsonProperty("opacity")] public double Opacity { get; set; } = 1;
     }
 
-    // the only layer drawn over the nick
+    // drawn over every free layer, anywhere on the profile
     public class UltraLayer : ImageLayerBase
     {
         public override string Type => "ultra";

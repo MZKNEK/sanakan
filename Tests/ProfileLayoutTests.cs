@@ -36,7 +36,8 @@ namespace Artifacts
             var layout = Stats();
             layout.Accent = "#4fc3e8";
             layout.Panels = PanelLook.Glass;
-            layout.Header = new SlotImage { Image = 1, Fade = true };
+            layout.Shade = HeaderShade.Band;
+            layout.Header = new SlotImage { Image = 1 };
             layout.Layers.Add(new StickerLayer { Id = 9, X = 600, Y = 20, Card = 77, Tilt = -5 });
             layout.Layers.Add(new OverlayLayer { Id = 10, Image = 3, Y = 98, Opacity = 0.5 });
             layout.Ultra = new UltraLayer { Image = 4 };
@@ -48,6 +49,7 @@ namespace Artifacts
             Assert.Equal(json, again.ToJson());
             Assert.Contains("\"t\":\"manga\"", json);
             Assert.Contains("\"panels\":\"glass\"", json);
+            Assert.Contains("\"shade\":\"band\"", json);
             Assert.True(again.LayersOf<ListPanelLayer>().Single(x => x.Y == 328).Manga);
             Assert.Equal(77UL, again.LayersOf<StickerLayer>().Single().Card);
         }
@@ -329,6 +331,7 @@ namespace Artifacts
             Assert.Equal(16, layout.LayersOf<CardsPanelLayer>().Single().X);
             Assert.Equal(777UL, layout.LayersOf<StickerLayer>().Single().Card);
             Assert.Equal(98, layout.LayersOf<OverlayLayer>().Single().Y);
+            Assert.Equal(HeaderShade.Band, layout.Shade);
             // drawn as before: the rank under the overlay, the waifu over it
             Assert.Equal(new[] { "rank", "overlay", "sticker" }, layout.Layers.Where(x => x is RankLayer or OverlayLayer or StickerLayer).Select(x => x.Type));
             Assert.NotNull(layout.Ultra);

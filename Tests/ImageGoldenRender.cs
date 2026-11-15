@@ -263,7 +263,7 @@ namespace Artifacts
 
             var full = ProfileCatalog.FindPreset("lists").Make();
             full.Panels = PanelLook.Glass;
-            full.Header = new SlotImage { Image = 1, Fade = true };
+            full.Header = new SlotImage { Image = 1 };
             full.Style = new SlotImage { Image = 2, Y = 160 };
             full.Avatar.Frame = "Water";
             foreach (var list in full.LayersOf<ListPanelLayer>()) { list.Recent = 3; list.Legend = LegendMode.All; }
