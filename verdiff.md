@@ -1,6 +1,8 @@
-# 1.5.0.4
+# 1.5.0.5
 
 Data: 2026-11-15
 
-- Naprawiono nachodzenie na siebie liczb i opisów statusów w panelach anime i mangi w profilu; przy dużych liczbach pozycje się rozsuwają, a największe liczby skracają się (np. 12,3K).
-- Dodano usuwanie własnych obrazków profilu w Profilatorze; obrazka używanego w zapisanym profilu nie da się usunąć, dopóki nie zapisze się profilu bez niego.
+- Dodano profil w podwójnej rozdzielczości (1500 × 1000), ostrzejszy na Discordzie, do kupienia tylko za TC.
+- Dodano wybór rozmiaru panelu karcianki: pełny, wąski (sama karta albo statystyki jedna pod drugą) i niski (same statystyki w rzędach), oraz możliwość wyłączenia jego tła.
+- Dodano wybór liczby kart w dużej galerii: 3, 6 albo 12, z panelem dopasowanym do liczby kart.
+- Dodano style rangi w profilu (pigułka, pełna, szkło, sam napis, podkreślenie, gradient) w trzech rozmiarach.
