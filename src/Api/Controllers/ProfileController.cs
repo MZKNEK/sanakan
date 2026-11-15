@@ -97,6 +97,8 @@ namespace Sanakan.Api.Controllers
             MaxOverlays = ProfileCatalog.MaxOverlays,
             MaxLayoutJson = ProfileCatalog.MaxLayoutJson,
             MaxPictureBytes = MaxPictureBytes,
+            MaxPicturePixels = ImageProcessing.MaxImagePixels,
+            MaxPictureFrames = ImageProcessing.MaxProfileFrames,
             Features = ProfileCatalog.Features.Select(FeatureView).ToList(),
             Presets = ProfileCatalog.Presets.Select(x => new ProfilePresetView { Key = x.Key, Name = x.Name, Layout = ToJson(x.Make()) }).ToList(),
             Frames = Enum.GetValues<AvatarBorder>().Select(x => new ProfileFrameView
@@ -194,7 +196,11 @@ namespace Sanakan.Api.Controllers
         /// <summary>
         /// Wysłanie obrazka do profilu (png, jpg, gif, webp, do 10 MB i 4096 px na bok); zwraca jego id do układu
         /// </summary>
+        /// <remarks>
+        /// Animacja mieści się w MaxPicturePixels z katalogu: szerokość × wysokość × liczba klatek.
+        /// </remarks>
         /// <response code="400">To nie jest obrazek albo jest za duży.</response>
+        /// <response code="413">Animacja ma za dużo klatek na swoją rozdzielczość.</response>
         /// <response code="404">User not found</response>
         /// <response code="429">Za dużo nieużywanych obrazków, zapisz profil albo poczekaj.</response>
         [HttpPost("discord/{id}/images"), Authorize(Policy = "Sansite"), RequestSizeLimit(MaxPictureBytes + 64 * 1024)]
@@ -224,6 +230,8 @@ namespace Sanakan.Api.Controllers
                 var allowed = format != null && new[] { "PNG", "JPEG", "GIF", "WEBP" }.Contains(format.Name.ToUpperInvariant());
                 if (!allowed || info.Width < 1 || info.Height < 1 || info.Width > MaxPictureSide || info.Height > MaxPictureSide)
                     return "Not a picture or too big".ToResponse(400);
+                if (!ImageProcessing.FitsPixelBudget(info.Width, info.Height, info.FrameMetadataCollection.Count))
+                    return "Animation too big".ToResponse(413);
 
                 var extension = "." + format.FileExtensions.First();
                 var named = Path.ChangeExtension(temporary, extension);
@@ -385,7 +393,7 @@ namespace Sanakan.Api.Controllers
             };
         }
 
-        private async Task<IActionResult> DrawAsync(ulong id, Func<Task<Image>> draw)
+        private async Task<IActionResult> DrawAsync(ulong id, Func<Task<Image>> draw, string what)
         {
             if (!DrawingFor.TryAdd(id, 0))
                 return ApiResponses.Unavailable(Response, "A picture of this profile is being drawn", 2);
@@ -395,12 +403,18 @@ namespace Sanakan.Api.Controllers
                     return ApiResponses.Unavailable(Response, "Drawing is busy", 5);
                 try
                 {
+                    _logger?.LogRoutine($"API: drawing profile {what} u{id}");
                     using var image = await draw();
                     if (image == null)
                         return "User not found!".ToResponse(404);
                     var stream = image.ToWebpStream();
                     Response.Headers.CacheControl = "no-store";
                     return File(stream, "image/webp");
+                }
+                catch (SixLabors.ImageSharp.Memory.InvalidMemoryOperationException ex)
+                {
+                    _logger?.LogError($"API: profile {what} u{id} needs too much memory: {ex.Message}");
+                    return "Profile too big to draw".ToResponse(422);
                 }
                 finally
                 {
@@ -435,7 +449,7 @@ namespace Sanakan.Api.Controllers
                 return new BadRequestObjectResult(errors);
 
             var top = await TopAsync(db, id);
-            return await DrawAsync(id, () => _profile.GetLayeredProfileImageAsync(db, user, Account(id), top, layout));
+            return await DrawAsync(id, () => _profile.GetLayeredProfileImageAsync(db, user, Account(id), top, layout), "preview");
         }
 
         /// <summary>
@@ -450,7 +464,7 @@ namespace Sanakan.Api.Controllers
                 return "User not found!".ToResponse(404);
 
             var top = await TopAsync(db, id);
-            return await DrawAsync(id, () => _profile.GetLayeredProfileImageAsync(db, user, Account(id), top));
+            return await DrawAsync(id, () => _profile.GetLayeredProfileImageAsync(db, user, Account(id), top), "image");
         }
 
         /// <summary>

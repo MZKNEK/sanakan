@@ -464,8 +464,7 @@ namespace Sanakan.Services
             {
                 Nick = account?.GetUserNickInGuild() ?? shinden?.Name ?? "",
                 Rank = botUser.Id == 1 ? "Safeguard" : shinden?.Rank ?? "",
-                // Discord gives 128 px without a size; the profile of twice the size wants more
-                AvatarUrl = account == null ? null : account.GetUserOrDefaultAvatarUrl(true) + (layout.Hd ? "?size=256" : ""),
+                AvatarUrl = account?.GetUserOrDefaultAvatarUrl(true),
                 RoleColor = RoleColorHex(account),
                 Top = topPosition,
                 Level = level,

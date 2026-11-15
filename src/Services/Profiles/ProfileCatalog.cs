@@ -51,7 +51,6 @@ namespace Sanakan.Services.Profiles
         public const string Layout = "layout";
         public const string CustomFrame = "customFrame";
         public const string Ultra = "ultra";
-        public const string HighResolution = "hd";
         public const string StickerPrefix = "sticker:";
         public const string OverlayPrefix = "overlay:";
         public const string FramePrefix = "frame:";
@@ -92,7 +91,6 @@ namespace Sanakan.Services.Profiles
                 list.Add(new ProfileFeature(Frame(border), $"Ramka awatara: {FrameName(border)}", "ramka z bota, na zawsze", 36000, 599));
             list.Add(new ProfileFeature(CustomFrame, "Własna ramka awatara", "własny obrazek wokół awatara, zmiany za darmo", 72000, 1199));
             list.Add(new ProfileFeature(Ultra, "Ultra nakładka", "obrazek na całym profilu, zmiany za darmo", 240000, 3999));
-            list.Add(new ProfileFeature(HighResolution, "Profil w podwójnej rozdzielczości", "1500 × 1000 zamiast 750 × 500, tylko za TC", 0, 5000, tcOnly: true));
             return list;
         }
 

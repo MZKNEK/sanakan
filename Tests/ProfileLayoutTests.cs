@@ -258,18 +258,14 @@ namespace Artifacts
         }
 
         [Fact]
-        public void TwiceTheSizeIsAnUnlockSoldOnlyForTc()
+        public void TheProfileOfTwiceTheSizeIsGone()
         {
-            var layout = Stats();
-            layout.Hd = true;
-            Assert.Contains(ProfileCatalog.HighResolution, ProfileRules.RequiredUnlocks(layout));
+            var json = Stats().ToJson();
+            var layout = ProfileLayout.FromJson(json.Insert(1, "\"hd\":true,"));
 
-            var feature = ProfileCatalog.Feature(ProfileCatalog.HighResolution);
-            Assert.True(feature.TcOnly);
-            Assert.Equal(5000, feature.Tc);
-            Assert.True(ProfileRules.NeedsTc(new[] { feature }));
-            Assert.False(ProfileRules.NeedsTc(new[] { ProfileCatalog.Feature(ProfileCatalog.Ultra) }));
-            Assert.Contains("\"hd\":true", layout.ToJson());
+            Assert.Null(ProfileCatalog.Feature("hd"));
+            Assert.Equal(ProfileRules.RequiredUnlocks(Stats()), ProfileRules.RequiredUnlocks(layout));
+            Assert.Equal(json, layout.ToJson());
         }
 
         [Theory]

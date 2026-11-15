@@ -52,8 +52,6 @@ namespace Sanakan.Services.Profiles
         [JsonProperty("panels")] public PanelLook Panels { get; set; } = PanelLook.Solid;
         [JsonProperty("shadow")] public int ShadowOpacity { get; set; } = 70;
         [JsonProperty("shade")] public HeaderShade Shade { get; set; } = HeaderShade.Fade;
-        // drawn at twice the size, 1500 x 1000; the layout itself stays in 750 x 500
-        [JsonProperty("hd")] public bool Hd { get; set; }
         [JsonProperty("bar")] public BarLayout Bar { get; set; } = new BarLayout();
         [JsonProperty("header")] public SlotImage Header { get; set; }
         [JsonProperty("style")] public SlotImage Style { get; set; }

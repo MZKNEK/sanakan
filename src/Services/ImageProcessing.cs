@@ -29,13 +29,19 @@ namespace Sanakan.Services
     {
         private const long MaxImageBytes = 40 * 1024 * 1024;
         private const int MaxImageDimension = 8192;
-        private const long MaxImagePixels = 64_000_000;
+        public const long MaxImagePixels = 64_000_000;
         // the default pool scales with the machine's total memory; this caps what stays reserved between images
         public const int MemoryPoolMegabytes = 1024;
+        // all pictures alive at once; past it a drawing fails instead of the system killing the bot for its memory
+        public const int MemoryLimitMegabytes = 3072;
 
         public static void LimitMemoryPool()
             => Configuration.Default.MemoryAllocator = SixLabors.ImageSharp.Memory.MemoryAllocator.Create(
-                new SixLabors.ImageSharp.Memory.MemoryAllocatorOptions { MaximumPoolSizeMegabytes = MemoryPoolMegabytes });
+                new SixLabors.ImageSharp.Memory.MemoryAllocatorOptions
+                {
+                    MaximumPoolSizeMegabytes = MemoryPoolMegabytes,
+                    AccumulativeAllocationLimitMegabytes = MemoryLimitMegabytes,
+                });
 
         private FontFamily _digital = new FontCollection().Add("Fonts/Digital.ttf");
         private FontFamily _latoBold = new FontCollection().Add("Fonts/Lato-Bold.ttf");
@@ -404,14 +410,20 @@ namespace Sanakan.Services
             }
         }
 
+        public static bool FitsPixelBudget(int width, int height, int frames)
+            => (long)width * height * Math.Max(1, frames) <= MaxImagePixels;
+
+        // how many frames of a picture of this size fit the pixel budget, at least one and at most max
+        public static int FramesWithinBudget(int width, int height, int max)
+            => (int)Math.Clamp(MaxImagePixels / Math.Max(1L, (long)width * height), 1, max);
+
         private static async Task<bool> HasAcceptableDimensionsAsync(Stream stream)
         {
             try
             {
                 var info = await Image.IdentifyAsync(stream);
-                var frames = Math.Max(1, info.FrameMetadataCollection.Count);
                 return info.Width <= MaxImageDimension && info.Height <= MaxImageDimension
-                    && (long)info.Width * info.Height * frames <= MaxImagePixels;
+                    && FitsPixelBudget(info.Width, info.Height, info.FrameMetadataCollection.Count);
             }
             catch (Exception)
             {
@@ -1643,6 +1655,27 @@ namespace Sanakan.Services
             };
 
             return await WebpDecoder.Instance.DecodeAsync(ops, file);
+        }
+
+        // a local picture with at most this many frames, the rest never decoded; a missing one is 1x1 as elsewhere
+        private async Task<Image> LoadLocalFramesAsync(string path, int maxFrames)
+        {
+            if (!Dir.IsLocal(path))
+                return await GetImageFromUrlOrLocalAsync(path);
+            if (!File.Exists(path))
+                return new Image<Rgba32>(1, 1);
+
+            var info = await Image.IdentifyAsync(path);
+            var options = new DecoderOptions { MaxFrames = (uint)FramesWithinBudget(info.Width, info.Height, maxFrames) };
+            if (await Image.DetectFormatAsync(path) != WebpFormat.Instance)
+                return await Image.LoadAsync(options, path);
+
+            await using var stream = File.OpenRead(path);
+            return await WebpDecoder.Instance.DecodeAsync(new WebpDecoderOptions
+            {
+                GeneralOptions = options,
+                BackgroundColorHandling = BackgroundColorHandling.Ignore,
+            }, stream);
         }
 
         private async Task<Image> LoadWebpFromDiskAsync(string path)

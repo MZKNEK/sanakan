@@ -314,7 +314,6 @@ namespace Sanakan.Services.Profiles
             if (layout.Header != null) needs.Add(ProfileCatalog.HeaderImage);
             if (layout.Style != null) needs.Add(ProfileCatalog.StyleImage);
             if (layout.Ultra != null) needs.Add(ProfileCatalog.Ultra);
-            if (layout.Hd) needs.Add(ProfileCatalog.HighResolution);
 
             var avatar = layout.Avatar;
             if (avatar.Size != ProfileCatalog.DefaultAvatarSize || (!avatar.HasFrame && avatar.Shape != AvatarShape.Circle))

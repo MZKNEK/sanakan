@@ -38,6 +38,10 @@ namespace Sanakan.Api.Models
         public int MaxOverlays { get; set; }
         public int MaxLayoutJson { get; set; }
         public int MaxPictureBytes { get; set; }
+        // width x height x frames of an uploaded picture
+        public long MaxPicturePixels { get; set; }
+        // the frames a moving part plays, the rest is dropped
+        public int MaxPictureFrames { get; set; }
         public List<ProfileFeatureView> Features { get; set; }
         public List<ProfilePresetView> Presets { get; set; }
         public List<ProfileFrameView> Frames { get; set; }

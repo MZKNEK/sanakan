@@ -110,7 +110,9 @@ namespace Artifacts
             var catalog = Controller().GetCatalog().Value;
 
             Assert.Equal(ProfileCatalog.Features.Count, catalog.Features.Count);
-            Assert.True(catalog.Features.Single(x => x.Key == ProfileCatalog.HighResolution).TcOnly);
+            Assert.DoesNotContain(catalog.Features, x => x.Key == "hd");
+            Assert.Equal(ImageProcessing.MaxImagePixels, catalog.MaxPicturePixels);
+            Assert.Equal(ImageProcessing.MaxProfileFrames, catalog.MaxPictureFrames);
             Assert.All(catalog.Presets, p => Assert.NotNull(ProfileLayout.FromJson(p.Layout.ToString())));
             Assert.Contains(catalog.Frames, f => f.Key == "Base" && f.Free);
             Assert.Contains(catalog.Frames, f => f.Key == "TurqLeaves" && !f.Selectable);
@@ -140,24 +142,40 @@ namespace Artifacts
         }
 
         [Fact]
-        public async Task TheProfileOfTwiceTheSizeIsBoughtOnlyWithTc()
+        public async Task ALayoutOfTheProfileOfTwiceTheSizeCostsNothingAndLosesIt()
         {
-            using (var db = Open())
-            {
-                var user = await db.Users.FirstAsync(x => x.Id == PlayerId);
-                user.TcCnt = 6000;
-                await db.SaveChangesAsync();
-            }
-            var layout = Layout(l => l.Hd = true);
+            var layout = Layout();
+            layout["hd"] = true;
 
             var quote = (await Controller().QuoteAsync(PlayerId, layout)).Value;
-            Assert.True(quote.TcOnly);
-            Assert.Equal(5000, quote.Tc);
+            Assert.Empty(quote.Missing);
+            Assert.False(quote.TcOnly);
 
-            Assert.Equal(400, Status(await Controller().SaveAsync(PlayerId, Save(layout, "sc"), "key-hd1")));
-            Assert.Equal(200, Status(await Controller().SaveAsync(PlayerId, Save(layout, "tc"), "key-hd2")));
-            var player = await PlayerAsync();
-            Assert.Equal((50000L, 1000L), (player.ScCnt, player.TcCnt));
+            Assert.Equal(200, Status(await Controller().SaveAsync(PlayerId, Save(layout, "sc"), "key-hd1")));
+            using var db = Open();
+            Assert.DoesNotContain("\"hd\"", (await db.UserProfiles.AsNoTracking().FirstAsync(x => x.UserId == PlayerId)).Layout);
+            Assert.Equal(50000L, (await PlayerAsync()).ScCnt);
+        }
+
+        [Fact]
+        public async Task AnAnimationOverThePixelBudgetIsRefused()
+        {
+            static byte[] Gif(int frames)
+            {
+                using var image = new Image<Rgba32>(400, 400);
+                for (int i = 1; i < frames; i++)
+                    image.Frames.CreateFrame(new Rgba32((byte)i, 0, 0, 255));
+                using var stream = new MemoryStream();
+                image.SaveAsGif(stream);
+                return stream.ToArray();
+            }
+
+            // 400 x 400 x 400 frames is the 64 million pixels of the budget
+            var fits = (await Controller().UploadPictureAsync(PlayerId, Upload(Gif(400), "fits.gif"), "ultra")).Value;
+            var over = await Controller().UploadPictureAsync(PlayerId, Upload(Gif(401), "over.gif"), "ultra");
+
+            Assert.True(fits.Animated);
+            Assert.Equal(413, Status(over.Result));
         }
 
         [Fact]

@@ -149,11 +149,27 @@ namespace Sanakan.Services
                     .Select(x => new ProfileRecentTitle { Title = x.Title, Progress = x.Progress, Ratio = x.Ratio, CoverUrl = x.CoverUrl }).ToList(),
             };
 
+        // a moving profile that runs out of memory (ImageProcessing.MemoryLimitMegabytes) is drawn again still
         public async Task<Image> GetLayeredProfileAsync(ProfileLayout layout, ProfileRenderData data)
+        {
+            try
+            {
+                return await DrawLayeredProfileAsync(layout, data);
+            }
+            catch (SixLabors.ImageSharp.Memory.InvalidMemoryOperationException ex) when (layout.Animate != null)
+            {
+                _logger?.LogError($"Profile: {data.Nick} drawn still, the moving part needs too much memory: {ex.Message}");
+                var still = layout.Clone();
+                still.Animate = null;
+                return await DrawLayeredProfileAsync(still, data);
+            }
+        }
+
+        private async Task<Image> DrawLayeredProfileAsync(ProfileLayout layout, ProfileRenderData data)
         {
             var canvas = new LayeredCanvas
             {
-                Image = LpSurface(ProfileLayout.Width, ProfileLayout.Height, layout.Hd ? 2 : 1, GetOrCreateColor(LpBackground).ToPixel<Rgba32>()),
+                Image = LpSurface(ProfileLayout.Width, ProfileLayout.Height, 1, GetOrCreateColor(LpBackground).ToPixel<Rgba32>()),
                 Moving = layout.Animate,
             };
             var accent = layout.Accent ?? data.RoleColor ?? "#546E7A";
@@ -201,6 +217,21 @@ namespace Sanakan.Services
         {
             while (image.Frames.Count > MaxProfileFrames)
                 image.Frames.RemoveFrame(image.Frames.Count - 1);
+        }
+
+        // a player's picture: only the moving part keeps its frames, as many as the pixel budget lets;
+        // one that fails to load (broken, too much memory) is left out and the profile is drawn without it
+        private async Task<Image> LoadPictureAsync(LayeredCanvas canvas, string path, string target)
+        {
+            try
+            {
+                return await LoadLocalFramesAsync(path, canvas.Moves(target) ? MaxProfileFrames : 1);
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                _logger?.LogError($"Profile: picture {path} left out: {ex.GetType().Name}: {ex.Message}");
+                return new Image<Rgba32>(1, 1);
+            }
         }
 
         // draws the piece; the first piece that is the moving part and has frames animates the whole canvas
@@ -261,7 +292,7 @@ namespace Sanakan.Services
             if (path == null)
                 return;
 
-            using var picture = await GetImageFromUrlOrLocalAsync(path);
+            using var picture = await LoadPictureAsync(canvas, path, target);
             if (picture.Width <= 1)
                 return;
 
@@ -321,7 +352,7 @@ namespace Sanakan.Services
             if (path == null)
                 return;
 
-            using var picture = await GetImageFromUrlOrLocalAsync(path);
+            using var picture = await LoadPictureAsync(canvas, path, target);
             if (picture.Width <= 1)
                 return;
 
@@ -1287,7 +1318,7 @@ namespace Sanakan.Services
                 if (path == null)
                     return;
 
-                using var frame = await GetImageFromUrlOrLocalAsync(path);
+                using var frame = await LoadPictureAsync(canvas, path, ProfileLayout.AnimateFrame);
                 if (frame.Width <= 1)
                     return;
 

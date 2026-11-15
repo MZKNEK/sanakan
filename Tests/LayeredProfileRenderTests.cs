@@ -164,16 +164,45 @@ namespace Artifacts
         }
 
         [Fact]
-        public async Task TwiceTheSizeDrawsTheSameLayoutAt1500By1000()
+        public async Task ALayoutOfTwiceTheSizeDrawsAt750By500()
         {
-            var layout = ProfileCatalog.FindPreset("stats").Make();
-            layout.Layers.Add(new StickerLayer { Id = 30, Card = 2, X = 600, Y = 20, H = 120, Tilt = 5, Ground = StickerGround.Glass });
-            layout.LayersOf<CardsPanelLayer>().Single().Panel = false;
-            layout.Hd = true;
+            var layout = ProfileLayout.FromJson(ProfileCatalog.FindPreset("stats").Make().ToJson().Insert(1, "\"hd\":true,"));
 
             using var image = await _img.GetLayeredProfileAsync(layout, Data(new Dictionary<long, string>()));
 
-            Assert.Equal((1500, 1000), (image.Width, image.Height));
+            Assert.Equal((750, 500), (image.Width, image.Height));
+        }
+
+        private string Webp(string name, int w, int h, int frames)
+        {
+            var path = $"{_dir}/{name}";
+            using var image = new Image<Rgba32>(w, h, new Rgba32(200, 80, 120, 180));
+            for (int i = 1; i < frames; i++)
+                image.Frames.CreateFrame(new Rgba32((byte)(i * 7), 160, 90, 200));
+            image.SaveAsWebp(path);
+            return path;
+        }
+
+        [Fact]
+        public async Task AMovingPictureKeepsOnlyTheFramesOfThePixelBudget()
+        {
+            // 2000 x 1000 lets 32 frames into the budget of 64 million pixels
+            var images = new Dictionary<long, string> { [1] = Webp("big.webp", 2000, 1000, 40), [2] = Webp("small.webp", 100, 100, 200) };
+            var layout = ProfileCatalog.FindPreset("minimal").Make();
+            layout.Ultra = new UltraLayer { Image = 1 };
+            layout.Animate = ProfileLayout.AnimateUltra;
+
+            using (var big = await _img.GetLayeredProfileAsync(layout, Data(images)))
+                Assert.Equal(32, big.Frames.Count);
+
+            layout.Ultra.Image = 2;
+            using (var small = await _img.GetLayeredProfileAsync(layout, Data(images)))
+                Assert.Equal(ImageProcessing.MaxProfileFrames, small.Frames.Count);
+
+            layout.Animate = null;
+            layout.Ultra.Image = 1;
+            using var still = await _img.GetLayeredProfileAsync(layout, Data(images));
+            Assert.Equal(1, still.Frames.Count);
         }
 
         [Fact]
@@ -281,6 +310,27 @@ namespace Artifacts
             layout.Animate = ProfileLayout.AnimateLayer(21);
             using var moving = await _img.GetLayeredProfileAsync(layout, Data(images));
             Assert.Equal(3, moving.Frames.Count);
+        }
+
+        [Fact]
+        public async Task ABrokenPictureIsLeftOutOfTheProfile()
+        {
+            var good = Webp("good.webp", 120, 80, 3);
+            var cut = File.ReadAllBytes(good);
+            var broken = $"{_dir}/broken.webp";
+            File.WriteAllBytes(broken, cut.Take(cut.Length / 2).ToArray());
+            var garbage = $"{_dir}/garbage.png";
+            File.WriteAllBytes(garbage, new byte[] { 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 1, 2, 3, 4, 5, 6, 7, 8 });
+            var layout = ProfileCatalog.Default();
+            layout.Header = new SlotImage { Image = 2 };
+            layout.Ultra = new UltraLayer { Image = 1 };
+            layout.Layers.Add(new OverlayLayer { Id = 21, Image = 3, X = 10, Y = 10 });
+            layout.Animate = ProfileLayout.AnimateUltra;
+
+            using var image = await _img.GetLayeredProfileAsync(layout, Data(new Dictionary<long, string> { [1] = broken, [2] = garbage, [3] = good }));
+
+            Assert.Equal((750, 500), (image.Width, image.Height));
+            Assert.Equal(1, image.Frames.Count);
         }
 
         [Fact]
