@@ -8,6 +8,7 @@ using Sanakan.Database.Models;
 using Sanakan.Extensions;
 using Sanakan.Services;
 using Sanakan.Services.PocketWaifu;
+using Sanakan.Services.Profiles;
 using Sanakan.Services.ScamImages;
 using Sanakan.ShindenCompat.Models;
 using ListStats = Sanakan.ShindenCompat.Models.Entities.ListStats;
@@ -254,6 +255,63 @@ namespace Artifacts
             }
             var animatedAvatarUser = NewUser(ProfileType.Stats, ProfileSettings.Default, AvatarBorder.Bow);
             await Render("profile_gif_avatar_no_shinden", () => img.GetUserProfileAsync(null, animatedAvatarUser, U("avatar.gif"), 1, "krótki", Discord.Color.Default));
+
+            // the profile of layers: every ready layout, everything at once, an old profile converted and one moving card
+            var layeredUser = NewUser(ProfileType.Stats, ProfileSettings.Default, AvatarBorder.Base);
+            var layeredCards = layeredUser.GameDeck.Cards.ToList();
+            var movingCard = cards.First(x => x.name == "animated").card;
+            ProfileListStats ListOf(ulong[] statuses, string total, string units, string time, string mean, params (string Title, string Progress, double? Ratio, string Cover)[] recent) => new ProfileListStats
+            {
+                Statuses = statuses, Total = total, Units = units, Time = time, Mean = mean,
+                Recent = recent.Select(r => new ProfileRecentTitle { Title = r.Title, Progress = r.Progress, Ratio = r.Ratio, CoverUrl = r.Cover }).ToList(),
+            };
+            var layeredImages = new Dictionary<long, string> { [1] = U("bg.jpg"), [2] = U("stats.png"), [3] = U("overlay.png"), [4] = U("overlaypro.png") };
+            var layeredData = new ProfileRenderData
+            {
+                Nick = "Bardzo długi nick gracza Żółć", Rank = "Ranga testowa", AvatarUrl = U("avatar.png"), RoleColor = "#9B59B6",
+                Top = 17, Level = 37, LevelProgress = 0.62, Sc = 98765, Tc = 4321,
+                Cards = layeredCards.Count, Limit = 1000, Karma = KarmaLook.Neutral,
+                Rarities = layeredCards.Where(x => !x.FromFigure).GroupBy(x => x.Rarity).ToDictionary(x => x.Key, x => x.Count()),
+                Waifu = layeredCards[0], Gallery = layeredCards.Take(12).ToList(),
+                Card = id => id == movingCard.Id ? movingCard : layeredCards.FirstOrDefault(x => x.Id == id),
+                Anime = ListOf(new ulong[] { 12, 340, 3, 9, 7, 120 }, "491", "9 876", "105 dni", "7,42",
+                    ("Pierwsze anime o bardzo długim tytule", "5 / 12", 5 / 12d, U("cover1.jpg")), ("Drugie", "100 / ?", null, U("cover2.png")), ("Trzecie", "1 / 1", 1d, U("missing.jpg"))),
+                Manga = ListOf(new ulong[] { 4, 77, 0, 1, 2, 31 }, "115", "4 321", "33 dni", "8,10", ("Manga pierwsza", "12.5 / 40", 12.5 / 40, U("cover2.png"))),
+                ImagePath = id => layeredImages.TryGetValue(id, out var path) ? path : null,
+            };
+            foreach (var preset in ProfileCatalog.Presets)
+                await Render($"layered_preset_{preset.Key}", () => img.GetLayeredProfileAsync(preset.Make(), layeredData));
+
+            var full = ProfileCatalog.FindPreset("lists").Make();
+            full.Panels = PanelLook.Glass;
+            full.Header = new SlotImage { Image = 1, Fade = true };
+            full.Style = new SlotImage { Image = 2, Y = 160 };
+            full.Avatar.Frame = "Water";
+            foreach (var list in full.LayersOf<ListPanelLayer>()) { list.Recent = 3; list.Legend = LegendMode.All; }
+            full.Layers.Add(new StickerLayer { Id = 20, Card = layeredCards[1].Id, X = 622, Y = 22, H = 120, Tilt = 4 });
+            await Render("layered_full_glass", () => img.GetLayeredProfileAsync(full, layeredData));
+
+            var shadow = full.Clone();
+            shadow.Panels = PanelLook.Shadow;
+            shadow.Accent = "#4FC3E8";
+            shadow.Bar.At = BarPlace.Top;
+            shadow.Bar.Hide.AddRange(new[] { BarLayout.Messages, BarLayout.Ac, BarLayout.Ct, BarLayout.Pc });
+            await Render("layered_shadow_bar_top", () => img.GetLayeredProfileAsync(shadow, layeredData));
+
+            var moving = ProfileCatalog.FindPreset("cardsCenter").Make();
+            moving.Style = new SlotImage { Image = 2, Y = 160 };
+            moving.Panels = PanelLook.Glass;
+            moving.Layers.Add(new StickerLayer { Id = 20, Card = movingCard.Id, X = 30, Y = 200, H = 200, Tilt = -6, Background = false });
+            moving.Layers.Add(new StickerLayer { Id = 21, Card = layeredCards[2].Id, X = 580, Y = 200, H = 200, Tilt = 6, Background = false });
+            moving.Animate = ProfileLayout.AnimateLayer(20);
+            await Render("layered_moving_sticker", () => img.GetLayeredProfileAsync(moving, layeredData));
+
+            var oldUser = NewUser(ProfileType.StatsOnImg, ProfileSettings.Default, AvatarBorder.Water);
+            var converted = ProfileLegacy.FromUser(oldUser, 0, (use, path) => use switch
+            {
+                ProfileImageUse.Header => 1, ProfileImageUse.Style => 2, ProfileImageUse.Overlay => 3, _ => 4,
+            });
+            await Render("layered_converted_stats_on_img", () => img.GetLayeredProfileAsync(converted.Layout, layeredData));
 
             await Render("badge_png", async () => await img.GetLevelUpBadgeAsync("gracz", 42, U("avatar.png"), new Discord.Color(30, 200, 30)));
             await Render("badge_gif_highlight", async () => await img.GetLevelUpBadgeAsync("Bardzo Długi Nick Gracza", 1234, U("avatar.gif"), Discord.Color.Default, new Discord.Color(0xE67E22)));
