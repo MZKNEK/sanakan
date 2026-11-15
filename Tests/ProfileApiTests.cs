@@ -274,6 +274,24 @@ namespace Artifacts
         }
 
         [Fact]
+        public async Task APictureIsDeletedOnlyWhenTheSavedProfileDoesNotUseIt()
+        {
+            var used = (await Controller().UploadPictureAsync(PlayerId, Upload(Png(100, 100, 30)), "overlay")).Value;
+            var spare = (await Controller().UploadPictureAsync(PlayerId, Upload(Png(100, 100, 70)), "overlay")).Value;
+            var saved = await Controller().SaveAsync(PlayerId, Save(Layout(l => l.Layers.Add(new OverlayLayer { Id = 30, Image = (long)used.Id, X = 10, Y = 200 }))), "key-d1");
+            Assert.Equal(200, Status(saved));
+
+            Assert.Equal(409, Status(await Controller().DeletePictureAsync(PlayerId, used.Id)));
+            Assert.Equal(404, Status(await Controller().DeletePictureAsync(PlayerId + 1, spare.Id)));
+            Assert.Equal(200, Status(await Controller().DeletePictureAsync(PlayerId, spare.Id)));
+            Assert.Equal(404, Status(await Controller().DeletePictureAsync(PlayerId, spare.Id)));
+
+            using var db = Open();
+            Assert.Equal(new[] { used.Id }, await db.ProfilePictures.Select(x => x.Id).ToListAsync());
+            Assert.Single(Directory.GetFiles(Dir.ProfilePictures, $"{PlayerId}_*"));
+        }
+
+        [Fact]
         public async Task ReplacedPicturesGoAwayAfterAnHour()
         {
             var old = (await Controller().UploadPictureAsync(PlayerId, Upload(Png(100, 100, 50)), "overlay")).Value;

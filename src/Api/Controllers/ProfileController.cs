@@ -254,6 +254,29 @@ namespace Sanakan.Api.Controllers
             }
         }
 
+        /// <summary>
+        /// Usunięcie obrazka gracza, którego nie używa jego zapisany profil
+        /// </summary>
+        /// <response code="404">Picture not found</response>
+        /// <response code="409">Obrazek jest w zapisanym profilu, najpierw zapisz profil bez niego.</response>
+        [HttpDelete("discord/{id}/images/{picture}"), Authorize(Policy = "Sansite")]
+        public async Task<IActionResult> DeletePictureAsync(ulong id, ulong picture)
+        {
+            using var db = CreateDatabaseContext();
+            var row = await db.ProfilePictures.FirstOrDefaultAsync(x => x.Id == picture && x.UserId == id);
+            if (row == null)
+                return "Picture not found!".ToResponse(404);
+
+            var stored = await db.UserProfiles.AsNoTracking().FirstOrDefaultAsync(x => x.UserId == id);
+            if (stored != null && PicturesOf(ProfileLayout.FromJson(stored.Layout)).Contains((long)picture))
+                return "Picture is in the saved profile".ToResponse(409);
+
+            db.ProfilePictures.Remove(row);
+            await db.SaveChangesAsync();
+            await DeleteFilesAsync(db, new[] { row.File });
+            return "Picture deleted!".ToResponse(200);
+        }
+
         private static IEnumerable<long> PicturesOf(ProfileLayout layout)
         {
             if (layout.Header != null) yield return layout.Header.Image;

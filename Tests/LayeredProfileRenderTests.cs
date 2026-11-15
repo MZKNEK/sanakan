@@ -91,6 +91,18 @@ namespace Artifacts
                 Assert.Equal(green, image[400, 60]);
         }
 
+        [Fact]
+        public void LegendItemsKeepTheirColumnsUntilTheyDoNotFit()
+        {
+            Assert.Equal(new[] { 30f, 131f, 232f }, ImageProcessing.LegendSpread(new[] { 80f, 60f, 70f }, 16, 331));
+
+            var widths = new[] { 120f, 75f, 90f };
+            var at = ImageProcessing.LegendSpread(widths, 16, 331);
+            Assert.Equal(30f, at[0]);
+            Assert.True(at[1] >= at[0] + widths[0] && at[2] >= at[1] + widths[1]);
+            Assert.Equal(16 + 331 - 14, at[2] + widths[2], 3);
+        }
+
         [Theory]
         [InlineData(9999, "9 999")]
         [InlineData(237960, "238K")]

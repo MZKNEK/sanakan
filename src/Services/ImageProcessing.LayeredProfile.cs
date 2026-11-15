@@ -499,29 +499,51 @@ namespace Sanakan.Services
         private void LpDot(Image image, float cx, float cy, string color)
             => image.Mutate(x => x.Paint(c => c.Fill(Brushes.Solid(GetOrCreateColor(color)), new EllipsePolygon(cx, cy, 4))));
 
-        private void LpLegend(Image image, ProfileListStats stats, string[] labels, float x, float y, int w, LegendMode mode)
+        // where each item of a legend row starts: in equal columns while every item fits its own,
+        // otherwise spread over the row with equal gaps
+        internal static float[] LegendSpread(IReadOnlyList<float> widths, float x, float w)
         {
-            var bold13 = GetOrCreateFont(_latoBold, 13);
-            if (mode == LegendMode.All)
+            int n = widths.Count;
+            float left = x + 14, room = w - 28, column = room / n;
+            var at = new float[n];
+            if (widths.All(v => v <= column - 6))
             {
-                for (int i = 0; i < 6; i++)
-                {
-                    var lx = x + 14 + i * ((w - 28) / 6f);
-                    LpDot(image, lx + 4, y, LpStatus[i]);
-                    LpWrite(image, FormatSiteStatsNumber(stats.Statuses[i]), bold13, LpText, lx + 12, y);
-                }
-                return;
+                for (int i = 0; i < n; i++)
+                    at[i] = left + column * i;
+                return at;
             }
 
+            var gap = n > 1 ? (room - widths.Sum()) / (n - 1) : 0;
+            at[0] = left;
+            for (int i = 1; i < n; i++)
+                at[i] = at[i - 1] + widths[i - 1] + gap;
+            return at;
+        }
+
+        private void LpLegend(Image image, ProfileListStats stats, string[] labels, float x, float y, int w, LegendMode mode)
+        {
+            if (mode == LegendMode.All)
+                LpLegendRow(image, stats, null, new[] { 0, 1, 2, 3, 4, 5 }, GetOrCreateFont(_latoBold, 13), 4, x, y, w);
+            else
+                LpLegendRow(image, stats, labels, new[] { 1, 0, 5 }, GetOrCreateFont(_latoBold, 13), 4, x, y, w);
+        }
+
+        // one row of a legend, with the statuses' names or without; large numbers are shortened (12,3K)
+        // when the full ones would run into each other
+        private void LpLegendRow(Image image, ProfileListStats stats, string[] labels, int[] shown, Font numbers, float labelGap, float x, float y, int w)
+        {
             var regular12 = GetOrCreateFont(_latoRegular, 12);
-            var main = new[] { 1, 0, 5 };
-            for (int i = 0; i < main.Length; i++)
+            string Number(int s, bool cut) => cut ? LpShort((long)Math.Min(stats.Statuses[s], long.MaxValue)) : FormatSiteStatsNumber(stats.Statuses[s]);
+            float Width(int s, bool cut) => 12 + (labels != null ? TextWidth(labels[s], regular12) + labelGap : 0) + TextWidth(Number(s, cut), numbers);
+            var cut = shown.Sum(s => Width(s, false)) + 8 * (shown.Length - 1) > w - 28;
+            var at = LegendSpread(shown.Select(s => Width(s, cut)).ToList(), x, w);
+
+            for (int i = 0; i < shown.Length; i++)
             {
-                var s = main[i];
-                var lx = x + 14 + (w - 28) / 3f * i;
-                LpDot(image, lx + 4, y, LpStatus[s]);
-                var tw = LpWrite(image, labels[s], regular12, LpDim, lx + 12, y);
-                LpWrite(image, FormatSiteStatsNumber(stats.Statuses[s]), bold13, LpText, lx + 16 + tw, y);
+                var s = shown[i];
+                LpDot(image, at[i] + 4, y, LpStatus[s]);
+                var tw = labels != null ? LpWrite(image, labels[s], regular12, LpDim, at[i] + 12, y) + labelGap : 0;
+                LpWrite(image, Number(s, cut), numbers, LpText, at[i] + 12 + tw, y);
             }
         }
 
@@ -599,16 +621,9 @@ namespace Sanakan.Services
             {
                 if (list.Legend == LegendMode.All)
                 {
-                    var regular12 = GetOrCreateFont(_latoRegular, 12);
                     var bold12 = GetOrCreateFont(_latoBold, 12);
-                    for (int i = 0; i < 6; i++)
-                    {
-                        var lx = x + 14 + (i % 3) * ((w - 28) / 3f);
-                        var ly = cy + 8 + (i / 3) * 20;
-                        LpDot(image, lx + 4, ly, LpStatus[i]);
-                        var tw = LpWrite(image, labels[i], regular12, LpDim, lx + 12, ly);
-                        LpWrite(image, FormatSiteStatsNumber(stats.Statuses[i]), bold12, LpText, lx + 15 + tw, ly);
-                    }
+                    LpLegendRow(image, stats, labels, new[] { 0, 1, 2 }, bold12, 3, x, cy + 8, w);
+                    LpLegendRow(image, stats, labels, new[] { 3, 4, 5 }, bold12, 3, x, cy + 28, w);
                     cy += 44;
                 }
                 else
