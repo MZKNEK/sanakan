@@ -190,6 +190,31 @@ namespace Artifacts
             Assert.Equal((750, 500), (image.Width, image.Height));
         }
 
+        [Theory]
+        [InlineData("#F1C40F", true)]
+        [InlineData("#FFFFFF", true)]
+        [InlineData("#546E7A", false)]
+        [InlineData("#9B59B6", false)]
+        public void LightAccentsTakeDarkLetters(string color, bool light)
+        {
+            Assert.Equal(light, ImageProcessing.IsLightColor(color));
+        }
+
+        [Fact]
+        public async Task EveryRankStyleDrawsAtEverySize()
+        {
+            var layout = ProfileCatalog.FindPreset("minimal").Make();
+            layout.Layers.Clear();
+            var id = 1;
+            foreach (var style in Enum.GetValues<RankStyle>())
+                foreach (var size in Enum.GetValues<RankSize>())
+                    layout.Layers.Add(new RankLayer { Id = id, X = 20 + (id % 3) * 240, Y = 170 + (id++ / 3) * 40, Style = style, Size = size });
+
+            using var image = await _img.GetLayeredProfileAsync(layout, Data(new Dictionary<long, string>()));
+
+            Assert.Equal((750, 500), (image.Width, image.Height));
+        }
+
         [Fact]
         public async Task EveryPresetDraws()
         {

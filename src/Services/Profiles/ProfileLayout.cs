@@ -30,6 +30,10 @@ namespace Sanakan.Services.Profiles
 
     public enum BarLook { Solid, Glass }
 
+    public enum RankStyle { Pill, Solid, Glass, Text, Underline, Gradient }
+
+    public enum RankSize { Small, Medium, Large }
+
     // the card game's panel: full, narrow (the waifu alone, or the numbers one under another) or low (the numbers in rows)
     public enum CardsPanelSize { Full, Narrow, Low }
 
@@ -290,6 +294,8 @@ namespace Sanakan.Services.Profiles
     {
         // centred: x is the middle of the pill
         [JsonProperty("align")] public NickAlign Align { get; set; } = NickAlign.Left;
+        [JsonProperty("style")] public RankStyle Style { get; set; } = RankStyle.Pill;
+        [JsonProperty("size")] public RankSize Size { get; set; } = RankSize.Medium;
 
         public override string Type => "rank";
     }

@@ -154,6 +154,14 @@ namespace Sanakan.Services.Profiles
         public const int BigGalleryRowHeight = 164;
         public const int BigGalleryHalfWidth = 360;
         public const int RankHeight = 22;
+
+        // the rank's font size, height and padding at each size
+        public static (int Font, int Height, int Pad) RankMetrics(RankSize size) => size switch
+        {
+            RankSize.Small => (11, 18, 9),
+            RankSize.Large => (16, 27, 14),
+            _ => (13, RankHeight, 11),
+        };
         public const double CardRatio = 475.0 / 667.0;
 
         public static readonly int[] AvatarSizes = { 84, 112, 140 };
@@ -179,7 +187,7 @@ namespace Sanakan.Services.Profiles
                 _ => (BigGalleryWidth, BigGalleryHeight),
             },
             StickerLayer s => (StickerWidth(s.H), s.H),
-            RankLayer => (rankWidth, RankHeight),
+            RankLayer r => (rankWidth, RankMetrics(r.Size).Height),
             ImageLayerBase i => imageSize?.Invoke(i.Image) is (int w, int h) ? ((int)Math.Round(w * i.Scale), (int)Math.Round(h * i.Scale)) : (0, 0),
             _ => (0, 0),
         };

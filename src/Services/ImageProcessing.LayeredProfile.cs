@@ -1053,17 +1053,79 @@ namespace Sanakan.Services
             if (string.IsNullOrWhiteSpace(text))
                 return;
 
-            var font = GetOrCreateFont(_latoBold, 13);
-            text = TrimSiteStatsText(text.Trim(), font, 300);
-            var w = TextWidth(text, font) + 22;
+            var (size, h, pad) = ProfileCatalog.RankMetrics(rank.Size);
+            var font = GetOrCreateFont(_latoBold, size);
+            text = TrimSiteStatsText(text.Trim(), font, 300f * size / 13);
+            var tw = TextWidth(text, font);
+            var w = tw + 2 * pad;
             var x = rank.Align == NickAlign.Center ? rank.X - w / 2 : rank.X;
-            var pill = GetRoundedRectPath(x, rank.Y, w, ProfileCatalog.RankHeight, 11);
-            LpPaint(image, p =>
+            float y = rank.Y, cy = y + h / 2f + 0.5f;
+            var pill = GetRoundedRectPath(x, y, w, h, h / 2f);
+            switch (rank.Style)
             {
-                p.Fill(Brushes.Solid(GetOrCreateColor(LpBackground).WithAlpha(0.72f)), pill);
-                p.Draw(Pens.Solid(GetOrCreateColor(accent), 1.5f), pill);
-            });
-            LpWrite(image, text, font, LpText, x + w / 2, rank.Y + 11.5f, HorizontalAlignment.Center);
+                case RankStyle.Solid:
+                    LpPaint(image, p => p.Fill(Brushes.Solid(GetOrCreateColor(accent)), pill));
+                    LpWrite(image, text, font, IsLightColor(accent) ? "#131217" : "#FFFFFF", x + w / 2, cy, HorizontalAlignment.Center);
+                    break;
+
+                case RankStyle.Glass:
+                    DrawGlass(image, pill, 0.55f);
+                    LpWrite(image, text, font, LpText, x + w / 2, cy, HorizontalAlignment.Center);
+                    break;
+
+                case RankStyle.Text:
+                    LpShadowText(image, text, font, LpText, x, cy);
+                    break;
+
+                case RankStyle.Underline:
+                    LpShadowText(image, text, font, LpText, x, cy - 2);
+                    LpPaint(image, p => p.Fill(Brushes.Solid(GetOrCreateColor(accent)), GetRoundedRectPath(x, cy + size / 2f + 1, tw, Math.Max(2, size / 6f), 1.5f)));
+                    break;
+
+                case RankStyle.Gradient:
+                {
+                    var color = GetOrCreateColor(accent);
+                    var fade = new LinearGradientBrush(new PointF(x, 0), new PointF(x + w + pad, 0), GradientRepetitionMode.None,
+                        new ColorStop(0, color.WithAlpha(0.95f)), new ColorStop(0.55f, color.WithAlpha(0.55f)), new ColorStop(1, color.WithAlpha(0)));
+                    LpPaint(image, p => p.Fill(fade, GetRoundedRectPath(x, y, w + pad, h, h / 2f)));
+                    LpShadowText(image, text, font, "#FFFFFF", x + pad, cy);
+                    break;
+                }
+
+                default:
+                    LpPaint(image, p =>
+                    {
+                        p.Fill(Brushes.Solid(GetOrCreateColor(LpBackground).WithAlpha(0.72f)), pill);
+                        p.Draw(Pens.Solid(GetOrCreateColor(accent), 1.5f), pill);
+                    });
+                    LpWrite(image, text, font, LpText, x + w / 2, cy, HorizontalAlignment.Center);
+                    break;
+            }
+        }
+
+        // a light colour takes dark letters, as the browser's own check does
+        internal static bool IsLightColor(string hex)
+        {
+            var c = Color.ParseHex(hex).ToPixel<Rgba32>();
+            double Channel(byte v) { var s = v / 255.0; return s <= 0.03928 ? s / 12.92 : Math.Pow((s + 0.055) / 1.055, 2.4); }
+            return 0.2126 * Channel(c.R) + 0.7152 * Channel(c.G) + 0.0722 * Channel(c.B) > 0.4;
+        }
+
+        // a text from its left edge with a soft shadow under the letters, as the nick has
+        private void LpShadowText(Image image, string text, Font font, string color, float x, float cy)
+        {
+            const int pad = 8;
+            var k = LpK(image);
+            var tw = TextWidth(text, font);
+            var sw = (int)Math.Ceiling(tw) + 2 * pad;
+            var sh = (int)Math.Ceiling(font.Size * 1.6f) + 2 * pad;
+            using (var shadow = LpSurface(sw, sh, k))
+            {
+                LpWrite(shadow, text, font, "#000000", pad, sh / 2f + 1);
+                shadow.Mutate(c => c.GaussianBlur(2.5f * k));
+                image.Mutate(c => c.DrawImage(shadow, new Point(LpR(x - pad, k), LpR(cy - sh / 2f, k)), 0.8f));
+            }
+            LpWrite(image, text, font, color, x, cy);
         }
 
         private void DrawNick(Image image, NickLayer nick, string text)

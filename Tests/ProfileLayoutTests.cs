@@ -293,6 +293,23 @@ namespace Artifacts
             Assert.Equal(valid, errors.Count == 0);
         }
 
+        [Theory]
+        [InlineData(RankSize.Small, 18)]
+        [InlineData(RankSize.Medium, 22)]
+        [InlineData(RankSize.Large, 27)]
+        public void TheRankHasStylesAndSizesForFree(RankSize size, int height)
+        {
+            var layout = Stats();
+            var rank = layout.LayersOf<RankLayer>().Single();
+            rank.Style = RankStyle.Gradient;
+            rank.Size = size;
+
+            Assert.Equal(height, ProfileCatalog.Size(rank, rankWidth: 100).H);
+            Assert.Empty(ProfileRules.RequiredUnlocks(layout));
+            var again = ProfileLayout.FromJson(layout.ToJson()).LayersOf<RankLayer>().Single();
+            Assert.Equal((RankStyle.Gradient, size), (again.Style, again.Size));
+        }
+
         [Fact]
         public void TheHeaderMustCoverItsField()
         {
