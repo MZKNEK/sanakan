@@ -244,6 +244,19 @@ namespace Artifacts
             Assert.Empty(Errors(l => l.Ultra = new UltraLayer { Id = 20, Image = 5, X = 0, Y = -220 }));
         }
 
+        [Theory]
+        [InlineData(4L, 1.0, 0, 0)]
+        [InlineData(5L, 2.5, 0, -125)]
+        public void OnePictureCanFillTheHeaderAndTheStyleAsAWholeProfile(long image, double scale, int x, int y)
+        {
+            var layout = Stats();
+            layout.Header = new SlotImage { Image = image, Scale = scale, X = x, Y = y };
+            layout.Style = new SlotImage { Image = image, Scale = scale, X = x, Y = y };
+
+            Assert.Empty(ProfileRules.Validate(layout, Context()));
+            Assert.Equal(new[] { ProfileCatalog.HeaderImage, ProfileCatalog.StyleImage }, ProfileRules.RequiredUnlocks(layout).OrderBy(z => z, StringComparer.Ordinal));
+        }
+
         [Fact]
         public void TheHeaderMustCoverItsField()
         {
