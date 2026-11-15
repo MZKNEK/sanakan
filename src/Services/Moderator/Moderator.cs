@@ -91,6 +91,9 @@ namespace Sanakan.Services
             TimeSpan.FromSeconds(30));
         }
 
+        // a logout (stop, update) cancels the requests to Discord still running
+        private bool LoggingOut => _client.LoginState != LoginState.LoggedIn;
+
         private async Task CyclicCheckPenalties(Database.DatabaseContext db)
         {
             foreach (var penalty in await db.GetCachedFullPenalties())
@@ -106,6 +109,10 @@ namespace Sanakan.Services
                         {
                             var ban = await guild.GetBanAsync(penalty.User);
                             if (ban != null) await guild.RemoveBanAsync(penalty.User);
+                        }
+                        catch (OperationCanceledException) when (LoggingOut)
+                        {
+                            return;
                         }
                         catch (Exception ex)
                         {
@@ -142,6 +149,10 @@ namespace Sanakan.Services
                         {
                             // stale member cache - the user is no longer in the guild
                         }
+                        catch (OperationCanceledException) when (LoggingOut)
+                        {
+                            return;
+                        }
                         catch (Exception ex)
                         {
                             _logger.LogError($"Mod: re-mute: {ex}");
@@ -155,6 +166,10 @@ namespace Sanakan.Services
                     }
                     catch (Discord.Net.HttpException ex) when (ex.DiscordCode == DiscordErrorCode.UnknownMember)
                     {
+                    }
+                    catch (OperationCanceledException) when (LoggingOut)
+                    {
+                        return;
                     }
                     catch (Exception ex)
                     {
