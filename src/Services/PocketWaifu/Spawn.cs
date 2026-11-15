@@ -183,8 +183,18 @@ namespace Sanakan.Services.PocketWaifu
                     }
 
                     var exe = GetSafariExe(embed, msg, newCard, pokeImage, trashChannel, winner);
+
+                    // once queued the card is granted, so a failure here must not reach the "escaped" handler
+                    try
+                    {
+                        await msg.RemoveAllReactionsAsync();
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError($"Spawn: safari reactions {msg.Id}: {ex.Message}");
+                    }
+
                     await _executor.TryAdd(exe, TimeSpan.FromSeconds(1));
-                    await msg.RemoveAllReactionsAsync();
                 }
                 catch (Exception ex)
                 {

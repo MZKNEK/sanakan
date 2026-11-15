@@ -218,6 +218,7 @@ namespace Sanakan.Modules
             }
             catch (Exception ex)
             {
+                Logger?.LogError($"Debug: reckc: {ex}");
                 await SafeReplyAsync("", embed: $"Laud lama: {ex.Message}".ToEmbedMessage(EMType.Error).Build());
             }
         }
@@ -644,6 +645,7 @@ namespace Sanakan.Modules
                 }
                 catch (Exception ex)
                 {
+                    Logger?.LogError($"Debug: lottery {lid}: {ex}");
                     if (_lotteries.ContainsKey(lid))
                     {
                         _lotteries.TryRemove(lid, out _);
@@ -928,14 +930,14 @@ namespace Sanakan.Modules
                         Description = $"{winner.Mention} wygrywa {Polish.Count(cardsIds.Count, "kartę", "karty", "kart")}:\n\n{Moderator.JoinWithinLimit(cardsIds, 3500, "\n", LotteryCardsShown)}",
                     };
                     if (footer.Length > 0) embToSend.Footer = new EmbedFooterBuilder().WithText(footer);
-                    msg = await SafeReplyAsync(embed: embToSend.Build());
+                    var resultMsg = await SafeReplyAsync(embed: embToSend.Build());
 
                     try
                     {
                         var privEmb = new EmbedBuilder()
                         {
                             Color = EMType.Info.Color(),
-                            Description = $"Na [loterii]({msg.GetJumpUrl()}) zdobyłeś {Polish.Count(cardsIds.Count, "kartę", "karty", "kart")}."
+                            Description = $"Na [loterii]({resultMsg.GetJumpUrl()}) zdobyłeś {Polish.Count(cardsIds.Count, "kartę", "karty", "kart")}."
                         };
 
                         var pw = await winner.CreateDMChannelAsync();
@@ -946,7 +948,7 @@ namespace Sanakan.Modules
                             if (mog == null || winner.Id == mog.Id)
                                 return;
 
-                            privEmb.Description = $"Na [loterii]({msg.GetJumpUrl()}) nie zdobyłeś {cardsIds.Count} kart.";
+                            privEmb.Description = $"Na [loterii]({resultMsg.GetJumpUrl()}) nie zdobyłeś {cardsIds.Count} kart.";
                             var mpw = await mog.CreateDMChannelAsync();
                             if (mpw != null) await mpw.SendMessageAsync("", embed: privEmb.Build());
                         }
@@ -957,8 +959,17 @@ namespace Sanakan.Modules
             // two lotteries from the same account must not draw the same card
             exe.AddOwner(id);
 
+            // the queued task deletes the message right away, so reactions go first
+            try
+            {
+                await msg.RemoveAllReactionsAsync();
+            }
+            catch (Exception ex)
+            {
+                Logger?.LogError($"Debug: lottery reactions {msg.Id}: {ex.Message}");
+            }
+
             await _executor.TryAdd(exe, TimeSpan.FromSeconds(1));
-            await msg.RemoveAllReactionsAsync();
         }
 
         internal static readonly Color LotteryWinColor = new Color(59, 165, 93);
