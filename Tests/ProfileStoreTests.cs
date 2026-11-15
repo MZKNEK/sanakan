@@ -45,7 +45,7 @@ namespace Artifacts
         {
             _connection.Dispose();
             try { Directory.Delete(_dir, true); } catch (IOException) { }
-            foreach (var file in Directory.GetFiles(Dir.ProfilePictures, "9100*"))
+            foreach (var file in Directory.GetFiles(Dir.ProfilePictures, "910*"))
                 File.Delete(file);
         }
 
@@ -123,6 +123,35 @@ namespace Artifacts
             var rules = ProfileStore.RulesContext(pictures, _ => true);
             Assert.Empty(ProfileRules.Validate(again.Layout, rules));
             Assert.Empty(ProfileRules.MissingUnlocks(again.Layout, unlocks.Select(x => x.Feature)));
+        }
+
+        [Fact]
+        public async Task OldPicturesAreStretchedAsTheOldProfileStretchedThem()
+        {
+            var bg = Picture("BG-narrow.png", 104, 160);
+            var ov = $"{_dir}/OV-moving.gif";
+            using (var gif = new Image<Rgba32>(300, 200, new Rgba32(200, 0, 0, 255)))
+            {
+                using var second = new Image<Rgba32>(300, 200, new Rgba32(0, 200, 0, 255));
+                gif.Frames.AddFrame(second.Frames.RootFrame);
+                gif.SaveAsGif(ov);
+            }
+            await AddUserAsync(91010, u =>
+            {
+                u.BackgroundProfileUri = bg;
+                u.CustomProfileOverlayUrl = ov;
+            });
+
+            await LoadAsync(91010);
+
+            using var db = Open();
+            var pictures = await db.ProfilePictures.Where(x => x.UserId == 91010).ToListAsync();
+            var header = pictures.Single(x => x.Use == ProfileImageUse.Header);
+            var overlay = pictures.Single(x => x.Use == ProfileImageUse.Overlay);
+            Assert.Equal((750, 160), (header.Width, header.Height));
+            Assert.Equal((750, 402, true), (overlay.Width, overlay.Height, overlay.Animated));
+            Assert.All(pictures, x => Assert.StartsWith(Dir.ProfilePictures, x.File));
+            Assert.Equal((104, 160), (Image.Identify(bg).Width, Image.Identify(bg).Height));
         }
 
         [Fact]

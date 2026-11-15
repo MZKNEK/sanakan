@@ -11,6 +11,7 @@ using Sanakan.Database;
 using Sanakan.Database.Models;
 using Sanakan.Extensions;
 using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Processing;
 
 namespace Sanakan.Services.Profiles
 {
@@ -85,19 +86,20 @@ namespace Sanakan.Services.Profiles
 
             // every picture the old profile uses, kept once each
             var pictures = new Dictionary<string, ProfilePicture>();
-            async Task Register(ProfileImageUse use, string path)
+            // the old profile stretched each picture to the size of its place
+            async Task Register(ProfileImageUse use, string path, int width, int height)
             {
                 if (string.IsNullOrEmpty(path) || pictures.ContainsKey(path))
                     return;
-                pictures[path] = await RegisterLegacyAsync(user.Id, use, path);
+                pictures[path] = await RegisterLegacyAsync(user.Id, use, path, new Size(width, height));
             }
 
             var styleUsed = ProfileLegacy.HasStyleImage(user.StatsReplacementProfileUri) && user.ProfileType != ProfileType.Stats
                 && user.ProfileType != ProfileType.Cards && user.ProfileType != ProfileType.MiniGallery;
-            if (!ProfileLegacy.IsDefaultBackground(user.BackgroundProfileUri)) await Register(ProfileImageUse.Header, user.BackgroundProfileUri);
-            if (styleUsed) await Register(user.ProfileType == ProfileType.StatsWithImg ? ProfileImageUse.Overlay : ProfileImageUse.Style, user.StatsReplacementProfileUri);
-            await Register(ProfileImageUse.Overlay, user.CustomProfileOverlayUrl);
-            await Register(ProfileImageUse.Ultra, user.PremiumCustomProfileOverlayUrl);
+            if (!ProfileLegacy.IsDefaultBackground(user.BackgroundProfileUri)) await Register(ProfileImageUse.Header, user.BackgroundProfileUri, 750, 160);
+            if (styleUsed) await Register(user.ProfileType == ProfileType.StatsWithImg ? ProfileImageUse.Overlay : ProfileImageUse.Style, user.StatsReplacementProfileUri, 750, 340);
+            await Register(ProfileImageUse.Overlay, user.CustomProfileOverlayUrl, 750, 402);
+            await Register(ProfileImageUse.Ultra, user.PremiumCustomProfileOverlayUrl, 750, 500);
 
             var found = pictures.Values.Where(x => x != null).ToList();
             db.ProfilePictures.AddRange(found);
@@ -128,17 +130,35 @@ namespace Sanakan.Services.Profiles
             layout.Layers.RemoveAll(x => x is OverlayLayer { Image: 0 });
         }
 
-        private async Task<ProfilePicture> RegisterLegacyAsync(ulong userId, ProfileImageUse use, string path)
+        private async Task<ProfilePicture> RegisterLegacyAsync(ulong userId, ProfileImageUse use, string path, Size size)
         {
             try
             {
+                ProfilePicture picture;
                 if (Dir.IsLocal(path))
-                    return File.Exists(path) ? await DescribeAsync(userId, use, path, _time.Now()) : null;
+                {
+                    if (!File.Exists(path))
+                        return null;
+                    picture = await DescribeAsync(userId, use, path, _time.Now());
+                }
+                else
+                {
+                    // an old link: the picture is downloaded once, as the old commands did when it was set
+                    var temp = $"{Dir.ProfilePictures}/{userId}_download_{Guid.NewGuid():N}.tmp";
+                    await _img.SaveImageFromUrlAsync(path, temp, new Size(0, 0));
+                    picture = await AddFileAsync(userId, use, temp, _time.Now());
+                }
 
-                // an old link: the picture is downloaded once, as the old commands did when it was set
-                var temp = $"{Dir.ProfilePictures}/{userId}_download_{Guid.NewGuid():N}.tmp";
-                await _img.SaveImageFromUrlAsync(path, temp, new Size(0, 0));
-                return await AddFileAsync(userId, use, temp, _time.Now());
+                if (picture.Width == size.Width && picture.Height == size.Height)
+                    return picture;
+
+                var stretched = $"{Dir.ProfilePictures}/{userId}_stretch_{Guid.NewGuid():N}{Path.GetExtension(picture.File)}";
+                using (var image = await Image.LoadAsync(picture.File))
+                {
+                    image.Mutate(x => x.Resize(size.Width, size.Height));
+                    await image.SaveAsync(stretched);
+                }
+                return await AddFileAsync(userId, use, stretched, _time.Now());
             }
             catch (Exception)
             {
