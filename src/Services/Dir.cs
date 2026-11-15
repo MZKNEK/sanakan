@@ -16,6 +16,7 @@ namespace Sanakan.Services
             Directory.CreateDirectory(FakeCardsAsProfiles);
             Directory.CreateDirectory(SiteStatistics);
             Directory.CreateDirectory(TemporaryCards);
+            Directory.CreateDirectory(ProfilePictures);
         }
 
         public static string Cards = $"{BaseOutput}/Cards";
@@ -27,6 +28,9 @@ namespace Sanakan.Services
         public static string LocalCardData = $"{SavedData}/Card";
         public static string ShindenCache = $"{SavedData}/Shinden";
         public static string SiteStatistics = $"{SavedData}/Site";
+
+        // the pictures of the profiles of layers, named <user id>_<start of their SHA-256>
+        public static string ProfilePictures = $"{SavedData}/Profile";
 
         // cards drawn while their picture could not be downloaded: sent once, never served by the CDN
         public static string TemporaryCards = $"{BaseOutput}/Temp";

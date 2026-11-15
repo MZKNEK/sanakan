@@ -2088,6 +2088,32 @@ namespace Sanakan.Modules
                 await SafeReplyAsync("", embed: report);
         }
 
+        [Command("profile migrate", RunMode = RunMode.Async), Priority(1), RequireDev]
+        [Summary("przenosi stare profile na profil z warstw, z ich obrazkami i odblokowaniami (tylko brakujące, można powtarzać)")]
+        [Remarks("")]
+        public async Task MigrateProfilesAsync()
+        {
+            var msg = await SafeReplyAsync("", embed: "Szukam starych profili do przeniesienia...".ToEmbedMessage(EMType.Info).Build());
+            var store = new Services.Profiles.ProfileStore(_img, _time);
+            var last = DateTime.MinValue;
+
+            var report = await store.MigrateAllAsync(() => new Database.DatabaseContext(Config), (done, all) =>
+            {
+                // Discord takes a few edits a minute
+                if (msg == null || DateTime.UtcNow - last < TimeSpan.FromSeconds(5))
+                    return;
+                last = DateTime.UtcNow;
+                _ = msg.ModifyAsync(x => x.Embed = $"Przeniesiono {done} z {all} profili...".ToEmbedMessage(EMType.Info).Build());
+            });
+
+            var text = $"Przeniesione profile: **{report.Converted}** z {report.Candidates}." + (report.Failed > 0 ? $"\nNie udało się: **{report.Failed}** (można uruchomić ponownie)." : "");
+            var embed = text.ToEmbedMessage(report.Failed > 0 ? EMType.Warning : EMType.Success).Build();
+            if (msg != null)
+                await msg.ModifyAsync(x => x.Embed = embed);
+            else
+                await SafeReplyAsync("", embed: embed);
+        }
+
         [Command("lvlbadge", RunMode = RunMode.Async), RequireDevOrTester]
         [Summary("generuje przykładowy obrazek otrzymania poziomu")]
         [Remarks("2150 \"Krótki nick\"")]

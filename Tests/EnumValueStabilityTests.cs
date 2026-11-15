@@ -48,6 +48,8 @@ namespace Artifacts
         [Fact] public void TransferSource_IsStable() => AssertDense(typeof(TransferSource));
         [Fact] public void DuelOutcome_IsStable() => AssertDense(typeof(DuelOutcome));
         [Fact] public void StatusType_IsStable() => AssertDense(typeof(StatusType));
+        [Fact] public void ProfileImageUse_IsStable() => AssertDense(typeof(ProfileImageUse));
+        [Fact] public void ProfileUnlockSource_IsStable() => AssertDense(typeof(ProfileUnlockSource));
 
         [Fact]
         public void Quality_HasNonContiguousPinnedValues()

@@ -7,15 +7,6 @@ using Sanakan.Database.Models;
 
 namespace Sanakan.Services.Profiles
 {
-    public enum ProfileImageUse
-    {
-        Header = 0,
-        Style = 1,
-        Overlay = 2,
-        Ultra = 3,
-        Frame = 4,
-    }
-
     public class LegacyProfile
     {
         public ProfileLayout Layout { get; set; }

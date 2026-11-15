@@ -1309,6 +1309,73 @@ namespace Sanakan.Database.Migrations
                     b.ToTable("Penalties");
                 });
 
+            modelBuilder.Entity("Sanakan.Database.Models.ProfilePicture", b =>
+                {
+                    b.Property<ulong>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint unsigned");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<ulong>("Id"));
+
+                    b.Property<bool>("Animated")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("File")
+                        .HasMaxLength(255)
+                        .HasColumnType("varchar(255)");
+
+                    b.Property<int>("Height")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Sha256")
+                        .HasMaxLength(64)
+                        .HasColumnType("varchar(64)");
+
+                    b.Property<int>("Use")
+                        .HasColumnType("int");
+
+                    b.Property<ulong>("UserId")
+                        .HasColumnType("bigint unsigned");
+
+                    b.Property<int>("Width")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("ProfilePictures");
+                });
+
+            modelBuilder.Entity("Sanakan.Database.Models.ProfileUnlock", b =>
+                {
+                    b.Property<ulong>("UserId")
+                        .HasColumnType("bigint unsigned");
+
+                    b.Property<string>("Feature")
+                        .HasMaxLength(64)
+                        .HasColumnType("varchar(64)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<int?>("Currency")
+                        .HasColumnType("int");
+
+                    b.Property<long>("Price")
+                        .HasColumnType("bigint");
+
+                    b.Property<int>("Source")
+                        .HasColumnType("int");
+
+                    b.HasKey("UserId", "Feature");
+
+                    b.ToTable("ProfileUnlocks");
+                });
+
             modelBuilder.Entity("Sanakan.Database.Models.RarityExcluded", b =>
                 {
                     b.Property<ulong>("Id")
@@ -1590,6 +1657,26 @@ namespace Sanakan.Database.Migrations
                         .IsUnique();
 
                     b.ToTable("UserApiKeys");
+                });
+
+            modelBuilder.Entity("Sanakan.Database.Models.UserProfile", b =>
+                {
+                    b.Property<ulong>("UserId")
+                        .HasColumnType("bigint unsigned");
+
+                    b.Property<string>("Layout")
+                        .HasMaxLength(16384)
+                        .HasColumnType("longtext");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<int>("Version")
+                        .HasColumnType("int");
+
+                    b.HasKey("UserId");
+
+                    b.ToTable("UserProfiles");
                 });
 
             modelBuilder.Entity("Sanakan.Database.Models.UserStats", b =>
@@ -1969,6 +2056,24 @@ namespace Sanakan.Database.Migrations
                     b.Navigation("PenaltyInfo");
                 });
 
+            modelBuilder.Entity("Sanakan.Database.Models.ProfilePicture", b =>
+                {
+                    b.HasOne("Sanakan.Database.Models.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Sanakan.Database.Models.ProfileUnlock", b =>
+                {
+                    b.HasOne("Sanakan.Database.Models.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("Sanakan.Database.Models.RarityExcluded", b =>
                 {
                     b.HasOne("Sanakan.Database.Models.BoosterPack", "BoosterPack")
@@ -2033,6 +2138,15 @@ namespace Sanakan.Database.Migrations
                 });
 
             modelBuilder.Entity("Sanakan.Database.Models.UserApiKey", b =>
+                {
+                    b.HasOne("Sanakan.Database.Models.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Sanakan.Database.Models.UserProfile", b =>
                 {
                     b.HasOne("Sanakan.Database.Models.User", null)
                         .WithMany()

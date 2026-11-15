@@ -80,6 +80,9 @@ namespace Sanakan.Database
         public DbSet<UserApiKey> UserApiKeys { get; set; }
         public DbSet<IdempotencyRecord> IdempotencyRecords { get; set; }
         public DbSet<LiftedPenalty> LiftedPenalties { get; set; }
+        public DbSet<UserProfile> UserProfiles { get; set; }
+        public DbSet<ProfileUnlock> ProfileUnlocks { get; set; }
+        public DbSet<ProfilePicture> ProfilePictures { get; set; }
 
         public const string PictureKindSql = "CASE WHEN CustomImage IS NULL THEN (CASE WHEN Image IS NULL THEN 0 ELSE 1 END) ELSE (CASE WHEN IsAnimatedImage THEN 3 ELSE 2 END) END";
         public const string CursedSql = "CASE WHEN Curse <> 0 THEN 1 ELSE 0 END";
@@ -554,6 +557,29 @@ namespace Sanakan.Database
                 entity.Property(e => e.RequestHash).HasMaxLength(64).IsRequired();
                 entity.HasIndex(e => new { e.Scope, e.Key }).IsUnique();
                 entity.HasIndex(e => e.CreatedAt);
+            });
+
+            modelBuilder.Entity<UserProfile>(entity =>
+            {
+                entity.HasKey(e => e.UserId);
+                entity.Property(e => e.Layout).HasMaxLength(Services.Profiles.ProfileCatalog.MaxLayoutJson);
+                entity.HasOne<User>().WithMany().HasForeignKey(e => e.UserId).OnDelete(DeleteBehavior.Cascade);
+            });
+
+            modelBuilder.Entity<ProfileUnlock>(entity =>
+            {
+                entity.HasKey(e => new { e.UserId, e.Feature });
+                entity.Property(e => e.Feature).HasMaxLength(64);
+                entity.HasOne<User>().WithMany().HasForeignKey(e => e.UserId).OnDelete(DeleteBehavior.Cascade);
+            });
+
+            modelBuilder.Entity<ProfilePicture>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.HasIndex(e => e.UserId);
+                entity.Property(e => e.File).HasMaxLength(255);
+                entity.Property(e => e.Sha256).HasMaxLength(64);
+                entity.HasOne<User>().WithMany().HasForeignKey(e => e.UserId).OnDelete(DeleteBehavior.Cascade);
             });
 
             modelBuilder.Entity<LiftedPenalty>(entity =>
