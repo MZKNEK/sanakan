@@ -140,8 +140,8 @@ that changes one of them has to expect both forms:
 
 The new profile is a layout of layers set in Profilator on the site, kept in `UserProfiles` (the layout as JSON),
 `ProfileUnlocks` (one-time paid options) and `ProfilePictures` (the players' pictures under `GOut/Saved/Profile`).
-Profilator reads and saves it through `api/Profile`, with an app key that has the `Profile` permission (`Site`
-includes it). The `profil` command keeps drawing the old profile until it is switched on for everyone:
+Profilator reads and saves it through `api/Profile`, with the site's app key and its `Sansite` permission (named
+`Info` before; configs with the old name still read, and `Site` includes it). The `profil` command keeps drawing the old profile until it is switched on for everyone:
 
 1. deploy the version with the migration `ProfileLayers`;
 2. run `dev profile migrate`, which converts every old customised profile with its pictures and what it used

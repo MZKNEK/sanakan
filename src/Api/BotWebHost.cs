@@ -166,20 +166,12 @@ namespace Sanakan.Api
                     policy.RequireAssertion(context => AppKeyAuthenticationHandler.IsAllowed(context.User, ApiAppPermission.Site));
                 });
 
-                op.AddPolicy("Profile", policy =>
+                op.AddPolicy("Sansite", policy =>
                 {
                     policy.AddAuthenticationSchemes(JwtBearerDefaults.AuthenticationScheme, AppKeyAuthenticationHandler.SchemeName);
                     policy.RequireAuthenticatedUser();
 
-                    policy.RequireAssertion(context => AppKeyAuthenticationHandler.IsAllowed(context.User, ApiAppPermission.Profile));
-                });
-
-                op.AddPolicy("Info", policy =>
-                {
-                    policy.AddAuthenticationSchemes(JwtBearerDefaults.AuthenticationScheme, AppKeyAuthenticationHandler.SchemeName);
-                    policy.RequireAuthenticatedUser();
-
-                    policy.RequireAssertion(context => AppKeyAuthenticationHandler.IsAllowed(context.User, ApiAppPermission.Info));
+                    policy.RequireAssertion(context => AppKeyAuthenticationHandler.IsAllowed(context.User, ApiAppPermission.Sansite));
                 });
             });
             services.AddControllers()

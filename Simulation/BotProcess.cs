@@ -97,7 +97,7 @@ public sealed class BotProcess : IDisposable
             ["Jwt"] = new JsonObject { ["Key"] = JwtKey, ["Issuer"] = JwtIssuer },
             ["GiveBanForUrlSpam"] = false,
             ["ApiKeys"] = new JsonArray(),
-            ["UserKeyApps"] = new JsonArray(new JsonObject { ["Key"] = SiteKey, ["Bearer"] = "sim-site", ["Permissions"] = "Info, Site" }),
+            ["UserKeyApps"] = new JsonArray(new JsonObject { ["Key"] = SiteKey, ["Bearer"] = "sim-site", ["Permissions"] = "Sansite, Site" }),
             ["AdminNotifyChannels"] = new JsonArray(),
             ["BlacklistedGuilds"] = new JsonArray(),
             ["LogChannel"] = new JsonObject { ["GuildId"] = 0, ["ChannelId"] = 0, ["ErrorRoleId"] = 0 },

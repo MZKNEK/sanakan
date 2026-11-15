@@ -30,7 +30,7 @@ namespace Sanakan.Api.Controllers
 {
     /// <summary>
     /// Profil z warstw dla Profilatora: cennik, odczyt, obrazki, podgląd, wycena i zapis z płatnością.
-    /// Identyfikator gracza podaje serwer strony z sesji zalogowanego konta (klucz aplikacji z uprawnieniem Profile).
+    /// Identyfikator gracza podaje serwer strony z sesji zalogowanego konta (klucz aplikacji z uprawnieniem Sansite).
     /// </summary>
     [ApiController]
     [Route("api/[controller]")]
@@ -92,6 +92,7 @@ namespace Sanakan.Api.Controllers
         [HttpGet("catalog"), AllowAnonymous]
         public ActionResult<ProfileCatalogView> GetCatalog() => new ProfileCatalogView
         {
+            Enabled = _config.Get().LayeredProfiles,
             LayoutVersion = ProfileLayout.CurrentVersion,
             MaxStickers = ProfileCatalog.MaxStickers,
             MaxOverlays = ProfileCatalog.MaxOverlays,
@@ -125,7 +126,7 @@ namespace Sanakan.Api.Controllers
         /// </summary>
         /// <param name="id">id użytkownika discorda</param>
         /// <response code="404">User not found</response>
-        [HttpGet("discord/{id}"), Authorize(Policy = "Profile")]
+        [HttpGet("discord/{id}"), Authorize(Policy = "Sansite")]
         public async Task<ActionResult<ProfileEditorView>> GetEditorAsync(ulong id)
         {
             using var db = CreateDatabaseContext();
@@ -172,7 +173,7 @@ namespace Sanakan.Api.Controllers
         /// <summary>
         /// Obrazek gracza z jego profilu
         /// </summary>
-        [HttpGet("discord/{id}/images/{picture}"), Authorize(Policy = "Profile")]
+        [HttpGet("discord/{id}/images/{picture}"), Authorize(Policy = "Sansite")]
         public async Task<IActionResult> GetPictureAsync(ulong id, ulong picture)
         {
             using var db = CreateDatabaseContext();
@@ -197,7 +198,7 @@ namespace Sanakan.Api.Controllers
         /// <response code="400">To nie jest obrazek albo jest za duży.</response>
         /// <response code="404">User not found</response>
         /// <response code="429">Za dużo nieużywanych obrazków, zapisz profil albo poczekaj.</response>
-        [HttpPost("discord/{id}/images"), Authorize(Policy = "Profile"), RequestSizeLimit(MaxPictureBytes + 64 * 1024)]
+        [HttpPost("discord/{id}/images"), Authorize(Policy = "Sansite"), RequestSizeLimit(MaxPictureBytes + 64 * 1024)]
         public async Task<ActionResult<ProfilePictureView>> UploadPictureAsync(ulong id, IFormFile file, [FromForm] string use = "overlay")
         {
             if (file == null || file.Length == 0 || file.Length > MaxPictureBytes)
@@ -336,7 +337,7 @@ namespace Sanakan.Api.Controllers
         /// <summary>
         /// Wycena układu: błędy, brakujące odblokowania i ich koszt w SC i TC
         /// </summary>
-        [HttpPost("discord/{id}/quote"), Authorize(Policy = "Profile")]
+        [HttpPost("discord/{id}/quote"), Authorize(Policy = "Sansite")]
         public async Task<ActionResult<ProfileQuoteView>> QuoteAsync(ulong id, [FromBody, Required] JToken layoutBody)
         {
             var (layout, error) = ReadLayout(layoutBody);
@@ -394,7 +395,7 @@ namespace Sanakan.Api.Controllers
         /// </summary>
         /// <response code="400">Błędny układ, w treści lista powodów.</response>
         /// <response code="503">Rysowanie zajęte, ponów po czasie z nagłówka Retry-After.</response>
-        [HttpPost("discord/{id}/preview"), Authorize(Policy = "Profile")]
+        [HttpPost("discord/{id}/preview"), Authorize(Policy = "Sansite")]
         public async Task<IActionResult> PreviewAsync(ulong id, [FromBody, Required] JToken layoutBody)
         {
             var (layout, error) = ReadLayout(layoutBody);
@@ -417,7 +418,7 @@ namespace Sanakan.Api.Controllers
         /// <summary>
         /// Obecny profil gracza tak, jak pokazuje go bot
         /// </summary>
-        [HttpGet("discord/{id}/image"), Authorize(Policy = "Profile")]
+        [HttpGet("discord/{id}/image"), Authorize(Policy = "Sansite")]
         public async Task<IActionResult> CurrentImageAsync(ulong id)
         {
             using var db = CreateDatabaseContext();
@@ -444,7 +445,7 @@ namespace Sanakan.Api.Controllers
         /// <response code="404">User not found</response>
         /// <response code="409">Profil zmienił się w międzyczasie albo zapis z tym kluczem trwa.</response>
         /// <response code="422">Klucz został użyty z innym zapisem.</response>
-        [HttpPut("discord/{id}"), Authorize(Policy = "Profile")]
+        [HttpPut("discord/{id}"), Authorize(Policy = "Sansite")]
         public async Task<IActionResult> SaveAsync(ulong id, [FromBody, Required] ProfileSaveRequest request,
             [FromHeader(Name = Services.Idempotency.KeyHeader)] string idempotencyKey = null)
         {

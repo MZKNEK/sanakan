@@ -190,24 +190,24 @@ namespace Sanakan.Api.Controllers
         }
 
         /// <summary>
-        /// Pobiera uprawnienia użytkownika na serwerze: dev, tester, admin, moderator itp. (token strony lub nagłówek x-app-key z uprawnieniem Info)
+        /// Pobiera uprawnienia użytkownika na serwerze: dev, tester, admin, moderator itp. (token strony lub nagłówek x-app-key z uprawnieniem Sansite)
         /// </summary>
         /// <param name="id">id użytkownika discorda</param>
         /// <param name="guildId">id serwera, domyślnie główny serwer</param>
         /// <response code="404">Guild not found</response>
-        [HttpGet("discord/{id}/permissions"), Authorize(Policy = "Info")]
+        [HttpGet("discord/{id}/permissions"), Authorize(Policy = "Sansite")]
         public async Task<ActionResult<UserPermissions>> GetUserPermissionsByDiscordIdAsync(ulong id, [FromQuery] ulong? guildId)
         {
             return await GetUserPermissionsAsync(id, guildId ?? MainGuildId);
         }
 
         /// <summary>
-        /// Pobiera uprawnienia użytkownika na serwerze: dev, tester, admin, moderator itp. (token strony lub nagłówek x-app-key z uprawnieniem Info)
+        /// Pobiera uprawnienia użytkownika na serwerze: dev, tester, admin, moderator itp. (token strony lub nagłówek x-app-key z uprawnieniem Sansite)
         /// </summary>
         /// <param name="id">id użytkownika shindena</param>
         /// <param name="guildId">id serwera, domyślnie główny serwer</param>
         /// <response code="404">User or guild not found</response>
-        [HttpGet("shinden/{id}/permissions"), Authorize(Policy = "Info")]
+        [HttpGet("shinden/{id}/permissions"), Authorize(Policy = "Sansite")]
         public async Task<ActionResult<UserPermissions>> GetUserPermissionsByShindenIdAsync(ulong id, [FromQuery] ulong? guildId)
         {
             using (var db = new Database.DatabaseContext(_config))
@@ -223,11 +223,11 @@ namespace Sanakan.Api.Controllers
         }
 
         /// <summary>
-        /// Pobiera dane do podglądu profilu w Profilatorze: kod wyglądu z obrazkami (wysłanymi na kanał śmieci głównego serwera), liczby, karty i statystyki z Shindena (nagłówek x-app-key z uprawnieniem Info)
+        /// Pobiera dane do podglądu profilu w Profilatorze: kod wyglądu z obrazkami (wysłanymi na kanał śmieci głównego serwera), liczby, karty i statystyki z Shindena (nagłówek x-app-key z uprawnieniem Sansite)
         /// </summary>
         /// <param name="id">id użytkownika discorda</param>
         /// <response code="404">User not found</response>
-        [HttpGet("discord/{id}/profile"), Authorize(Policy = "Info")]
+        [HttpGet("discord/{id}/profile"), Authorize(Policy = "Sansite")]
         public async Task<ActionResult<ProfilePreview>> GetProfilePreviewAsync(ulong id)
         {
             using (var db = new Database.DatabaseContext(_config))

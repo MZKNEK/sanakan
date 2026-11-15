@@ -309,8 +309,8 @@ namespace Artifacts
         [Theory]
         [InlineData(ApiAppPermission.None)]
         [InlineData(ApiAppPermission.UserKeys)]
-        [InlineData(ApiAppPermission.Info)]
-        [InlineData(ApiAppPermission.UserKeys | ApiAppPermission.Info)]
+        [InlineData(ApiAppPermission.Sansite)]
+        [InlineData(ApiAppPermission.UserKeys | ApiAppPermission.Sansite)]
         public void AppWithoutSite_Returns403(ApiAppPermission permissions)
         {
             var config = new FakeConfig();

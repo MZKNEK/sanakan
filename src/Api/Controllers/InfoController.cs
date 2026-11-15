@@ -52,10 +52,10 @@ namespace Sanakan.Api.Controllers
         }
 
         /// <summary>
-        /// Pobiera listę poleceń moderatorskich i debug bota (token strony lub nagłówek x-app-key z uprawnieniem Info)
+        /// Pobiera listę poleceń moderatorskich i debug bota (token strony lub nagłówek x-app-key z uprawnieniem Sansite)
         /// </summary>
         /// <response code="500">Internal Server Error</response>
-        [HttpGet("commands/private"), Authorize(Policy = "Info")]
+        [HttpGet("commands/private"), Authorize(Policy = "Sansite")]
         public ActionResult<Commands> GetPrivateCommandsInfoAsync()
         {
             try

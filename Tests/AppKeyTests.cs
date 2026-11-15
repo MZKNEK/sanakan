@@ -43,17 +43,26 @@ namespace Artifacts
         [Fact]
         public void Permissions_AreReadFromNames()
         {
-            var config = Read("{\"UserKeyApps\":[{\"Key\":\"k\",\"Bearer\":\"app\",\"Permissions\":\"Info, Site\"}]}");
+            var config = Read("{\"UserKeyApps\":[{\"Key\":\"k\",\"Bearer\":\"app\",\"Permissions\":\"Sansite, Site\"}]}");
 
-            Assert.Equal(ApiAppPermission.Info | ApiAppPermission.Site, config.UserKeyApps.Single().Permissions);
+            Assert.Equal(ApiAppPermission.Sansite | ApiAppPermission.Site, config.UserKeyApps.Single().Permissions);
+        }
+
+        [Fact]
+        public void TheOldInfoIsReadAsSansite()
+        {
+            var config = Read("{\"UserKeyApps\":[{\"Key\":\"k\",\"Bearer\":\"app\",\"Permissions\":\"Info, Site\"},{\"Key\":\"l\",\"Bearer\":\"b\",\"Permissions\":\"info\"}]}");
+
+            Assert.Equal(ApiAppPermission.Sansite | ApiAppPermission.Site, config.UserKeyApps[0].Permissions);
+            Assert.Equal(ApiAppPermission.Sansite, config.UserKeyApps[1].Permissions);
         }
 
         [Fact]
         public void Permissions_AreSavedAsNames()
         {
-            var json = JsonConvert.SerializeObject(new ApiApp { Key = "k", Bearer = "app", Permissions = ApiAppPermission.UserKeys | ApiAppPermission.Info });
+            var json = JsonConvert.SerializeObject(new ApiApp { Key = "k", Bearer = "app", Permissions = ApiAppPermission.UserKeys | ApiAppPermission.Sansite });
 
-            Assert.Contains("\"Permissions\":\"UserKeys, Info\"", json);
+            Assert.Contains("\"Permissions\":\"UserKeys, Sansite\"", json);
         }
 
         [Fact]
@@ -68,8 +77,8 @@ namespace Artifacts
 
         [Theory]
         [InlineData(ApiAppPermission.UserKeys, ApiAppPermission.UserKeys, true)]
-        [InlineData(ApiAppPermission.UserKeys, ApiAppPermission.Info, false)]
-        [InlineData(ApiAppPermission.Info | ApiAppPermission.Site, ApiAppPermission.Site, true)]
+        [InlineData(ApiAppPermission.UserKeys, ApiAppPermission.Sansite, false)]
+        [InlineData(ApiAppPermission.Sansite | ApiAppPermission.Site, ApiAppPermission.Site, true)]
         [InlineData(ApiAppPermission.None, ApiAppPermission.UserKeys, false)]
         public void Has_ChecksSingleFlag(ApiAppPermission permissions, ApiAppPermission check, bool expected)
         {
@@ -105,7 +114,7 @@ namespace Artifacts
         [Fact]
         public async Task NoHeader_ReturnsNoResult()
         {
-            var result = await AuthenticateAsync(Config(ApiAppPermission.Info), null);
+            var result = await AuthenticateAsync(Config(ApiAppPermission.Sansite), null);
 
             Assert.True(result.None);
         }
@@ -116,7 +125,7 @@ namespace Artifacts
         [InlineData("app")]
         public async Task InvalidKey_Fails(string key)
         {
-            var result = await AuthenticateAsync(Config(ApiAppPermission.Info), key);
+            var result = await AuthenticateAsync(Config(ApiAppPermission.Sansite), key);
 
             Assert.False(result.Succeeded);
             Assert.NotNull(result.Failure);
@@ -125,7 +134,7 @@ namespace Artifacts
         [Fact]
         public async Task RepeatedInvalidKeys_LockOutEvenValidKey()
         {
-            var config = Config(ApiAppPermission.Info);
+            var config = Config(ApiAppPermission.Sansite);
             var guard = new Sanakan.Api.TokenAttemptGuard(new FixedTime { Value = System.DateTime.Now });
 
             for (int i = 0; i < Sanakan.Api.TokenAttemptGuard.MaxAttempts; i++)
@@ -137,7 +146,7 @@ namespace Artifacts
         [Fact]
         public async Task ValidKey_DoesNotResetFailedAttempts()
         {
-            var config = Config(ApiAppPermission.Info);
+            var config = Config(ApiAppPermission.Sansite);
             var guard = new Sanakan.Api.TokenAttemptGuard(new FixedTime { Value = System.DateTime.Now });
 
             for (int i = 0; i < Sanakan.Api.TokenAttemptGuard.MaxAttempts - 1; i++)
@@ -162,13 +171,13 @@ namespace Artifacts
         [Fact]
         public async Task ValidKey_HasAppAndPermissionClaims()
         {
-            var result = await AuthenticateAsync(Config(ApiAppPermission.UserKeys | ApiAppPermission.Info), "app-key");
+            var result = await AuthenticateAsync(Config(ApiAppPermission.UserKeys | ApiAppPermission.Sansite), "app-key");
 
             Assert.True(result.Succeeded);
             var user = result.Principal;
             Assert.True(user.HasClaim(AppKeyAuthenticationHandler.AppClaim, "app"));
             Assert.True(user.HasClaim(AppKeyAuthenticationHandler.PermissionClaim, "UserKeys"));
-            Assert.True(user.HasClaim(AppKeyAuthenticationHandler.PermissionClaim, "Info"));
+            Assert.True(user.HasClaim(AppKeyAuthenticationHandler.PermissionClaim, "Sansite"));
             Assert.False(user.HasClaim(AppKeyAuthenticationHandler.PermissionClaim, "Site"));
             Assert.False(user.HasClaim(c => c.Type == "Player"));
         }
@@ -184,7 +193,7 @@ namespace Artifacts
         [Fact]
         public async Task WithoutSitePermission_IsNotWebpage()
         {
-            var result = await AuthenticateAsync(Config(ApiAppPermission.UserKeys | ApiAppPermission.Info), "app-key");
+            var result = await AuthenticateAsync(Config(ApiAppPermission.UserKeys | ApiAppPermission.Sansite), "app-key");
 
             Assert.False(result.Principal.HasClaim(c => c.Type == ClaimTypes.Webpage));
         }
@@ -217,38 +226,38 @@ namespace Artifacts
 
         [Theory]
         [InlineData(ApiAppPermission.Site)]
-        [InlineData(ApiAppPermission.Info)]
+        [InlineData(ApiAppPermission.Sansite)]
         public void SiteToken_IsAllowed(ApiAppPermission permission) => Assert.True(Allowed(permission, Site()));
 
         [Theory]
         [InlineData(ApiAppPermission.Site)]
-        [InlineData(ApiAppPermission.Info)]
+        [InlineData(ApiAppPermission.Sansite)]
         public void PlayerToken_IsDenied(ApiAppPermission permission) => Assert.False(Allowed(permission, PlayerToken()));
 
         [Fact]
         public void InfoApp_OnlyInfo()
         {
-            Assert.True(Allowed(ApiAppPermission.Info, App("Info")));
-            Assert.False(Allowed(ApiAppPermission.Site, App("Info")));
+            Assert.True(Allowed(ApiAppPermission.Sansite, App("Sansite")));
+            Assert.False(Allowed(ApiAppPermission.Site, App("Sansite")));
         }
 
         [Fact]
         public void SiteApp_IncludesInfo()
         {
             Assert.True(Allowed(ApiAppPermission.Site, App("Site")));
-            Assert.True(Allowed(ApiAppPermission.Info, App("Site")));
+            Assert.True(Allowed(ApiAppPermission.Sansite, App("Site")));
         }
 
         [Theory]
         [InlineData(ApiAppPermission.Site)]
-        [InlineData(ApiAppPermission.Info)]
+        [InlineData(ApiAppPermission.Sansite)]
         public void UserKeysApp_IsDenied(ApiAppPermission permission) => Assert.False(Allowed(permission, App("UserKeys")));
 
         [Fact]
         public void SiteToken_WinsOverAppWithoutPermission()
         {
             Assert.True(Allowed(ApiAppPermission.Site, Site(), App("UserKeys")));
-            Assert.True(Allowed(ApiAppPermission.Info, App("None"), Site()));
+            Assert.True(Allowed(ApiAppPermission.Sansite, App("None"), Site()));
         }
 
         [Fact]
@@ -278,9 +287,9 @@ namespace Artifacts
 
         [Theory]
         [InlineData(ApiAppPermission.None)]
-        [InlineData(ApiAppPermission.Info)]
+        [InlineData(ApiAppPermission.Sansite)]
         [InlineData(ApiAppPermission.Site)]
-        [InlineData(ApiAppPermission.Info | ApiAppPermission.Site)]
+        [InlineData(ApiAppPermission.Sansite | ApiAppPermission.Site)]
         public async Task AppWithoutUserKeys_CannotGenerateOrRevoke(ApiAppPermission permissions)
         {
             Assert.Equal(403, (await Controller(permissions).GenerateUserKeyAsync(1, "app-key") as ObjectResult)?.StatusCode);
@@ -291,7 +300,7 @@ namespace Artifacts
         public async Task RealKeyWithoutPermission_IsNotCountedAsGuess()
         {
             var config = new FakeConfig();
-            config.Model.UserKeyApps.Add(new ApiApp { Key = "info-key", Bearer = "info", Permissions = ApiAppPermission.Info });
+            config.Model.UserKeyApps.Add(new ApiApp { Key = "info-key", Bearer = "info", Permissions = ApiAppPermission.Sansite });
             var guard = new Sanakan.Api.TokenAttemptGuard(new FixedTime { Value = System.DateTime.Now });
             var controller = new UserKeyController(config, new FixedTime(), guard)
             {
@@ -333,7 +342,7 @@ namespace Artifacts
         public AppKeyApiTests()
         {
             _api.Config.Model.UserKeyApps.Add(new ApiApp { Key = "userkeys-app", Bearer = "uk", Permissions = ApiAppPermission.UserKeys });
-            _api.Config.Model.UserKeyApps.Add(new ApiApp { Key = "info-app", Bearer = "info", Permissions = ApiAppPermission.Info });
+            _api.Config.Model.UserKeyApps.Add(new ApiApp { Key = "info-app", Bearer = "info", Permissions = ApiAppPermission.Sansite });
             _api.Config.Model.UserKeyApps.Add(new ApiApp { Key = "site-app", Bearer = "site", Permissions = ApiAppPermission.Site });
         }
 

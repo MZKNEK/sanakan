@@ -65,7 +65,7 @@ namespace Artifacts
             var client = await _api.AsSiteAsync();
             Assert.Equal(HttpStatusCode.OK, (await ApiServer.PostSiteEndpointAsync(client)).StatusCode);
 
-            _api.Config.Model.UserKeyApps.Single(x => x.Key == ApiServer.SiteKey).Permissions = ApiAppPermission.Info;
+            _api.Config.Model.UserKeyApps.Single(x => x.Key == ApiServer.SiteKey).Permissions = ApiAppPermission.Sansite;
 
             Assert.Equal(HttpStatusCode.Unauthorized, (await ApiServer.PostSiteEndpointAsync(client)).StatusCode);
         }
@@ -75,7 +75,7 @@ namespace Artifacts
         {
             var config = new FakeConfig();
             config.Model.UserKeyApps.Add(new ApiApp { Key = "a", Bearer = "site", Permissions = ApiAppPermission.Site });
-            config.Model.UserKeyApps.Add(new ApiApp { Key = "b", Bearer = "info", Permissions = ApiAppPermission.Info });
+            config.Model.UserKeyApps.Add(new ApiApp { Key = "b", Bearer = "info", Permissions = ApiAppPermission.Sansite });
 
             Assert.True(TokenChecks.IsSiteAppActive(config, "site"));
             Assert.False(TokenChecks.IsSiteAppActive(config, "info"));
