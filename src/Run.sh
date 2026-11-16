@@ -41,14 +41,17 @@ current() { cat "$DEPLOY/current" 2>/dev/null; }
 is_update() { [ "$1" -eq 100 ] || [ "$1" -eq 200 ]; }
 
 build() {
-    local stamp
+    local stamp started
     stamp=$(date '+%Y%m%d-%H%M%S')
+    started=$(date +%s)
     log "building $stamp ($CONFIG, commit $(git rev-parse --short HEAD 2>/dev/null))"
-    if ! dotnet publish Sanakan.csproj -c "$CONFIG" -o "$DEPLOY/$stamp" --nologo -v quiet; then
+    # the last build's binary log (MSBuild Structured Log Viewer) shows where its time went
+    if ! dotnet publish Sanakan.csproj -c "$CONFIG" -o "$DEPLOY/$stamp" --nologo -v quiet -bl:"$DEPLOY/last-build.binlog"; then
         rm -rf "${DEPLOY:?}/$stamp"
-        log "build failed, staying on ${1:-$(current)}"
+        log "build failed after $(( $(date +%s) - started ))s, staying on ${1:-$(current)}"
         return 1
     fi
+    log "built $stamp in $(( $(date +%s) - started ))s"
     if [ -n "$(current)" ]; then current > "$DEPLOY/previous"; fi
     echo "$stamp" > "$DEPLOY/current"
     echo "$stamp" > "$DEPLOY/pending"

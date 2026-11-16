@@ -289,7 +289,9 @@ The bot tells `src/Run.sh` what to do next with its exit code (`src/ExitCodes.cs
 
 An update pulls the current branch from `origin` (fast-forward only) and builds it into a new folder under
 `src/deploy/`. The bot switches to it only when the build succeeded; if the new build fails within a minute of
-starting, the previous one is started again. The last three builds are kept. If the bot crashes 10 times within
+starting, the previous one is started again. The last three builds are kept. The log says how long each build
+took, and the last build's MSBuild binary log is kept as `src/deploy/<config>/last-build.binlog` (open it in the
+MSBuild Structured Log Viewer to see where the time went). If the bot crashes 10 times within
 10 minutes, systemd stops trying; `systemctl status sanakan` shows why.
 
 #### Moving from the old Run.sh
