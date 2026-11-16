@@ -1,13 +1,8 @@
-# 1.5.0.7
+# 1.5.0.8
 
-Data: 2026-11-15
+Data: 2026-11-16
 
-- Naprawiono błąd, przez który bardzo duża animacja ustawiona w profilu wyłączała bota przy każdym wyświetleniu profilu.
-- Zmieniono przyjmowanie animacji do profilu: zbyt duże są odrzucane z wyjaśnieniem, a edytor profilu na stronie sam je zmniejsza przed wysłaniem.
-- Zmieniono wyświetlanie profilu: uszkodzony obrazek jest pomijany, zamiast blokować cały profil.
-- Usunięto profil w podwójnej rozdzielczości: wszystkie profile mają znów zwykły rozmiar, a gracze, którzy go kupili, dostali zwrot TC.
-
-## Techniczne
-
-- Bot pilnuje pamięci zużywanej na rysowanie obrazków, dzięki czemu nie wyłącza się przy bardzo dużych plikach.
-- Bot nie wraca już do poprzedniej wersji po awarii, za którą nowa wersja nie odpowiada.
+- Dodano do sklepiku za TC pakiet dwóch wymienialnych kart z postaciami z obecnego sezonu anime za 404 TC.
+- Usunięto ze sklepiku za TC fioletowy, pomarańczowy, złoty i różowy pakiet kart, przez co numery dalszych przedmiotów zmniejszyły się o 3.
+- Dodano adminom możliwość poprawienia na stronie profilu gracza lub profilu bota bez opłat dla gracza, z odnotowaniem tego w historii.
+- Zmieniono opis komendy używania przedmiotu: numer przedmiotu to ten z listy posiadanych przedmiotów.
