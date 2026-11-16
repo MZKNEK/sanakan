@@ -45,8 +45,10 @@ build() {
     stamp=$(date '+%Y%m%d-%H%M%S')
     started=$(date +%s)
     log "building $stamp ($CONFIG, commit $(git rev-parse --short HEAD 2>/dev/null))"
-    # the last build's binary log (MSBuild Structured Log Viewer) shows where its time went
-    if ! dotnet publish Sanakan.csproj -c "$CONFIG" -o "$DEPLOY/$stamp" --nologo -v quiet -bl:"$DEPLOY/last-build.binlog"; then
+    # the last build's binary log (MSBuild Structured Log Viewer) shows where its time went.
+    # NuGet's vulnerability audit is the restore's only call to the network while the packages are cached; a connection
+    # to nuget.org that hangs held a build for 100 s, and nobody reads the audit's warnings here (it runs on local builds)
+    if ! dotnet publish Sanakan.csproj -c "$CONFIG" -o "$DEPLOY/$stamp" --nologo -v quiet -p:NuGetAudit=false -bl:"$DEPLOY/last-build.binlog"; then
         rm -rf "${DEPLOY:?}/$stamp"
         log "build failed after $(( $(date +%s) - started ))s, staying on ${1:-$(current)}"
         return 1
