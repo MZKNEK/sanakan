@@ -30,12 +30,26 @@ namespace Sanakan.Api.Models
         public bool Selectable { get; set; }
     }
 
+    // a font of the nick; the site serves the same file from its own fonts
+    public class ProfileNickFontView
+    {
+        public string Key { get; set; }
+        public string Name { get; set; }
+        public string File { get; set; }
+        // the size the nick starts from before it is made smaller to fit its width
+        public int Size { get; set; }
+    }
+
     // everything Profilator needs to know without a player: prices, ready layouts, frames, limits
     public class ProfileCatalogView
     {
         public int LayoutVersion { get; set; }
         public int MaxStickers { get; set; }
         public int MaxOverlays { get; set; }
+        public int MaxTiles { get; set; }
+        // the most a card-sticker tilts either way, in degrees
+        public int MaxTilt { get; set; }
+        public List<ProfileNickFontView> NickFonts { get; set; }
         public int MaxLayoutJson { get; set; }
         public int MaxPictureBytes { get; set; }
         // width x height x frames of an uploaded picture
@@ -63,6 +77,9 @@ namespace Sanakan.Api.Models
         public string Rarity { get; set; }
         public bool Animated { get; set; }
         public string Url { get; set; }
+        public bool Ultimate { get; set; }
+        // the rarity as the bot shows it: an ultimate card's quality instead of its rarity
+        public string Grade { get; set; }
     }
 
     public class ProfileRecentView

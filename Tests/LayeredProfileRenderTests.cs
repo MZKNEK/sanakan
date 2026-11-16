@@ -10,6 +10,7 @@ using Sanakan.Services.Profiles;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Formats.Gif;
 using SixLabors.ImageSharp.PixelFormats;
+using SixLabors.ImageSharp.Processing;
 using Xunit;
 
 namespace Artifacts
@@ -91,6 +92,145 @@ namespace Artifacts
                 Assert.Equal(green, image[400, 60]);
         }
 
+        // the brightest pixel of the minimal layout's nick box
+        private static int NickBrightness(Image<Rgba32> image, ProfileLayout layout)
+        {
+            var n = layout.Nick;
+            var max = 0;
+            for (int y = n.Y; y < n.Y + NickLayer.Height; y++)
+                for (int x = n.X; x < n.X + n.W; x++)
+                    max = Math.Max(max, Math.Min(image[x, y].R, Math.Min(image[x, y].G, image[x, y].B)));
+            return max;
+        }
+
+        private static bool NickHas(Image<Rgba32> image, ProfileLayout layout, Func<Rgba32, bool> pixel, int fromX = 0, int toX = 750)
+        {
+            var n = layout.Nick;
+            for (int y = n.Y; y < n.Y + NickLayer.Height; y++)
+                for (int x = Math.Max(n.X, fromX); x < Math.Min(n.X + n.W, toX); x++)
+                    if (pixel(image[x, y]))
+                        return true;
+            return false;
+        }
+
+        [Fact]
+        public async Task TheNickLiesUnderOrOverTheLayersAsItsPlaceSays()
+        {
+            var layout = ProfileCatalog.FindPreset("minimal").Make();
+            var n = layout.Nick;
+            layout.Layers.Insert(0, new TileLayer { Id = 40, X = n.X - 10, Y = n.Y - 6, W = n.W + 20, H = NickLayer.Height + 12 });
+            var data = Data(new Dictionary<long, string>());
+
+            layout.Nick.At = 0;
+            using (var under = (await _img.GetLayeredProfileAsync(layout, data)).CloneAs<Rgba32>())
+                Assert.True(NickBrightness(under, layout) < 60);
+
+            layout.Nick.At = 1;
+            using (var over = (await _img.GetLayeredProfileAsync(layout, data)).CloneAs<Rgba32>())
+                Assert.True(NickBrightness(over, layout) > 200);
+        }
+
+        [Fact]
+        public async Task EveryNickFontDrawsItsOwnLetters()
+        {
+            var layout = ProfileCatalog.FindPreset("minimal").Make();
+            var data = Data(new Dictionary<long, string>());
+            data.Nick = "Żółć Gęślą";
+            byte[] Pixels(Image<Rgba32> image)
+            {
+                var bytes = new byte[layout.Nick.W * NickLayer.Height * 4];
+                image.Clone(c => c.Crop(new Rectangle(layout.Nick.X, layout.Nick.Y, layout.Nick.W, NickLayer.Height))).CopyPixelDataTo(bytes);
+                return bytes;
+            }
+
+            byte[] lato;
+            using (var image = (await _img.GetLayeredProfileAsync(layout, data)).CloneAs<Rgba32>())
+                lato = Pixels(image);
+
+            foreach (var font in ProfileCatalog.NickFonts.Where(x => x.Key != ProfileCatalog.DefaultNickFont))
+            {
+                layout.Nick.Font = font.Key;
+                using var image = (await _img.GetLayeredProfileAsync(layout, data)).CloneAs<Rgba32>();
+                Assert.True(NickBrightness(image, layout) > 200, font.Key);
+                Assert.False(lato.SequenceEqual(Pixels(image)), font.Key + " is drawn in Lato");
+            }
+        }
+
+        [Fact]
+        public async Task EveryNickColourDraws()
+        {
+            var layout = ProfileCatalog.FindPreset("minimal").Make();
+            layout.Accent = "#00c853";
+            var data = Data(new Dictionary<long, string>());
+            data.Nick = "MMMMMMMMMMMMMMMM";
+            bool Red(Rgba32 p) => p.R > 200 && p.G < 60 && p.B < 60;
+            bool Blue(Rgba32 p) => p.B > 200 && p.R < 60 && p.G < 60;
+
+            layout.Nick.Paint = NickPaint.Solid;
+            layout.Nick.Color1 = "#ff0000";
+            using (var image = (await _img.GetLayeredProfileAsync(layout, data)).CloneAs<Rgba32>())
+                Assert.True(NickHas(image, layout, Red));
+
+            layout.Nick.Paint = NickPaint.Accent;
+            using (var image = (await _img.GetLayeredProfileAsync(layout, data)).CloneAs<Rgba32>())
+                Assert.True(NickHas(image, layout, p => p.G > 150 && p.R < 40 && p.B < 120));
+
+            layout.Nick.Paint = NickPaint.Gradient;
+            layout.Nick.Color2 = "#0000ff";
+            using (var image = (await _img.GetLayeredProfileAsync(layout, data)).CloneAs<Rgba32>())
+            {
+                Assert.True(NickHas(image, layout, Red, toX: layout.Nick.X + 40));
+                Assert.False(NickHas(image, layout, Blue, toX: layout.Nick.X + 40));
+                Assert.True(NickHas(image, layout, Blue, fromX: layout.Nick.X + 200));
+            }
+
+            layout.Nick.Paint = NickPaint.Outline;
+            using (var image = (await _img.GetLayeredProfileAsync(layout, data)).CloneAs<Rgba32>())
+                Assert.True(NickHas(image, layout, Red));
+        }
+
+        [Theory]
+        [InlineData(TileLook.Panel, null)]
+        [InlineData(TileLook.Glass, 80)]
+        [InlineData(TileLook.Shadow, 100)]
+        public async Task EveryTileDrawsWhereItIsPlaced(TileLook look, int? opacity)
+        {
+            var path = $"{_dir}/white.png";
+            using (var white = new Image<Rgba32>(750, 340, new Rgba32(255, 255, 255, 255)))
+                white.SaveAsPng(path);
+            var layout = ProfileCatalog.FindPreset("image").Make();
+            layout.Style = new SlotImage { Image = 1, X = 0, Y = 160 };
+            layout.Layers.Add(new TileLayer { Id = 40, X = 100, Y = 200, W = 300, H = 150, Look = look, Opacity = opacity });
+
+            using var image = (await _img.GetLayeredProfileAsync(layout, Data(new Dictionary<long, string> { [1] = path }))).CloneAs<Rgba32>();
+
+            Assert.True(image[250, 275].R < 200, look.ToString());
+            Assert.Equal(255, image[600, 400].R);
+        }
+
+        [Fact]
+        public async Task TheSecondUltraOverlayLiesOverTheFirst()
+        {
+            string Solid(string name, Rgba32 color)
+            {
+                var path = $"{_dir}/{name}.png";
+                using var image = new Image<Rgba32>(750, 500, color);
+                image.SaveAsPng(path);
+                return path;
+            }
+            var green = new Rgba32(10, 200, 30, 255);
+            var red = new Rgba32(220, 20, 20, 255);
+            var data = Data(new Dictionary<long, string> { [1] = Solid("green", green), [2] = Solid("red", red) });
+            var layout = ProfileCatalog.FindPreset("minimal").Make();
+            layout.Ultra = new UltraLayer { Image = 1 };
+            layout.Ultra2 = new UltraLayer { Image = 2, X = 375 };
+
+            using var image = (await _img.GetLayeredProfileAsync(layout, data)).CloneAs<Rgba32>();
+
+            Assert.Equal(green, image[200, 300]);
+            Assert.Equal(red, image[500, 300]);
+        }
+
         [Fact]
         public void LegendItemsKeepTheirColumnsUntilTheyDoNotFit()
         {
@@ -131,6 +271,9 @@ namespace Artifacts
         [InlineData(StickerGround.Glass, 9)]
         [InlineData(StickerGround.Shadow, -7)]
         [InlineData(StickerGround.None, 5)]
+        [InlineData(StickerGround.Glass, 90)]
+        [InlineData(StickerGround.Shadow, -90)]
+        [InlineData(StickerGround.Panel, 45)]
         public async Task EveryGroundUnderACardDraws(StickerGround ground, int tilt)
         {
             var layout = ProfileCatalog.FindPreset("minimal").Make();

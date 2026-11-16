@@ -322,7 +322,9 @@ namespace Artifacts
         {
             Assert.Empty(Errors(l => l.Layers.Add(new StickerLayer { Id = 9, X = 10, Y = 10, Card = 5 }), 5));
             Assert.NotEmpty(Errors(l => l.Layers.Add(new StickerLayer { Id = 9, X = 10, Y = 10, Card = 6 }), 5));
-            Assert.NotEmpty(Errors(l => l.Layers.Add(new StickerLayer { Id = 9, X = 10, Y = 10, Card = 5, Tilt = 40 }), 5));
+            Assert.Empty(Errors(l => l.Layers.Add(new StickerLayer { Id = 9, X = 100, Y = 100, Card = 5, Tilt = 90 }), 5));
+            Assert.Empty(Errors(l => l.Layers.Add(new StickerLayer { Id = 9, X = 100, Y = 100, Card = 5, Tilt = -90 }), 5));
+            Assert.NotEmpty(Errors(l => l.Layers.Add(new StickerLayer { Id = 9, X = 100, Y = 100, Card = 5, Tilt = 91 }), 5));
             Assert.NotEmpty(Errors(l =>
             {
                 for (int i = 0; i < 5; i++)
@@ -351,6 +353,98 @@ namespace Artifacts
             Assert.NotEmpty(Errors(l => l.Bar.Hide.Add("gold")));
             Assert.NotEmpty(Errors(l => l.Nick.W = 900));
             Assert.NotEmpty(Errors(l => l.LayersOf<ListPanelLayer>().First().Recent = 4));
+        }
+
+        [Fact]
+        public void TheNickStandsAmongTheLayersOnlyWithTheOwnLayout()
+        {
+            var layout = Stats();
+            layout.Nick.At = 2;
+
+            Assert.Empty(ProfileRules.Validate(layout, Context()));
+            Assert.Equal(new[] { ProfileCatalog.Layout }, ProfileRules.RequiredUnlocks(layout));
+            Assert.Equal(2, ProfileLayout.FromJson(layout.ToJson()).Nick.At);
+            Assert.NotEmpty(Errors(l => l.Nick.At = l.Layers.Count + 1));
+            Assert.NotEmpty(Errors(l => l.Nick.At = -1));
+            Assert.Empty(Errors(l => l.Nick.At = l.Layers.Count));
+        }
+
+        [Fact]
+        public void EveryNickFontIsFreeAndKnown()
+        {
+            foreach (var font in ProfileCatalog.NickFonts)
+            {
+                var layout = Stats();
+                layout.Nick.Font = font.Key;
+                Assert.Empty(ProfileRules.Validate(layout, Context()));
+                Assert.Empty(ProfileRules.RequiredUnlocks(layout));
+                Assert.True(System.IO.File.Exists("Fonts/" + font.File), font.File);
+            }
+            Assert.Equal(ProfileCatalog.NickFonts.Count, ProfileCatalog.NickFonts.Select(x => x.Key).Distinct().Count());
+            Assert.NotEmpty(Errors(l => l.Nick.Font = "comicSans"));
+        }
+
+        [Theory]
+        [InlineData(NickPaint.Solid, "#ff0000", null, true)]
+        [InlineData(NickPaint.Solid, null, null, false)]
+        [InlineData(NickPaint.Outline, "#ff0000", null, true)]
+        [InlineData(NickPaint.Outline, "red", null, false)]
+        [InlineData(NickPaint.Gradient, "#ff0000", "#0000ff", true)]
+        [InlineData(NickPaint.Gradient, "#ff0000", null, false)]
+        [InlineData(NickPaint.Accent, null, null, true)]
+        public void ANickColourIsPaidAndChecked(NickPaint paint, string c1, string c2, bool valid)
+        {
+            var layout = Stats();
+            layout.Nick.Paint = paint;
+            layout.Nick.Color1 = c1;
+            layout.Nick.Color2 = c2;
+
+            Assert.Equal(valid, ProfileRules.Validate(layout, Context()).Count == 0);
+            Assert.Equal(new[] { ProfileCatalog.NickColor }, ProfileRules.RequiredUnlocks(layout));
+            Assert.Empty(Errors(l => l.Nick.Paint = NickPaint.White));
+        }
+
+        [Fact]
+        public void TilesAreFreeSizedAndAtMostThree()
+        {
+            var layout = Stats();
+            layout.Layers.Add(new TileLayer { Id = 20, X = 10, Y = 170, W = 300, H = 200, Look = TileLook.Glass });
+            layout.Layers.Add(new TileLayer { Id = 21, X = 0, Y = 0, W = 750, H = 500, Look = TileLook.Shadow, Opacity = 40 });
+            layout.Layers.Add(new TileLayer { Id = 22, X = 400, Y = 20, W = 16, H = 16 });
+
+            Assert.Empty(ProfileRules.Validate(layout, Context()));
+            Assert.Empty(ProfileRules.RequiredUnlocks(layout));
+            var again = ProfileLayout.FromJson(layout.ToJson()).LayersOf<TileLayer>().ToList();
+            Assert.Equal(new[] { TileLook.Glass, TileLook.Shadow, TileLook.Panel }, again.Select(x => x.Look));
+            Assert.Equal(40, again[1].Opacity);
+
+            Assert.NotEmpty(Errors(l => { for (int i = 0; i < 4; i++) l.Layers.Add(new TileLayer { Id = 30 + i, X = 10, Y = 10 }); }));
+            Assert.NotEmpty(Errors(l => l.Layers.Add(new TileLayer { Id = 30, X = 10, Y = 10, W = 15 })));
+            Assert.NotEmpty(Errors(l => l.Layers.Add(new TileLayer { Id = 30, X = 10, Y = 10, H = 501 })));
+            Assert.NotEmpty(Errors(l => l.Layers.Add(new TileLayer { Id = 30, X = 10, Y = 10, Opacity = 101 })));
+            Assert.NotEmpty(Errors(l => l.Layers.Add(new TileLayer { Id = 30, X = 740, Y = 10 })));
+        }
+
+        [Fact]
+        public void TheSecondUltraOverlayIsPaidOnlyForASecondPicture()
+        {
+            var one = Stats();
+            one.Ultra2 = new UltraLayer { Image = 4 };
+            Assert.Empty(ProfileRules.Validate(one, Context()));
+            Assert.Equal(new[] { ProfileCatalog.Ultra }, ProfileRules.RequiredUnlocks(one));
+
+            var two = Stats();
+            two.Ultra = new UltraLayer { Image = 4 };
+            two.Ultra2 = new UltraLayer { Image = 5, Opacity = 0.5 };
+            two.Animate = ProfileLayout.AnimateUltra2;
+            Assert.Empty(ProfileRules.Validate(two, Context()));
+            Assert.Equal(new[] { ProfileCatalog.Ultra, ProfileCatalog.Ultra2 }, ProfileRules.RequiredUnlocks(two));
+            Assert.Equal(5, ProfileLayout.FromJson(two.ToJson()).Ultra2.Image);
+
+            var price = ProfileCatalog.Feature(ProfileCatalog.Ultra2);
+            Assert.Equal((360000L, 5999L), (price.Sc, price.Tc));
+            Assert.NotEmpty(Errors(l => l.Ultra2 = new UltraLayer { Image = 99 }));
+            Assert.NotEmpty(Errors(l => l.Animate = ProfileLayout.AnimateUltra2));
         }
 
         [Fact]

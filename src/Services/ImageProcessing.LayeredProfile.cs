@@ -22,8 +22,8 @@ using PathExtensions = SixLabors.ImageSharp.Drawing.PathExtensions;
 namespace Sanakan.Services
 {
     // The profile drawn from a layout of layers (Services/Profiles): the header and style pictures in their fields,
-    // the nick, the free layers bottom to top (overlays cut to their field), the ultra overlay, the bar and the avatar
-    // with its frame on top.
+    // the free layers bottom to top with the nick among them (overlays cut to their field), the two ultra overlays,
+    // the bar and the avatar with its frame on top.
     // At most one part moves: everything under it is drawn once, its frames go over copies of that,
     // and every part above it is drawn on each frame.
     public partial class ImageProcessing
@@ -191,14 +191,19 @@ namespace Sanakan.Services
                 else
                     LpPaint(canvas.Image, c => c.Fill(Brushes.Solid(GetOrCreateColor(LpLine)), new RectanglePolygon(0, 159, 750, 1)));
 
-                if (!layout.Nick.Hidden)
-                    DrawNick(canvas.Image, layout.Nick, data.Nick);
-
-                foreach (var layer in layout.Layers.Where(x => !x.Hidden))
-                    await DrawLayerAsync(canvas, layout, layer, data, accent);
+                var nickAt = Math.Clamp(layout.Nick.At, 0, layout.Layers.Count);
+                for (int i = 0; i <= layout.Layers.Count; i++)
+                {
+                    if (i == nickAt && !layout.Nick.Hidden)
+                        DrawNick(canvas.Image, layout.Nick, data.Nick, accent);
+                    if (i < layout.Layers.Count && !layout.Layers[i].Hidden)
+                        await DrawLayerAsync(canvas, layout, layout.Layers[i], data, accent);
+                }
 
                 if (layout.Ultra != null && !layout.Ultra.Hidden)
                     await DrawImageLayerAsync(canvas, layout.Ultra, data, ProfileLayout.AnimateUltra);
+                if (layout.Ultra2 != null && !layout.Ultra2.Hidden)
+                    await DrawImageLayerAsync(canvas, layout.Ultra2, data, ProfileLayout.AnimateUltra2);
 
                 DrawBar(canvas.Image, layout.Bar, data, accent);
                 await DrawAvatarAsync(canvas, layout.Avatar, data, accent);
@@ -341,6 +346,34 @@ namespace Sanakan.Services
 
                 case RankLayer rank:
                     DrawRank(canvas.Image, rank, data.Rank, accent);
+                    break;
+
+                case TileLayer tile:
+                    DrawTile(canvas.Image, tile);
+                    break;
+            }
+        }
+
+        private void DrawTile(Image image, TileLayer tile)
+        {
+            var shape = GetRoundedRectPath(tile.X, tile.Y, tile.W, tile.H, 12);
+            var alpha = tile.Alpha;
+            switch (tile.Look)
+            {
+                case TileLook.Glass:
+                    DrawGlass(image, shape, alpha);
+                    break;
+
+                case TileLook.Shadow:
+                    LpPaint(image, p => p.Fill(Brushes.Solid(Color.Black.WithAlpha(alpha)), shape));
+                    break;
+
+                default:
+                    LpPaint(image, p =>
+                    {
+                        p.Fill(Brushes.Solid(GetOrCreateColor(LpPanel).WithAlpha(alpha)), shape);
+                        p.Draw(Pens.Solid(GetOrCreateColor(LpLine).WithAlpha(alpha), 1.5f), shape);
+                    });
                     break;
             }
         }
@@ -1159,12 +1192,45 @@ namespace Sanakan.Services
             LpWrite(image, text, font, color, x, cy);
         }
 
-        private void DrawNick(Image image, NickLayer nick, string text)
+        private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, FontFamily> NickFamilies = new();
+
+        private FontFamily NickFamily(string key)
+        {
+            var font = ProfileCatalog.FindNickFont(key);
+            if (font == null || font.Key == ProfileCatalog.DefaultNickFont)
+                return _latoBold;
+
+            try
+            {
+                return NickFamilies.GetOrAdd(font.File, file => new FontCollection().Add("Fonts/" + file));
+            }
+            catch (Exception ex) when (ex is System.IO.IOException or UnauthorizedAccessException or InvalidFontFileException)
+            {
+                _logger?.LogError($"Profile: nick font {font.File} left out: {ex.Message}");
+                return _latoBold;
+            }
+        }
+
+        // a letter the nick's font lacks is drawn in Lato
+        private RichTextOptions NickText(Font font, PointF origin, HorizontalAlignment align) => new RichTextOptions(font)
+        {
+            Origin = origin, HorizontalAlignment = align, VerticalAlignment = VerticalAlignment.Center, FallbackFontFamilies = new[] { _latoBold },
+        };
+
+        private Font FitNick(FontFamily family, float size, string text, float maxWidth)
+        {
+            var font = GetOrCreateFont(family, size);
+            while (size > 1 && TextMeasurer.MeasureBounds(text, NickText(font, PointF.Empty, HorizontalAlignment.Left)).Width > maxWidth)
+                font = GetOrCreateFont(family, --size);
+            return font;
+        }
+
+        private void DrawNick(Image image, NickLayer nick, string text, string accent)
         {
             if (string.IsNullOrEmpty(text))
                 return;
 
-            var font = GetFontSize(_latoBold, 28, text, nick.W);
+            var font = FitNick(NickFamily(nick.Font), ProfileCatalog.FindNickFont(nick.Font)?.Size ?? 28, text, nick.W);
             var align = nick.Align == NickAlign.Center ? HorizontalAlignment.Center : HorizontalAlignment.Left;
             var x = nick.Align == NickAlign.Center ? nick.X + nick.W / 2f : nick.X;
             var cy = nick.Y + NickLayer.Height / 2f;
@@ -1174,11 +1240,48 @@ namespace Sanakan.Services
             var k = LpK(image);
             using var shadow = LpSurface(nick.W + 2 * pad, NickLayer.Height + 2 * pad, k);
             var sx = nick.Align == NickAlign.Center ? (nick.W + 2 * pad) / 2f : pad;
-            LpWrite(shadow, text, font, "#000000", sx, (NickLayer.Height + 2 * pad) / 2f + 1, align);
+            var shadowText = NickText(font, new PointF(sx, (NickLayer.Height + 2 * pad) / 2f + 1), align);
+            LpPaint(shadow, c => c.DrawText(shadowText, text, Brushes.Solid(Color.Black), null));
             shadow.Mutate(c => c.GaussianBlur(3 * k));
             image.Mutate(c => c.DrawImage(shadow, new Point(LpR(nick.X - pad, k), LpR(nick.Y - pad, k)), 0.8f));
 
-            LpWrite(image, text, font, LpText, x, cy, align);
+            var options = NickText(font, new PointF(x, cy), align);
+            Brush brush;
+            switch (nick.Paint)
+            {
+                case NickPaint.Solid:
+                case NickPaint.Outline:
+                    brush = Brushes.Solid(GetOrCreateColor(nick.Color1 ?? LpText));
+                    break;
+
+                case NickPaint.Accent:
+                    brush = Brushes.Solid(GetOrCreateColor(accent));
+                    break;
+
+                case NickPaint.Gradient:
+                {
+                    var width = TextMeasurer.MeasureAdvance(text, options).Width;
+                    var left = align == HorizontalAlignment.Center ? x - width / 2 : x;
+                    brush = new LinearGradientBrush(new PointF(left, 0), new PointF(left + Math.Max(1, width), 0), GradientRepetitionMode.None,
+                        new ColorStop(0, GetOrCreateColor(nick.Color1 ?? LpText)), new ColorStop(1, GetOrCreateColor(nick.Color2 ?? LpText)));
+                    break;
+                }
+
+                default:
+                    brush = Brushes.Solid(GetOrCreateColor(LpText));
+                    break;
+            }
+
+            // the outline lies under the letters, so only its outer half shows
+            if (nick.Paint == NickPaint.Outline)
+            {
+                var outline = new SolidPen(new PenOptions(GetOrCreateColor(LpBackground), 4)
+                {
+                    StrokeOptions = new StrokeOptions { LineJoin = SixLabors.ImageSharp.Drawing.LineJoin.Round },
+                });
+                LpPaint(image, c => c.DrawText(options, text, null, outline));
+            }
+            LpPaint(image, c => c.DrawText(options, text, brush, null));
         }
 
         // the gap between the currencies (14 down to 8) and the experience bar (90 down to 36) that let both sides fit

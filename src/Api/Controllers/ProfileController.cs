@@ -72,9 +72,11 @@ namespace Sanakan.Api.Controllers
 
         private static JToken ToJson(ProfileLayout layout) => JToken.Parse(layout.ToJson());
 
-        private static ProfileCardView CardView(Card card) => card == null ? null : new ProfileCardView
+        internal static ProfileCardView CardView(Card card) => card == null ? null : new ProfileCardView
         {
             Id = card.Id, Name = card.Name, Rarity = card.Rarity.ToString(), Animated = card.IsAnimatedImage, Url = CardFinalView.GetCardProfileInShindenUrl(card),
+            Ultimate = card.FromFigure,
+            Grade = card.FromFigure ? card.Quality.ToName() + (card.BorderOverflow > 0 ? $" +{card.BorderOverflow}" : "") : card.Rarity.ToString(),
         };
 
         private static ProfileListView ListView(Services.Profiles.ProfileListStats stats) => stats == null ? null : new ProfileListView
@@ -97,6 +99,9 @@ namespace Sanakan.Api.Controllers
             LayoutVersion = ProfileLayout.CurrentVersion,
             MaxStickers = ProfileCatalog.MaxStickers,
             MaxOverlays = ProfileCatalog.MaxOverlays,
+            MaxTiles = ProfileCatalog.MaxTiles,
+            MaxTilt = StickerLayer.MaxTilt,
+            NickFonts = ProfileCatalog.NickFonts.Select(x => new ProfileNickFontView { Key = x.Key, Name = x.Name, File = x.File, Size = x.Size }).ToList(),
             MaxLayoutJson = ProfileCatalog.MaxLayoutJson,
             MaxPictureBytes = MaxPictureBytes,
             MaxPicturePixels = ImageProcessing.MaxImagePixels,
@@ -291,7 +296,8 @@ namespace Sanakan.Api.Controllers
         {
             if (layout.Header != null) yield return layout.Header.Image;
             if (layout.Style != null) yield return layout.Style.Image;
-            if (layout.Ultra != null) yield return layout.Ultra.Image;
+            foreach (var ultra in layout.Ultras())
+                yield return ultra.Image;
             if (layout.Avatar.HasCustomFrame) yield return layout.Avatar.CustomImage;
             foreach (var overlay in layout.LayersOf<OverlayLayer>())
                 yield return overlay.Image;

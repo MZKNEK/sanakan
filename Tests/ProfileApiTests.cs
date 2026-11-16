@@ -116,6 +116,23 @@ namespace Artifacts
             Assert.All(catalog.Presets, p => Assert.NotNull(ProfileLayout.FromJson(p.Layout.ToString())));
             Assert.Contains(catalog.Frames, f => f.Key == "Base" && f.Free);
             Assert.Contains(catalog.Frames, f => f.Key == "TurqLeaves" && !f.Selectable);
+            Assert.Equal(StickerLayer.MaxTilt, catalog.MaxTilt);
+            Assert.Equal(ProfileCatalog.MaxTiles, catalog.MaxTiles);
+            Assert.Equal(ProfileCatalog.NickFonts.Select(x => x.File), catalog.NickFonts.Select(x => x.File));
+        }
+
+        [Theory]
+        [InlineData(false, Rarity.SS, Quality.Broken, 0, "SS")]
+        [InlineData(true, Rarity.SSS, Quality.Alpha, 0, "α")]
+        [InlineData(true, Rarity.SSS, Quality.Alpha, 7, "α +7")]
+        [InlineData(true, Rarity.SSS, Quality.Omega, 12, "Ω +12")]
+        public void AnUltimateCardToChooseShowsItsQualityAndOverflow(bool ultimate, Rarity rarity, Quality quality, int overflow, string grade)
+        {
+            var view = ProfileController.CardView(new Card { Id = 5, Name = "Misaki", Rarity = rarity, FromFigure = ultimate, Quality = quality, BorderOverflow = overflow });
+
+            Assert.Equal(ultimate, view.Ultimate);
+            Assert.Equal(grade, view.Grade);
+            Assert.Equal(rarity.ToString(), view.Rarity);
         }
 
         [Fact]

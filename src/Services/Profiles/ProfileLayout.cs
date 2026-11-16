@@ -37,8 +37,14 @@ namespace Sanakan.Services.Profiles
     // the card game's panel: full, narrow (the waifu alone, or the numbers one under another) or low (the numbers in rows)
     public enum CardsPanelSize { Full, Narrow, Low }
 
-    // The look of a profile: fixed parts (header and style images, avatar, nick, ultra overlay, bar)
-    // and free layers drawn between the nick and the ultra overlay, bottom to top.
+    // the nick's letters: white, one colour, the accent, two colours left to right, or one colour with a dark outline
+    public enum NickPaint { White, Solid, Accent, Gradient, Outline }
+
+    // a tile of ground the player places and sizes freely
+    public enum TileLook { Panel, Glass, Shadow }
+
+    // The look of a profile: fixed parts (header and style images, avatar, nick, ultra overlays, bar)
+    // and free layers drawn under the ultra overlays, bottom to top, with the nick among them.
     // Stored as JSON; unknown fields and layer types are skipped, so newer layouts still load.
     public class ProfileLayout
     {
@@ -58,20 +64,25 @@ namespace Sanakan.Services.Profiles
         [JsonProperty("avatar")] public AvatarLayer Avatar { get; set; } = new AvatarLayer();
         [JsonProperty("nick")] public NickLayer Nick { get; set; } = new NickLayer();
         [JsonProperty("ultra")] public UltraLayer Ultra { get; set; }
+        // drawn over the first one
+        [JsonProperty("ultra2")] public UltraLayer Ultra2 { get; set; }
         [JsonProperty("layers")] public List<ProfileLayer> Layers { get; set; } = new List<ProfileLayer>();
-        // what moves: "avatar", "header", "style", "ultra", "frame", "layer:<id>", or null
+        // what moves: "avatar", "header", "style", "ultra", "ultra2", "frame", "layer:<id>", or null
         [JsonProperty("animate")] public string Animate { get; set; }
 
         public const string AnimateAvatar = "avatar";
         public const string AnimateHeader = "header";
         public const string AnimateStyle = "style";
         public const string AnimateUltra = "ultra";
+        public const string AnimateUltra2 = "ultra2";
         public const string AnimateFrame = "frame";
         public const string AnimateLayerPrefix = "layer:";
 
         public static string AnimateLayer(int id) => AnimateLayerPrefix + id;
 
         public IEnumerable<T> LayersOf<T>() where T : ProfileLayer => Layers.OfType<T>();
+
+        public IEnumerable<UltraLayer> Ultras() => new[] { Ultra, Ultra2 }.Where(x => x != null);
 
         public ProfileLayer FindLayer(int id) => Layers.FirstOrDefault(x => x.Id == id);
 
@@ -176,6 +187,15 @@ namespace Sanakan.Services.Profiles
         [JsonProperty("w")] public int W { get; set; } = 445;
         [JsonProperty("align")] public NickAlign Align { get; set; } = NickAlign.Left;
         [JsonProperty("hidden")] public bool Hidden { get; set; }
+        // how many free layers lie under the nick, counted from the bottom of the list
+        [JsonProperty("at")] public int At { get; set; }
+        // a key of ProfileCatalog.NickFonts, null for Lato
+        [JsonProperty("font")] public string Font { get; set; }
+        [JsonProperty("paint")] public NickPaint Paint { get; set; } = NickPaint.White;
+        // "#rrggbb": the colour of Solid and Outline, the left one of Gradient
+        [JsonProperty("c1")] public string Color1 { get; set; }
+        // "#rrggbb": the right one of Gradient
+        [JsonProperty("c2")] public string Color2 { get; set; }
     }
 
     public abstract class ProfileLayer
@@ -260,7 +280,7 @@ namespace Sanakan.Services.Profiles
     {
         public const int MinHeight = 60;
         public const int MaxHeight = 300;
-        public const int MaxTilt = 15;
+        public const int MaxTilt = 90;
         public const int MaxPad = 40;
 
         private StickerGround _ground = StickerGround.Panel;
@@ -286,6 +306,21 @@ namespace Sanakan.Services.Profiles
         public float GroundAlpha => Math.Clamp(GroundOpacity ?? (Ground switch { StickerGround.Glass => 55, StickerGround.Shadow => 50, _ => 45 }), 0, 100) / 100f;
 
         public override string Type => "sticker";
+    }
+
+    public class TileLayer : ProfileLayer
+    {
+        public const int MinSize = 16;
+
+        [JsonProperty("w")] public int W { get; set; } = 200;
+        [JsonProperty("h")] public int H { get; set; } = 120;
+        [JsonProperty("look")] public TileLook Look { get; set; } = TileLook.Panel;
+        // 0-100, or null for the look's own: 100 for the panel, 55 for the glass's tint, 70 for the shadow
+        [JsonProperty("opacity")] public int? Opacity { get; set; }
+
+        public float Alpha => Math.Clamp(Opacity ?? (Look switch { TileLook.Glass => 55, TileLook.Shadow => 70, _ => 100 }), 0, 100) / 100f;
+
+        public override string Type => "tile";
     }
 
     public class RankLayer : ProfileLayer
@@ -315,6 +350,7 @@ namespace Sanakan.Services.Profiles
             "overlay" => new OverlayLayer(),
             "sticker" => new StickerLayer(),
             "rank" => new RankLayer(),
+            "tile" => new TileLayer(),
             _ => null,
         };
 

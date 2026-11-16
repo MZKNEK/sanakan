@@ -127,6 +127,7 @@ namespace Sanakan.Services.Profiles
             if (layout.Header?.Image == 0) layout.Header = null;
             if (layout.Style?.Image == 0) layout.Style = null;
             if (layout.Ultra?.Image == 0) layout.Ultra = null;
+            if (layout.Ultra2?.Image == 0) layout.Ultra2 = null;
             layout.Layers.RemoveAll(x => x is OverlayLayer { Image: 0 });
         }
 

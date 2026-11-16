@@ -97,6 +97,16 @@ namespace Sanakan.Services.Profiles
                 Fail($"szerokość nicka musi być od {MinNickWidth} do {MaxNickWidth} px");
             if (!Inside(nick.X, nick.Y, nick.W, NickLayer.Height))
                 Fail("nick wychodzi poza obrazek");
+            if (nick.At < 0 || nick.At > layout.Layers.Count)
+                Fail("nick: nieznane miejsce między warstwami");
+            if (ProfileCatalog.FindNickFont(nick.Font) == null)
+                Fail("nick: nieznana czcionka");
+            if (!Enum.IsDefined(nick.Paint))
+                Fail("nick: nieznany kolor");
+            if ((nick.Paint is NickPaint.Solid or NickPaint.Gradient or NickPaint.Outline) && (nick.Color1 == null || !HexColor.IsMatch(nick.Color1)))
+                Fail("kolor nicka musi mieć postać #rrggbb");
+            if (nick.Paint == NickPaint.Gradient && (nick.Color2 == null || !HexColor.IsMatch(nick.Color2)))
+                Fail("drugi kolor nicka musi mieć postać #rrggbb");
 
             if (layout.Layers.Count > MaxLayers)
                 Fail("za dużo warstw");
@@ -110,6 +120,9 @@ namespace Sanakan.Services.Profiles
             if (layout.LayersOf<OverlayLayer>().Count() > ProfileCatalog.MaxOverlays)
                 Fail($"najwyżej {ProfileCatalog.MaxOverlays} nakładki");
 
+            if (layout.LayersOf<TileLayer>().Count() > ProfileCatalog.MaxTiles)
+                Fail($"najwyżej {ProfileCatalog.MaxTiles} kafelki tła");
+
             if (layout.LayersOf<ListPanelLayer>().Count(x => !x.Manga) > 1 || layout.LayersOf<ListPanelLayer>().Count(x => x.Manga) > 1
                 || Single.Any(t => layout.Layers.Count(x => x.GetType() == t) > 1))
                 Fail("każdy panel może być tylko raz");
@@ -119,6 +132,8 @@ namespace Sanakan.Services.Profiles
 
             if (layout.Ultra != null)
                 CheckImageLayer(layout.Ultra, "ultra nakładka", context, Fail);
+            if (layout.Ultra2 != null)
+                CheckImageLayer(layout.Ultra2, "druga ultra nakładka", context, Fail);
 
             CheckAnimate(layout, Fail);
 
@@ -234,6 +249,15 @@ namespace Sanakan.Services.Profiles
                     if (sticker.GroundOpacity is < 0 or > 100)
                         fail("karta-naklejka: krycie tła od 0 do 100%");
                     break;
+
+                case TileLayer tile:
+                    if (tile.W < TileLayer.MinSize || tile.W > ProfileLayout.Width || tile.H < TileLayer.MinSize || tile.H > ProfileLayout.Height)
+                        fail($"kafelek tła: od {TileLayer.MinSize} px do rozmiaru profilu");
+                    if (!Enum.IsDefined(tile.Look))
+                        fail("kafelek tła: nieznany wygląd");
+                    if (tile.Opacity is < 0 or > 100)
+                        fail("kafelek tła: krycie od 0 do 100%");
+                    break;
             }
 
             var box = Box(layer, context);
@@ -253,6 +277,7 @@ namespace Sanakan.Services.Profiles
                 ProfileLayout.AnimateHeader => layout.Header != null,
                 ProfileLayout.AnimateStyle => layout.Style != null,
                 ProfileLayout.AnimateUltra => layout.Ultra != null,
+                ProfileLayout.AnimateUltra2 => layout.Ultra2 != null,
                 ProfileLayout.AnimateFrame => layout.Avatar.HasCustomFrame,
                 _ => target.StartsWith(ProfileLayout.AnimateLayerPrefix) && int.TryParse(target.Substring(ProfileLayout.AnimateLayerPrefix.Length), out var id)
                     && layout.FindLayer(id) is StickerLayer or OverlayLayer or CardsPanelLayer or GalleryLayer or BigGalleryLayer,
@@ -281,7 +306,7 @@ namespace Sanakan.Services.Profiles
 
             var n = layout.Nick;
             var pn = preset.Nick;
-            if (n.X != pn.X || n.Y != pn.Y || n.W != pn.W || n.Align != pn.Align)
+            if (n.X != pn.X || n.Y != pn.Y || n.W != pn.W || n.Align != pn.Align || n.At != pn.At)
                 return false;
 
             foreach (var layer in layout.Layers)
@@ -311,9 +336,13 @@ namespace Sanakan.Services.Profiles
             if (layout.Bar.Hide?.Count > 0) needs.Add(ProfileCatalog.BarHide);
             if (layout.Bar.At != BarPlace.Bottom) needs.Add(ProfileCatalog.BarPlace);
             if (layout.Nick.Hidden) needs.Add(ProfileCatalog.NickHide);
+            if (layout.Nick.Paint != NickPaint.White) needs.Add(ProfileCatalog.NickColor);
             if (layout.Header != null) needs.Add(ProfileCatalog.HeaderImage);
             if (layout.Style != null) needs.Add(ProfileCatalog.StyleImage);
-            if (layout.Ultra != null) needs.Add(ProfileCatalog.Ultra);
+            // the second place is paid only for a second picture, whichever of the two places holds the one
+            var ultras = layout.Ultras().Count();
+            if (ultras >= 1) needs.Add(ProfileCatalog.Ultra);
+            if (ultras >= 2) needs.Add(ProfileCatalog.Ultra2);
 
             var avatar = layout.Avatar;
             if (avatar.Size != ProfileCatalog.DefaultAvatarSize || (!avatar.HasFrame && avatar.Shape != AvatarShape.Circle))

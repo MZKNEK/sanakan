@@ -28,12 +28,30 @@ namespace Sanakan.Services.Profiles
         public bool TcOnly { get; }
     }
 
+    // a font of the nick: its file in Fonts/ (the site keeps the same file) and the size it starts from before it fits the width
+    public class NickFont
+    {
+        public NickFont(string key, string name, string file, int size)
+        {
+            Key = key;
+            Name = name;
+            File = file;
+            Size = size;
+        }
+
+        public string Key { get; }
+        public string Name { get; }
+        public string File { get; }
+        public int Size { get; }
+    }
+
     // The one-time unlocks with their prices, the limits, the sizes of the parts and the ready layouts.
     // The API hands all of it to Profilator, so the site keeps no prices or sizes of its own.
     public static class ProfileCatalog
     {
         public const int MaxStickers = 4;
         public const int MaxOverlays = 3;
+        public const int MaxTiles = 3;
         public const int MinInside = 16;
         public const int MaxLayoutJson = 16 * 1024;
 
@@ -51,6 +69,8 @@ namespace Sanakan.Services.Profiles
         public const string Layout = "layout";
         public const string CustomFrame = "customFrame";
         public const string Ultra = "ultra";
+        public const string Ultra2 = "ultra2";
+        public const string NickColor = "nickColor";
         public const string StickerPrefix = "sticker:";
         public const string OverlayPrefix = "overlay:";
         public const string FramePrefix = "frame:";
@@ -74,6 +94,7 @@ namespace Sanakan.Services.Profiles
                 new ProfileFeature(BarPlace, "Położenie paska", "pasek na górze albo ukryty", 6000, 99),
                 new ProfileFeature(PanelHide, "Ukrywanie pozycji paneli", "karcianka, anime i manga", 6000, 99),
                 new ProfileFeature(NickHide, "Ukrycie nicka", "np. dla własnego nicka na nakładce", 6000, 99),
+                new ProfileFeature(NickColor, "Kolor nicka", "dowolny kolor, kolor akcentu, przejście dwóch kolorów, obwódka", 12000, 199),
                 new ProfileFeature(PanelLook, "Wygląd paneli", "szkło i cień paneli, szkło pod paskiem i kartami", 12000, 199),
                 new ProfileFeature(AvatarLook, "Awatar: rozmiar i kształt", "większy awatar, zaokrąglony i kwadrat", 12000, 199),
                 new ProfileFeature(Recent, "Ostatnio oglądane i czytane", "ostatnie tytuły w panelach anime i mangi", 12000, 199),
@@ -91,8 +112,37 @@ namespace Sanakan.Services.Profiles
                 list.Add(new ProfileFeature(Frame(border), $"Ramka awatara: {FrameName(border)}", "ramka z bota, na zawsze", 36000, 599));
             list.Add(new ProfileFeature(CustomFrame, "Własna ramka awatara", "własny obrazek wokół awatara, zmiany za darmo", 72000, 1199));
             list.Add(new ProfileFeature(Ultra, "Ultra nakładka", "obrazek na całym profilu, zmiany za darmo", 240000, 3999));
+            list.Add(new ProfileFeature(Ultra2, "Druga ultra nakładka", "drugi obrazek na całym profilu, nad pierwszym, zmiany za darmo", 360000, 5999));
             return list;
         }
+
+        public const string DefaultNickFont = "lato";
+
+        // free to pick; a letter a font lacks is drawn in Lato
+        public static readonly IReadOnlyList<NickFont> NickFonts = new List<NickFont>
+        {
+            new NickFont(DefaultNickFont, "Lato", "Lato-Bold.ttf", 28),
+            new NickFont("montserrat", "Montserrat", "Montserrat-ExtraBold.ttf", 28),
+            new NickFont("bebas", "Bebas Neue", "BebasNeue-Regular.ttf", 28),
+            new NickFont("oswald", "Oswald", "Oswald-SemiBold.ttf", 28),
+            new NickFont("righteous", "Righteous", "Righteous-Regular.ttf", 28),
+            new NickFont("russo", "Russo One", "RussoOne-Regular.ttf", 28),
+            new NickFont("exo", "Exo 2", "Exo2-ExtraBold.ttf", 28),
+            new NickFont("pacifico", "Pacifico", "Pacifico-Regular.ttf", 28),
+            new NickFont("lobster", "Lobster", "Lobster-Regular.ttf", 28),
+            new NickFont("cinzel", "Cinzel", "Cinzel-Bold.ttf", 28),
+            new NickFont("bangers", "Bangers", "Bangers-Regular.ttf", 28),
+            new NickFont("pixel", "Press Start 2P", "PressStart2P-Regular.ttf", 17),
+            new NickFont("audiowide", "Audiowide", "Audiowide-Regular.ttf", 28),
+            new NickFont("orbitron", "Orbitron", "Orbitron-Bold.ttf", 28),
+            new NickFont("blackOps", "Black Ops One", "BlackOpsOne-Regular.ttf", 28),
+            new NickFont("digital", "Digital", "Digital.ttf", 28),
+            new NickFont("caveat", "Caveat", "Caveat-Bold.ttf", 32),
+            new NickFont("kalam", "Kalam", "Kalam-Bold.ttf", 28),
+            new NickFont("marker", "Permanent Marker", "PermanentMarker-Regular.ttf", 28),
+        };
+
+        public static NickFont FindNickFont(string key) => NickFonts.FirstOrDefault(x => x.Key == (key ?? DefaultNickFont));
 
         public static ProfileFeature Feature(string key) => key != null && ByKey.TryGetValue(key, out var f) ? f : null;
 
@@ -186,6 +236,7 @@ namespace Sanakan.Services.Profiles
             },
             StickerLayer s => (StickerWidth(s.H), s.H),
             RankLayer r => (rankWidth, RankMetrics(r.Size).Height),
+            TileLayer t => (t.W, t.H),
             ImageLayerBase i => imageSize?.Invoke(i.Image) is (int w, int h) ? ((int)Math.Round(w * i.Scale), (int)Math.Round(h * i.Scale)) : (0, 0),
             _ => (0, 0),
         };
