@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Microsoft.EntityFrameworkCore;
 using Sanakan.Api.Models;
 using Sanakan.Database.Models;
 using Sanakan.Extensions;
@@ -66,6 +67,37 @@ namespace Artifacts
             var values = sorted.Select(shown).ToList();
             var expected = type.ToString().EndsWith("Des") ? values.OrderByDescending(x => x) : values.OrderBy(x => x);
             Assert.Equal(expected, values);
+        }
+
+        [Theory]
+        [InlineData(OrderType.CritChance)]
+        [InlineData(OrderType.CritChanceDes)]
+        public void CritChanceSorts_FollowTheShownCritChance(OrderType type)
+        {
+            var random = new Random(4321);
+            var dere = Enum.GetValues<Dere>();
+            var cards = Enumerable.Range(1, 2000).Select(i => new Card
+            {
+                Id = (ulong)i,
+                CritChance = Math.Round(random.NextDouble() * 30, 1),
+                Dere = dere[random.Next(dere.Length)],
+            }).ToList();
+            var shown = CardsQueryFilter.CritChanceShown.Compile();
+            Assert.All(cards, x => Assert.Equal(x.GetCritChance(), shown(x)));
+
+            var values = CardsQueryFilter.Use(type, cards.AsQueryable()).Select(x => x.GetCritChance()).ToList();
+            var expected = type == OrderType.CritChanceDes ? values.OrderByDescending(x => x) : values.OrderBy(x => x);
+            Assert.Equal(expected, values);
+        }
+
+        [Fact]
+        public void CritChanceSort_IsComputedByMySql()
+        {
+            using var db = new ModelIndexTests.MySqlContext();
+
+            var sql = CardsQueryFilter.Use(OrderType.CritChanceDes, db.Cards.AsQueryable()).Select(x => x.Id).Skip(0).Take(30).ToQueryString();
+
+            Assert.Contains("ORDER BY `c`.`CritChance` + CASE", sql);
         }
     }
 }

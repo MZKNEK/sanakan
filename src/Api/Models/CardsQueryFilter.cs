@@ -14,7 +14,7 @@ namespace Sanakan.Api.Models
         Atack, AtackDes, Defence, DefenceDes, Exp, ExpDes, Dere, DereDes, Picture, PictureDes, Relation, RelationDes,
         CardPower, CardPowerDes, WhoWantsCount, WhoWantsCountDes, Blocked, BlockedDes, Curse, CurseDes, Fatigue, FatigueDes,
         Overflow, OverflowDes, ActiveWhoWantsCount, ActiveWhoWantsCountDes, CharacterId, CharacterIdDes,
-        Unique, UniqueDes
+        Unique, UniqueDes, CritChance, CritChanceDes
     }
 
     public enum FilterTagsMethodType
@@ -72,6 +72,10 @@ namespace Sanakan.Api.Models
         internal static readonly Expression<Func<Card, int>> HealthShown = x => Math.Max(Math.Min(x.Health
             + Math.Min((int)Math.Truncate(x.Health * (x.Affection * 5d / 100d)), 2000)
             + (x.FromFigure ? x.HealthBonus : 0), x.FromFigure ? Extensions.CardExtension.MaxUltimateHealth : 999), 10);
+
+        // as GetCritChance shows it
+        internal static readonly Expression<Func<Card, double>> CritChanceShown = x => x.CritChance
+            + (x.Dere == Dere.Kuudere ? Services.PocketWaifu.Fight.DereAbility.KuudereCritBonus : 0d);
 
         // the lowered stats curse halves the value, then the value is capped like the card does it
         private static Expression<Func<Card, int>> WithCurseAndCap(Expression<Func<Card, int>> value, int normalCap, int ultimateCap)
@@ -132,6 +136,8 @@ namespace Sanakan.Api.Models
                 OrderType.CharacterIdDes => query.OrderByDescending(x => x.Character),
                 OrderType.Unique => query.OrderBy(x => x.Unique ? 1 : 0),
                 OrderType.UniqueDes => query.OrderByDescending(x => x.Unique ? 1 : 0),
+                OrderType.CritChance => query.OrderBy(CritChanceShown),
+                OrderType.CritChanceDes => query.OrderByDescending(CritChanceShown),
                 _ => query.OrderBy(x => x.Id)
             };
             // the tie-breaker follows the last key's direction, so a descending sort can read its index backwards

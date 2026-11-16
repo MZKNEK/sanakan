@@ -174,6 +174,23 @@ namespace Artifacts
         }
 
         [Fact]
+        public void Deck_ShowsCritChanceWithTheDereBonus()
+        {
+            var user = NewUser();
+            var plain = ActiveCard(1);
+            plain.CritChance = 3.4;
+            var kuudere = ActiveCard(2);
+            kuudere.CritChance = 1.5;
+            kuudere.Dere = Dere.Kuudere;
+            user.GameDeck.Cards = new List<Card> { plain, kuudere };
+
+            var cards = UserDeck.From(user, Now).Cards;
+
+            Assert.Equal(3.4, cards.Single(x => x.Id == 1).CritChance);
+            Assert.Equal(21.5, cards.Single(x => x.Id == 2).CritChance);
+        }
+
+        [Fact]
         public void Deck_DoesNotChangeStoredDeckPower()
         {
             var user = NewUser();

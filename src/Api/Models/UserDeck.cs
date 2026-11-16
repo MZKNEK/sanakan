@@ -122,6 +122,10 @@ namespace Sanakan.Api.Models
         /// </summary>
         public double Power { get; set; }
         /// <summary>
+        /// Precyzja, czyli szansa na trafienie krytyczne w procentach
+        /// </summary>
+        public double CritChance { get; set; }
+        /// <summary>
         /// Czy karta jest kartą ultimate
         /// </summary>
         public bool Ultimate { get; set; }
@@ -137,6 +141,7 @@ namespace Sanakan.Api.Models
             Defence = card.GetDefenceWithBonus(),
             Health = card.GetHealthWithPenalty(),
             Power = card.CalculateCardPower(),
+            CritChance = card.GetCritChance(),
             Ultimate = card.FromFigure,
         };
     }
