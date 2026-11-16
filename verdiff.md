@@ -1,8 +1,13 @@
-# 1.5.0.8
+# 1.5.0.9
 
 Data: 2026-11-16
 
-- Dodano do sklepiku za TC pakiet dwóch wymienialnych kart z postaciami z obecnego sezonu anime za 404 TC.
-- Usunięto ze sklepiku za TC fioletowy, pomarańczowy, złoty i różowy pakiet kart, przez co numery dalszych przedmiotów zmniejszyły się o 3.
-- Dodano adminom możliwość poprawienia na stronie profilu gracza lub profilu bota bez opłat dla gracza, z odnotowaniem tego w historii.
-- Zmieniono opis komendy używania przedmiotu: numer przedmiotu to ten z listy posiadanych przedmiotów.
+- Dodano wybór jednej z 19 czcionek nicka na profilu, za darmo.
+- Dodano kolor nicka (dowolny kolor, kolor akcentu, przejście dwóch kolorów albo kolor z obwódką) jako odblokowanie za 12 000 SC lub 199 TC.
+- Dodano możliwość położenia nicka nad wybranymi elementami profilu albo pod nimi, w ramach własnego układu.
+- Dodano do profilu do trzech darmowych kafelków tła o dowolnym rozmiarze: pełnych, ze szkła albo z cienia.
+- Dodano drugą ultra nakładkę za 360 000 SC lub 5999 TC.
+- Zmieniono największe pochylenie karty-naklejki na profilu z 15 do 90 stopni.
+- Zmieniono opis kart ultimate do wyboru w edytorze profilu: zamiast rzadkości widać jakość z przepełnieniem, np. α +7.
+- Dodano dla strony precyzję kart z aktywnej talii i sortowanie list kart według precyzji.
+- Naprawiono awatar bez przezroczystości, np. awatar bota, który na profilu zakrywał obwódkę zamiast być przycięty do kształtu.
