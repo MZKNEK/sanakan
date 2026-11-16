@@ -142,6 +142,8 @@ namespace Sanakan.Api.Models
         // "sc" or "tc"; only needed when something is to be paid
         public string Currency { get; set; }
         public int Version { get; set; }
+        // a site admin's save: what the layout still needs is given for free, noted as given by an admin
+        public bool Grant { get; set; }
     }
 
     public class ProfileSaveView

@@ -65,8 +65,10 @@ namespace Sanakan.Api.Controllers
 
         protected virtual Database.DatabaseContext CreateDatabaseContext() => new Database.DatabaseContext(_config);
 
-        protected virtual Discord.IUser Account(ulong id)
-            => (Discord.IUser)_client?.GetGuild(UserController.MainGuildId)?.GetUser(id) ?? _client?.GetUser(id);
+        // the profile of id 1 is the bot's own, drawn with the bot's account as the profile command does
+        protected virtual Discord.IUser Account(ulong id) => id == 1
+            ? (Discord.IUser)_client?.GetGuild(UserController.MainGuildId)?.CurrentUser ?? _client?.CurrentUser
+            : (Discord.IUser)_client?.GetGuild(UserController.MainGuildId)?.GetUser(id) ?? _client?.GetUser(id);
 
         private static JToken ToJson(ProfileLayout layout) => JToken.Parse(layout.ToJson());
 
@@ -473,6 +475,7 @@ namespace Sanakan.Api.Controllers
         /// <remarks>
         /// Wymaga Idempotency-Key: powtórka z tym samym kluczem w ciągu 48 h nie pobiera opłaty drugi raz.
         /// Version musi być tą z odczytu profilu; gdy profil zmienił się w międzyczasie, odpowiedź to 409.
+        /// Grant: zapis admina strony; brakujące odblokowania są nadawane za darmo (źródło Admin), bez pobierania waluty.
         /// </remarks>
         /// <response code="400">Błędny układ (w treści lista powodów) albo brak klucza.</response>
         /// <response code="402">Za mało SC albo TC.</response>
@@ -506,7 +509,7 @@ namespace Sanakan.Api.Controllers
                 Scope = "profile",
                 Key = idempotencyKey,
                 OwnerId = id,
-                RequestHash = Services.Idempotency.Hash(new { json, currency, request.Version }),
+                RequestHash = Services.Idempotency.Hash(new { json, currency, request.Version, request.Grant }),
                 CreatedAt = _time.Now(),
             };
 
@@ -541,7 +544,7 @@ namespace Sanakan.Api.Controllers
                 {
                     try
                     {
-                        result = await SaveNowAsync(id, layout, json, currency, request.Version, record, () => committed = true);
+                        result = await SaveNowAsync(id, layout, json, currency, request.Version, request.Grant, record, () => committed = true);
                     }
                     finally
                     {
@@ -570,7 +573,7 @@ namespace Sanakan.Api.Controllers
             }
         }
 
-        private async Task<IActionResult> SaveNowAsync(ulong id, ProfileLayout layout, string json, CurrencyType currency, int version,
+        private async Task<IActionResult> SaveNowAsync(ulong id, ProfileLayout layout, string json, CurrencyType currency, int version, bool grant,
             IdempotencyRecord record, Action committed)
         {
             using var db = CreateDatabaseContext();
@@ -586,10 +589,10 @@ namespace Sanakan.Api.Controllers
             if (errors.Count > 0)
                 return new BadRequestObjectResult(errors);
 
-            if (currency != CurrencyType.TC && ProfileRules.NeedsTc(missing))
+            if (!grant && currency != CurrencyType.TC && ProfileRules.NeedsTc(missing))
                 return "This profile needs TC".ToResponse(400);
 
-            var cost = ProfileRules.Cost(missing, currency);
+            var cost = grant ? 0 : ProfileRules.Cost(missing, currency);
             if (cost > 0)
             {
                 var wallet = currency == CurrencyType.TC ? user.TcCnt : user.ScCnt;
@@ -605,8 +608,8 @@ namespace Sanakan.Api.Controllers
             {
                 db.ProfileUnlocks.Add(new ProfileUnlock
                 {
-                    UserId = id, Feature = feature.Key, Source = ProfileUnlockSource.Bought, Currency = currency,
-                    Price = currency == CurrencyType.TC ? feature.Tc : feature.Sc, CreatedAt = now,
+                    UserId = id, Feature = feature.Key, Source = grant ? ProfileUnlockSource.Admin : ProfileUnlockSource.Bought, Currency = currency,
+                    Price = grant ? 0 : currency == CurrencyType.TC ? feature.Tc : feature.Sc, CreatedAt = now,
                 });
             }
 

@@ -130,6 +130,51 @@ namespace Artifacts
         }
 
         [Fact]
+        public async Task TheBotsOwnProfileCanBeReadAndSavedForFree()
+        {
+            using (var db = Open())
+            {
+                db.Users.Add(new User().Default(1, _time.Now()));
+                db.SaveChanges();
+            }
+            Sanakan.QueryCache.ExpireTag(new[] { Sanakan.CacheTags.User(1) });
+
+            var editor = (await Controller().GetEditorAsync(1)).Value;
+            Assert.Equal("Safeguard", editor.Data.Rank);
+            Assert.Equal(0, editor.Data.Top);
+
+            var layout = Layout(l => l.Accent = "#ff0000");
+            var request = Save(layout, version: editor.Version);
+            request.Grant = true;
+            Assert.Equal(200, Status(await Controller().SaveAsync(1, request, "key-bot")));
+        }
+
+        [Fact]
+        public async Task AGrantedSaveUnlocksForFreeAsGivenByAnAdmin()
+        {
+            var layout = Layout(l => { l.Accent = "#ff0000"; l.Panels = PanelLook.Glass; });
+            var granted = Save(layout);
+            granted.Grant = true;
+
+            var result = await Controller().SaveAsync(PlayerId, granted, "key-g1");
+            var paid = Save(Layout(l => { l.Accent = "#ff0000"; l.Panels = PanelLook.Glass; }));
+            var reused = await Controller().SaveAsync(PlayerId, paid, "key-g1");
+
+            Assert.Equal(200, Status(result));
+            var view = Assert.IsType<ProfileSaveView>(((ObjectResult)result).Value);
+            Assert.Equal(0, view.Paid);
+            Assert.Equal(new[] { "accent", "panels" }, view.Unlocked.OrderBy(x => x));
+            Assert.Equal(422, Status(reused));
+            var player = await PlayerAsync();
+            Assert.Equal((50000L, 300L), (player.ScCnt, player.TcCnt));
+
+            using var db = Open();
+            var unlocks = await db.ProfileUnlocks.Where(x => x.UserId == PlayerId).ToListAsync();
+            Assert.Equal(2, unlocks.Count);
+            Assert.All(unlocks, x => Assert.Equal((ProfileUnlockSource.Admin, 0L), (x.Source, x.Price)));
+        }
+
+        [Fact]
         public async Task TheQuoteListsWhatIsMissing()
         {
             var quote = (await Controller().QuoteAsync(PlayerId, Layout(l => { l.Accent = "#ff0000"; l.Panels = PanelLook.Glass; }))).Value;
