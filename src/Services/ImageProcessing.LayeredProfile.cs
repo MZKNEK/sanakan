@@ -1387,6 +1387,15 @@ namespace Sanakan.Services
 
         // ---- avatar ----
 
+        // cut to the avatar's shape on a copy with alpha, every frame kept: a picture without alpha (a JPEG, a WebP
+        // without transparency) would keep its corners
+        internal static Image<Rgba32> RoundAvatar(Image picture, int side, float radius)
+        {
+            var round = picture.CloneAs<Rgba32>();
+            round.Mutate(c => c.Resize(new ResizeOptions { Mode = ResizeMode.Crop, Size = new Size(side, side) }).Round(radius));
+            return round;
+        }
+
         private async Task DrawAvatarAsync(LayeredCanvas canvas, AvatarLayer avatar, ProfileRenderData data, string accent)
         {
             var s = avatar.Size;
@@ -1409,8 +1418,8 @@ namespace Sanakan.Services
                 if (picture.Width > 1)
                 {
                     var inner = s - 2 * inset;
-                    picture.Mutate(c => c.Resize(new ResizeOptions { Mode = ResizeMode.Crop, Size = new Size(LpR(inner, ks), LpR(inner, ks)) }).Round(Math.Max(2, radius - inset) * ks));
-                    Place(canvas, picture, new Point(LpR(avatar.X + inset, ks), LpR(avatar.Y + inset, ks)), ProfileLayout.AnimateAvatar);
+                    using var round = RoundAvatar(picture, LpR(inner, ks), Math.Max(2, radius - inset) * ks);
+                    Place(canvas, round, new Point(LpR(avatar.X + inset, ks), LpR(avatar.Y + inset, ks)), ProfileLayout.AnimateAvatar);
                 }
             }
 

@@ -232,6 +232,21 @@ namespace Artifacts
         }
 
         [Fact]
+        public void AnAvatarWithoutAlphaIsCutToItsShape()
+        {
+            using var jpeg = new Image<Rgb24>(128, 128, new Rgb24(0, 0, 0));
+            jpeg.Frames.AddFrame(new Image<Rgb24>(128, 128, new Rgb24(0, 0, 0)).Frames.RootFrame);
+
+            using var round = ImageProcessing.RoundAvatar(jpeg, 78, 39);
+
+            Assert.Equal(2, round.Frames.Count);
+            Assert.Equal((78, 78), (round.Width, round.Height));
+            Assert.Equal(0, round[1, 1].A);
+            Assert.Equal(0, round.Frames[1][1, 1].A);
+            Assert.Equal(255, round[39, 39].A);
+        }
+
+        [Fact]
         public void LegendItemsKeepTheirColumnsUntilTheyDoNotFit()
         {
             Assert.Equal(new[] { 30f, 131f, 232f }, ImageProcessing.LegendSpread(new[] { 80f, 60f, 70f }, 16, 331));
