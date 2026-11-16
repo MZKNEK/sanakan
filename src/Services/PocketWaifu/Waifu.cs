@@ -682,10 +682,7 @@ namespace Sanakan.Services.PocketWaifu
                 new ItemWithCost(104,   ItemType.RandomBoosterPackSingleE.ToItem()),
                 new ItemWithCost(989,   ItemType.BigRandomBoosterPackE.ToItem()),
                 new ItemWithCost(1409,  ItemType.RandomTitleBoosterPackSingleE.ToItem()),
-                new ItemWithCost(159,   ItemType.RandomNormalBoosterPackB.ToItem()),
-                new ItemWithCost(199,   ItemType.RandomNormalBoosterPackA.ToItem()),
-                new ItemWithCost(249,   ItemType.RandomNormalBoosterPackS.ToItem()),
-                new ItemWithCost(399,   ItemType.RandomNormalBoosterPackSS.ToItem()),
+                new ItemWithCost(404,   ItemType.SeasonBoosterPack.ToItem()),
                 new ItemWithCost(369,   ItemType.ResetCardValue.ToItem()),
                 new ItemWithCost(4999,  ItemType.SetCustomAnimatedImage.ToItem()),
                 new ItemWithCost(444,   ItemType.GiveTagSlot.ToItem()),
@@ -933,6 +930,7 @@ namespace Sanakan.Services.PocketWaifu
             bool isWrongType = false;
             ulong boosterPackTitleId = 0;
             string boosterPackTitleName = "";
+            string boosterPackSeason = null;
             const int minCharactersInPack = 8;
             switch (thisItem.Item.Type)
             {
@@ -980,6 +978,16 @@ namespace Sanakan.Services.PocketWaifu
                     boosterPackTitleId = titleInfo.Id;
                     break;
 
+                case ItemType.SeasonBoosterPack:
+                    var season = await _shinden.GetCurrentSeasonAsync();
+                    if (season == null || season.Characters.Count == 0)
+                    {
+                        return $"{discordUser.Mention} nie udało się pobrać obecnego sezonu z Shindena, spróbuj później.".ToEmbedMessage(EMType.Error).Build();
+                    }
+                    boosterPackTitleName = $" ({season.Name()})";
+                    boosterPackSeason = season.Key;
+                    break;
+
                 case ItemType.PreAssembledAsuna:
                 case ItemType.PreAssembledGintoki:
                 case ItemType.PreAssembledMegumin:
@@ -1012,6 +1020,11 @@ namespace Sanakan.Services.PocketWaifu
                         if (boosterPackTitleId != 0)
                         {
                             booster.Title = boosterPackTitleId;
+                            booster.Name += boosterPackTitleName;
+                        }
+                        if (boosterPackSeason != null)
+                        {
+                            booster.Season = boosterPackSeason;
                             booster.Name += boosterPackTitleName;
                         }
                         if (booster != null)

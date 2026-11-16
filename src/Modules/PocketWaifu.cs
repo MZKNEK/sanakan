@@ -576,14 +576,14 @@ namespace Sanakan.Modules
         [Alias("usewc", "uzyjbk")]
         [Summary("używa przedmiotu")]
         [Remarks("1 1 tak"), RequireWaifuCommandChannel]
-        public async Task UseItemAsync([Summary("nr przedmiotu")] int itemNumber, [Summary("liczba przedmiotów")] string detail = "1", [Summary("czy zamienić część figurki na exp?")] bool itemToExp = false, [Hidden] ulong wid = 0)
+        public async Task UseItemAsync([Summary("nr przedmiotu z listy s.items")] int itemNumber, [Summary("liczba przedmiotów")] string detail = "1", [Summary("czy zamienić część figurki na exp?")] bool itemToExp = false, [Hidden] ulong wid = 0)
             => await UseItemOnCardAsync(itemNumber, wid, detail, itemToExp);
 
         [Command("użyj")]
         [Alias("uzyj", "use")]
         [Summary("używa przedmiotu na karcie")]
         [Remarks("1 4212 2"), RequireWaifuCommandChannel]
-        public async Task UseItemOnCardAsync([Summary("nr przedmiotu")] int itemNumber, [Summary("WID")] ulong wid = 0, [Summary("liczba przedmiotów/link do obrazka/typ gwiazdki")] string detail = "1", [Hidden] bool itemToExp = false)
+        public async Task UseItemOnCardAsync([Summary("nr przedmiotu z listy s.items")] int itemNumber, [Summary("WID")] ulong wid = 0, [Summary("liczba przedmiotów/link do obrazka/typ gwiazdki")] string detail = "1", [Hidden] bool itemToExp = false)
         {
             if (wid != 0 && await BlockDuringExchangeAsync()) return;
 

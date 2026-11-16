@@ -31,6 +31,8 @@ namespace Sanakan.Extensions
                     return "Dodaje nowy pakiet z dwiema losowymi kartami.\n\nWykluczone jakości to: SS, S i A.";
                 case ItemType.BigRandomBoosterPackE:
                     return "Dodaje nowy pakiet z dwudziestoma losowymi kartami.\n\nWykluczone jakości to: SS i S.";
+                case ItemType.SeasonBoosterPack:
+                    return "Dodaje nowy pakiet z dwiema losowymi kartami postaci z obecnego sezonu anime, sezon ustala się przy zakupie.";
                 case ItemType.RandomTitleBoosterPackSingleE:
                     return "Dodaje nowy pakiet z dwiema losowymi, niewymienialnymi kartami z tytułu podanego przez kupującego.\n\nWykluczone jakości to: SS i S.";
                 case ItemType.AffectionRecoverySmall:
@@ -203,6 +205,8 @@ namespace Sanakan.Extensions
                     return "Może i nie tani ale za to duży pakiet kart";
                 case ItemType.RandomTitleBoosterPackSingleE:
                     return "Pakiet losowych kart z tytułu";
+                case ItemType.SeasonBoosterPack:
+                    return "Pakiet kart z sezonu";
                 case ItemType.AffectionRecoverySmall:
                     return $"Banan w czekoladzie{quality}";
                 case ItemType.RandomNormalBoosterPackB:
@@ -593,6 +597,7 @@ namespace Sanakan.Extensions
                 case ItemType.RandomNormalBoosterPackS:
                 case ItemType.RandomNormalBoosterPackSS:
                 case ItemType.BigRandomBoosterPackE:
+                case ItemType.SeasonBoosterPack:
                     return true;
 
                 default:
@@ -703,6 +708,7 @@ namespace Sanakan.Extensions
                 case ItemType.RandomNormalBoosterPackSS:
                 case ItemType.RandomTitleBoosterPackSingleE:
                 case ItemType.BigRandomBoosterPackE:
+                case ItemType.SeasonBoosterPack:
                     return CardSource.Shop;
 
                 default:

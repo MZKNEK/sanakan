@@ -55,7 +55,8 @@ namespace Sanakan.Database.Models
         NotAnItem = 46,
         CheckCurse = 47,
         ChangeBorderVariant = 48,
-        IncreasePrecision = 49
+        IncreasePrecision = 49,
+        SeasonBoosterPack = 50
     }
 
     public class Item
