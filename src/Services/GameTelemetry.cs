@@ -214,8 +214,8 @@ namespace Sanakan.Services
 
         public sealed class ShopPrice
         {
-            public string Shop { get; init; }
-            public string Item { get; init; }
+            // shop:number:name, see Waifu.GetShopItemLabel
+            public string Label { get; init; }
             public CurrencyType Currency { get; init; }
             public long Cost { get; init; }
         }
@@ -283,7 +283,7 @@ namespace Sanakan.Services
                         Set(day, "balance", $"{currency}:p{p}", Percentile(amounts, p));
                 }
                 foreach (var price in prices ?? Enumerable.Empty<ShopPrice>())
-                    Set(day, "can_afford", $"{price.Shop}:{price.Item}", Permille(wallets.Count(x => x[price.Currency] >= price.Cost), wallets.Count));
+                    Set(day, "can_afford", price.Label,Permille(wallets.Count(x => x[price.Currency] >= price.Cost), wallets.Count));
 
                 Set(day, "circulation", "SC", await db.Users.SumAsync(x => x.ScCnt));
                 Set(day, "circulation", "TC", await db.Users.SumAsync(x => x.TcCnt));
@@ -307,6 +307,23 @@ namespace Sanakan.Services
                     Set(day, "tc_transfer", $"{g.Key}:count", g.Count());
                     Set(day, "tc_transfer", $"{g.Key}:players", g.Select(x => x.DiscordId).Distinct().Count());
                 }
+
+                var exchanges = await db.CardExchanges.AsNoTracking().Where(x => x.Date >= day && x.Date < next)
+                    .Select(x => new { x.User1Id, x.User2Id, x.User1Gave, x.User2Gave }).ToListAsync();
+                Set(day, "exchanges", "count", exchanges.Count);
+                Set(day, "exchanges", "cards", exchanges.Sum(x => (long)x.User1Gave + x.User2Gave));
+                // only one side gave cards: a gift, or cards moved to another account
+                Set(day, "exchanges", "one_sided", exchanges.Count(x => x.User1Gave == 0 || x.User2Gave == 0));
+                Set(day, "exchanges", "players", exchanges.SelectMany(x => new[] { x.User1Id, x.User2Id }).Distinct().Count());
+                Set(day, "exchanges", "pairs", exchanges.Select(x => Math.Min(x.User1Id, x.User2Id) + ":" + Math.Max(x.User1Id, x.User2Id)).Distinct().Count());
+
+                var gifts = await db.ScGifts.AsNoTracking().Where(x => x.Date >= day && x.Date < next)
+                    .Select(x => new { x.FromUserId, x.ToUserId, x.Sent, x.Received }).ToListAsync();
+                Set(day, "sc_gift", "count", gifts.Count);
+                Set(day, "sc_gift", "sent", gifts.Sum(x => x.Sent));
+                Set(day, "sc_gift", "received", gifts.Sum(x => x.Received));
+                Set(day, "sc_gift", "givers", gifts.Select(x => x.FromUserId).Distinct().Count());
+                Set(day, "sc_gift", "recipients", gifts.Select(x => x.ToUserId).Distinct().Count());
             }
 
             await _writing.WaitAsync();
@@ -359,6 +376,9 @@ namespace Sanakan.Services
         }
 
         public static string Rarities(IEnumerable<Card> cards) => string.Join(",", cards.OrderBy(x => x.Rarity).Select(x => x.Rarity));
+
+        // in the same order as Rarities, so the n-th dere belongs to the n-th rarity
+        public static string Deres(IEnumerable<Card> cards) => string.Join(",", cards.OrderBy(x => x.Rarity).Select(x => x.Dere));
 
         // collects before a save what it changes, counts it only after the save succeeded
         private sealed class SaveInterceptor : SaveChangesInterceptor

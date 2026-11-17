@@ -760,6 +760,8 @@ namespace Sanakan.Services.PocketWaifu
             }
         }
 
+        public string GetShopItemLabel(ShopType type, int number, ItemWithCost item) => $"{GetShopName(type)}:{number}:{item.Item.Name}";
+
         public string GetShopName(ShopType type)
         {
             switch (type)
@@ -1056,6 +1058,8 @@ namespace Sanakan.Services.PocketWaifu
 
                 RemoveMoneyFromUser(type, bUser, realCost);
 
+                // the same label as the shop's can_afford, so sales can be set against it; it stays inside this call
+                GameTelemetry.Reason = GetShopItemLabel(type, selectedItem + 1, thisItem);
                 await db.SaveChangesAsync();
 
                 QueryCache.ExpireTag(new string[] { CacheTags.User(bUser.Id) });

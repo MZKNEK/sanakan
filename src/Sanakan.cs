@@ -240,8 +240,7 @@ namespace Sanakan
             GameTelemetry.Default.Start(() => new Database.DatabaseContext(_config), _time, _logger,
                 () => shops.SelectMany(shop => _waifu.GetItemsWithCostForShop(shop.Item1).Select((x, i) => new GameTelemetry.ShopPrice
                 {
-                    Shop = _waifu.GetShopName(shop.Item1),
-                    Item = $"{i + 1}:{x.Item.Name}",
+                    Label = _waifu.GetShopItemLabel(shop.Item1, i + 1, x),
                     Currency = shop.Item2,
                     Cost = x.Cost,
                 })).ToList());

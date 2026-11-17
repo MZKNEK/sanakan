@@ -365,6 +365,15 @@ namespace Sanakan.Modules
                 var newScCnt = (value * 60) / 100;
                 targetUser.ScCnt += newScCnt;
 
+                db.ScGifts.Add(new Database.Models.Analytics.ScGift
+                {
+                    Date = _time.Now(),
+                    FromUserId = thisUser.Id,
+                    ToUserId = targetUser.Id,
+                    Sent = value,
+                    Received = newScCnt,
+                });
+
                 await db.SaveChangesAsync();
 
                 QueryCache.ExpireTag(new string[] { CacheTags.User(thisUser.Id), CacheTags.User(targetUser.Id) });

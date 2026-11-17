@@ -4393,6 +4393,8 @@ namespace Sanakan.Modules
                     DefenderMmr = denemy.GameDeck.MatachMakingRatio,
                     AttackerCards = GameTelemetry.Rarities(players[0].Cards),
                     DefenderCards = GameTelemetry.Rarities(players[1].Cards),
+                    AttackerDeres = GameTelemetry.Deres(players[0].Cards),
+                    DefenderDeres = GameTelemetry.Deres(players[1].Cards),
                     Rounds = fight.Rounds?.Count ?? 0,
                 };
                 var info = duser.GameDeck.CalculatePVPParams(denemy.GameDeck, res);

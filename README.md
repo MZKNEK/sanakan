@@ -159,14 +159,21 @@ The bot keeps statistics of the game for charts (e.g. Grafana with a MySQL data 
   day before: `players_active` (`30d` for the last 30 days), `retention` (`d1`, `d7`, `d30`, per mille of the new
   players of that day who came back), `newbies_d7`, `balance` (`TC:p50`… of the players of the last 30 days),
   `can_afford` (per mille of them who can pay for each shop item), `circulation`, `cards_total`, `items_total`,
-  `packs_unopened`, `tc_transfer`.
+  `packs_unopened`, `tc_transfer`, `exchanges` (`count`, `cards`, `one_sided`, `players`, `pairs`), `sc_gift`
+  (`count`, `sent`, `received`, `givers`, `recipients`).
+- A purchase in a shop (`sklepik`, `kiosk`, `koszary`) is labelled with the item instead of the command, the same
+  label as its `can_afford`: `currency_out` `AC:Kiosk:1:<item>`, `item_in`/`pack_in` `<type>:Kiosk:1:<item>`.
 - `PlayerDays (Date, UserId, Commands, IsNew)`: who used the bot on which day.
-- `DuelResults`: every PvP duel with both decks' power, rank, MMR and rarities, the win chance the game gave the
-  attacker and the outcome, without the players.
+- `DuelResults`: every PvP duel with both decks' power, rank, MMR, rarities and deres (in the same order, e.g.
+  `SSS,S` and `Yato,Yami`), the win chance the game gave the attacker and the outcome, without the players.
+- `CardExchanges (Date, User1Id, User2Id, User1Gave, User2Gave)`: every finished card exchange, `User1Id` proposed
+  it; `CardExchangeCards (ExchangeId, CardId, FromUserId, ToUserId)` the cards it moved. `ScGifts (Date, FromUserId,
+  ToUserId, Sent, Received)`: SC given with `podarujsc`. These name the players, for moderation, and stay when they
+  leave. A player reads their own exchanges with `GET api/waifu/exchanges` (user key).
 
 Counters are written every 10 minutes and when the bot stops; the daily values just after midnight, or a minute
 after the start when the bot was down then. `PlayerDays`, `DuelResults` and the RAM measurements (`SystemData`) are
-kept for a year.
+kept for a year, the exchanges and SC gifts are not removed.
 
 #### Downloads from players' links (fetch proxy)
 

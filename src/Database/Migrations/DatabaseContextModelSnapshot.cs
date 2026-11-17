@@ -22,6 +22,61 @@ namespace Sanakan.Database.Migrations
 
             MySqlModelBuilderExtensions.AutoIncrementColumns(modelBuilder);
 
+            modelBuilder.Entity("Sanakan.Database.Models.Analytics.CardExchange", b =>
+                {
+                    b.Property<ulong>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint unsigned");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<ulong>("Id"));
+
+                    b.Property<DateTime>("Date")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<int>("User1Gave")
+                        .HasColumnType("int");
+
+                    b.Property<ulong>("User1Id")
+                        .HasColumnType("bigint unsigned");
+
+                    b.Property<int>("User2Gave")
+                        .HasColumnType("int");
+
+                    b.Property<ulong>("User2Id")
+                        .HasColumnType("bigint unsigned");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Date");
+
+                    b.HasIndex("User1Id");
+
+                    b.HasIndex("User2Id");
+
+                    b.ToTable("CardExchanges");
+                });
+
+            modelBuilder.Entity("Sanakan.Database.Models.Analytics.CardExchangeCard", b =>
+                {
+                    b.Property<ulong>("ExchangeId")
+                        .HasColumnType("bigint unsigned");
+
+                    b.Property<ulong>("CardId")
+                        .HasColumnType("bigint unsigned");
+
+                    b.Property<ulong>("FromUserId")
+                        .HasColumnType("bigint unsigned");
+
+                    b.Property<ulong>("ToUserId")
+                        .HasColumnType("bigint unsigned");
+
+                    b.HasKey("ExchangeId", "CardId");
+
+                    b.HasIndex("CardId");
+
+                    b.ToTable("CardExchangeCards");
+                });
+
             modelBuilder.Entity("Sanakan.Database.Models.Analytics.DuelResult", b =>
                 {
                     b.Property<ulong>("Id")
@@ -33,6 +88,10 @@ namespace Sanakan.Database.Migrations
                     b.Property<string>("AttackerCards")
                         .HasMaxLength(100)
                         .HasColumnType("varchar(100)");
+
+                    b.Property<string>("AttackerDeres")
+                        .HasMaxLength(200)
+                        .HasColumnType("varchar(200)");
 
                     b.Property<double>("AttackerMmr")
                         .HasColumnType("double");
@@ -52,6 +111,10 @@ namespace Sanakan.Database.Migrations
                     b.Property<string>("DefenderCards")
                         .HasMaxLength(100)
                         .HasColumnType("varchar(100)");
+
+                    b.Property<string>("DefenderDeres")
+                        .HasMaxLength(200)
+                        .HasColumnType("varchar(200)");
 
                     b.Property<double>("DefenderMmr")
                         .HasColumnType("double");
@@ -113,6 +176,40 @@ namespace Sanakan.Database.Migrations
                     b.HasKey("Date", "UserId");
 
                     b.ToTable("PlayerDays");
+                });
+
+            modelBuilder.Entity("Sanakan.Database.Models.Analytics.ScGift", b =>
+                {
+                    b.Property<ulong>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint unsigned");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<ulong>("Id"));
+
+                    b.Property<DateTime>("Date")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<ulong>("FromUserId")
+                        .HasColumnType("bigint unsigned");
+
+                    b.Property<long>("Received")
+                        .HasColumnType("bigint");
+
+                    b.Property<long>("Sent")
+                        .HasColumnType("bigint");
+
+                    b.Property<ulong>("ToUserId")
+                        .HasColumnType("bigint unsigned");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Date");
+
+                    b.HasIndex("FromUserId");
+
+                    b.HasIndex("ToUserId");
+
+                    b.ToTable("ScGifts");
                 });
 
             modelBuilder.Entity("Sanakan.Database.Models.Analytics.SystemAnalytics", b =>
@@ -1825,6 +1922,17 @@ namespace Sanakan.Database.Migrations
                     b.ToTable("Wishes");
                 });
 
+            modelBuilder.Entity("Sanakan.Database.Models.Analytics.CardExchangeCard", b =>
+                {
+                    b.HasOne("Sanakan.Database.Models.Analytics.CardExchange", "Exchange")
+                        .WithMany("Cards")
+                        .HasForeignKey("ExchangeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Exchange");
+                });
+
             modelBuilder.Entity("Sanakan.Database.Models.BoosterPack", b =>
                 {
                     b.HasOne("Sanakan.Database.Models.GameDeck", "GameDeck")
@@ -2175,6 +2283,11 @@ namespace Sanakan.Database.Migrations
                         .IsRequired();
 
                     b.Navigation("GameDeck");
+                });
+
+            modelBuilder.Entity("Sanakan.Database.Models.Analytics.CardExchange", b =>
+                {
+                    b.Navigation("Cards");
                 });
 
             modelBuilder.Entity("Sanakan.Database.Models.BoosterPack", b =>

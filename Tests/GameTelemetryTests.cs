@@ -259,6 +259,18 @@ namespace Artifacts
             => Assert.Equal("SSS,S,E", GameTelemetry.Rarities(new[] { new Card { Rarity = Rarity.E }, new Card { Rarity = Rarity.SSS }, new Card { Rarity = Rarity.S } }));
 
         [Fact]
+        public void DeresFollowTheOrderOfRarities()
+        {
+            var cards = new[]
+            {
+                new Card { Rarity = Rarity.E, Dere = Dere.Tsundere }, new Card { Rarity = Rarity.SSS, Dere = Dere.Yato },
+                new Card { Rarity = Rarity.S, Dere = Dere.Yami }, new Card { Rarity = Rarity.SSS, Dere = Dere.Raito },
+            };
+            Assert.Equal("SSS,SSS,S,E", GameTelemetry.Rarities(cards));
+            Assert.Equal("Yato,Raito,Yami,Tsundere", GameTelemetry.Deres(cards));
+        }
+
+        [Fact]
         public async Task SnapshotShowsRetentionWalletsAndWhatPlayersCanAfford()
         {
             var day = _now.Date;
@@ -273,6 +285,13 @@ namespace Artifacts
                 db.SaveChanges();
                 db.Users.First(x => x.Id == Player).TcCnt = 1000;
                 db.Users.First(x => x.Id == Other).TcCnt = 20;
+                db.CardExchanges.AddRange(
+                    new CardExchange { Date = day.AddHours(1), User1Id = Player, User2Id = Other, User1Gave = 2, User2Gave = 1 },
+                    new CardExchange { Date = day.AddHours(2), User1Id = Other, User2Id = Player, User1Gave = 3, User2Gave = 0 },
+                    new CardExchange { Date = day.AddDays(1), User1Id = Player, User2Id = Other, User1Gave = 9, User2Gave = 9 });
+                db.ScGifts.AddRange(
+                    new ScGift { Date = day.AddHours(3), FromUserId = Player, ToUserId = Other, Sent = 2000, Received = 1200 },
+                    new ScGift { Date = day.AddHours(4), FromUserId = Player, ToUserId = Other, Sent = 1000, Received = 600 });
                 db.SaveChanges();
             }
             await _telemetry.FlushAsync(Open);
@@ -284,8 +303,8 @@ namespace Artifacts
 
             var prices = new[]
             {
-                new GameTelemetry.ShopPrice { Shop = "Sklepik", Item = "1:Cheap", Currency = CurrencyType.TC, Cost = 10 },
-                new GameTelemetry.ShopPrice { Shop = "Sklepik", Item = "2:Dear", Currency = CurrencyType.TC, Cost = 999 },
+                new GameTelemetry.ShopPrice { Label = "Sklepik:1:Cheap", Currency = CurrencyType.TC, Cost = 10 },
+                new GameTelemetry.ShopPrice { Label = "Sklepik:2:Dear", Currency = CurrencyType.TC, Cost = 999 },
             };
             Assert.False(await GameTelemetry.HasSnapshotAsync(Open, day));
             await _telemetry.SnapshotAsync(Open, day, prices);
@@ -303,6 +322,10 @@ namespace Artifacts
             Assert.Equal(1020, stats[(day, "circulation", "TC")]);
             Assert.Equal(20, stats[(day, "balance", "TC:p50")]);
             Assert.Equal(200, stats[(day, "circulation", "SC")]);
+            Assert.Equal((2L, 6L, 1L, 2L, 1L), (stats[(day, "exchanges", "count")], stats[(day, "exchanges", "cards")],
+                stats[(day, "exchanges", "one_sided")], stats[(day, "exchanges", "players")], stats[(day, "exchanges", "pairs")]));
+            Assert.Equal((2L, 3000L, 1800L, 1L, 1L), (stats[(day, "sc_gift", "count")], stats[(day, "sc_gift", "sent")],
+                stats[(day, "sc_gift", "received")], stats[(day, "sc_gift", "givers")], stats[(day, "sc_gift", "recipients")]));
 
             // running it again replaces the values
             await _telemetry.SnapshotAsync(Open, day, prices);

@@ -73,6 +73,9 @@ namespace Sanakan.Database
         public DbSet<GameStat> GameStats { get; set; }
         public DbSet<PlayerDay> PlayerDays { get; set; }
         public DbSet<DuelResult> DuelResults { get; set; }
+        public DbSet<CardExchange> CardExchanges { get; set; }
+        public DbSet<CardExchangeCard> CardExchangeCards { get; set; }
+        public DbSet<ScGift> ScGifts { get; set; }
         public DbSet<WishlistCount> WishlistCountData { get; set; }
         public DbSet<UserActivity> UserActivities { get; set; }
         public DbSet<TagCardRelation> TagCardRelations { get; set; }
@@ -518,6 +521,31 @@ namespace Sanakan.Database
                 entity.HasIndex(e => e.Date);
                 entity.Property(e => e.AttackerCards).HasMaxLength(100);
                 entity.Property(e => e.DefenderCards).HasMaxLength(100);
+                entity.Property(e => e.AttackerDeres).HasMaxLength(200);
+                entity.Property(e => e.DefenderDeres).HasMaxLength(200);
+            });
+
+            modelBuilder.Entity<CardExchange>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.HasIndex(e => e.Date);
+                entity.HasIndex(e => e.User1Id);
+                entity.HasIndex(e => e.User2Id);
+            });
+
+            modelBuilder.Entity<CardExchangeCard>(entity =>
+            {
+                entity.HasKey(e => new { e.ExchangeId, e.CardId });
+                entity.HasIndex(e => e.CardId);
+                entity.HasOne(e => e.Exchange).WithMany(e => e.Cards).HasForeignKey(e => e.ExchangeId);
+            });
+
+            modelBuilder.Entity<ScGift>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.HasIndex(e => e.Date);
+                entity.HasIndex(e => e.FromUserId);
+                entity.HasIndex(e => e.ToUserId);
             });
 
             // Other

@@ -46,6 +46,9 @@ namespace Sanakan.Database.Models.Analytics
         // the active cards' rarities, best first, e.g. "SSS,SS,S"
         public string AttackerCards { get; set; }
         public string DefenderCards { get; set; }
+        // the same cards' deres, e.g. "Yato,Yami,Deredere"
+        public string AttackerDeres { get; set; }
+        public string DefenderDeres { get; set; }
         public int Rounds { get; set; }
     }
 }

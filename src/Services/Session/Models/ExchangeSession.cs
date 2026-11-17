@@ -465,6 +465,20 @@ namespace Sanakan.Services.Session.Models
             foreach (var card in cards2)
                 await card.ExchangeWithAsync(u2Data, u1Data, db, _time);
 
+            var record = new Database.Models.Analytics.CardExchange
+            {
+                Date = _time.Now(),
+                User1Id = user1.Id,
+                User2Id = user2.Id,
+                User1Gave = cards1.Count,
+                User2Gave = cards2.Count,
+            };
+            foreach (var card in cards1)
+                record.Cards.Add(new Database.Models.Analytics.CardExchangeCard { CardId = card.Id, FromUserId = user1.Id, ToUserId = user2.Id });
+            foreach (var card in cards2)
+                record.Cards.Add(new Database.Models.Analytics.CardExchangeCard { CardId = card.Id, FromUserId = user2.Id, ToUserId = user1.Id });
+            db.CardExchanges.Add(record);
+
             await db.SaveChangesAsync();
             QueryCache.ExpireTag(new string[] { CacheTags.User(P1.User.Id), CacheTags.User(P2.User.Id) });
             return null;

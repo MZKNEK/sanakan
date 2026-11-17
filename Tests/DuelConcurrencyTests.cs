@@ -15,6 +15,7 @@ using Moq;
 using Sanakan.Database;
 using Sanakan.Database.Models;
 using Sanakan.Extensions;
+using Sanakan.Services;
 using Sanakan.Services.Executor;
 using Sanakan.Services.PocketWaifu;
 using Xunit;
@@ -22,6 +23,7 @@ using WaifuModule = Sanakan.Modules.PocketWaifu;
 
 namespace Artifacts
 {
+    [Collection(SharedTelemetry.Name)]
     public class DuelConcurrencyTests : IDisposable
     {
         private readonly SqliteConnection _connection = new SqliteConnection("Data Source=:memory:");
@@ -160,6 +162,35 @@ namespace Artifacts
                 Assert.Equal(FightResult.Win, Assert.Single(player.GameDeck.PvPStats).Result);
                 Assert.True(player.GameDeck.PVPCoins > 0);
             }
+        }
+
+        [Fact]
+        public async Task Duel_IsRecordedWithTheDeresOfBothDecks()
+        {
+            using (var db = Open())
+            {
+                (await db.Cards.FindAsync(61UL)).Dere = Dere.Kamidere;
+                (await db.Cards.FindAsync(63UL)).Dere = Dere.Yato;
+                await db.SaveChangesAsync();
+            }
+            await GameTelemetry.Default.FlushAsync(Open);
+            using (var db = Open())
+            {
+                db.DuelResults.RemoveRange(db.DuelResults);
+                await db.SaveChangesAsync();
+            }
+
+            var jobs = new List<IExecutable>();
+            var executor = new Mock<IExecutor>();
+            executor.Setup(x => x.TryAdd(It.IsAny<IExecutable>(), It.IsAny<TimeSpan>()))
+                .Callback<IExecutable, TimeSpan>((job, _) => jobs.Add(job)).ReturnsAsync(true);
+            await Queue(Module(executor.Object, 61));
+            foreach (var job in jobs) await job.ExecuteAsync(new EmptyServiceProvider());
+            await GameTelemetry.Default.FlushAsync(Open);
+
+            using var read = Open();
+            var duel = Assert.Single(read.DuelResults);
+            Assert.Equal(("E", "Kamidere", "E", "Yato"), (duel.AttackerCards, duel.AttackerDeres, duel.DefenderCards, duel.DefenderDeres));
         }
 
         [Fact]

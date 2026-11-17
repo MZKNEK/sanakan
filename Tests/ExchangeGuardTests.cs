@@ -179,6 +179,8 @@ namespace Artifacts
                 db.ChangeTracker.Clear();
                 var after = await db.Cards.Select(x => new { x.Id, x.GameDeckId }).ToListAsync();
                 Assert.Equal(before.OrderBy(x => x.Id), after.OrderBy(x => x.Id));
+                Assert.Empty(db.CardExchanges);
+                Assert.Empty(db.CardExchangeCards);
             }
         }
 
@@ -262,6 +264,29 @@ namespace Artifacts
                 Assert.Equal(0, secondDeck.CardsInDeck);
                 Assert.Equal(new[] { (WishlistObjectType.Character, 102ul) }, firstDeck.Wishes.Select(x => (x.Type, x.ObjectId)));
                 Assert.Equal(new[] { (WishlistObjectType.Character, 999ul) }, secondDeck.Wishes.Select(x => (x.Type, x.ObjectId)));
+            }
+        }
+
+        [Fact]
+        public async Task FinishedExchange_IsRecordedWithBothSides()
+        {
+            var (db, session, first, second) = await CreateExchange();
+            using (db)
+            {
+                var extra = NewCard(103, first.Id);
+                db.Cards.Add(extra);
+                session.P1.Cards.Add(extra);
+                await db.SaveChangesAsync();
+                db.ChangeTracker.Clear();
+
+                Assert.Null(await Finalize(session, db));
+
+                var record = Assert.Single(db.CardExchanges.Include(x => x.Cards));
+                Assert.Equal((first.Id, second.Id), (record.User1Id, record.User2Id));
+                Assert.Equal((2, 1), (record.User1Gave, record.User2Gave));
+                Assert.Equal(new FixedTime().Now(), record.Date);
+                Assert.Equal(new[] { (101ul, first.Id, second.Id), (102ul, second.Id, first.Id), (103ul, first.Id, second.Id) },
+                    record.Cards.OrderBy(x => x.CardId).Select(x => (x.CardId, x.FromUserId, x.ToUserId)));
             }
         }
 

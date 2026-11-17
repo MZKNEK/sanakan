@@ -149,6 +149,20 @@ namespace Artifacts
                 ctx.Model.FindEntityType(typeof(PlayerDay)).FindPrimaryKey().Properties.Select(p => p.Name));
             Assert.True(HasSimpleIndex<DuelResult>(ctx, nameof(DuelResult.Date)));
         }
+
+        [Fact]
+        public void TradeTables_CanBeSearchedByPlayerAndDate()
+        {
+            var ctx = new SqliteContext();
+            Assert.True(HasSimpleIndex<CardExchange>(ctx, nameof(CardExchange.Date)));
+            Assert.True(HasSimpleIndex<CardExchange>(ctx, nameof(CardExchange.User1Id)));
+            Assert.True(HasSimpleIndex<CardExchange>(ctx, nameof(CardExchange.User2Id)));
+            Assert.Equal(new[] { nameof(CardExchangeCard.CardId) },
+                ctx.Model.FindEntityType(typeof(CardExchangeCard)).GetIndexes().Single(i => i.Properties[0].Name == nameof(CardExchangeCard.CardId)).Properties.Select(p => p.Name));
+            Assert.True(HasSimpleIndex<ScGift>(ctx, nameof(ScGift.Date)));
+            Assert.True(HasSimpleIndex<ScGift>(ctx, nameof(ScGift.FromUserId)));
+            Assert.True(HasSimpleIndex<ScGift>(ctx, nameof(ScGift.ToUserId)));
+        }
     }
 
     public class OffsetClampTests
