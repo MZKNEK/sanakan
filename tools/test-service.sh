@@ -137,6 +137,7 @@ if "$REPO/tools/install-service.sh" --name "$NAME" --user "$RUN_AS" --data "$T/d
 [ "$(stat -c %U "$T/data/GOut")" = "$RUN_AS" ] && pass "GOut folder belongs to $RUN_AS" || fail "GOut folder belongs to $(stat -c %U "$T/data/GOut")"
 [ "$(stat -c %U "$T/data/GOut/picture.webp")" = root ] && pass "files in GOut were not walked" || fail "the install walked into GOut"
 grep -q "RestartPreventExitStatus=78" "/etc/systemd/system/$NAME.service" && pass "unit keeps bad config down" || fail "unit has no RestartPreventExitStatus"
+grep -q "MALLOC_ARENA_MAX=2" "/etc/systemd/system/$NAME.service" && pass "unit limits glibc arenas" || fail "unit has no MALLOC_ARENA_MAX"
 
 echo "== start (builds first, about a minute)"
 systemctl start "$NAME"

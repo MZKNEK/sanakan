@@ -129,6 +129,8 @@ if [ -f "$UNIT" ]; then
     echo "previous unit saved as $BACKUP"
 fi
 
+# the pictures are drawn in 4 and 32 MiB blocks taken with malloc; with its default arenas glibc kept freed blocks
+# (~2.3 GB of 64 MiB arenas beside a 400 MiB .NET heap), with these settings large blocks go back to the system
 cat > "$UNIT" <<EOF
 [Unit]
 Description=Sanakan Discord bot$ARGS
@@ -146,6 +148,8 @@ Environment=PATH=$DOTNET_DIR:/usr/local/bin:/usr/bin:/bin
 Environment=DOTNET_ROOT=$DOTNET_DIR
 Environment=DOTNET_CLI_TELEMETRY_OPTOUT=1
 Environment=DOTNET_NOLOGO=1
+Environment=MALLOC_ARENA_MAX=2
+Environment=MALLOC_MMAP_THRESHOLD_=131072
 Restart=on-failure
 RestartPreventExitStatus=78
 RestartSec=5
