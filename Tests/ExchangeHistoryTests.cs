@@ -137,6 +137,22 @@ namespace Artifacts
         }
 
         [Fact]
+        public async Task PlayerTheBotDoesNotSee_GetsTheRememberedName()
+        {
+            using (var db = Open())
+            {
+                db.PlayerNames.Add(new PlayerName { UserId = Other, Name = "dawny nick", SeenAt = Day });
+                db.PlayerNames.Add(new PlayerName { UserId = Partner, Name = "stary", SeenAt = Day });
+                db.SaveChanges();
+            }
+
+            var (history, _) = await GetAsync(0, 50);
+
+            Assert.Equal("dawny nick", history.Partners.Single(x => x.Player.DiscordId == Other.ToString()).Player.Nick);
+            Assert.Equal("discord7002", history.Partners.Single(x => x.Player.DiscordId == Partner.ToString()).Player.Nick);
+        }
+
+        [Fact]
         public async Task PlayerWithoutExchanges_GetsAnEmptyHistory()
         {
             using (var db = Open())

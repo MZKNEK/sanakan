@@ -2039,6 +2039,80 @@ namespace Sanakan.Modules
             await Context.Channel.SendFileAsync(stream, "tldr.txt");
         }
 
+        [Command("exchanges import", RunMode = RunMode.Async), Priority(1), RequireDev]
+        [Summary("odtwarza historię wymian z wiadomości bota na kanale wymian (pomija już znane, można powtarzać lub wznowić od id wiadomości)")]
+        [Remarks("#wymiany 1234567890")]
+        public async Task ImportExchangesAsync([Summary("kanał wymian")] ITextChannel channel, [Summary("id wiadomości, przed którą zacząć (wznowienie)")] ulong before = 0)
+        {
+            // two imports at once could both add the same player's name
+            if (!await _exchangeImport.WaitAsync(0))
+            {
+                await SafeReplyAsync("", embed: "Import wymian już trwa, uruchom kolejny kanał po jego zakończeniu.".ToEmbedMessage(EMType.Error).Build());
+                return;
+            }
+            try
+            {
+                await RunExchangeImportAsync(channel, before);
+            }
+            finally
+            {
+                _exchangeImport.Release();
+            }
+        }
+
+        private static readonly SemaphoreSlim _exchangeImport = new SemaphoreSlim(1, 1);
+
+        private async Task RunExchangeImportAsync(ITextChannel channel, ulong before)
+        {
+            var msg = await SafeReplyAsync("", embed: $"Przeglądam {channel.Mention}...".ToEmbedMessage(EMType.Info).Build());
+
+            var status = new System.Runtime.CompilerServices.StrongBox<string>();
+            using var done = new CancellationTokenSource();
+            var updates = Task.Run(async () =>
+            {
+                string shown = null;
+                while (msg != null)
+                {
+                    try { await Task.Delay(TimeSpan.FromSeconds(5), done.Token); }
+                    catch (OperationCanceledException) { return; }
+
+                    var now = Volatile.Read(ref status.Value);
+                    if (now == null || now == shown) continue;
+                    shown = now;
+                    try { await msg.ModifyAsync(x => x.Embed = now.ToEmbedMessage(EMType.Info).Build()); }
+                    catch (Exception ex) { Logger?.LogError($"Cmd: exchanges import progress: {ex.Message}"); }
+                }
+            });
+
+            string report;
+            var progress = new ExchangeImport.Result();
+            try
+            {
+                var result = await ExchangeImport.ImportAsync(() => new Database.DatabaseContext(Config),
+                    async from => (from == null ? await channel.GetMessagesAsync(100).FlattenAsync()
+                        : await channel.GetMessagesAsync(from.Value, Direction.Before, 100).FlattenAsync()).ToList(),
+                    Context.Client.CurrentUser.Id, before == 0 ? null : before,
+                    x => { progress = x; Volatile.Write(ref status.Value, ExchangeImport.Describe(x, false)); });
+                report = ExchangeImport.Describe(result, true);
+                Logger?.Log($"Cmd: {report}");
+            }
+            catch (Exception ex)
+            {
+                report = $"{ExchangeImport.Describe(progress, false)}\nPrzerwano: {ex.Message}. Wznów od tej wiadomości.";
+                Logger?.LogError($"Cmd: exchanges import: {ex}");
+            }
+            finally
+            {
+                done.Cancel();
+                await updates;
+            }
+
+            if (msg != null)
+                await msg.ModifyAsync(x => x.Embed = report.ToEmbedMessage(EMType.Success).Build());
+            else
+                await SafeReplyAsync("", embed: report.ToEmbedMessage(EMType.Success).Build());
+        }
+
         [Command("orphans", RunMode = RunMode.Async), Priority(1), RequireDev]
         [Summary("liczy obrazki kart i profili, których karty lub gracza nie ma już w bazie (niczego nie usuwa)")]
         [Remarks("7")]

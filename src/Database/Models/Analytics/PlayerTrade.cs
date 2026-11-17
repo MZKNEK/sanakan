@@ -16,6 +16,10 @@ namespace Sanakan.Database.Models.Analytics
         public ulong User2Id { get; set; }
         public int User1Gave { get; set; }
         public int User2Gave { get; set; }
+        // the bot's exchange message
+        public ulong? MessageId { get; set; }
+        // read back from an old exchange message; an offer of more than 12 cards has no cards listed
+        public bool Imported { get; set; }
 
         public virtual ICollection<CardExchangeCard> Cards { get; set; } = new List<CardExchangeCard>();
     }
@@ -29,6 +33,14 @@ namespace Sanakan.Database.Models.Analytics
         public ulong ToUserId { get; set; }
 
         public virtual CardExchange Exchange { get; set; }
+    }
+
+    // the last name a player was seen with, for players the bot no longer sees (e.g. who left the server)
+    public class PlayerName
+    {
+        public ulong UserId { get; set; }
+        public string Name { get; set; }
+        public DateTime SeenAt { get; set; }
     }
 
     // SC given with podarujsc: Sent leaves the giver, Received (after the tax) reaches the recipient

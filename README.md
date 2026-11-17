@@ -169,7 +169,14 @@ The bot keeps statistics of the game for charts (e.g. Grafana with a MySQL data 
 - `CardExchanges (Date, User1Id, User2Id, User1Gave, User2Gave)`: every finished card exchange, `User1Id` proposed
   it; `CardExchangeCards (ExchangeId, CardId, FromUserId, ToUserId)` the cards it moved. `ScGifts (Date, FromUserId,
   ToUserId, Sent, Received)`: SC given with `podarujsc`. These name the players, for moderation, and stay when they
-  leave. A player reads their own exchanges with `GET api/waifu/exchanges` (user key).
+  leave. A player reads their own exchanges with `GET api/waifu/exchanges` (user key). Exchanges from before are
+  read back from the bot's messages with `dev exchanges import #channel [message id]`, one channel at a time
+  (`Imported`, matched by `MessageId`, safe to repeat). Only certain exchanges are added: an offer of more than 12
+  cards, shown as a number, is taken from the players' `dodaj`/`usuń` during the exchange only when the bot's
+  reactions leave no doubt and the number matches; a message cut at Discord's limit, or one whose starting command
+  names another player, is left out.
+  `PlayerNames (UserId, Name, SeenAt)` keeps the last name a player was seen with in exchanges, so the history can
+  name players who left.
 
 Counters are written every 10 minutes and when the bot stops; the daily values just after midnight, or a minute
 after the start when the bot was down then. `PlayerDays`, `DuelResults` and the RAM measurements (`SystemData`) are

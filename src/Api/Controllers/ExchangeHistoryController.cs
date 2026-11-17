@@ -70,6 +70,7 @@ namespace Sanakan.Api.Controllers
             var lookups = await Services.BoundedParallel.SelectAsync(shindenIds.Values.Distinct(), Services.BoundedParallel.ShindenLookups,
                 async id => (id, Name: await GetShindenNickAsync(id)));
             var shindenNicks = lookups.ToDictionary(x => x.id, x => x.Name);
+            var storedNames = await db.PlayerNames.AsNoTracking().Where(x => playerIds.Contains(x.UserId)).ToDictionaryAsync(x => x.UserId, x => x.Name);
 
             var players = playerIds.ToDictionary(id => id, id =>
             {
@@ -77,7 +78,7 @@ namespace Sanakan.Api.Controllers
                 return new ExchangePlayer
                 {
                     DiscordId = id.ToString(),
-                    Nick = GetNick(id),
+                    Nick = GetNick(id) ?? (storedNames.TryGetValue(id, out var stored) ? stored : null),
                     ShindenId = shinden == 0 ? null : shinden.ToString(),
                     ShindenNick = shinden == 0 ? null : shindenNicks[shinden],
                 };

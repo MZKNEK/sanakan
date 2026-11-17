@@ -33,6 +33,12 @@ namespace Sanakan.Database.Migrations
                     b.Property<DateTime>("Date")
                         .HasColumnType("datetime(6)");
 
+                    b.Property<bool>("Imported")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<ulong?>("MessageId")
+                        .HasColumnType("bigint unsigned");
+
                     b.Property<int>("User1Gave")
                         .HasColumnType("int");
 
@@ -48,6 +54,9 @@ namespace Sanakan.Database.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("Date");
+
+                    b.HasIndex("MessageId")
+                        .IsUnique();
 
                     b.HasIndex("User1Id");
 
@@ -176,6 +185,23 @@ namespace Sanakan.Database.Migrations
                     b.HasKey("Date", "UserId");
 
                     b.ToTable("PlayerDays");
+                });
+
+            modelBuilder.Entity("Sanakan.Database.Models.Analytics.PlayerName", b =>
+                {
+                    b.Property<ulong>("UserId")
+                        .HasColumnType("bigint unsigned");
+
+                    b.Property<string>("Name")
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
+
+                    b.Property<DateTime>("SeenAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.HasKey("UserId");
+
+                    b.ToTable("PlayerNames");
                 });
 
             modelBuilder.Entity("Sanakan.Database.Models.Analytics.ScGift", b =>

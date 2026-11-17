@@ -83,7 +83,7 @@ namespace Sanakan.Api.Models
         /// </summary>
         public string DiscordId { get; set; }
         /// <summary>
-        /// Nick na discordzie (null, gdy bot go nie zna, np. gracz opuścił serwer)
+        /// Nick na discordzie; gdy gracza nie ma już na serwerze, ostatni zapamiętany z wymian (null, gdy nieznany)
         /// </summary>
         public string Nick { get; set; }
         /// <summary>

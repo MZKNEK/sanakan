@@ -276,12 +276,16 @@ namespace Artifacts
                 var extra = NewCard(103, first.Id);
                 db.Cards.Add(extra);
                 session.P1.Cards.Add(extra);
+                session.Message = Mock.Of<IUserMessage>(x => x.Id == 555);
                 await db.SaveChangesAsync();
                 db.ChangeTracker.Clear();
 
                 Assert.Null(await Finalize(session, db));
 
                 var record = Assert.Single(db.CardExchanges.Include(x => x.Cards));
+                Assert.Equal((555ul, false), (record.MessageId, record.Imported));
+                Assert.Equal(new[] { (first.Id, "user81"), (second.Id, "user82") },
+                    db.PlayerNames.AsEnumerable().OrderBy(x => x.UserId).Select(x => (x.UserId, x.Name)));
                 Assert.Equal((first.Id, second.Id), (record.User1Id, record.User2Id));
                 Assert.Equal((2, 1), (record.User1Gave, record.User2Gave));
                 Assert.Equal(new FixedTime().Now(), record.Date);

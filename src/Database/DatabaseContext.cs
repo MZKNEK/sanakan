@@ -75,6 +75,7 @@ namespace Sanakan.Database
         public DbSet<DuelResult> DuelResults { get; set; }
         public DbSet<CardExchange> CardExchanges { get; set; }
         public DbSet<CardExchangeCard> CardExchangeCards { get; set; }
+        public DbSet<PlayerName> PlayerNames { get; set; }
         public DbSet<ScGift> ScGifts { get; set; }
         public DbSet<WishlistCount> WishlistCountData { get; set; }
         public DbSet<UserActivity> UserActivities { get; set; }
@@ -531,6 +532,14 @@ namespace Sanakan.Database
                 entity.HasIndex(e => e.Date);
                 entity.HasIndex(e => e.User1Id);
                 entity.HasIndex(e => e.User2Id);
+                entity.HasIndex(e => e.MessageId).IsUnique();
+            });
+
+            modelBuilder.Entity<PlayerName>(entity =>
+            {
+                entity.HasKey(e => e.UserId);
+                entity.Property(e => e.UserId).ValueGeneratedNever();
+                entity.Property(e => e.Name).HasMaxLength(100);
             });
 
             modelBuilder.Entity<CardExchangeCard>(entity =>

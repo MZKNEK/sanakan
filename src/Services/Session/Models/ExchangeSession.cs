@@ -472,12 +472,14 @@ namespace Sanakan.Services.Session.Models
                 User2Id = user2.Id,
                 User1Gave = cards1.Count,
                 User2Gave = cards2.Count,
+                MessageId = Message?.Id,
             };
             foreach (var card in cards1)
                 record.Cards.Add(new Database.Models.Analytics.CardExchangeCard { CardId = card.Id, FromUserId = user1.Id, ToUserId = user2.Id });
             foreach (var card in cards2)
                 record.Cards.Add(new Database.Models.Analytics.CardExchangeCard { CardId = card.Id, FromUserId = user2.Id, ToUserId = user1.Id });
             db.CardExchanges.Add(record);
+            await ExchangeImport.RememberNamesAsync(db, new[] { (user1.Id, P1.User.GetUserNickInGuild(), _time.Now()), (user2.Id, P2.User.GetUserNickInGuild(), _time.Now()) });
 
             await db.SaveChangesAsync();
             QueryCache.ExpireTag(new string[] { CacheTags.User(P1.User.Id), CacheTags.User(P2.User.Id) });
