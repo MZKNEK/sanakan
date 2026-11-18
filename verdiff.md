@@ -1,6 +1,11 @@
-# 1.5.0.11
+# 1.5.0.12
 
-Data: 2026-11-17
+Data: 2026-11-18
 
-- Dodano do historii wymian dawne wymiany, odczytane z wiadomości na kanale wymian (tylko te, co do których nie ma wątpliwości).
-- Zmieniono historię wymian tak, by pokazywała nick również graczy, którzy opuścili serwer.
+- Naprawiono błąd, przez który emoji w nicku, nazwie oznaczenia czy innym tekście psuło zapis, np. wygrana z loterii przepadała.
+- Dodano filtrowanie historii wymian po graczu, jego nicku, karcie i dacie.
+- Zmieniono adresy obrazków kart i profili, aby po zmianie karty jej nowy wygląd był od razu widoczny na stronie.
+
+## Techniczne
+
+- Pierwsze uruchomienie tej wersji potrwa dłużej, bo baza danych jest jednorazowo przestawiana na obsługę emoji.
