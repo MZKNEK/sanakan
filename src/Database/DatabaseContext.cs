@@ -119,6 +119,7 @@ namespace Sanakan.Database
 
         public const string BaselineMigration = "20261113000443_Baseline";
         private const int MySqlTriggerNeedsSuper = 1419;
+        public static readonly TimeSpan MigrationCommandTimeout = TimeSpan.FromMinutes(30);
 
         // SQLite gets its schema straight from the model; MySQL from the migrations
         public void EnsureReady(ILogger logger = null)
@@ -146,6 +147,8 @@ namespace Sanakan.Database
 
             logger?.Log($"Database: applying migration(s) {string.Join(", ", pending)}");
             var watch = System.Diagnostics.Stopwatch.StartNew();
+            // rebuilding a big table (Utf8mb4 on Cards) runs well past the default 30 s
+            Database.SetCommandTimeout(MigrationCommandTimeout);
             try
             {
                 Database.Migrate();

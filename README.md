@@ -134,7 +134,8 @@ that changes one of them has to expect both forms:
 - some columns have default values the model does not set (`Cards`/`Figures.CritChance`, `GameDecks` dates,
   `Guilds.AlwaysBanChannel`);
 - the foreign keys of `ExpContainers`, `TagCardRelations` and `Tags` have MySQL's own names (`*_ibfk_*`);
-- `Tags.Name` is `text NOT NULL`, `WishlistCountData.Id` has no `AUTO_INCREMENT`.
+- `Tags.Name` is `mediumtext NOT NULL` (the migration `Utf8mb4` turns the old `text` into it), `WishlistCountData.Id` has
+  no `AUTO_INCREMENT`.
 
 #### Profile of layers
 

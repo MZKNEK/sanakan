@@ -48,6 +48,21 @@ namespace Artifacts
         }
 
         [Fact]
+        public void Utf8mb4MigrationNamesTablesExactlyAsTheModel()
+        {
+            using var db = MySql();
+            var tables = db.Model.GetEntityTypes().Select(x => x.GetTableName()).ToHashSet(System.StringComparer.Ordinal);
+
+            // table names are case sensitive on the Linux server
+            Assert.All(Sanakan.Database.Migrations.Utf8mb4.Tables, x => Assert.Contains(x, tables));
+            Assert.Equal(37, Sanakan.Database.Migrations.Utf8mb4.Tables.Distinct().Count());
+
+            var sql = db.GetService<IMigrator>().GenerateScript("20261117151113_ExchangeMessages", "20261118181128_Utf8mb4");
+            Assert.Contains("ALTER TABLE `UserActivities` CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;", sql);
+            Assert.Contains("ALTER TABLE `Cards` CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;", sql);
+        }
+
+        [Fact]
         public void MigrateOnStartIsOnByDefault()
             => Assert.True(new ConfigModel().MigrateOnStart);
     }
