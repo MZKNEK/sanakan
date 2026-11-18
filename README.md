@@ -170,7 +170,9 @@ The bot keeps statistics of the game for charts (e.g. Grafana with a MySQL data 
 - `CardExchanges (Date, User1Id, User2Id, User1Gave, User2Gave)`: every finished card exchange, `User1Id` proposed
   it; `CardExchangeCards (ExchangeId, CardId, FromUserId, ToUserId)` the cards it moved. `ScGifts (Date, FromUserId,
   ToUserId, Sent, Received)`: SC given with `podarujsc`. These name the players, for moderation, and stay when they
-  leave. A player reads their own exchanges with `GET api/waifu/exchanges` (user key). Exchanges from before are
+  leave. A player reads their own exchanges with `GET api/waifu/exchanges` (user key), optionally only those with
+  one partner (`partner`, a part of their `nick`), of one card (`card`) or between dates (`since`, `before`); the
+  summary always covers the whole history. Exchanges from before are
   read back from the bot's messages with `dev exchanges import #channel [message id]`, one channel at a time
   (`Imported`, matched by `MessageId`, safe to repeat). Only certain exchanges are added: an offer of more than 12
   cards, shown as a number, is taken from the players' `dodaj`/`usuń` during the exchange only when the bot's

@@ -22,6 +22,10 @@ namespace Sanakan.Api.Models
         /// </summary>
         public int TotalExchanges { get; set; }
         /// <summary>
+        /// Liczba wymian pasujących do filtrów (bez filtrów równa TotalExchanges)
+        /// </summary>
+        public int MatchingExchanges { get; set; }
+        /// <summary>
         /// Łączna liczba oddanych kart
         /// </summary>
         public long CardsGiven { get; set; }
@@ -34,11 +38,11 @@ namespace Sanakan.Api.Models
         /// </summary>
         public List<ExchangePartner> Partners { get; set; }
         /// <summary>
-        /// Wymiany z wybranej strony, od najnowszej
+        /// Wymiany z wybranej strony spośród pasujących do filtrów, od najnowszej
         /// </summary>
         public List<UserExchange> Exchanges { get; set; }
 
-        public static UserExchanges From(ulong userId, IReadOnlyCollection<CardExchange> all, IEnumerable<CardExchange> page,
+        public static UserExchanges From(ulong userId, IReadOnlyCollection<CardExchange> all, int matching, IEnumerable<CardExchange> page,
             IReadOnlyDictionary<ulong, Card> cards, Func<ulong, ExchangePlayer> player)
         {
             var mine = all.Select(x => Side.Of(x, userId)).ToList();
@@ -46,6 +50,7 @@ namespace Sanakan.Api.Models
             {
                 User = player(userId),
                 TotalExchanges = mine.Count,
+                MatchingExchanges = matching,
                 CardsGiven = mine.Sum(x => (long)x.Given),
                 CardsReceived = mine.Sum(x => (long)x.Received),
                 Partners = mine.GroupBy(x => x.Partner).Select(g => new ExchangePartner

@@ -82,12 +82,94 @@ namespace Artifacts
 
         private TestDatabase Open() => new TestDatabase(_connection);
 
-        private async Task<(UserExchanges History, TestController Controller)> GetAsync(uint offset, uint count, ulong user = Me)
+        private Task<(UserExchanges History, TestController Controller)> GetAsync(uint offset, uint count, ulong user = Me)
+            => GetFilteredAsync(x => x.GetExchangesAsync(offset, count), user);
+
+        private async Task<(UserExchanges History, TestController Controller)> GetFilteredAsync(Func<TestController, Task<IActionResult>> call, ulong user = Me)
         {
             var controller = ControllerHarness.Attach(new TestController(Open));
             controller.HttpContext.User = new ClaimsPrincipal(new ClaimsIdentity(new[] { new Claim("DiscordId", user.ToString()), new Claim("Player", "waifu_player") }, "test"));
-            var result = Assert.IsType<OkObjectResult>(await controller.GetExchangesAsync(offset, count));
+            var result = Assert.IsType<OkObjectResult>(await call(controller));
             return (Assert.IsType<UserExchanges>(result.Value), controller);
+        }
+
+        private async Task<DateTime[]> FilteredDatesAsync(Func<TestController, Task<IActionResult>> call)
+        {
+            var (history, _) = await GetFilteredAsync(call);
+            Assert.Equal(history.Exchanges.Count, history.MatchingExchanges);
+            return history.Exchanges.Select(x => x.Date).ToArray();
+        }
+
+        [Fact]
+        public async Task Filters_NarrowThePage_ButNotTheSummary()
+        {
+            var (history, _) = await GetFilteredAsync(x => x.GetExchangesAsync(0, 50, partner: Partner));
+
+            Assert.Equal(new[] { Day.AddDays(2), Day }, history.Exchanges.Select(x => x.Date));
+            Assert.Equal((3, 2), (history.TotalExchanges, history.MatchingExchanges));
+            Assert.Equal(2, history.Partners.Count);
+            Assert.Equal((3L, 3L), (history.CardsGiven, history.CardsReceived));
+        }
+
+        [Fact]
+        public async Task Filter_PagesThroughTheMatchingExchanges()
+        {
+            var (history, _) = await GetFilteredAsync(x => x.GetExchangesAsync(1, 1, partner: Partner));
+
+            Assert.Equal(Day, Assert.Single(history.Exchanges).Date);
+            Assert.Equal(2, history.MatchingExchanges);
+        }
+
+        [Theory]
+        [InlineData("DISCORD7002", 2)]
+        [InlineData(" shinden6 ", 2)]
+        [InlineData("dawny", 1)]
+        [InlineData("discord700", 2)]
+        [InlineData("nikt", 0)]
+        public async Task NickFilter_MatchesAnyOfThePartnersNames(string nick, int expected)
+        {
+            using (var db = Open())
+            {
+                db.PlayerNames.Add(new PlayerName { UserId = Other, Name = "Dawny nick", SeenAt = Day });
+                db.SaveChanges();
+            }
+
+            Assert.Equal(expected, (await FilteredDatesAsync(x => x.GetExchangesAsync(0, 50, nick: nick))).Length);
+        }
+
+        [Fact]
+        public async Task NickFilter_AlsoMatchesTheRememberedName_WhenTheBotSeesANewOne()
+        {
+            using (var db = Open())
+            {
+                db.PlayerNames.Add(new PlayerName { UserId = Partner, Name = "stary nick", SeenAt = Day });
+                db.SaveChanges();
+            }
+
+            Assert.Equal(new[] { Day.AddDays(2), Day }, await FilteredDatesAsync(x => x.GetExchangesAsync(0, 50, nick: "stary")));
+        }
+
+        [Fact]
+        public async Task CardFilter_FindsTheExchangesThatMovedTheCard_EvenWhenItIsGone()
+        {
+            Assert.Equal(new[] { Day.AddDays(2) }, await FilteredDatesAsync(x => x.GetExchangesAsync(0, 50, card: 103)));
+            Assert.Equal(new[] { Day }, await FilteredDatesAsync(x => x.GetExchangesAsync(0, 50, card: 102)));
+            // another player's exchange is not shown even by its card
+            Assert.Empty(await FilteredDatesAsync(x => x.GetExchangesAsync(0, 50, card: 999)));
+        }
+
+        [Fact]
+        public async Task DateFilter_TakesSinceAndExcludesBefore()
+        {
+            Assert.Equal(new[] { Day.AddDays(1) }, await FilteredDatesAsync(x => x.GetExchangesAsync(0, 50, since: Day.AddDays(1), before: Day.AddDays(2))));
+            Assert.Equal(new[] { Day.AddDays(2), Day.AddDays(1) }, await FilteredDatesAsync(x => x.GetExchangesAsync(0, 50, since: Day.AddDays(1))));
+        }
+
+        [Fact]
+        public async Task Filters_AreCombined()
+        {
+            Assert.Equal(new[] { Day }, await FilteredDatesAsync(x => x.GetExchangesAsync(0, 50, partner: Partner, card: 201)));
+            Assert.Empty(await FilteredDatesAsync(x => x.GetExchangesAsync(0, 50, partner: Other, card: 201)));
         }
 
         [Fact]
