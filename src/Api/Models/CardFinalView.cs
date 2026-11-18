@@ -210,19 +210,24 @@ namespace Sanakan.Api.Models
         }
 
         public static string GetProfileUrl(ulong userId)
-            => $"https://cdn2.shinden.eu/prof/{userId}.webp";
+            => WithFileVersion($"https://cdn2.shinden.eu/prof/{userId}.webp", $"{Dir.FakeCardsAsProfiles}/{userId}.webp");
 
         // no miniatures any more, Small points at the full card
         public static string GetCardImageInShindenUrl(ulong cardId, string extension, CardImageType type) => type switch
         {
-            CardImageType.Profile => $"https://cdn2.shinden.eu/profile/{cardId}.{extension}",
-            _ => $"https://cdn2.shinden.eu/{cardId}.{extension}",
+            CardImageType.Profile => WithFileVersion($"https://cdn2.shinden.eu/profile/{cardId}.{extension}", $"{Dir.CardsInProfiles}/{cardId}.{extension}"),
+            _ => WithFileVersion($"https://cdn2.shinden.eu/{cardId}.{extension}", $"{Dir.Cards}/{cardId}.{extension}"),
         };
+
+        // the CDN and browsers keep an image for hours under its address, so a redrawn file gets a new one from its write time
+        public static string WithFileVersion(string url, string file)
+        {
+            var info = new System.IO.FileInfo(file);
+            return info.Exists ? $"{url}?v={new DateTimeOffset(info.LastWriteTimeUtc).ToUnixTimeSeconds()}" : url;
+        }
 
         private static string GetCardImageInShindenUrl(Card card, CardImageType type)
             => GetCardImageInShindenUrl(card.Id, card.IsCardAnimated() ? Waifu.AnimatedCardExtension : Waifu.NormalCardExtension, type);
-
-        public static string GetCardMiniInShindenUrl(Card card) => GetCardImageInShindenUrl(card, CardImageType.Small);
 
         public static string GetCardBaseInShindenUrl(Card card) => GetCardImageInShindenUrl(card, CardImageType.Normal);
 
@@ -232,6 +237,7 @@ namespace Sanakan.Api.Models
         {
             if (card == null) return null;
             var kcs = Fun.IsAF() ? Fun.GetAFKC(card.Character) : card.WhoWantsCount;
+            var imageUrl = GetCardBaseInShindenUrl(card);
             return new CardFinalView
             {
                 Id = card.Id,
@@ -272,10 +278,10 @@ namespace Sanakan.Api.Models
                 ExpCntForNextLevel = card.ExpToUpgrade(),
                 HasCustomImage = card.CustomImage != null,
                 HasCustomBorder = card.CustomBorder != null,
-                ImageUrl = GetCardBaseInShindenUrl(card),
+                ImageUrl = imageUrl,
                 ShindenId =  card?.GameDeck?.User?.Shinden ?? shindenId,
                 IsOnExpedition = card.Expedition != CardExpedition.None,
-                SmallImageUrl = GetCardMiniInShindenUrl(card),
+                SmallImageUrl = imageUrl,
                 ProfileImageUrl = GetCardProfileInShindenUrl(card),
                 Tags = card.Tags.Select(x => x.Name).ToList()
             };

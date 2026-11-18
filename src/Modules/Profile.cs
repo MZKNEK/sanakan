@@ -275,7 +275,6 @@ namespace Sanakan.Modules
                     return;
                 }
 
-                var url = Api.Models.CardFinalView.GetProfileUrl(dataUser.Id);
                 var profileUri = $"{Dir.FakeCardsAsProfiles}/{dataUser.Id}.webp";
 
                 var availableAt = await DelayNextUseBy.TryUseAsync(caller, ProfileCommand, ProfileCooldown, Config, _time);
@@ -304,7 +303,7 @@ namespace Sanakan.Modules
                     }
                     catch(Exception)
                     {
-                        await Context.Channel.SendMessageAsync(url);
+                        await Context.Channel.SendMessageAsync(Api.Models.CardFinalView.GetProfileUrl(dataUser.Id));
                     }
                 }
             }

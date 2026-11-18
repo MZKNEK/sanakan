@@ -429,16 +429,45 @@ namespace Artifacts
             {
                 foreach (var path in files)
                     File.WriteAllBytes(path, new byte[] { 1 });
+                // each type is versioned by its own file
+                File.SetLastWriteTimeUtc(files[0], new DateTime(2026, 11, 18, 10, 0, 0, DateTimeKind.Utc));
+                File.SetLastWriteTimeUtc(files[1], new DateTime(2026, 11, 18, 11, 0, 0, DateTimeKind.Utc));
+                var version = folder == "" ? 1794996000 : 1794999600;
 
                 var res = await _api.Client.GetAsync($"/api/waifu/card/{id}{query}");
 
                 Assert.Equal(HttpStatusCode.Redirect, res.StatusCode);
-                Assert.Equal($"https://cdn2.shinden.eu/{folder}{id}.{ext}", res.Headers.Location?.ToString());
+                Assert.Equal($"https://cdn2.shinden.eu/{folder}{id}.{ext}?v={version}", res.Headers.Location?.ToString());
             }
             finally
             {
                 foreach (var path in files.Where(File.Exists))
                     File.Delete(path);
+            }
+        }
+
+        [Fact]
+        public void ImageUrl_ChangesWhenTheFileIsDrawnAgain_AndHasNoVersionWithoutAFile()
+        {
+            Dir.Create();
+            var id = 970000000000UL + (ulong)Environment.TickCount64 % 1000000;
+            var path = $"{Dir.Cards}/{id}.webp";
+            try
+            {
+                Assert.Equal($"https://cdn2.shinden.eu/{id}.webp", Sanakan.Api.Models.CardFinalView.GetCardImageInShindenUrl(id, "webp", CardImageType.Normal));
+
+                File.WriteAllBytes(path, new byte[] { 1 });
+                File.SetLastWriteTimeUtc(path, new DateTime(2026, 11, 18, 10, 0, 0, DateTimeKind.Utc));
+                var first = Sanakan.Api.Models.CardFinalView.GetCardImageInShindenUrl(id, "webp", CardImageType.Normal);
+                File.SetLastWriteTimeUtc(path, new DateTime(2026, 11, 18, 10, 0, 1, DateTimeKind.Utc));
+                var redrawn = Sanakan.Api.Models.CardFinalView.GetCardImageInShindenUrl(id, "webp", CardImageType.Normal);
+
+                Assert.Equal($"https://cdn2.shinden.eu/{id}.webp?v=1794996000", first);
+                Assert.Equal($"https://cdn2.shinden.eu/{id}.webp?v=1794996001", redrawn);
+            }
+            finally
+            {
+                if (File.Exists(path)) File.Delete(path);
             }
         }
     }

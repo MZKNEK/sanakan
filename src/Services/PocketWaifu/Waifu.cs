@@ -1640,8 +1640,8 @@ namespace Sanakan.Services.PocketWaifu
 
         public async Task<string> GetWaifuProfileImageAsync(Card card, ITextChannel trashCh)
         {
-            var url = Api.Models.CardFinalView.GetCardProfileInShindenUrl(card);
             var uri = await GetCardProfileUrlIfExistAsync(card);
+            var url = Api.Models.CardFinalView.GetCardProfileInShindenUrl(card);
             if (!card.IsAnimatedImage || (card.IsAnimatedImage && !FileIsTooBigToSend(uri)))
             {
                 try
@@ -2170,8 +2170,8 @@ namespace Sanakan.Services.PocketWaifu
 
         public async Task<string> GetWaifuCardImageAsync(Card card, ITextChannel trashCh)
         {
-            var url = Api.Models.CardFinalView.GetCardBaseInShindenUrl(card);
             var uri = await GetCardUrlIfExistAsync(card);
+            var url = Api.Models.CardFinalView.GetCardBaseInShindenUrl(card);
             if (!card.IsAnimatedImage || (card.IsAnimatedImage && !FileIsTooBigToSend(uri)))
             {
                 try
