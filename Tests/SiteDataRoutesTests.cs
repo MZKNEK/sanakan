@@ -156,6 +156,9 @@ namespace Artifacts
             var only = Assert.Single(statuses);
             Assert.Equal(11UL, only.ShindenId);
             Assert.Equal(now.AddHours(8), only.EndsAt);
+            Assert.Equal(1UL, only.DiscordId);
+            Assert.Equal(now.AddHours(10 - UserExtension.FreeCardCooldownHours), only.TakenAt);
+            Assert.Null(only.OnServer);
 
             using (var db = new DatabaseContext(_config))
             {
@@ -163,6 +166,54 @@ namespace Artifacts
                 var limits = UserLimits.From(user, now, 3);
                 Assert.Equal(limits.Cooldowns.Single(x => x.Type == StatusType.Card).AvailableAt, only.EndsAt);
             }
+        }
+
+        private sealed class MembersWaifuController : WaifuController
+        {
+            private readonly HashSet<ulong> _members;
+            public MembersWaifuController(FakeConfig config, FixedTime time, params ulong[] members)
+                : base(null, null, new FakeExecutor(), null, config, time, null, null, null, null) => _members = members.ToHashSet();
+            protected override Func<ulong, bool> MainGuildMembers() => _members.Contains;
+        }
+
+        [Fact]
+        public async Task FreeCardStatuses_WithDays_AddPlayersWhoTookTheCardRecently()
+        {
+            var now = _time.Now();
+            var hours = UserExtension.FreeCardCooldownHours;
+            using (var db = new DatabaseContext(_config))
+            {
+                // waiting now
+                AddUser(db, 1, 11).TimeStatuses.Add(new TimeStatus { Type = StatusType.Card, EndsAt = now.AddHours(5) });
+                // took it 3 days ago, can take again
+                AddUser(db, 2, 22).TimeStatuses.Add(new TimeStatus { Type = StatusType.Card, EndsAt = now.AddDays(-3).AddHours(hours) });
+                // took it 8 days ago
+                AddUser(db, 3, 33).TimeStatuses.Add(new TimeStatus { Type = StatusType.Card, EndsAt = now.AddDays(-8).AddHours(hours) });
+                // took it 20 h ago, the reduction already ended the wait
+                AddUser(db, 4, 44).TimeStatuses.Add(new TimeStatus { Type = StatusType.Card, EndsAt = now.AddHours(hours - 20) });
+                db.SaveChanges();
+                db.Cards.AddRange(NewCard(4, 100, true, Quality.Omega));
+                db.SaveChanges();
+            }
+
+            var controller = ControllerHarness.Attach(new MembersWaifuController(_config, _time, 1, 4));
+
+            var waiting = (await controller.GetFreeCardStatusesAsync()).Value.ToList();
+            Assert.Equal(new ulong[] { 11 }, waiting.Select(x => x.ShindenId));
+
+            var week = (await controller.GetFreeCardStatusesAsync(7)).Value.OrderBy(x => x.ShindenId).ToList();
+            Assert.Equal(new ulong[] { 11, 22, 44 }, week.Select(x => x.ShindenId));
+            Assert.Equal(new bool?[] { true, false, true }, week.Select(x => x.OnServer));
+            Assert.Equal(now.AddDays(-3), week[1].TakenAt);
+            Assert.Equal(now.AddHours(-20), week[2].TakenAt);
+            Assert.True(week[2].EndsAt < now);
+            Assert.Equal(now.AddHours(5), week[0].EndsAt);
+
+            var month = (await controller.GetFreeCardStatusesAsync(30)).Value;
+            Assert.Equal(4, month.Count());
+
+            Assert.Equal(400, ((ObjectResult)(await controller.GetFreeCardStatusesAsync(31)).Result).StatusCode);
+            Assert.Equal(400, ((ObjectResult)(await controller.GetFreeCardStatusesAsync(-1)).Result).StatusCode);
         }
 
         [Fact]

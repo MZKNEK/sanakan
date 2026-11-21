@@ -1477,7 +1477,7 @@ namespace Sanakan.Modules
                 }
                 mission.Count(_time.Now());
 
-                freeCard.EndsAt = _time.Now().AddHours(22);
+                freeCard.EndsAt = _time.Now().AddHours(UserExtension.FreeCardCooldownHours);
 
                 var character = await _waifu.GetRandomCharacterAsync(botuser.PoolType);
                 if (character.CharInfo == null)

@@ -681,19 +681,30 @@ namespace Sanakan.Api.Controllers
         }
 
         /// <summary>
-        /// Pobiera graczy, którzy czekają na następną kartę z karta+
+        /// Pobiera graczy, którzy czekają na następną kartę z karta+, a z days także tych, którzy wzięli ją w ostatnich dniach
         /// </summary>
         /// <remarks>
-        /// Czas jest już skrócony za karty ultimate, tak jak liczy bot. Gracze, którzy mogą wziąć kartę teraz, nie są na liście.
+        /// endsAt jest już skrócone za karty ultimate, tak jak liczy bot; takenAt to ostatnie wzięcie karty (bot pamięta tylko ostatnie).
+        /// Bez days (albo z days=0) na liście są tylko gracze, którzy teraz czekają.
+        /// onServer mówi, czy gracz jest na głównym serwerze; null, gdy bot nie ma jeszcze pełnej listy członków.
         /// </remarks>
+        /// <param name="days">dodaje graczy, którzy wzięli kartę w ciągu tylu ostatnich dni (od 0 do 30)</param>
         /// <returns>lista graczy z czasem, od kiedy mogą wziąć kartę</returns>
+        /// <response code="400">days outside 0-30</response>
         [HttpGet("statuses/card"), Authorize(Policy = "Site")]
-        public async Task<ActionResult<IEnumerable<FreeCardStatus>>> GetFreeCardStatusesAsync()
+        public async Task<ActionResult<IEnumerable<FreeCardStatus>>> GetFreeCardStatusesAsync([FromQuery] int days = 0)
         {
+            if (days < 0 || days > MaxFreeCardStatusDays)
+                return $"Days must be between 0 and {MaxFreeCardStatusDays}".ToResponse(400);
+
             using (var db = CreateDatabaseContext())
             {
                 var now = _time.Now();
-                var earliest = now.AddHours(-UserExtension.MaxFreeCardCooldownReductionHours);
+                var takenSince = now.AddDays(-days);
+                var waitingSince = now.AddHours(-UserExtension.MaxFreeCardCooldownReductionHours);
+                var takenSinceEnd = takenSince.AddHours(UserExtension.FreeCardCooldownHours);
+                var earliest = days == 0 || waitingSince < takenSinceEnd ? waitingSince : takenSinceEnd;
+
                 var statuses = await (from status in db.TimeStatuses
                                       join user in db.Users on status.UserId equals user.Id
                                       where status.Type == StatusType.Card && status.EndsAt >= earliest && user.Shinden != 0
@@ -707,17 +718,40 @@ namespace Sanakan.Api.Controllers
                     .Select(x => new { x.GameDeckId, x.Quality, x.BorderOverflow }).ToListAsync())
                     .ToLookup(x => x.GameDeckId, x => new Card { FromFigure = true, Quality = x.Quality, BorderOverflow = x.BorderOverflow });
 
+                var onServer = MainGuildMembers();
                 var result = new List<FreeCardStatus>();
                 foreach (var entry in statuses)
                 {
                     var reduction = new GameDeck { Cards = ultimateCards[entry.Id].ToList() }.GetFreeCardCooldownReductionHours();
                     var freeCard = new TimeStatus { Type = StatusType.Card, EndsAt = entry.EndsAt }.Sub(TimeSpan.FromHours(reduction));
-                    if (freeCard.IsActive(now))
-                        result.Add(new FreeCardStatus { ShindenId = entry.Shinden, EndsAt = freeCard.EndsAt });
+                    var takenAt = entry.EndsAt.AddHours(-UserExtension.FreeCardCooldownHours);
+                    if (!freeCard.IsActive(now) && (days == 0 || takenAt < takenSince))
+                        continue;
+
+                    result.Add(new FreeCardStatus
+                    {
+                        ShindenId = entry.Shinden,
+                        DiscordId = entry.Id,
+                        EndsAt = freeCard.EndsAt,
+                        TakenAt = takenAt,
+                        OnServer = onServer?.Invoke(entry.Id),
+                    });
                 }
 
                 return result;
             }
+        }
+
+        private const int MaxFreeCardStatusDays = 30;
+
+        // null while the bot does not have the whole member list of the main guild, an absent member would look like one who left
+        protected virtual Func<ulong, bool> MainGuildMembers()
+        {
+            var guild = _client?.GetGuild(UserController.MainGuildId);
+            if (guild == null || !guild.HasAllMembers)
+                return null;
+
+            return id => guild.GetUser(id) != null;
         }
 
         // Full rows of every card are the bulk of a profile load, so statistics are computed from narrow rows

@@ -573,6 +573,7 @@ namespace Sanakan.Extensions
             deck.DeckPower = deck.CalculateDeckPower();
         }
 
+        public const int FreeCardCooldownHours = 22;
         public const int MaxFreeCardCooldownReductionHours = 12;
 
         public static int GetFreeCardCooldownReductionHours(this GameDeck deck)
