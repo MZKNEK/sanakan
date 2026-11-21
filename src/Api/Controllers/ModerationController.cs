@@ -1,15 +1,20 @@
 #pragma warning disable 1591
 
 using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
+using Sanakan.Api.Models;
+using Sanakan.Config;
 using Sanakan.Extensions;
 using Sanakan.Services;
+using Sanakan.Services.Time;
 
 namespace Sanakan.Api.Controllers
 {
@@ -17,11 +22,69 @@ namespace Sanakan.Api.Controllers
     [Route("api/[controller]")]
     public class ModerationController : ControllerBase
     {
-        private readonly Moderator _moderator;
+        public const int MaxPenaltyUsers = 100;
 
-        public ModerationController(Moderator moderator)
+        private readonly Moderator _moderator;
+        private readonly IConfig _config;
+        private readonly ISystemTime _time;
+
+        public ModerationController(Moderator moderator, IConfig config, ISystemTime time)
         {
             _moderator = moderator;
+            _config = config;
+            _time = time;
+        }
+
+        protected virtual Database.DatabaseContext CreateDatabaseContext() => new Database.DatabaseContext(_config);
+
+        /// <summary>
+        /// Zapytanie o trwające kary
+        /// </summary>
+        public class ActivePenaltiesQuery
+        {
+            /// <summary>
+            /// Id serwera Discord (liczba albo tekst)
+            /// </summary>
+            [Required]
+            public ulong? Guild { get; set; }
+            /// <summary>
+            /// Id użytkowników Discord (liczby albo tekst), najwyżej 100
+            /// </summary>
+            [Required]
+            public List<ulong> Users { get; set; }
+        }
+
+        /// <summary>
+        /// Pobiera trwające wyciszenia i bany podanych osób na serwerze
+        /// </summary>
+        /// <response code="200">lista trwających kar (type: mute albo ban)</response>
+        /// <response code="400">Brak pól albo więcej niż 100 osób.</response>
+        [HttpPost("penalties/active"), Authorize(Policy = "Site")]
+        public async Task<ActionResult<IEnumerable<ActivePenalty>>> GetActivePenaltiesAsync([FromBody, Required] ActivePenaltiesQuery query)
+        {
+            if (query.Users.Count > MaxPenaltyUsers)
+                return $"At most {MaxPenaltyUsers} users".ToResponse(400);
+
+            var users = query.Users.Distinct().ToList();
+            if (users.Count == 0)
+                return new List<ActivePenalty>();
+
+            var guild = query.Guild.Value;
+            using (var db = CreateDatabaseContext())
+            {
+                var penalties = await db.Penalties.AsQueryable().AsNoTracking().Where(x => x.Guild == guild && users.Contains(x.User)).ToListAsync();
+
+                var now = _time.Now();
+                return penalties.Select(x => new ActivePenalty
+                {
+                    User = x.User,
+                    Type = x.Type,
+                    Reason = x.Reason,
+                    StartDate = x.StartDate,
+                    DurationInHours = x.DurationInHours,
+                    End = PenaltyFormat.End(x),
+                }).Where(x => x.End > now).OrderBy(x => x.StartDate).ToList();
+            }
         }
 
         /// <summary>

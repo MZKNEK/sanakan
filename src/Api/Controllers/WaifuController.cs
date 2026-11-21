@@ -569,6 +569,157 @@ namespace Sanakan.Api.Controllers
             }
         }
 
+        /// <summary>
+        /// Pobiera dodatkowe statystyki gracza
+        /// </summary>
+        /// <param name="id">id użytkownika shindena</param>
+        /// <returns>statystyki</returns>
+        /// <response code="403">User on blacklist</response>
+        /// <response code="404">User not found</response>
+        [HttpGet("user/{id}/stats"), Authorize(Policy = "Site")]
+        public async Task<ActionResult<UserSiteStats>> GetUserSiteStatsAsync(ulong id)
+        {
+            using (var db = CreateDatabaseContext())
+            {
+                var user = await db.Users.AsQueryable().AsNoTracking().Where(x => id != 0 && x.Shinden == id)
+                    .Select(x => new { x.IsBlacklisted, x.Stats, Packs = x.GameDeck.BoosterPacks.Count() }).FirstOrDefaultAsync();
+
+                if (user == null)
+                {
+                    return "User not found".ToResponse(404);
+                }
+
+                if (user.IsBlacklisted)
+                {
+                    return "User on blacklist".ToResponse(403);
+                }
+
+                var stats = user.Stats ?? new UserStats();
+                return new UserSiteStats
+                {
+                    UnopenedBoosterPacks = user.Packs,
+                    CreatedCardsFromItems = stats.CreatedCardsFromItems,
+                    SlotMachineGames = stats.SlotMachineGames,
+                    IncomeInSc = stats.IncomeInSc,
+                    ScLost = stats.ScLost,
+                    RightAnswers = stats.RightAnswers,
+                    TotalAnswers = stats.TotalAnswers,
+                    TurnamentsWon = stats.TurnamentsWon,
+                };
+            }
+        }
+
+        /// <summary>
+        /// Pobiera liczniki postaci: liczbę kont Shindena z kartą postaci i liczbę publicznych list życzeń z postacią
+        /// </summary>
+        /// <remarks>
+        /// Lista jest posortowana po id postaci; następną stronę pobiera się z after równym ostatniemu zwróconemu id.
+        /// Wyniki są liczone raz na godzinę. Listy życzeń bot przelicza co noc o 4:00.
+        /// </remarks>
+        /// <param name="after">id postaci, po której zacząć (0 - od początku)</param>
+        /// <param name="count">liczba wpisów (od 1 do 10000)</param>
+        /// <returns>liczniki postaci</returns>
+        [HttpGet("characters/counts"), Authorize(Policy = "Site")]
+        public async Task<ActionResult<IEnumerable<CharacterCardCounts>>> GetCharacterCountsAsync([FromQuery] ulong after = 0, [FromQuery] int count = 1000)
+        {
+            using (var db = CreateDatabaseContext())
+            {
+                var expireTime = new MemoryCacheEntryOptions().SetAbsoluteExpiration(TimeSpan.FromHours(1));
+                var all = await QueryCache.GetOrLoadAsync(db, "character-counts", () => CountCharactersAsync(db), expireTime);
+
+                var limit = Math.Clamp(count, 1, MaxCharacterCountsPerRequest);
+                var start = FirstCharacterAfter(all, after);
+                return all.Skip(start).Take(limit).ToList();
+            }
+        }
+
+        private const int MaxCharacterCountsPerRequest = 10000;
+
+        private static int FirstCharacterAfter(List<CharacterCardCounts> sorted, ulong after)
+        {
+            int low = 0, high = sorted.Count;
+            while (low < high)
+            {
+                var mid = (low + high) / 2;
+                if (sorted[mid].CharacterId <= after) low = mid + 1;
+                else high = mid;
+            }
+            return low;
+        }
+
+        private static async Task<List<CharacterCardCounts>> CountCharactersAsync(Database.DatabaseContext db)
+        {
+            var owners = await (from card in db.Cards
+                                join user in db.Users on card.GameDeckId equals user.Id
+                                where user.Shinden != 0
+                                group card by card.Character into g
+                                select new { Character = g.Key, Owners = g.Select(x => x.GameDeckId).Distinct().Count() })
+                .AsNoTracking().ToListAsync();
+
+            var wishlists = await db.WishlistCountData.AsQueryable().AsNoTracking().Where(x => x.Count > 0 || x.ACount > 0)
+                .Select(x => new { x.Id, x.Count, x.ACount }).ToListAsync();
+
+            var counts = new Dictionary<ulong, CharacterCardCounts>();
+            CharacterCardCounts Of(ulong character)
+            {
+                if (!counts.TryGetValue(character, out var entry))
+                    counts.Add(character, entry = new CharacterCardCounts { CharacterId = character });
+                return entry;
+            }
+
+            foreach (var owner in owners.Where(x => x.Character != 0))
+                Of(owner.Character).Owners = owner.Owners;
+
+            foreach (var wish in wishlists.Where(x => x.Id != 0))
+            {
+                var entry = Of(wish.Id);
+                entry.Wishlists = wish.Count;
+                entry.ActiveWishlists = wish.ACount;
+            }
+
+            return counts.Values.OrderBy(x => x.CharacterId).ToList();
+        }
+
+        /// <summary>
+        /// Pobiera graczy, którzy czekają na następną kartę z karta+
+        /// </summary>
+        /// <remarks>
+        /// Czas jest już skrócony za karty ultimate, tak jak liczy bot. Gracze, którzy mogą wziąć kartę teraz, nie są na liście.
+        /// </remarks>
+        /// <returns>lista graczy z czasem, od kiedy mogą wziąć kartę</returns>
+        [HttpGet("statuses/card"), Authorize(Policy = "Site")]
+        public async Task<ActionResult<IEnumerable<FreeCardStatus>>> GetFreeCardStatusesAsync()
+        {
+            using (var db = CreateDatabaseContext())
+            {
+                var now = _time.Now();
+                var earliest = now.AddHours(-UserExtension.MaxFreeCardCooldownReductionHours);
+                var statuses = await (from status in db.TimeStatuses
+                                      join user in db.Users on status.UserId equals user.Id
+                                      where status.Type == StatusType.Card && status.EndsAt >= earliest && user.Shinden != 0
+                                      select new { user.Id, user.Shinden, status.EndsAt })
+                    .AsNoTracking().ToListAsync();
+
+                var ids = statuses.Select(x => x.Id).Distinct().ToList();
+                // same reason as in the ultimate cards query
+                var ultimate = true;
+                var ultimateCards = (await db.Cards.AsQueryable().AsNoTracking().Where(x => x.FromFigure == ultimate && ids.Contains(x.GameDeckId))
+                    .Select(x => new { x.GameDeckId, x.Quality, x.BorderOverflow }).ToListAsync())
+                    .ToLookup(x => x.GameDeckId, x => new Card { FromFigure = true, Quality = x.Quality, BorderOverflow = x.BorderOverflow });
+
+                var result = new List<FreeCardStatus>();
+                foreach (var entry in statuses)
+                {
+                    var reduction = new GameDeck { Cards = ultimateCards[entry.Id].ToList() }.GetFreeCardCooldownReductionHours();
+                    var freeCard = new TimeStatus { Type = StatusType.Card, EndsAt = entry.EndsAt }.Sub(TimeSpan.FromHours(reduction));
+                    if (freeCard.IsActive(now))
+                        result.Add(new FreeCardStatus { ShindenId = entry.Shinden, EndsAt = freeCard.EndsAt });
+                }
+
+                return result;
+            }
+        }
+
         // Full rows of every card are the bulk of a profile load, so statistics are computed from narrow rows
         // and only the cards the profile shows are loaded whole. They replace their narrow copies in GameDeck.Cards.
         public sealed class SiteProfilePvp

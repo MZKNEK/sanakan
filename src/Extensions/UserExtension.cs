@@ -573,6 +573,8 @@ namespace Sanakan.Extensions
             deck.DeckPower = deck.CalculateDeckPower();
         }
 
+        public const int MaxFreeCardCooldownReductionHours = 12;
+
         public static int GetFreeCardCooldownReductionHours(this GameDeck deck)
         {
             var ultimateCards = deck.Cards.Where(x => x.FromFigure).ToList();
@@ -583,7 +585,7 @@ namespace Sanakan.Extensions
             cnt += ultimateCards.Any(x => x.GetEffectiveQuality() > Quality.Gamma) ? 2 : 0;
             cnt += ultimateCards.Any(x => x.GetEffectiveQuality() > Quality.Zeta) ? 3 : 0;
             cnt += ultimateCards.Any(x => x.GetEffectiveQuality() > Quality.Lambda) ? 5 : 0;
-            if (cnt > 12) cnt = 12;
+            if (cnt > MaxFreeCardCooldownReductionHours) cnt = MaxFreeCardCooldownReductionHours;
 
             return cnt;
         }
