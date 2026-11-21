@@ -1,4 +1,4 @@
-# 1.5.0.13
+# 1.5.0.14
 
 Data: 2026-11-21
 
@@ -6,4 +6,4 @@ Data: 2026-11-21
 
 ## Techniczne
 
-- Strona może teraz pobierać od bota dodatkowe statystyki graczy, liczniki postaci, czas do następnej darmowej karty i trwające kary, zamiast czytać je bezpośrednio z bazy danych.
+- Strona może teraz sprawdzić u bota, kto w ostatnich dniach wziął darmową kartę i czy jest na serwerze, zamiast czytać to bezpośrednio z bazy danych.
