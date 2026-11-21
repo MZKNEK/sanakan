@@ -1,11 +1,9 @@
-# 1.5.0.12
+# 1.5.0.13
 
-Data: 2026-11-18
+Data: 2026-11-21
 
-- Naprawiono błąd, przez który emoji w nicku, nazwie oznaczenia czy innym tekście psuło zapis, np. wygrana z loterii przepadała.
-- Dodano filtrowanie historii wymian po graczu, jego nicku, karcie i dacie.
-- Zmieniono adresy obrazków kart i profili, aby po zmianie karty jej nowy wygląd był od razu widoczny na stronie.
+- Ta wersja zawiera tylko zmiany wewnętrzne.
 
 ## Techniczne
 
-- Pierwsze uruchomienie tej wersji potrwa dłużej, bo baza danych jest jednorazowo przestawiana na obsługę emoji.
+- Strona może teraz pobierać od bota dodatkowe statystyki graczy, liczniki postaci, czas do następnej darmowej karty i trwające kary, zamiast czytać je bezpośrednio z bazy danych.
