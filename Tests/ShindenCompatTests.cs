@@ -10,6 +10,7 @@ using Sanakan.Config.Model;
 using Sanakan.ShindenCompat;
 using Sanakan.ShindenCompat.Models;
 using Xunit;
+using SeriesStatus = Sanakan.ShindenCompat.Models.Entities.SeriesStatus;
 
 namespace Artifacts
 {
@@ -214,6 +215,9 @@ namespace Artifacts
             Assert.Equal(1200ul, user.ListStats.EpisodesCount);
             Assert.Equal(340ul, user.ListStats.ChaptersCount);
             Assert.Equal(66ul, user.ListStats.AnimeStatus.Total);
+            Assert.Equal(56ul, Sanakan.Services.ImageProcessing.GetSiteStatsTitleCount(user.ListStats.AnimeStatus));
+            Assert.Equal(5ul, Sanakan.Services.ImageProcessing.GetSiteStatsTitleCount(user.ListStats.MangaStatus));
+            Assert.Equal(0ul, Sanakan.Services.ImageProcessing.GetSiteStatsTitleCount(null));
             Assert.Equal(2ul, user.ListStats.AnimeStatus.InProgress);
             Assert.Equal(5ul, user.ListStats.MangaStatus.Total);
             Assert.Equal(5ul + 4 * 60 + 3 * 24 * 60 + 2 * 31 * 24 * 60, user.ListStats.AnimeTime.TotalMinutes);
@@ -221,6 +225,24 @@ namespace Artifacts
             Assert.Equal(7.5, user.ListStats.AnimeMeanScore.Rating);
             Assert.Equal(40ul, user.ListStats.AnimeMeanScore.Count);
             Assert.Equal(0ul, user.ListStats.MangaMeanScore.Count);
+        }
+
+        [Fact]
+        public void SiteStatsSubtitleMocksPlanners()
+        {
+            static SeriesStatus Status(ulong rest, ulong plan, ulong skip)
+                => new SeriesStatus { Completed = rest, InProgress = 0, OnHold = 0, Dropped = 0, InPlan = plan, Skipped = skip };
+
+            Assert.False(Sanakan.Services.ImageProcessing.IsSiteStatsDreamer(null, null));
+            Assert.False(Sanakan.Services.ImageProcessing.IsSiteStatsDreamer(Status(10, 5, 5), null));
+            Assert.True(Sanakan.Services.ImageProcessing.IsSiteStatsDreamer(Status(10, 6, 5), null));
+            Assert.True(Sanakan.Services.ImageProcessing.IsSiteStatsDreamer(null, Status(0, 1, 0)));
+            // the full view weighs anime and manga together
+            Assert.False(Sanakan.Services.ImageProcessing.IsSiteStatsDreamer(Status(0, 3, 0), Status(5, 0, 0)));
+
+            Assert.Equal("Statystyki anime", Sanakan.Services.ImageProcessing.GetSiteStatsSubtitle(Sanakan.Services.ImageProcessing.SiteStatsKind.Anime, false));
+            Assert.Contains("nie przeczyta", Sanakan.Services.ImageProcessing.GetSiteStatsSubtitle(Sanakan.Services.ImageProcessing.SiteStatsKind.Manga, true));
+            Assert.Contains("nie obejrzy ani nie przeczyta", Sanakan.Services.ImageProcessing.GetSiteStatsSubtitle(Sanakan.Services.ImageProcessing.SiteStatsKind.All, true));
         }
 
         [Fact]

@@ -35,14 +35,14 @@ namespace Sanakan.Services
 
         private const string SiteStatsBackground = "#131217";
         private const string SiteStatsAccent = "#A77BF3";
-        private const string SiteStatsCompleted = "#6FD47E";
+        private const string SiteStatsCompleted = "#34C38F";
         private const string SiteStatsTextBright = "#F2F0F7";
         private const string SiteStatsTextDim = "#C4BFCE";
         private const string SiteStatsLine = "#34303F";
         private const string SiteStatsTrack = "#2A2733";
 
         // order matches ISeriesStatus: in progress, completed, skipped, on hold, dropped, in plan
-        private static readonly string[] SiteStatsStatusColors = { SiteStatsAccent, SiteStatsCompleted, "#8A8A8F", "#F5C445", "#F0525C", "#4FC3E8" };
+        private static readonly string[] SiteStatsStatusColors = { "#56B4E9", SiteStatsCompleted, "#94A3B8", "#E9B44C", "#E76F68", "#A78BFA" };
         private static readonly string[] SiteStatsAnimeLabels = { "Oglądam:", "Obejrzane:", "Pomijam:", "Wstrzymane:", "Porzucone:", "Planuję:" };
         private static readonly string[] SiteStatsMangaLabels = { "Czytam:", "Przeczytane:", "Pomijam:", "Wstrzymane:", "Porzucone:", "Planuję:" };
 
@@ -53,6 +53,9 @@ namespace Sanakan.Services
         {
             public bool HasData => (Status?.Total ?? 0) > 0 || Entries.Count > 0;
         }
+
+        internal static ulong GetSiteStatsTitleCount(ISeriesStatus status)
+            => (status?.InProgress ?? 0) + (status?.Completed ?? 0) + (status?.OnHold ?? 0) + (status?.Dropped ?? 0);
 
         private static string FormatSiteStatsNumber(ulong value)
             => value.ToString("#,0", System.Globalization.CultureInfo.InvariantCulture).Replace(',', ' ');
@@ -227,7 +230,29 @@ namespace Sanakan.Services
             return bar;
         }
 
-        private void DrawSiteStatsHeader(Image image, Image avatar, string name, string rank, string color, SiteStatsKind kind)
+        // more planned and skipped titles than all the others together
+        internal static bool IsSiteStatsDreamer(params ISeriesStatus[] statuses)
+        {
+            ulong wishful = 0, rest = 0;
+            foreach (var status in statuses)
+            {
+                wishful += (status?.InPlan ?? 0) + (status?.Skipped ?? 0);
+                rest += GetSiteStatsTitleCount(status);
+            }
+            return wishful > rest;
+        }
+
+        internal static string GetSiteStatsSubtitle(SiteStatsKind kind, bool dreamer) => (kind, dreamer) switch
+        {
+            (SiteStatsKind.Anime, false) => "Statystyki anime",
+            (SiteStatsKind.Manga, false) => "Statystyki mangi",
+            (_, false) => "Statystyki anime i mangi",
+            (SiteStatsKind.Anime, true) => "Statystyki szaleńca, co tego i tak nie obejrzy",
+            (SiteStatsKind.Manga, true) => "Statystyki szaleńca, co tego i tak nie przeczyta",
+            (_, true) => "Statystyki szaleńca, co tego i tak nie obejrzy ani nie przeczyta",
+        };
+
+        private void DrawSiteStatsHeader(Image image, Image avatar, string name, string rank, string color, string subtitle)
         {
             var background = GetOrCreateColor(SiteStatsBackground);
             if (avatar != null)
@@ -261,23 +286,18 @@ namespace Sanakan.Services
 
             var nameFont = GetFontSize(_latoBold, 42, name, SiteStatsWidth - 520);
             DrawSiteStatsText(image, name, nameFont, SiteStatsTextBright, 134, 33);
-            var subtitle = kind switch
-            {
-                SiteStatsKind.Anime => "Statystyki anime",
-                SiteStatsKind.Manga => "Statystyki mangi",
-                _ => "Statystyki anime i mangi",
-            };
-            DrawSiteStatsText(image, subtitle, GetOrCreateFont(_latoRegular, 22), "#CFCBD8", 135, 69);
-
-            if (string.IsNullOrWhiteSpace(rank))
-                return;
 
             var rankFont = GetOrCreateFont(_latoBold, 22);
-            rank = TrimSiteStatsText(rank.Trim(), rankFont, 300);
-
-            var rankWidth = TextMeasurer.MeasureBounds(rank, new TextOptions(rankFont)).Width;
-            var pillWidth = rankWidth + 34;
+            rank = string.IsNullOrWhiteSpace(rank) ? null : TrimSiteStatsText(rank.Trim(), rankFont, 300);
+            var pillWidth = rank == null ? 0 : TextMeasurer.MeasureBounds(rank, new TextOptions(rankFont)).Width + 34;
             var pillX = SiteStatsWidth - 24 - pillWidth;
+
+            var subtitleFont = GetFontSize(_latoRegular, 22, subtitle, pillX - 16 - 135);
+            DrawSiteStatsText(image, subtitle, subtitleFont, "#CFCBD8", 135, 69);
+
+            if (rank == null)
+                return;
+
             var pill = GetRoundedRectPath(pillX, 26, pillWidth, 40, 20);
 
             image.Mutate(x => x.Paint(c =>
@@ -507,7 +527,7 @@ namespace Sanakan.Services
                 var stats = shindenInfo?.ListStats;
                 var anime = new SiteStatsPanel("Anime", false, stats?.AnimeStatus, new[]
                 {
-                    (FormatSiteStatsShortNumber(stats?.AnimeStatus?.Total ?? 0), "Tytuły"),
+                    (FormatSiteStatsShortNumber(GetSiteStatsTitleCount(stats?.AnimeStatus)), "Tytuły"),
                     (FormatSiteStatsShortNumber(stats?.EpisodesCount ?? 0), "Odcinki"),
                     (FormatSiteStatsTime(stats?.AnimeTime), "Czas"),
                     (FormatSiteStatsRating(stats?.AnimeMeanScore?.Rating), "Średnia"),
@@ -515,7 +535,7 @@ namespace Sanakan.Services
 
                 var manga = new SiteStatsPanel("Manga", true, stats?.MangaStatus, new[]
                 {
-                    (FormatSiteStatsShortNumber(stats?.MangaStatus?.Total ?? 0), "Tytuły"),
+                    (FormatSiteStatsShortNumber(GetSiteStatsTitleCount(stats?.MangaStatus)), "Tytuły"),
                     (FormatSiteStatsShortNumber(stats?.ChaptersCount ?? 0), "Rozdziały"),
                     (FormatSiteStatsTime(stats?.MangaTime), "Czas"),
                     (FormatSiteStatsRating(stats?.MangaMeanScore?.Rating), "Średnia"),
@@ -530,7 +550,8 @@ namespace Sanakan.Services
                 };
 
                 var image = new Image<Rgba32>(SiteStatsWidth, SiteStatsPanelY + panelHeight + 16, GetOrCreateColor(SiteStatsBackground).ToPixel<Rgba32>());
-                DrawSiteStatsHeader(image, avatar, shindenInfo?.Name ?? "", shindenInfo?.Rank, color.RawValue.ToString("X6"), kind);
+                DrawSiteStatsHeader(image, avatar, shindenInfo?.Name ?? "", shindenInfo?.Rank, color.RawValue.ToString("X6"),
+                    GetSiteStatsSubtitle(kind, IsSiteStatsDreamer(stats?.AnimeStatus, stats?.MangaStatus)));
 
                 switch (withData.Count)
                 {
