@@ -45,10 +45,11 @@ namespace Sanakan.Services.PocketWaifu
 
             ServerCounter = new ConcurrentDictionary<ulong, long>();
             UserCounter = new ConcurrentDictionary<ulong, long>();
-#if !DEBUG
+            if (BuildInfo.IsDebug)
+                return;
+
             _client.MessageReceived += HandleMessageAsync;
             LoadDumpedData();
-#endif
         }
 
         public void DumpData()

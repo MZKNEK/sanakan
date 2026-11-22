@@ -50,9 +50,8 @@ namespace Sanakan.Services
             _commands = new Dictionary<ulong, ulong>();
             _characters = new Dictionary<ulong, ulong>();
 
-#if !DEBUG
-            _client.MessageReceived += HandleMessageAsync;
-#endif
+            if (!BuildInfo.IsDebug)
+                _client.MessageReceived += HandleMessageAsync;
         }
 
         public static long CalculateExpForLevel(long level, double lm = LM) => (level <= 0) ? 0 : Convert.ToInt64(Math.Floor(Math.Pow(level / lm, 2)) + 1);

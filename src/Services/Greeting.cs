@@ -36,13 +36,14 @@ namespace Sanakan.Services
             _executor = exe;
             _time = time;
 
-#if !DEBUG
+            if (BuildInfo.IsDebug)
+                return;
+
             _client.LeftGuild += BotLeftGuildAsync;
             _client.UserJoined += UserJoinedAsync;
             _client.UserBanned += UserBannedAsync;
             _client.UserLeft += UserLeftAsync;
             _cleanupTimer = new Timer(_ => _ = RemoveLeftUsersAsync(), null, UntilNextCleanup(time.Now()), Timeout.InfiniteTimeSpan);
-#endif
         }
 
         private async Task UserBannedAsync(SocketUser user, SocketGuild guild)

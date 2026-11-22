@@ -112,7 +112,9 @@ namespace Sanakan.Services
             _exe = exe;
             _img = img;
 
-#if !DEBUG
+            if (BuildInfo.IsDebug)
+                return;
+
             _timer = new Timer(async _ =>
             {
                 try
@@ -127,7 +129,6 @@ namespace Sanakan.Services
             null,
             TimeSpan.FromMinutes(5),
             TimeSpan.FromMinutes(10));
-#endif
         }
 
         private async Task CyclicCheckAsync()

@@ -59,6 +59,9 @@ namespace Sanakan.Services
             _time = time;
             _img = img;
 
+            if (BuildInfo.IsDebug)
+                return;
+
             _timer = new Timer(async _ =>
             {
                 if (_disposed)

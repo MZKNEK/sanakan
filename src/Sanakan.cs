@@ -58,17 +58,25 @@ namespace Sanakan
 
         public async Task MainAsync()
         {
-            ImageProcessing.LimitMemoryPool();
-            LoadConfig();
-            MigrateConfig();
-            ValidateConfig();
+            await StepAsync("config", ExitCodes.BadConfig, () =>
+            {
+                ImageProcessing.LimitMemoryPool();
+                LoadConfig();
+                MigrateConfig();
+                ValidateConfig();
+                return Task.CompletedTask;
+            });
 
             _time = new SystemTime();
-            await EnsureDbIsCreatedAsync();
+            await StepAsync("database", ExitCodes.Restart, EnsureDbIsCreatedAsync);
 
-            CreateModules();
-            WarnAboutWeakAppKeys();
-            AddSigTermHandler();
+            await StepAsync("modules", ExitCodes.Restart, () =>
+            {
+                CreateModules();
+                WarnAboutWeakAppKeys();
+                AddSigTermHandler();
+                return Task.CompletedTask;
+            });
 
             var connected = new TaskCompletionSource();
             _client.Ready += () =>
@@ -77,30 +85,85 @@ namespace Sanakan
                 connected.TrySetResult();
                 return Task.CompletedTask;
             };
+            // the client logs only errors, a gateway that closes the connection right away would go unnoticed
+            _client.Disconnected += ex =>
+            {
+                if (!connected.Task.IsCompleted)
+                    _logger.LogError(StartupDiagnostics.DescribeDisconnect(ex));
+                return Task.CompletedTask;
+            };
 
-            var tmpCnf = _config.Get();
-            await _client.LoginAsync(TokenType.Bot, tmpCnf.BotToken);
-            await _client.SetGameAsync(tmpCnf.Prefix + "pomoc");
-            await _client.StartAsync();
+            await StepAsync("Discord login", ExitCodes.Restart, async () =>
+            {
+                var tmpCnf = _config.Get();
+                await _client.LoginAsync(TokenType.Bot, tmpCnf.BotToken);
+                await _client.SetGameAsync(tmpCnf.Prefix + "pomoc");
+                await _client.StartAsync();
+            });
 
             var serviceCollection = CreateServices();
-            var services = serviceCollection.BuildServiceProvider();
-            _executor.Initialize(services);
-            _sessions.Initialize(services);
-            await _handler.InitializeAsync(services, _helper);
+            await StepAsync("commands", ExitCodes.Restart, async () =>
+            {
+                var services = serviceCollection.BuildServiceProvider();
+                _executor.Initialize(services);
+                _sessions.Initialize(services);
+                await _handler.InitializeAsync(services, _helper);
+            });
 
-            await BotWebHost.StartAsync(_config, serviceCollection, _logger);
+            await StepAsync("API", ExitCodes.Restart, () => BotWebHost.StartAsync(_config, serviceCollection, _logger));
 
-            _heartbeat.Start();
-            _ingest.Start();
-            _waifu.ImageQueue.Start();
+            await StepAsync("background services", ExitCodes.Restart, () =>
+            {
+                _heartbeat.Start();
+                _ingest.Start();
+                _waifu.ImageQueue.Start();
+                return Task.CompletedTask;
+            });
 
             _logger.Log($"Bot: Sanakan {HealthMonitor.GetVersion()} started, API: {BotWebHost.Url}");
+
+            StartLog.Log("Start: waiting for Discord");
+            if (await Task.WhenAny(connected.Task, Task.Delay(StartupDiagnostics.DiscordReadyWarning)) != connected.Task)
+                _logger.LogError(StartupDiagnostics.NotReadyWarning(StartupDiagnostics.DiscordReadyWarning));
 
             await connected.Task;
             ReadyMarker.Write(Environment.GetEnvironmentVariable(ReadyMarker.Variable), _logger);
 
             await Task.Delay(-1);
+        }
+
+        private ILogger StartLog => new ConsoleLogger(_config);
+
+        // the last "Start:" line shows where a start that hangs got stuck
+        private async Task StepAsync(string name, int exitCode, Func<Task> step)
+        {
+            StartLog.Log($"Start: {name}");
+            try
+            {
+                // on the thread pool, a step that blocks (the database connection retries) still gets reported
+                var running = Task.Run(step);
+                var watch = System.Diagnostics.Stopwatch.StartNew();
+                while (await Task.WhenAny(running, Task.Delay(StartupDiagnostics.SlowStepWarning)) != running)
+                    StartLog.LogError(StartupDiagnostics.SlowStep(name, watch.Elapsed));
+
+                await running;
+            }
+            catch (Exception ex)
+            {
+                StartLog.LogError($"Start: {name} failed: {ex}");
+                StopAfterFailedStart(exitCode);
+            }
+        }
+
+        private static void StopAfterFailedStart(int exitCode)
+        {
+            // F5 in VS Code runs the bot in its own console window, which closes together with the bot
+            if (System.Diagnostics.Debugger.IsAttached)
+            {
+                Console.WriteLine("Press Enter to close.");
+                Console.ReadLine();
+            }
+            Environment.Exit(exitCode);
         }
 
         private static string DescribeDiscordLog(LogMessage log)
@@ -124,7 +187,7 @@ namespace Sanakan
             catch (InvalidOperationException ex)
             {
                 Console.Error.WriteLine($"Config: invalid configuration: {ex.Message}");
-                Environment.Exit(ExitCodes.BadConfig);
+                StopAfterFailedStart(ExitCodes.BadConfig);
             }
         }
 
@@ -193,7 +256,8 @@ namespace Sanakan
             _heartbeat = new Heartbeat(_health.GetAsync, _config, _logger);
             _ingest = new DiscordIngest(_client, _config, _logger);
             _apiGuard = new Api.TokenAttemptGuard(_time);
-            MemoryReport.StartStoring(_config, _time, _logger, TimeSpan.FromMinutes(5));
+            if (!BuildInfo.IsDebug)
+                MemoryReport.StartStoring(_config, _time, _logger, TimeSpan.FromMinutes(5));
             _events = new Events(_time);
             var fetchProxy = new FetchProxy(_config, _logger);
             _helper = new Helper(_config, _logger, fetchProxy.CreateHandler(new System.Net.Http.HttpClientHandler { AllowAutoRedirect = false }));
@@ -224,8 +288,16 @@ namespace Sanakan
             _img.CurrentCharacterPicture = id => _shinden.GetCurrentPictureAsync(id);
             _img.CharacterPictureMoved = (id, oldUrl, newUrl) => _waifu.MoveCharacterPictureAsync(id, oldUrl, newUrl);
             _waifu.ImageQueue = new CardImageQueue((id, force) => _waifu.DrawInBackgroundAsync(id, force), _logger);
-            WishlistRecount.Start(_config, _time, _logger);
-            StartTelemetry();
+            if (BuildInfo.IsDebug)
+            {
+                StartLog.Log("Start: Debug build, background work that writes to the database is off (penalty sweep, KC recount, "
+                    + "game telemetry, RAM history, profile check, greetings and left users cleanup, safari, experience from messages)");
+            }
+            else
+            {
+                WishlistRecount.Start(_config, _time, _logger);
+                StartTelemetry();
+            }
             _supervisor = new Supervisor(_client, _config, _logger, _mod, _time, _scamImages);
             _greeting = new Greeting(_client, _logger, _config, _executor, _time);
             _exp = new ExperienceManager(_client, _executor, _config, _img, _time, _logger);
@@ -256,10 +328,17 @@ namespace Sanakan
         private void LoadConfig()
         {
 #if !DEBUG
-            _config = new ConfigManager("Config.json");
+            var (file, debug) = ("Config.json", false);
 #else
-            _config = new ConfigManager("ConfigDebug.json", true);
+            var (file, debug) = ("ConfigDebug.json", true);
 #endif
+            var path = System.IO.Path.GetFullPath(file);
+            var existed = System.IO.File.Exists(path);
+            StartLog.Log($"Start: reading {path}");
+            _config = new ConfigManager(file, debug);
+
+            if (!existed && debug)
+                StartLog.LogError($"Config: {file} did not exist, an empty one was created at {path}, fill it in (BotToken first)");
         }
 
         private void AddSigTermHandler()
