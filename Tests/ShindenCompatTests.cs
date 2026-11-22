@@ -100,6 +100,7 @@ namespace Artifacts
             Assert.Equal("Sniku", info.Points.Single().Name);
             Assert.Equal(12.5, info.Points.Single().Points);
             Assert.Equal("Code Geass", info.Relations.OrderBy(x => x.Id).First().Title);
+            Assert.Equal(99ul, info.Relations.OrderBy(x => x.Id).First().TitleId);
             Assert.Equal(15ul, info.Relations.First().CharacterId);
             Assert.Equal(Language.Japanese, info.Relations.First().Language);
             Assert.Equal(new[] { 501ul, 502ul }, info.Pictures.Select(x => x.PictureId));

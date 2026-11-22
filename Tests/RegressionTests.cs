@@ -54,13 +54,35 @@ namespace Artifacts
         public void GetSearchResponse_ManyPages_DoesNotThrow()
         {
             var shinden = new Sanakan.Services.Shinden(null, null, null, new ListLogger(), new FixedTime());
-            var items = Enumerable.Range(0, 300).Select(_ => (object)new string('x', 200)).ToList();
+            var items = Enumerable.Range(0, 300).Select(_ => new string('x', 200)).ToList();
 
             var pages = shinden.GetSearchResponse(items, "title");
 
             Assert.True(pages.Length > 10);
-            Assert.Contains("```", pages.Last());
+            Assert.All(pages, x => Assert.True(x.Description.Length <= 4096));
+            Assert.StartsWith("title", pages.First().Description.TrimStart('ℹ'));
+            Assert.Contains("**300.**", pages.Last().Description);
+            Assert.Contains("`koniec`", pages.Last().Description);
         }
+
+        [Fact]
+        public void SearchLines_LinkCharacterAndTitle()
+        {
+            var character = new Sanakan.ShindenCompat.Models.Entities.PersonSearch { Id = 15, FirstName = "Lelouch", LastName = "Lamperouge" };
+
+            Assert.Equal("[Code Geass](https://shinden.pl/t/99)",
+                Sanakan.Services.Shinden.TitleSearchLine(new Sanakan.ShindenCompat.Models.Entities.QuickSearch { Id = 99, Title = "Code Geass" }));
+            Assert.Equal("[Lelouch Lamperouge](https://shinden.pl/character/15) ([Code Geass](https://shinden.pl/t/99))",
+                Sanakan.Services.Shinden.CharacterSearchLine(new CharacterWithTitle { Character = character, Title = "Code Geass", TitleId = 99 }));
+            Assert.Equal("[Lelouch Lamperouge](https://shinden.pl/character/15) (Code Geass)",
+                Sanakan.Services.Shinden.CharacterSearchLine(new CharacterWithTitle { Character = character, Title = "Code Geass" }));
+            Assert.Equal("[Lelouch Lamperouge](https://shinden.pl/character/15)",
+                Sanakan.Services.Shinden.CharacterSearchLine(new CharacterWithTitle { Character = character, Title = "" }));
+        }
+
+        [Fact]
+        public void SearchLink_EscapesBrackets()
+            => Assert.Equal("[A \\[B\\] C](https://shinden.pl/t/1)", Sanakan.Services.Shinden.SearchLink("A [B] C", "https://shinden.pl/t/1"));
 
         // 5.7 StringExtensions
         [Fact]

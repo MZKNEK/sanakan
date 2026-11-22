@@ -296,37 +296,66 @@ namespace Sanakan.Services
                 };
 
                 var info = await GetCharacterInfoAsync(ch.Id).ConfigureAwait(false);
-                if (info != null)
+                var relation = info?.Relations?.OrderBy(x => x.Id)?.FirstOrDefault();
+                if (relation != null)
                 {
-                    entity.Title = info?.Relations?.OrderBy(x => x.Id)?.FirstOrDefault()?.Title ?? string.Empty;
+                    entity.Title = relation.Title ?? string.Empty;
+                    entity.TitleId = relation.TitleId;
                 }
 
                 return entity;
             }).ConfigureAwait(false);
         }
 
-        public string[] GetSearchResponse(IEnumerable<object> list, string title)
+        private const int SearchPageLength = 4000;
+
+        public static string SearchLink(string text, string url)
         {
-            string temp = "";
-            int messageNr = 0;
-            var toSend = new List<string> { $"{title}\n```ini\n" };
+            var safe = Discord.Format.Sanitize((text ?? "").Trim().TrimToLength(200)).Replace("[", "\\[").Replace("]", "\\]");
+            return $"[{(string.IsNullOrEmpty(safe) ? "?" : safe)}]({url})";
+        }
+
+        public static string TitleSearchLine(IQuickSearch title) => SearchLink(title.Title, Url.GetTitleURL(title.Id));
+
+        public static string CharacterSearchLine(CharacterWithTitle character)
+        {
+            var line = SearchLink(character.Character.ToString(), Url.GetCharacterURL(character.Character.Id));
+            if (string.IsNullOrWhiteSpace(character.Title))
+                return line;
+
+            var title = character.TitleId == 0
+                ? Discord.Format.Sanitize(character.Title.Trim().TrimToLength(200))
+                : SearchLink(character.Title, Url.GetTitleURL(character.TitleId));
+
+            return $"{line} ({title})";
+        }
+
+        public Discord.Embed[] GetSearchResponse(IEnumerable<string> lines, string title)
+        {
+            var pages = new List<string>();
+            var page = $"{title}\n\n";
             int i = 0;
 
-            foreach (var item in list)
+            foreach (var line in lines)
             {
-                temp += $"[{++i}] {item}\n";
-                if (temp.Length > 1800)
+                var entry = $"**{++i}.** {line}\n";
+                if (page.Length + entry.Length > SearchPageLength)
                 {
-                    toSend[messageNr] += "\n```";
-                    toSend.Add($"```ini\n[{i}] {item}\n");
-                    messageNr++;
-                    temp = "";
+                    pages.Add(page);
+                    page = "";
                 }
-                else toSend[messageNr] += $"[{i}] {item}\n";
+                page += entry;
             }
-            toSend[messageNr] += "```\nNapisz `koniec`, aby zamknąć menu.";
 
-            return toSend.ToArray();
+            const string close = "\nNapisz `koniec`, aby zamknąć menu.";
+            if (page.Length + close.Length > SearchPageLength)
+            {
+                pages.Add(page);
+                page = "";
+            }
+            pages.Add(page + close);
+
+            return pages.Select(x => x.ToEmbedMessage(EMType.Info).Build()).ToArray();
         }
 
         public async Task SendSearchInfoAsync(SocketCommandContext context, string title, QuickSearchType type)
@@ -346,7 +375,11 @@ namespace Sanakan.Services
             }
 
             var list = res.Item3;
-            var toSend = GetSearchResponse(list, "Wybierz tytuł, który chcesz wyświetlić poprzez wpisanie numeru odpowiadającemu mu na liście.");
+            if (list == null || list.Count < 1)
+            {
+                await context.Channel.SendMessageAsync("", false, GetResponseFromSearchCode(HttpStatusCode.NotFound).ToEmbedMessage(EMType.Error).Build());
+                return;
+            }
 
             if (list.Count == 1)
             {
@@ -355,16 +388,17 @@ namespace Sanakan.Services
             }
             else
             {
+                var toSend = GetSearchResponse(list.Select(TitleSearchLine), "Wybierz tytuł, który chcesz wyświetlić poprzez wpisanie numeru odpowiadającemu mu na liście.");
                 session.SList = list;
                 await SendSearchResponseAsync(context, toSend, session);
             }
         }
 
-        public async Task SendSearchResponseAsync(SocketCommandContext context, string[] toSend, SearchSession session)
+        public async Task SendSearchResponseAsync(SocketCommandContext context, Discord.Embed[] toSend, SearchSession session)
         {
             var msg = new List<Discord.Rest.RestUserMessage>();
-            for (int index = 0; index < toSend.Length; index++)
-                if (toSend[index] != null) msg.Add(await context.Channel.SendMessageAsync(toSend[index]));
+            foreach (var embed in toSend)
+                msg.Add(await context.Channel.SendMessageAsync("", false, embed));
 
             session.Messages = msg.ToArray();
             await _session.TryAddSession(session);

@@ -103,6 +103,7 @@ namespace Sanakan.ShindenCompat.Models.Entities
         public Language Language { get; set; }
         public ulong? StaffId { get; set; }
         public string Title { get; set; }
+        public ulong TitleId { get; set; }
 
         public override string ToString() => Title;
     }

@@ -7,6 +7,7 @@ namespace Sanakan.Services.PocketWaifu
     public class CharacterWithTitle
     {
         public string Title { get; set; }
+        public ulong TitleId { get; set; }
         public IPersonSearch Character { get; set; }
 
         public override string ToString()

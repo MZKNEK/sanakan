@@ -72,6 +72,7 @@ namespace Sanakan.ShindenCompat.Models
         Language Language { get; }
         ulong? StaffId { get; }
         string Title { get; }
+        ulong TitleId { get; }
     }
 
     public interface IDateTimePrecision

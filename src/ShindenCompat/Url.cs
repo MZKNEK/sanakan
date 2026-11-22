@@ -28,6 +28,9 @@ namespace Sanakan.ShindenCompat
 
         public static string GetMangaURL(ulong seriesId) => $"{SiteUrl}manga/{seriesId}";
 
+        // short link that opens both anime and manga
+        public static string GetTitleURL(ulong titleId) => $"{SiteUrl}t/{titleId}";
+
         public static string GetEpisodeURL(ulong seriesId, ulong episodeId) => $"{SiteUrl}epek/{seriesId}/view/{episodeId}";
 
         public static string GetCharacterURL(ulong id) => $"{SiteUrl}character/{id}";

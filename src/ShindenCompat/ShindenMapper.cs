@@ -67,6 +67,7 @@ namespace Sanakan.ShindenCompat
             StaffFirstName = Decode(row.Str("s_first_name")),
             StaffLastName = Decode(row.Str("s_last_name")),
             Title = Decode(row.Str("title")),
+            TitleId = row.ULong("title_id") ?? 0,
             StaffPosition = row.Str("position"),
             CharacterRole = row.Str("role"),
         };

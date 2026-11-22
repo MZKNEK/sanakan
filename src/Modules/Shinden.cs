@@ -95,13 +95,7 @@ namespace Sanakan.Modules
         [Alias("postac", "character")]
         [Summary("wyświetla informacje o postaci")]
         [Remarks("Gintoki")]
-        public async Task SearchCharacterBasicAsync([Summary("imię")][Remainder]string name) => await SearchCharacterAsync(false, name);
-
-        [Command("postać", RunMode = RunMode.Async)]
-        [Alias("postac", "character")]
-        [Summary("wyświetla informacje o postaci")]
-        [Remarks("Gintoki")]
-        public async Task SearchCharacterAsync([Summary("czy szukać tytułów?")]bool longSearch, [Summary("imię")][Remainder]string name)
+        public async Task SearchCharacterAsync([Summary("imię")][Remainder]string name)
         {
             var session = new SearchSession(Context.User, _shclient, _shinden);
             if (_session.SessionExist(session)) return;
@@ -127,17 +121,13 @@ namespace Sanakan.Modules
                 return;
             }
 
-            System.Collections.Generic.IEnumerable<object> eList = list;
             Discord.IUserMessage buildingMsg = null;
-            if (longSearch)
-            {
-                if (list.Count > 6)
-                    buildingMsg = await SafeReplyAsync("", embed: $"📚 Przeglądanie zakurzonych półek...".ToEmbedMessage(EMType.Bot).Build());
+            if (list.Count > 6)
+                buildingMsg = await SafeReplyAsync("", embed: $"📚 Przeglądanie zakurzonych półek...".ToEmbedMessage(EMType.Bot).Build());
 
-                eList = await _shinden.GetTitlesForCharactersAsync(list);
-            }
+            var eList = await _shinden.GetTitlesForCharactersAsync(list);
 
-            var toSend = _shinden.GetSearchResponse(eList, "Wybierz postać, którą chcesz wyświetlić poprzez wpisanie numeru odpowiadającemu jej na liście.");
+            var toSend = _shinden.GetSearchResponse(eList.Select(Services.Shinden.CharacterSearchLine), "Wybierz postać, którą chcesz wyświetlić poprzez wpisanie numeru odpowiadającemu jej na liście.");
 
             if (buildingMsg != null)
                 await buildingMsg.DeleteAsync();
