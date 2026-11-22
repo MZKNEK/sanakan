@@ -1,9 +1,7 @@
-# 1.5.0.14
+# 1.5.0.15
 
-Data: 2026-11-21
+Data: 2026-11-22
 
-- Ta wersja zawiera tylko zmiany wewnętrzne.
-
-## Techniczne
-
-- Strona może teraz sprawdzić u bota, kto w ostatnich dniach wziął darmową kartę i czy jest na serwerze, zamiast czytać to bezpośrednio z bazy danych.
+- Zmieniono liczbę tytułów w statystykach ze strony, tak aby nie liczyła tytułów pomijanych i planowanych.
+- Dodano specjalny podpis w statystykach ze strony dla osób, które mają więcej tytułów planowanych i pomijanych niż wszystkich pozostałych razem.
+- Zmieniono kolory statusów na pasku w statystykach ze strony, tak aby pasowały do kolorów na stronie.
