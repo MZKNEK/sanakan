@@ -1,5 +1,6 @@
 ﻿#pragma warning disable 1591
 
+using System;
 using Discord;
 using Discord.WebSocket;
 
@@ -16,6 +17,21 @@ namespace Sanakan.Extensions
                 if (guildAvatar != null) avatar = guildAvatar;
             }
             return avatar.Split("?")[0];
+        }
+
+        public static Func<string> PublicApiUrl { get; set; }
+
+        // A CDN link dies once the user changes the avatar, an embed keeps it forever.
+        public static string GetEmbedAvatarUrl(this IUser user, bool getFromGuild = false)
+            => GetEmbedAvatarUrl(user, getFromGuild, PublicApiUrl?.Invoke());
+
+        public static string GetEmbedAvatarUrl(IUser user, bool getFromGuild, string publicApiUrl)
+        {
+            if (string.IsNullOrWhiteSpace(publicApiUrl))
+                return user.GetUserOrDefaultAvatarUrl(getFromGuild);
+
+            var url = $"{publicApiUrl.TrimEnd('/')}/api/user/discord/{user.Id}/avatar";
+            return getFromGuild && user is IGuildUser guildUser ? $"{url}?guild={guildUser.GuildId}" : url;
         }
 
         public static string GetUserNickInGuild(this IUser user)
@@ -48,7 +64,7 @@ namespace Sanakan.Extensions
                 builder.WithName($"{user.GlobalName ?? user.Username}{id}");
             }
 
-            return builder.WithIconUrl(user.GetUserOrDefaultAvatarUrl(true));
+            return builder.WithIconUrl(user.GetEmbedAvatarUrl(true));
         }
     }
 }

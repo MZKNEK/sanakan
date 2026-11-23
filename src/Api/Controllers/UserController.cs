@@ -68,6 +68,28 @@ namespace Sanakan.Api.Controllers
         }
 
         /// <summary>
+        /// Przekierowuje do aktualnego awatara użytkownika discorda (używane w embedach bota)
+        /// </summary>
+        /// <param name="id">id użytkownika discorda</param>
+        /// <param name="guild">id serwera, z którego brać awatar serwerowy</param>
+        /// <response code="302">Adres awatara na CDN Discorda; domyślny awatar, gdy bot nie widzi użytkownika</response>
+        [HttpGet("discord/{id}/avatar"), AllowAnonymous]
+        public IActionResult GetDiscordAvatar(ulong id, [FromQuery] ulong? guild)
+        {
+            var user = FindCachedDiscordUser(id, guild);
+            Response.Headers.CacheControl = "public, max-age=3600";
+            return Redirect(user?.GetUserOrDefaultAvatarUrl(guild != null) ?? Discord.CDN.GetDefaultUserAvatarUrl(id));
+        }
+
+        // Only the gateway cache: a REST lookup per anonymous call could use up the bot's Discord rate limit.
+        protected virtual Discord.IUser FindCachedDiscordUser(ulong id, ulong? guild)
+        {
+            if (_client == null) return null;
+            var member = guild == null ? null : _client.GetGuild(guild.Value)?.GetUser(id);
+            return (Discord.IUser)member ?? _client.GetUser(id);
+        }
+
+        /// <summary>
         /// Wyszukuje id użytkownika na shinden
         /// </summary>
         /// <param name="name">nazwa użytkownika</param>

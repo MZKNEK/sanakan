@@ -1560,6 +1560,42 @@ namespace Sanakan.Modules
             await SafeReplyAsync("", embed: $"Ustawiono próg dystansu scamowych obrazków na `{distance}`.".ToEmbedMessage(EMType.Success).Build());
         }
 
+        [Command("apiurl"), Priority(1), RequireDev]
+        [Summary("wyświetla lub ustawia publiczny adres API, przez który embedy pokazują aktualne awatary (off - linki do CDN Discorda)")]
+        [Remarks("https://api.example.pl/")]
+        public async Task SetPublicApiUrlAsync([Summary("adres albo off")] string url = null)
+        {
+            var config = Config.Get();
+            if (url == null)
+            {
+                var current = string.IsNullOrWhiteSpace(config.PublicApiUrl) ? "brak (awatary z CDN Discorda)" : config.PublicApiUrl;
+                await SafeReplyAsync("", embed: $"Publiczny adres API: `{current}`".ToEmbedMessage(EMType.Info).Build());
+                return;
+            }
+
+            if (url.Equals("off", StringComparison.OrdinalIgnoreCase))
+            {
+                config.PublicApiUrl = null;
+                Config.Save();
+                await SafeReplyAsync("", embed: "Awatary w embedach linkują do CDN Discorda.".ToEmbedMessage(EMType.Success).Build());
+                return;
+            }
+
+            if (!Uri.TryCreate(url, UriKind.Absolute, out var uri) || (uri.Scheme != Uri.UriSchemeHttps && uri.Scheme != Uri.UriSchemeHttp)
+                || !string.IsNullOrEmpty(uri.Query) || !string.IsNullOrEmpty(uri.Fragment))
+            {
+                await SafeReplyAsync("", embed: "Podaj pełny adres http(s) bez parametrów.".ToEmbedMessage(EMType.Error).Build());
+                return;
+            }
+
+            config.PublicApiUrl = uri.ToString();
+            Config.Save();
+
+            var test = Context.User.GetEmbedAvatarUrl();
+            await SafeReplyAsync("", embed: $"Publiczny adres API: `{uri}`\nTest: {test}\nJeśli ikonka obok nicku tej wiadomości się nie wyświetla, Discord nie dociera pod ten adres."
+                .ToEmbedMessage(EMType.Success).WithUser(Context.User).Build());
+        }
+
         [Command("phash", RunMode = RunMode.Async), Priority(1), RequireDevOrTester]
         [Summary("liczy dystans obrazków z załącznika lub wiadomości, na którą odpowiadasz, do znanych scamów oraz między sobą")]
         [Remarks("")]

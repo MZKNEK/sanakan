@@ -232,7 +232,7 @@ namespace Sanakan.Services
             return new EmbedBuilder
             {
                 Author = new EmbedAuthorBuilder().WithUser(user),
-                ThumbnailUrl = user.GetUserOrDefaultAvatarUrl(),
+                ThumbnailUrl = user.GetEmbedAvatarUrl(),
                 Fields = GetInfoUserFields(user),
                 Color = EMType.Info.Color(),
             }.Build();

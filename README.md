@@ -212,6 +212,15 @@ directly; it works without a proxy too, and the addresses kept in the database d
 most 4 downloads to the fetch proxy at once. When the proxy refuses the key or
 cannot be reached, the log channel gets one error, and one line when it works again.
 
+#### Avatars in embeds
+
+An embed keeps the avatar link it was sent with, and Discord removes the old picture some time after a user
+changes the avatar, so old messages show a broken icon. With `"PublicApiUrl": "https://<api host>/"` (the address
+Discord reaches the bot's API at) avatars in embeds link to `api/user/discord/{id}/avatar` instead, which
+redirects to the current avatar. Without it they link to Discord's CDN, as before. `dev apiurl` shows or sets it
+(`off` clears it) and replies with an embed whose icon only shows when Discord can reach that address. `s.awatar`, the site API and
+the pictures the bot draws always use Discord's CDN.
+
 Keep `Config.json` out of source control. It contains bot credentials,
 database credentials, and API keys. The repository's `.gitignore` should be
 used to prevent accidental commits of local configuration.

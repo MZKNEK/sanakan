@@ -238,6 +238,7 @@ namespace Sanakan
                 socketConfig.RestClientProvider = _ => Discord.Net.Rest.DefaultRestClientProvider.Instance(endpoints.DiscordApiUrl);
 
             _client = new DiscordSocketClient(socketConfig);
+            Extensions.EmbedAuthorBuilderExtension.PublicApiUrl = () => _config.Get().PublicApiUrl;
 
             _client.Log += log =>
             {

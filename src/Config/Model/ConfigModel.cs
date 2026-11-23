@@ -35,6 +35,8 @@ namespace Sanakan.Config.Model
         public IngestConfig Ingest { get; set; }
         public FetchProxyConfig FetchProxy { get; set; }
         public int ScamImageMaxDistance { get; set; } = 6;
+        // address Discord reaches this API at; when set, avatars in embeds link to the API and follow avatar changes
+        public string PublicApiUrl { get; set; }
         // only for the local simulation (fake Discord), empty in production
         public string DiscordGatewayUrl { get; set; }
         public string DiscordApiUrl { get; set; }

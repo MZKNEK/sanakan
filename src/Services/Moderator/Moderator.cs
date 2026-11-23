@@ -570,7 +570,7 @@ namespace Sanakan.Services
                 ImageUrl = image,
                 Footer = new EmbedFooterBuilder
                 {
-                    IconUrl = who.GetUserOrDefaultAvatarUrl(),
+                    IconUrl = who.GetEmbedAvatarUrl(),
                     Text = $"{byLabel}: {who.GetUserNickInGuild()}",
                 },
             };
