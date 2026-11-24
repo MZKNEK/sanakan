@@ -1,5 +1,5 @@
-# 1.5.0.17
+# 1.5.0.18
 
-Data: 2026-11-23
+Data: 2026-11-24
 
-- Naprawiono znikające awatary graczy w wiadomościach bota po zmianie awatara; dotyczy wiadomości wysłanych od tej wersji, które pokażą aktualny awatar zamiast pustej ikonki.
+- Ta wersja zawiera tylko zmiany wewnętrzne.
