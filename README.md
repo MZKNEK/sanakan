@@ -180,10 +180,14 @@ The bot keeps statistics of the game for charts (e.g. Grafana with a MySQL data 
   names another player, is left out.
   `PlayerNames (UserId, Name, SeenAt)` keeps the last name a player was seen with in exchanges, so the history can
   name players who left.
+- `LotteryResults (Date, GuildId, ChannelId, GiverId, Prize, Participants, WinnerId, CardsWon, Outcome)`: every card
+  lottery (`dev rozdaj`, each round of `rozdajm`): how many players joined (up to the 300 the bot reads), who won and
+  how many cards. `Outcome`: 0 won, 1 nobody joined, 2 nobody who joined could win (muted, blacklisted, no profile),
+  3 the giver had no cards left.
 
 Counters are written every 10 minutes and when the bot stops; the daily values just after midnight, or a minute
 after the start when the bot was down then. `PlayerDays`, `DuelResults` and the RAM measurements (`SystemData`) are
-kept for a year, the exchanges and SC gifts are not removed.
+kept for a year, the exchanges, SC gifts and lotteries are not removed.
 
 #### Downloads from players' links (fetch proxy)
 

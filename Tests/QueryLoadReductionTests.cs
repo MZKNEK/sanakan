@@ -202,10 +202,45 @@ namespace Artifacts
             return db.Cards.AsQueryable().AsNoTracking().Include(x => x.Tags).Where(x => x.GameDeckId == id).ToList();
         }
 
-        private async Task<(List<string> Cards, int Scalpels, int Ultimates, bool AnyWishlist)?> LotteryAsync(ulong giverId, ulong winnerId, uint count)
+        private async Task<(List<string> Cards, int Scalpels, int Ultimates, bool AnyWishlist)?> LotteryAsync(ulong giverId, ulong winnerId, uint count,
+            Sanakan.Database.Models.Analytics.LotteryResult result = null)
         {
             using var db = Open();
-            return await Sanakan.Modules.Debug.TransferLotteryCardsAsync(db, giverId, Users.Discord(winnerId), count, new FixedTime { Value = _now });
+            return await Sanakan.Modules.Debug.TransferLotteryCardsAsync(db, giverId, Users.Discord(winnerId), count, new FixedTime { Value = _now }, result);
+        }
+
+        [Fact]
+        public async Task Lottery_RecordsWinnerParticipantsAndCardsActuallyWon()
+        {
+            SeedUser(PlayerId);
+            SeedUser(OtherId);
+            SeedLotteryCards(PlayerId, 3);
+
+            await LotteryAsync(PlayerId, OtherId, 5, new Sanakan.Database.Models.Analytics.LotteryResult
+            {
+                Date = _now, GuildId = 1, ChannelId = 2, GiverId = PlayerId, Prize = 5, Participants = 7,
+            });
+
+            using var db = Open();
+            var result = Assert.Single(db.LotteryResults);
+            Assert.Equal(Sanakan.Database.Models.Analytics.LotteryOutcome.Won, result.Outcome);
+            Assert.Equal(OtherId, result.WinnerId);
+            Assert.Equal(PlayerId, result.GiverId);
+            Assert.Equal(7, result.Participants);
+            Assert.Equal(5, result.Prize);
+            Assert.Equal(3, result.CardsWon);
+            Assert.Equal(_now, result.Date);
+        }
+
+        [Fact]
+        public async Task Lottery_GiverWithoutCards_RecordsNothingByItself()
+        {
+            SeedUser(PlayerId);
+
+            Assert.Null(await LotteryAsync(PlayerId, OtherId, 3, new Sanakan.Database.Models.Analytics.LotteryResult { Date = _now }));
+
+            using var db = Open();
+            Assert.Empty(db.LotteryResults);
         }
 
         [Fact]

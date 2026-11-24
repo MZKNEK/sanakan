@@ -162,6 +162,8 @@ namespace Artifacts
             Assert.True(HasSimpleIndex<ScGift>(ctx, nameof(ScGift.Date)));
             Assert.True(HasSimpleIndex<ScGift>(ctx, nameof(ScGift.FromUserId)));
             Assert.True(HasSimpleIndex<ScGift>(ctx, nameof(ScGift.ToUserId)));
+            Assert.True(HasSimpleIndex<LotteryResult>(ctx, nameof(LotteryResult.Date)));
+            Assert.True(HasSimpleIndex<LotteryResult>(ctx, nameof(LotteryResult.WinnerId)));
         }
     }
 

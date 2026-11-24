@@ -77,6 +77,7 @@ namespace Sanakan.Database
         public DbSet<CardExchangeCard> CardExchangeCards { get; set; }
         public DbSet<PlayerName> PlayerNames { get; set; }
         public DbSet<ScGift> ScGifts { get; set; }
+        public DbSet<LotteryResult> LotteryResults { get; set; }
         public DbSet<WishlistCount> WishlistCountData { get; set; }
         public DbSet<UserActivity> UserActivities { get; set; }
         public DbSet<TagCardRelation> TagCardRelations { get; set; }
@@ -558,6 +559,13 @@ namespace Sanakan.Database
                 entity.HasIndex(e => e.Date);
                 entity.HasIndex(e => e.FromUserId);
                 entity.HasIndex(e => e.ToUserId);
+            });
+
+            modelBuilder.Entity<LotteryResult>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.HasIndex(e => e.Date);
+                entity.HasIndex(e => e.WinnerId);
             });
 
             // Other

@@ -16,6 +16,7 @@ using Newtonsoft.Json;
 using Sanakan.Config;
 using Sanakan.Config.Model;
 using Sanakan.Database.Models;
+using Sanakan.Database.Models.Analytics;
 using Sanakan.Extensions;
 using Sanakan.Preconditions;
 using Sanakan.Services;
@@ -873,21 +874,30 @@ namespace Sanakan.Modules
             var reactions = await msg.GetReactionUsersAsync(emote, 300).FlattenAsync();
             var users = reactions.Where(x => !x.IsBot).ToList();
 
+            var result = new LotteryResult
+            {
+                Date = _time.Now(),
+                GuildId = Context.Guild.Id,
+                ChannelId = Context.Channel.Id,
+                GiverId = id,
+                Prize = (int)prizeCount,
+                Participants = users.Count,
+            };
+
             IUser winner = null;
             using (var db = new Database.DatabaseContext(_config))
             {
                 var watch = Stopwatch.StartNew();
                 while (winner == null)
                 {
-                    if (watch.ElapsedMilliseconds > 60000)
+                    var timedOut = watch.ElapsedMilliseconds > 60000;
+                    if (timedOut || users.Count < 1)
                     {
-                        await msg.ModifyAsync(x => x.Embed = LotteryNoWinner("Nie udało się wylosować zwycięzcy."));
-                        return;
-                    }
+                        result.Outcome = result.Participants < 1 ? LotteryOutcome.NoParticipants : LotteryOutcome.NoEligibleWinner;
+                        db.LotteryResults.Add(result);
+                        await db.SaveChangesAsync();
 
-                    if (users.Count < 1)
-                    {
-                        await msg.ModifyAsync(x => x.Embed = LotteryNoWinner("Nikt nie wziął udziału."));
+                        await msg.ModifyAsync(x => x.Embed = LotteryNoWinner(timedOut ? "Nie udało się wylosować zwycięzcy." : "Nikt nie wziął udziału."));
                         return;
                     }
 
@@ -909,9 +919,14 @@ namespace Sanakan.Modules
             {
                 using (var db = new Database.DatabaseContext(Config))
                 {
-                    var won = await TransferLotteryCardsAsync(db, id, winner, count, _time);
+                    var won = await TransferLotteryCardsAsync(db, id, winner, count, _time, result);
                     if (won == null)
                     {
+                        result.WinnerId = winner.Id;
+                        result.Outcome = LotteryOutcome.NoCards;
+                        db.LotteryResults.Add(result);
+                        await db.SaveChangesAsync();
+
                         await msg.ModifyAsync(x => x.Embed = "Nie odnaleziono kart do rozdania!".ToEmbedMessage(EMType.Error).Build());
                         return;
                     }
@@ -997,7 +1012,8 @@ namespace Sanakan.Modules
             Description = $"{reason} Karty zostają u rozdającego.",
         }.Build();
 
-        internal static async Task<(List<string> Cards, int Scalpels, int Ultimates, bool AnyWishlist)?> TransferLotteryCardsAsync(Database.DatabaseContext db, ulong giverId, IUser winner, uint count, ISystemTime time)
+        internal static async Task<(List<string> Cards, int Scalpels, int Ultimates, bool AnyWishlist)?> TransferLotteryCardsAsync(Database.DatabaseContext db, ulong giverId, IUser winner, uint count, ISystemTime time,
+            LotteryResult result = null)
         {
             // the giver can hold tens of thousands of cards, so only ids are read and just the drawn cards are loaded
             var idsToSelect = await db.Cards.AsQueryable().Where(x => x.GameDeckId == giverId).Select(x => x.Id).ToListAsync();
@@ -1048,6 +1064,14 @@ namespace Sanakan.Modules
 
             await db.UserActivities.AddAsync(new Services.UserActivityBuilder(time)
                 .WithUser(winnerUser, winner).WithType(Database.Models.ActivityType.WonLottery).Build());
+
+            if (result != null)
+            {
+                result.WinnerId = winner.Id;
+                result.CardsWon = cardsIds.Count;
+                result.Outcome = LotteryOutcome.Won;
+                db.LotteryResults.Add(result);
+            }
 
             await db.SaveChangesAsync();
             // the most special and most wanted cards go to the top of the results

@@ -168,6 +168,50 @@ namespace Sanakan.Database.Migrations
                     b.ToTable("GameStats");
                 });
 
+            modelBuilder.Entity("Sanakan.Database.Models.Analytics.LotteryResult", b =>
+                {
+                    b.Property<ulong>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint unsigned");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<ulong>("Id"));
+
+                    b.Property<int>("CardsWon")
+                        .HasColumnType("int");
+
+                    b.Property<ulong>("ChannelId")
+                        .HasColumnType("bigint unsigned");
+
+                    b.Property<DateTime>("Date")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<ulong>("GiverId")
+                        .HasColumnType("bigint unsigned");
+
+                    b.Property<ulong>("GuildId")
+                        .HasColumnType("bigint unsigned");
+
+                    b.Property<int>("Outcome")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Participants")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Prize")
+                        .HasColumnType("int");
+
+                    b.Property<ulong?>("WinnerId")
+                        .HasColumnType("bigint unsigned");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Date");
+
+                    b.HasIndex("WinnerId");
+
+                    b.ToTable("LotteryResults");
+                });
+
             modelBuilder.Entity("Sanakan.Database.Models.Analytics.PlayerDay", b =>
                 {
                     b.Property<DateTime>("Date")
