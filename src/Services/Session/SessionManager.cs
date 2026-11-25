@@ -276,6 +276,22 @@ namespace Sanakan.Services.Session
             }
         }
 
+        // ends every session as if it expired, so its message shows it is over
+        public async Task EndAllAsync()
+        {
+            foreach (var session in FindSessions(_ => true))
+            {
+                try
+                {
+                    await DisposeAsync(session).ConfigureAwait(false);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError($"Session: end on shutdown: {ex.Message}");
+                }
+            }
+        }
+
         public void Dispose()
         {
             _disposed = true;

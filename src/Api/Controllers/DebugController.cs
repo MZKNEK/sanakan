@@ -42,6 +42,7 @@ namespace Sanakan.Api.Controllers
         // and stop the bot again after its restart.
         private async Task<IActionResult> StopAsync(string action, int exitCode)
         {
+            await Services.ShutdownCleanup.RunAsync(_logger, Services.ShutdownCleanup.Timeout);
             await _client.LogoutAsync();
             _logger.Log($"API: {action} requested from web");
             Response.OnCompleted(() =>

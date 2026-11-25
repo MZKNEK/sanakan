@@ -150,7 +150,9 @@ namespace Sanakan.Services.PocketWaifu
             {
                 try
                 {
-                    await Task.Delay(TimeSpan.FromMinutes(5));
+                    // the card is not granted yet, so a bot stopping now just lets it go
+                    using (ShutdownCleanup.DeleteOnShutdown(msg))
+                        await Task.Delay(TimeSpan.FromMinutes(5));
 
                     var usersReacted = await msg.GetReactionUsersAsync(ClaimEmote, 300).FlattenAsync();
                     var users = usersReacted.Where(u => !u.IsBot && u.Id != _client.CurrentUser.Id).ToList();

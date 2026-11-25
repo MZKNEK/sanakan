@@ -497,7 +497,9 @@ namespace Sanakan.Services.Session.Models
                         if (Outcome == ExchangeOutcome.None && P1 != null && P2 != null)
                         {
                             Outcome = ExchangeOutcome.Expired;
-                            OutcomeText = "Przez 2 minuty nikt nic nie zrobił. Karty zostały u właścicieli.";
+                            OutcomeText = ShutdownCleanup.IsStopping
+                                ? "Wymiana przerwana: bot się restartuje. Karty zostały u właścicieli."
+                                : "Przez 2 minuty nikt nic nie zrobił. Karty zostały u właścicieli.";
                             await msg.ModifyAsync(x => x.Embed = BuildEmbed());
                         }
 

@@ -274,6 +274,7 @@ namespace Sanakan
             _executor = new UserBasedExecutor(_logger);
             _eCounter = new EmoteCounter(_client, _time, _logger);
             _sessions = new SessionManager(_client, _executor, _logger);
+            ShutdownCleanup.Register(() => _sessions.EndAllAsync());
             _mod = new Moderator(_logger, _config, _client, _time, _img);
             _daemon = new Daemonizer(_client, _logger, _config);
             _shinden = new Services.Shinden(_shindenClient, _sessions, _img, _logger, _time, Services.Dir.ShindenCache);
@@ -351,6 +352,7 @@ namespace Sanakan
                 _ = Task.Run(async () =>
                 {
                     _logger.Log("Bot: SIGTERM received");
+                    await ShutdownCleanup.RunAsync(_logger, ShutdownCleanup.Timeout);
                     await _client.LogoutAsync();
                     await BotWebHost.StopAsync(TimeSpan.FromSeconds(5));
                     _executor?.Dispose();

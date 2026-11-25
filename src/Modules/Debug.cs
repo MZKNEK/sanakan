@@ -867,9 +867,12 @@ namespace Sanakan.Modules
             var progressText = LotteryProgress(progress, howMuch);
             if (progressText != null) sendMsg.Footer = new EmbedFooterBuilder().WithText(progressText);
             var msg = await SafeReplyAsync(mention, embed: sendMsg.Build());
-            await SafeAddReactionToMsg(msg, emote);
-
-            await Task.Delay(TimeSpan.FromMinutes(duration));
+            // nobody has won anything yet, so a bot stopping now just takes the lottery down
+            using (ShutdownCleanup.DeleteOnShutdown(msg))
+            {
+                await SafeAddReactionToMsg(msg, emote);
+                await Task.Delay(TimeSpan.FromMinutes(duration));
+            }
 
             var reactions = await msg.GetReactionUsersAsync(emote, 300).FlattenAsync();
             var users = reactions.Where(x => !x.IsBot).ToList();
@@ -2796,6 +2799,7 @@ namespace Sanakan.Modules
         public async Task TurnOffAsync()
         {
             await SafeReplyAsync("", embed: "To dobry czas by umrzeć.".ToEmbedMessage(EMType.Bot).Build());
+            await ShutdownCleanup.RunAsync(Logger, ShutdownCleanup.Timeout);
             await Context.Client.LogoutAsync();
             _spawn.DumpData();
             _eCounter.DumpData();
@@ -2810,6 +2814,7 @@ namespace Sanakan.Modules
         public async Task TurnOffWithUpdateAsync()
         {
             await SafeReplyAsync("", embed: "To już czas?".ToEmbedMessage(EMType.Bot).Build());
+            await ShutdownCleanup.RunAsync(Logger, ShutdownCleanup.Timeout);
             await Context.Client.LogoutAsync();
             _spawn.DumpData();
             _eCounter.DumpData();
