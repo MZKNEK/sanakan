@@ -33,6 +33,9 @@ namespace Sanakan.Database
         // what the save changes in the game, counted after it succeeds (GameTelemetry)
         public List<(string Metric, string Label, long Value, ulong NewPlayer)> PendingTelemetry { get; set; }
 
+        // what the next save also counts although it writes no row of it, e.g. a card discarded as soon as it was drawn
+        public List<(ulong Owner, string Metric, string Label, long Value)> TelemetryNotes { get; } = new();
+
         public DatabaseContext(IConfig config) : base()
         {
             _config = config;

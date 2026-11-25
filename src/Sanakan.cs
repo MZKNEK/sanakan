@@ -310,6 +310,7 @@ namespace Sanakan
         private void StartTelemetry()
         {
             var shops = new[] { (ShopType.Normal, CurrencyType.TC), (ShopType.Pvp, CurrencyType.PC), (ShopType.Activity, CurrencyType.AC) };
+            GameTelemetry.Default.ExcludedUsers = () => _config.Get().Dev;
             GameTelemetry.Default.Start(() => new Database.DatabaseContext(_config), _time, _logger,
                 () => shops.SelectMany(shop => _waifu.GetItemsWithCostForShop(shop.Item1).Select((x, i) => new GameTelemetry.ShopPrice
                 {

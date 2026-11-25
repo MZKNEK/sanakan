@@ -798,6 +798,7 @@ namespace Sanakan.Modules
                             {
                                 destroyedCards.Add(card);
                                 card.DestroyOrRelease(bUser, changeToRelease);
+                                GameTelemetry.CountDiscardedNewCard(db, card, bUser.Id);
                                 continue;
                             }
                         }
@@ -1503,6 +1504,7 @@ namespace Sanakan.Modules
                 if (destroyCards > 0 && card.WhoWantsCount < destroyCards && !isOnUserWishlist)
                 {
                     card.DestroyOrRelease(botuser, changeToRelease);
+                    GameTelemetry.CountDiscardedNewCard(db, card, botuser.Id);
                 }
                 else
                 {
@@ -3016,6 +3018,7 @@ namespace Sanakan.Modules
                         if (wishlistsCnt < destroyCards && !isOnUserWishlist)
                         {
                             card.DestroyOrRelease(bUser, changeToRelease);
+                            GameTelemetry.CountDiscardedNewCard(db, card, bUser.Id);
                             continue;
                         }
                     }
@@ -4399,7 +4402,7 @@ namespace Sanakan.Modules
                 };
                 var info = duser.GameDeck.CalculatePVPParams(denemy.GameDeck, res);
                 await db.SaveChangesAsync();
-                GameTelemetry.Default.Duel(duel);
+                GameTelemetry.Default.Duel(duel, duser.Id, denemy.Id);
                 var trash = await GetFightTrashChannelAsync(db);
 
                 _ = Task.Run(async () =>

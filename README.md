@@ -149,45 +149,15 @@ Deploying the version with the migration `ProfileLayers` switches everyone. A pl
 with its pictures and what it used unlocked, the first time it is read; `dev profile migrate` converts all of them
 at once (it only takes the missing ones, so it can run again).
 
-#### Game statistics
+#### Exchange history
 
-The bot keeps statistics of the game for charts (e.g. Grafana with a MySQL data source):
-
-- `GameStats (Date, Metric, Label, Value)`, one value per day. Counted from what the saves really write, labelled
-  with the command or API call (`api:Controller.Action`): `currency_in`/`currency_out` (`SC:drobne`),
-  `card_in` (`A:Activity`, rarity and source), `card_out`, `card_upgrade` (`A>S`), `item_in`/`item_out`,
-  `pack_in`/`pack_out`, `command`, `command_failed`, `command_error_reply`, `players_new`. Taken once a day for the
-  day before: `players_active` (`30d` for the last 30 days), `retention` (`d1`, `d7`, `d30`, per mille of the new
-  players of that day who came back), `newbies_d7`, `balance` (`TC:p50`… of the players of the last 30 days),
-  `can_afford` (per mille of them who can pay for each shop item), `circulation`, `cards_total`, `items_total`,
-  `packs_unopened`, `tc_transfer`, `exchanges` (`count`, `cards`, `one_sided`, `players`, `pairs`), `sc_gift`
-  (`count`, `sent`, `received`, `givers`, `recipients`).
-- A purchase in a shop (`sklepik`, `kiosk`, `koszary`) is labelled with the item instead of the command, the same
-  label as its `can_afford`: `currency_out` `AC:Kiosk:1:<item>`, `item_in`/`pack_in` `<type>:Kiosk:1:<item>`.
-- `PlayerDays (Date, UserId, Commands, IsNew)`: who used the bot on which day.
-- `DuelResults`: every PvP duel with both decks' power, rank, MMR, rarities and deres (in the same order, e.g.
-  `SSS,S` and `Yato,Yami`), the win chance the game gave the attacker and the outcome, without the players.
-- `CardExchanges (Date, User1Id, User2Id, User1Gave, User2Gave)`: every finished card exchange, `User1Id` proposed
-  it; `CardExchangeCards (ExchangeId, CardId, FromUserId, ToUserId)` the cards it moved. `ScGifts (Date, FromUserId,
-  ToUserId, Sent, Received)`: SC given with `podarujsc`. These name the players, for moderation, and stay when they
-  leave. A player reads their own exchanges with `GET api/waifu/exchanges` (user key), optionally only those with
-  one partner (`partner`, a part of their `nick`), of one card (`card`) or between dates (`since`, `before`); the
-  summary always covers the whole history. Exchanges from before are
-  read back from the bot's messages with `dev exchanges import #channel [message id]`, one channel at a time
-  (`Imported`, matched by `MessageId`, safe to repeat). Only certain exchanges are added: an offer of more than 12
-  cards, shown as a number, is taken from the players' `dodaj`/`usuń` during the exchange only when the bot's
-  reactions leave no doubt and the number matches; a message cut at Discord's limit, or one whose starting command
-  names another player, is left out.
-  `PlayerNames (UserId, Name, SeenAt)` keeps the last name a player was seen with in exchanges, so the history can
-  name players who left.
-- `LotteryResults (Date, GuildId, ChannelId, GiverId, Prize, Participants, WinnerId, CardsWon, Outcome)`: every card
-  lottery (`dev rozdaj`, each round of `rozdajm`): how many players joined (up to the 300 the bot reads), who won and
-  how many cards. `Outcome`: 0 won, 1 nobody joined, 2 nobody who joined could win (muted, blacklisted, no profile),
-  3 the giver had no cards left.
-
-Counters are written every 10 minutes and when the bot stops; the daily values just after midnight, or a minute
-after the start when the bot was down then. `PlayerDays`, `DuelResults` and the RAM measurements (`SystemData`) are
-kept for a year, the exchanges, SC gifts and lotteries are not removed.
+A player reads their own exchanges with `GET api/waifu/exchanges` (user key), optionally only those with one
+partner (`partner`, a part of their `nick`), of one card (`card`) or between dates (`since`, `before`); the summary
+always covers the whole history. Exchanges from before are read back from the bot's messages with
+`dev exchanges import #channel [message id]`, one channel at a time (safe to repeat). Only certain exchanges are
+added: an offer of more than 12 cards, shown as a number, is taken from the players' `dodaj`/`usuń` during the
+exchange only when the bot's reactions leave no doubt and the number matches; a message cut at Discord's limit, or
+one whose starting command names another player, is left out.
 
 #### Downloads from players' links (fetch proxy)
 

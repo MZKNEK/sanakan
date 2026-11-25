@@ -330,6 +330,7 @@ namespace Sanakan.Modules
                         if (d.CanClaim(_time.Now()))
                         {
                             d.Claim(botuser);
+                            GameTelemetry.CountAfterSave(db, botuser.Id, "quest_claimed", d.Type.ToString());
                             rewards.Add(d.Type.GetRewardString());
                         }
                     }
@@ -337,6 +338,7 @@ namespace Sanakan.Modules
                     if (!allClaimedBefore && dailyQuests.Count(x => x.IsClaimed(_time.Now())) == dailyQuests.Count)
                     {
                         botuser.AcCnt += 10;
+                        GameTelemetry.CountAfterSave(db, botuser.Id, "quest_claimed", "AllDaily");
                         rewards.Add("10 AC");
                     }
 
@@ -345,6 +347,7 @@ namespace Sanakan.Modules
                         if (w.CanClaim(_time.Now()))
                         {
                             w.Claim(botuser);
+                            GameTelemetry.CountAfterSave(db, botuser.Id, "quest_claimed", w.Type.ToString());
                             rewards.Add(w.Type.GetRewardString());
                         }
                     }

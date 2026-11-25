@@ -16,13 +16,14 @@ namespace Sanakan.Services.Executor
         private readonly Priority _priority;
         private readonly List<ulong> _owners;
         // the command or API call that queued it, its saves are counted under that (GameTelemetry)
-        private readonly string _reason = GameTelemetry.Reason;
+        private readonly string _reason;
 
         /// <summary>Maksymalny czas oczekiwania API na wykonanie zakolejkowanego zadania.</summary>
         public static readonly TimeSpan ApiMaxWait = TimeSpan.FromSeconds(30);
 
-        public Executable(string name, Func<Task> task, ulong owner = 0, Priority priority = Priority.Normal)
+        public Executable(string name, Func<Task> task, ulong owner = 0, Priority priority = Priority.Normal, string reason = null)
         {
+            _reason = reason ?? GameTelemetry.Reason;
             _name = name;
             _task = task;
             _internalTask = null;
@@ -30,8 +31,9 @@ namespace Sanakan.Services.Executor
             _owners =  new List<ulong>() {owner};
         }
 
-        public Executable(string name, Task task, ulong owner = 0, Priority priority = Priority.Normal)
+        public Executable(string name, Task task, ulong owner = 0, Priority priority = Priority.Normal, string reason = null)
         {
+            _reason = reason ?? GameTelemetry.Reason;
             _name = name;
             _task = null;
             _internalTask = task;

@@ -245,7 +245,7 @@ namespace Sanakan.Services
                         }
                     });
 
-                    await _executor.TryAdd(new Executable("delete user", removeTask, userId, Priority.High), TimeSpan.FromSeconds(1));
+                    await _executor.TryAdd(new Executable("delete user", removeTask, userId, Priority.High, "auto:usunięcie gracza"), TimeSpan.FromSeconds(1));
                 }
             }
             catch (Exception ex)

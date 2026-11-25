@@ -158,7 +158,7 @@ namespace Sanakan.Services
                     if (!db.Users.AsNoTracking().Any(x => x.Id == user.Id))
                     {
                         var task = CreateUserTask(user);
-                        await _executor.TryAdd(new Executable("add user", task, user.Id), TimeSpan.FromSeconds(1));
+                        await _executor.TryAdd(new Executable("add user", task, user.Id, reason: "auto:nowy gracz"), TimeSpan.FromSeconds(1));
                     }
                 }
             }
@@ -217,7 +217,7 @@ namespace Sanakan.Services
             var characters = _characters[user.Id];
             var task = CreateTask(user, message.Channel, fullP, messages, commands, characters, calculateExp);
 
-            if (!await _executor.TryAdd(new Executable("add exp", task, user.Id), TimeSpan.FromSeconds(1)))
+            if (!await _executor.TryAdd(new Executable("add exp", task, user.Id, reason: "auto:aktywność"), TimeSpan.FromSeconds(1)))
                 return;
 
             _exp[user.Id] -= fullP;

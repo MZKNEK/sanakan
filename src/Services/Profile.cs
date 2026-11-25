@@ -195,7 +195,7 @@ namespace Sanakan.Services
                     if (save)
                         await db.SaveChangesAsync();
                 }
-            }));
+            }), reason: "auto:subskrypcje");
 
             await _exe.TryAdd(task, TimeSpan.FromSeconds(1));
         }

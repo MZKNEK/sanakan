@@ -22,6 +22,8 @@ namespace Sanakan.Services.Session
         private bool _added { get; set; }
         private volatile bool _disposed;
         private int _disposeFlag;
+        // the command that opened it; what it does on a reaction later is counted under that
+        private readonly string _reason = GameTelemetry.Reason;
 
         public Session(IUser owner)
         {
@@ -141,7 +143,7 @@ namespace Sanakan.Services.Session
                     }
                     return false;
                 }
-            }), _owners.First().Id);
+            }), _owners.First().Id, reason: _reason);
 
             foreach (var u in _owners)
                 task.AddOwner(u.Id);

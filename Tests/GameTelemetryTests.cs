@@ -226,7 +226,7 @@ namespace Artifacts
         {
             _telemetry.Add("command", "x", 4);
             _telemetry.Command(Player, "x", false);
-            _telemetry.Duel(new DuelResult { AttackerCards = "S", DefenderCards = "A" });
+            _telemetry.Duel(new DuelResult { AttackerCards = "S", DefenderCards = "A" }, Player, Other);
 
             await Assert.ThrowsAnyAsync<Exception>(() => _telemetry.FlushAsync(() =>
             {
@@ -244,7 +244,7 @@ namespace Artifacts
         [Fact]
         public async Task DuelsAreStoredWithTheirTime()
         {
-            _telemetry.Duel(new DuelResult { Outcome = DuelOutcome.Draw, AttackerWinChance = 0.25, AttackerCards = "SSS,A", DefenderCards = "B" });
+            _telemetry.Duel(new DuelResult { Outcome = DuelOutcome.Draw, AttackerWinChance = 0.25, AttackerCards = "SSS,A", DefenderCards = "B" }, Player, Other);
             await _telemetry.FlushAsync(Open);
 
             using var db = Open();
@@ -331,6 +331,215 @@ namespace Artifacts
             await _telemetry.SnapshotAsync(Open, day, prices);
             using var again = Open();
             Assert.Equal(stats.Count, again.GameStats.Count());
+        }
+
+        [Fact]
+        public async Task StaffAccountsAreNotCounted()
+        {
+            const ulong Staff = 51003;
+            _telemetry.ExcludedUsers = () => new[] { Staff };
+            using (var db = WithReason("other"))
+            {
+                db.Users.Add(new User().Default(Staff, _now));
+                db.SaveChanges();
+            }
+            using (var db = WithReason("give"))
+            {
+                var staff = db.Users.Include(x => x.GameDeck).First(x => x.Id == Staff);
+                staff.ScCnt -= 100;
+                staff.GameDeck.CTCnt += 5;
+                staff.GameDeck.Cards = new List<Card> { new Card { Character = 1, Name = "a", Title = "t", Rarity = Rarity.SSS, Source = CardSource.GodIntervention, Dere = Dere.Yato, Tags = new List<Tag>() } };
+                db.Items.Add(new Item { GameDeckId = Staff, Type = ItemType.AffectionRecoverySmall, Count = 5, Name = "x" });
+                // what the staff gives a player is still counted
+                db.Users.First(x => x.Id == Player).ScCnt += 100;
+                db.SaveChanges();
+            }
+            using (var db = WithReason("zniszcz"))
+            {
+                db.Cards.Remove(db.Cards.First(x => x.GameDeckId == Staff));
+                db.SaveChanges();
+            }
+            _telemetry.Command(Staff, "give", false);
+            _telemetry.ErrorReply(Staff, "give");
+            _telemetry.Duel(new DuelResult { AttackerCards = "S", DefenderCards = "A" }, Player, Staff);
+
+            var stats = await StatsAsync();
+            Assert.Equal(new[] { ("currency_in", "SC:give") }, stats.Keys.ToArray());
+            Assert.Equal(100, stats[("currency_in", "SC:give")]);
+            using var check = Open();
+            Assert.Empty(check.PlayerDays);
+            Assert.Empty(check.DuelResults);
+        }
+
+        [Fact]
+        public async Task SnapshotLeavesOutStaffAccounts()
+        {
+            const ulong Staff = 51003;
+            _telemetry.ExcludedUsers = () => new[] { Staff };
+            var day = _now.Date;
+            using (var db = Open())
+            {
+                db.Users.Add(new User().Default(Staff, day));
+                db.PlayerDays.AddRange(new PlayerDay { Date = day, UserId = Player, Commands = 1 }, new PlayerDay { Date = day, UserId = Staff, Commands = 9 });
+                db.SaveChanges();
+                db.Users.First(x => x.Id == Staff).TcCnt = 1_000_000;
+                db.Users.First(x => x.Id == Player).TcCnt = 30;
+                db.GameDecks.First(x => x.Id == Staff).Cards = new List<Card> { new Card { Character = 1, Name = "a", Title = "t", Rarity = Rarity.SSS, Dere = Dere.Yato, Tags = new List<Tag>() } };
+                db.GameDecks.First(x => x.Id == Player).Cards = new List<Card> { new Card { Character = 2, Name = "b", Title = "t", Rarity = Rarity.SSS, Dere = Dere.Yami, Tags = new List<Tag>() } };
+                db.CardExchanges.Add(new CardExchange { Date = day.AddHours(1), User1Id = Staff, User2Id = Player, User1Gave = 5, User2Gave = 0 });
+                db.ScGifts.Add(new ScGift { Date = day.AddHours(1), FromUserId = Staff, ToUserId = Player, Sent = 100, Received = 60 });
+                db.SaveChanges();
+            }
+
+            await _telemetry.SnapshotAsync(Open, day);
+
+            using var check = Open();
+            var stats = check.GameStats.AsNoTracking().Where(x => x.Date == day).ToList().ToDictionary(x => (x.Metric, x.Label), x => x.Value);
+            Assert.Equal(1, stats[("players_active", "")]);
+            Assert.Equal(30, stats[("circulation", "TC")]);
+            Assert.Equal(30, stats[("balance", "TC:p99")]);
+            Assert.Equal(1, stats[("cards_total", "SSS")]);
+            Assert.Equal(0, stats[("exchanges", "count")]);
+            Assert.Equal(0, stats[("sc_gift", "count")]);
+        }
+
+        [Fact]
+        public async Task ACardDiscardedAsSoonAsDrawnCountsWithTheSave()
+        {
+            const ulong Staff = 51003;
+            _telemetry.ExcludedUsers = () => new[] { Staff };
+            using (var db = WithReason("pakiet"))
+            {
+                GameTelemetry.CountDiscardedNewCard(db, new Card { Rarity = Rarity.C, Source = CardSource.Activity }, Player);
+                GameTelemetry.CountDiscardedNewCard(db, new Card { Rarity = Rarity.C, Source = CardSource.Activity }, Staff);
+                // the command returned before saving
+            }
+            Assert.Empty(await StatsAsync());
+
+            using (var db = WithReason("pakiet"))
+            {
+                GameTelemetry.CountDiscardedNewCard(db, new Card { Rarity = Rarity.D, Source = CardSource.Shop }, Player);
+                GameTelemetry.CountDiscardedNewCard(db, new Card { Rarity = Rarity.D, Source = CardSource.Shop }, Staff);
+                GameTelemetry.CountAfterSave(db, Player, "quest_claimed", "DPacket");
+                db.Users.First(x => x.Id == Player).ScCnt += 1;
+                db.SaveChanges();
+                // counted once
+                db.Users.First(x => x.Id == Player).ScCnt += 1;
+                db.SaveChanges();
+            }
+
+            var stats = await StatsAsync();
+            Assert.Equal(1, stats[("card_in", "D:Shop")]);
+            Assert.Equal(1, stats[("card_out", "D:pakiet")]);
+            Assert.Equal(1, stats[("quest_claimed", "DPacket")]);
+            Assert.False(stats.ContainsKey(("card_in", "C:Activity")));
+        }
+
+        [Fact]
+        public async Task ARestartIsNotAnUpgrade()
+        {
+            ulong cardId;
+            using (var db = WithReason("x"))
+            {
+                var card = new Card { Character = 1, Name = "a", Title = "t", Rarity = Rarity.SSS, Dere = Dere.Yato, Tags = new List<Tag>() };
+                db.GameDecks.First(x => x.Id == Player).Cards = new List<Card> { card };
+                db.SaveChanges();
+                cardId = card.Id;
+            }
+            using (var db = WithReason("reset"))
+            {
+                var card = db.Cards.First(x => x.Id == cardId);
+                card.Rarity = Rarity.E;
+                card.RestartCnt += 1;
+                db.SaveChanges();
+            }
+
+            var stats = await StatsAsync();
+            Assert.Equal(1, stats[("card_restart", "SSS>E")]);
+            Assert.False(stats.ContainsKey(("card_upgrade", "SSS>E")));
+        }
+
+        [Fact]
+        public async Task ARemovedPlayerTakesTheirCurrencyAndExpAway()
+        {
+            using (var db = WithReason("x"))
+            {
+                var user = db.Users.Include(x => x.GameDeck).ThenInclude(x => x.ExpContainer).First(x => x.Id == Player);
+                user.GameDeck.CTCnt = 40;
+                user.GameDeck.ExpContainer.ExpCount = 2.5;
+                db.SaveChanges();
+            }
+            await StatsAsync();
+            using (var db = Open())
+            {
+                db.GameStats.RemoveRange(db.GameStats);
+                db.SaveChanges();
+            }
+            using (var db = WithReason("usuń"))
+            {
+                var user = db.Users.Include(x => x.GameDeck).ThenInclude(x => x.ExpContainer).First(x => x.Id == Player);
+                var sc = user.ScCnt;
+                db.Users.Remove(user);
+                db.SaveChanges();
+
+                var stats = await StatsAsync();
+                Assert.Equal(sc, stats[("currency_out", "SC:usuń")]);
+                Assert.Equal(40, stats[("currency_out", "CT:usuń")]);
+                Assert.Equal(250, stats[("exp_out", "Chest:usuń")]);
+                Assert.DoesNotContain(stats.Keys, x => x.Metric.StartsWith("karma"));
+            }
+        }
+
+        [Fact]
+        public async Task KarmaExpAndPlayerCountersAreCounted()
+        {
+            using (var db = WithReason("zniszcz"))
+            {
+                var user = db.Users.Include(x => x.Stats).Include(x => x.GameDeck).ThenInclude(x => x.ExpContainer).First(x => x.Id == Player);
+                user.GameDeck.Karma -= 2.5;
+                user.GameDeck.ExpContainer.ExpCount += 3;
+                user.Stats.DestroyedCards += 2;
+                user.GameDeck.Cards = new List<Card> { new Card { Character = 1, Name = "a", Title = "t", Rarity = Rarity.A, Dere = Dere.Yato, ExpCnt = 10.25, Tags = new List<Tag>() } };
+                db.SaveChanges();
+            }
+            using (var db = WithReason("ulepsz"))
+            {
+                var card = db.Cards.First(x => x.GameDeckId == Player);
+                card.ExpCnt = 0;
+                db.GameDecks.First(x => x.Id == Player).Karma += 1;
+                db.SaveChanges();
+            }
+
+            var stats = await StatsAsync();
+            Assert.Equal(250, stats[("karma_out", "zniszcz")]);
+            Assert.Equal(100, stats[("karma_in", "ulepsz")]);
+            Assert.Equal(300, stats[("exp_in", "Chest:zniszcz")]);
+            Assert.Equal(1025, stats[("exp_in", "Card:zniszcz")]);
+            Assert.Equal(1025, stats[("exp_out", "Card:ulepsz")]);
+            Assert.Equal(2, stats[("user_stat", "DestroyedCards:zniszcz")]);
+        }
+
+        [Fact]
+        public async Task RefusalsAreCountedWithTheirReason()
+        {
+            _telemetry.ErrorReply(Player, "pakiet", "<@51001> masz już **Asuna Yuuki** i 1000 kart!\nDrugi wiersz");
+            _telemetry.ErrorReply(Other, "pakiet", "<@51002> masz już **Kirito** i 200 kart!");
+
+            var stats = await StatsAsync();
+            Assert.Equal(2, stats[("command_error_reply", "pakiet")]);
+            Assert.Equal(2, stats[("command_refusal", "pakiet:masz już * i # kart!")]);
+        }
+
+        [Fact]
+        public async Task BackgroundWorkCanNameItsOwnReason()
+        {
+            GameTelemetry.Reason = "pakiet";
+            var seen = "";
+            var work = new Executable("safari", () => { seen = GameTelemetry.Reason; return Task.CompletedTask; }, reason: "auto:safari");
+
+            await Task.Run(() => work.ExecuteAsync(null));
+
+            Assert.Equal("auto:safari", seen);
         }
 
         [Fact]

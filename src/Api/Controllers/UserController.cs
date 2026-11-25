@@ -220,6 +220,15 @@ namespace Sanakan.Api.Controllers
         }
 
         /// <summary>
+        /// Pobiera id kont z listy Dev w configu bota, pomijanych w statystykach gry (token strony lub nagłówek x-app-key z uprawnieniem Site)
+        /// </summary>
+        [HttpGet("excluded-from-stats"), Authorize(Policy = "Site")]
+        public ActionResult<List<string>> GetUsersExcludedFromStats()
+        {
+            return (_config.Get().Dev ?? new List<ulong>()).Select(x => x.ToString()).ToList();
+        }
+
+        /// <summary>
         /// Pobiera uprawnienia użytkownika na serwerze: dev, tester, admin, moderator itp. (token strony lub nagłówek x-app-key z uprawnieniem Sansite)
         /// </summary>
         /// <param name="id">id użytkownika shindena</param>

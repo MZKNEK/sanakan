@@ -30,7 +30,7 @@ namespace Sanakan.Services.Commands
         public async Task<IUserMessage> SafeReplyAsync(string message = null, bool isTTS = false, Embed embed = null, RequestOptions options = null, AllowedMentions allowedMentions = null, MessageReference messageReference = null, MessageComponent components = null, ISticker[] stickers = null, Embed[] embeds = null, MessageFlags flags = MessageFlags.None)
         {
             if (_command != null && embed?.Color == EMType.Error.Color())
-                GameTelemetry.Default.ErrorReply(_command);
+                GameTelemetry.Default.ErrorReply(Context.User.Id, _command, embed.Description ?? embed.Title);
 
             IUserMessage msg = null;
             Exception last = null;
