@@ -82,6 +82,25 @@ namespace Artifacts
             Assert.Empty(_api.Executor.Added);
         }
 
+        [Fact]
+        public void ActivityShop_KeepsItemOrderWithCurrentPrices()
+        {
+            var items = Waifu().GetItemsWithCostForShop(ShopType.Activity);
+
+            Assert.Equal(new (ItemType, int)[]
+            {
+                (ItemType.AffectionRecoveryBig, 6),
+                (ItemType.IncreaseExpBig, 18),
+                (ItemType.IncreaseUpgradeCnt, 99),
+                (ItemType.SetCustomImage, 345),
+                (ItemType.RandomBoosterPackSingleE, 99),
+                (ItemType.BigRandomBoosterPackE, 939),
+                (ItemType.CreationItemBase, 37),
+                (ItemType.SetCustomBorder, 172),
+                (ItemType.ChangeBorderVariant, 49),
+            }, items.Select(x => (x.Item.Type, x.Cost)));
+        }
+
         [Theory]
         [InlineData("unknown")]
         [InlineData("-1")]

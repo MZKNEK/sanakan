@@ -717,14 +717,14 @@ namespace Sanakan.Services.PocketWaifu
             return new ItemWithCost[]
             {
                 new ItemWithCost(6,     ItemType.AffectionRecoveryBig.ToItem()),
-                new ItemWithCost(35,    ItemType.IncreaseExpBig.ToItem()),
-                new ItemWithCost(395,   ItemType.IncreaseUpgradeCnt.ToItem()),
-                new ItemWithCost(1665,  ItemType.SetCustomImage.ToItem()),
-                new ItemWithCost(165,   ItemType.RandomBoosterPackSingleE.ToItem()),
-                new ItemWithCost(1500,  ItemType.BigRandomBoosterPackE.ToItem()),
-                new ItemWithCost(125,   ItemType.CreationItemBase.ToItem()),
-                new ItemWithCost(921,   ItemType.SetCustomBorder.ToItem()),
-                new ItemWithCost(216,   ItemType.ChangeBorderVariant.ToItem()),
+                new ItemWithCost(18,    ItemType.IncreaseExpBig.ToItem()),
+                new ItemWithCost(99,    ItemType.IncreaseUpgradeCnt.ToItem()),
+                new ItemWithCost(345,   ItemType.SetCustomImage.ToItem()),
+                new ItemWithCost(99,    ItemType.RandomBoosterPackSingleE.ToItem()),
+                new ItemWithCost(939,   ItemType.BigRandomBoosterPackE.ToItem()),
+                new ItemWithCost(37,    ItemType.CreationItemBase.ToItem()),
+                new ItemWithCost(172,   ItemType.SetCustomBorder.ToItem()),
+                new ItemWithCost(49,    ItemType.ChangeBorderVariant.ToItem()),
             };
         }
 
