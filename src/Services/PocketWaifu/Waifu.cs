@@ -1146,7 +1146,7 @@ namespace Sanakan.Services.PocketWaifu
             }
             else
             {
-                if (critical) defence /= 2;
+                // a critical hit does not lower the defence: against a tank it then dealt five times a normal hit and precision decided the fight
                 // defence above the enemy's attack would make an ultimate card almost immortal
                 damage = Math.Max(attack - defence, attack * UltimateMinDamageShare);
             }

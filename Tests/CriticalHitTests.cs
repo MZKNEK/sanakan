@@ -30,8 +30,12 @@ namespace Artifacts
             => Assert.Equal(15, Waifu.GetFA(Card(false, 100, 0), Card(false, 0, 90, dere: Dere.Dandere), true), 3);
 
         [Fact]
-        public void Critical_InUltimateFights_AlsoHalvesTheDefence()
-            => Assert.Equal((3000 - 1000) * 1.5, Waifu.GetFA(Card(true, 3000, 0), Card(true, 0, 2000, dere: Dere.Dandere), true), 3);
+        public void Critical_InUltimateFights_OnlyMultipliesTheDamage()
+        {
+            Assert.Equal((3000 - 2000) * 1.5, Waifu.GetFA(Card(true, 3000, 0), Card(true, 0, 2000, dere: Dere.Dandere), true), 3);
+            // against a tank the minimum share is multiplied too, without the defence it would bypass
+            Assert.Equal(9999 * Waifu.UltimateMinDamageShare * 1.5, Waifu.GetFA(Card(true, 9999, 0), Card(true, 0, 9999, dere: Dere.Dandere), true), 3);
+        }
 
         [Fact]
         public void ExpectedDamage_MixesNormalAndCriticalHits()
@@ -51,7 +55,8 @@ namespace Artifacts
             precise.Health = 10000;
 
             Assert.Equal(2950.69, plain.CalculateCardPower(), 1);
-            Assert.True(precise.CalculateCardPower() > plain.CalculateCardPower() * 1.1);
+            // 40% of hits at x1.5 deal 20% more, the power grows with the square root of the damage dealt
+            Assert.Equal(Math.Sqrt(1.2), precise.CalculateCardPower() / plain.CalculateCardPower(), 6);
         }
 
         [Theory]
