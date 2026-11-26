@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Sanakan.Database.Models;
 using Sanakan.Extensions;
+using Sanakan.Services.PocketWaifu.Fight;
 
 namespace Sanakan.Api.Models
 {
@@ -54,6 +55,7 @@ namespace Sanakan.Api.Models
         {
             var deck = user.GameDeck;
             var active = deck.Cards.Where(x => x.Active).ToList();
+            var front = DeckLines.GetFrontCards(active);
             var power = UserExtension.CombineCardPowers(active.Select(x => x.CalculateCardPower()));
 
             var pvp = user.TimeStatuses?.FirstOrDefault(x => x.Type == StatusType.Pvp);
@@ -67,7 +69,7 @@ namespace Sanakan.Api.Models
 
             return new UserDeck
             {
-                Cards = active.Select(UserDeckCard.From).ToList(),
+                Cards = active.Select(x => UserDeckCard.From(x, front.Contains(x.Id))).ToList(),
                 Power = power,
                 MinPower = deck.GetMinDeckPower(),
                 MaxPower = deck.GetMaxDeckPower(),
@@ -129,8 +131,16 @@ namespace Sanakan.Api.Models
         /// Czy karta jest kartą ultimate
         /// </summary>
         public bool Ultimate { get; set; }
+        /// <summary>
+        /// Ustawienie linii: auto - wybiera bot, front - przód, back - tył
+        /// </summary>
+        public CardLine Line { get; set; }
+        /// <summary>
+        /// Czy karta stoi w walce z przodu (jest celem dwa razy częściej i nie trafia krytycznie); przód ma najwyżej 4 karty i połowę talii
+        /// </summary>
+        public bool Front { get; set; }
 
-        public static UserDeckCard From(Card card) => new UserDeckCard
+        public static UserDeckCard From(Card card, bool front) => new UserDeckCard
         {
             Id = card.Id,
             Name = card.Name,
@@ -143,6 +153,8 @@ namespace Sanakan.Api.Models
             Power = card.CalculateCardPower(),
             CritChance = card.GetCritChance(),
             Ultimate = card.FromFigure,
+            Line = card.Line,
+            Front = front,
         };
     }
 }

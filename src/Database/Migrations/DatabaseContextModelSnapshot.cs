@@ -554,6 +554,9 @@ namespace Sanakan.Database.Migrations
                     b.Property<ulong>("LastIdOwner")
                         .HasColumnType("bigint unsigned");
 
+                    b.Property<int>("Line")
+                        .HasColumnType("int");
+
                     b.Property<double>("MarketValue")
                         .HasColumnType("double");
 

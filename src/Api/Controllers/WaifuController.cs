@@ -1694,6 +1694,53 @@ namespace Sanakan.Api.Controllers
             return result;
         }
 
+        /// <summary>
+        /// Ustawia linię karty w pojedynkach (wymagany Bearer od użytkownika)
+        /// </summary>
+        /// <remarks>Karta z przodu jest celem dwa razy częściej i nie trafia krytycznie; przód ma najwyżej 4 karty i połowę talii. Ustawienie działa też dla kart spoza talii, po ich aktywowaniu.</remarks>
+        /// <param name="wid">id karty</param>
+        /// <param name="line">"auto" - wybiera bot, "front" - przód, "back" - tył</param>
+        /// <response code="200">Line set</response>
+        /// <response code="400">Unknown line</response>
+        /// <response code="403">The appropriate claim was not found</response>
+        /// <response code="404">Card not found</response>
+        /// <response code="503">Command queue is full, retry after the Retry-After header</response>
+        /// <response code="504">Command timed out</response>
+        [HttpPut("deck/card/{wid}/line"), Authorize(Policy = "Player")]
+        public async Task<IActionResult> SetCardLineAsync(ulong wid, [FromBody] CardLine line)
+        {
+            if (!TryGetDiscordId(out var discordId))
+                return "The appropriate claim was not found".ToResponse(403);
+
+            if (!Enum.IsDefined(line))
+                return "Unknown line".ToResponse(400);
+
+            IActionResult result = null;
+            var exe = new Executable($"api-line u{discordId}", new Func<Task>(async () =>
+            {
+                using var db = CreateDatabaseContext();
+                var thisCard = await db.Cards.AsQueryable().FirstOrDefaultAsync(x => x.Id == wid && x.GameDeckId == discordId);
+                if (thisCard == null)
+                {
+                    result = "Card not found!".ToResponse(404);
+                    return;
+                }
+
+                thisCard.Line = line;
+                await db.SaveChangesAsync();
+
+                QueryCache.ExpireTag(new string[] { CacheTags.User(discordId) });
+                result = "Line set".ToResponse(200);
+            }), discordId);
+
+            if (!await _executor.TryAdd(exe, TimeSpan.FromSeconds(1)))
+                return ApiResponses.QueueFull(Response);
+
+            if (!await exe.WaitAsync(Executable.ApiMaxWait))
+                return "Command timed out".ToResponse(504);
+            return result;
+        }
+
         public const string CardInCageCode = "card_in_cage";
         public const string CardOnExpeditionCode = "card_on_expedition";
 

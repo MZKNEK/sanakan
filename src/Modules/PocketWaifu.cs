@@ -20,6 +20,7 @@ using Sanakan.Services;
 using Sanakan.Services.Commands;
 using Sanakan.Services.Executor;
 using Sanakan.Services.PocketWaifu;
+using Sanakan.Services.PocketWaifu.Fight;
 using Sanakan.Services.Session;
 using Sanakan.Services.Session.Models;
 using Sanakan.Services.Time;
@@ -3577,6 +3578,41 @@ namespace Sanakan.Modules
                 var message = thisCard.Active ? "aktywował: " : "dezaktywował: ";
                 var power = $"**Moc talii**: {bUser.GameDeck.DeckPower:F}";
                 await SafeReplyAsync("", embed: $"{Context.User.Mention} {message}{thisCard.GetString(false, false, true)}\n\n{power}".ToEmbedMessage(EMType.Success).Build());
+            }
+        }
+
+        [Command("linia")]
+        [Alias("line")]
+        [Summary("ustawia linię karty w pojedynkach: przód (celem dwa razy częściej, bez trafień krytycznych), tył albo auto")]
+        [Remarks("1 przód"), RequireWaifuCommandChannel]
+        public async Task SetCardLineAsync([Summary("WID")] ulong wid, [Summary("przód, tył albo auto")] string line)
+        {
+            if (!DeckLines.TryParse(line, out var newLine))
+            {
+                await SafeReplyAsync("", embed: $"{Context.User.Mention} nie rozpoznano linii, dostępne: `przód`, `tył`, `auto`.".ToEmbedMessage(EMType.Error).Build());
+                return;
+            }
+
+            using (var db = new Database.DatabaseContext(Config))
+            {
+                var thisCard = await db.Cards.AsQueryable().FirstOrDefaultAsync(x => x.Id == wid && x.GameDeckId == Context.User.Id);
+                if (thisCard == null)
+                {
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} nie odnaleziono karty.".ToEmbedMessage(EMType.Error).Build());
+                    return;
+                }
+
+                thisCard.Line = newLine;
+                await db.SaveChangesAsync();
+                QueryCache.ExpireTag(new string[] { CacheTags.User(Context.User.Id) });
+
+                var active = await db.Cards.AsQueryable().AsNoTracking().Where(x => x.Active && x.GameDeckId == Context.User.Id).ToListAsync();
+                var front = DeckLines.GetFrontCards(active);
+                var where = !thisCard.Active ? "Karta nie jest w talii, ustawienie zadziała po jej aktywowaniu."
+                    : front.Contains(thisCard.Id) ? "W walce stoi z przodu." : "W walce stoi z tyłu.";
+                var frontNames = string.Join(", ", active.Where(x => front.Contains(x.Id)).Select(x => x.Name));
+                await SafeReplyAsync("", embed: $"{Context.User.Mention} ustawił linię karty {thisCard.GetString(false, false, true)}: **{newLine.Name()}**.\n{where}\n\n**Z przodu**: {(frontNames.Length > 0 ? frontNames : "nikt")} (najwyżej {DeckLines.MaxFrontCards} karty i połowa talii)"
+                    .ToEmbedMessage(EMType.Success).Build());
             }
         }
 

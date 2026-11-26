@@ -275,6 +275,25 @@ namespace Artifacts
         }
 
         [Fact]
+        public async Task SettingCardLine_SavesIt_AndTheDeckShowsWhereCardsStand()
+        {
+            await SeedAsync();
+
+            Assert.Equal("Line set", ApiBody.Message(await NewWaifuController().SetCardLineAsync(902, CardLine.Front)));
+            Assert.Equal(400, (await NewWaifuController().SetCardLineAsync(902, (CardLine)7)).StatusOf());
+            Assert.Equal(404, (await NewWaifuController().SetCardLineAsync(12345, CardLine.Back)).StatusOf());
+
+            var deck = (UserDeck)((OkObjectResult)await NewPlayerController().GetDeckAsync()).Value;
+            var set = deck.Cards.Single(x => x.Id == 902);
+            Assert.Equal(CardLine.Front, set.Line);
+            Assert.True(set.Front);
+            var auto = deck.Cards.Single(x => x.Id == 901);
+            Assert.Equal(CardLine.Auto, auto.Line);
+            Assert.False(auto.Front);
+            Assert.Contains("\"line\":\"front\"", JsonConvert.SerializeObject(set, new Newtonsoft.Json.Converters.StringEnumConverter { NamingStrategy = new Newtonsoft.Json.Serialization.CamelCaseNamingStrategy() }).Replace("\"Line\"", "\"line\""));
+        }
+
+        [Fact]
         public async Task SettingCardActive_InCageOrOnExpedition_Returns409WithCode()
         {
             await SeedAsync();

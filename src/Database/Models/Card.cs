@@ -105,10 +105,19 @@ namespace Sanakan.Database.Models
         UltimateHardcore = 12
     }
 
+    // where the card stands in a duel; Auto lets the bot choose
+    public enum CardLine
+    {
+        Auto = 0,
+        Front = 1,
+        Back = 2
+    }
+
     public class Card
     {
         public ulong Id { get; set; }
         public bool Active { get; set; }
+        public CardLine Line { get; set; }
         public bool InCage { get; set; }
         public bool IsTradable { get; set; }
         public double ExpCnt { get; set; }

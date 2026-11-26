@@ -10,5 +10,6 @@ namespace Sanakan.Services.PocketWaifu.Fight
         public double Health { get; set; }
         public double MaxHealth { get; set; }
         public bool Healed { get; set; }
+        public bool Front { get; set; }
     }
 }

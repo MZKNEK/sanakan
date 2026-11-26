@@ -52,6 +52,7 @@ public static class CommandCatalog
         ["uwolnij"] = T(ChannelKind.Waifu, c => $"uwolnij {c.Card}"),
         ["loteria"] = T(ChannelKind.Waifu, "loteria 1"),
         ["talia"] = T(ChannelKind.Waifu, "talia"),
+        ["linia"] = T(ChannelKind.Waifu, c => $"linia {c.Card} {(c.Random.Next(3) switch { 0 => "przód", 1 => "tył", _ => "auto" })}"),
         ["klatka"] = T(ChannelKind.Waifu, "klatka"),
         ["wyprawa status"] = T(ChannelKind.Fight, "wyprawa status"),
         ["karcianka"] = T(ChannelKind.Waifu, "karcianka"),

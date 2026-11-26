@@ -1403,7 +1403,8 @@ namespace Sanakan.Services.PocketWaifu
                 return 0;
             }
 
-            info.Critical = critical ?? Fun.TakeATry(attacker.Card.GetCritChance());
+            // a front card shields the others and cannot hit critically
+            info.Critical = critical ?? (!attacker.Front && Fun.TakeATry(attacker.Card.GetCritChance()));
             var dmg = GetFA(attacker.Card, target.Card, info.Critical) * share;
             if (attacker.Card.Dere == Dere.Yandere && attacker.Health < attacker.MaxHealth * DereAbility.YandereRageBelow)
             {
@@ -1501,13 +1502,15 @@ namespace Sanakan.Services.PocketWaifu
             var log = new StringBuilder();
             log.AppendLine($"Pojedynek: {string.Join(" vs ", players.Select(PlayerName))}");
             log.AppendLine();
-            log.AppendLine("Karty na start");
+            log.AppendLine("Karty na start (karty z przodu są celem dwa razy częściej i nie trafiają krytycznie)");
             foreach (var player in players)
             {
                 log.AppendLine($"{PlayerName(player)}:");
-                foreach (var card in player.Cards)
+                var front = DeckLines.GetFrontCards(player.Cards);
+                foreach (var card in player.Cards.OrderBy(x => front.Contains(x.Id) ? 0 : 1))
                 {
-                    log.AppendLine($"  {card.Name} (WID {card.Id}, {card.GetCardRealRarity()}) · {card.Dere} · życie {card.GetHealthWithPenalty()} · atak {card.GetAttackWithBonus()}"
+                    var line = $"{(front.Contains(card.Id) ? "przód" : "tył")}{(card.Line == CardLine.Auto ? " (auto)" : "")}";
+                    log.AppendLine($"  {card.Name} (WID {card.Id}, {card.GetCardRealRarity()}) · {line} · {card.Dere} · życie {card.GetHealthWithPenalty()} · atak {card.GetAttackWithBonus()}"
                         + $" · obrona {card.GetDefenceWithBonus()} · precyzja {card.GetCritChance():0.#}% · moc {card.CalculateCardPower():0}");
                     var ability = card.GetAbilityDescription();
                     if (ability != null)
@@ -1565,10 +1568,11 @@ namespace Sanakan.Services.PocketWaifu
 
             foreach (var player in players)
             {
+                var front = DeckLines.GetFrontCards(player.Cards);
                 foreach (var card in player.Cards)
                 {
                     var health = card.GetHealthWithPenalty();
-                    totalCards.Add(new CardWithHealth() { Card = card, Health = health, MaxHealth = health });
+                    totalCards.Add(new CardWithHealth() { Card = card, Health = health, MaxHealth = health, Front = front.Contains(card.Id) });
                 }
             }
 
@@ -1588,14 +1592,14 @@ namespace Sanakan.Services.PocketWaifu
                     var enemies = totalCards.Where(x => x.Health > 0 && x.Card.GameDeckId != card.Card.GameDeckId).ToList();
                     if (enemies.Count() > 0)
                     {
-                        Strike(round, card, Fun.GetOneRandomFrom(enemies), false, totalCards);
+                        Strike(round, card, DeckLines.PickTarget(enemies, x => x.Front), false, totalCards);
 
                         // on its own turn, so the bonus does not grow with the number of enemies hitting it
                         if (card.Card.Dere == Dere.Bodere && card.Health > 0 && Fun.TakeATry(DereAbility.BodereSecondStrikeChance))
                         {
                             enemies = enemies.Where(x => x.Health > 0).ToList();
                             if (enemies.Count > 0)
-                                Strike(round, card, Fun.GetOneRandomFrom(enemies), true, totalCards);
+                                Strike(round, card, DeckLines.PickTarget(enemies, x => x.Front), true, totalCards);
                         }
                     }
                 }
@@ -1629,9 +1633,12 @@ namespace Sanakan.Services.PocketWaifu
         {
             var page = 0;
             var msg = new List<Embed>();
-            var cardsStrings = list.Select(x => $"{x.GetString(false, false, true)} · moc {x.CardPower:0}");
+            var cards = list.ToList();
+            var front = DeckLines.GetFrontCards(cards);
+            var cardsStrings = cards.OrderBy(x => front.Contains(x.Id) ? 0 : 1)
+                .Select(x => $"**{(front.Contains(x.Id) ? "przód" : "tył")}**{(x.Line == CardLine.Auto ? " (auto)" : "")} · {x.GetString(false, false, true)} · moc {x.CardPower:0}").ToList();
             var perPage = cardsStrings.SplitList(10);
-            var deckPower = UserExtension.CombineCardPowers(list.Select(x => x.CalculateCardPower()));
+            var deckPower = UserExtension.CombineCardPowers(cards.Select(x => x.CalculateCardPower()));
 
             foreach (var p in perPage)
             {
@@ -1639,7 +1646,7 @@ namespace Sanakan.Services.PocketWaifu
                 {
                     Color = EMType.Info.Color(),
                     Title = "Aktywne karty",
-                    Footer = new EmbedFooterBuilder().WithText($"Strona {++page} z {perPage.Count} · moc talii {deckPower:0}"),
+                    Footer = new EmbedFooterBuilder().WithText($"Strona {++page} z {perPage.Count} · moc talii {deckPower:0} · linię zmienisz poleceniem linia"),
                     Description = string.Join("\n", p).TrimToLength(),
                 }.Build());
             }
