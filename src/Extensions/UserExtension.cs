@@ -256,6 +256,27 @@ namespace Sanakan.Extensions
 
         public static string GetGlobalRankName(this GameDeck deck) => GetRankName(deck.GlobalPVPRank, PVPRankMultiplier);
 
+        public const int SeasonRewardPerRank = 100;
+        public const int TopRankLevel = 17;
+
+        public static int GetSeasonRankLevel(this GameDeck deck)
+            => Math.Min(TopRankLevel, (int)(ExperienceManager.CalculateLevel(deck.SeasonalPVPRank, SeasonalPVPRankMultiplier) / 10));
+
+        public static long GetSeasonReward(this GameDeck deck) => SeasonRewardPerRank * deck.GetSeasonRankLevel();
+
+        // the seasonal rank of a finished season is paid out and cleared, for the defender as well; returns the paid PC
+        public static long StartCurrentPvpSeason(this GameDeck deck, DateTime now)
+        {
+            if (deck.IsPVPSeasonalRankActive(now))
+                return 0;
+
+            var reward = deck.GetSeasonReward();
+            deck.PVPCoins += reward;
+            deck.SeasonalPVPRank = 0;
+            deck.PVPSeasonBeginDate = new DateTime(now.Year, now.Month, 1);
+            return reward;
+        }
+
         private static string GetRankName(long points, double multiplier)
         {
             switch ((ExperienceManager.CalculateLevel(points, multiplier) / 10))
@@ -439,6 +460,32 @@ namespace Sanakan.Extensions
             d1.PVPCoins += coins;
 
             return $"**{coins:+0;-#}** PC **{gRank:+0;-#}** GR  **{sRank:+0;-#}** SR";
+        }
+
+        // the defender is not playing, so a won defence pays only a little and only up to a daily limit
+        public const int DefenceWinCoins = 5;
+        public const int DefenceCoinsPerDay = 50;
+
+        // returns the PC paid, 0 once the daily limit is reached; the status counts the PC paid today
+        public static long PayForWonDefence(this User defender, DateTime now)
+        {
+            var status = defender.TimeStatuses.FirstOrDefault(x => x.Type == StatusType.PvpDefence);
+            if (status == null)
+            {
+                status = StatusType.PvpDefence.NewTimeStatus();
+                defender.TimeStatuses.Add(status);
+            }
+
+            if (!status.IsActive(now))
+            {
+                status.IValue = 0;
+                status.EndsAt = now.Date.AddDays(1);
+            }
+
+            var paid = Math.Max(0, Math.Min(DefenceWinCoins, DefenceCoinsPerDay - status.IValue));
+            status.IValue += paid;
+            defender.GameDeck.PVPCoins += paid;
+            return paid;
         }
 
         public static void AddItem(this GameDeck deck, Item item)

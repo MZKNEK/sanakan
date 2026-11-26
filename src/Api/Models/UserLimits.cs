@@ -42,6 +42,7 @@ namespace Sanakan.Api.Models
                         pvp.IsActive(now) ? (long)user.GameDeck.PVPDailyGamesPlayed : 0),
                     UserDailyCounter.From(StatusType.Packet, "pakiety za aktywność", GetOrEmpty(user, StatusType.Packet), now, packsPerDay < 1 ? 3 : packsPerDay),
                     UserDailyCounter.From(StatusType.Tinkering, "druciarstwo", GetOrEmpty(user, StatusType.Tinkering), now, null),
+                    UserDailyCounter.From(StatusType.PvpDefence, "PC za obronę w PvP", GetOrEmpty(user, StatusType.PvpDefence), now, UserExtension.DefenceCoinsPerDay),
                 },
             };
         }

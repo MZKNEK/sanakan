@@ -67,6 +67,53 @@ namespace Artifacts
         }
 
         [Theory]
+        [InlineData(0, 0)]
+        [InlineData(52, 100)]
+        [InlineData(15000, 1700)]
+        [InlineData(900000, 1700)]
+        public void FinishedSeason_PaysForTheRankAndStartsAgain(long rank, long reward)
+        {
+            var now = new System.DateTime(2026, 12, 3);
+            var deck = new GameDeck { SeasonalPVPRank = rank, PVPSeasonBeginDate = new System.DateTime(2026, 11, 1), PVPCoins = 10 };
+
+            Assert.Equal(reward, deck.StartCurrentPvpSeason(now));
+            Assert.Equal(10 + reward, deck.PVPCoins);
+            Assert.Equal(0, deck.SeasonalPVPRank);
+            Assert.Equal(new System.DateTime(2026, 12, 1), deck.PVPSeasonBeginDate);
+
+            deck.SeasonalPVPRank = 500;
+            Assert.Equal(0, deck.StartCurrentPvpSeason(now.AddDays(5)));
+            Assert.Equal(500, deck.SeasonalPVPRank);
+        }
+
+        [Fact]
+        public void WonDefences_PayUpToTheDailyLimit_AndTheLimitResetsTheNextDay()
+        {
+            var now = new System.DateTime(2026, 12, 3, 18, 0, 0);
+            var defender = new User().Default(5, now);
+
+            var paid = Enumerable.Range(0, 12).Select(_ => defender.PayForWonDefence(now)).ToList();
+
+            Assert.Equal(10, paid.Count(x => x == UserExtension.DefenceWinCoins));
+            Assert.Equal(UserExtension.DefenceCoinsPerDay, defender.GameDeck.PVPCoins);
+            Assert.Equal(0, paid.Last());
+            Assert.Equal(UserExtension.DefenceWinCoins, defender.PayForWonDefence(now.AddDays(1)));
+        }
+
+        [Theory]
+        [InlineData(FightResult.Lose)]
+        [InlineData(FightResult.Win)]
+        [InlineData(FightResult.Draw)]
+        public void DuelParams_DoNotPayTheDefender(FightResult result)
+        {
+            var d2 = Deck();
+
+            Deck().CalculatePVPParams(d2, result);
+
+            Assert.Equal(0, d2.PVPCoins);
+        }
+
+        [Theory]
         [InlineData(0, "Miles gregarius")]
         [InlineData(52, "Signifer")]
         [InlineData(3323, "Primus pilus")]

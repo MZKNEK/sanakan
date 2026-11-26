@@ -1546,6 +1546,33 @@ namespace Sanakan.Database.Migrations
                     b.ToTable("ProfileUnlocks");
                 });
 
+            modelBuilder.Entity("Sanakan.Database.Models.PvpDefeat", b =>
+                {
+                    b.Property<ulong>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint unsigned");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<ulong>("Id"));
+
+                    b.Property<ulong>("AttackerId")
+                        .HasColumnType("bigint unsigned");
+
+                    b.Property<bool>("Avenged")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<DateTime>("Date")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<ulong>("UserId")
+                        .HasColumnType("bigint unsigned");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId", "Date");
+
+                    b.ToTable("PvpDefeats");
+                });
+
             modelBuilder.Entity("Sanakan.Database.Models.RarityExcluded", b =>
                 {
                     b.Property<ulong>("Id")

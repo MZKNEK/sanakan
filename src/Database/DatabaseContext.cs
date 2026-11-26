@@ -76,6 +76,7 @@ namespace Sanakan.Database
         public DbSet<GameStat> GameStats { get; set; }
         public DbSet<PlayerDay> PlayerDays { get; set; }
         public DbSet<DuelResult> DuelResults { get; set; }
+        public DbSet<PvpDefeat> PvpDefeats { get; set; }
         public DbSet<CardExchange> CardExchanges { get; set; }
         public DbSet<CardExchangeCard> CardExchangeCards { get; set; }
         public DbSet<PlayerName> PlayerNames { get; set; }
@@ -521,6 +522,13 @@ namespace Sanakan.Database
             modelBuilder.Entity<PlayerDay>(entity =>
             {
                 entity.HasKey(e => new { e.Date, e.UserId });
+            });
+
+            modelBuilder.Entity<PvpDefeat>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                // the revenge list reads one player's defeats of the day
+                entity.HasIndex(e => new { e.UserId, e.Date });
             });
 
             modelBuilder.Entity<DuelResult>(entity =>

@@ -32,6 +32,7 @@ public static class CommandCatalog
         ["użyj"] = T(ChannelKind.Waifu, c => $"użyj {c.Item} {c.Card}"),
         ["wyprawa koniec"] = T(ChannelKind.Fight, c => $"wyprawa koniec {c.ExpeditionCard}"),
         ["pojedynek"] = T(ChannelKind.Duel, "pojedynek"),
+        ["rewanż"] = T(ChannelKind.Duel, c => c.Random.Next(2) == 0 ? "rewanż" : "rewanż 1"),
         ["karta+"] = T(ChannelKind.Command, "karta+"),
         ["ulepsz"] = T(ChannelKind.Waifu, c => $"ulepsz {c.Card}"),
         ["czarny rynek"] = T(ChannelKind.Waifu, c => $"czarny rynek {c.Card}"),

@@ -4298,6 +4298,63 @@ namespace Sanakan.Modules
             await SafeReplyAsync("", embed: $"{Context.User.Mention} nie udało się znaleźć przeciwnika, spróbuj później.".ToEmbedMessage(EMType.Error).Build());
         }
 
+        [Command("rewanż")]
+        [Alias("rewanz", "revenge")]
+        [Summary("pokazuje graczy, którzy dziś cię pokonali; raz dziennie możesz zaatakować jednego z nich, rewanż liczy się jak zwykły pojedynek")]
+        [Remarks("1"), RequireWaifuDuelChannel]
+        public async Task RevengeAsync([Summary("numer gracza z listy")] int number = 0)
+        {
+            using var db = CreateDuelDatabaseContext();
+            var today = _time.Now().Date;
+            var defeats = await db.PvpDefeats.AsQueryable().AsNoTracking().Where(x => x.UserId == Context.User.Id && x.Date >= today).OrderBy(x => x.Date).ToListAsync();
+            var attackers = defeats.GroupBy(x => x.AttackerId).Select(g => (Id: g.Key, Wins: g.Count(), Avenged: g.Any(x => x.Avenged))).ToList();
+            var used = defeats.Any(x => x.Avenged);
+
+            if (number <= 0)
+            {
+                if (attackers.Count == 0)
+                {
+                    await SafeReplyAsync("", embed: $"{Context.User.Mention} nikt cię dziś nie pokonał.".ToEmbedMessage(EMType.Info).Build());
+                    return;
+                }
+
+                var lines = new List<string>();
+                for (int i = 0; i < attackers.Count; i++)
+                {
+                    var user = await GetDuelOpponentAsync(attackers[i].Id);
+                    lines.Add($"**[{i + 1}]** {user?.Mention ?? $"gracz {attackers[i].Id}"} · wygrane z tobą: {attackers[i].Wins}{(attackers[i].Avenged ? " · rewanż wzięty" : "")}");
+                }
+                var footer = used ? "Dzisiejszy rewanż został już wykorzystany." : "Rewanż: `rewanż numer`, raz dziennie, wlicza się do dziennego limitu pojedynków.";
+                await SafeReplyAsync("", embed: $"{Context.User.Mention} dziś pokonali cię:\n\n{string.Join("\n", lines)}\n\n{footer}".TrimToLength().ToEmbedMessage(EMType.Info).Build());
+                return;
+            }
+
+            if (used)
+            {
+                await SafeReplyAsync("", embed: $"{Context.User.Mention} dzisiejszy rewanż został już wykorzystany.".ToEmbedMessage(EMType.Error).Build());
+                return;
+            }
+
+            if (number > attackers.Count)
+            {
+                await SafeReplyAsync("", embed: $"{Context.User.Mention} nie ma takiego gracza na liście, sprawdź ją poleceniem `rewanż`.".ToEmbedMessage(EMType.Error).Build());
+                return;
+            }
+
+            var duser = await db.GetUserOrCreateSimpleAsync(Context.User.Id, _time);
+            duser.GameDeck.Cards = await db.Entry(duser.GameDeck).Collection(x => x.Cards).Query().Where(x => x.Active).ToListAsync();
+            if (!await PrepareDuelAsync(duser)) return;
+
+            var enemy = await GetDuelOpponentAsync(attackers[number - 1].Id);
+            if (enemy == null)
+            {
+                await SafeReplyAsync("", embed: $"{Context.User.Mention} nie udało się znaleźć tego gracza, spróbuj później.".ToEmbedMessage(EMType.Error).Build());
+                return;
+            }
+
+            await QueueDuelAsync(enemy, true);
+        }
+
         protected virtual Database.DatabaseContext CreateDuelDatabaseContext() => new Database.DatabaseContext(Config);
 
         private async Task<IUser> GetDuelOpponentAsync(ulong id)
@@ -4347,24 +4404,18 @@ namespace Sanakan.Modules
                     .ToEmbedMessage(EMType.Error).Build());
                 return false;
             }
-
-            if ((_time.Now() - duser.GameDeck.PVPSeasonBeginDate.AddMonths(1)).TotalSeconds > 1)
-            {
-                duser.GameDeck.PVPSeasonBeginDate = new DateTime(_time.Now().Year, _time.Now().Month, 1);
-                duser.GameDeck.SeasonalPVPRank = 0;
-            }
             return true;
         }
 
-        private async Task QueueDuelAsync(IUser enemy)
+        private async Task QueueDuelAsync(IUser enemy, bool revenge = false)
         {
-            var duel = new Executable("pvp duel", () => ExecuteDuelAsync(enemy), Context.User.Id);
+            var duel = new Executable(revenge ? "pvp revenge" : "pvp duel", () => ExecuteDuelAsync(enemy, revenge), Context.User.Id);
             duel.AddOwner(enemy.Id);
             if (!await _executor.TryAdd(duel, TimeSpan.FromSeconds(1)))
                 await SafeReplyAsync("", embed: $"{Context.User.Mention} kolejka pojedynków jest pełna, spróbuj później.".ToEmbedMessage(EMType.Error).Build());
         }
 
-        private async Task ExecuteDuelAsync(IUser euser)
+        private async Task ExecuteDuelAsync(IUser euser, bool revenge = false)
         {
             using (var db = CreateDuelDatabaseContext())
             {
@@ -4376,6 +4427,28 @@ namespace Sanakan.Modules
                 {
                     await SafeReplyAsync("", embed: $"{Context.User.Mention} nie udało się znaleźć przeciwnika, spróbuj później.".ToEmbedMessage(EMType.Error).Build());
                     return;
+                }
+
+                var today = _time.Now().Date;
+                if (revenge)
+                {
+                    // checked again in the queue, so two revenges sent at once cannot both pass
+                    var defeats = await db.PvpDefeats.AsQueryable().Where(x => x.UserId == duser.Id && x.Date >= today).ToListAsync();
+                    if (defeats.Any(x => x.Avenged) || !defeats.Any(x => x.AttackerId == denemy.Id))
+                    {
+                        await SafeReplyAsync("", embed: $"{Context.User.Mention} nie możesz już wziąć rewanżu na tym graczu.".ToEmbedMessage(EMType.Error).Build());
+                        return;
+                    }
+                    foreach (var defeat in defeats.Where(x => x.AttackerId == denemy.Id))
+                        defeat.Avenged = true;
+                }
+
+                var seasonRewards = new List<string>();
+                foreach (var (player, user) in new[] { (duser, Context.User), (denemy, euser) })
+                {
+                    var reward = player.GameDeck.StartCurrentPvpSeason(_time.Now());
+                    if (reward > 0)
+                        seasonRewards.Add($"🏆 {user.Mention} dostaje **{reward} PC** za rangę w poprzednim sezonie.");
                 }
 
                 var players = new List<PlayerInfo>
@@ -4437,6 +4510,18 @@ namespace Sanakan.Modules
                     Rounds = fight.Rounds?.Count ?? 0,
                 };
                 var info = duser.GameDeck.CalculatePVPParams(denemy.GameDeck, res);
+                if (res == FightResult.Lose)
+                {
+                    var defence = denemy.PayForWonDefence(_time.Now());
+                    info += defence > 0 ? $" · obrońca **+{defence}** PC" : " · obrońca ma już dzienny limit PC za obronę";
+                }
+                if (seasonRewards.Count > 0)
+                    info += "\n" + string.Join("\n", seasonRewards);
+                if (res == FightResult.Win)
+                {
+                    await db.PvpDefeats.AsQueryable().Where(x => x.UserId == denemy.Id && x.Date < today).ExecuteDeleteAsync();
+                    db.PvpDefeats.Add(new PvpDefeat { UserId = denemy.Id, AttackerId = duser.Id, Date = _time.Now() });
+                }
                 await db.SaveChangesAsync();
                 GameTelemetry.Default.Duel(duel, duser.Id, denemy.Id);
                 var trash = await GetFightTrashChannelAsync(db);
@@ -4446,7 +4531,7 @@ namespace Sanakan.Modules
                     try
                     {
                         string wStr = fight.Winner == null ? "Remis!" : $"Zwycięża {fight.Winner.User.Mention}!";
-                        await SendDuelResultAsync(trash, $"⚔️ **Pojedynek**:\n{Context.User.Mention} vs. {euser.Mention}\n\n{Moderator.JoinWithinLimit(deathLog.Split('\n'), 2000, "\n")}\n{wStr}\n{info}",
+                        await SendDuelResultAsync(trash, $"⚔️ **{(revenge ? "Rewanż" : "Pojedynek")}**:\n{Context.User.Mention} vs. {euser.Mention}\n\n{Moderator.JoinWithinLimit(deathLog.Split('\n'), 2000, "\n")}\n{wStr}\n{info}",
                             EMType.Bot, fight, players);
                     }
                     catch (Exception ex)

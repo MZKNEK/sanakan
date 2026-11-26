@@ -97,9 +97,118 @@ namespace Artifacts
             return module;
         }
 
-        private static Task Queue(TestModule module) => (Task)typeof(WaifuModule)
+        private static Task Queue(TestModule module, ulong enemy = 63, bool revenge = false) => (Task)typeof(WaifuModule)
             .GetMethod("QueueDuelAsync", BindingFlags.Instance | BindingFlags.NonPublic)
-            .Invoke(module, new object[] { SocketTestObjects.User(63) });
+            .Invoke(module, new object[] { SocketTestObjects.User(enemy), revenge });
+
+        private (Mock<IExecutor> Executor, List<IExecutable> Jobs) CollectingExecutor()
+        {
+            var jobs = new List<IExecutable>();
+            var executor = new Mock<IExecutor>();
+            executor.Setup(x => x.TryAdd(It.IsAny<IExecutable>(), It.IsAny<TimeSpan>()))
+                .Callback<IExecutable, TimeSpan>((job, _) => jobs.Add(job)).ReturnsAsync(true);
+            return (executor, jobs);
+        }
+
+        private async Task DuelAsync(ulong attacker, ulong defender, bool revenge = false)
+        {
+            var (executor, jobs) = CollectingExecutor();
+            await Queue(Module(executor.Object, attacker), defender, revenge);
+            foreach (var job in jobs) await job.ExecuteAsync(new EmptyServiceProvider());
+        }
+
+        private static string Replies(TestModule module) => string.Join("\n", module.ReplyChannel.Invocations
+            .Where(x => x.Method.Name == "SendMessageAsync").SelectMany(x => x.Arguments).OfType<Embed>().Select(x => x.Description));
+
+        // the seeded weak card is below the PvP minimum, it can defend but not attack
+        private void LetTheWeakPlayerAttack()
+        {
+            using var db = Open();
+            var card = db.Cards.Single(x => x.Id == 63);
+            card.Health = 300;
+            card.Attack = 200;
+            // the test users have no names, an ability (here the Deredere heal) would make the duel summary read them
+            card.Dere = Dere.Kamidere;
+            db.SaveChanges();
+        }
+
+        [Fact]
+        public async Task WonDefence_PaysTheDefender()
+        {
+            LetTheWeakPlayerAttack();
+            await DuelAsync(63, 61);
+
+            using var db = Open();
+            Assert.Equal(UserExtension.DefenceWinCoins, (await db.GameDecks.SingleAsync(x => x.Id == 61)).PVPCoins);
+            Assert.Empty(db.PvpDefeats);
+        }
+
+        [Fact]
+        public async Task DefenderFromAnOldSeason_IsResetAndPaidForItsRank()
+        {
+            using (var db = Open())
+            {
+                var defender = await db.GameDecks.SingleAsync(x => x.Id == 63);
+                defender.PVPSeasonBeginDate = _time.Now().AddMonths(-1);
+                defender.SeasonalPVPRank = 15000;
+                await db.SaveChangesAsync();
+            }
+
+            await DuelAsync(61, 63);
+
+            using var check = Open();
+            var deck = await check.GameDecks.SingleAsync(x => x.Id == 63);
+            Assert.Equal(UserExtension.SeasonRewardPerRank * UserExtension.TopRankLevel, deck.PVPCoins);
+            Assert.Equal(new DateTime(_time.Now().Year, _time.Now().Month, 1), deck.PVPSeasonBeginDate);
+            Assert.True(deck.SeasonalPVPRank < 1000);
+        }
+
+        [Fact]
+        public async Task Revenge_IsListed_AndTakenOncePerDay()
+        {
+            LetTheWeakPlayerAttack();
+            await DuelAsync(61, 63);
+            await DuelAsync(62, 63);
+            using (var db = Open())
+                Assert.Equal(new ulong[] { 61, 62 }, db.PvpDefeats.Where(x => x.UserId == 63).Select(x => x.AttackerId).ToList().OrderBy(x => x).ToList());
+
+            var (executor, jobs) = CollectingExecutor();
+            var list = Module(executor.Object, 63);
+            await list.RevengeAsync();
+            Assert.Contains("**[1]**", Replies(list));
+            Assert.Contains("**[2]**", Replies(list));
+
+            await DuelAsync(63, 62, revenge: true);
+            using (var db = Open())
+            {
+                Assert.True(db.PvpDefeats.Single(x => x.UserId == 63 && x.AttackerId == 62).Avenged);
+                Assert.False(db.PvpDefeats.Single(x => x.UserId == 63 && x.AttackerId == 61).Avenged);
+                Assert.Equal(1, db.CardPvPStats.Count(x => x.GameDeckId == 63));
+            }
+
+            var again = Module(executor.Object, 63);
+            await again.RevengeAsync(1);
+            Assert.Contains("wykorzystany", Replies(again));
+            await DuelAsync(63, 61, revenge: true);
+            using (var db = Open())
+            {
+                Assert.False(db.PvpDefeats.Single(x => x.UserId == 63 && x.AttackerId == 61).Avenged);
+                Assert.Equal(1, db.CardPvPStats.Count(x => x.GameDeckId == 63));
+            }
+        }
+
+        [Fact]
+        public async Task Revenge_NeedsADefeatOfToday()
+        {
+            LetTheWeakPlayerAttack();
+            await DuelAsync(61, 63);
+            _time.Value = _time.Value.AddDays(1);
+            await DuelAsync(63, 61, revenge: true);
+
+            using var db = Open();
+            Assert.Equal(0, db.CardPvPStats.Count(x => x.GameDeckId == 63));
+            Assert.False(db.PvpDefeats.Single().Avenged);
+        }
 
         [Fact]
         public async Task CommonOpponent_IsLockedAndReloadedAfterSelectionWithoutBlockingOtherUsers()
