@@ -14,7 +14,7 @@ namespace Sanakan.Api.Models
         Atack, AtackDes, Defence, DefenceDes, Exp, ExpDes, Dere, DereDes, Picture, PictureDes, Relation, RelationDes,
         CardPower, CardPowerDes, WhoWantsCount, WhoWantsCountDes, Blocked, BlockedDes, Curse, CurseDes, Fatigue, FatigueDes,
         Overflow, OverflowDes, ActiveWhoWantsCount, ActiveWhoWantsCountDes, CharacterId, CharacterIdDes,
-        Unique, UniqueDes, CritChance, CritChanceDes
+        Unique, UniqueDes, CritChance, CritChanceDes, MarketValue, MarketValueDes
     }
 
     public enum FilterTagsMethodType
@@ -138,6 +138,8 @@ namespace Sanakan.Api.Models
                 OrderType.UniqueDes => query.OrderByDescending(x => x.Unique ? 1 : 0),
                 OrderType.CritChance => query.OrderBy(CritChanceShown),
                 OrderType.CritChanceDes => query.OrderByDescending(CritChanceShown),
+                OrderType.MarketValue => query.OrderBy(x => x.MarketValue),
+                OrderType.MarketValueDes => query.OrderByDescending(x => x.MarketValue),
                 _ => query.OrderBy(x => x.Id)
             };
             // the tie-breaker follows the last key's direction, so a descending sort can read its index backwards
