@@ -216,8 +216,6 @@ namespace Sanakan.Services.PocketWaifu
                     {
                         CardCnt = cnt,
                         Season = reward == LotteryReward.CardsFromSeason ? season.Key : null,
-                        RarityExcludedFromPack = new List<RarityExcluded>(),
-                        Characters = new List<BoosterPackCharacter>(),
                         Name = $"Pakiet kart z loterii ({name})",
                         CardSourceFromPack = CardSource.Lottery,
                         IsCardFromPackTradable = true,

@@ -51,10 +51,8 @@ namespace Sanakan.Database
         public DbSet<Item> Items { get; set; }
         public DbSet<BoosterPack> BoosterPacks { get; set; }
         public DbSet<CardPvPStats> CardPvPStats { get; set; }
-        public DbSet<BoosterPackCharacter> BoosterPackCharacters { get; set; }
         public DbSet<WishlistObject> Wishes { get; set; }
         public DbSet<Figure> Figures { get; set; }
-        public DbSet<RarityExcluded> RaritysExcludedFromPacks { get; set; }
         public DbSet<SelfRole> SelfRoles { get; set; }
         public DbSet<GuildOptions> Guilds { get; set; }
         public DbSet<LevelRole> LevelRoles { get; set; }
@@ -340,6 +338,7 @@ namespace Sanakan.Database
             {
                 entity.HasKey(e => e.Id);
                 entity.Property(e => e.Season).HasMaxLength(32);
+                entity.PrimitiveCollection(e => e.Characters).IsRequired();
 
                 entity.HasOne(e => e.GameDeck)
                     .WithMany(d => d.BoosterPacks);
@@ -353,22 +352,6 @@ namespace Sanakan.Database
 
                 entity.HasOne(e => e.GameDeck)
                     .WithMany(d => d.PvPStats);
-            });
-
-            modelBuilder.Entity<BoosterPackCharacter>(entity =>
-            {
-                entity.HasKey(e => e.Id);
-
-                entity.HasOne(e => e.BoosterPack)
-                    .WithMany(p => p.Characters);
-            });
-
-            modelBuilder.Entity<RarityExcluded>(entity =>
-            {
-                entity.HasKey(e => e.Id);
-
-                entity.HasOne(e => e.BoosterPack)
-                    .WithMany(p => p.RarityExcludedFromPack);
             });
 
             // GuildConfig

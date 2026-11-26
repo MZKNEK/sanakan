@@ -54,7 +54,8 @@ namespace Artifacts
             var tables = db.Model.GetEntityTypes().Select(x => x.GetTableName()).ToHashSet(System.StringComparer.Ordinal);
 
             // table names are case sensitive on the Linux server
-            Assert.All(Sanakan.Database.Migrations.Utf8mb4.Tables, x => Assert.Contains(x, tables));
+            var removedLater = new[] { "RaritysExcludedFromPacks", "BoosterPackCharacters" };
+            Assert.All(Sanakan.Database.Migrations.Utf8mb4.Tables.Except(removedLater), x => Assert.Contains(x, tables));
             Assert.Equal(37, Sanakan.Database.Migrations.Utf8mb4.Tables.Distinct().Count());
 
             var sql = db.GetService<IMigrator>().GenerateScript("20261117151113_ExchangeMessages", "20261118181128_Utf8mb4");

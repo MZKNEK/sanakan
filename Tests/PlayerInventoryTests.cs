@@ -21,8 +21,8 @@ namespace Artifacts
             var pack = new BoosterPack
             {
                 Id = 77, Name = "Pakiet", CardCnt = 3, MinRarity = Rarity.A, IsCardFromPackTradable = true,
-                CardSourceFromPack = CardSource.Activity, Title = 1234,
-                Characters = new List<BoosterPackCharacter> { new BoosterPackCharacter(), new BoosterPackCharacter() },
+                CardSourceFromPack = CardSource.Activity, Title = 1234, CreationDate = new System.DateTime(2026, 11, 26, 12, 30, 0),
+                Characters = new List<ulong> { 1, 2 },
             };
 
             var dto = UserBoosterPack.From(pack, 5);
@@ -36,6 +36,7 @@ namespace Artifacts
             Assert.Equal(CardSource.Activity, dto.Source);
             Assert.Equal(CardsPoolType.List, dto.Pool);
             Assert.Equal(2, dto.CharacterCount);
+            Assert.Equal(new System.DateTime(2026, 11, 26, 12, 30, 0), dto.ObtainedAt);
         }
 
         [Fact]
@@ -47,18 +48,18 @@ namespace Artifacts
         [Fact]
         public void BoosterPack_PoolType_FollowsOpeningOrder()
         {
-            var list = new List<BoosterPackCharacter> { new BoosterPackCharacter { Character = 5 } };
+            var list = new List<ulong> { 5 };
 
             Assert.Equal(CardsPoolType.List, UserBoosterPack.From(new BoosterPack { Title = 10, Characters = list }, 1).Pool);
-            Assert.Equal(CardsPoolType.Season, UserBoosterPack.From(new BoosterPack { Title = 10, Season = "2026-autumn", Characters = new List<BoosterPackCharacter>() }, 1).Pool);
-            Assert.Equal(CardsPoolType.Title, UserBoosterPack.From(new BoosterPack { Title = 10, Characters = new List<BoosterPackCharacter>() }, 1).Pool);
-            Assert.Equal(CardsPoolType.Random, UserBoosterPack.From(new BoosterPack { Characters = new List<BoosterPackCharacter>() }, 1).Pool);
+            Assert.Equal(CardsPoolType.Season, UserBoosterPack.From(new BoosterPack { Title = 10, Season = "2026-autumn" }, 1).Pool);
+            Assert.Equal(CardsPoolType.Title, UserBoosterPack.From(new BoosterPack { Title = 10 }, 1).Pool);
+            Assert.Equal(CardsPoolType.Random, UserBoosterPack.From(new BoosterPack { Characters = new List<ulong>() }, 1).Pool);
         }
 
         [Fact]
         public void SeasonPack_ShowsSeasonKeyAndName()
         {
-            var dto = UserBoosterPack.From(new BoosterPack { Season = "2026-autumn", Characters = new List<BoosterPackCharacter>() }, 1);
+            var dto = UserBoosterPack.From(new BoosterPack { Season = "2026-autumn" }, 1);
 
             Assert.Equal("2026-autumn", dto.Season);
             Assert.Equal("jesień 2026", dto.SeasonName);
@@ -67,12 +68,12 @@ namespace Artifacts
         [Fact]
         public void OtherPacks_HaveNoSeason()
         {
-            var list = new List<BoosterPackCharacter> { new BoosterPackCharacter { Character = 5 } };
+            var list = new List<ulong> { 5 };
 
             foreach (var pack in new[]
             {
-                new BoosterPack { Characters = new List<BoosterPackCharacter>() },
-                new BoosterPack { Title = 10, Characters = new List<BoosterPackCharacter>() },
+                new BoosterPack { Characters = new List<ulong>() },
+                new BoosterPack { Title = 10 },
                 new BoosterPack { Season = "2026-autumn", Characters = list },
             })
             {
@@ -85,7 +86,7 @@ namespace Artifacts
         [Fact]
         public void SeasonPack_WithUnreadableKey_KeepsKeyWithoutName()
         {
-            var dto = UserBoosterPack.From(new BoosterPack { Season = "broken", Characters = new List<BoosterPackCharacter>() }, 1);
+            var dto = UserBoosterPack.From(new BoosterPack { Season = "broken" }, 1);
 
             Assert.Equal("broken", dto.Season);
             Assert.Null(dto.SeasonName);
@@ -97,11 +98,7 @@ namespace Artifacts
             var pack = new BoosterPack
             {
                 Id = 1, Name = "Pakiet", Title = 987654321,
-                Characters = new List<BoosterPackCharacter>
-                {
-                    new BoosterPackCharacter { Id = 11, Character = 123456789 },
-                    new BoosterPackCharacter { Id = 12, Character = 555444333 },
-                },
+                Characters = new List<ulong> { 123456789, 555444333 },
             };
 
             var json = Newtonsoft.Json.JsonConvert.SerializeObject(UserBoosterPack.From(pack, 1));
@@ -118,7 +115,7 @@ namespace Artifacts
         {
             var json = Newtonsoft.Json.JsonConvert.SerializeObject(UserBoosterPack.From(new BoosterPack
             {
-                GameDeck = new GameDeck { Id = 999 }, Characters = new List<BoosterPackCharacter>()
+                GameDeck = new GameDeck { Id = 999 }
             }, 1));
 
             Assert.DoesNotContain("GameDeck", json);

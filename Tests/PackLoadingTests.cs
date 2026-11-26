@@ -51,8 +51,7 @@ namespace Artifacts
         private static BoosterPack NewPack(string name, int cards, ulong character) => new BoosterPack
         {
             Name = name, CardCnt = cards, MinRarity = Rarity.E, IsCardFromPackTradable = true, CardSourceFromPack = CardSource.Api,
-            Characters = new List<BoosterPackCharacter> { new BoosterPackCharacter { Character = character } },
-            RarityExcludedFromPack = new List<RarityExcluded>(),
+            Characters = new List<ulong> { character },
         };
 
         private (List<Card> Cards, List<WishlistObject> Wishes, List<BoosterPack> Packs, WishlistCount Count, UserStats Stats) Read()

@@ -39,23 +39,13 @@ namespace Sanakan.Api.Models
         {
             var pack = new BoosterPack
             {
-                RarityExcludedFromPack = new List<RarityExcluded>(),
-                Characters = new List<BoosterPackCharacter>(),
+                ExcludedRarities = BoosterPack.RarityMask(RarityExcluded),
                 CardSourceFromPack = CardSource.Api,
                 IsCardFromPackTradable = Tradable,
                 MinRarity = Rarity,
                 CardCnt = Count,
                 Name = Name
             };
-
-            if (RarityExcluded != null)
-            {
-                if (RarityExcluded.Count > 0)
-                {
-                    foreach (var exc in RarityExcluded)
-                        pack.RarityExcludedFromPack.Add(new RarityExcluded() { Rarity = exc });
-                }
-            }
 
             switch (Pool?.Type ?? CardsPoolType.Random)
             {
@@ -66,7 +56,7 @@ namespace Sanakan.Api.Models
                 case CardsPoolType.List:
                     pack.Title = 0;
                     foreach (var id in Pool?.Character ?? new List<ulong>())
-                        pack.Characters.Add(new BoosterPackCharacter() { Character = id });
+                        pack.Characters.Add(id);
                 break;
 
                 // the season key is resolved by the controller, it needs the season store

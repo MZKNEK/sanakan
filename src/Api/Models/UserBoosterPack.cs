@@ -1,5 +1,6 @@
 #pragma warning disable 1591
 
+using System;
 using Sanakan.Database.Models;
 
 namespace Sanakan.Api.Models
@@ -53,9 +54,14 @@ namespace Sanakan.Api.Models
         /// Nazwa sezonu do wyświetlenia, np. jesień 2026 (tylko dla pool season)
         /// </summary>
         public string SeasonName { get; set; }
+        /// <summary>
+        /// Data otrzymania pakietu (pakiety otrzymane przed dodaniem daty mają datę jej wprowadzenia)
+        /// </summary>
+        public DateTime ObtainedAt { get; set; }
 
         public static UserBoosterPack From(BoosterPack pack, int number) => new UserBoosterPack
         {
+            ObtainedAt = pack.CreationDate,
             Season = GetPoolType(pack) == CardsPoolType.Season ? pack.Season : null,
             SeasonName = GetPoolType(pack) == CardsPoolType.Season ? GetSeasonName(pack.Season) : null,
             Number = number,

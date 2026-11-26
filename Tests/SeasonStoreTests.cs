@@ -429,8 +429,6 @@ namespace Artifacts
         {
             CardCnt = cards,
             Season = season,
-            Characters = new List<BoosterPackCharacter>(),
-            RarityExcludedFromPack = new List<RarityExcluded>(),
             CardSourceFromPack = CardSource.Lottery,
             MinRarity = Rarity.E,
         };

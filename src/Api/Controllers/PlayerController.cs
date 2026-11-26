@@ -88,7 +88,7 @@ namespace Sanakan.Api.Controllers
         /// <returns>pakiety, numer odpowiada numerowi w api/waifu/boosterpack/open/{numer}</returns>
         [HttpGet("boosterpacks"), ProducesResponseType(typeof(List<UserBoosterPack>), 200)]
         public Task<IActionResult> GetUserBoosterPacksAsync()
-            => WithPlayerAsync(q => q.Include(x => x.GameDeck).ThenInclude(x => x.BoosterPacks).ThenInclude(x => x.Characters),
+            => WithPlayerAsync(q => q.Include(x => x.GameDeck).ThenInclude(x => x.BoosterPacks),
                 user => Waifu.OrderPacksForNumbering(user.GameDeck.BoosterPacks).Select((x, i) => UserBoosterPack.From(x, i + 1)).ToList());
 
         /// <summary>

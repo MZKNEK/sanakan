@@ -84,7 +84,6 @@ namespace Sanakan.Database
                 var cardIds = new HashSet<ulong>();
                 var tagIds = new HashSet<ulong>();
                 var waifuIds = new HashSet<ulong>();
-                var packIds = new HashSet<ulong>();
                 var userProfiles = new HashSet<ulong>();
                 var mute = false;
                 var ultimateCards = false;
@@ -113,14 +112,6 @@ namespace Sanakan.Database
 
                         case TagCardRelation relation:
                             cardIds.Add(relation.CardId);
-                            break;
-
-                        case BoosterPackCharacter character:
-                            packIds.Add(character.BoosterPackId);
-                            break;
-
-                        case RarityExcluded excluded:
-                            packIds.Add(excluded.BoosterPackId);
                             break;
 
                         case Tag tag:
@@ -204,15 +195,6 @@ namespace Sanakan.Database
                         .Where(x => ids.Contains(x.Id)).Select(x => x.GuildOptionsId).Distinct();
                     foreach (var guildId in async ? await query.ToListAsync(cancellationToken) : query.ToList())
                         guilds.Add(guildId);
-                }
-
-                if (packIds.Count > 0)
-                {
-                    var ids = packIds.ToList();
-                    var query = context.Set<BoosterPack>().AsNoTracking()
-                        .Where(x => ids.Contains(x.Id)).Select(x => x.GameDeckId).Distinct();
-                    foreach (var deckId in async ? await query.ToListAsync(cancellationToken) : query.ToList())
-                        users.Add(deckId);
                 }
 
                 var tags = new List<string>();

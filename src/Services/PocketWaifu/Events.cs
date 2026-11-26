@@ -184,9 +184,7 @@ namespace Sanakan.Services.PocketWaifu
                 {
                     var boosterPack = new BoosterPack
                     {
-                        RarityExcludedFromPack = new List<RarityExcluded>(),
                         Title = Fun.GetOneRandomFrom(_titles),
-                        Characters = new List<BoosterPackCharacter>(),
                         CardSourceFromPack = CardSource.Expedition,
                         Name = "Losowa karta z wyprawy",
                         IsCardFromPackTradable = true,

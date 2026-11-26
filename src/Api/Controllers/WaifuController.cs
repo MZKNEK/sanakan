@@ -1516,7 +1516,6 @@ namespace Sanakan.Api.Controllers
                     }
 
                     var botUserCh = await db.Users.AsQueryable().Where(x => x.Id == discordId).Include(x => x.GameDeck).ThenInclude(x => x.BoosterPacks)
-                        .ThenInclude(x => x.Characters).Include(x => x.GameDeck).ThenInclude(x => x.BoosterPacks).ThenInclude(x => x.RarityExcludedFromPack)
                         .AsNoTracking().AsSplitQuery().FirstOrDefaultAsync();
                     if (botUserCh == null)
                         return "User not found!".ToResponse(404);
@@ -1549,7 +1548,7 @@ namespace Sanakan.Api.Controllers
                         {
                             var botUser = await db.GetUserOrCreateSimpleAsync(discordId, _time);
                             var pack = await db.BoosterPacks.AsQueryable().Where(x => x.Id == packId && x.GameDeckId == discordId)
-                                .Include(x => x.Characters).Include(x => x.RarityExcludedFromPack).AsSplitQuery().FirstOrDefaultAsync();
+                                .FirstOrDefaultAsync();
                             if (pack == null)
                             {
                                 error = ApiResponses.Conflict(PackOpenedCode, "Boosterpack already opened!");

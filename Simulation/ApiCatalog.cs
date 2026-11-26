@@ -20,7 +20,7 @@ public static class ApiCatalog
         public Random Random { get; init; }
     }
 
-    private static readonly Func<Context, string> Pack = _ => "[{\"name\":\"Symulacja\",\"count\":1,\"pool\":{\"type\":\"Random\"}}]";
+    private static readonly Func<Context, string> Pack = _ => "[{\"name\":\"Symulacja\",\"count\":1,\"rarityExcluded\":[1],\"pool\":{\"type\":\"Random\"}}]";
 
     // the sorts players use most (picture, power, id, character, fatigue, curse) and a few others, sometimes with a
     // default tag (1 favourite, 2 gallery, 4 exchange) or a text; reverse direction half of the time

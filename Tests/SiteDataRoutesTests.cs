@@ -69,8 +69,8 @@ namespace Artifacts
                 user.Stats.RightAnswers = 7;
                 user.Stats.TotalAnswers = 9;
                 user.Stats.TurnamentsWon = 2;
-                user.GameDeck.BoosterPacks.Add(new BoosterPack { Name = "a", CardCnt = 2, Characters = new List<BoosterPackCharacter>(), RarityExcludedFromPack = new List<RarityExcluded>() });
-                user.GameDeck.BoosterPacks.Add(new BoosterPack { Name = "b", CardCnt = 2, Characters = new List<BoosterPackCharacter>(), RarityExcludedFromPack = new List<RarityExcluded>() });
+                user.GameDeck.BoosterPacks.Add(new BoosterPack { Name = "a", CardCnt = 2 });
+                user.GameDeck.BoosterPacks.Add(new BoosterPack { Name = "b", CardCnt = 2 });
                 AddUser(db, 2, 22).IsBlacklisted = true;
                 db.SaveChanges();
             }

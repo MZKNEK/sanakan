@@ -716,35 +716,25 @@ namespace Sanakan.Extensions
             }
         }
 
-        public static List<RarityExcluded> RarityExcluded(this ItemType type)
+        public static List<Rarity> RarityExcluded(this ItemType type)
         {
-            var ex = new List<RarityExcluded>();
-
             switch (type)
             {
                 case ItemType.RandomTitleBoosterPackSingleE:
                 case ItemType.BigRandomBoosterPackE:
-                    ex.Add(new RarityExcluded { Rarity = Rarity.SS });
-                    ex.Add(new RarityExcluded { Rarity = Rarity.S });
-                    break;
+                    return new List<Rarity> { Rarity.SS, Rarity.S };
 
                 case ItemType.RandomNormalBoosterPackB:
                 case ItemType.RandomNormalBoosterPackA:
                 case ItemType.RandomNormalBoosterPackS:
-                    ex.Add(new RarityExcluded { Rarity = Rarity.SS });
-                    break;
+                    return new List<Rarity> { Rarity.SS };
 
                 case ItemType.RandomBoosterPackSingleE:
-                    ex.Add(new RarityExcluded { Rarity = Rarity.SS });
-                    ex.Add(new RarityExcluded { Rarity = Rarity.S });
-                    ex.Add(new RarityExcluded { Rarity = Rarity.A });
-                    break;
+                    return new List<Rarity> { Rarity.SS, Rarity.S, Rarity.A };
 
                 default:
-                    break;
+                    return new List<Rarity>();
             }
-
-            return ex;
         }
 
         public static Item ToItem(this ItemType type, long count = 1, Quality quality = Quality.Broken, bool forceQuality = false)
@@ -873,7 +863,7 @@ namespace Sanakan.Extensions
                 MinRarity = type.MinRarity(),
                 CardSourceFromPack = type.GetSource(),
                 IsCardFromPackTradable = type.IsTradable(),
-                RarityExcludedFromPack = type.RarityExcluded(),
+                ExcludedRarities = BoosterPack.RarityMask(type.RarityExcluded()),
             };
         }
 

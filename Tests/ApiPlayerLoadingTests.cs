@@ -42,8 +42,7 @@ namespace Artifacts
         private static BoosterPack NewPack(string name, int cards) => new BoosterPack
         {
             Name = name, CardCnt = cards, MinRarity = Rarity.E, IsCardFromPackTradable = true, CardSourceFromPack = CardSource.Api,
-            Characters = new List<BoosterPackCharacter> { new BoosterPackCharacter { Character = Packed } },
-            RarityExcludedFromPack = new List<RarityExcluded>(),
+            Characters = new List<ulong> { Packed },
         };
 
         private async Task SeedAsync(long maxCards = 1000)
@@ -236,6 +235,33 @@ namespace Artifacts
 
             using var db = _h.Open();
             Assert.Equal(1, db.BoosterPacks.Count(x => x.GameDeckId == Player && x.Name == "x"));
+        }
+
+        [Fact]
+        public async Task GivingAListPack_StoresItsCharactersExclusionsAndDate_AndItOpens()
+        {
+            await SeedAsync();
+            var before = DateTime.Now;
+            var packs = new List<CardBoosterPack> { new CardBoosterPack { Name = "lista", Count = 3, RarityExcluded = new List<Rarity> { Rarity.SS, Rarity.S },
+                Pool = new BoosterPackPool { Type = CardsPoolType.List, Character = new List<ulong> { Packed } } } };
+
+            Assert.Equal(200, (await NewWaifuController().GiveUserAPacksAsync(Player, packs, "give-list")).StatusOf());
+
+            using (var db = _h.Open())
+            {
+                var pack = db.BoosterPacks.Single(x => x.GameDeckId == Player && x.Name == "lista");
+                Assert.Equal(new[] { Packed }, pack.Characters);
+                Assert.Equal(new[] { Rarity.SS, Rarity.S }, pack.GetExcludedRarities());
+                Assert.InRange(pack.CreationDate, before, DateTime.Now);
+                Assert.Equal(CardSource.Api, pack.CardSourceFromPack);
+            }
+
+            int number;
+            using (var db = _h.Open())
+                number = Waifu.OrderPacksForNumbering(db.BoosterPacks.Where(x => x.GameDeckId == Player).ToList()).ToList().FindIndex(x => x.Name == "lista") + 1;
+            var cards = (await NewWaifuController().OpenAPackAsync(number, "open-list")).Value;
+            Assert.Equal(3, cards.Count);
+            Assert.All(cards, x => Assert.Equal(Packed, x.Character));
         }
 
         private DeckState Deck()

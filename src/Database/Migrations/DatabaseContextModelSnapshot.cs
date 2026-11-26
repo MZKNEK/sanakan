@@ -383,6 +383,16 @@ namespace Sanakan.Database.Migrations
                     b.Property<int>("CardSourceFromPack")
                         .HasColumnType("int");
 
+                    b.PrimitiveCollection<string>("Characters")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<DateTime>("CreationDate")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<int>("ExcludedRarities")
+                        .HasColumnType("int");
+
                     b.Property<ulong>("GameDeckId")
                         .HasColumnType("bigint unsigned");
 
@@ -407,27 +417,6 @@ namespace Sanakan.Database.Migrations
                     b.HasIndex("GameDeckId");
 
                     b.ToTable("BoosterPacks");
-                });
-
-            modelBuilder.Entity("Sanakan.Database.Models.BoosterPackCharacter", b =>
-                {
-                    b.Property<ulong>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint unsigned");
-
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<ulong>("Id"));
-
-                    b.Property<ulong>("BoosterPackId")
-                        .HasColumnType("bigint unsigned");
-
-                    b.Property<ulong>("Character")
-                        .HasColumnType("bigint unsigned");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("BoosterPackId");
-
-                    b.ToTable("BoosterPackCharacters");
                 });
 
             modelBuilder.Entity("Sanakan.Database.Models.Card", b =>
@@ -1573,27 +1562,6 @@ namespace Sanakan.Database.Migrations
                     b.ToTable("PvpDefeats");
                 });
 
-            modelBuilder.Entity("Sanakan.Database.Models.RarityExcluded", b =>
-                {
-                    b.Property<ulong>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint unsigned");
-
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<ulong>("Id"));
-
-                    b.Property<ulong>("BoosterPackId")
-                        .HasColumnType("bigint unsigned");
-
-                    b.Property<int>("Rarity")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("BoosterPackId");
-
-                    b.ToTable("RaritysExcludedFromPacks");
-                });
-
             modelBuilder.Entity("Sanakan.Database.Models.SlotMachineConfig", b =>
                 {
                     b.Property<ulong>("Id")
@@ -2044,17 +2012,6 @@ namespace Sanakan.Database.Migrations
                     b.Navigation("GameDeck");
                 });
 
-            modelBuilder.Entity("Sanakan.Database.Models.BoosterPackCharacter", b =>
-                {
-                    b.HasOne("Sanakan.Database.Models.BoosterPack", "BoosterPack")
-                        .WithMany("Characters")
-                        .HasForeignKey("BoosterPackId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("BoosterPack");
-                });
-
             modelBuilder.Entity("Sanakan.Database.Models.Card", b =>
                 {
                     b.HasOne("Sanakan.Database.Models.GameDeck", "GameDeck")
@@ -2282,17 +2239,6 @@ namespace Sanakan.Database.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("Sanakan.Database.Models.RarityExcluded", b =>
-                {
-                    b.HasOne("Sanakan.Database.Models.BoosterPack", "BoosterPack")
-                        .WithMany("RarityExcludedFromPack")
-                        .HasForeignKey("BoosterPackId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("BoosterPack");
-                });
-
             modelBuilder.Entity("Sanakan.Database.Models.SlotMachineConfig", b =>
                 {
                     b.HasOne("Sanakan.Database.Models.User", "User")
@@ -2388,13 +2334,6 @@ namespace Sanakan.Database.Migrations
             modelBuilder.Entity("Sanakan.Database.Models.Analytics.CardExchange", b =>
                 {
                     b.Navigation("Cards");
-                });
-
-            modelBuilder.Entity("Sanakan.Database.Models.BoosterPack", b =>
-                {
-                    b.Navigation("Characters");
-
-                    b.Navigation("RarityExcludedFromPack");
                 });
 
             modelBuilder.Entity("Sanakan.Database.Models.Card", b =>

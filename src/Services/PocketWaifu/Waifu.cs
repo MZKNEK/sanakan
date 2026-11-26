@@ -1876,7 +1876,7 @@ namespace Sanakan.Services.PocketWaifu
                     if (pack.Characters.Count > 1)
                         id = Fun.GetOneRandomFrom(pack.Characters);
 
-                    chara = await _shinden.GetCharacterInfoAsync(id.Character);
+                    chara = await _shinden.GetCharacterInfoAsync(id);
                 }
                 else if (!string.IsNullOrEmpty(pack.Season))
                 {
@@ -1916,7 +1916,7 @@ namespace Sanakan.Services.PocketWaifu
                         continue;
                     }
 
-                    var newCard = GenerateNewCard(user, chart.CharInfo, pack.RarityExcludedFromPack.Select(x => x.Rarity).ToList());
+                    var newCard = GenerateNewCard(user, chart.CharInfo, pack.GetExcludedRarities());
                     if (pack.MinRarity != Rarity.E && i == pack.CardCnt - 1)
                         newCard = GenerateNewCard(user, chart.CharInfo, pack.MinRarity);
 
@@ -1929,7 +1929,7 @@ namespace Sanakan.Services.PocketWaifu
 
                 if (chara != null)
                 {
-                    var newCard = GenerateNewCard(user, chara, pack.RarityExcludedFromPack.Select(x => x.Rarity).ToList());
+                    var newCard = GenerateNewCard(user, chara, pack.GetExcludedRarities());
                     if (pack.MinRarity != Rarity.E && i == pack.CardCnt - 1)
                         newCard = GenerateNewCard(user, chara, pack.MinRarity);
 
