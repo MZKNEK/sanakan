@@ -114,7 +114,7 @@ namespace Artifacts
         {
             private readonly Func<DatabaseContext> _factory;
             public TestPlayerController(IExecutor executor, ISystemTime time, SessionManager sessions, Func<DatabaseContext> factory)
-                : base(new FakeConfig(), time, executor, null, null, sessions) => _factory = factory;
+                : base(new FakeConfig(), time, executor, null, null, sessions, null) => _factory = factory;
             protected override DatabaseContext CreateDatabaseContext() => _factory();
         }
 

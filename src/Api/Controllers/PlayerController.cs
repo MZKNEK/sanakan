@@ -11,6 +11,7 @@ using Sanakan.Api.Models;
 using Sanakan.Config;
 using Sanakan.Database.Models;
 using Sanakan.Extensions;
+using Sanakan.Services;
 using Sanakan.Services.Executor;
 using Sanakan.Services.PocketWaifu;
 using Sanakan.Services.Session;
@@ -30,6 +31,7 @@ namespace Sanakan.Api.Controllers
         public const int MaxTagNameLength = 100;
         public const int MaxExchangeConditionsLength = 2000;
         public const int MaxCardsPerOperation = 1000;
+        public const int MaxTitleLookupsPerRequest = 50;
 
         private static readonly TagType[] _defaultTags = new[]
         {
@@ -42,8 +44,9 @@ namespace Sanakan.Api.Controllers
         private readonly TagHelper _tags;
         private readonly Waifu _waifu;
         private readonly SessionManager _sessions;
+        private readonly Shinden _shinden;
 
-        public PlayerController(IConfig config, ISystemTime time, IExecutor executor, TagHelper tags, Waifu waifu, SessionManager sessions)
+        public PlayerController(IConfig config, ISystemTime time, IExecutor executor, TagHelper tags, Waifu waifu, SessionManager sessions, Shinden shinden)
         {
             _config = config;
             _time = time;
@@ -51,6 +54,7 @@ namespace Sanakan.Api.Controllers
             _tags = tags;
             _waifu = waifu;
             _sessions = sessions;
+            _shinden = shinden;
         }
 
         /// <summary>
@@ -125,9 +129,69 @@ namespace Sanakan.Api.Controllers
         /// <summary>
         /// Pobiera własną listę życzeń (również gdy jest prywatna)
         /// </summary>
+        /// <param name="titleCharacters">
+        /// czy dołączyć do wpisów title postacie z tych tytułów; tytuły z pamięci podręcznej (do 8 h) są zawsze dołączane,
+        /// z shindena pobieranych jest najwyżej 50 kolejnych, reszta trafia do skippedTitles
+        /// </param>
         [HttpGet("wishlist"), ProducesResponseType(typeof(UserWishlist), 200)]
-        public Task<IActionResult> GetWishlistAsync()
-            => WithPlayerAsync(q => q.Include(x => x.GameDeck).ThenInclude(x => x.Wishes), user => UserWishlist.From(user.GameDeck));
+        public async Task<IActionResult> GetWishlistAsync([FromQuery] bool titleCharacters = false)
+        {
+            var result = await WithPlayerAsync(q => q.Include(x => x.GameDeck).ThenInclude(x => x.Wishes), user => UserWishlist.From(user.GameDeck));
+            if (!titleCharacters || result is not OkObjectResult { Value: UserWishlist wishlist } || !TryGetDiscordId(out var discordId))
+                return result;
+
+            wishlist.SkippedTitles = new List<ulong>();
+            var titles = wishlist.Entries.Where(x => x.Type == WishlistObjectType.Title).ToList();
+            if (titles.Count == 0)
+                return result;
+
+            var ids = new List<ulong>();
+            var fromShinden = 0;
+            foreach (var id in titles.Select(x => x.ObjectId).Distinct())
+            {
+                if (_shinden.HasFreshCharactersFromTitle(id) || fromShinden++ < MaxTitleLookupsPerRequest)
+                    ids.Add(id);
+                else
+                    wishlist.SkippedTitles.Add(id);
+            }
+
+            var owned = await GetOwnedCharactersAsync(discordId);
+            var lookups = await BoundedParallel.SelectAsync(ids, BoundedParallel.ShindenLookups, _shinden.GetCharactersFromTitleAsync);
+            var byTitle = ids.Zip(lookups).Where(x => x.Second != null).ToDictionary(x => x.First, x => x.Second);
+
+            foreach (var entry in titles)
+            {
+                if (byTitle.TryGetValue(entry.ObjectId, out var relations))
+                    entry.Characters = UserTitleCharacter.From(relations, owned);
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Pobiera postacie z tytułu (dowolnego, nie tylko z listy życzeń) wraz z informacją, czy użytkownik ma już ich karty
+        /// </summary>
+        /// <param name="id">id tytułu na shinden</param>
+        /// <response code="404">Title not found</response>
+        /// <response code="503">Can't connect to shinden, retry after the Retry-After header</response>
+        [HttpGet("titles/{id}/characters"), ProducesResponseType(typeof(List<UserTitleCharacter>), 200)]
+        public async Task<IActionResult> GetTitleCharactersAsync(ulong id)
+        {
+            if (!TryGetDiscordId(out var discordId))
+                return NoClaim();
+
+            var (relations, notFound) = await _shinden.GetCharactersFromTitleWithStatusAsync(id);
+            if (relations == null)
+                return notFound ? "Title not found!".ToResponse(404) : ApiResponses.ShindenUnavailable(Response);
+
+            return Ok(UserTitleCharacter.From(relations, await GetOwnedCharactersAsync(discordId)));
+        }
+
+        private async Task<HashSet<ulong>> GetOwnedCharactersAsync(ulong discordId)
+        {
+            using (var db = new Database.DatabaseContext(_config))
+                return await db.GetOwnedCharactersAsync(discordId);
+        }
 
         /// <summary>
         /// Pobiera figurki i ich części

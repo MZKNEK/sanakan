@@ -131,21 +131,30 @@ namespace Sanakan.Services
         }
 
         public async Task<List<IRelation>> GetCharactersFromTitleAsync(ulong titleId)
+            => (await GetCharactersFromTitleWithStatusAsync(titleId)).Characters;
+
+        // NotFound tells a title Shinden does not know from Shinden not answering (both give no characters)
+        public async Task<(List<IRelation> Characters, bool NotFound)> GetCharactersFromTitleWithStatusAsync(ulong titleId)
         {
+            HttpStatusCode? code = null;
             try
             {
-                return await _titleCharacters.GetAsync(titleId, async () =>
+                var characters = await _titleCharacters.GetAsync(titleId, async () =>
                 {
                     var res = await _shClient.Title.GetCharactersAsync(titleId);
+                    code = res.Code;
                     return res.IsSuccessStatusCode() ? res.Body : null;
                 }, _time.Now());
+                return (characters, characters == null && code == HttpStatusCode.NotFound);
             }
             catch (Exception ex)
             {
                 _logger.LogError($"Shinden: GetCharactersFromTitle {titleId}: {ex.Message}");
-                return null;
+                return (null, false);
             }
         }
+
+        public bool HasFreshCharactersFromTitle(ulong titleId) => _titleCharacters.IsFresh(titleId, _time.Now());
 
         public async Task<ITitleInfo> GetInfoFromTitleAsync(ulong titleId)
         {

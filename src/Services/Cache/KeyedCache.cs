@@ -52,6 +52,16 @@ namespace Sanakan.Services.Cache
 
         public int Count => _entries.Count;
 
+        // true when GetAsync would answer without calling fetch
+        public bool IsFresh(TKey key, DateTime now)
+        {
+            EnsureLoaded();
+            return _entries.TryGetValue(key, out var entry) && AnswersWithoutFetch(entry, now);
+        }
+
+        private bool AnswersWithoutFetch(Entry entry, DateTime now)
+            => now - entry.UpdatedAt < _maxAge || now - entry.FailedAt < _retryAfter || now - _failedAt < _retryAfter;
+
         public TValue Peek(TKey key)
         {
             EnsureLoaded();
@@ -64,7 +74,7 @@ namespace Sanakan.Services.Cache
         {
             EnsureLoaded();
             _entries.TryGetValue(key, out var entry);
-            if (entry != null && (now - entry.UpdatedAt < _maxAge || now - entry.FailedAt < _retryAfter || now - _failedAt < _retryAfter))
+            if (entry != null && AnswersWithoutFetch(entry, now))
                 return entry.Value;
 
             TValue value;

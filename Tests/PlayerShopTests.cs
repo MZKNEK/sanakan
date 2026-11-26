@@ -134,7 +134,7 @@ namespace Artifacts
         public void PlayerIdentityWithoutDiscordId_Returns403()
         {
             var controller = ControllerHarness.Attach(new PlayerController(new FakeConfig(), new FixedTime(),
-                new FakeExecutor(), null, Waifu(), null));
+                new FakeExecutor(), null, Waifu(), null, null));
             controller.HttpContext.User = new ClaimsPrincipal(new ClaimsIdentity(new[] { new Claim("Player", "waifu_player") }, "test"));
 
             Assert.Equal(403, controller.GetShopList().StatusOf());

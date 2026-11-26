@@ -25,6 +25,13 @@ namespace Artifacts
         // the random character pool; everything else on Shinden answers 404, so character info and seasons are missing
         public List<(ulong Id, string Name)> Pool { get; } = new List<(ulong, string)>();
 
+        // title id -> relations rows answered by title/{id}/characters
+        public Dictionary<ulong, Newtonsoft.Json.Linq.JArray> TitleCharacters { get; } = new Dictionary<ulong, Newtonsoft.Json.Linq.JArray>();
+        // titles answered with 500 by title/{id}/characters
+        public HashSet<ulong> FailingTitles { get; } = new HashSet<ulong>();
+        public int TitleCharactersRequests => _titleCharactersRequests;
+        private int _titleCharactersRequests;
+
         public FixedTime Time { get; } = new FixedTime();
         public FakeConfig Config { get; } = new FakeConfig();
         public TagHelper Tags { get; private set; }
@@ -41,6 +48,21 @@ namespace Artifacts
                     }));
                     ctx.Response.ContentType = "application/json";
                     await ctx.Response.OutputStream.WriteAsync(System.Text.Encoding.UTF8.GetBytes(list.ToString()));
+                }
+                else if (System.Text.RegularExpressions.Regex.Match(ctx.Request.Url.AbsolutePath, @"/title/(\d+)/characters$") is { Success: true } m)
+                {
+                    System.Threading.Interlocked.Increment(ref _titleCharactersRequests);
+                    var title = ulong.Parse(m.Groups[1].Value);
+                    if (FailingTitles.Contains(title))
+                        ctx.Response.StatusCode = 500;
+                    else if (TitleCharacters.TryGetValue(title, out var relations))
+                    {
+                        ctx.Response.ContentType = "application/json";
+                        var body = new Newtonsoft.Json.Linq.JObject { ["relations"] = relations };
+                        await ctx.Response.OutputStream.WriteAsync(System.Text.Encoding.UTF8.GetBytes(body.ToString()));
+                    }
+                    else
+                        ctx.Response.StatusCode = 404;
                 }
                 else
                 {

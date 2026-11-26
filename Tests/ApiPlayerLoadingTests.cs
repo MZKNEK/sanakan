@@ -5,6 +5,7 @@ using System.Security.Claims;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
+using Sanakan.Api;
 using Sanakan.Api.Controllers;
 using Sanakan.Api.Models;
 using Sanakan.Database.Models;
@@ -91,7 +92,7 @@ namespace Artifacts
             return controller;
         }
 
-        private PlayerController NewPlayerController() => AsPlayer(new PlayerController(_h.Config, _h.Time, _executor, _h.Tags, null, null));
+        private PlayerController NewPlayerController() => AsPlayer(new PlayerController(_h.Config, _h.Time, _executor, _h.Tags, null, null, _h.Shinden));
 
         private WaifuController NewWaifuController() => AsPlayer(new WaifuController(null, NewWaifu(), _executor, _h.Tags, _h.Config, _h.Time,
             _h.Shinden, null, null, null));
@@ -141,6 +142,102 @@ namespace Artifacts
             Assert.Equal(1, Assert.Single(tags.Custom).CardCount);
             Assert.Equal(2, tags.Default.Single(x => x.Id == _h.Tags.GetTagId(TagType.Gallery)).CardCount);
             Assert.All(tags.Default.Where(x => x.Id != _h.Tags.GetTagId(TagType.Gallery)), x => Assert.Equal(0, x.CardCount));
+        }
+
+        [Fact]
+        public async Task Wishlist_WithTitleCharacters_ListsThemOnlyOnTitleEntries()
+        {
+            await SeedAsync();
+            using (var db = _h.Open())
+            {
+                db.Wishes.Add(new WishlistObject { GameDeckId = Player, Type = WishlistObjectType.Title, ObjectId = 50, ObjectName = "Seria" });
+                db.Wishes.Add(new WishlistObject { GameDeckId = Player, Type = WishlistObjectType.Title, ObjectId = 51, ObjectName = "Brak" });
+                await db.SaveChangesAsync();
+            }
+            _h.TitleCharacters[50] = Newtonsoft.Json.Linq.JArray.Parse(@"[
+                { ""many_id"": ""1"", ""character_id"": ""901"", ""first_name"": ""Posiadana"", ""last_name"": ""Postać"", ""title"": ""Seria"" },
+                { ""many_id"": ""2"", ""character_id"": ""600"", ""first_name"": ""Nowa"", ""title"": ""Seria"" },
+                { ""many_id"": ""3"", ""character_id"": ""600"", ""first_name"": ""Nowa"", ""title"": ""Seria"" },
+                { ""many_id"": ""4"", ""character_id"": null, ""staff_id"": ""3"", ""title"": ""Seria"" } ]");
+
+            var plain = (UserWishlist)((OkObjectResult)await NewPlayerController().GetWishlistAsync()).Value;
+            Assert.All(plain.Entries, x => Assert.Null(x.Characters));
+            Assert.DoesNotContain("Characters", Json(plain));
+            Assert.DoesNotContain("SkippedTitles", Json(plain));
+
+            var wishlist = (UserWishlist)((OkObjectResult)await NewPlayerController().GetWishlistAsync(titleCharacters: true)).Value;
+            Assert.Empty(wishlist.SkippedTitles);
+            var title = wishlist.Entries.Single(x => x.ObjectId == 50);
+            Assert.Equal(new (ulong, string, bool)[] { (901, "Posiadana Postać", true), (600, "Nowa", false) },
+                title.Characters.Select(x => (x.Id, x.Name, x.Owned)));
+            Assert.Null(wishlist.Entries.Single(x => x.ObjectId == 51).Characters);
+            Assert.Null(wishlist.Entries.Single(x => x.Type == WishlistObjectType.Character).Characters);
+            Assert.Equal(2, _h.TitleCharactersRequests);
+
+            // a found title is kept for hours like in the bot, a title Shinden does not answer is asked again
+            var again = (UserWishlist)((OkObjectResult)await NewPlayerController().GetWishlistAsync(titleCharacters: true)).Value;
+            Assert.Equal(2, again.Entries.Single(x => x.ObjectId == 50).Characters.Count);
+            Assert.Equal(3, _h.TitleCharactersRequests);
+        }
+
+        [Fact]
+        public async Task Wishlist_WithTitleCharacters_AsksShindenForAtMost50TitlesAndListsTheSkippedOnes()
+        {
+            const int titleCount = PlayerController.MaxTitleLookupsPerRequest + 2;
+            await SeedAsync();
+            using (var db = _h.Open())
+            {
+                for (ulong id = 1; id <= titleCount; id++)
+                {
+                    db.Wishes.Add(new WishlistObject { GameDeckId = Player, Type = WishlistObjectType.Title, ObjectId = id, ObjectName = $"t{id}" });
+                    _h.TitleCharacters[id] = Newtonsoft.Json.Linq.JArray.Parse($@"[ {{ ""many_id"": ""{id}"", ""character_id"": ""{500 + id}"", ""first_name"": ""p"" }} ]");
+                }
+                await db.SaveChangesAsync();
+            }
+
+            var first = (UserWishlist)((OkObjectResult)await NewPlayerController().GetWishlistAsync(titleCharacters: true)).Value;
+            var titles = first.Entries.Where(x => x.Type == WishlistObjectType.Title).ToList();
+            Assert.Equal(PlayerController.MaxTitleLookupsPerRequest, _h.TitleCharactersRequests);
+            Assert.Equal(2, first.SkippedTitles.Count);
+            Assert.Equal(first.SkippedTitles.OrderBy(x => x), titles.Where(x => x.Characters == null).Select(x => x.ObjectId).OrderBy(x => x));
+            Assert.Equal(PlayerController.MaxTitleLookupsPerRequest, titles.Count(x => x.Characters != null));
+
+            // the cached titles do not count against the limit, so the next request completes the list
+            var second = (UserWishlist)((OkObjectResult)await NewPlayerController().GetWishlistAsync(titleCharacters: true)).Value;
+            Assert.Empty(second.SkippedTitles);
+            Assert.All(second.Entries.Where(x => x.Type == WishlistObjectType.Title), x => Assert.Single(x.Characters));
+            Assert.Equal(titleCount, _h.TitleCharactersRequests);
+
+            // once the cache is old every title is asked again within the limit
+            _h.Time.Value = _h.Time.Value.AddHours(9);
+            var third = (UserWishlist)((OkObjectResult)await NewPlayerController().GetWishlistAsync(titleCharacters: true)).Value;
+            Assert.Equal(2, third.SkippedTitles.Count);
+            Assert.Equal(titleCount + PlayerController.MaxTitleLookupsPerRequest, _h.TitleCharactersRequests);
+        }
+
+        [Fact]
+        public async Task TitleCharacters_ListsAnyTitle_AndTellsMissingFromUnavailable()
+        {
+            await SeedAsync();
+            _h.TitleCharacters[70] = Newtonsoft.Json.Linq.JArray.Parse(@"[
+                { ""many_id"": ""1"", ""character_id"": ""902"", ""first_name"": ""Mam"" },
+                { ""many_id"": ""2"", ""character_id"": ""700"", ""first_name"": ""Nie"", ""last_name"": ""mam"" } ]");
+            _h.FailingTitles.Add(72);
+
+            var found = await NewPlayerController().GetTitleCharactersAsync(70);
+            var characters = Assert.IsType<List<UserTitleCharacter>>(Assert.IsType<OkObjectResult>(found).Value);
+            Assert.Equal(new (ulong, string, bool)[] { (902, "Mam", true), (700, "Nie mam", false) }, characters.Select(x => (x.Id, x.Name, x.Owned)));
+
+            // the same cache as the wishlist and the bot
+            Assert.Equal(200, (await NewPlayerController().GetTitleCharactersAsync(70)).StatusOf());
+            Assert.True(_h.Shinden.HasFreshCharactersFromTitle(70));
+            Assert.Equal(1, _h.TitleCharactersRequests);
+
+            Assert.Equal(404, (await NewPlayerController().GetTitleCharactersAsync(71)).StatusOf());
+
+            var controller = NewPlayerController();
+            Assert.Equal(503, (await controller.GetTitleCharactersAsync(72)).StatusOf());
+            Assert.True(controller.Response.Headers.ContainsKey(ApiResponses.RetryAfterHeader));
         }
 
         [Fact]
@@ -358,7 +455,7 @@ namespace Artifacts
             using var client = new Discord.WebSocket.DiscordSocketClient();
             using var sessions = new Sanakan.Services.Session.SessionManager(client, new FakeExecutor(), new ListLogger());
             sessions.Initialize(new EmptyServiceProvider());
-            PlayerController Controller() => AsPlayer(new PlayerController(_h.Config, _h.Time, _executor, _h.Tags, null, sessions));
+            PlayerController Controller() => AsPlayer(new PlayerController(_h.Config, _h.Time, _executor, _h.Tags, null, sessions, _h.Shinden));
 
             Assert.Equal("Waifu changed!", ApiBody.Message(await Controller().SetWaifuAsync(905)));
             double Affection()
