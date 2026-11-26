@@ -62,6 +62,77 @@ namespace Artifacts
             Assert.EndsWith("Wynik: wygrywa ????" + System.Environment.NewLine, log);
         }
 
+        // a Kamidere SSS with 100 attack hits a Kuudere with 50 defence for exactly 50
+        private static (CardWithHealth Attacker, CardWithHealth Target, List<CardWithHealth> All) Overkill(double targetHp, params double[] allyHp)
+        {
+            var attacker = Fighter(NewCard("Atak", Dere.Kamidere, 1), 1000);
+            var target = Fighter(NewCard("Cel", Dere.Kuudere, 2), targetHp);
+            var all = new List<CardWithHealth> { attacker, target, Fighter(NewCard("Kolega", Dere.Kamidere, 1), 1000) };
+            all.AddRange(allyHp.Select(hp => Fighter(NewCard("Sojusznik", Dere.Kuudere, 2), hp)));
+            return (attacker, target, all);
+        }
+
+        [Fact]
+        public void Overkill_CarriesTheLeftoverToOneCardOfTheSameDeck()
+        {
+            var (attacker, target, all) = Overkill(20, 1000, 1000);
+            var round = new RoundInfo();
+
+            Waifu.Strike(round, attacker, target, false, all);
+
+            Assert.Equal(2, round.Fights.Count);
+            var carried = round.Fights[1];
+            Assert.True(carried.Carried);
+            Assert.Equal(30, carried.Dmg, 6);
+            Assert.Equal(1970, all.Skip(3).Sum(x => x.Health), 6);
+            Assert.Equal(1000, all[2].Health);
+        }
+
+        [Fact]
+        public void Overkill_IsPassedOnOnlyOnce()
+        {
+            var (attacker, target, all) = Overkill(20, 10, 10);
+            var round = new RoundInfo();
+
+            Waifu.Strike(round, attacker, target, false, all);
+
+            Assert.Equal(2, round.Fights.Count);
+            Assert.Single(all.Skip(3), x => x.Health == 0);
+        }
+
+        [Fact]
+        public void Overkill_NeedsAKillAndAnotherCardOfThatDeck()
+        {
+            var (attacker, target, all) = Overkill(80, 1000);
+            var round = new RoundInfo();
+            Waifu.Strike(round, attacker, target, false, all);
+            Assert.Single(round.Fights);
+
+            (attacker, target, all) = Overkill(20);
+            round = new RoundInfo();
+            Waifu.Strike(round, attacker, target, false, all);
+            Assert.Single(round.Fights);
+        }
+
+        [Fact]
+        public void Overkill_IsShownInTheFullLog_AndNotCountedAsAnotherCriticalHit()
+        {
+            var (attacker, target, all) = Overkill(20, 1000);
+            var players = new List<PlayerInfo>
+            {
+                new PlayerInfo { Cards = all.Where(x => x.Card.GameDeckId == 1).Select(x => x.Card).ToList() },
+                new PlayerInfo { Cards = all.Where(x => x.Card.GameDeckId == 2).Select(x => x.Card).ToList() },
+            };
+            var round = new RoundInfo();
+            Waifu.Strike(round, attacker, target, false, all);
+            round.Fights.ForEach(x => x.Critical = true);
+            var fight = new FightHistory(players[0]);
+            fight.Rounds.Add(round);
+
+            Assert.Contains("↪ nadwyżka: Atak [????] → Sojusznik [????]: 30 obrażeń", Waifu.GetFullFightLog(fight, players));
+            Assert.Equal("💥 Trafienia krytyczne: ???? 1\n", Waifu.CriticalHitsLine(fight, players));
+        }
+
         [Fact]
         public void LogFileName_HasTheDateAndBothPlayers()
         {

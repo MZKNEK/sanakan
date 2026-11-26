@@ -10,6 +10,8 @@ namespace Sanakan.Services.PocketWaifu.Fight
         public bool Critical { get; set; }
         public bool Dodged { get; set; }
         public bool SecondStrike { get; set; }
+        // the leftover of a hit that killed the previous target
+        public bool Carried { get; set; }
         public bool Healed { get; set; }
         public bool Rage { get; set; }
         public bool Guarded { get; set; }

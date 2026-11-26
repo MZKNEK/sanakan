@@ -88,16 +88,26 @@ namespace Artifacts
         private static GameDeck Deck(ulong id, double power, double mmr) => new GameDeck { Id = id, UserId = id, DeckPower = power, MatachMakingRatio = mmr };
 
         [Fact]
-        public void Opponents_ComeFromTheClosestPowerRangeWithEnoughPlayers()
+        public void Opponents_AreMatchedByMmr_WithPowerOnlyAsASafetyRange()
         {
-            var player = Deck(1, 1000, 1);
-            var pool = Enumerable.Range(0, 12).Select(i => Deck(10UL + (ulong)i, 900 + i * 20, 1))
-                .Concat(Enumerable.Range(0, 30).Select(i => Deck(100UL + (ulong)i, 50000, 1))).ToList();
+            var player = Deck(1, 1000, 5);
+            var pool = Enumerable.Range(0, 10).Select(i => Deck(10UL + (ulong)i, 4000, 6))
+                .Concat(Enumerable.Range(0, 10).Select(i => Deck(100UL + (ulong)i, 1000, 50)))
+                .Concat(Enumerable.Range(0, 10).Select(i => Deck(200UL + (ulong)i, 6000, 5))).ToList();
 
             var candidates = player.GetPvpOpponentCandidates(pool);
 
-            Assert.True(candidates.Count >= 10);
-            Assert.All(candidates, x => Assert.InRange(x.DeckPower, 800, 1250));
+            Assert.Equal(10, candidates.Count);
+            Assert.All(candidates, x => Assert.Equal(4000, x.DeckPower));
+        }
+
+        [Fact]
+        public void Opponents_TiedOnMmrAreAllKept()
+        {
+            var player = Deck(1, 1000, 0);
+            var pool = Enumerable.Range(0, 30).Select(i => Deck(10UL + (ulong)i, 1000, 0)).ToList();
+
+            Assert.Equal(30, player.GetPvpOpponentCandidates(pool).Count);
         }
 
         [Fact]

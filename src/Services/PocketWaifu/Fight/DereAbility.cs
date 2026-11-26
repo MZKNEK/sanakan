@@ -15,6 +15,22 @@ namespace Sanakan.Services.PocketWaifu.Fight
         public const double DandereDodgeChance = 10;
         public const double KuudereCritBonus = 20;
         public const double BodereSecondStrikeChance = 15;
+        // tuned on power-matched decks of real ultimates with leftover damage carried on: Yato wins about 75-80% against Yami or Raito
+        public const double UltimateYatoDodgeChance = 25;
+
+        public static double GetDodgeChance(this Card target, Card attacker)
+        {
+            if (target.Dere == Dere.Dandere)
+                return DandereDodgeChance;
+
+            if (target.Dere == Dere.Yato && target.FromFigure && (attacker.Dere == Dere.Yami || attacker.Dere == Dere.Raito))
+                return UltimateYatoDodgeChance;
+
+            return 0;
+        }
+
+        public static string GetAbilityDescription(this Card card)
+            => card.Dere == Dere.Yato && card.FromFigure ? $"jako karta ultimate unika {UltimateYatoDodgeChance}% ataków Yami i Raito" : card.Dere.GetAbilityDescription();
 
         public static string GetAbilityDescription(this Dere dere) => dere switch
         {

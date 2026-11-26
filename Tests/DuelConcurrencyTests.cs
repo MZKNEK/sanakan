@@ -250,7 +250,7 @@ namespace Artifacts
             var player = await read.GetUserOrCreateAsync(61, _time);
             Assert.Equal(10UL, player.GameDeck.PVPDailyGamesPlayed);
             Assert.Single(player.GameDeck.PvPStats);
-            Assert.Equal(60, player.GameDeck.PVPCoins);
+            Assert.Equal(80, player.GameDeck.PVPCoins);
         }
 
         [Fact]

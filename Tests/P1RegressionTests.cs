@@ -33,16 +33,38 @@ namespace Artifacts
             Assert.Equal((d1.SeasonalPVPRank - 500) / 2, 500 - d2.SeasonalPVPRank);
         }
 
-        private static GameDeck Powered(double power) => new GameDeck { DeckPower = power };
+        private static GameDeck Powered(double power, double mmr = 0) => new GameDeck { DeckPower = power, MatachMakingRatio = mmr };
 
         [Theory]
         [InlineData(1000, 1000, FightResult.Win, 100)]
         [InlineData(1000, 1000, FightResult.Lose, 50)]
         [InlineData(1000, 1000, FightResult.Draw, 50)]
-        [InlineData(1000, 5000, FightResult.Win, 140)]
-        [InlineData(5000, 1000, FightResult.Win, 60)]
+        [InlineData(1000, 5000, FightResult.Win, 120)]
+        [InlineData(5000, 1000, FightResult.Win, 80)]
         public void Coins_GrowWithTheOpponentsStrength(double mine, double enemy, FightResult result, long expected)
             => Assert.Equal(expected, Powered(mine).GetPVPCoinsFromDuel(Powered(enemy), result));
+
+        [Theory]
+        [InlineData(0, 40, 116)]
+        [InlineData(40, 0, 84)]
+        [InlineData(1000, 1000, 100)]
+        public void Coins_GrowWithTheOpponentsMmr(double mine, double enemy, long expected)
+            => Assert.Equal(expected, Powered(1000, mine).GetPVPCoinsFromDuel(Powered(1000, enemy), FightResult.Win));
+
+        [Theory]
+        [InlineData(FightResult.Win, 1006, 100)]
+        [InlineData(FightResult.Lose, 994, 50)]
+        [InlineData(FightResult.Draw, 1000, 50)]
+        public void Mmr_MovesHalfTheStepBetweenEqualDecks_AndCoinsUseItBeforeTheChange(FightResult result, double mmr, long coins)
+        {
+            var d1 = Deck();
+            var d2 = Deck();
+
+            d1.CalculatePVPParams(d2, result);
+
+            Assert.Equal(mmr, d1.MatachMakingRatio, 6);
+            Assert.Equal(coins, d1.PVPCoins);
+        }
 
         [Theory]
         [InlineData(0, "Miles gregarius")]

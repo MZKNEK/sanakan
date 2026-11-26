@@ -330,7 +330,7 @@ namespace Sanakan.Extensions
                 card.GetWhoWantsLine(),
                 $"Zdobyta: {card.Source.GetString()}, {card.CreationDate.ToShortDateTime()}",
             };
-            var ability = card.Dere.GetAbilityDescription();
+            var ability = card.GetAbilityDescription();
             if (ability != null)
                 more.Insert(0, $"Zdolność ({card.Dere}): {ability}");
             if (!string.IsNullOrEmpty(card.CustomImage) && !hideScalpelInfo)

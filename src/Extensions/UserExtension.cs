@@ -313,48 +313,33 @@ namespace Sanakan.Extensions
         public static bool CanFightPvPs(this GameDeck deck)
             => CanFightPvP(deck) == 0;
 
-        public static bool IsNearMMR(this GameDeck d1, GameDeck d2, double margin = 0.3)
-        {
-            var d1MMR = d1.MatachMakingRatio;
-            var mDown = d2.MatachMakingRatio - margin;
-            var mUp = d2.MatachMakingRatio + (margin * 1.2);
-
-            return d1MMR >= mDown && d1MMR <= mUp;
-        }
-
         public static bool IsNearPower(this GameDeck candidate, GameDeck player, double factor)
             => candidate.DeckPower >= player.DeckPower / factor && candidate.DeckPower <= player.DeckPower * factor;
 
-        // a 25% stronger deck already wins about 70% of duels, so the power range widens only when there are too few opponents
-        private static readonly double[] _powerRanges = { 1.25, 1.5, 2, 3, 5 };
+        // only a safety net, opponents are matched by MMR
+        public const double PvpPowerSafetyFactor = 5;
 
         public static List<GameDeck> GetPvpOpponentCandidates(this GameDeck player, IReadOnlyCollection<GameDeck> pool, int wanted = 10)
         {
-            // without anyone in range the closest decks are taken, so a far stronger deck does not get the whole pool to farm
-            var byPower = pool.OrderBy(x => Math.Abs(Math.Log(Math.Max(x.DeckPower, 1) / Math.Max(player.DeckPower, 1)))).Take(wanted).ToList();
-            foreach (var range in _powerRanges)
-            {
-                var near = pool.Where(x => x.IsNearPower(player, range)).ToList();
-                if (near.Count >= wanted)
-                {
-                    byPower = near;
-                    break;
-                }
-            }
+            var allowed = pool.Where(x => x.IsNearPower(player, PvpPowerSafetyFactor)).ToList();
+            // without enough decks in the safety range the closest ones are taken, so a far stronger deck does not get the whole pool to farm
+            if (allowed.Count < wanted)
+                allowed = pool.OrderBy(x => Math.Abs(Math.Log(Math.Max(x.DeckPower, 1) / Math.Max(player.DeckPower, 1)))).Take(wanted).ToList();
 
-            if (byPower.Count < wanted)
-                return byPower;
+            if (allowed.Count <= wanted)
+                return allowed;
 
-            double toLong = 1;
-            var inRange = byPower.Where(x => x.IsNearMMR(player)).ToList();
-            for (double mmr = 0.5; inRange.Count < wanted; mmr += (0.5 * toLong))
-            {
-                inRange = byPower.Where(x => x.IsNearMMR(player, mmr)).ToList();
-                toLong += 0.5;
-            }
-
-            return inRange;
+            // everyone tied with the last of the closest stays, so equal MMR (e.g. new players) does not always give the same opponents
+            double MmrDistance(GameDeck x) => Math.Abs(x.MatachMakingRatio - player.MatachMakingRatio);
+            var limit = allowed.Select(MmrDistance).OrderBy(x => x).ElementAt(wanted - 1);
+            return allowed.Where(x => MmrDistance(x) <= limit).ToList();
         }
+
+        public const double MmrStep = 12;
+        private const double MmrScale = 40;
+
+        public static double GetMmrWinChance(this GameDeck deck, GameDeck enemy)
+            => 1 / (1 + Math.Pow(10, -(deck.MatachMakingRatio - enemy.MatachMakingRatio) / MmrScale));
 
         public const int MinPvpCoinsForWin = 60;
         public const int MaxPvpCoinsForWin = 140;
@@ -364,10 +349,12 @@ namespace Sanakan.Extensions
         public static double GetPvpWinChance(this GameDeck deck, GameDeck enemy)
             => 1 / (1 + Math.Pow(Math.Max(enemy.DeckPower, 1) / Math.Max(deck.DeckPower, 1), PvpPowerSlope));
 
-        // beating a stronger deck pays more, a draw or a loss gives half of what the win would have
+        // beating a stronger deck pays more, a draw or a loss gives half of what the win would have;
+        // power and MMR count equally, so coins stay as before while opponents are matched by MMR
         public static long GetPVPCoinsFromDuel(this GameDeck deck, GameDeck enemy, FightResult res)
         {
-            var win = MinPvpCoinsForWin + (MaxPvpCoinsForWin - MinPvpCoinsForWin) * (1 - deck.GetPvpWinChance(enemy));
+            var chance = (deck.GetPvpWinChance(enemy) + deck.GetMmrWinChance(enemy)) / 2;
+            var win = MinPvpCoinsForWin + (MaxPvpCoinsForWin - MinPvpCoinsForWin) * (1 - chance);
             return (long)Math.Round(res == FightResult.Win ? win : win / 2);
         }
 
@@ -375,9 +362,11 @@ namespace Sanakan.Extensions
         {
             ++d1.PVPDailyGamesPlayed;
 
-            var mmrDif = d1.MatachMakingRatio - d2.MatachMakingRatio;
-            var chanceD1 = 1 / (1 + Math.Pow(10, -mmrDif / 40f));
-            var chanceD2 = 1 / (1 + Math.Pow(10, mmrDif / 40f));
+            // before the MMR changes below
+            var coins = d1.GetPVPCoinsFromDuel(d2, res);
+
+            var chanceD1 = d1.GetMmrWinChance(d2);
+            var chanceD2 = d2.GetMmrWinChance(d1);
 
             var sDif = d1.SeasonalPVPRank - d2.SeasonalPVPRank;
             var sChan = 1 / (1 + Math.Pow(10, -sDif / 400f));
@@ -403,8 +392,8 @@ namespace Sanakan.Extensions
                     sRank = (long)(80 * (1 - sChan)) + wsb;
                     gRank = (long)(40 * (1 - gChan)) + wsb;
 
-                    mmrChange = 2 * (1 - chanceD1);
-                    mmreChange = 2 * (0 - chanceD2);
+                    mmrChange = MmrStep * (1 - chanceD1);
+                    mmreChange = MmrStep * (0 - chanceD2);
                     break;
 
                 case FightResult.Lose:
@@ -412,8 +401,8 @@ namespace Sanakan.Extensions
                     sRank = (long)(80 * (0 - sChan));
                     gRank = (long)(40 * (0 - gChan));
 
-                    mmrChange = 2 * (0 - chanceD1);
-                    mmreChange = 2 * (1 - chanceD2);
+                    mmrChange = MmrStep * (0 - chanceD1);
+                    mmreChange = MmrStep * (1 - chanceD2);
                     break;
 
                 case FightResult.Draw:
@@ -421,8 +410,8 @@ namespace Sanakan.Extensions
                     gRank = (long)(20 * (1 - gChan));
 
                     // remis musi być zero-sum, inaczej rating obu graczy rośnie
-                    mmrChange = 1 * (0.5 - chanceD1);
-                    mmreChange = 1 * (0.5 - chanceD2);
+                    mmrChange = MmrStep / 2 * (0.5 - chanceD1);
+                    mmreChange = MmrStep / 2 * (0.5 - chanceD2);
                     break;
             }
 
@@ -447,7 +436,6 @@ namespace Sanakan.Extensions
             if (d2.SeasonalPVPRank < 0)
                 d2.SeasonalPVPRank = 0;
 
-            var coins = d1.GetPVPCoinsFromDuel(d2, res);
             d1.PVPCoins += coins;
 
             return $"**{coins:+0;-#}** PC **{gRank:+0;-#}** GR  **{sRank:+0;-#}** SR";

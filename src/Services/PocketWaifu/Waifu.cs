@@ -1373,20 +1373,38 @@ namespace Sanakan.Services.PocketWaifu
             return nDef;
         }
 
-        public static bool Strike(RoundInfo round, CardWithHealth attacker, CardWithHealth target, bool secondStrike)
+        // a hit that kills its target passes the unused part on to one more card of the same deck, which can dodge it but passes nothing further
+        public static bool Strike(RoundInfo round, CardWithHealth attacker, CardWithHealth target, bool secondStrike, IEnumerable<CardWithHealth> fighters = null)
         {
             var info = new AttackInfo { AtkCardId = attacker.Card.Id, DefCardId = target.Card.Id, SecondStrike = secondStrike };
+            var excess = Hit(round, attacker, target, info, null, 1);
+            if (info.Dodged)
+                return false;
+
+            var next = fighters?.Where(x => x != target && x.Health > 0 && x.Card.GameDeckId == target.Card.GameDeckId).ToList();
+            if (excess > 0 && next?.Count > 0)
+            {
+                var carried = Fun.GetOneRandomFrom(next);
+                Hit(round, attacker, carried, new AttackInfo { AtkCardId = attacker.Card.Id, DefCardId = carried.Card.Id, Carried = true }, info.Critical, excess);
+            }
+            return true;
+        }
+
+        // returns the part of the hit left over after killing the target
+        private static double Hit(RoundInfo round, CardWithHealth attacker, CardWithHealth target, AttackInfo info, bool? critical, double share)
+        {
             round.Fights.Add(info);
 
-            if (target.Card.Dere == Dere.Dandere && Fun.TakeATry(DereAbility.DandereDodgeChance))
+            var dodgeChance = target.Card.GetDodgeChance(attacker.Card);
+            if (dodgeChance > 0 && Fun.TakeATry(dodgeChance))
             {
                 info.Dodged = true;
                 info.TargetHp = target.Health;
-                return false;
+                return 0;
             }
 
-            info.Critical = Fun.TakeATry(attacker.Card.GetCritChance());
-            var dmg = GetFA(attacker.Card, target.Card, info.Critical);
+            info.Critical = critical ?? Fun.TakeATry(attacker.Card.GetCritChance());
+            var dmg = GetFA(attacker.Card, target.Card, info.Critical) * share;
             if (attacker.Card.Dere == Dere.Yandere && attacker.Health < attacker.MaxHealth * DereAbility.YandereRageBelow)
             {
                 dmg *= DereAbility.YandereRageMultiplier;
@@ -1399,9 +1417,11 @@ namespace Sanakan.Services.PocketWaifu
             }
 
             info.Dmg = dmg;
+            var before = target.Health;
             target.Health -= dmg;
             if (target.Health < 1)
                 target.Health = 0;
+            var excess = dmg > before ? (dmg - before) / dmg : 0;
 
             if (target.Card.Dere == Dere.Deredere && !target.Healed && target.Health > 0 && target.Health < target.MaxHealth * DereAbility.DeredereHealBelow)
             {
@@ -1417,7 +1437,7 @@ namespace Sanakan.Services.PocketWaifu
             else
                 hpSnap.Hp = target.Health;
 
-            return true;
+            return excess;
         }
 
         public string GetDeathLog(FightHistory fight, List<PlayerInfo> players)
@@ -1489,7 +1509,7 @@ namespace Sanakan.Services.PocketWaifu
                 {
                     log.AppendLine($"  {card.Name} (WID {card.Id}, {card.GetCardRealRarity()}) · {card.Dere} · życie {card.GetHealthWithPenalty()} · atak {card.GetAttackWithBonus()}"
                         + $" · obrona {card.GetDefenceWithBonus()} · precyzja {card.GetCritChance():0.#}% · moc {card.CalculateCardPower():0}");
-                    var ability = card.Dere.GetAbilityDescription();
+                    var ability = card.GetAbilityDescription();
                     if (ability != null)
                         log.AppendLine($"     zdolność: {ability}");
                     if (!card.HasImage())
@@ -1503,7 +1523,7 @@ namespace Sanakan.Services.PocketWaifu
                 log.AppendLine($"Runda {i + 1}");
                 foreach (var attack in fight.Rounds[i].Fights)
                 {
-                    var who = $"{(attack.SecondStrike ? "⚔ drugi cios: " : "")}{Label(attack.AtkCardId)} → {Label(attack.DefCardId)}";
+                    var who = $"{(attack.SecondStrike ? "⚔ drugi cios: " : "")}{(attack.Carried ? "↪ nadwyżka: " : "")}{Label(attack.AtkCardId)} → {Label(attack.DefCardId)}";
                     if (attack.Dodged)
                     {
                         log.AppendLine($"  {who}: unik");
@@ -1530,7 +1550,7 @@ namespace Sanakan.Services.PocketWaifu
 
         public static string CriticalHitsLine(FightHistory fight, List<PlayerInfo> players)
         {
-            var critical = fight.Rounds.SelectMany(x => x.Fights).Where(x => x.Critical).Select(x => x.AtkCardId).ToList();
+            var critical = fight.Rounds.SelectMany(x => x.Fights).Where(x => x.Critical && !x.Carried).Select(x => x.AtkCardId).ToList();
             if (critical.Count == 0)
                 return "";
 
@@ -1568,14 +1588,14 @@ namespace Sanakan.Services.PocketWaifu
                     var enemies = totalCards.Where(x => x.Health > 0 && x.Card.GameDeckId != card.Card.GameDeckId).ToList();
                     if (enemies.Count() > 0)
                     {
-                        Strike(round, card, Fun.GetOneRandomFrom(enemies), false);
+                        Strike(round, card, Fun.GetOneRandomFrom(enemies), false, totalCards);
 
                         // on its own turn, so the bonus does not grow with the number of enemies hitting it
                         if (card.Card.Dere == Dere.Bodere && card.Health > 0 && Fun.TakeATry(DereAbility.BodereSecondStrikeChance))
                         {
                             enemies = enemies.Where(x => x.Health > 0).ToList();
                             if (enemies.Count > 0)
-                                Strike(round, card, Fun.GetOneRandomFrom(enemies), true);
+                                Strike(round, card, Fun.GetOneRandomFrom(enemies), true, totalCards);
                         }
                     }
                 }

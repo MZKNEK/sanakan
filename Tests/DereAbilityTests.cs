@@ -117,6 +117,46 @@ namespace Artifacts
             Assert.InRange(rate, 0.09, 0.11);
         }
 
+        private static double DodgeRate(Dere attackerDere, bool ultimateYato)
+        {
+            var attacker = Fighter(attackerDere);
+            var round = new RoundInfo();
+            for (int i = 0; i < 20000; i++)
+            {
+                var yato = Fighter(Dere.Yato);
+                yato.Card.FromFigure = ultimateYato;
+                Waifu.Strike(round, attacker, yato, false);
+            }
+            return round.Fights.Count(x => x.Dodged) / 20000d;
+        }
+
+        [Theory]
+        [InlineData(Dere.Yami)]
+        [InlineData(Dere.Raito)]
+        public void UltimateYato_DodgesAQuarterOfYamiAndRaitoAttacks(Dere attacker)
+        {
+            Assert.InRange(DodgeRate(attacker, true), 0.235, 0.265);
+            Assert.Equal(0, DodgeRate(attacker, false));
+        }
+
+        [Theory]
+        [InlineData(Dere.Yato)]
+        [InlineData(Dere.Kamidere)]
+        [InlineData(Dere.Dandere)]
+        public void UltimateYato_DoesNotDodgeOtherDeres(Dere attacker)
+            => Assert.Equal(0, DodgeRate(attacker, true));
+
+        [Fact]
+        public void UltimateYato_HasItsAbilityDescribed()
+        {
+            var yato = Fighter(Dere.Yato).Card;
+            Assert.Null(yato.GetAbilityDescription());
+
+            yato.FromFigure = true;
+            Assert.Contains("Yami i Raito", yato.GetAbilityDescription());
+            Assert.Equal(Dere.Dandere.GetAbilityDescription(), Fighter(Dere.Dandere).Card.GetAbilityDescription());
+        }
+
         [Fact]
         public void AbilitiesLine_CountsEventsPerPlayer()
         {
