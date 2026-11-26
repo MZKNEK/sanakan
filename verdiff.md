@@ -1,5 +1,9 @@
-# 1.5.1.1
+# 1.5.1.2
 
 Data: 2026-11-26
 
-- Zmieniono rewanż: jest dodatkowym pojedynkiem ponad dzienny limit 10 walk i nie zabiera żadnej z nich.
+- Dodano zapamiętywanie daty otrzymania pakietu kart, którą strona może pokazać na liście pakietów; pakiety zdobyte wcześniej mają datę wprowadzenia tej zmiany.
+
+## Techniczne
+
+- Przyspieszono wczytywanie danych gracza, bo informacje o pakietach kart są teraz trzymane w jednym miejscu.
