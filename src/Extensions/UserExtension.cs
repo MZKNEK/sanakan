@@ -379,9 +379,10 @@ namespace Sanakan.Extensions
             return (long)Math.Round(res == FightResult.Win ? win : win / 2);
         }
 
-        public static string CalculatePVPParams(this GameDeck d1, GameDeck d2, FightResult res)
+        public static string CalculatePVPParams(this GameDeck d1, GameDeck d2, FightResult res, bool countsTowardDailyLimit = true)
         {
-            ++d1.PVPDailyGamesPlayed;
+            if (countsTowardDailyLimit)
+                ++d1.PVPDailyGamesPlayed;
 
             // before the MMR changes below
             var coins = d1.GetPVPCoinsFromDuel(d2, res);

@@ -198,6 +198,32 @@ namespace Artifacts
         }
 
         [Fact]
+        public async Task Revenge_IsADuelOnTopOfTheDailyLimit()
+        {
+            LetTheWeakPlayerAttack();
+            await DuelAsync(61, 63);
+            using (var db = Open())
+            {
+                var user = await db.Users.Include(x => x.TimeStatuses).Include(x => x.GameDeck).SingleAsync(x => x.Id == 63);
+                user.GameDeck.PVPDailyGamesPlayed = (ulong)UserExtension.MAX_PVP_DAILY_GAMES;
+                user.TimeStatuses.Add(new TimeStatus { Type = StatusType.Pvp, EndsAt = _time.Now().AddDays(1) });
+                await db.SaveChangesAsync();
+            }
+
+            await DuelAsync(63, 62);
+            using (var db = Open())
+                Assert.Equal(0, db.CardPvPStats.Count(x => x.GameDeckId == 63));
+
+            await DuelAsync(63, 61, revenge: true);
+            using (var check = Open())
+            {
+                Assert.Equal(1, check.CardPvPStats.Count(x => x.GameDeckId == 63));
+                Assert.Equal((ulong)UserExtension.MAX_PVP_DAILY_GAMES, (await check.GameDecks.SingleAsync(x => x.Id == 63)).PVPDailyGamesPlayed);
+                Assert.True(check.PvpDefeats.Single(x => x.UserId == 63).Avenged);
+            }
+        }
+
+        [Fact]
         public async Task Revenge_NeedsADefeatOfToday()
         {
             LetTheWeakPlayerAttack();

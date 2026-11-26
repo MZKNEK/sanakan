@@ -4300,7 +4300,7 @@ namespace Sanakan.Modules
 
         [Command("rewanż")]
         [Alias("rewanz", "revenge")]
-        [Summary("pokazuje graczy, którzy dziś cię pokonali; raz dziennie możesz zaatakować jednego z nich, rewanż liczy się jak zwykły pojedynek")]
+        [Summary("pokazuje graczy, którzy dziś cię pokonali; raz dziennie możesz zaatakować jednego z nich ponad dzienny limit pojedynków, a wynik liczy się jak w zwykłym pojedynku")]
         [Remarks("1"), RequireWaifuDuelChannel]
         public async Task RevengeAsync([Summary("numer gracza z listy")] int number = 0)
         {
@@ -4324,7 +4324,7 @@ namespace Sanakan.Modules
                     var user = await GetDuelOpponentAsync(attackers[i].Id);
                     lines.Add($"**[{i + 1}]** {user?.Mention ?? $"gracz {attackers[i].Id}"} · wygrane z tobą: {attackers[i].Wins}{(attackers[i].Avenged ? " · rewanż wzięty" : "")}");
                 }
-                var footer = used ? "Dzisiejszy rewanż został już wykorzystany." : "Rewanż: `rewanż numer`, raz dziennie, wlicza się do dziennego limitu pojedynków.";
+                var footer = used ? "Dzisiejszy rewanż został już wykorzystany." : $"Rewanż: `rewanż numer`, raz dziennie, ponad dzienny limit {UserExtension.MAX_PVP_DAILY_GAMES} pojedynków.";
                 await SafeReplyAsync("", embed: $"{Context.User.Mention} dziś pokonali cię:\n\n{string.Join("\n", lines)}\n\n{footer}".TrimToLength().ToEmbedMessage(EMType.Info).Build());
                 return;
             }
@@ -4343,7 +4343,7 @@ namespace Sanakan.Modules
 
             var duser = await db.GetUserOrCreateSimpleAsync(Context.User.Id, _time);
             duser.GameDeck.Cards = await db.Entry(duser.GameDeck).Collection(x => x.Cards).Query().Where(x => x.Active).ToListAsync();
-            if (!await PrepareDuelAsync(duser)) return;
+            if (!await PrepareDuelAsync(duser, revenge: true)) return;
 
             var enemy = await GetDuelOpponentAsync(attackers[number - 1].Id);
             if (enemy == null)
@@ -4370,7 +4370,8 @@ namespace Sanakan.Modules
             }
         }
 
-        private async Task<bool> PrepareDuelAsync(User duser)
+        // the daily revenge is a duel on top of the daily limit
+        private async Task<bool> PrepareDuelAsync(User duser, bool revenge = false)
         {
             if (duser.GameDeck.NeedToSetDeckAgain())
             {
@@ -4398,7 +4399,7 @@ namespace Sanakan.Modules
                 duser.GameDeck.PVPDailyGamesPlayed = 0;
             }
 
-            if (duser.GameDeck.ReachedDailyMaxPVPCount())
+            if (!revenge && duser.GameDeck.ReachedDailyMaxPVPCount())
             {
                 await SafeReplyAsync("", embed: $"{Context.User.Mention} rozegrano już wszystkie {UserExtension.MAX_PVP_DAILY_GAMES} dzisiejszych pojedynków. Kolejne będą dostępne {(pvpDailyMax.EndsAt.TimeOfDay == TimeSpan.Zero ? "o północy, " : "")}{pvpDailyMax.EndsAt.ToRemTime()}."
                     .ToEmbedMessage(EMType.Error).Build());
@@ -4420,7 +4421,7 @@ namespace Sanakan.Modules
             using (var db = CreateDuelDatabaseContext())
             {
                 var duser = await db.GetUserOrCreateWithActiveCardsAsync(Context.User.Id, _time);
-                if (!await PrepareDuelAsync(duser)) return;
+                if (!await PrepareDuelAsync(duser, revenge)) return;
 
                 var denemy = await db.GetUserOrCreateWithActiveCardsAsync(euser.Id, _time);
                 if (!denemy.GameDeck.Cards.Any(x => x.Active))
@@ -4509,7 +4510,7 @@ namespace Sanakan.Modules
                     DefenderDeres = GameTelemetry.Deres(players[1].Cards),
                     Rounds = fight.Rounds?.Count ?? 0,
                 };
-                var info = duser.GameDeck.CalculatePVPParams(denemy.GameDeck, res);
+                var info = duser.GameDeck.CalculatePVPParams(denemy.GameDeck, res, countsTowardDailyLimit: !revenge);
                 if (res == FightResult.Lose)
                 {
                     var defence = denemy.PayForWonDefence(_time.Now());
