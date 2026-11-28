@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Discord.WebSocket;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -45,9 +46,12 @@ namespace Sanakan.Api.Controllers
         private readonly Waifu _waifu;
         private readonly SessionManager _sessions;
         private readonly Shinden _shinden;
+        private readonly DiscordSocketClient _client;
 
-        public PlayerController(IConfig config, ISystemTime time, IExecutor executor, TagHelper tags, Waifu waifu, SessionManager sessions, Shinden shinden)
+        public PlayerController(IConfig config, ISystemTime time, IExecutor executor, TagHelper tags, Waifu waifu, SessionManager sessions, Shinden shinden,
+            DiscordSocketClient client = null)
         {
+            _client = client;
             _config = config;
             _time = time;
             _executor = executor;
@@ -191,6 +195,47 @@ namespace Sanakan.Api.Controllers
         {
             using (var db = new Database.DatabaseContext(_config))
                 return await db.GetOwnedCharactersAsync(discordId);
+        }
+
+        /// <summary>
+        /// Pobiera graczy, którzy dziś pokonali użytkownika w PvP (lista polecenia rewanże)
+        /// </summary>
+        [HttpGet("revenge"), ProducesResponseType(typeof(UserRevenges), 200)]
+        public async Task<IActionResult> GetRevengeListAsync()
+        {
+            if (!TryGetDiscordId(out var discordId))
+                return NoClaim();
+
+            using (var db = new Database.DatabaseContext(_config))
+            {
+                if (!await db.Users.AsQueryable().AnyAsync(x => x.Id == discordId))
+                    return "User not found!".ToResponse(404);
+
+                var revenge = await db.GetTodayRevengeListAsync(discordId, _time.Now().Date);
+                var ids = revenge.Targets.Select(x => x.AttackerId).ToList();
+                var shindenIds = await db.Users.AsNoTracking().Where(x => ids.Contains(x.Id) && x.Shinden != 0).ToDictionaryAsync(x => x.Id, x => x.Shinden);
+                var storedNames = await db.PlayerNames.AsNoTracking().Where(x => ids.Contains(x.UserId)).ToDictionaryAsync(x => x.UserId, x => x.Name);
+
+                return Ok(new UserRevenges
+                {
+                    Used = revenge.Used,
+                    Players = revenge.Targets.Select((x, i) => new UserRevengeTarget
+                    {
+                        Number = i + 1,
+                        DiscordId = x.AttackerId.ToString(),
+                        Nick = GetNick(x.AttackerId) ?? storedNames.GetValueOrDefault(x.AttackerId),
+                        ShindenId = shindenIds.TryGetValue(x.AttackerId, out var shinden) ? shinden.ToString() : null,
+                        Wins = x.Wins,
+                        Avenged = x.Avenged,
+                    }).ToList(),
+                });
+            }
+        }
+
+        protected virtual string GetNick(ulong id)
+        {
+            var user = (Discord.IUser)_client?.GetGuild(UserController.MainGuildId)?.GetUser(id) ?? _client?.GetUser(id);
+            return user?.GetUserNickInGuild();
         }
 
         /// <summary>

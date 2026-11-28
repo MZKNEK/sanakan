@@ -12,6 +12,10 @@ using Sanakan.Database.Models.Management;
 
 namespace Sanakan.Extensions
 {
+    public record RevengeTarget(ulong AttackerId, int Wins, bool Avenged);
+
+    public record RevengeList(List<RevengeTarget> Targets, bool Used);
+
     public static class ContextExtension
     {
         public static async Task<GuildOptions> GetGuildConfigOrCreateAsync(this Database.DatabaseContext context, ulong guildId, bool dontCreate = false)
@@ -67,6 +71,14 @@ namespace Sanakan.Extensions
 
         public static async Task<HashSet<ulong>> GetOwnedCharactersAsync(this Database.DatabaseContext context, ulong userId)
             => (await context.Cards.AsQueryable().Where(x => x.GameDeckId == userId).Select(x => x.Character).Distinct().ToListAsync()).ToHashSet();
+
+        // today's winners against the player in the order of their first win, the numbering of the revenge command
+        public static async Task<RevengeList> GetTodayRevengeListAsync(this Database.DatabaseContext context, ulong userId, DateTime today)
+        {
+            var defeats = await context.PvpDefeats.AsQueryable().AsNoTracking().Where(x => x.UserId == userId && x.Date >= today).OrderBy(x => x.Date).ToListAsync();
+            var targets = defeats.GroupBy(x => x.AttackerId).Select(g => new RevengeTarget(g.Key, g.Count(), g.Any(x => x.Avenged))).ToList();
+            return new RevengeList(targets, defeats.Any(x => x.Avenged));
+        }
 
         public static async Task<User> GetCachedNoGameDeckUserAsync(this Database.DatabaseContext context, ulong userId)
         {

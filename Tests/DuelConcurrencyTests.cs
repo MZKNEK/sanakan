@@ -174,9 +174,14 @@ namespace Artifacts
 
             var (executor, jobs) = CollectingExecutor();
             var list = Module(executor.Object, 63);
-            await list.RevengeAsync();
+            await list.ShowRevengeListAsync();
             Assert.Contains("**[1]**", Replies(list));
             Assert.Contains("**[2]**", Replies(list));
+
+            var outOfList = Module(executor.Object, 63);
+            await outOfList.RevengeAsync(3);
+            Assert.Contains("nie ma takiego gracza", Replies(outOfList));
+            Assert.Empty(jobs);
 
             await DuelAsync(63, 62, revenge: true);
             using (var db = Open())

@@ -4298,46 +4298,49 @@ namespace Sanakan.Modules
             await SafeReplyAsync("", embed: $"{Context.User.Mention} nie udało się znaleźć przeciwnika, spróbuj później.".ToEmbedMessage(EMType.Error).Build());
         }
 
-        [Command("rewanż")]
-        [Alias("rewanz", "revenge")]
-        [Summary("pokazuje graczy, którzy dziś cię pokonali; raz dziennie możesz zaatakować jednego z nich ponad dzienny limit pojedynków, a wynik liczy się jak w zwykłym pojedynku")]
-        [Remarks("1"), RequireWaifuDuelChannel]
-        public async Task RevengeAsync([Summary("numer gracza z listy")] int number = 0)
+        [Command("rewanże")]
+        [Alias("rewanze", "revenges")]
+        [Summary("pokazuje graczy, którzy dziś cię pokonali; na jednego z nich możesz raz dziennie wziąć rewanż poleceniem rewanż")]
+        [Remarks(""), RequireAnyCommandOrDuelChannel]
+        public async Task ShowRevengeListAsync()
         {
             using var db = CreateDuelDatabaseContext();
-            var today = _time.Now().Date;
-            var defeats = await db.PvpDefeats.AsQueryable().AsNoTracking().Where(x => x.UserId == Context.User.Id && x.Date >= today).OrderBy(x => x.Date).ToListAsync();
-            var attackers = defeats.GroupBy(x => x.AttackerId).Select(g => (Id: g.Key, Wins: g.Count(), Avenged: g.Any(x => x.Avenged))).ToList();
-            var used = defeats.Any(x => x.Avenged);
-
-            if (number <= 0)
+            var revenge = await db.GetTodayRevengeListAsync(Context.User.Id, _time.Now().Date);
+            var attackers = revenge.Targets;
+            if (attackers.Count == 0)
             {
-                if (attackers.Count == 0)
-                {
-                    await SafeReplyAsync("", embed: $"{Context.User.Mention} nikt cię dziś nie pokonał.".ToEmbedMessage(EMType.Info).Build());
-                    return;
-                }
-
-                var lines = new List<string>();
-                for (int i = 0; i < attackers.Count; i++)
-                {
-                    var user = await GetDuelOpponentAsync(attackers[i].Id);
-                    lines.Add($"**[{i + 1}]** {user?.Mention ?? $"gracz {attackers[i].Id}"} · wygrane z tobą: {attackers[i].Wins}{(attackers[i].Avenged ? " · rewanż wzięty" : "")}");
-                }
-                var footer = used ? "Dzisiejszy rewanż został już wykorzystany." : $"Rewanż: `rewanż numer`, raz dziennie, ponad dzienny limit {UserExtension.MAX_PVP_DAILY_GAMES} pojedynków.";
-                await SafeReplyAsync("", embed: $"{Context.User.Mention} dziś pokonali cię:\n\n{string.Join("\n", lines)}\n\n{footer}".TrimToLength().ToEmbedMessage(EMType.Info).Build());
+                await SafeReplyAsync("", embed: $"{Context.User.Mention} nikt cię dziś nie pokonał.".ToEmbedMessage(EMType.Info).Build());
                 return;
             }
 
-            if (used)
+            var lines = new List<string>();
+            for (int i = 0; i < attackers.Count; i++)
+            {
+                var user = await GetDuelOpponentAsync(attackers[i].AttackerId);
+                lines.Add($"**[{i + 1}]** {user?.Mention ?? $"gracz {attackers[i].AttackerId}"} · wygrane z tobą: {attackers[i].Wins}{(attackers[i].Avenged ? " · rewanż wzięty" : "")}");
+            }
+            var footer = revenge.Used ? "Dzisiejszy rewanż został już wykorzystany." : $"Rewanż: `rewanż numer` na kanale pojedynków, raz dziennie, ponad dzienny limit {UserExtension.MAX_PVP_DAILY_GAMES} pojedynków.";
+            await SafeReplyAsync("", embed: $"{Context.User.Mention} dziś pokonali cię:\n\n{string.Join("\n", lines)}\n\n{footer}".TrimToLength().ToEmbedMessage(EMType.Info).Build());
+        }
+
+        [Command("rewanż")]
+        [Alias("rewanz", "revenge")]
+        [Summary("raz dziennie atakujesz gracza z listy rewanże ponad dzienny limit pojedynków, a wynik liczy się jak w zwykłym pojedynku")]
+        [Remarks("1"), RequireWaifuDuelChannel]
+        public async Task RevengeAsync([Summary("numer gracza z listy rewanże")] int number)
+        {
+            using var db = CreateDuelDatabaseContext();
+            var revenge = await db.GetTodayRevengeListAsync(Context.User.Id, _time.Now().Date);
+            var attackers = revenge.Targets;
+            if (revenge.Used)
             {
                 await SafeReplyAsync("", embed: $"{Context.User.Mention} dzisiejszy rewanż został już wykorzystany.".ToEmbedMessage(EMType.Error).Build());
                 return;
             }
 
-            if (number > attackers.Count)
+            if (number <= 0 || number > attackers.Count)
             {
-                await SafeReplyAsync("", embed: $"{Context.User.Mention} nie ma takiego gracza na liście, sprawdź ją poleceniem `rewanż`.".ToEmbedMessage(EMType.Error).Build());
+                await SafeReplyAsync("", embed: $"{Context.User.Mention} nie ma takiego gracza na liście, sprawdź ją poleceniem `rewanże`.".ToEmbedMessage(EMType.Error).Build());
                 return;
             }
 
@@ -4345,7 +4348,7 @@ namespace Sanakan.Modules
             duser.GameDeck.Cards = await db.Entry(duser.GameDeck).Collection(x => x.Cards).Query().Where(x => x.Active).ToListAsync();
             if (!await PrepareDuelAsync(duser, revenge: true)) return;
 
-            var enemy = await GetDuelOpponentAsync(attackers[number - 1].Id);
+            var enemy = await GetDuelOpponentAsync(attackers[number - 1].AttackerId);
             if (enemy == null)
             {
                 await SafeReplyAsync("", embed: $"{Context.User.Mention} nie udało się znaleźć tego gracza, spróbuj później.".ToEmbedMessage(EMType.Error).Build());
